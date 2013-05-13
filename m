@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3EMPRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 11:17:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54972 "EHLO mx2.suse.de"
+	id S1754365Ab3EMPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 11:18:26 -0400
+Received: from MX2.LL.MIT.EDU ([129.55.12.46]:41359 "EHLO mx2.ll.mit.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab3EMPRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 11:17:33 -0400
-Date: Mon, 13 May 2013 17:17:27 +0200
-From: Jan Kara <jack@suse.cz>
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, EUNBONG SONG <eunb.song@samsung.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: Re: Re: EXT4 regression caused 4eec7
-Message-ID: <20130513151727.GI400@quack.suse.cz>
-References: <31302271.2821368363898561.JavaMail.weblogic@epml17>
- <20130513131809.GG400@quack.suse.cz>
- <20130513135643.GB12883@gmail.com>
+	id S1751652Ab3EMPSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 11:18:25 -0400
+Message-ID: <51910436.6070509@ll.mit.edu>
+Date: Mon, 13 May 2013 11:18:14 -0400
+From: David Oostdyk <daveo@ll.mit.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130412 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513135643.GB12883@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Landley <rob@landley.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: high-speed disk I/O is CPU-bound?
+References: <518CFE7C.9080708@ll.mit.edu> <1368377617.18069.228@driftwood>
+In-Reply-To: <1368377617.18069.228@driftwood>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
+ definitions=2013-05-13_02:2013-05-13,2013-05-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=2 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1211240000 definitions=main-1305130134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 13-05-13 21:56:43, Zheng Liu wrote:
-> On Mon, May 13, 2013 at 03:18:09PM +0200, Jan Kara wrote:
-> > On Sun 12-05-13 13:04:59, EUNBONG SONG wrote:
-> > > 
-> > > 
-> > > >> Since at this point it's safer to rollback the change and we can
-> > > >> investigate more deeply how to fix it correctly for the next
-> > > >> development cycle, this is the patch which I'm testing.
-> > > 
-> > > >>                     - Ted
-> > > 
-> > > > Hello, I've tested with your patch. But the same problem was reproduced.
-> > > > Currently, I'm trying to git bisect. If i done git bisect, i will let you know.
-> > > 
-> > > Hi, I've done git bisect. and panic at jbd2_journal_put_journal_head() is caused by 
-> > > ae4647fb7654676fc44a97e86eb35f9f06b99f66: "jbd2: reduce journal_head size."
-> > > I write just code patch which revert ae4647fb7654676fc44a97e86eb35f9f06b99f66 because
-> > > I don't know the root cause. 
-> >   This is really strange. I've verified the code and all the places
-> > modifying b_jlist or b_modified are holding bh_state lock so we should be
-> > safe...
-> 
-> Hi Jan,
-> 
-> Could you please take a look at this mail [1].  I don't think we hold
-> bh_state lock there.
-> 
-> 1. http://www.spinics.net/lists/linux-ext4/msg38205.html
-  I'll also reply to that thread but: Yes, we don't hold bh_state lock when
-reading b_jlist in that one case (that's why I wrote 'modify' and not just
-'access' in my previous email). But that's really harmless since we don't
-do any complex operations with b_jlist (only get & set) so we either see an
-old value or a new one. And that particular use is going away anyway later
-in my series.
+On 05/12/13 12:53, Rob Landley wrote:
+> On 05/10/2013 09:04:44 AM, David Oostdyk wrote:
+>> Hello,
+>>
+>> I have a few relatively high-end systems with hardware RAIDs which
+>> are being used for recording systems, and I'm trying to get a better
+>> understanding of contiguous write performance.
+> ...
+>> The question is, is it possible that high-speed I/O to these hardware
+>> RAIDs could
+>> actually be CPU-bound above ~1400MB/sec?
+> In some setups your processor is calculating CRCs for the data. It's a
+> fairly cheap operation, but a cheap operation on gigabytes of data can
+> still saturate your memory bus.
+>
+> Rob
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+At what level would you say this calculation is being applied? Somewhere 
+in the block/filesystem layer, or in the device driver, or at the 
+hardware level?  I'm seeing write speeds that are about 1/4 the memory 
+bandwidth of a single thread, which would suggest at least one 
+"additional" pass through the data before it gets DMA'd out.
+
+
+
