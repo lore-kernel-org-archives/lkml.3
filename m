@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab3EMTKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:10:15 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:48274 "EHLO mail.ispras.ru"
+	id S1755202Ab3EMTK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:10:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30677 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754534Ab3EMTKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:10:12 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, spruce-project@linuxtesting.org
-Subject: [PATCH 2/2] ext4: do not left pages locked in ext4_writepage()
-Date: Mon, 13 May 2013 23:08:13 +0400
-Message-Id: <1368472093-16997-3-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
-References: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
+	id S1753636Ab3EMTKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 15:10:24 -0400
+Message-ID: <51913A9B.2030807@redhat.com>
+Date: Mon, 13 May 2013 15:10:19 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Luiz Capitulino <lcapitulino@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, aquini@redhat.com,
+        amit.shah@redhat.com, anton@enomsg.org
+Subject: Re: [RFC 2/2] virtio_balloon: auto-ballooning support
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com> <1368111229-29847-3-git-send-email-lcapitulino@redhat.com> <20130512143054.GI10144@redhat.com> <518FC4F9.5010505@redhat.com> <20130512184934.GA16334@redhat.com> <20130513110303.33dbaba6@redhat.com> <20130513151624.GB1992@redhat.com> <51910552.5050507@redhat.com> <20130513153513.GA4981@redhat.com>
+In-Reply-To: <20130513153513.GA4981@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If call to ext4_init_io_end() is failed under memory pressure,
-ext4_writepage() calls redirty_page_for_writepage() but left the page locked.
-That leads to a deadlock since it is expected the page is unlocked after writepage().
+On 05/13/2013 11:35 AM, Michael S. Tsirkin wrote:
+> On Mon, May 13, 2013 at 11:22:58AM -0400, Rik van Riel wrote:
 
-Found by Linux File System Verification project (linuxtesting.org).
+>> I believe the Google patches still included some way for the
+>> host to initiate balloon inflation on the guest side, because
+>> the guest internal state alone is not enough to see when the
+>> host is under memory pressure.
+>>
+>> I discussed the project with the Google developers in question
+>> a little over a year ago, but I do not remember whether their
+>> pressure notification went through qemu, or directly from the
+>> host kernel to the guest kernel...
+>
+> So increasing the max number of pages in balloon
+> indicates host memory pressure to the guest?
+> Fair enough but I wonder whether there's a way to
+> make it more explicit in the interface, somehow.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/ext4/inode.c |    1 +
- 1 file changed, 1 insertion(+)
+There may be a better way to do this, but I am really not sure
+what that would be. What properties would you like to see in
+the interface? What kind of behaviour are you looking for?
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index aeca439..c6bc999 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2250,6 +2250,7 @@ static int ext4_writepage(struct page *page,
- 	io_submit.io_end = ext4_init_io_end(inode, GFP_NOFS);
- 	if (!io_submit.io_end) {
- 		redirty_page_for_writepage(wbc, page);
-+		unlock_page(page);
- 		return -ENOMEM;
- 	}
- 	ret = ext4_bio_write_page(&io_submit, page, len, wbc);
 -- 
-1.7.9.5
-
+All rights reversed
