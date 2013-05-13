@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3EMGF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:05:27 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:37243 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3EMGFX (ORCPT
+	id S1753711Ab3EMGFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:05:42 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:52666 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab3EMGFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:05:23 -0400
+	Mon, 13 May 2013 02:05:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <5176A807.2090005@samsung.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<2a5901ce31c9$95160980$bf421c80$%kim@samsung.com>
-	<CAKohpokk1Q+0gRpeW=ts0a8D+rGAUpHu62X+7ejdpfom_B6FYA@mail.gmail.com>
-	<1769336.FkfMpuXqqb@vostro.rjw.lan>
-	<5176A807.2090005@samsung.com>
-Date: Mon, 13 May 2013 11:35:22 +0530
-Message-ID: <CAKohpomV9-JEbuHWdmp6N+bKYt+83hXXcqg4aKXSY1a5zwpW9Q@mail.gmail.com>
-Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: robin.randhawa@arm.com, Ben Dooks <ben-linux@fluff.org>,
-        linux-pm@vger.kernel.org, patches@linaro.org, Liviu.Dudau@arm.com,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
-        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
-        charles.garcia-tobin@arm.com
+Date: Mon, 13 May 2013 14:05:38 +0800
+Message-ID: <CAPgLHd9MXzrkvKBtJYG6GZ2Xn9fBi6TO7NzJQDLgw2jCGqDupQ@mail.gmail.com>
+Subject: [PATCH] staging: vme: fix error return code in vme_user_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
+        wfp5p@virginia.edu, yamanetoshi@gmail.com, gmate.amit@gmail.com,
+        joe@perches.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2013 20:55, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> On 04/05/13 20:36, Rafael J. Wysocki wrote:
->>
->> On Friday, April 05, 2013 12:36:34 PM Viresh Kumar wrote:
->>>
->>> On 5 April 2013 12:18, Kukjin Kim<kgene.kim@samsung.com>  wrote:
->>>>
->>>> Basically, this moving looks good to me, but should be re-worked based
->>>> on
->>>> for-next of samsung tree because this touches too many samsung stuff so
->>>> this
->>>> should be sent to upstream via samsung tree.
->>>
->>>
->>> Hmm... Its already applied in Rafael's tree. But it doesn't mean that
->>> it can't be
->>> moved to your tree if there is a issue.
->>
->>
->> Well, I'm dropping it.  Please merge via the Samsung tree.
->>
->
-> Oops, I missed, maybe I have no more chance to send this to upstream for
-> upcoming merge window :-(
->
-> Rafael, please take this patch with my ack in your tree, sorry for noise.
->
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->
-> If any problems, please kindly let me know.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Who is going to pick this patch now for next merge window?
+Fix to return -ENOMEM in the resource alloc error handling
+case instead of 0, as done elsewhere in this function.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/vme/devices/vme_user.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index da7f759..5fe224d3 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -734,6 +734,7 @@ static int vme_user_probe(struct vme_dev *vdev)
+ 		if (image[i].resource == NULL) {
+ 			dev_warn(&vdev->dev,
+ 				 "Unable to allocate slave resource\n");
++			err = -ENOMEM;
+ 			goto err_slave;
+ 		}
+ 		image[i].size_buf = PCI_BUF_SIZE;
+@@ -760,6 +761,7 @@ static int vme_user_probe(struct vme_dev *vdev)
+ 		if (image[i].resource == NULL) {
+ 			dev_warn(&vdev->dev,
+ 				 "Unable to allocate master resource\n");
++			err = -ENOMEM;
+ 			goto err_master;
+ 		}
+ 		image[i].size_buf = PCI_BUF_SIZE;
+
