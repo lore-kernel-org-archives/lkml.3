@@ -1,122 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab3EMIIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:08:38 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:54829 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3EMIIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:08:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <OFE7F9663A.1F3DE1BE-ON48257B60.00045684-48257B60.001360DF@zte.com.cn>
-References: <CAFLxGvxfzHudUMRc7VkgWMO9RJAkyh1iuouRAV-0s-5eaLqfEQ@mail.gmail.com>
-	<OFE7F9663A.1F3DE1BE-ON48257B60.00045684-48257B60.001360DF@zte.com.cn>
-Date: Mon, 13 May 2013 10:08:35 +0200
-Message-ID: <CAFLxGvzKw1_L3Nm4J5GM_wr0sFe6umN0yLzDnK=DM_AJ7GpaaQ@mail.gmail.com>
-Subject: Re: Re: Re: [PATCH] UBI: fix memory leak when use fastmap
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: wang.bo116@zte.com.cn
-Cc: artem.bityutskiy@linux.intel.com, cui.yunfeng@zte.com.cn,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        liu.dong3@zte.com.cn
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753546Ab3EMIM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:12:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753186Ab3EMIMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 04:12:54 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 9/9] mm: vmscan: Move logic from balance_pgdat() to kswapd_shrink_zone()
+Date: Mon, 13 May 2013 09:12:40 +0100
+Message-Id: <1368432760-21573-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 3, 2013 at 5:31 AM,  <wang.bo116@zte.com.cn> wrote:
-> richard -rw- weinberger <richard.weinberger@gmail.com> write 2013-05-03
-> 03:21:33:
->
->> On Thu, May 2, 2013 at 10:30 AM,  <wang.bo116@zte.com.cn> wrote:
->> >> Hi!
->> >>
->> >> On Tue, Apr 16, 2013 at 10:53 AM,  <wang.bo116@zte.com.cn> wrote:
->> >> > Hello,
->> >> >         Sorry, there is still something wrong with the previous
->> > patch's
->> >> > format, try to submit it again. When use ubi fastmap, there is a
->> > memory
->> >> > leak which will make destroy_ai() fail to free the slab alloced in
->> >> > scan_fast(). The following patch fix this problem by use a
-> temporary
->> >> > "ubi_attach_info" variable in scan_fast().
->> >>
->> >> Thanks a lot for your patch!
->> >>
->> >> Did you test it well?
->> >> We need to make sure that it does the right thing for the following
->> > cases:
->> >> 1. fastmap disabled, attaching a non-fastmap volume
->> >> 1. fastmap disabled, attaching a fastmap volume
->> >> 3. fastmap enabled, attaching a non-fastmap volume
->> >> 4. fastmap enablled, attaching a fastmap volume
->> >>
->> >> --
->> >> Thanks,
->> >> //richard
->> >
->> >
->> > Thanks for your advice. I consider this problem like this:
->> > 1: if fastmap not config, ubi_attach() just call scan_all(ubi, ai, 0),
->> > there is nothing changed, so there is all right.
->> >
->> > 2: if fastmap config, and force_scan is 0, ubi_attach() will call
->> > scan_fast(), when scan_fast() return, temp ai used in scan_fast() has
-> been
->> > free, and there will be two conditions:
->> > A: scan_fast() return UBI_NO_FASTMAP(may be flash is empty or
-> attaching a
->> > non-fastmap volume), all ubi_attach() need is to call scan_all(ubi,
-> ai, 0)
->> > to scan all blocks.
->> > B: scan_fast() return UBI_BAD_FASTMAP, ubi_attach() first free ai used
-> in
->> > ubi_scan_fastmap(), then alloc a clean ai, at last call scan_all(ubi,
-> ai,
->> > 0) to scan all blocks.
->> >
->> > 3: if fastmap config, and force_scan is 1, just call scan_all(ubi, ai,
-> 0).
->> >
->> > This patch pass the following cases(include attach and detach):
->> > 1. fastmap config, flash is empty,fm_autoconvert is 1.
->> > 2. fastmap config, flash is empty,fm_autoconvert is 0.
->> > 3. fastmap config, attaching a fastmap volume
->> > 4. fastmap config, attaching a bad fastmap volume
->> > 5. fastmap config, attaching a non-fastmap volume
->> > 6. fastmap not config, attaching a fastmap volume
->> > 7. fastmap not config, attaching a non-fastmap volume
->> > 8. fastmap not config, flash is empty.
->>
->> Good. :)
->>
->> > By the way, the problem may cause ubi_attach() fail after ubi detach
-> when
->> > CONFIG_DEBUG_VM config.
->> > The reason is that ubi_attach() will alloc a slab cache, but the
->> > kmem_cache_sanity_check() will find the slab cache is already
-> exist(not
->> > been free after last detach), so slab cache alloc fail, and
-> ubi_attach()
->> > fail, too.
->>
->> Doesn't your patch address this issue too?
->> If not, we should fix this.Th
->
-> The patch had already fix the above problem mentioned.
-> Now, all the slabs belong to the slab-cache named "ubi_aeb_slab_cache" can
-> be rightly freed, so the slab-cache can be rightly freed when ubi_attach()
-> return.
-> When ubi attach again after detach, ubi can alloc a slab-cache named "
-> ubi_aeb_slab_cache" again.
+balance_pgdat() is very long and some of the logic can and should
+be internal to kswapd_shrink_zone(). Move it so the flow of
+balance_pgdat() is marginally easier to follow.
 
-I tried to apply/test your patch.
-It has lots of white spaces damages.
-Can you please resend it using git send-email?
-And also run checkpatch.pl before sending.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 110 +++++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 54 insertions(+), 56 deletions(-)
 
---
-Thanks,
-//richard
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index e65fe46..0ba9d3a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2705,18 +2705,53 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+  * This is used to determine if the scanning priority needs to be raised.
+  */
+ static bool kswapd_shrink_zone(struct zone *zone,
++			       int classzone_idx,
+ 			       struct scan_control *sc,
+ 			       unsigned long lru_pages,
+ 			       unsigned long *nr_attempted)
+ {
+ 	unsigned long nr_slab;
++	int testorder = sc->order;
++	unsigned long balance_gap;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc->gfp_mask,
+ 	};
++	bool lowmem_pressure;
+ 
+ 	/* Reclaim above the high watermark. */
+ 	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
++
++	/*
++	 * Kswapd reclaims only single pages with compaction enabled. Trying
++	 * too hard to reclaim until contiguous free pages have become
++	 * available can hurt performance by evicting too much useful data
++	 * from memory. Do not reclaim more than needed for compaction.
++	 */
++	if (IS_ENABLED(CONFIG_COMPACTION) && sc->order &&
++			compaction_suitable(zone, sc->order) !=
++				COMPACT_SKIPPED)
++		testorder = 0;
++
++	/*
++	 * We put equal pressure on every zone, unless one zone has way too
++	 * many pages free already. The "too many pages" is defined as the
++	 * high wmark plus a "gap" where the gap is either the low
++	 * watermark or 1% of the zone, whichever is smaller.
++	 */
++	balance_gap = min(low_wmark_pages(zone),
++		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
++		KSWAPD_ZONE_BALANCE_GAP_RATIO);
++
++	/*
++	 * If there is no low memory pressure or the zone is balanced then no
++	 * reclaim is necessary
++	 */
++	lowmem_pressure = (buffer_heads_over_limit && is_highmem(zone));
++	if (!lowmem_pressure && zone_balanced(zone, testorder,
++						balance_gap, classzone_idx))
++		return true;
++
+ 	shrink_zone(zone, sc);
+ 
+ 	reclaim_state->reclaimed_slab = 0;
+@@ -2731,6 +2766,18 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 
+ 	zone_clear_flag(zone, ZONE_WRITEBACK);
+ 
++	/*
++	 * If a zone reaches its high watermark, consider it to be no longer
++	 * congested. It's possible there are dirty pages backed by congested
++	 * BDIs but as pressure is relieved, speculatively avoid congestion
++	 * waits.
++	 */
++	if (!zone->all_unreclaimable &&
++	    zone_balanced(zone, testorder, 0, classzone_idx)) {
++		zone_clear_flag(zone, ZONE_CONGESTED);
++		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
++	}
++
+ 	return sc->nr_scanned >= sc->nr_to_reclaim;
+ }
+ 
+@@ -2866,8 +2913,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+-			int testorder;
+-			unsigned long balance_gap;
+ 
+ 			if (!populated_zone(zone))
+ 				continue;
+@@ -2888,61 +2933,14 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			sc.nr_reclaimed += nr_soft_reclaimed;
+ 
+ 			/*
+-			 * We put equal pressure on every zone, unless
+-			 * one zone has way too many pages free
+-			 * already. The "too many pages" is defined
+-			 * as the high wmark plus a "gap" where the
+-			 * gap is either the low watermark or 1%
+-			 * of the zone, whichever is smaller.
+-			 */
+-			balance_gap = min(low_wmark_pages(zone),
+-				(zone->managed_pages +
+-					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+-				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+-			/*
+-			 * Kswapd reclaims only single pages with compaction
+-			 * enabled. Trying too hard to reclaim until contiguous
+-			 * free pages have become available can hurt performance
+-			 * by evicting too much useful data from memory.
+-			 * Do not reclaim more than needed for compaction.
++			 * There should be no need to raise the scanning
++			 * priority if enough pages are already being scanned
++			 * that that high watermark would be met at 100%
++			 * efficiency.
+ 			 */
+-			testorder = order;
+-			if (IS_ENABLED(CONFIG_COMPACTION) && order &&
+-					compaction_suitable(zone, order) !=
+-						COMPACT_SKIPPED)
+-				testorder = 0;
+-
+-			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+-			    !zone_balanced(zone, testorder,
+-					   balance_gap, end_zone)) {
+-				/*
+-				 * There should be no need to raise the
+-				 * scanning priority if enough pages are
+-				 * already being scanned that high
+-				 * watermark would be met at 100% efficiency.
+-				 */
+-				if (kswapd_shrink_zone(zone, &sc, lru_pages,
+-						       &nr_attempted))
+-					raise_priority = false;
+-			}
+-
+-			if (zone->all_unreclaimable) {
+-				if (end_zone && end_zone == i)
+-					end_zone--;
+-				continue;
+-			}
+-
+-			if (zone_balanced(zone, testorder, 0, end_zone))
+-				/*
+-				 * If a zone reaches its high watermark,
+-				 * consider it to be no longer congested. It's
+-				 * possible there are dirty pages backed by
+-				 * congested BDIs but as pressure is relieved,
+-				 * speculatively avoid congestion waits
+-				 * or writing pages from kswapd context.
+-				 */
+-				zone_clear_flag(zone, ZONE_CONGESTED);
+-				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
++			if (kswapd_shrink_zone(zone, end_zone, &sc,
++					lru_pages, &nr_attempted))
++				raise_priority = false;
+ 		}
+ 
+ 		/*
+-- 
+1.8.1.4
+
