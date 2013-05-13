@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3EMDMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 23:12:01 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:56663 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab3EMDL7 (ORCPT
+	id S1752560Ab3EMDOr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 23:14:47 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:31517 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab3EMDOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 23:11:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <7032562.14371368411664268.JavaMail.weblogic@epml07>
-References: <7032562.14371368411664268.JavaMail.weblogic@epml07>
-Date: Sun, 12 May 2013 20:11:59 -0700
-Message-ID: <CA+8MBb+51dMaYQd-g-T40+UstbxsSbmewSXiUfNDrVouSA3=Zw@mail.gmail.com>
-Subject: Re: Re: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-From: Tony Luck <tony.luck@gmail.com>
-To: eunb.song@samsung.com
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 12 May 2013 23:14:46 -0400
+From: Warner Wang <warner.wang@hp.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Warner Wang <warner.wang@hp.com>
+Subject: [PATCH] sysfs: sysfs_link_sibling(): fix typo in comment
+Date: Mon, 13 May 2013 11:11:05 +0800
+Message-Id: <1368414665-29566-1-git-send-email-warner.wang@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 7:21 PM, EUNBONG SONG <eunb.song@samsung.com> wrote:
-> Hi, my git bisect result is same yours. And i reported that to community yesterday.
+Fix a typo subling->sibling in the comment of sysfs_link_sibling().
 
-Ah. Good to have some confirmation (I was never sure how long to keep
-running before deciding that a test was "good".  My slowest "bad" test took
-about 2.5 hours.  I mostly let the tests run for >6 hours before deciding.
+Signed-off-by: Warner Wang <warner.wang@hp.com>
+---
+ fs/sysfs/dir.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I just confirmed that 3.10-rc1 still fails (30 minutes).  Now running a test
-on 3.10-rc1 with just this commit reverted. Only been going for about
-15 minutes, so no useful information yet.
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e8e0e71..17c9a70 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -74,7 +74,7 @@ static int sysfs_sd_compare(const struct sysfs_dirent *left,
+ }
+ 
+ /**
+- *	sysfs_link_subling - link sysfs_dirent into sibling rbtree
++ *	sysfs_link_sibling - link sysfs_dirent into sibling rbtree
+  *	@sd: sysfs_dirent of interest
+  *
+  *	Link @sd into its sibling rbtree which starts from
+-- 
+1.7.1
 
-My best guess as to why this commit causes problems is that there are places
-where updates to individual fields in this structure used to be independent
-because they were to whole words.  Now we have bitfileds there are races
-between access to different fields in the same word.
-
--Tony
