@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab3EMX73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 19:59:29 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:53535 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab3EMX7Z (ORCPT
+	id S1755712Ab3EMX7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 19:59:18 -0400
+Received: from mail-da0-f45.google.com ([209.85.210.45]:55411 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab3EMX7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 19:59:25 -0400
+	Mon, 13 May 2013 19:59:09 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 9/9] drm: Don't leak phys_wc "handles" to userspace
-Date: Mon, 13 May 2013 16:58:48 -0700
-Message-Id: <49cb9bfb3edeaf86ec659f1722893ddbd31075c4.1368485053.git.luto@amacapital.net>
+Subject: [PATCH v3 4/9] drm,agpgart: Use pgprot_writecombine for AGP maps and make the MTRR optional
+Date: Mon, 13 May 2013 16:58:43 -0700
+Message-Id: <809e6805f78212758097c0a74f9f59053cfdafaf.1368485053.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1368485053.git.luto@amacapital.net>
 References: <cover.1368485053.git.luto@amacapital.net>
@@ -25,69 +25,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't fix this in the earlier patch -- it would have broken the
-build due to the now-deleted garbage in drm_os_linux.h.
+I'm not sure I understand the intent of the previous behavior.  mmap
+on /dev/agpgart and DRM_AGP maps had no cache flags set, so they
+would be fully cacheable.  But the DRM code (most of the time) would
+add a write-combining MTRR that would change the effective memory
+type to WC.
+
+The new behavior just requests WC explicitly for all AGP maps.
+
+If there is any code out there that expects cacheable access to the
+AGP aperture (because the drm driver doesn't request an MTRR or
+because it's using /dev/agpgart directly), then it will now end up
+with a UC or WC mapping, depending on the architecture and PAT
+availability.  But cacheable access to the aperture seems like it's
+asking for trouble, because, AIUI, the aperture is an alias of RAM.
 
 Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- drivers/gpu/drm/drm_bufs.c  |  9 +++++++++
- drivers/gpu/drm/drm_ioctl.c | 15 ++++++++++++++-
- 2 files changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_bufs.c b/drivers/gpu/drm/drm_bufs.c
-index 0190fce..5a4dbb4 100644
---- a/drivers/gpu/drm/drm_bufs.c
-+++ b/drivers/gpu/drm/drm_bufs.c
-@@ -414,6 +414,15 @@ int drm_addmap_ioctl(struct drm_device *dev, void *data,
- 
- 	/* avoid a warning on 64-bit, this casting isn't very nice, but the API is set so too late */
- 	map->handle = (void *)(unsigned long)maplist->user_token;
-+
-+	/*
-+	 * It appears that there are no users of this value whatsoever --
-+	 * drmAddMap just discards it.  Let's not encourage its use.
-+	 * (Keeping drm_addmap_core's returned mtrr value would be wrong --
-+	 *  it's not a real mtrr index anymore.)
-+	 */
-+	map->mtrr = -1;
-+
+It's conceivable that libpciaccess could have issues with this due to
+memtype conflicts, but I think this is unlikely (as long as a WC
+mapping gets there first, I think the conflict resolution rules will
+all work out).  In any case, everything that maps the AGP aperture
+ought to be using /dev/agpgart or the DRM API, in which case
+everything should be okay.
+
+I don't have anything with an AGP slot to test AFAIK.
+
+ drivers/char/agp/frontend.c |  8 +++++---
+ drivers/gpu/drm/drm_pci.c   |  8 ++++----
+ drivers/gpu/drm/drm_stub.c  | 10 ++--------
+ drivers/gpu/drm/drm_vm.c    | 11 ++++-------
+ 4 files changed, 15 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+index 2e04433..1b19239 100644
+--- a/drivers/char/agp/frontend.c
++++ b/drivers/char/agp/frontend.c
+@@ -603,7 +603,8 @@ static int agp_mmap(struct file *file, struct vm_area_struct *vma)
+ 			vma->vm_ops = kerninfo.vm_ops;
+ 		} else if (io_remap_pfn_range(vma, vma->vm_start,
+ 				(kerninfo.aper_base + offset) >> PAGE_SHIFT,
+-					    size, vma->vm_page_prot)) {
++				size,
++				pgprot_writecombine(vma->vm_page_prot))) {
+ 			goto out_again;
+ 		}
+ 		mutex_unlock(&(agp_fe.agp_mutex));
+@@ -618,8 +619,9 @@ static int agp_mmap(struct file *file, struct vm_area_struct *vma)
+ 		if (kerninfo.vm_ops) {
+ 			vma->vm_ops = kerninfo.vm_ops;
+ 		} else if (io_remap_pfn_range(vma, vma->vm_start,
+-					    kerninfo.aper_base >> PAGE_SHIFT,
+-					    size, vma->vm_page_prot)) {
++				kerninfo.aper_base >> PAGE_SHIFT,
++				size,
++				pgprot_writecombine(vma->vm_page_prot))) {
+ 			goto out_again;
+ 		}
+ 		mutex_unlock(&(agp_fe.agp_mutex));
+diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+index bd719e9..d0f6699 100644
+--- a/drivers/gpu/drm/drm_pci.c
++++ b/drivers/gpu/drm/drm_pci.c
+@@ -278,10 +278,10 @@ int drm_pci_agp_init(struct drm_device *dev)
+ 		}
+ 		if (drm_core_has_MTRR(dev)) {
+ 			if (dev->agp)
+-				dev->agp->agp_mtrr =
+-					mtrr_add(dev->agp->agp_info.aper_base,
+-						 dev->agp->agp_info.aper_size *
+-						 1024 * 1024, MTRR_TYPE_WRCOMB, 1);
++				dev->agp->agp_mtrr = arch_phys_wc_add(
++					dev->agp->agp_info.aper_base,
++					dev->agp->agp_info.aper_size *
++					1024 * 1024);
+ 		}
+ 	}
  	return 0;
- }
+diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+index 7d30802..9e2acdf 100644
+--- a/drivers/gpu/drm/drm_stub.c
++++ b/drivers/gpu/drm/drm_stub.c
+@@ -451,14 +451,8 @@ void drm_put_dev(struct drm_device *dev)
  
-diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
-index e77bd8b..ffd7a7b 100644
---- a/drivers/gpu/drm/drm_ioctl.c
-+++ b/drivers/gpu/drm/drm_ioctl.c
-@@ -38,6 +38,9 @@
+ 	drm_lastclose(dev);
  
- #include <linux/pci.h>
- #include <linux/export.h>
-+#ifdef CONFIG_X86
-+#include <asm/mtrr.h>
-+#endif
+-	if (drm_core_has_MTRR(dev) && drm_core_has_AGP(dev) &&
+-	    dev->agp && dev->agp->agp_mtrr >= 0) {
+-		int retval;
+-		retval = mtrr_del(dev->agp->agp_mtrr,
+-				  dev->agp->agp_info.aper_base,
+-				  dev->agp->agp_info.aper_size * 1024 * 1024);
+-		DRM_DEBUG("mtrr_del=%d\n", retval);
+-	}
++	if (drm_core_has_MTRR(dev) && drm_core_has_AGP(dev) && dev->agp)
++		arch_phys_wc_del(dev->agp->agp_mtrr);
  
- /**
-  * Get the bus id.
-@@ -181,7 +184,17 @@ int drm_getmap(struct drm_device *dev, void *data,
- 	map->type = r_list->map->type;
- 	map->flags = r_list->map->flags;
- 	map->handle = (void *)(unsigned long) r_list->user_token;
--	map->mtrr = r_list->map->mtrr;
-+
-+#ifdef CONFIG_X86
-+	/*
-+	 * There appears to be exactly one user of the mtrr index: dritest.
-+	 * It's easy enough to keep it working on non-PAT systems.
-+	 */
-+	map->mtrr = phys_wc_to_mtrr_index(r_list->map->mtrr);
-+#else
-+	map->mtrr = -1;
-+#endif
-+
- 	mutex_unlock(&dev->struct_mutex);
+ 	if (dev->driver->unload)
+ 		dev->driver->unload(dev);
+diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+index 163f436..b1e4ec8 100644
+--- a/drivers/gpu/drm/drm_vm.c
++++ b/drivers/gpu/drm/drm_vm.c
+@@ -49,13 +49,10 @@ static pgprot_t drm_io_prot(struct drm_local_map *map,
+ 	pgprot_t tmp = vm_get_page_prot(vma->vm_flags);
  
- 	return 0;
+ #if defined(__i386__) || defined(__x86_64__)
+-	if (map->type != _DRM_AGP) {
+-		if (map->type == _DRM_FRAME_BUFFER ||
+-		    map->flags & _DRM_WRITE_COMBINING)
+-			tmp = pgprot_writecombine(tmp);
+-		else
+-			tmp = pgprot_noncached(tmp);
+-	}
++	if (map->type == _DRM_REGISTERS && !(map->flags & _DRM_WRITE_COMBINING))
++		tmp = pgprot_noncached(tmp);
++	else
++		tmp = pgprot_writecombine(tmp);
+ #elif defined(__powerpc__)
+ 	pgprot_val(tmp) |= _PAGE_NO_CACHE;
+ 	if (map_type == _DRM_REGISTERS)
 -- 
 1.8.1.4
 
