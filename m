@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3EMLVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 07:21:35 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44437 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830Ab3EMLVe convert rfc822-to-8bit (ORCPT
+	id S1754648Ab3EMLVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 07:21:39 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50910 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750830Ab3EMLVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 07:21:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>, paulmck@linux.vnet.ibm.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time as with v3.9
-Date: Mon, 13 May 2013 13:30:05 +0200
-Message-ID: <136862945.66DBfZPmr6@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130512172058.GB6205@pd.tnic>
-References: <87r4hdjsu5.fsf@nemi.mork.no> <87ehdcuofr.fsf@nemi.mork.no> <20130512172058.GB6205@pd.tnic>
+	Mon, 13 May 2013 07:21:36 -0400
+Date: Mon, 13 May 2013 07:21:32 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Francis Deslauriers <fdeslaur@gmail.com>, linux-mm@kvack.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, raphael.beamonte@gmail.com,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [page fault tracepoint 1/2] Add page fault trace event
+	definitions
+Message-ID: <20130513112132.GA15168@Krystal>
+References: <1368079520-11015-1-git-send-email-fdeslaur@gmail.com> <518B464E.6010208@huawei.com> <518BA91E.3080406@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518BA91E.3080406@zytor.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 12, 2013 07:20:58 PM Borislav Petkov wrote:
-> On Sun, May 12, 2013 at 06:56:40PM +0200, Bjørn Mork wrote:
-> > Borislav Petkov <bp@alien8.de> writes:
-> > > On Sun, May 12, 2013 at 06:13:34PM +0200, Bjørn Mork wrote:
-> > >> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > >> index 6934238..2dcbf84 100644
-> > >> --- a/kernel/rcutree.c
-> > >> +++ b/kernel/rcutree.c
-> > >> @@ -3103,9 +3103,11 @@ static int rcu_pm_notify(struct notifier_block *self,
-> > >>  {
-> > >>  	switch (action) {
-> > >>  	case PM_HIBERNATION_PREPARE:
-> > >> +	case PM_SUSPEND_PREPARE:
-> > >>  		rcu_expedited = 1;
-> > >>  		break;
-> > >> -	case PM_POST_RESTORE:
-> > >> +	case PM_POST_HIBERNATION:
-> > >> +	case PM_POST_SUSPEND:
-> > >>  		rcu_expedited = 0;
-> > >>  		break;
-> > >>  	default:
-> > >
-> > > If I'm reading Documentation/power/notifiers.txt correctly, we only need
-> > > PM_HIBERNATION_PREPARE when we go to sleep (whatever hibernation method
-> > > we use) and PM_POST_HIBERNATION when we restore.
+* H. Peter Anvin (hpa@zytor.com) wrote:
+> On 05/08/2013 11:46 PM, zhangwei(Jovi) wrote:
+> > On 2013/5/9 14:05, Francis Deslauriers wrote:
+> >> Add page_fault_entry and page_fault_exit event definitions. It will
+> >> allow each architecture to instrument their page faults.
 > > 
-> > Well, that's not the way I read it. And testing also supports that.
+> > I'm wondering if this tracepoint could handle other page faults,
+> > like faults in kernel memory(vmalloc, kmmio, etc...)
 > > 
-> > Adding the above to your patch makes restore from suspend use < 3
-> > seconds again.  Using only PM_HIBERNATION_PREPARE had no effect on the
-> > restore from suspend time, still measured at around 15 seconds on my
-> > laptop.
+> > And if we decide to support those faults, add a type annotate in TP_printk
+> > would be much helpful for user, to let user know what type of page faults happened.
+> > 
 > 
-> Hmm, that could be because suspend.c does PM_SUSPEND_PREPARE and
-> hibernate.c does PM_HIBERNATION_PREPARE. So the statement
-> 
-> "PM_HIBERNATION_PREPARE  The system is going to hibernate or suspend,"
-> 
-> is wrong.
+> The plan for x86 was to switch the IDT so that any exception could get a
+> trace event without any overhead in normal operation.  This has been in
+> the process for quite some time but looks like it was getting very close.
 
-Yes, this is incorrect.  It should be "The system is going to hibernate".
+Hi Peter,
 
-> Hi Rafael, it seems to me that if we need to do something for both sleep
-> methods, we have different notifier states and we have to add them both
-> if we want to do stuff for both, correct?
+Who is leading this IDT instrumentation effort ?
 
-Yes, that's correct.
+Since we have tracepoints in interrupt handlers nowadays, I wonder what
+makes traps so much more special than interrupts to require the
+arch-specific complexity of the IDT switcharoo trick ? If I had to
+guess, the reason for this would be the page fault handler, which is
+called way too frequently for its own good. The number of page faults
+triggered by COW on process fork has been impressively high for the past
+couple of years.
 
-The reason why is that hibernation does extra work between notifiers and
-freezing drivers (also the "freezing" is not the same as "suspending").
+IMHO, this should be one extra reason for quickly allowing people to
+trace those page faults, so they can get an idea of their tremendous
+performance impact. This could speed up the efforts on transparent huge
+pages, which seems to be a viable long-term solution to this page-size
+scalability issue.
+
+By default, my 3.5 Linux kernel (Debian) has:
+
+$ cat /sys/kernel/mm/transparent_hugepage/enabled
+always [madvise] never
+
+I think transparent huge pages will become generally useful when enabled
+by default, and when they will handle the page cache in addition to
+anonymous pages.[1]
 
 Thanks,
-Rafael
 
+Mathieu
+
+[1] Documentation/vm/transhuge.txt
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
