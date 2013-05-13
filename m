@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab3EMOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:30:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43679 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752734Ab3EMOaY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:30:24 -0400
-X-Sasl-enc: 4SCabrwJXh8JPFLs+MYP3smLbV0HLfRxr9efdXsdsycA 1368455420
-Message-ID: <5190F8FA.9050201@ladisch.de>
-Date: Mon, 13 May 2013 16:30:18 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1754185Ab3EMObI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:31:08 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:50854 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752402Ab3EMObG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:31:06 -0400
+Date: Mon, 13 May 2013 09:31:04 -0500
+From: Robin Holt <holt@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Robin Holt <holt@sgi.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: Full dynticks needs evtdesc set before marking cpu online.
+Message-ID: <20130513143104.GG3658@sgi.com>
+References: <20130508235736.GT3658@sgi.com>
+ <alpine.LFD.2.02.1305131119180.2863@ionos>
+ <20130513125514.GE3658@sgi.com>
+ <alpine.LFD.2.02.1305131501210.2863@ionos>
+ <20130513135948.GF3658@sgi.com>
+ <alpine.LFD.2.02.1305131602090.2863@ionos>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Imre Deak <imre.deak@intel.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 11/11] sound/oxygen_io: take msecs_to_jiffies_min into
- use
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com> <1368188011-23661-11-git-send-email-imre.deak@intel.com> <s5hr4hbq8sd.wl%tiwai@suse.de>
-In-Reply-To: <s5hr4hbq8sd.wl%tiwai@suse.de>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1305131602090.2863@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai wrote:
-> Imre Deak wrote:
->> Use msecs_to_jiffies_min instead of open-coding the same.
->>
->> +++ b/sound/pci/oxygen/oxygen_io.c
->> @@ -108,7 +108,7 @@ static int oxygen_ac97_wait(struct oxygen *chip, unsigned int mask)
->>  	wait_event_timeout(chip->ac97_waitqueue,
->>  			   ({ status |= oxygen_read8(chip, OXYGEN_AC97_INTERRUPT_STATUS);
->>  			      status & mask; }),
->> -			   msecs_to_jiffies(1) + 1);
->> +			   msecs_to_jiffies_min(1));
->
-> This would change the behavior, I guess.
+On Mon, May 13, 2013 at 04:04:45PM +0200, Thomas Gleixner wrote:
+> On Mon, 13 May 2013, Robin Holt wrote:
+> > On Mon, May 13, 2013 at 03:03:55PM +0200, Thomas Gleixner wrote:
+> > > On Mon, 13 May 2013, Robin Holt wrote:
+> > > 
+> > > > On Mon, May 13, 2013 at 11:21:00AM +0200, Thomas Gleixner wrote:
+> > > > > On Wed, 8 May 2013, Robin Holt wrote:
+> > > > > 
+> > > > > > Thomas,
+> > > > > > 
+> > > > > > We are seeing failures booting medium sized machines which I think is
+> > > > > > a change in expectations that dyntick put on x86's start_secondary.
+> > > > > > 
+> > > > > > During boot of cpus, we see an occassional panic in tick_do_broadcast at
+> > > > > 
+> > > > > http://lkml.indiana.edu/hypermail/linux/kernel/1305.0/01818.html
+> > > > > 
+> > > > > Will hit Linus tree soon.
+> > > > 
+> > > > I think this is really due to a sequence in start_secondary.  The cpu
+> > > > has been marked as online, but its evtdesc has not been initialized.
+> > > > I sent a followup to this with a hack/patch.
+> > > 
+> > > No, the real issue is that I messed up the cpumask conversion in the
+> > > broadcast code, i.e. using alloc instead of zalloc, which allocated
+> > > nonzeroed memory for the cpumasks, so any random bit set will crash
+> > > the machine. Your patch is just papering over the issue.
+> > 
+> > I believe I understand now.  What would be the downside of moving
+> > the initialization to before marking the cpu online?  It seems like a
+> > reasonable this to expect as well in spite of it not being the right
+> > fix to the other bug.
+> 
+> Yes, we can move it, but its not a required thing that the tick device
+> is setup befor onlining.
 
-No, that's exactly how msecs_to_jiffies_min would be implemented.
+I tested with your patch and it does fix my problem as well.
 
-> (Though, I'm not sure whether the original code was intentional.)
-
-When I wrote this, I was not able to prove that msecs_to_jiffies always
-rounds up.  (And I guess it doesn't; otherwise the _min variant would
-not be needed.)
-
-
-Regards,
-Clemens
+Thank your,
+Robin
