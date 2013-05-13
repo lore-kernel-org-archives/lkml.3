@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab3EMCQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:16:59 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:38428 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab3EMCQ6 (ORCPT
+	id S1752732Ab3EMCUD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:20:03 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:54549 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab3EMCUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:16:58 -0400
-X-Spam-Score: -100.8
-Message-ID: <51904CE7.8080504@asianux.com>
-Date: Mon, 13 May 2013 10:16:07 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 12 May 2013 22:20:01 -0400
+From: Libin <huawei.libin@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <guohanjun@huawei.com>, <wangyijing@huawei.com>
+Subject: [PATCH] char: Use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
+Date: Mon, 13 May 2013 10:17:39 +0800
+Message-ID: <1368411459-52524-1-git-send-email-huawei.libin@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] kernel/acct.c: cleanup, also better to set related variable
- to NULL after kfree
-References: <518CC9E3.1060304@asianux.com> <20130510074809.0e930a28@corrin.poochiereds.net> <518D02A0.1080306@asianux.com> <518D2004.8070400@asianux.com>
-In-Reply-To: <518D2004.8070400@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.74.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(*->vm_end - *->vm_start) >> PAGE_SHIFT operation is implemented
+as a inline funcion vma_pages() in linux/mm.h, so using it.
 
-After kfree acct, also better to set ns->bacct to NULL.
-
-Currently, it is as a cleanup patch.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Libin <huawei.libin@huawei.com>
 ---
- kernel/acct.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/char/mspec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 85389fe..91a23eb 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -332,6 +332,7 @@ void acct_exit_ns(struct pid_namespace *ns)
- 	spin_lock(&acct_lock);
- 	if (acct->file != NULL)
- 		acct_file_reopen(acct, NULL, NULL);
-+	ns->bacct = NULL;
- 	spin_unlock(&acct_lock);
+diff --git a/drivers/char/mspec.c b/drivers/char/mspec.c
+index e1f60f9..f1d7fa4 100644
+--- a/drivers/char/mspec.c
++++ b/drivers/char/mspec.c
+@@ -267,7 +267,7 @@ mspec_mmap(struct file *file, struct vm_area_struct *vma,
+ 	if ((vma->vm_flags & VM_WRITE) == 0)
+ 		return -EPERM;
  
- 	kfree(acct);
+-	pages = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++	pages = vma_pages(vma);
+ 	vdata_size = sizeof(struct vma_data) + pages * sizeof(long);
+ 	if (vdata_size <= PAGE_SIZE)
+ 		vdata = kzalloc(vdata_size, GFP_KERNEL);
 -- 
-1.7.7.6
+1.8.2.1
+
+
