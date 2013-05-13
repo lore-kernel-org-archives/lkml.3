@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3EMG0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:26:04 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:57267 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247Ab3EMG0B (ORCPT
+	id S1753799Ab3EMG35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:29:57 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39939 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3EMG34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:26:01 -0400
+	Mon, 13 May 2013 02:29:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,659,1363158000"; 
+   d="scan'208";a="46643284"
+Message-ID: <74fe9162e1de73d086bd7e987a8fce6d.squirrel@www.codeaurora.org>
+In-Reply-To: <002301ce4f8f$5bc02600$13407200$%jun@samsung.com>
+References: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
+    <1368368640-10167-4-git-send-email-draviv@codeaurora.org>
+    <002301ce4f8f$5bc02600$13407200$%jun@samsung.com>
+Date: Sun, 12 May 2013 23:29:55 -0700
+Subject: RE: [PATCH V1 3/8] scsi: ufs: wrap the i/o access operations
+From: "Dolev Raviv" <draviv@codeaurora.org>
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: "'Dolev Raviv'" <draviv@codeaurora.org>, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "'open list'" <linux-kernel@vger.kernel.org>,
+        "'Santosh Y'" <santoshsy@gmail.com>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Date: Mon, 13 May 2013 14:26:00 +0800
-Message-ID: <CAPgLHd-+10_c9A64OW8QkjgGn+FjrpMQTH+C+Y-HN_fwgQSrKA@mail.gmail.com>
-Subject: [PATCH] rtc: rtc-vr41xx: fix error return code in rtc_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: a.zummo@towertech.it, akpm@linux-foundation.org
-Cc: yongjun_wei@trendmicro.com.cn, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Fix to return -EBUSY in the platform irq get error handling
-case instead of 0, as done elsewhere in this function.
+> On Sunday, May 12, 2013, Dolev Raviv wrote:
+> Author should be identified here. (From: author...)
+> Except last patch of series(8/8), all of patches are not from you.
+>
+>> Simplify operations with hiding mmio_base.
+>>
+>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>> Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
+> I'm not sure that your signed-off is proper here including (3/8 ~ 6/8)
+> And maintainer, Santosh's ack is omitted.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/rtc/rtc-vr41xx.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Thanks for your comment I wasn't sure about the appropriate custom.
+I will remove it later today if it is ok with you.
 
-diff --git a/drivers/rtc/rtc-vr41xx.c b/drivers/rtc/rtc-vr41xx.c
-index 3b5b4fa..54e104e 100644
---- a/drivers/rtc/rtc-vr41xx.c
-+++ b/drivers/rtc/rtc-vr41xx.c
-@@ -339,8 +339,10 @@ static int rtc_probe(struct platform_device *pdev)
- 		goto err_device_unregister;
- 
- 	pie_irq = platform_get_irq(pdev, 1);
--	if (pie_irq <= 0)
-+	if (pie_irq <= 0) {
-+		retval = -EBUSY;
- 		goto err_free_irq;
-+	}
- 
- 	retval = request_irq(pie_irq, rtclong1_interrupt, 0,
- 			     "rtclong1", pdev);
+Dolev
+
+>
+>> Tested-by: Maya Erez <merez@codeaurora.org>
+> Thanks,
+> Seungwon Jeon
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
 
