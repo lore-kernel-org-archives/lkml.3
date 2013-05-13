@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab3EMT0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:26:22 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50757 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab3EMT0R (ORCPT
+	id S1755016Ab3EMT0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:26:21 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47450 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab3EMT0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 May 2013 15:26:17 -0400
 X-IronPort-AV: E=Sophos;i="4.87,663,1363158000"; 
-   d="scan'208";a="46876043"
+   d="scan'208";a="46754204"
 From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv6 03/11] ARM: smp: Remove duplicate dummy timer implementation
-Date: Mon, 13 May 2013 12:26:07 -0700
-Message-Id: <1368473175-4841-4-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv6 01/11] clockevents: Prefer CPU local devices over global devices
+Date: Mon, 13 May 2013 12:26:05 -0700
+Message-Id: <1368473175-4841-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc1.25.g423ecb0.dirty
 In-Reply-To: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
 References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
@@ -23,55 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop ARM's version of the dummy timer now that we have a generic
-implementation in drivers/clocksource.
+On an SMP system with only one global clockevent and a dummy
+clockevent per CPU we run into problems. We want the dummy
+clockevents to be registered as the per CPU tick devices, but
+we can only achieve that if we register the dummy clockevents
+before the global clockevent or if we artificially inflate the
+rating of the dummy clockevents to be higher than the rating
+of the global clockevent. Failure to do so leads to boot
+hangs when the dummy timers are registered on all other CPUs
+besides the CPU that accepted the global clockevent as its tick
+device and there is no broadcast timer to poke the dummy
+devices.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+If we're registering multiple clockevents and one clockevent is
+global and the other is local to a particular CPU we should
+choose to use the local clockevent regardless of the rating of
+the device. This way, if the clockevent is a dummy it will take
+the tick device duty as long as there isn't a higher rated tick
+device and any global clockevent will be bumped out into
+broadcast mode, fixing the problem described above.
+
+Reported-by: Mark Rutland <mark.rutland@arm.com>
+Tested-by: Mark Rutland <mark.rutland@arm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/kernel/smp.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+ kernel/time/tick-common.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 47ab905..4dc883a 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -503,24 +503,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 5d3fb10..3da62de 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -254,9 +254,10 @@ static int tick_check_new_device(struct clock_event_device *newdev)
+ 		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+ 			goto out_bc;
+ 		/*
+-		 * Check the rating
++		 * Check the rating, but prefer CPU local devices
+ 		 */
+-		if (curdev->rating >= newdev->rating)
++		if (curdev->rating >= newdev->rating &&
++		    cpumask_equal(curdev->cpumask, newdev->cpumask))
+ 			goto out_bc;
+ 	}
  
--static void broadcast_timer_set_mode(enum clock_event_mode mode,
--	struct clock_event_device *evt)
--{
--}
--
--static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
--{
--	evt->name	= "dummy_timer";
--	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
--			  CLOCK_EVT_FEAT_PERIODIC |
--			  CLOCK_EVT_FEAT_DUMMY;
--	evt->rating	= 100;
--	evt->mult	= 1;
--	evt->set_mode	= broadcast_timer_set_mode;
--
--	clockevents_register_device(evt);
--}
--
- static struct local_timer_ops *lt_ops;
- 
- #ifdef CONFIG_LOCAL_TIMERS
-@@ -544,8 +526,8 @@ static void __cpuinit percpu_timer_setup(void)
- 
- 	evt->cpumask = cpumask_of(cpu);
- 
--	if (!lt_ops || lt_ops->setup(evt))
--		broadcast_timer_setup(evt);
-+	if (lt_ops)
-+		lt_ops->setup(evt);
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
