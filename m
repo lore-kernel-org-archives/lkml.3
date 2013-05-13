@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab3EMLnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 07:43:19 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:58496 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab3EMLnS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 07:43:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130512152829.GA17866@merkur.ravnborg.org>
-References: <1368367807-1263-1-git-send-email-laurent.navet@gmail.com>
-	<20130512152829.GA17866@merkur.ravnborg.org>
-Date: Mon, 13 May 2013 13:43:17 +0200
-Message-ID: <CAH7P7NjHK+QQ1E1ygCG0u=oEL1=Dty__OAZfYA1bitPm_cY3Yw@mail.gmail.com>
-Subject: Re: [PATCH] arch: sparc: kernel: use devm_ioremap_resource()
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: davem@davemloft.net, daniel@gaisler.com, sparclinux@vger.kernel.org,
+	id S1754757Ab3EMLoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 07:44:22 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44451 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752077Ab3EMLoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 07:44:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] cpufreq: rename references to CPU_FREQ_SA11x0
+Date: Mon, 13 May 2013 13:52:52 +0200
+Message-ID: <1793382.NnHvlOcUkD@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1368437542.1350.37.camel@x61.thuisdomein>
+References: <1368437025.1350.35.camel@x61.thuisdomein> <CAKohpo=WKr_+1E6KvrsNyy8xPJHVVt-panTrt409k9wP27u8Gg@mail.gmail.com> <1368437542.1350.37.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same is done almost everywhere in kernel tree :
+On Monday, May 13, 2013 11:32:22 AM Paul Bolle wrote:
+> On Mon, 2013-05-13 at 14:58 +0530, Viresh Kumar wrote:
+> > Already Acked.
+> > 
+> > http://www.spinics.net/lists/arm-kernel/msg242828.html
+> 
+> I see. Thanks!
 
-e.g :
-http://lxr.free-electrons.com/source/drivers/staging/iio/adc/mxs-lradc.c#L928
-http://lxr.free-electrons.com/source/drivers/gpio/gpio-mxs.c#L292
-http://lxr.free-electrons.com/source/drivers/iommu/tegra-smmu.c#L1181
-http://lxr.free-electrons.com/source/drivers/rtc/rtc-spear.c#L388
-http://lxr.free-electrons.com/source/drivers/i2c/busses/i2c-imx.c#L514
-http://lxr.free-electrons.com/source/sound/soc/kirkwood/kirkwood-i2s.c#L475
+And applied too (see current linux-next).
 
-and so on...  all theses functions return an int.
-
-Regards,
-Laurent.
-
-2013/5/12, Sam Ravnborg <sam@ravnborg.org>:
-> On Sun, May 12, 2013 at 04:10:07PM +0200, Laurent Navet wrote:
->> Replace a call to deprecated devm_request_and_ioremap by
->> devm_ioremap_resource.
->>
->> Found with coccicheck and this semantic patch:
->>  scripts/coccinelle/api/devm_request_and_ioremap.cocci.
->>
->> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
->> ---
->>  arch/sparc/kernel/leon_pci_grpci1.c |    8 +++-----
->>  1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/sparc/kernel/leon_pci_grpci1.c
->> b/arch/sparc/kernel/leon_pci_grpci1.c
->> index 7739a54..6df26e3 100644
->> --- a/arch/sparc/kernel/leon_pci_grpci1.c
->> +++ b/arch/sparc/kernel/leon_pci_grpci1.c
->> @@ -536,11 +536,9 @@ static int grpci1_of_probe(struct platform_device
->> *ofdev)
->>
->>  	/* find device register base address */
->>  	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
->> -	regs = devm_request_and_ioremap(&ofdev->dev, res);
->> -	if (!regs) {
->> -		dev_err(&ofdev->dev, "io-regs mapping failed\n");
->> -		return -EADDRNOTAVAIL;
->> -	}
->> +	regs = devm_ioremap_resource(&ofdev->dev, res);
->> +	if (IS_ERR(regs))
->> +		return PTR_ERR(regs);
->
-> This looks bogus. The function return an int - not a pointer.
->
-> 	Sam
->
+Thanks,
+Rafael
 
 
 -- 
-« On ne résout pas un problème avec les modes de pensée qui l’ont engendré. »
-« You cannot solve current problems with current thinking. Current
-problems are the result of current thinking »
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
