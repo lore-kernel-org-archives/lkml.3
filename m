@@ -1,124 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3EMW7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 18:59:13 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39915 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3EMW7L (ORCPT
+	id S1755430Ab3EMW7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 18:59:39 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:37292 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab3EMW7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 18:59:11 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH RFC v3] media: i2c: mt9p031: add OF support
-Date: Tue, 14 May 2013 00:59:27 +0200
-Message-ID: <2897565.OjqREpRvoz@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130513104604.GU20989@pengutronix.de>
-References: <1367563919-2880-1-git-send-email-prabhakar.csengg@gmail.com> <5750435.WVYuIYMX2V@avalon> <20130513104604.GU20989@pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 13 May 2013 18:59:37 -0400
+Message-ID: <1368486153.4020.39.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 2/3] target: close target_put_sess_cmd() vs.
+ core_tmr_abort_task() race v5
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joern Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+Date: Mon, 13 May 2013 16:02:33 -0700
+In-Reply-To: <1368477007-25274-3-git-send-email-joern@logfs.org>
+References: <1368477007-25274-1-git-send-email-joern@logfs.org>
+	 <1368477007-25274-3-git-send-email-joern@logfs.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
-
-On Monday 13 May 2013 12:46:04 Sascha Hauer wrote:
-> On Wed, May 08, 2013 at 12:37:29PM +0200, Laurent Pinchart wrote:
-> > Hi Prabhakar,
-> > 
-> > On Wednesday 08 May 2013 10:19:57 Prabhakar Lad wrote:
-> > > On Wed, May 8, 2013 at 7:32 AM, Laurent Pinchart wrote:
-> > > > On Tuesday 07 May 2013 15:10:36 Prabhakar Lad wrote:
-> > > >> On Mon, May 6, 2013 at 8:29 PM, Prabhakar Lad wrote:
-> > > >> > On Fri, May 3, 2013 at 8:04 PM, Arnd Bergmann wrote:
-> > > >> >> On Friday 03 May 2013, Prabhakar Lad wrote:
-> > > >> > [snip]
-> > > >> > 
-> > > >> >>> +}
-> > > >> >> 
-> > > >> >> Ok, good.
-> > > >> >> 
-> > > >> >>> @@ -955,7 +998,17 @@ static int mt9p031_probe(struct i2c_client
-> > > >> >>> *client,
-> > > >> >>> 
-> > > >> >>>         mt9p031->pdata = pdata;
-> > > >> >>>         mt9p031->output_control = MT9P031_OUTPUT_CONTROL_DEF;
-> > > >> >>>         mt9p031->mode2 = MT9P031_READ_MODE_2_ROW_BLC;
-> > > >> >>> 
-> > > >> >>> -       mt9p031->model = did->driver_data;
-> > > >> >>> +
-> > > >> >>> +       if (!client->dev.of_node) {
-> > > >> >>> +               mt9p031->model = (enum
-> > > >> >>> mt9p031_model)did->driver_data;
-> > > >> >>> +       } else {
-> > > >> >>> +               const struct of_device_id *of_id;
-> > > >> >>> +
-> > > >> >>> +               of_id =
-> > > >> >>> of_match_device(of_match_ptr(mt9p031_of_match),
-> > > >> >>> +                                       &client->dev);
-> > > >> >>> +               if (of_id)
-> > > >> >>> +                       mt9p031->model = (enum
-> > > >> >>> mt9p031_model)of_id->data;
-> > > >> >>> +       }
-> > > >> >>> 
-> > > >> >>>         mt9p031->reset = -1;
-> > > >> >> 
-> > > >> >> Is this actually required? I thought the i2c core just compared
-> > > >> >> the
-> > > >> >> part of the "compatible" value after the first comma to the
-> > > >> >> string, so
-> > > >> >> "mt9p031->model = (enum mt9p031_model)did->driver_data" should
-> > > >> >> work
-> > > >> >> in both cases.
+On Mon, 2013-05-13 at 16:30 -0400, Joern Engel wrote:
+> It is possible for one thread to to take se_sess->sess_cmd_lock in
+> core_tmr_abort_task() before taking a reference count on
+> se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+> se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
 > 
-> At least on v3.8 I just checked that 'did' is indeed NULL for the
-> devicetree case. Also I see no indication that i2c starts comparing
-> after the first comma in the string.
+> This introduces kref_put_spinlock_irqsave() and uses it in
+> target_put_sess_cmd() to close the race window.
 > 
-> > > >> > I am OK with "mt9p031->model = (enum
-> > > >> > mt9p031_model)did->driver_data"
-> > > >> > but I see still few drivers doing this, I am not sure for what
-> > > >> > reason.
-> > > >> > If everyone is OK with it I can drop the above change.
-> > > >> 
-> > > >> My bad, while booting with DT the i2c_device_id ie did in this case
-> > > >> will
-> > > >> be NULL, so the above changes are required :-)
-> > > > 
-> > > > I've just tested your patch, and did isn't NULL when booting my
-> > > > Beagleboard with DT (on v3.9-rc5).
-> > > 
-> > > I am pretty much sure you tested it compatible property as
-> > > "aptina,mt9p031"
-> > > if the compatible property is set to "aptina,mt9p031m" the did will be
-> > > NULL.> 
-> > I've tested both :-)
+> Signed-off-by: Joern Engel <joern@logfs.org>
+> ---
+
+I'm fine with applying this one..
+
+Greg-KH, are you OK with the kref.h changes here..?
+
+--nab
+
+>  drivers/target/target_core_transport.c |   11 +++++------
+>  include/linux/kref.h                   |   33 ++++++++++++++++++++++++++++++++
+>  2 files changed, 38 insertions(+), 6 deletions(-)
 > 
-> Sorry to nag, but did you use "aptina,mt9p031[m]" as a compatible string or
-> did you use "mt9p031[m]". With "aptina,..." 'did' should really be NULL.
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 3243ea7..0d46276 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2213,21 +2213,19 @@ static void target_release_cmd_kref(struct kref *kref)
+>  {
+>  	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+>  	struct se_session *se_sess = se_cmd->se_sess;
+> -	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+>  	if (list_empty(&se_cmd->se_cmd_list)) {
+> -		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> +		spin_unlock(&se_sess->sess_cmd_lock);
+>  		se_cmd->se_tfo->release_cmd(se_cmd);
+>  		return;
+>  	}
+>  	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+> -		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> +		spin_unlock(&se_sess->sess_cmd_lock);
+>  		complete(&se_cmd->cmd_wait_comp);
+>  		return;
+>  	}
+>  	list_del(&se_cmd->se_cmd_list);
+> -	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> +	spin_unlock(&se_sess->sess_cmd_lock);
+>  
+>  	se_cmd->se_tfo->release_cmd(se_cmd);
+>  }
+> @@ -2238,7 +2236,8 @@ static void target_release_cmd_kref(struct kref *kref)
+>   */
+>  int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+>  {
+> -	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
+> +	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
+> +			&se_sess->sess_cmd_lock);
+>  }
+>  EXPORT_SYMBOL(target_put_sess_cmd);
+>  
+> diff --git a/include/linux/kref.h b/include/linux/kref.h
+> index 4972e6e..7419c02 100644
+> --- a/include/linux/kref.h
+> +++ b/include/linux/kref.h
+> @@ -19,6 +19,7 @@
+>  #include <linux/atomic.h>
+>  #include <linux/kernel.h>
+>  #include <linux/mutex.h>
+> +#include <linux/spinlock.h>
+>  
+>  struct kref {
+>  	atomic_t refcount;
+> @@ -95,6 +96,38 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
+>  	return kref_sub(kref, 1, release);
+>  }
+>  
+> +/**
+> + * kref_put_spinlock_irqsave - decrement refcount for object.
+> + * @kref: object.
+> + * @release: pointer to the function that will clean up the object when the
+> + *	     last reference to the object is released.
+> + *	     This pointer is required, and it is not acceptable to pass kfree
+> + *	     in as this function.
+> + * @lock: lock to take in release case
+> + *
+> + * Behaves identical to kref_put with one exception.  If the reference count
+> + * drops to zero, the lock will be taken atomically wrt dropping the reference
+> + * count.  The release function has to call spin_unlock() without _irqrestore.
+> + */
+> +static inline int kref_put_spinlock_irqsave(struct kref *kref,
+> +		void (*release)(struct kref *kref),
+> +		spinlock_t *lock)
+> +{
+> +	unsigned long flags;
+> +
+> +	WARN_ON(release == NULL);
+> +	if (atomic_add_unless(&kref->refcount, -1, 1))
+> +		return 0;
+> +	spin_lock_irqsave(lock, flags);
+> +	if (atomic_dec_and_test(&kref->refcount)) {
+> +		release(kref);
+> +		local_irq_restore(flags);
+> +		return 1;
+> +	}
+> +	spin_unlock_irqrestore(lock, flags);
+> +	return 0;
+> +}
+> +
+>  static inline int kref_put_mutex(struct kref *kref,
+>  				 void (*release)(struct kref *kref),
+>  				 struct mutex *lock)
 
-I've used "aptina,mt9p031[m]".
-
-Please see the of_modalias_node() call in of_i2c_register_devices() 
-(drivers/of/of-i2c.c), that's where the I2C device type name should be 
-initialized.
-
--- 
-Regards,
-
-Laurent Pinchart
 
