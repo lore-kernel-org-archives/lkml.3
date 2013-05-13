@@ -1,553 +1,740 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3EMU5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 16:57:06 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:59531 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab3EMU4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 16:56:51 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, "Steven J. Hill" <Steven.Hill@imgtec.com>,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH 2/2] Revert "MIPS: Allow ASID size to be determined at boot time."
-Date: Mon, 13 May 2013 13:56:44 -0700
-Message-Id: <1368478604-14732-2-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1368478604-14732-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1368478604-14732-1-git-send-email-ddaney.cavm@gmail.com>
+	id S1753090Ab3EMU7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 16:59:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59428 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab3EMU7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 16:59:35 -0400
+Date: Mon, 13 May 2013 15:59:27 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 2/4] zbud: add to mm/
+Message-ID: <20130513205927.GA19183@medulla>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <3dfa0c20-ab39-4839-aaeb-46d51314afd4@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3dfa0c20-ab39-4839-aaeb-46d51314afd4@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051320-5806-0000-0000-0000211E131C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Mon, May 13, 2013 at 08:43:36AM -0700, Dan Magenheimer wrote:
+> > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > Sent: Monday, May 13, 2013 6:40 AM
+> > Subject: [PATCHv11 2/4] zbud: add to mm/
+> 
+> One comment about a questionable algorithm change (vs my original zbud code)
+> below... I'll leave the detailed code review to others.
+> 
+> Dan
+> 
+> > zbud is an special purpose allocator for storing compressed pages. It is
+> > designed to store up to two compressed pages per physical page.  While this
+> > design limits storage density, it has simple and deterministic reclaim
+> > properties that make it preferable to a higher density approach when reclaim
+> > will be used.
+> > 
+> > zbud works by storing compressed pages, or "zpages", together in pairs in a
+> > single memory page called a "zbud page".  The first buddy is "left
+> > justifed" at the beginning of the zbud page, and the last buddy is "right
+> > justified" at the end of the zbud page.  The benefit is that if either
+> > buddy is freed, the freed buddy space, coalesced with whatever slack space
+> > that existed between the buddies, results in the largest possible free region
+> > within the zbud page.
+> > 
+> > zbud also provides an attractive lower bound on density. The ratio of zpages
+> > to zbud pages can not be less than 1.  This ensures that zbud can never "do
+> > harm" by using more pages to store zpages than the uncompressed zpages would
+> > have used on their own.
+> > 
+> > This patch adds zbud to mm/ for later use by zswap.
+> > 
+> > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/zbud.h |   22 ++
+> >  mm/Kconfig           |   10 +
+> >  mm/Makefile          |    1 +
+> >  mm/zbud.c            |  564 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 597 insertions(+)
+> >  create mode 100644 include/linux/zbud.h
+> >  create mode 100644 mm/zbud.c
+> > 
+> > diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+> > new file mode 100644
+> > index 0000000..954252b
+> > --- /dev/null
+> > +++ b/include/linux/zbud.h
+> > @@ -0,0 +1,22 @@
+> > +#ifndef _ZBUD_H_
+> > +#define _ZBUD_H_
+> > +
+> > +#include <linux/types.h>
+> > +
+> > +struct zbud_pool;
+> > +
+> > +struct zbud_ops {
+> > +	int (*evict)(struct zbud_pool *pool, unsigned long handle);
+> > +};
+> > +
+> > +struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops);
+> > +void zbud_destroy_pool(struct zbud_pool *pool);
+> > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> > +	unsigned long *handle);
+> > +void zbud_free(struct zbud_pool *pool, unsigned long handle);
+> > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+> > +void *zbud_map(struct zbud_pool *pool, unsigned long handle);
+> > +void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
+> > +int zbud_get_pool_size(struct zbud_pool *pool);
+> > +
+> > +#endif /* _ZBUD_H_ */
+> > diff --git a/mm/Kconfig b/mm/Kconfig
+> > index e742d06..908f41b 100644
+> > --- a/mm/Kconfig
+> > +++ b/mm/Kconfig
+> > @@ -477,3 +477,13 @@ config FRONTSWAP
+> >  	  and swap data is stored as normal on the matching swap device.
+> > 
+> >  	  If unsure, say Y to enable frontswap.
+> > +
+> > +config ZBUD
+> > +	tristate "Buddy allocator for compressed pages"
+> > +	default n
+> > +	help
+> > +	  zbud is an special purpose allocator for storing compressed pages.
+> > +	  It is designed to store up to two compressed pages per physical page.
+> > +	  While this design limits storage density, it has simple and
+> > +	  deterministic reclaim properties that make it preferable to a higher
+> > +	  density approach when reclaim will be used.
+> > diff --git a/mm/Makefile b/mm/Makefile
+> > index 72c5acb..95f0197 100644
+> > --- a/mm/Makefile
+> > +++ b/mm/Makefile
+> > @@ -58,3 +58,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+> >  obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
+> >  obj-$(CONFIG_CLEANCACHE) += cleancache.o
+> >  obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
+> > +obj-$(CONFIG_ZBUD)	+= zbud.o
+> > diff --git a/mm/zbud.c b/mm/zbud.c
+> > new file mode 100644
+> > index 0000000..e5bd0e6
+> > --- /dev/null
+> > +++ b/mm/zbud.c
+> > @@ -0,0 +1,564 @@
+> > +/*
+> > + * zbud.c - Buddy Allocator for Compressed Pages
+> > + *
+> > + * Copyright (C) 2013, Seth Jennings, IBM
+> > + *
+> > + * Concepts based on zcache internal zbud allocator by Dan Magenheimer.
+> > + *
+> > + * zbud is an special purpose allocator for storing compressed pages. It is
+> > + * designed to store up to two compressed pages per physical page.  While this
+> > + * design limits storage density, it has simple and deterministic reclaim
+> > + * properties that make it preferable to a higher density approach when reclaim
+> > + * will be used.
+> > + *
+> > + * zbud works by storing compressed pages, or "zpages", together in pairs in a
+> > + * single memory page called a "zbud page".  The first buddy is "left
+> > + * justifed" at the beginning of the zbud page, and the last buddy is "right
+> > + * justified" at the end of the zbud page.  The benefit is that if either
+> > + * buddy is freed, the freed buddy space, coalesced with whatever slack space
+> > + * that existed between the buddies, results in the largest possible free region
+> > + * within the zbud page.
+> > + *
+> > + * zbud also provides an attractive lower bound on density. The ratio of zpages
+> > + * to zbud pages can not be less than 1.  This ensures that zbud can never "do
+> > + * harm" by using more pages to store zpages than the uncompressed zpages would
+> > + * have used on their own.
+> > + *
+> > + * zbud pages are divided into "chunks".  The size of the chunks is fixed at
+> > + * compile time and determined by NCHUNKS_ORDER below.  Dividing zbud pages
+> > + * into chunks allows organizing unbuddied zbud pages into a manageable number
+> > + * of unbuddied lists according to the number of free chunks available in the
+> > + * zbud page.
+> > + *
+> > + * The zbud API differs from that of conventional allocators in that the
+> > + * allocation function, zbud_alloc(), returns an opaque handle to the user,
+> > + * not a dereferenceable pointer.  The user must map the handle using
+> > + * zbud_map() in order to get a usable pointer by which to access the
+> > + * allocation data and unmap the handle with zbud_unmap() when operations
+> > + * on the allocation data are complete.
+> > + */
+> > +
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > +
+> > +#include <linux/atomic.h>
+> > +#include <linux/list.h>
+> > +#include <linux/mm.h>
+> > +#include <linux/module.h>
+> > +#include <linux/preempt.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/spinlock.h>
+> > +#include <linux/zbud.h>
+> > +
+> > +/*****************
+> > + * Structures
+> > +*****************/
+> > +/**
+> > + * struct zbud_page - zbud page metadata overlay
+> > + * @page:	typed reference to the underlying struct page
+> > + * @donotuse:	this overlays the page flags and should not be used
+> > + * @first_chunks:	the size of the first buddy in chunks, 0 if free
+> > + * @last_chunks:	the size of the last buddy in chunks, 0 if free
+> > + * @buddy:	links the zbud page into the unbuddied/buddied lists in the pool
+> > + * @lru:	links the zbud page into the lru list in the pool
+> > + *
+> > + * This structure overlays the struct page to store metadata needed for a
+> > + * single storage page in for zbud.  There is a BUILD_BUG_ON in zbud_init()
+> > + * that ensures this structure is not larger that struct page.
+> > + *
+> > + * The PG_reclaim flag of the underlying page is used for indicating
+> > + * that this zbud page is under reclaim (see zbud_reclaim_page())
+> > + */
+> > +struct zbud_page {
+> > +	union {
+> > +		struct page page;
+> > +		struct {
+> > +			unsigned long donotuse;
+> > +			u16 first_chunks;
+> > +			u16 last_chunks;
+> > +			struct list_head buddy;
+> > +			struct list_head lru;
+> > +		};
+> > +	};
+> > +};
+> > +
+> > +/*
+> > + * NCHUNKS_ORDER determines the internal allocation granularity, effectively
+> > + * adjusting internal fragmentation.  It also determines the number of
+> > + * freelists maintained in each pool. NCHUNKS_ORDER of 6 means that the
+> > + * allocation granularity will be in chunks of size PAGE_SIZE/64, and there
+> > + * will be 64 freelists per pool.
+> > + */
+> > +#define NCHUNKS_ORDER	6
+> > +
+> > +#define CHUNK_SHIFT	(PAGE_SHIFT - NCHUNKS_ORDER)
+> > +#define CHUNK_SIZE	(1 << CHUNK_SHIFT)
+> > +#define NCHUNKS		(PAGE_SIZE >> CHUNK_SHIFT)
+> > +
+> > +/**
+> > + * struct zbud_pool - stores metadata for each zbud pool
+> > + * @lock:	protects all pool lists and first|last_chunk fields of any
+> > + *		zbud page in the pool
+> > + * @unbuddied:	array of lists tracking zbud pages that only contain one buddy;
+> > + *		the lists each zbud page is added to depends on the size of
+> > + *		its free region.
+> > + * @buddied:	list tracking the zbud pages that contain two buddies;
+> > + *		these zbud pages are full
+> > + * @pages_nr:	number of zbud pages in the pool.
+> > + * @ops:	pointer to a structure of user defined operations specified at
+> > + *		pool creation time.
+> > + *
+> > + * This structure is allocated at pool creation time and maintains metadata
+> > + * pertaining to a particular zbud pool.
+> > + */
+> > +struct zbud_pool {
+> > +	spinlock_t lock;
+> > +	struct list_head unbuddied[NCHUNKS];
+> > +	struct list_head buddied;
+> > +	struct list_head lru;
+> > +	atomic_t pages_nr;
+> > +	struct zbud_ops *ops;
+> > +};
+> > +
+> > +/*****************
+> > + * Helpers
+> > +*****************/
+> > +/* Just to make the code easier to read */
+> > +enum buddy {
+> > +	FIRST,
+> > +	LAST
+> > +};
+> > +
+> > +/* Converts an allocation size in bytes to size in zbud chunks */
+> > +static inline int size_to_chunks(int size)
+> > +{
+> > +	return (size + CHUNK_SIZE - 1) >> CHUNK_SHIFT;
+> > +}
+> > +
+> > +#define for_each_unbuddied_list(_iter, _begin) \
+> > +	for ((_iter) = (_begin); (_iter) < NCHUNKS; (_iter)++)
+> > +
+> > +/* Initializes a zbud page from a newly allocated page */
+> > +static inline struct zbud_page *init_zbud_page(struct page *page)
+> > +{
+> > +	struct zbud_page *zbpage = (struct zbud_page *)page;
+> > +	zbpage->first_chunks = 0;
+> > +	zbpage->last_chunks = 0;
+> > +	INIT_LIST_HEAD(&zbpage->buddy);
+> > +	INIT_LIST_HEAD(&zbpage->lru);
+> > +	return zbpage;
+> > +}
+> > +
+> > +/* Resets a zbud page so that it can be properly freed  */
+> > +static inline struct page *reset_zbud_page(struct zbud_page *zbpage)
+> > +{
+> > +	struct page *page = &zbpage->page;
+> > +	set_page_private(page, 0);
+> > +	page->mapping = NULL;
+> > +	page->index = 0;
+> > +	page_mapcount_reset(page);
+> > +	init_page_count(page);
+> > +	INIT_LIST_HEAD(&page->lru);
+> > +	return page;
+> > +}
+> > +
+> > +/*
+> > + * Encodes the handle of a particular buddy within a zbud page
+> > + * Pool lock should be held as this function accesses first|last_chunks
+> > + */
+> > +static inline unsigned long encode_handle(struct zbud_page *zbpage,
+> > +					enum buddy bud)
+> > +{
+> > +	unsigned long handle;
+> > +
+> > +	/*
+> > +	 * For now, the encoded handle is actually just the pointer to the data
+> > +	 * but this might not always be the case.  A little information hiding.
+> > +	 */
+> > +	handle = (unsigned long)page_address(&zbpage->page);
+> > +	if (bud == FIRST)
+> > +		return handle;
+> > +	handle += PAGE_SIZE - (zbpage->last_chunks  << CHUNK_SHIFT);
+> > +	return handle;
+> > +}
+> > +
+> > +/* Returns the zbud page where a given handle is stored */
+> > +static inline struct zbud_page *handle_to_zbud_page(unsigned long handle)
+> > +{
+> > +	return (struct zbud_page *)(virt_to_page(handle));
+> > +}
+> > +
+> > +/* Returns the number of free chunks in a zbud page */
+> > +static inline int num_free_chunks(struct zbud_page *zbpage)
+> > +{
+> > +	/*
+> > +	 * Rather than branch for different situations, just use the fact that
+> > +	 * free buddies have a length of zero to simplify everything.
+> > +	 */
+> > +	return NCHUNKS - zbpage->first_chunks - zbpage->last_chunks;
+> > +}
+> > +
+> > +/*****************
+> > + * API Functions
+> > +*****************/
+> > +/**
+> > + * zbud_create_pool() - create a new zbud pool
+> > + * @gfp:	gfp flags when allocating the zbud pool structure
+> > + * @ops:	user-defined operations for the zbud pool
+> > + *
+> > + * Return: pointer to the new zbud pool or NULL if the metadata allocation
+> > + * failed.
+> > + */
+> > +struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
+> > +{
+> > +	struct zbud_pool *pool;
+> > +	int i;
+> > +
+> > +	pool = kmalloc(sizeof(struct zbud_pool), gfp);
+> > +	if (!pool)
+> > +		return NULL;
+> > +	spin_lock_init(&pool->lock);
+> > +	for_each_unbuddied_list(i, 0)
+> > +		INIT_LIST_HEAD(&pool->unbuddied[i]);
+> > +	INIT_LIST_HEAD(&pool->buddied);
+> > +	INIT_LIST_HEAD(&pool->lru);
+> > +	atomic_set(&pool->pages_nr, 0);
+> > +	pool->ops = ops;
+> > +	return pool;
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_create_pool);
+> > +
+> > +/**
+> > + * zbud_destroy_pool() - destroys an existing zbud pool
+> > + * @pool:	the zbud pool to be destroyed
+> > + */
+> > +void zbud_destroy_pool(struct zbud_pool *pool)
+> > +{
+> > +	kfree(pool);
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_destroy_pool);
+> > +
+> > +/**
+> > + * zbud_alloc() - allocates a region of a given size
+> > + * @pool:	zbud pool from which to allocate
+> > + * @size:	size in bytes of the desired allocation
+> > + * @gfp:	gfp flags used if the pool needs to grow
+> > + * @handle:	handle of the new allocation
+> > + *
+> > + * This function will attempt to find a free region in the pool large
+> > + * enough to satisfy the allocation request.  First, it tries to use
+> > + * free space in the most recently used zbud page, at the beginning of
+> > + * the pool LRU list.  If that zbud page is full or doesn't have the
+> > + * required free space, a best fit search of the unbuddied lists is
+> > + * performed. If no suitable free region is found, then a new page
+> > + * is allocated and added to the pool to satisfy the request.
+> > + *
+> > + * gfp should not set __GFP_HIGHMEM as highmem pages cannot be used
+> > + * as zbud pool pages.
+> > + *
+> > + * Return: 0 if success and handle is set, otherwise -EINVAL is the size or
+> > + * gfp arguments are invalid or -ENOMEM if the pool was unable to allocate
+> > + * a new page.
+> > + */
+> > +int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> > +			unsigned long *handle)
+> > +{
+> > +	int chunks, i, freechunks;
+> > +	struct zbud_page *zbpage = NULL;
+> > +	enum buddy bud;
+> > +	struct page *page;
+> > +
+> > +	if (size <= 0 || size > PAGE_SIZE || gfp & __GFP_HIGHMEM)
+> > +		return -EINVAL;
+> > +	chunks = size_to_chunks(size);
+> > +	spin_lock(&pool->lock);
+> > +
+> > +	/*
+> > +	 * First, try to use the zbpage we last used (at the head of the
+> > +	 * LRU) to increase LRU locality of the buddies. This is first fit.
+> > +	 */
+> > +	if (!list_empty(&pool->lru)) {
+> > +		zbpage = list_first_entry(&pool->lru, struct zbud_page, lru);
+> > +		if (num_free_chunks(zbpage) >= chunks) {
+> > +			if (zbpage->first_chunks == 0) {
+> > +				list_del(&zbpage->buddy);
+> > +				bud = FIRST;
+> > +				goto found;
+> > +			}
+> > +			if (zbpage->last_chunks == 0) {
+> > +				list_del(&zbpage->buddy);
+> > +				bud = LAST;
+> > +				goto found;
+> > +			}
+> > +		}
+> > +	}
+> 
+> The above appears to be a new addition to my original zbud design.
+> While it may appear to be a good idea for improving LRU-ness, I
+> suspect it may have unexpected side effects in that I think far
+> fewer "fat" zpages will be buddied, which will result in many more
+> unbuddied pages containing a single fat zpage, which means much worse
+> overall density on many workloads.
 
-This reverts commit d532f3d26716a39dfd4b88d687bd344fbe77e390.
+Yes, I see what you are saying.  While I can't think of a workload that would
+cause this kind of allocation pattern in practice, I also don't have a way to
+measure the impact this first-fit fast path code has on density.
 
-The original commit has several problems:
+> 
+> This may not be apparent in kernbench or specjbb or any workload
+> where the vast majority of zpages compress to less than PAGE_SIZE/2,
+> but for a zsize distribution that is symmetric or "skews fat",
+> it may become very apparent.
 
-1) Doesn't work with 64-bit kernels.
+I'd personally think it should be kept because 1) it makes a fast allocation
+path and 2) improves LRU locality.  But, without numbers to demonstrate a
+performance improvements or impacts on density, I wouldn't be opposed to taking
+it out if it is a point of contention.
 
-2) Calls TLBMISS_HANDLER_SETUP() before the code is generated.
+Anyone else care to weigh in?
 
-3) Calls TLBMISS_HANDLER_SETUP() twice in per_cpu_trap_init() when
-   only one call is needed.
+Seth
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/include/asm/mmu_context.h | 95 ++++++++++++++-----------------------
- arch/mips/kernel/genex.S            |  2 +-
- arch/mips/kernel/smtc.c             | 10 ++--
- arch/mips/kernel/traps.c            |  6 +--
- arch/mips/lib/dump_tlb.c            |  5 +-
- arch/mips/lib/r3k_dump_tlb.c        |  7 ++-
- arch/mips/mm/tlb-r3k.c              | 20 ++++----
- arch/mips/mm/tlb-r4k.c              |  2 +-
- arch/mips/mm/tlb-r8k.c              |  2 +-
- arch/mips/mm/tlbex.c                | 49 -------------------
- 10 files changed, 61 insertions(+), 137 deletions(-)
-
-diff --git a/arch/mips/include/asm/mmu_context.h b/arch/mips/include/asm/mmu_context.h
-index 1554721..8201160 100644
---- a/arch/mips/include/asm/mmu_context.h
-+++ b/arch/mips/include/asm/mmu_context.h
-@@ -67,68 +67,45 @@ extern unsigned long pgd_current[];
- 	TLBMISS_HANDLER_SETUP_PGD(swapper_pg_dir)
- #endif
- #endif /* CONFIG_MIPS_PGD_C0_CONTEXT*/
-+#if defined(CONFIG_CPU_R3000) || defined(CONFIG_CPU_TX39XX)
- 
--#define ASID_INC(asid)						\
--({								\
--	unsigned long __asid = asid;				\
--	__asm__("1:\taddiu\t%0,1\t\t\t\t# patched\n\t"		\
--	".section\t__asid_inc,\"a\"\n\t"			\
--	".word\t1b\n\t"						\
--	".previous"						\
--	:"=r" (__asid)						\
--	:"0" (__asid));						\
--	__asid;							\
--})
--#define ASID_MASK(asid)						\
--({								\
--	unsigned long __asid = asid;				\
--	__asm__("1:\tandi\t%0,%1,0xfc0\t\t\t# patched\n\t"	\
--	".section\t__asid_mask,\"a\"\n\t"			\
--	".word\t1b\n\t"						\
--	".previous"						\
--	:"=r" (__asid)						\
--	:"r" (__asid));						\
--	__asid;							\
--})
--#define ASID_VERSION_MASK					\
--({								\
--	unsigned long __asid;					\
--	__asm__("1:\taddiu\t%0,$0,0xff00\t\t\t\t# patched\n\t"	\
--	".section\t__asid_version_mask,\"a\"\n\t"		\
--	".word\t1b\n\t"						\
--	".previous"						\
--	:"=r" (__asid));					\
--	__asid;							\
--})
--#define ASID_FIRST_VERSION					\
--({								\
--	unsigned long __asid = asid;				\
--	__asm__("1:\tli\t%0,0x100\t\t\t\t# patched\n\t"		\
--	".section\t__asid_first_version,\"a\"\n\t"		\
--	".word\t1b\n\t"						\
--	".previous"						\
--	:"=r" (__asid));					\
--	__asid;							\
--})
--
--#define ASID_FIRST_VERSION_R3000	0x1000
--#define ASID_FIRST_VERSION_R4000	0x100
--#define ASID_FIRST_VERSION_R8000	0x1000
--#define ASID_FIRST_VERSION_RM9000	0x1000
-+#define ASID_INC	0x40
-+#define ASID_MASK	0xfc0
-+
-+#elif defined(CONFIG_CPU_R8000)
-+
-+#define ASID_INC	0x10
-+#define ASID_MASK	0xff0
-+
-+#elif defined(CONFIG_MIPS_MT_SMTC)
-+
-+#define ASID_INC	0x1
-+extern unsigned long smtc_asid_mask;
-+#define ASID_MASK	(smtc_asid_mask)
-+#define HW_ASID_MASK	0xff
-+/* End SMTC/34K debug hack */
-+#else /* FIXME: not correct for R6000 */
-+
-+#define ASID_INC	0x1
-+#define ASID_MASK	0xff
- 
--#ifdef CONFIG_MIPS_MT_SMTC
--#define SMTC_HW_ASID_MASK		0xff
--extern unsigned int smtc_asid_mask;
- #endif
- 
- #define cpu_context(cpu, mm)	((mm)->context.asid[cpu])
--#define cpu_asid(cpu, mm)	ASID_MASK(cpu_context((cpu), (mm)))
-+#define cpu_asid(cpu, mm)	(cpu_context((cpu), (mm)) & ASID_MASK)
- #define asid_cache(cpu)		(cpu_data[cpu].asid_cache)
- 
- static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
- {
- }
- 
-+/*
-+ *  All unused by hardware upper bits will be considered
-+ *  as a software asid extension.
-+ */
-+#define ASID_VERSION_MASK  ((unsigned long)~(ASID_MASK|(ASID_MASK-1)))
-+#define ASID_FIRST_VERSION ((unsigned long)(~ASID_VERSION_MASK) + 1)
-+
- #ifndef CONFIG_MIPS_MT_SMTC
- /* Normal, classic MIPS get_new_mmu_context */
- static inline void
-@@ -137,7 +114,7 @@ get_new_mmu_context(struct mm_struct *mm, unsigned long cpu)
- 	extern void kvm_local_flush_tlb_all(void);
- 	unsigned long asid = asid_cache(cpu);
- 
--	if (!ASID_MASK((asid = ASID_INC(asid)))) {
-+	if (! ((asid += ASID_INC) & ASID_MASK) ) {
- 		if (cpu_has_vtag_icache)
- 			flush_icache_all();
- #ifdef CONFIG_VIRTUALIZATION
-@@ -200,7 +177,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 	 * free up the ASID value for use and flush any old
- 	 * instances of it from the TLB.
- 	 */
--	oldasid = ASID_MASK(read_c0_entryhi());
-+	oldasid = (read_c0_entryhi() & ASID_MASK);
- 	if(smtc_live_asid[mytlb][oldasid]) {
- 		smtc_live_asid[mytlb][oldasid] &= ~(0x1 << cpu);
- 		if(smtc_live_asid[mytlb][oldasid] == 0)
-@@ -211,7 +188,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 	 * having ASID_MASK smaller than the hardware maximum,
- 	 * make sure no "soft" bits become "hard"...
- 	 */
--	write_c0_entryhi((read_c0_entryhi() & ~SMTC_HW_ASID_MASK) |
-+	write_c0_entryhi((read_c0_entryhi() & ~HW_ASID_MASK) |
- 			 cpu_asid(cpu, next));
- 	ehb(); /* Make sure it propagates to TCStatus */
- 	evpe(mtflags);
-@@ -264,15 +241,15 @@ activate_mm(struct mm_struct *prev, struct mm_struct *next)
- #ifdef CONFIG_MIPS_MT_SMTC
- 	/* See comments for similar code above */
- 	mtflags = dvpe();
--	oldasid = ASID_MASK(read_c0_entryhi());
-+	oldasid = read_c0_entryhi() & ASID_MASK;
- 	if(smtc_live_asid[mytlb][oldasid]) {
- 		smtc_live_asid[mytlb][oldasid] &= ~(0x1 << cpu);
- 		if(smtc_live_asid[mytlb][oldasid] == 0)
- 			 smtc_flush_tlb_asid(oldasid);
- 	}
- 	/* See comments for similar code above */
--	write_c0_entryhi((read_c0_entryhi() & ~SMTC_HW_ASID_MASK) |
--	                 cpu_asid(cpu, next));
-+	write_c0_entryhi((read_c0_entryhi() & ~HW_ASID_MASK) |
-+			 cpu_asid(cpu, next));
- 	ehb(); /* Make sure it propagates to TCStatus */
- 	evpe(mtflags);
- #else
-@@ -309,14 +286,14 @@ drop_mmu_context(struct mm_struct *mm, unsigned cpu)
- #ifdef CONFIG_MIPS_MT_SMTC
- 		/* See comments for similar code above */
- 		prevvpe = dvpe();
--		oldasid = ASID_MASK(read_c0_entryhi());
-+		oldasid = (read_c0_entryhi() & ASID_MASK);
- 		if (smtc_live_asid[mytlb][oldasid]) {
- 			smtc_live_asid[mytlb][oldasid] &= ~(0x1 << cpu);
- 			if(smtc_live_asid[mytlb][oldasid] == 0)
- 				smtc_flush_tlb_asid(oldasid);
- 		}
- 		/* See comments for similar code above */
--		write_c0_entryhi((read_c0_entryhi() & ~SMTC_HW_ASID_MASK)
-+		write_c0_entryhi((read_c0_entryhi() & ~HW_ASID_MASK)
- 				| cpu_asid(cpu, mm));
- 		ehb(); /* Make sure it propagates to TCStatus */
- 		evpe(prevvpe);
-diff --git a/arch/mips/kernel/genex.S b/arch/mips/kernel/genex.S
-index 5c2ba9f..9098829 100644
---- a/arch/mips/kernel/genex.S
-+++ b/arch/mips/kernel/genex.S
-@@ -493,7 +493,7 @@ NESTED(nmi_handler, PT_SIZE, sp)
- 	.set	noreorder
- 	/* check if TLB contains a entry for EPC */
- 	MFC0	k1, CP0_ENTRYHI
--	andi	k1, 0xff	/* ASID_MASK patched at run-time!! */
-+	andi	k1, 0xff	/* ASID_MASK */
- 	MFC0	k0, CP0_EPC
- 	PTR_SRL k0, _PAGE_SHIFT + 1
- 	PTR_SLL k0, _PAGE_SHIFT + 1
-diff --git a/arch/mips/kernel/smtc.c b/arch/mips/kernel/smtc.c
-index 31d22f3..7186222 100644
---- a/arch/mips/kernel/smtc.c
-+++ b/arch/mips/kernel/smtc.c
-@@ -111,7 +111,7 @@ static int vpe0limit;
- static int ipibuffers;
- static int nostlb;
- static int asidmask;
--unsigned int smtc_asid_mask = 0xff;
-+unsigned long smtc_asid_mask = 0xff;
- 
- static int __init vpe0tcs(char *str)
- {
-@@ -1395,7 +1395,7 @@ void smtc_get_new_mmu_context(struct mm_struct *mm, unsigned long cpu)
- 	asid = asid_cache(cpu);
- 
- 	do {
--		if (!ASID_MASK(ASID_INC(asid))) {
-+		if (!((asid += ASID_INC) & ASID_MASK) ) {
- 			if (cpu_has_vtag_icache)
- 				flush_icache_all();
- 			/* Traverse all online CPUs (hack requires contiguous range) */
-@@ -1414,7 +1414,7 @@ void smtc_get_new_mmu_context(struct mm_struct *mm, unsigned long cpu)
- 						mips_ihb();
- 					}
- 					tcstat = read_tc_c0_tcstatus();
--					smtc_live_asid[tlb][ASID_MASK(tcstat)] |= (asiduse)(0x1 << i);
-+					smtc_live_asid[tlb][(tcstat & ASID_MASK)] |= (asiduse)(0x1 << i);
- 					if (!prevhalt)
- 						write_tc_c0_tchalt(0);
- 				}
-@@ -1423,7 +1423,7 @@ void smtc_get_new_mmu_context(struct mm_struct *mm, unsigned long cpu)
- 				asid = ASID_FIRST_VERSION;
- 			local_flush_tlb_all();	/* start new asid cycle */
- 		}
--	} while (smtc_live_asid[tlb][ASID_MASK(asid)]);
-+	} while (smtc_live_asid[tlb][(asid & ASID_MASK)]);
- 
- 	/*
- 	 * SMTC shares the TLB within VPEs and possibly across all VPEs.
-@@ -1461,7 +1461,7 @@ void smtc_flush_tlb_asid(unsigned long asid)
- 		tlb_read();
- 		ehb();
- 		ehi = read_c0_entryhi();
--		if (ASID_MASK(ehi) == asid) {
-+		if ((ehi & ASID_MASK) == asid) {
- 		    /*
- 		     * Invalidate only entries with specified ASID,
- 		     * makiing sure all entries differ.
-diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-index 77cff1f..cb14db3 100644
---- a/arch/mips/kernel/traps.c
-+++ b/arch/mips/kernel/traps.c
-@@ -1656,7 +1656,6 @@ void __cpuinit per_cpu_trap_init(bool is_boot_cpu)
- 	unsigned int cpu = smp_processor_id();
- 	unsigned int status_set = ST0_CU0;
- 	unsigned int hwrena = cpu_hwrena_impl_bits;
--	unsigned long asid = 0;
- #ifdef CONFIG_MIPS_MT_SMTC
- 	int secondaryTC = 0;
- 	int bootTC = (cpu == 0);
-@@ -1740,9 +1739,8 @@ void __cpuinit per_cpu_trap_init(bool is_boot_cpu)
- 	}
- #endif /* CONFIG_MIPS_MT_SMTC */
- 
--	asid = ASID_FIRST_VERSION;
--	cpu_data[cpu].asid_cache = asid;
--	TLBMISS_HANDLER_SETUP();
-+	if (!cpu_data[cpu].asid_cache)
-+		cpu_data[cpu].asid_cache = ASID_FIRST_VERSION;
- 
- 	atomic_inc(&init_mm.mm_count);
- 	current->active_mm = &init_mm;
-diff --git a/arch/mips/lib/dump_tlb.c b/arch/mips/lib/dump_tlb.c
-index 8a12d00..32b9f21 100644
---- a/arch/mips/lib/dump_tlb.c
-+++ b/arch/mips/lib/dump_tlb.c
-@@ -11,7 +11,6 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/tlbdebug.h>
--#include <asm/mmu_context.h>
- 
- static inline const char *msk2str(unsigned int mask)
- {
-@@ -56,7 +55,7 @@ static void dump_tlb(int first, int last)
- 	s_pagemask = read_c0_pagemask();
- 	s_entryhi = read_c0_entryhi();
- 	s_index = read_c0_index();
--	asid = ASID_MASK(s_entryhi);
-+	asid = s_entryhi & 0xff;
- 
- 	for (i = first; i <= last; i++) {
- 		write_c0_index(i);
-@@ -86,7 +85,7 @@ static void dump_tlb(int first, int last)
- 
- 			printk("va=%0*lx asid=%02lx\n",
- 			       width, (entryhi & ~0x1fffUL),
--			       ASID_MASK(entryhi));
-+			       entryhi & 0xff);
- 			printk("\t[pa=%0*llx c=%d d=%d v=%d g=%d] ",
- 			       width,
- 			       (entrylo0 << 6) & PAGE_MASK, c0,
-diff --git a/arch/mips/lib/r3k_dump_tlb.c b/arch/mips/lib/r3k_dump_tlb.c
-index 8327698..91615c2 100644
---- a/arch/mips/lib/r3k_dump_tlb.c
-+++ b/arch/mips/lib/r3k_dump_tlb.c
-@@ -9,7 +9,6 @@
- #include <linux/mm.h>
- 
- #include <asm/mipsregs.h>
--#include <asm/mmu_context.h>
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/tlbdebug.h>
-@@ -22,7 +21,7 @@ static void dump_tlb(int first, int last)
- 	unsigned int asid;
- 	unsigned long entryhi, entrylo0;
- 
--	asid = ASID_MASK(read_c0_entryhi());
-+	asid = read_c0_entryhi() & 0xfc0;
- 
- 	for (i = first; i <= last; i++) {
- 		write_c0_index(i<<8);
-@@ -36,7 +35,7 @@ static void dump_tlb(int first, int last)
- 
- 		/* Unused entries have a virtual address of KSEG0.  */
- 		if ((entryhi & 0xffffe000) != 0x80000000
--		    && (ASID_MASK(entryhi) == asid)) {
-+		    && (entryhi & 0xfc0) == asid) {
- 			/*
- 			 * Only print entries in use
- 			 */
-@@ -45,7 +44,7 @@ static void dump_tlb(int first, int last)
- 			printk("va=%08lx asid=%08lx"
- 			       "  [pa=%06lx n=%d d=%d v=%d g=%d]",
- 			       (entryhi & 0xffffe000),
--			       ASID_MASK(entryhi),
-+			       entryhi & 0xfc0,
- 			       entrylo0 & PAGE_MASK,
- 			       (entrylo0 & (1 << 11)) ? 1 : 0,
- 			       (entrylo0 & (1 << 10)) ? 1 : 0,
-diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
-index 4a13c15..a63d1ed 100644
---- a/arch/mips/mm/tlb-r3k.c
-+++ b/arch/mips/mm/tlb-r3k.c
-@@ -51,7 +51,7 @@ void local_flush_tlb_all(void)
- #endif
- 
- 	local_irq_save(flags);
--	old_ctx = ASID_MASK(read_c0_entryhi());
-+	old_ctx = read_c0_entryhi() & ASID_MASK;
- 	write_c0_entrylo0(0);
- 	entry = r3k_have_wired_reg ? read_c0_wired() : 8;
- 	for (; entry < current_cpu_data.tlbsize; entry++) {
-@@ -87,13 +87,13 @@ void local_flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
- 
- #ifdef DEBUG_TLB
- 		printk("[tlbrange<%lu,0x%08lx,0x%08lx>]",
--			ASID_MASK(cpu_context(cpu, mm)), start, end);
-+			cpu_context(cpu, mm) & ASID_MASK, start, end);
- #endif
- 		local_irq_save(flags);
- 		size = (end - start + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
- 		if (size <= current_cpu_data.tlbsize) {
--			int oldpid = ASID_MASK(read_c0_entryhi());
--			int newpid = ASID_MASK(cpu_context(cpu, mm));
-+			int oldpid = read_c0_entryhi() & ASID_MASK;
-+			int newpid = cpu_context(cpu, mm) & ASID_MASK;
- 
- 			start &= PAGE_MASK;
- 			end += PAGE_SIZE - 1;
-@@ -166,10 +166,10 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
- #ifdef DEBUG_TLB
- 		printk("[tlbpage<%lu,0x%08lx>]", cpu_context(cpu, vma->vm_mm), page);
- #endif
--		newpid = ASID_MASK(cpu_context(cpu, vma->vm_mm));
-+		newpid = cpu_context(cpu, vma->vm_mm) & ASID_MASK;
- 		page &= PAGE_MASK;
- 		local_irq_save(flags);
--		oldpid = ASID_MASK(read_c0_entryhi());
-+		oldpid = read_c0_entryhi() & ASID_MASK;
- 		write_c0_entryhi(page | newpid);
- 		BARRIER;
- 		tlb_probe();
-@@ -197,10 +197,10 @@ void __update_tlb(struct vm_area_struct *vma, unsigned long address, pte_t pte)
- 	if (current->active_mm != vma->vm_mm)
- 		return;
- 
--	pid = ASID_MASK(read_c0_entryhi());
-+	pid = read_c0_entryhi() & ASID_MASK;
- 
- #ifdef DEBUG_TLB
--	if ((pid != ASID_MASK(cpu_context(cpu, vma->vm_mm))) || (cpu_context(cpu, vma->vm_mm) == 0)) {
-+	if ((pid != (cpu_context(cpu, vma->vm_mm) & ASID_MASK)) || (cpu_context(cpu, vma->vm_mm) == 0)) {
- 		printk("update_mmu_cache: Wheee, bogus tlbpid mmpid=%lu tlbpid=%d\n",
- 		       (cpu_context(cpu, vma->vm_mm)), pid);
- 	}
-@@ -241,7 +241,7 @@ void add_wired_entry(unsigned long entrylo0, unsigned long entrylo1,
- 
- 		local_irq_save(flags);
- 		/* Save old context and create impossible VPN2 value */
--		old_ctx = ASID_MASK(read_c0_entryhi());
-+		old_ctx = read_c0_entryhi() & ASID_MASK;
- 		old_pagemask = read_c0_pagemask();
- 		w = read_c0_wired();
- 		write_c0_wired(w + 1);
-@@ -264,7 +264,7 @@ void add_wired_entry(unsigned long entrylo0, unsigned long entrylo1,
- #endif
- 
- 		local_irq_save(flags);
--		old_ctx = ASID_MASK(read_c0_entryhi());
-+		old_ctx = read_c0_entryhi() & ASID_MASK;
- 		write_c0_entrylo0(entrylo0);
- 		write_c0_entryhi(entryhi);
- 		write_c0_index(wired);
-diff --git a/arch/mips/mm/tlb-r4k.c b/arch/mips/mm/tlb-r4k.c
-index 09653b2..c643de4 100644
---- a/arch/mips/mm/tlb-r4k.c
-+++ b/arch/mips/mm/tlb-r4k.c
-@@ -287,7 +287,7 @@ void __update_tlb(struct vm_area_struct * vma, unsigned long address, pte_t pte)
- 
- 	ENTER_CRITICAL(flags);
- 
--	pid = ASID_MASK(read_c0_entryhi());
-+	pid = read_c0_entryhi() & ASID_MASK;
- 	address &= (PAGE_MASK << 1);
- 	write_c0_entryhi(address | pid);
- 	pgdp = pgd_offset(vma->vm_mm, address);
-diff --git a/arch/mips/mm/tlb-r8k.c b/arch/mips/mm/tlb-r8k.c
-index 122f920..91c2499 100644
---- a/arch/mips/mm/tlb-r8k.c
-+++ b/arch/mips/mm/tlb-r8k.c
-@@ -195,7 +195,7 @@ void __update_tlb(struct vm_area_struct * vma, unsigned long address, pte_t pte)
- 	if (current->active_mm != vma->vm_mm)
- 		return;
- 
--	pid = ASID_MASK(read_c0_entryhi());
-+	pid = read_c0_entryhi() & ASID_MASK;
- 
- 	local_irq_save(flags);
- 	address &= PAGE_MASK;
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index 2ad41e9..ce9818e 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -29,7 +29,6 @@
- #include <linux/init.h>
- #include <linux/cache.h>
- 
--#include <asm/mmu_context.h>
- #include <asm/cacheflush.h>
- #include <asm/pgtable.h>
- #include <asm/war.h>
-@@ -306,48 +305,6 @@ static struct uasm_reloc relocs[128] __cpuinitdata;
- static int check_for_high_segbits __cpuinitdata;
- #endif
- 
--static void __cpuinit insn_fixup(unsigned int **start, unsigned int **stop,
--					unsigned int i_const)
--{
--	unsigned int **p, *ip;
--
--	for (p = start; p < stop; p++) {
--		ip = *p;
--		*ip = (*ip & 0xffff0000) | i_const;
--	}
--	local_flush_icache_range((unsigned long)*p, (unsigned long)((*p) + 1));
--}
--
--#define asid_insn_fixup(section, const)					\
--do {									\
--	extern unsigned int *__start_ ## section;			\
--	extern unsigned int *__stop_ ## section;			\
--	insn_fixup(&__start_ ## section, &__stop_ ## section, const);	\
--} while(0)
--
--/*
-- * Caller is assumed to flush the caches before the first context switch.
-- */
--static void __cpuinit setup_asid(unsigned int inc, unsigned int mask,
--				 unsigned int version_mask,
--				 unsigned int first_version)
--{
--	extern asmlinkage void handle_ri_rdhwr_vivt(void);
--	unsigned long *vivt_exc;
--
--	asid_insn_fixup(__asid_inc, inc);
--	asid_insn_fixup(__asid_mask, mask);
--	asid_insn_fixup(__asid_version_mask, version_mask);
--	asid_insn_fixup(__asid_first_version, first_version);
--
--	/* Patch up the 'handle_ri_rdhwr_vivt' handler. */
--	vivt_exc = (unsigned long *) &handle_ri_rdhwr_vivt;
--	vivt_exc++;
--	*vivt_exc = (*vivt_exc & ~mask) | mask;
--
--	current_cpu_data.asid_cache = first_version;
--}
--
- static int check_for_high_segbits __cpuinitdata;
- 
- static unsigned int kscratch_used_mask __cpuinitdata;
-@@ -2226,7 +2183,6 @@ void __cpuinit build_tlb_refill_handler(void)
- 	case CPU_TX3922:
- 	case CPU_TX3927:
- #ifndef CONFIG_MIPS_PGD_C0_CONTEXT
--		setup_asid(0x40, 0xfc0, 0xf000, ASID_FIRST_VERSION_R3000);
- 		if (cpu_has_local_ebase)
- 			build_r3000_tlb_refill_handler();
- 		if (!run_once) {
-@@ -2252,11 +2208,6 @@ void __cpuinit build_tlb_refill_handler(void)
- 		break;
- 
- 	default:
--#ifndef CONFIG_MIPS_MT_SMTC
--		setup_asid(0x1, 0xff, 0xff00, ASID_FIRST_VERSION_R4000);
--#else
--		setup_asid(0x1, smtc_asid_mask, 0xff00, ASID_FIRST_VERSION_R4000);
--#endif
- 		if (!run_once) {
- 			scratch_reg = allocate_kscratch();
- #ifdef CONFIG_MIPS_PGD_C0_CONTEXT
--- 
-1.7.11.7
+> 
+> > +	/* Second, try to find an unbuddied zbpage. This is best fit. */
+> > +	zbpage = NULL;
+> > +	for_each_unbuddied_list(i, chunks) {
+> > +		if (!list_empty(&pool->unbuddied[i])) {
+> > +			zbpage = list_first_entry(&pool->unbuddied[i],
+> > +					struct zbud_page, buddy);
+> > +			list_del(&zbpage->buddy);
+> > +			if (zbpage->first_chunks == 0)
+> > +				bud = FIRST;
+> > +			else
+> > +				bud = LAST;
+> > +			goto found;
+> > +		}
+> > +	}
+> > +
+> > +	/* Lastly, couldn't find unbuddied zbpage, create new one */
+> > +	spin_unlock(&pool->lock);
+> > +	page = alloc_page(gfp);
+> > +	if (!page)
+> > +		return -ENOMEM;
+> > +	spin_lock(&pool->lock);
+> > +	atomic_inc(&pool->pages_nr);
+> > +	zbpage = init_zbud_page(page);
+> > +	bud = FIRST;
+> > +
+> > +found:
+> > +	if (bud == FIRST)
+> > +		zbpage->first_chunks = chunks;
+> > +	else
+> > +		zbpage->last_chunks = chunks;
+> > +
+> > +	if (zbpage->first_chunks == 0 || zbpage->last_chunks == 0) {
+> > +		/* Add to unbuddied list */
+> > +		freechunks = num_free_chunks(zbpage);
+> > +		list_add(&zbpage->buddy, &pool->unbuddied[freechunks]);
+> > +	} else {
+> > +		/* Add to buddied list */
+> > +		list_add(&zbpage->buddy, &pool->buddied);
+> > +	}
+> > +
+> > +	/* Add/move zbpage to beginning of LRU */
+> > +	if (!list_empty(&zbpage->lru))
+> > +		list_del(&zbpage->lru);
+> > +	list_add(&zbpage->lru, &pool->lru);
+> > +
+> > +	*handle = encode_handle(zbpage, bud);
+> > +	spin_unlock(&pool->lock);
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_alloc);
+> > +
+> > +/**
+> > + * zbud_free() - frees the allocation associated with the given handle
+> > + * @pool:	pool in which the allocation resided
+> > + * @handle:	handle associated with the allocation returned by zbud_alloc()
+> > + *
+> > + * In the case that the zbud page in which the allocation resides is under
+> > + * reclaim, as indicated by the PG_reclaim flag being set, this function
+> > + * only sets the first|last_chunks to 0.  The page is actually freed
+> > + * once both buddies are evicted (see zbud_reclaim_page() below).
+> > + */
+> > +void zbud_free(struct zbud_pool *pool, unsigned long handle)
+> > +{
+> > +	struct zbud_page *zbpage;
+> > +	int freechunks;
+> > +
+> > +	spin_lock(&pool->lock);
+> > +	zbpage = handle_to_zbud_page(handle);
+> > +
+> > +	/* If first buddy, handle will be page aligned */
+> > +	if (handle & ~PAGE_MASK)
+> > +		zbpage->last_chunks = 0;
+> > +	else
+> > +		zbpage->first_chunks = 0;
+> > +
+> > +	if (PageReclaim(&zbpage->page)) {
+> > +		/* zbpage is under reclaim, reclaim will free */
+> > +		spin_unlock(&pool->lock);
+> > +		return;
+> > +	}
+> > +
+> > +	/* Remove from existing buddy list */
+> > +	list_del(&zbpage->buddy);
+> > +
+> > +	if (zbpage->first_chunks == 0 && zbpage->last_chunks == 0) {
+> > +		/* zbpage is empty, free */
+> > +		list_del(&zbpage->lru);
+> > +		__free_page(reset_zbud_page(zbpage));
+> > +		atomic_dec(&pool->pages_nr);
+> > +	} else {
+> > +		/* Add to unbuddied list */
+> > +		freechunks = num_free_chunks(zbpage);
+> > +		list_add(&zbpage->buddy, &pool->unbuddied[freechunks]);
+> > +	}
+> > +
+> > +	spin_unlock(&pool->lock);
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_free);
+> > +
+> > +#define list_tail_entry(ptr, type, member) \
+> > +	list_entry((ptr)->prev, type, member)
+> > +
+> > +/**
+> > + * zbud_reclaim_page() - evicts allocations from a pool page and frees it
+> > + * @pool:	pool from which a page will attempt to be evicted
+> > + * @retires:	number of pages on the LRU list for which eviction will
+> > + *		be attempted before failing
+> > + *
+> > + * zbud reclaim is different from normal system reclaim in that the reclaim is
+> > + * done from the bottom, up.  This is because only the bottom layer, zbud, has
+> > + * information on how the allocations are organized within each zbud page. This
+> > + * has the potential to create interesting locking situations between zbud and
+> > + * the user, however.
+> > + *
+> > + * To avoid these, this is how zbud_reclaim_page() should be called:
+> > +
+> > + * The user detects a page should be reclaimed and calls zbud_reclaim_page().
+> > + * zbud_reclaim_page() will remove a zbud page from the pool LRU list and call
+> > + * the user-defined eviction handler with the pool and handle as arguments.
+> > + *
+> > + * If the handle can not be evicted, the eviction handler should return
+> > + * non-zero. zbud_reclaim_page() will add the zbud page back to the
+> > + * appropriate list and try the next zbud page on the LRU up to
+> > + * a user defined number of retries.
+> > + *
+> > + * If the handle is successfully evicted, the eviction handler should
+> > + * return 0 _and_ should have called zbud_free() on the handle. zbud_free()
+> > + * contains logic to delay freeing the page if the page is under reclaim,
+> > + * as indicated by the setting of the PG_reclaim flag on the underlying page.
+> > + *
+> > + * If all buddies in the zbud page are successfully evicted, then the
+> > + * zbud page can be freed.
+> > + *
+> > + * Returns: 0 if page is successfully freed, otherwise -EINVAL if there are
+> > + * no pages to evict or an eviction handler is not registered, -EAGAIN if
+> > + * the retry limit was hit.
+> > + */
+> > +int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+> > +{
+> > +	int i, ret, freechunks;
+> > +	struct zbud_page *zbpage;
+> > +	unsigned long first_handle = 0, last_handle = 0;
+> > +
+> > +	spin_lock(&pool->lock);
+> > +	if (!pool->ops || !pool->ops->evict || list_empty(&pool->lru) ||
+> > +			retries == 0) {
+> > +		spin_unlock(&pool->lock);
+> > +		return -EINVAL;
+> > +	}
+> > +	for (i = 0; i < retries; i++) {
+> > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
+> > +		list_del(&zbpage->lru);
+> > +		list_del(&zbpage->buddy);
+> > +		/* Protect zbpage against free */
+> > +		SetPageReclaim(&zbpage->page);
+> > +		/*
+> > +		 * We need encode the handles before unlocking, since we can
+> > +		 * race with free that will set (first|last)_chunks to 0
+> > +		 */
+> > +		first_handle = 0;
+> > +		last_handle = 0;
+> > +		if (zbpage->first_chunks)
+> > +			first_handle = encode_handle(zbpage, FIRST);
+> > +		if (zbpage->last_chunks)
+> > +			last_handle = encode_handle(zbpage, LAST);
+> > +		spin_unlock(&pool->lock);
+> > +
+> > +		/* Issue the eviction callback(s) */
+> > +		if (first_handle) {
+> > +			ret = pool->ops->evict(pool, first_handle);
+> > +			if (ret)
+> > +				goto next;
+> > +		}
+> > +		if (last_handle) {
+> > +			ret = pool->ops->evict(pool, last_handle);
+> > +			if (ret)
+> > +				goto next;
+> > +		}
+> > +next:
+> > +		spin_lock(&pool->lock);
+> > +		ClearPageReclaim(&zbpage->page);
+> > +		if (zbpage->first_chunks == 0 && zbpage->last_chunks == 0) {
+> > +			/*
+> > +			 * Both buddies are now free, free the zbpage and
+> > +			 * return success.
+> > +			 */
+> > +			__free_page(reset_zbud_page(zbpage));
+> > +			atomic_dec(&pool->pages_nr);
+> > +			spin_unlock(&pool->lock);
+> > +			return 0;
+> > +		} else if (zbpage->first_chunks == 0 ||
+> > +				zbpage->last_chunks == 0) {
+> > +			/* add to unbuddied list */
+> > +			freechunks = num_free_chunks(zbpage);
+> > +			list_add(&zbpage->buddy, &pool->unbuddied[freechunks]);
+> > +		} else {
+> > +			/* add to buddied list */
+> > +			list_add(&zbpage->buddy, &pool->buddied);
+> > +		}
+> > +
+> > +		/* add to beginning of LRU */
+> > +		list_add(&zbpage->lru, &pool->lru);
+> > +	}
+> > +	spin_unlock(&pool->lock);
+> > +	return -EAGAIN;
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_reclaim_page);
+> > +
+> > +/**
+> > + * zbud_map() - maps the allocation associated with the given handle
+> > + * @pool:	pool in which the allocation resides
+> > + * @handle:	handle associated with the allocation to be mapped
+> > + *
+> > + * While trivial for zbud, the mapping functions for others allocators
+> > + * implementing this allocation API could have more complex information encoded
+> > + * in the handle and could create temporary mappings to make the data
+> > + * accessible to the user.
+> > + *
+> > + * Returns: a pointer to the mapped allocation
+> > + */
+> > +void *zbud_map(struct zbud_pool *pool, unsigned long handle)
+> > +{
+> > +	return (void *)(handle);
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_map);
+> > +
+> > +/**
+> > + * zbud_unmap() - maps the allocation associated with the given handle
+> > + * @pool:	pool in which the allocation resides
+> > + * @handle:	handle associated with the allocation to be unmapped
+> > + */
+> > +void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
+> > +{
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_unmap);
+> > +
+> > +/**
+> > + * zbud_get_pool_size() - gets the zbud pool size in pages
+> > + * @pool:	pool whose size is being queried
+> > + *
+> > + * Returns: size in pages of the given pool
+> > + */
+> > +int zbud_get_pool_size(struct zbud_pool *pool)
+> > +{
+> > +	return atomic_read(&pool->pages_nr);
+> > +}
+> > +EXPORT_SYMBOL_GPL(zbud_get_pool_size);
+> > +
+> > +static int __init init_zbud(void)
+> > +{
+> > +	/* Make sure we aren't overflowing the underlying struct page */
+> > +	BUILD_BUG_ON(sizeof(struct zbud_page) != sizeof(struct page));
+> > +	/* Make sure we can represent any chunk offset with a u16 */
+> > +	BUILD_BUG_ON(sizeof(u16) * BITS_PER_BYTE < PAGE_SHIFT - CHUNK_SHIFT);
+> > +	pr_info("loaded\n");
+> > +	return 0;
+> > +}
+> > +
+> > +static void __exit exit_zbud(void)
+> > +{
+> > +	pr_info("unloaded\n");
+> > +}
+> > +
+> > +module_init(init_zbud);
+> > +module_exit(exit_zbud);
+> > +
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
+> > +MODULE_DESCRIPTION("Buddy Allocator for Compressed Pages");
+> > --
+> > 1.7.9.5
+> 
 
