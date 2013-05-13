@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3EMOaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:30:01 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:65036 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab3EMO37 (ORCPT
+	id S1754117Ab3EMOa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:30:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43679 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752734Ab3EMOaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:29:59 -0400
+	Mon, 13 May 2013 10:30:24 -0400
+X-Sasl-enc: 4SCabrwJXh8JPFLs+MYP3smLbV0HLfRxr9efdXsdsycA 1368455420
+Message-ID: <5190F8FA.9050201@ladisch.de>
+Date: Mon, 13 May 2013 16:30:18 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1368044622-25645-1-git-send-email-geert@linux-m68k.org>
-References: <1368044622-25645-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 13 May 2013 07:29:59 -0700
-Message-ID: <CAHQ1cqFrJL6vBSpx7HXYYEE040=Lz8Qnqo2gjSMTUnMQCfygRw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [media] v4l2: SI476X MFD - Do not use binary constants
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Takashi Iwai <tiwai@suse.de>
+CC: Imre Deak <imre.deak@intel.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 11/11] sound/oxygen_io: take msecs_to_jiffies_min into
+ use
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com> <1368188011-23661-11-git-send-email-imre.deak@intel.com> <s5hr4hbq8sd.wl%tiwai@suse.de>
+In-Reply-To: <s5hr4hbq8sd.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 1:23 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Gcc < 4.3 doesn't understand binary constanrs (0b*):
+Takashi Iwai wrote:
+> Imre Deak wrote:
+>> Use msecs_to_jiffies_min instead of open-coding the same.
+>>
+>> +++ b/sound/pci/oxygen/oxygen_io.c
+>> @@ -108,7 +108,7 @@ static int oxygen_ac97_wait(struct oxygen *chip, unsigned int mask)
+>>  	wait_event_timeout(chip->ac97_waitqueue,
+>>  			   ({ status |= oxygen_read8(chip, OXYGEN_AC97_INTERRUPT_STATUS);
+>>  			      status & mask; }),
+>> -			   msecs_to_jiffies(1) + 1);
+>> +			   msecs_to_jiffies_min(1));
 >
-> drivers/media/radio/radio-si476x.c:862:20: error: invalid suffix "b10000000" on integer constant
->
-> Hence use a hexadecimal constant (0x*) instead.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: linux-media@vger.kernel.org
+> This would change the behavior, I guess.
 
-Acked-by: Andrey Smirnov <andrew.smirnov@gmail.com>
+No, that's exactly how msecs_to_jiffies_min would be implemented.
 
-> ---
->  drivers/media/radio/radio-si476x.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/media/radio/radio-si476x.c b/drivers/media/radio/radio-si476x.c
-> index 9430c6a..9dc8baf 100644
-> --- a/drivers/media/radio/radio-si476x.c
-> +++ b/drivers/media/radio/radio-si476x.c
-> @@ -44,7 +44,7 @@
->
->  #define FREQ_MUL (10000000 / 625)
->
-> -#define SI476X_PHDIV_STATUS_LINK_LOCKED(status) (0b10000000 & (status))
-> +#define SI476X_PHDIV_STATUS_LINK_LOCKED(status) (0x80 & (status))
->
->  #define DRIVER_NAME "si476x-radio"
->  #define DRIVER_CARD "SI476x AM/FM Receiver"
-> --
-> 1.7.0.4
->
+> (Though, I'm not sure whether the original code was intentional.)
+
+When I wrote this, I was not able to prove that msecs_to_jiffies always
+rounds up.  (And I guess it doesn't; otherwise the _min variant would
+not be needed.)
+
+
+Regards,
+Clemens
