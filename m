@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab3EMX7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 19:59:03 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:46202 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3EMX67 (ORCPT
+	id S1755724Ab3EMX7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 19:59:23 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:54276 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755710Ab3EMX7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 19:58:59 -0400
+	Mon, 13 May 2013 19:59:18 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-fbdev@vger.kernel.org
 Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Jerome Glisse <j.glisse@gmail.com>,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 1/9] Add arch_phys_wc_{add,del} to manipulate WC MTRRs if needed
-Date: Mon, 13 May 2013 16:58:40 -0700
-Message-Id: <89c33a8d4a367b33dfb3fe4af2ad85b59b02ec22.1368485053.git.luto@amacapital.net>
+Subject: [PATCH v3 7/9] uvesafb: Clean up MTRR code
+Date: Mon, 13 May 2013 16:58:46 -0700
+Message-Id: <d3b3c5ea13e5b2d38af340b02a844b055cb61e2c.1368485053.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <cover.1368485053.git.luto@amacapital.net>
 References: <cover.1368485053.git.luto@amacapital.net>
@@ -25,211 +25,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several drivers currently use mtrr_add through various #ifdef guards
-and/or drm wrappers.  The vast majority of them want to add WC MTRRs
-on x86 systems and don't actually need the MTRR if PAT (i.e.
-ioremap_wc, etc) are working.
+The old code allowed very strange memory types.  Now it works like
+all the other video drivers: ioremap_wc is used unconditionally,
+and MTRRs are set if PAT is unavailable (unless MTRR is disabled
+by a module parameter).
 
-arch_phys_wc_add and arch_phys_wc_del are new functions, available
-on all architectures and configurations, that add WC MTRRs on x86 if
-needed (and handle errors) and do nothing at all otherwise.  They're
-also easier to use than mtrr_add and mtrr_del, so the call sites can
-be simplified.
+UC, WB, and WT support is gone.  If there are MTRR conflicts that prevent
+addition of a WC MTRR, adding a non-conflicting MTRR is pointless; it's
+better to just turn off MTRR support entirely.
 
-As an added benefit, this will avoid wasting MTRRs and possibly
-warning pointlessly on PAT-supporting systems.
+As an added bonus, any MTRR added is freed on unload.
 
 Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
+ Documentation/fb/uvesafb.txt | 16 ++++------
+ drivers/video/uvesafb.c      | 70 +++++++++++---------------------------------
+ include/video/uvesafb.h      |  1 +
+ 3 files changed, 23 insertions(+), 64 deletions(-)
 
-Changes from v2:
- - Make MTRR_TO_PHYS_WC_OFFSET a macro instead of open-coding it.
- - Add phys_wc_to_mtrr_index to make drmGetMap keep working.  Sigh.
-
- arch/x86/include/asm/io.h       |  7 ++++
- arch/x86/include/asm/mtrr.h     | 10 +++++-
- arch/x86/kernel/cpu/mtrr/main.c | 71 +++++++++++++++++++++++++++++++++++++++++
- include/linux/io.h              | 25 +++++++++++++++
- 4 files changed, 112 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index d8e8eef..34f69cb 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -345,4 +345,11 @@ extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
+diff --git a/Documentation/fb/uvesafb.txt b/Documentation/fb/uvesafb.txt
+index eefdd91..f6362d8 100644
+--- a/Documentation/fb/uvesafb.txt
++++ b/Documentation/fb/uvesafb.txt
+@@ -81,17 +81,11 @@ pmipal  Use the protected mode interface for palette changes.
  
- #define IO_SPACE_LIMIT 0xffff
- 
-+#ifdef CONFIG_MTRR
-+extern int __must_check arch_phys_wc_add(unsigned long base,
-+					 unsigned long size);
-+extern void arch_phys_wc_del(int handle);
-+#define arch_phys_wc_add arch_phys_wc_add
-+#endif
+ mtrr:n  Setup memory type range registers for the framebuffer
+         where n:
+-              0 - disabled (equivalent to nomtrr) (default)
+-              1 - uncachable
+-              2 - write-back
+-              3 - write-combining
+-              4 - write-through
+-
+-        If you see the following in dmesg, choose the type that matches
+-        the old one.  In this example, use "mtrr:2".
+-...
+-mtrr: type mismatch for e0000000,8000000 old: write-back new: write-combining
+-...
++              0 - disabled (equivalent to nomtrr)
++              3 - write-combining (default)
 +
- #endif /* _ASM_X86_IO_H */
-diff --git a/arch/x86/include/asm/mtrr.h b/arch/x86/include/asm/mtrr.h
-index e235582..f768f62 100644
---- a/arch/x86/include/asm/mtrr.h
-+++ b/arch/x86/include/asm/mtrr.h
-@@ -26,7 +26,10 @@
- #include <uapi/asm/mtrr.h>
++	Values other than 0 and 3 will result in a warning and will be
++	treated just like 3.
  
+ nomtrr  Do not use memory type range registers.
  
--/*  The following functions are for use by other drivers  */
-+/*
-+ * The following functions are for use by other drivers that cannot use
-+ * arch_phys_wc_add and arch_phys_wc_del.
-+ */
- # ifdef CONFIG_MTRR
- extern u8 mtrr_type_lookup(u64 addr, u64 end);
- extern void mtrr_save_fixed_ranges(void *);
-@@ -45,6 +48,7 @@ extern void mtrr_aps_init(void);
- extern void mtrr_bp_restore(void);
- extern int mtrr_trim_uncached_memory(unsigned long end_pfn);
- extern int amd_special_default_mtrr(void);
-+extern int phys_wc_to_mtrr_index(int handle);
- #  else
- static inline u8 mtrr_type_lookup(u64 addr, u64 end)
- {
-@@ -80,6 +84,10 @@ static inline int mtrr_trim_uncached_memory(unsigned long end_pfn)
- static inline void mtrr_centaur_report_mcr(int mcr, u32 lo, u32 hi)
- {
- }
-+static inline int phys_wc_to_mtrr_index(int handle)
-+{
-+	return -1;
-+}
- 
- #define mtrr_ap_init() do {} while (0)
- #define mtrr_bp_init() do {} while (0)
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 726bf96..3533d4d 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -51,9 +51,13 @@
- #include <asm/e820.h>
- #include <asm/mtrr.h>
- #include <asm/msr.h>
-+#include <asm/pat.h>
- 
- #include "mtrr.h"
- 
-+/* arch_phys_wc_add returns an MTRR register index plus this offset. */
-+#define MTRR_TO_PHYS_WC_OFFSET 1000
-+
- u32 num_var_ranges;
- 
- unsigned int mtrr_usage_table[MTRR_MAX_VAR_RANGES];
-@@ -524,6 +528,73 @@ int mtrr_del(int reg, unsigned long base, unsigned long size)
- }
- EXPORT_SYMBOL(mtrr_del);
- 
-+/**
-+ * arch_phys_wc_add - add a WC MTRR and handle errors if PAT is unavailable
-+ * @base: Physical base address
-+ * @size: Size of region
-+ *
-+ * If PAT is available, this does nothing.  If PAT is unavailable, it
-+ * attempts to add a WC MTRR covering size bytes starting at base and
-+ * logs an error if this fails.
-+ *
-+ * Drivers must store the return value to pass to mtrr_del_wc_if_needed,
-+ * but drivers should not try to interpret that return value.
-+ */
-+int arch_phys_wc_add(unsigned long base, unsigned long size)
-+{
-+	int ret;
-+
-+	if (pat_enabled)
-+		return 0;  /* Success!  (We don't need to do anything.) */
-+
-+	ret = mtrr_add(base, size, MTRR_TYPE_WRCOMB, true);
-+	if (ret < 0) {
-+		pr_warn("Failed to add WC MTRR for [%p-%p]; performance may suffer.",
-+			(void *)base, (void *)(base + size - 1));
-+		return ret;
-+	}
-+	return ret + MTRR_TO_PHYS_WC_OFFSET;
-+}
-+EXPORT_SYMBOL(arch_phys_wc_add);
-+
-+/*
-+ * arch_phys_wc_del - undoes arch_phys_wc_add
-+ * @handle: Return value from arch_phys_wc_add
-+ *
-+ * This cleans up after mtrr_add_wc_if_needed.
-+ *
-+ * The API guarantees that mtrr_del_wc_if_needed(error code) and
-+ * mtrr_del_wc_if_needed(0) do nothing.
-+ */
-+void arch_phys_wc_del(int handle)
-+{
-+	if (handle >= 1) {
-+		WARN_ON(handle < MTRR_TO_PHYS_WC_OFFSET);
-+		mtrr_del(handle - MTRR_TO_PHYS_WC_OFFSET, 0, 0);
-+	}
-+}
-+EXPORT_SYMBOL(arch_phys_wc_del);
-+
-+/*
-+ * phys_wc_to_mtrr_index - translates arch_phys_wc_add's return value
-+ * @handle: Return value from arch_phys_wc_add
-+ *
-+ * This will turn the return value from arch_phys_wc_add into an mtrr
-+ * index suitable for debugging.
-+ *
-+ * Note: There is no legitimate use for this function, except possibly
-+ * in printk line.  Alas there is an illegitimate use in some ancient
-+ * drm ioctls.
-+ */
-+int phys_wc_to_mtrr_index(int handle)
-+{
-+	if (handle < MTRR_TO_PHYS_WC_OFFSET)
-+		return -1;
-+	else
-+		return handle - MTRR_TO_PHYS_WC_OFFSET;
-+}
-+EXPORT_SYMBOL_GPL(phys_wc_to_mtrr_index);
-+
- /*
-  * HACK ALERT!
-  * These should be called implicitly, but we can't yet until all the initcall
-diff --git a/include/linux/io.h b/include/linux/io.h
-index 069e407..f4f42fa 100644
---- a/include/linux/io.h
-+++ b/include/linux/io.h
-@@ -76,4 +76,29 @@ void devm_ioremap_release(struct device *dev, void *res);
- #define arch_has_dev_port()     (1)
+diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
+index d428445..8701f96 100644
+--- a/drivers/video/uvesafb.c
++++ b/drivers/video/uvesafb.c
+@@ -24,9 +24,6 @@
+ #ifdef CONFIG_X86
+ #include <video/vga.h>
  #endif
+-#ifdef CONFIG_MTRR
+-#include <asm/mtrr.h>
+-#endif
+ #include "edid.h"
  
-+/*
-+ * Some systems (x86 without PAT) have a somewhat reliable way to mark a
-+ * physical address range such that uncached mappings will actually
-+ * end up write-combining.  This facility should be used in conjunction
-+ * with pgprot_writecombine, ioremap-wc, or set_memory_wc, since it has
-+ * no effect if the per-page mechanisms are functional.
-+ * (On x86 without PAT, these functions manipulate MTRRs.)
-+ *
-+ * arch_phys_del_wc(0) or arch_phys_del_wc(any error code) is guaranteed
-+ * to have no effect.
-+ */
-+#ifndef arch_phys_wc_add
-+static inline int __must_check arch_phys_wc_add(unsigned long base,
-+						unsigned long size)
-+{
-+	return 0;  /* It worked (i.e. did nothing). */
-+}
+ static struct cb_id uvesafb_cn_id = {
+@@ -1540,67 +1537,30 @@ static void uvesafb_init_info(struct fb_info *info, struct vbe_mode_ib *mode)
+ 
+ static void uvesafb_init_mtrr(struct fb_info *info)
+ {
+-#ifdef CONFIG_MTRR
++	struct uvesafb_par *par = info->par;
 +
-+static inline void arch_phys_wc_del(int handle)
-+{
-+}
+ 	if (mtrr && !(info->fix.smem_start & (PAGE_SIZE - 1))) {
+ 		int temp_size = info->fix.smem_len;
+-		unsigned int type = 0;
+ 
+-		switch (mtrr) {
+-		case 1:
+-			type = MTRR_TYPE_UNCACHABLE;
+-			break;
+-		case 2:
+-			type = MTRR_TYPE_WRBACK;
+-			break;
+-		case 3:
+-			type = MTRR_TYPE_WRCOMB;
+-			break;
+-		case 4:
+-			type = MTRR_TYPE_WRTHROUGH;
+-			break;
+-		default:
+-			type = 0;
+-			break;
+-		}
++		int rc;
+ 
+-		if (type) {
+-			int rc;
++		/* Find the largest power-of-two */
++		temp_size = roundup_pow_of_two(temp_size);
+ 
+-			/* Find the largest power-of-two */
+-			temp_size = roundup_pow_of_two(temp_size);
++		/* Try and find a power of two to add */
++		do {
++			rc = arch_phys_wc_add(info->fix.smem_start, temp_size);
++			temp_size >>= 1;
++		} while (temp_size >= PAGE_SIZE && rc == -EINVAL);
+ 
+-			/* Try and find a power of two to add */
+-			do {
+-				rc = mtrr_add(info->fix.smem_start,
+-					      temp_size, type, 1);
+-				temp_size >>= 1;
+-			} while (temp_size >= PAGE_SIZE && rc == -EINVAL);
+-		}
++		if (rc >= 0)
++			par->mtrr_handle = rc;
+ 	}
+-#endif /* CONFIG_MTRR */
+ }
+ 
+ static void uvesafb_ioremap(struct fb_info *info)
+ {
+-#ifdef CONFIG_X86
+-	switch (mtrr) {
+-	case 1: /* uncachable */
+-		info->screen_base = ioremap_nocache(info->fix.smem_start, info->fix.smem_len);
+-		break;
+-	case 2: /* write-back */
+-		info->screen_base = ioremap_cache(info->fix.smem_start, info->fix.smem_len);
+-		break;
+-	case 3: /* write-combining */
+-		info->screen_base = ioremap_wc(info->fix.smem_start, info->fix.smem_len);
+-		break;
+-	case 4: /* write-through */
+-	default:
+-		info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
+-		break;
+-	}
+-#else
+-	info->screen_base = ioremap(info->fix.smem_start, info->fix.smem_len);
+-#endif /* CONFIG_X86 */
++	info->screen_base = ioremap_wc(info->fix.smem_start, info->fix.smem_len);
+ }
+ 
+ static ssize_t uvesafb_show_vbe_ver(struct device *dev,
+@@ -1851,6 +1811,7 @@ static int uvesafb_remove(struct platform_device *dev)
+ 		unregister_framebuffer(info);
+ 		release_region(0x3c0, 32);
+ 		iounmap(info->screen_base);
++		arch_phys_wc_del(par->mtrr_handle);
+ 		release_mem_region(info->fix.smem_start, info->fix.smem_len);
+ 		fb_destroy_modedb(info->monspecs.modedb);
+ 		fb_dealloc_cmap(&info->cmap);
+@@ -1930,6 +1891,9 @@ static int uvesafb_setup(char *options)
+ 		}
+ 	}
+ 
++	if (mtrr != 3 && mtrr != 1)
++		pr_warn("uvesafb: mtrr should be set to 0 or 3; %d is unsupported", mtrr);
 +
-+#define arch_phys_wc_add arch_phys_wc_add
-+#endif
-+
- #endif /* _LINUX_IO_H */
+ 	return 0;
+ }
+ #endif /* !MODULE */
+diff --git a/include/video/uvesafb.h b/include/video/uvesafb.h
+index 1a91850..30f5362 100644
+--- a/include/video/uvesafb.h
++++ b/include/video/uvesafb.h
+@@ -134,6 +134,7 @@ struct uvesafb_par {
+ 
+ 	int mode_idx;
+ 	struct vbe_crtc_ib crtc;
++	int mtrr_handle;
+ };
+ 
+ #endif /* _UVESAFB_H */
 -- 
 1.8.1.4
 
