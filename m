@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3EMJkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:40:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24532 "EHLO mx1.redhat.com"
+	id S1753517Ab3EMJlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:41:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39154 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022Ab3EMJkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:40:41 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1368293689-16410-17-git-send-email-jiang.liu@huawei.com>
-References: <1368293689-16410-17-git-send-email-jiang.liu@huawei.com> <1368293689-16410-1-git-send-email-jiang.liu@huawei.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH v6, part3 16/16] AVR32: fix building warnings caused by redifinitions of HZ
-Date: Mon, 13 May 2013 10:40:05 +0100
-Message-ID: <15932.1368438005@warthog.procyon.org.uk>
+	id S1751471Ab3EMJlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:41:17 -0400
+Date: Mon, 13 May 2013 12:40:43 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@kernel.org, fweisbec@gmail.com,
+        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 00/13] perf: kvm live mode
+Message-ID: <20130513094043.GN10830@redhat.com>
+References: <1368073909-8825-1-git-send-email-dsahern@gmail.com>
+ <518B9C44.7090404@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <518B9C44.7090404@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiang Liu <liuj97@gmail.com> wrote:
+On Thu, May 09, 2013 at 08:53:24PM +0800, Xiao Guangrong wrote:
+> CC kvm list.
+> 
+> On 05/09/2013 12:31 PM, David Ahern wrote:
+> > With the consolidation of the open counters code in December 2012
+> > (late to the party figuring that out) I think all of the past
+> > comments on the live mode for perf-kvm have been resolved.
+> 
+> Great work, David! I am playing it and glad to see it works fine.
+> Will review the patches later.
+> 
+Looks very useful indeed!
 
-> -#ifndef HZ
-> +#ifndef __KERNEL__
-> +   /*
-> +    * Technically, this is wrong, but some old apps still refer to it.
-> +    * The proper way to get the HZ value is via sysconf(_SC_CLK_TCK).
-> +    */
->  # define HZ		100
->  #endif
-
-Better still, use asm-generic/param.h and uapi/asm-generic/param.h for AVR32
-instead.
-
-David
-
+--
+			Gleb.
