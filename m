@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab3EMD2e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 23:28:34 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50119 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab3EMD2c (ORCPT
+	id S1752418Ab3EMDdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 23:33:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30807 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab3EMDdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 23:28:32 -0400
+	Sun, 12 May 2013 23:33:53 -0400
+X-Spam-Score: -100.8
+Message-ID: <51905EEF.2050901@asianux.com>
+Date: Mon, 13 May 2013 11:33:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130513020400.GS25399@ZenIV.linux.org.uk>
-References: <CAAJw_Zv4Cy-fSg24F=7poRNs2oGA=7nuZQtQOyf_-dsStzNpgw@mail.gmail.com>
-	<20130513020400.GS25399@ZenIV.linux.org.uk>
-Date: Mon, 13 May 2013 11:28:30 +0800
-Message-ID: <CAAJw_ZseY94_u_w=P43VeUE2gNZ1qEe9Dpon3q3BEG=MPNp67w@mail.gmail.com>
-Subject: Re: linux-3.10-rc1 procfs interface breaks vmware, eicon, fio ....
- any fix?
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/module.c: for looping, need use 'goto' instead
+ of 'break' to jump out in time
+References: <51889EE4.4070504@asianux.com> <87ip2unwkt.fsf@rustcorp.com.au> <5189C1D6.1040209@asianux.com> <87li7j3cgw.fsf@rustcorp.com.au>
+In-Reply-To: <87li7j3cgw.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And now you have a chutzpah to come and
-complain about that? Better yet, we are expected to be working on
-fixing those?
+On 05/13/2013 09:17 AM, Rusty Russell wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+>> > On 2013年05月08日 08:29, Rusty Russell wrote:
+>>> >> Chen Gang <gang.chen@asianux.com> writes:
+>>>>> >>> > In the 'for' looping, when error occurs, the 'break' only jump out of
+>>>>> >>> > 'switch', and still in 'for' looping.  If error occurs multiple times,
+>>>>> >>> > the original error value will be overwrite.
+>>>>> >>> >
+>>>>> >>> > Currently, that will not cause issue, but still better to improve it,
+>>>>> >>> > so that let it return the first real error code in time.
+>>> >> We choose to print all the problems, rather than just one.  I don't
+>>> >> really mind though.
+>>> >> 
+>> >
+>> > It sounds good: "choose to print all the problems, rather than just one"
+>> >
+>> > If so, it seems enough to only return a bool value to known whether
+>> > success or fail, do not need the error details any more (since they are
+>> > already been printed)
+>> >
+>>> >> It we want this patch, it would be neater to just 'return -ENOEXEC'
+>>> >> and 'return PTR_ERR(ksym) ?: -ENOENT'.
+>> >
+>> > If we really want this patch (still only print the first error, and
+>> > return the real error value), I should send patch v2 (also 'ret' is
+>> > obsoleted)
+> I would take such a patch, since it makes things a little neater.  But
+> if you don't write it, I wouldn't write it myself, since it's
+> borderline.
 
-Al,
+OK, thank, I should write it, and now I will "choose to print all the
+problems, and return a bool value", and it will be as a cleanup patch.
 
-Complaining about something that I can't fix, yep. But asking you to
-fix those, nop! That's not my intent. All I'm trying to say is there's
-too many out there who don't care about linux-next until the vanilla
-version came out and then everyone (may be just me) complained that it
-doesn't work anymore, So, would it be reasonable to allow the
-old-method to still function may be via CONFIG_OLD_PROCFS but warning
-that the old interface should not be used anymore. That's to allow
-"me" to continue to be able to work on the latest linux-3.10.0-rc1
-while waiting for someone to fix those old modules. Reasonable?
+I will finish it within 2 days (2013-05-15).
 
-Thanks,
-Jeff
+If have additional suggestions or completions, please reply.
 
-On Mon, May 13, 2013 at 10:04 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, May 13, 2013 at 08:19:46AM +0800, Jeff Chua wrote:
->> Anyone on lkml working on patches for vmware to make it run on
->> Linux-3.10-rc1? The recent change in procfs interface breaks vmware,
->> diva/eicon and fio modules.
->>
->> Every modules is now broken and needs to be reworked. Is there a more
->> subtle way to handle this like give more time to allow developers to
->> handle the move rather than killing off the "tranditional" procfs
->> access
->
-> I might feel bad about those, if not for one thing - their authors
-> had explicitly chosen to keep them out of tree and did not bother
-> to watch what was going on in linux-next - these changes had been
-> there for quite a while.  And now you have a chutzpah to come and
-> complain about that?  Better yet, we are expected to be working on
-> fixing those?  Really?  It's not a rethorical question - I seriously
-> want to know whether I'd misparsed what you meant to say.
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
