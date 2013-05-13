@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab3EMJHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:07:33 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:53095 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab3EMJHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:07:31 -0400
-Message-ID: <5190AC9B.70106@linux.vnet.ibm.com>
-Date: Mon, 13 May 2013 14:34:27 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1752357Ab3EMJIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:08:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35116 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751564Ab3EMJIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:08:51 -0400
+X-IronPort-AV: E=Sophos;i="4.87,661,1363104000"; 
+   d="scan'208";a="7255668"
+Message-ID: <5190AE4F.4000103@cn.fujitsu.com>
+Date: Mon, 13 May 2013 17:11:43 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Lianwei Wang <lianwei.wang@gmail.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [linux-pm] [PATCH] cpuidle: don't wakeup processor when set a
- longer latency
-References: <CAJFUiJiMMAgLGF3tiG1V59dx+KOpTBCEL3ctHUosjMDkBagbJg@mail.gmail.com> <518A324A.8000000@linaro.org> <CAJFUiJio8jHtGwGo=-FSm6_E9LATSkyUx_iWsuFddmA9+PXCJA@mail.gmail.com> <518C3502.2040306@linaro.org> <CAJFUiJjLUvpO5t+LT32hmaER1QX06wpK8a+Rr4GSB-Xikh=O7w@mail.gmail.com>
-In-Reply-To: <CAJFUiJjLUvpO5t+LT32hmaER1QX06wpK8a+Rr4GSB-Xikh=O7w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mel Gorman <mgorman@suse.de>
+CC: Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
+        akpm@linux-foundation.org, bcrl@kvack.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com> <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com> <20130205120137.GG21389@suse.de> <20130206004234.GD11197@blaptop> <20130206095617.GN21389@suse.de>
+In-Reply-To: <20130206095617.GN21389@suse.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/13 17:07:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/13 17:07:47,
+	Serialize complete at 2013/05/13 17:07:47
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051309-5564-0000-0000-000007E5DC09
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 12:22 PM, Lianwei Wang wrote:
-> Thank you. Patch is updated.
-> 
-> From 2d0b4afb5461847dcdf08a87b02015d061b12e85 Mon Sep 17 00:00:00 2001
-> From: Lianwei Wang <lianwei.wang@gmail.com>
-> Date: Fri, 26 Apr 2013 10:59:24 +0800
-> Subject: [PATCH] cpuidle: wakeup processor on a smaller latency
-> 
-> Checking the PM-Qos latency and cpu idle sleep latency, and only
-> wakeup the cpu if the requested PM-Qos latency is smaller than its
-> idle sleep latency. This can reduce at least 50% cpu wakeup count
-> on PM-Qos updated.
+Hi Mel,
+
+On 02/06/2013 05:56 PM, Mel Gorman wrote:
 >
-> The PM-Qos is not updated most of time, especially for home idle
-> case. But for some specific case, the PM-Qos may be updated too
-> frequently. (E.g. my measurement show that it is changed frequently
-> between 2us/3us/200us/200s for bootup and usb case.)
-> 
-> The battery current drain is measured from PMIC or battery eliminator.
-> Although this is just a little saving, it is still reasonable to
-> improve it.
+> There is the possibility that callbacks could be introduced for
+> migrate_unpin() and migrate_pin() that takes a list of PFN pairs
+> (old,new). The unpin callback should release the old PFNs and barrier
+> against any operations until the migrate_pfn() callback is called with
+> the updated pfns to be repinned. Again it would fully depend on subsystems
+> implementing it properly.
+>
+> The callback interface would be more robust but puts a lot more work on
+> the driver side where your milage will vary.
 >
 
-I don't understand how this patch is supposed to improve things.
+I'm very interested in the "callback" way you said.
 
-IIUC, if a CPU was sleeping for a short duration, and you set the latency
-requirement for a longer value, this patch will avoid waking that CPU.
-But how does that help? Perhaps, during the short sleep, the CPU was
-actually in a shallow (less power-saving) sleep state, and hence it might
-actually be better off waking it up and then putting it into a much
-deeper sleep state no?
+For memory hot-remove case, the aio pages are pined in memory and making
+the pages cannot be offlined, furthermore, the pages cannot be removed.
 
-And if we ignore the sleep length for a moment, in the case that you
-set a very strict latency requirement and then later relax the constraint,
-does it not make sense to wake up the CPUs and allow them to go to
-deeper sleep states?
+IIUC, you mean implement migrate_unpin() and migrate_pin() callbacks in aio
+subsystem, and call them when hot-remove code tries to offline pages, 
+right ?
 
-And IMHO there are other problems with this patch as well, see below.
+If so, I'm wondering where should we put this callback pointers ?
+In struct page ?
 
-> Change-Id: If564fd0d9c53cf100bd85247bfd509dfeaf54c13
-> Signed-off-by: Lianwei Wang <lianwei.wang@gmail.com>
-> ---
->  drivers/cpuidle/cpuidle.c |   17 ++++++++++++++++-
->  1 files changed, 16 insertions(+), 1 deletions(-)
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 2f0083a..a0829ad 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -18,6 +18,7 @@
->  #include <linux/ktime.h>
->  #include <linux/hrtimer.h>
->  #include <linux/module.h>
-> +#include <linux/tick.h>
->  #include <trace/events/power.h>
-> 
->  #include "cpuidle.h"
-> @@ -462,11 +463,25 @@ static void smp_callback(void *v)
->   * requirement.  This means we need to get all processors out of their C-state,
->   * and then recalculate a new suitable C-state. Just do a cross-cpu IPI; that
->   * wakes them all right up.
-> + * l - > latency in us
->   */
->  static int cpuidle_latency_notify(struct notifier_block *b,
->                 unsigned long l, void *v)
->  {
-> -       smp_call_function(smp_callback, NULL, 1);
-> +       int cpu, rcpu = smp_processor_id();
 
-This is not atomic context. So your rcpu is not guaranteed to remain valid
-(because you can get migrated to another cpu).
+It has been a long time since this topic was discussed. But to solve this
+problem cleanly for hotplug guys and CMA guys, please give some more 
+comments.
 
-> +       s64 s; /* sleep_length in us */
-> +       struct tick_device *td;
-> +
-> +       for_each_online_cpu(cpu) {
+Thanks. :)
 
-You need to protect against CPU hotplug, by using get/put_online_cpus().
-
-> +               if (cpu == rcpu)
-> +                       continue;
-> +               td = tick_get_device(cpu);
-> +               s = ktime_us_delta(td->evtdev->next_event, ktime_get());
-
-What happens if that wakeup event got cancelled just after this? And hence
-the CPU sleeps longer than expected... In that case, you'll be violating
-the latency requirement set by the user, no?
-
-Moreover, looking at the menu and ladder cpu idle governors, the value set
-in cpu_dma_latency is used to compare with the *exit-latency* of the sleep
-state in order to decide which sleep state to go to. IOW, it has got *nothing*
-to do with the duration of the sleep!!
-
-> +               if ((long)l < (long)s) {
-
-... and hence, this check doesn't make sense at all!
-
-> +                       smp_call_function_single(cpu, smp_callback, NULL, 1);
-> +               }
-> +       }
-> +
->         return NOTIFY_OK;
->  }
-> 
-
-Regards,
-Srivatsa S. Bhat
-
+>
+> To guarantee CMA can migrate pages pinned by drivers I think you need
+> migrate-related callsbacks to unpin, barrier the driver until migration
+> completes and repin.
+>
+> I do not know, or at least have no heard, of anyone working on such a
+> scheme.
+>
