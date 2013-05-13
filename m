@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3EMMCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:02:11 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56586 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3EMMBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:01:15 -0400
-X-AuditID: 85900ec0-d38c8b900000151e-a2-5190d609c0f7
-Subject: [PATCH 2/3] [CLEANUP/SPARSE] tracing/kprobes: Fix a sparse warning
- for incorrect type in assignment
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Date: Mon, 13 May 2013 20:58:37 +0900
-Message-ID: <20130513115837.6545.23322.stgit@mhiramat-M0-7522>
-In-Reply-To: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
-References: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
-User-Agent: StGit/0.15
+	id S1752631Ab3EMMEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:04:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251Ab3EMMEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:04:13 -0400
+Message-ID: <5190D6B8.7020905@redhat.com>
+Date: Mon, 13 May 2013 14:04:08 +0200
+From: Peter Rajnoha <prajnoha@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Mike Snitzer <snitzer@redhat.com>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, Joe Thornber <thornber@redhat.com>
+Subject: Re: [PATCH 2/2] dmcache: Implement a flush message
+References: <20130508214845.GA7729@blackbox.djwong.org> <20130508220526.GA24132@redhat.com> <20130509203616.GA5713@blackbox.djwong.org> <20130509204751.GB5712@blackbox.djwong.org> <20130510102224.GF20880@debian> <20130510175149.GC5712@blackbox.djwong.org> <20130511152523.GA18988@redhat.com>
+In-Reply-To: <20130511152523.GA18988@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a sparse warning about the rcu operated pointer is
-defined without __rcu address space.
+On 11.05.2013 17:25, Mike Snitzer wrote:> On Fri, May 10 2013 at  1:51pm
+-0400,
+> Darrick J. Wong <darrick.wong@oracle.com> wrote:
+>
+...
+>> afaict, there isn't anything in the initscripts that tears down dm
+devices
+>> prior to invoking reboot(), and the kernel drivers don't have reboot
+notifiers
+>> to flush things out either.  I've been told that lvm does this, but I
+don't see
+>> anything in the Ubuntu or RHEL6 that would suggest a teardown script...
+>
+> See:
+https://git.fedorahosted.org/cgit/lvm2.git/commit/?id=c698ee14bbb1310cf2383c8977d14a8e29139f8c
+>
+> But I'm not sure which distros have hooked blkdeactivate in (cc'ing
+> prajnoha for his insight).
+>
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kprobe.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The blk-availability initscript/systemd unit that gets called at
+shutdown/reboot and which in turn calls the blkdeactivate is already
+used in RHEL 6.4 onwards and also in Fedora 18 onwards. However, for
+Fedora, you need to enable the systemd unit explicitly at the moment
+(systemctl enable blk-availability.service). To have it enabled by
+default, the distro-wide default systemd configuration needs to be
+edited which is controlled by systemd-preset file (I hope F19 is going
+to have this enabled by default finally).
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 0a3d8d5..81c5109 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -35,7 +35,7 @@ struct trace_probe {
- 	const char		*symbol;	/* symbol name */
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
--	struct ftrace_event_file	**files;
-+	struct ftrace_event_file * __rcu *files;
- 	ssize_t			size;		/* trace entry size */
- 	unsigned int		nr_args;
- 	struct probe_arg	args[];
+As for any other distros, it's up to the maintainers in that distro to
+make use of the new script - I haven't looked if they started using it
+or not. But upstream already provides it since lvm2 v2.02.98.
 
+Peter
