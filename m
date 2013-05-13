@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab3EMIPB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:15:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53376 "EHLO mx2.suse.de"
+	id S1753969Ab3EMIPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:15:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53358 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618Ab3EMIMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:12:47 -0400
+	id S1752215Ab3EMIMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 04:12:45 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -15,9 +15,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/9] mm: vmscan: Flatten kswapd priority loop
-Date: Mon, 13 May 2013 09:12:34 +0100
-Message-Id: <1368432760-21573-4-git-send-email-mgorman@suse.de>
+Subject: [PATCH 1/9] mm: vmscan: Limit the number of pages kswapd reclaims at each priority
+Date: Mon, 13 May 2013 09:12:32 +0100
+Message-Id: <1368432760-21573-2-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
 References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
@@ -25,192 +25,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kswapd stops raising the scanning priority when at least SWAP_CLUSTER_MAX
-pages have been reclaimed or the pgdat is considered balanced. It then
-rechecks if it needs to restart at DEF_PRIORITY and whether high-order
-reclaim needs to be reset. This is not wrong per-se but it is confusing
-to follow and forcing kswapd to stay at DEF_PRIORITY may require several
-restarts before it has scanned enough pages to meet the high watermark even
-at 100% efficiency. This patch irons out the logic a bit by controlling
-when priority is raised and removing the "goto loop_again".
+The number of pages kswapd can reclaim is bound by the number of pages it
+scans which is related to the size of the zone and the scanning priority. In
+many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+reclaimed pages but in the event kswapd scans a large number of pages it
+cannot reclaim, it will raise the priority and potentially discard a large
+percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+effect is a reclaim "spike" where a large percentage of memory is suddenly
+freed. It would be bad enough if this was just unused memory but because
+of how anon/file pages are balanced it is possible that applications get
+pushed to swap unnecessarily.
 
-This patch has kswapd raise the scanning priority until it is scanning
-enough pages that it could meet the high watermark in one shrink of the
-LRU lists if it is able to reclaim at 100% efficiency. It will not raise
-the scanning prioirty higher unless it is failing to reclaim any pages.
-
-To avoid infinite looping for high-order allocation requests kswapd will
-not reclaim for high-order allocations when it has reclaimed at least
-twice the number of pages as the allocation request.
+This patch limits the number of pages kswapd will reclaim to the high
+watermark. Reclaim will still overshoot due to it not being a hard limit as
+shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+prevents kswapd reclaiming the world at higher priorities. The number of
+pages it reclaims is not adjusted for high-order allocations as kswapd will
+reclaim excessively if it is to balance zones for high-order allocations.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/vmscan.c | 86 +++++++++++++++++++++++++++++--------------------------------
- 1 file changed, 41 insertions(+), 45 deletions(-)
+ mm/vmscan.c | 49 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 20 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 26ad67f..1c10ee5 100644
+index fa6a853..cdbc069 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2654,8 +2654,12 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- /*
-  * kswapd shrinks the zone by the number of pages required to reach
-  * the high watermark.
-+ *
-+ * Returns true if kswapd scanned at least the requested number of pages to
-+ * reclaim. This is used to determine if the scanning priority needs to be
-+ * raised.
-  */
--static void kswapd_shrink_zone(struct zone *zone,
-+static bool kswapd_shrink_zone(struct zone *zone,
- 			       struct scan_control *sc,
- 			       unsigned long lru_pages)
- {
-@@ -2675,6 +2679,8 @@ static void kswapd_shrink_zone(struct zone *zone,
- 
- 	if (nr_slab == 0 && !zone_reclaimable(zone))
- 		zone->all_unreclaimable = 1;
-+
-+	return sc->nr_scanned >= sc->nr_to_reclaim;
+@@ -2601,6 +2601,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
  }
  
  /*
-@@ -2701,26 +2707,26 @@ static void kswapd_shrink_zone(struct zone *zone,
- static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 							int *classzone_idx)
- {
--	bool pgdat_is_balanced = false;
++ * kswapd shrinks the zone by the number of pages required to reach
++ * the high watermark.
++ */
++static void kswapd_shrink_zone(struct zone *zone,
++			       struct scan_control *sc,
++			       unsigned long lru_pages)
++{
++	unsigned long nr_slab;
++	struct reclaim_state *reclaim_state = current->reclaim_state;
++	struct shrink_control shrink = {
++		.gfp_mask = sc->gfp_mask,
++	};
++
++	/* Reclaim above the high watermark. */
++	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
++	shrink_zone(zone, sc);
++
++	reclaim_state->reclaimed_slab = 0;
++	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
++	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++
++	if (nr_slab == 0 && !zone_reclaimable(zone))
++		zone->all_unreclaimable = 1;
++}
++
++/*
+  * For kswapd, balance_pgdat() will work across all this node's zones until
+  * they are all at high_wmark_pages(zone).
+  *
+@@ -2627,24 +2653,15 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	bool pgdat_is_balanced = false;
  	int i;
  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
  	unsigned long nr_soft_reclaimed;
  	unsigned long nr_soft_scanned;
  	struct scan_control sc = {
  		.gfp_mask = GFP_KERNEL,
-+		.priority = DEF_PRIORITY,
  		.may_unmap = 1,
  		.may_swap = 1,
-+		.may_writepage = !laptop_mode,
+-		/*
+-		 * kswapd doesn't want to be bailed out while reclaim. because
+-		 * we want to put equal scanning pressure on each zone.
+-		 */
+-		.nr_to_reclaim = ULONG_MAX,
  		.order = order,
  		.target_mem_cgroup = NULL,
  	};
--loop_again:
--	sc.priority = DEF_PRIORITY;
--	sc.nr_reclaimed = 0;
--	sc.may_writepage = !laptop_mode;
- 	count_vm_event(PAGEOUTRUN);
- 
- 	do {
- 		unsigned long lru_pages = 0;
-+		bool raise_priority = true;
-+
-+		sc.nr_reclaimed = 0;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2762,10 +2768,8 @@ loop_again:
- 			}
- 		}
- 
--		if (i < 0) {
--			pgdat_is_balanced = true;
-+		if (i < 0)
- 			goto out;
--		}
- 
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ loop_again:
+ 	sc.priority = DEF_PRIORITY;
+ 	sc.nr_reclaimed = 0;
+@@ -2716,7 +2733,7 @@ loop_again:
+ 		 */
  		for (i = 0; i <= end_zone; i++) {
  			struct zone *zone = pgdat->node_zones + i;
-@@ -2832,8 +2836,16 @@ loop_again:
+-			int nr_slab, testorder;
++			int testorder;
+ 			unsigned long balance_gap;
+ 
+ 			if (!populated_zone(zone))
+@@ -2764,16 +2781,8 @@ loop_again:
  
  			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
  			    !zone_balanced(zone, testorder,
--					   balance_gap, end_zone))
--				kswapd_shrink_zone(zone, &sc, lru_pages);
-+					   balance_gap, end_zone)) {
-+				/*
-+				 * There should be no need to raise the
-+				 * scanning priority if enough pages are
-+				 * already being scanned that high
-+				 * watermark would be met at 100% efficiency.
-+				 */
-+				if (kswapd_shrink_zone(zone, &sc, lru_pages))
-+					raise_priority = false;
-+			}
+-					   balance_gap, end_zone)) {
+-				shrink_zone(zone, &sc);
+-
+-				reclaim_state->reclaimed_slab = 0;
+-				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+-				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-
+-				if (nr_slab == 0 && !zone_reclaimable(zone))
+-					zone->all_unreclaimable = 1;
+-			}
++					   balance_gap, end_zone))
++				kswapd_shrink_zone(zone, &sc, lru_pages);
  
  			/*
  			 * If we're getting trouble reclaiming, start doing
-@@ -2868,46 +2880,29 @@ loop_again:
- 				pfmemalloc_watermark_ok(pgdat))
- 			wake_up(&pgdat->pfmemalloc_wait);
- 
--		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
--			pgdat_is_balanced = true;
--			break;		/* kswapd: all done */
--		}
--
- 		/*
--		 * We do this so kswapd doesn't build up large priorities for
--		 * example when it is freeing in parallel with allocators. It
--		 * matches the direct reclaim path behaviour in terms of impact
--		 * on zone->*_priority.
-+		 * Fragmentation may mean that the system cannot be rebalanced
-+		 * for high-order allocations in all zones. If twice the
-+		 * allocation size has been reclaimed and the zones are still
-+		 * not balanced then recheck the watermarks at order-0 to
-+		 * prevent kswapd reclaiming excessively. Assume that a
-+		 * process requested a high-order can direct reclaim/compact.
- 		 */
--		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
--			break;
--	} while (--sc.priority >= 0);
--
--out:
--	if (!pgdat_is_balanced) {
--		cond_resched();
-+		if (order && sc.nr_reclaimed >= 2UL << order)
-+			order = sc.order = 0;
- 
--		try_to_freeze();
-+		/* Check if kswapd should be suspending */
-+		if (try_to_freeze() || kthread_should_stop())
-+			break;
- 
- 		/*
--		 * Fragmentation may mean that the system cannot be
--		 * rebalanced for high-order allocations in all zones.
--		 * At this point, if nr_reclaimed < SWAP_CLUSTER_MAX,
--		 * it means the zones have been fully scanned and are still
--		 * not balanced. For high-order allocations, there is
--		 * little point trying all over again as kswapd may
--		 * infinite loop.
--		 *
--		 * Instead, recheck all watermarks at order-0 as they
--		 * are the most important. If watermarks are ok, kswapd will go
--		 * back to sleep. High-order users can still perform direct
--		 * reclaim if they wish.
-+		 * Raise priority if scanning rate is too low or there was no
-+		 * progress in reclaiming pages
- 		 */
--		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
--			order = sc.order = 0;
--
--		goto loop_again;
--	}
-+		if (raise_priority || !sc.nr_reclaimed)
-+			sc.priority--;
-+	} while (sc.priority >= 0 &&
-+		 !pgdat_balanced(pgdat, order, *classzone_idx));
- 
- 	/*
- 	 * If kswapd was reclaiming at a higher order, it has the option of
-@@ -2936,6 +2931,7 @@ out:
- 			compact_pgdat(pgdat, order);
- 	}
- 
-+out:
- 	/*
- 	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
- 	 * makes a decision on the order we were last reclaiming at. However,
 -- 
 1.8.1.4
 
