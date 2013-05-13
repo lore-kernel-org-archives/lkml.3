@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab3EMTJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:09:20 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42805 "EHLO
+	id S1754825Ab3EMTJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:09:18 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42687 "EHLO
 	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720Ab3EMTI7 (ORCPT
+	with ESMTP id S1754551Ab3EMTIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:08:59 -0400
+	Mon, 13 May 2013 15:08:51 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -15,85 +15,72 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH RESEND v3 05/11] mm/page_alloc: convert zone_pcp_update() to rely on memory barriers instead of stop_machine()
-Date: Mon, 13 May 2013 12:08:17 -0700
-Message-Id: <1368472103-3427-6-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH RESEND v3 02/11] mm/page_alloc: prevent concurrent updaters of pcp ->batch and ->high
+Date: Mon, 13 May 2013 12:08:14 -0700
+Message-Id: <1368472103-3427-3-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051319-3620-0000-0000-0000027572F4
+x-cbid: 13051319-3620-0000-0000-0000027572BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zone_pcp_update()'s goal is to adjust the ->high and ->mark members of a
-percpu pageset based on a zone's ->managed_pages. We don't need to drain
-the entire percpu pageset just to modify these fields.
+Because we are going to rely upon a careful transision between old and
+new ->high and ->batch values using memory barriers and will remove
+stop_machine(), we need to prevent multiple updaters from interweaving
+their memory writes.
 
-This lets us avoid calling setup_pageset() (and the draining required to
-call it) and instead allows simply setting the fields' values (with some
-attention paid to memory barriers to prevent the relationship between
-->batch and ->high from being thrown off).
-
-This does change the behavior of zone_pcp_update() as the percpu
-pagesets will not be drained when zone_pcp_update() is called (they will
-end up being shrunk, not completely drained, later when a 0-order page
-is freed in free_hot_cold_page()).
+Add a simple mutex to protect both update loops.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/page_alloc.c | 33 +++++++++------------------------
- 1 file changed, 9 insertions(+), 24 deletions(-)
+ mm/page_alloc.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 71d843d..5a00195 100644
+index 9e556e6..cea883d 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -6083,33 +6083,18 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
- #endif
+@@ -65,6 +65,9 @@
+ #include <asm/div64.h>
+ #include "internal.h"
  
- #ifdef CONFIG_MEMORY_HOTPLUG
--static int __meminit __zone_pcp_update(void *data)
--{
--	struct zone *zone = data;
--	int cpu;
--	unsigned long batch = zone_batchsize(zone), flags;
--
--	for_each_possible_cpu(cpu) {
--		struct per_cpu_pageset *pset;
--		struct per_cpu_pages *pcp;
--
--		pset = per_cpu_ptr(zone->pageset, cpu);
--		pcp = &pset->pcp;
--
--		local_irq_save(flags);
--		if (pcp->count > 0)
--			free_pcppages_bulk(zone, pcp->count, pcp);
--		drain_zonestat(zone, pset);
--		setup_pageset(pset, batch);
--		local_irq_restore(flags);
--	}
--	return 0;
--}
--
-+/*
-+ * The zone indicated has a new number of managed_pages; batch sizes and percpu
-+ * page high values need to be recalulated.
-+ */
++/* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
++static DEFINE_MUTEX(pcp_batch_high_lock);
++
+ #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
+ DEFINE_PER_CPU(int, numa_node);
+ EXPORT_PER_CPU_SYMBOL(numa_node);
+@@ -5555,6 +5558,8 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+ 	if (!write || (ret < 0))
+ 		return ret;
++
++	mutex_lock(&pcp_batch_high_lock);
+ 	for_each_populated_zone(zone) {
+ 		for_each_possible_cpu(cpu) {
+ 			unsigned long  high;
+@@ -5563,6 +5568,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 				per_cpu_ptr(zone->pageset, cpu), high);
+ 		}
+ 	}
++	mutex_unlock(&pcp_batch_high_lock);
+ 	return 0;
+ }
+ 
+@@ -6076,7 +6082,9 @@ static int __meminit __zone_pcp_update(void *data)
+ 
  void __meminit zone_pcp_update(struct zone *zone)
  {
-+	unsigned cpu;
-+	unsigned long batch;
- 	mutex_lock(&pcp_batch_high_lock);
--	stop_machine(__zone_pcp_update, zone, NULL);
-+	batch = zone_batchsize(zone);
-+	for_each_possible_cpu(cpu)
-+		pageset_set_batch(per_cpu_ptr(zone->pageset, cpu), batch);
- 	mutex_unlock(&pcp_batch_high_lock);
++	mutex_lock(&pcp_batch_high_lock);
+ 	stop_machine(__zone_pcp_update, zone, NULL);
++	mutex_unlock(&pcp_batch_high_lock);
  }
  #endif
+ 
 -- 
 1.8.2.2
 
