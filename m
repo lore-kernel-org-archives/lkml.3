@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab3EMTLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:11:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48838 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113Ab3EMTK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:10:58 -0400
-Date: Mon, 13 May 2013 21:10:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Prarit Bhargava <prarit@redhat.com>
-cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bitbucket@online.de, tip-bot for Thomas Gleixner <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/urgent] tick: Cleanup NOHZ per cpu data on cpu
- down
-In-Reply-To: <5190FE00.6010508@redhat.com>
-Message-ID: <alpine.LFD.2.02.1305132035360.2863@ionos>
-References: <alpine.LFD.2.02.1305031451561.2886@ionos> <tip-4b0c0f294f60abcdd20994a8341a95c8ac5eeb96@git.kernel.org> <5190FE00.6010508@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755037Ab3EMTJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:09:29 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:55877 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754762Ab3EMTJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 15:09:13 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH RESEND v3 08/11] mm/page_alloc: relocate comment to be directly above code it refers to.
+Date: Mon, 13 May 2013 12:08:20 -0700
+Message-Id: <1368472103-3427-9-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051319-9360-0000-0000-0000122662A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013, Prarit Bhargava wrote:
-> Thomas, while this does fix up the NULL pointer issue, I think you've introduced
-> a new bug in the schedule timer code.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I don't think that I introduced a new bug. I'm quite sure that change
-unearthed another issue which was papered over by the stale data.
-
-That memset is putting the data structure into the same state as we
-have on boot. From tick-sched perspective cpu onlining is not
-different between boot and an offline/online cycle
-
-> While doing up and downs on the same CPU, I now occasionally see long delays in
-> the up and down...
-
-> [   81.744565] smpboot: Booting Node 1 Processor 19 APIC 0x28
-> [   82.848591] smpboot: CPU 19 is now offline
-> 
-> Long delay in bringing CPU "up"
-> 
-> [   89.826533] smpboot: Booting Node 1 Processor 19 APIC 0x28
-> [   84.905358] smpboot: CPU 19 is now offline
-> [   87.565274] smpboot: Booting Node 1 Processor 19 APIC 0x28
-
-Errm, the timestamps are random. -ENOTUSEFUL
- 
-> Also, if the system is in this state I cannot reboot -- the system appears to
-> hang while bringing down CPUs...
-> 
-> Oddly, if I do
-> 
-> +       memset(ts, 0, sizeof(*ts));
-> +       ts->tick_stopped = 1;
-> 
-> instead of your memset, everything works.  I'm looking at the tick-sched.c code
-> to see why setting tick_stopped = 1 seems to fix the problem.
-
-That doesn't make any sense. So instead of changing random values in
-ts, could you please fire up the tracer and gather evidence, so we can
-see what the system does when these long delays happen. You can start
-and stop the tracer from your script and terminate if one of the
-operations takes too long.
-
-Thanks,
-
-	tglx
-
-
-
-
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 696ce96..53c62c5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3709,12 +3709,12 @@ void __ref build_all_zonelists(pg_data_t *pgdat, struct zone *zone)
+ 		mminit_verify_zonelist();
+ 		cpuset_init_current_mems_allowed();
+ 	} else {
+-		/* we have to stop all cpus to guarantee there is no user
+-		   of zonelist */
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ 		if (zone)
+ 			setup_zone_pageset(zone);
+ #endif
++		/* we have to stop all cpus to guarantee there is no user
++		   of zonelist */
+ 		stop_machine(__build_all_zonelists, pgdat, NULL);
+ 		/* cpuset refresh routine should be here */
+ 	}
+-- 
+1.8.2.2
 
