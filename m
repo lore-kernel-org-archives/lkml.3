@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab3EMWEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 18:04:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63934 "EHLO mx1.redhat.com"
+	id S1755404Ab3EMWJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 18:09:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab3EMWEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 18:04:51 -0400
-Date: Mon, 13 May 2013 18:04:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: luto@amacapital.net
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: irq remapping warnings on macbook pro.
-Message-ID: <20130513220444.GA22440@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, luto@amacapital.net,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755228Ab3EMWJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 18:09:06 -0400
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
+        chuck.anderson@oracle.com, imammedo@redhat.com
+Subject: [PATCH 1/2] cpu: fix "crash_notes" leak in register_cpu()
+Date: Tue, 14 May 2013 00:05:31 +0200
+Message-Id: <1368482732-25554-2-git-send-email-imammedo@redhat.com>
+In-Reply-To: <20130513133128.GJ6811@phenom.dumpdata.com>
+References: <20130513133128.GJ6811@phenom.dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy,
+"crash_notes" is dinamically created with device_create_file() but
+isn't anywhere deleted.
+Define "crash_notes" statically via attribute groups so that
+device_register would create it automatically and file would be
+destroyed when CPU is destroyed.
 
-since commit af8d102f999a41c0189bd2cce488bac2ee88c29b, we've had
-reports from users getting this backtrace..
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+---
+ drivers/base/cpu.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-WARNING: at drivers/iommu/intel_irq_remapping.c:658 intel_enable_irq_remapping+0x295/0x2a4()
-Hardware name: MacBookPro10,1
-Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.
-Modules linked in:
-Pid: 1, comm: swapper/0 Not tainted 3.9.1-301.fc19.x86_64 #1
-Call Trace:
- [<ffffffff81d46d3b>] ? intel_enable_irq_remapping+0x295/0x2a4
- [<ffffffff8105cd86>] warn_slowpath_common+0x66/0x80
- [<ffffffff8105cdec>] warn_slowpath_fmt+0x4c/0x50
- [<ffffffff81d46d3b>] intel_enable_irq_remapping+0x295/0x2a4
- [<ffffffff81d46e94>] irq_remapping_enable+0x1b/0x7b
- [<ffffffff81d15b6f>] enable_IR+0x59/0x60
- [<ffffffff81d15d75>] enable_IR_x2apic+0x8d/0x13f
- [<ffffffff81d17b8a>] default_setup_apic_routing+0x11/0x69
- [<ffffffff81d13a94>] native_smp_prepare_cpus+0x2c0/0x3c2
- [<ffffffff81d04f8a>] kernel_init_freeable+0xba/0x1fa
- [<ffffffff81629cb0>] ? rest_init+0x80/0x80
- [<ffffffff81629cbe>] kernel_init+0xe/0x190
- [<ffffffff8164da6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff81629cb0>] ? rest_init+0x80/0x80
-
-examples at:
-
-https://bugzilla.redhat.com/show_bug.cgi?id=962356
-https://bugzilla.redhat.com/show_bug.cgi?id=948262
-https://bugzilla.redhat.com/show_bug.cgi?id=954068
-
-Given the unlikelyhood of Apple releasing a firmware fix to appease Linux,
-can we downgrade this to just a printk ? That would at least stop
-it getting picked up as a kernel bug by abrt and similar tools.
-
-	Dave
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index fb10728..02e4d73 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -132,8 +132,24 @@ static ssize_t show_crash_notes(struct device *dev, struct device_attribute *att
+ 	return rc;
+ }
+ static DEVICE_ATTR(crash_notes, 0400, show_crash_notes, NULL);
++
++static struct attribute *crash_note_cpu_attrs[] = {
++	&dev_attr_crash_notes.attr,
++	NULL
++};
++
++static struct attribute_group crash_note_cpu_attr_group = {
++	.attrs = crash_note_cpu_attrs,
++};
+ #endif
+ 
++static const struct attribute_group *common_cpu_attr_groups[] = {
++#ifdef CONFIG_KEXEC
++	&crash_note_cpu_attr_group,
++#endif
++	NULL
++};
++
+ /*
+  * Print cpu online, possible, present, and system maps
+  */
+@@ -248,6 +264,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = arch_cpu_uevent;
+ #endif
++	cpu->dev.groups = common_cpu_attr_groups;
+ 	error = device_register(&cpu->dev);
+ 	if (!error && cpu->hotpluggable)
+ 		register_cpu_control(cpu);
+@@ -256,10 +273,6 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	if (!error)
+ 		register_cpu_under_node(num, cpu_to_node(num));
+ 
+-#ifdef CONFIG_KEXEC
+-	if (!error)
+-		error = device_create_file(&cpu->dev, &dev_attr_crash_notes);
+-#endif
+ 	return error;
+ }
+ 
+-- 
+1.7.1
 
