@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3EMRna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:43:30 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63764 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3EMRn2 (ORCPT
+	id S1752912Ab3EMRrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:47:06 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63707 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab3EMRrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:43:28 -0400
+	Mon, 13 May 2013 13:47:04 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Josh Cartwright <joshc@eso.teric.us>,
+        Mike Turquette <mturquette@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 0/5] Zynq: revised CCF code
+Date: Mon, 13 May 2013 10:46:34 -0700
+Message-Id: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
 MIME-Version: 1.0
-In-Reply-To: <CAJ-Vmo=HOFqu8vB1=pvz79YwE8qAMDc4ZJACJHaSuxn4S92sFg@mail.gmail.com>
-References: <1320756113.14409.385.camel@x61.thuisdomein> <20111108141647.GA3390@hash.lan>
- <1342124352.22584.21.camel@x61.thuisdomein> <20120712203837.GA3045@localhost>
- <4FFFBDD8.6020305@neratec.com> <20120713124134.GA5567@localhost>
- <1362999998.3137.60.camel@x61.thuisdomein> <1368457391.1350.67.camel@x61.thuisdomein>
- <CAJ-VmokciVPxzJ0LptdQyL9koa8Bw7ecJdentPH5q9+MQ4=GpA@mail.gmail.com>
- <5191173D.3070709@gmail.com> <CAJ-Vmo=HOFqu8vB1=pvz79YwE8qAMDc4ZJACJHaSuxn4S92sFg@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 13 May 2013 10:43:06 -0700
-X-Google-Sender-Auth: y-0rvk4iu6NrH-zjoNlnSuGEhb4
-Message-ID: <CAB=NE6UR+3uadczBt+2n4g8j2e_A6OBJ-+ZJiO4y2g4Z0cFywg@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH] ath5k: Remove AHB bus support.
-To: Adrian Chadd <adrian@freebsd.org>
-Cc: Jonathan Bither <jonbither@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>, Jiri Slaby <jirislaby@gmail.com>,
-        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 10:09 AM, Adrian Chadd <adrian@freebsd.org> wrote:
-> On 13 May 2013 09:39, Jonathan Bither <jonbither@gmail.com> wrote:
->
->>> ... is anyone using this on openwrt?
->>>
->> I am.
->> I am also reworking AR2131X drivers and will submit a patch to linux-mips
->> shortly.
->
-> Sweet. Someone say NACK then? :)
+I rebased this series on v3.10-rc1 eliminating all dependencies and incorporated
+Greg's feedback.
+I'll push this also to my github repository.
+https://github.com/sorenb-xlnx/linux-xlnx/tree/zynq/clkc
 
-NACK, looking forward to the linux-mips patches, in the future however
-we want to avoid these type of placeholder patches.
+v2:
+ - dropped the 'sort #includes' patches
 
-  Luis
+	Sören
+
+
+Soren Brinkmann (5):
+  tty: xuartps: Remove suspend/resume functions
+  clk: zynq: Factor out PLL driver
+  clk: zynq: Add clock controller driver
+  arm: zynq: Migrate platform to clock controller
+  clk: zynq: Remove deprecated clock code
+
+ .../devicetree/bindings/clock/zynq-7000.txt        | 127 +++--
+ arch/arm/boot/dts/zynq-7000.dtsi                   |  71 +--
+ arch/arm/boot/dts/zynq-zc702.dts                   |   4 -
+ arch/arm/mach-zynq/slcr.c                          |   2 +-
+ drivers/clk/Makefile                               |   2 +-
+ drivers/clk/clk-zynq.c                             | 378 ---------------
+ drivers/clk/zynq/Makefile                          |   3 +
+ drivers/clk/zynq/clkc.c                            | 533 +++++++++++++++++++++
+ drivers/clk/zynq/pll.c                             | 235 +++++++++
+ drivers/clocksource/cadence_ttc_timer.c            |  23 +-
+ drivers/tty/serial/xilinx_uartps.c                 | 115 +++--
+ include/linux/clk/zynq.h                           |   8 +-
+ 12 files changed, 974 insertions(+), 527 deletions(-)
+ delete mode 100644 drivers/clk/clk-zynq.c
+ create mode 100644 drivers/clk/zynq/Makefile
+ create mode 100644 drivers/clk/zynq/clkc.c
+ create mode 100644 drivers/clk/zynq/pll.c
+
+-- 
+1.8.2.3
+
