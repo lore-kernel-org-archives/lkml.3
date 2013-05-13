@@ -1,221 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3EMKE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 06:04:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51192 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab3EMKDB (ORCPT
+	id S1752833Ab3EMKHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 06:07:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39531 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab3EMKHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 06:03:01 -0400
-X-IronPort-AV: E=Sophos;i="4.87,660,1363158000"; 
-   d="scan'208";a="46573941"
-From: Dolev Raviv <draviv@codeaurora.org>
-To: linux-scsi@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH V1 4/8] scsi: ufs: amend interrupt configuration
-Date: Mon, 13 May 2013 13:02:14 +0300
-Message-Id: <1368439340-26346-5-git-send-email-draviv@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1368439340-26346-1-git-send-email-draviv@codeaurora.org>
-References: <1368439340-26346-1-git-send-email-draviv@codeaurora.org>
+	Mon, 13 May 2013 06:07:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <38896893-83c7-4eb4-848a-bb35663d945b@email.android.com>
+References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
+	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
+	<alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
+	<CAFLxGvzA5nzpQjOKWgz0nBKG2s3gPspted-25uduqkr7_ySj6A@mail.gmail.com>
+	<CAMuHMdWt0i6Q+i9Qh+tMs910a388NoddhHmq2LGr50f1=dJPvQ@mail.gmail.com>
+	<38896893-83c7-4eb4-848a-bb35663d945b@email.android.com>
+Date: Mon, 13 May 2013 12:07:20 +0200
+Message-ID: <CAFLxGvyKANuy_vezO+E1aL3FzvdjiNgCD3j-BVGSyL_ne015Xw@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        User-mode Linux Kernel Development 
+	<user-mode-linux-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes interrupt setting more flexible especially
-for disabling. And wrong bit mask is fixed for ver 1.0.
-[17:16] is added for mask.
+On Mon, May 13, 2013 at 11:54 AM, Michael Ellerman
+<michael@ellerman.id.au> wrote:
+>
+>
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>
+>>On Sun, May 12, 2013 at 11:17 PM, richard -rw- weinberger
+>><richard.weinberger@gmail.com> wrote:
+>>> On Sun, May 12, 2013 at 10:47 PM, Geert Uytterhoeven
+>>> <geert@linux-m68k.org> wrote:
+>>>> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
+>>>>> However, the full list of errors isn't that unmanageable, so I'm
+>>following
+>>>>> up with a digested list...
+>>>>
+>>>> arch/um/drivers/cow_user.c:216: error: implicit declaration of
+>>function 'htobe32': 1 errors in 1 logs
+>>>> arch/um/drivers/cow_user.c:249: error: implicit declaration of
+>>function 'htobe64': 1 errors in 1 logs
+>>>> arch/um/drivers/cow_user.c:303: error: implicit declaration of
+>>function 'be32toh': 1 errors in 1 logs
+>>>> arch/um/drivers/cow_user.c:330: error: implicit declaration of
+>>function 'be64toh': 1 errors in 1 logs
+>>>> arch/um/os-Linux/skas/process.c:321: error: 'PTRACE_O_TRACESYSGOOD'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/skas/process.c:321: error: (Each undeclared
+>>identifier is reported only once: 1 errors in 1 logs
+>>>> arch/um/os-Linux/skas/process.c:321: error: for each function it
+>>appears in.): 1 errors in 1 logs
+>>>> arch/um/os-Linux/skas/process.c:412: error: 'PTRACE_GETSIGINFO'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/skas/process.c:560: error: 'PTRACE_O_TRACESYSGOOD'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:245: error: 'PTRACE_SETOPTIONS'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:245: error: (Each undeclared identifier
+>>is reported only once: 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:245: error: for each function it appears
+>>in.): 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:246: error: 'PTRACE_O_TRACESYSGOOD'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:303: error: 'PTRACE_SETOPTIONS'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>> arch/um/os-Linux/start_up.c:304: error: 'PTRACE_O_TRACESYSGOOD'
+>>undeclared (first use in this function): 1 errors in 1 logs
+>>>>         v3.10-rc1/um-i386/um-defconfig
+>>>>         Old host environment on kissb?
+>>>
+>>> This really looks like a host environment issue.
+>>> PTRACE_O_TRACESYSGOOD for example is defined in
+>>/usr/include/linux/ptrace.h
+>>
+>>Yep, just like e.g. htobe32().
+>>
+>>Michael, Stephen: Any chance this can be fixed?
+>
+> Possibly. We're cross compiling these on powerpc so perhaps we need to update the cross compiler.
 
-Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
-Tested-by: Maya Erez <merez@codeaurora.org>
-Acked-by: Santosh Y <santoshsy@gmail.com>
+Looks like you are the first man on planet earth who tries do build
+UML/x86 on powerpc. :D
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index 3946b9d..c342a38 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -35,6 +35,10 @@
- 
- #include "ufshcd.h"
- 
-+#define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
-+				 UTP_TASK_REQ_COMPL |\
-+				 UFSHCD_ERROR_MASK)
-+
- enum {
- 	UFSHCD_MAX_CHANNEL	= 0,
- 	UFSHCD_MAX_ID		= 1,
-@@ -64,6 +68,20 @@ enum {
- };
- 
- /**
-+ * ufshcd_get_intr_mask - Get the interrupt bit mask
-+ * @hba - Pointer to adapter instance
-+ *
-+ * Returns interrupt bit mask per version
-+ */
-+static inline u32 ufshcd_get_intr_mask(struct ufs_hba *hba)
-+{
-+	if (hba->ufs_version == UFSHCI_VERSION_10)
-+		return INTERRUPT_MASK_ALL_VER_10;
-+	else
-+		return INTERRUPT_MASK_ALL_VER_11;
-+}
-+
-+/**
-  * ufshcd_get_ufs_version - Get the UFS version supported by the HBA
-  * @hba - Pointer to adapter instance
-  *
-@@ -441,25 +459,45 @@ static int ufshcd_map_sg(struct ufshcd_lrb *lrbp)
- }
- 
- /**
-- * ufshcd_int_config - enable/disable interrupts
-+ * ufshcd_enable_intr - enable interrupts
-  * @hba: per adapter instance
-- * @option: interrupt option
-+ * @intrs: interrupt bits
-  */
--static void ufshcd_int_config(struct ufs_hba *hba, u32 option)
-+static void ufshcd_enable_intr(struct ufs_hba *hba, u32 intrs)
- {
--	switch (option) {
--	case UFSHCD_INT_ENABLE:
--		ufshcd_writel(hba, hba->int_enable_mask, REG_INTERRUPT_ENABLE);
--		break;
--	case UFSHCD_INT_DISABLE:
--		if (hba->ufs_version == UFSHCI_VERSION_10)
--			ufshcd_writel(hba, INTERRUPT_DISABLE_MASK_10,
--				      REG_INTERRUPT_ENABLE);
--		else
--			ufshcd_writel(hba, INTERRUPT_DISABLE_MASK_11,
--				      REG_INTERRUPT_ENABLE);
--		break;
-+	u32 set = ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
-+
-+	if (hba->ufs_version == UFSHCI_VERSION_10) {
-+		u32 rw;
-+		rw = set & INTERRUPT_MASK_RW_VER_10;
-+		set = rw | ((set ^ intrs) & intrs);
-+	} else {
-+		set |= intrs;
-+	}
-+
-+	ufshcd_writel(hba, set, REG_INTERRUPT_ENABLE);
-+}
-+
-+/**
-+ * ufshcd_disable_intr - disable interrupts
-+ * @hba: per adapter instance
-+ * @intrs: interrupt bits
-+ */
-+static void ufshcd_disable_intr(struct ufs_hba *hba, u32 intrs)
-+{
-+	u32 set = ufshcd_readl(hba, REG_INTERRUPT_ENABLE);
-+
-+	if (hba->ufs_version == UFSHCI_VERSION_10) {
-+		u32 rw;
-+		rw = (set & INTERRUPT_MASK_RW_VER_10) &
-+			~(intrs & INTERRUPT_MASK_RW_VER_10);
-+		set = rw | ((set & intrs) & ~INTERRUPT_MASK_RW_VER_10);
-+
-+	} else {
-+		set &= ~intrs;
- 	}
-+
-+	ufshcd_writel(hba, set, REG_INTERRUPT_ENABLE);
- }
- 
- /**
-@@ -842,8 +880,7 @@ static int ufshcd_dme_link_startup(struct ufs_hba *hba)
- 	uic_cmd->argument3 = 0;
- 
- 	/* enable UIC related interrupts */
--	hba->int_enable_mask |= UIC_COMMAND_COMPL;
--	ufshcd_int_config(hba, UFSHCD_INT_ENABLE);
-+	ufshcd_enable_intr(hba, UIC_COMMAND_COMPL);
- 
- 	/* sending UIC commands to controller */
- 	ufshcd_send_uic_command(hba, uic_cmd);
-@@ -890,13 +927,7 @@ static int ufshcd_make_hba_operational(struct ufs_hba *hba)
- 	}
- 
- 	/* Enable required interrupts */
--	hba->int_enable_mask |= (UTP_TRANSFER_REQ_COMPL |
--				 UIC_ERROR |
--				 UTP_TASK_REQ_COMPL |
--				 DEVICE_FATAL_ERROR |
--				 CONTROLLER_FATAL_ERROR |
--				 SYSTEM_BUS_FATAL_ERROR);
--	ufshcd_int_config(hba, UFSHCD_INT_ENABLE);
-+	ufshcd_enable_intr(hba, UFSHCD_ENABLE_INTRS);
- 
- 	/* Configure interrupt aggregation */
- 	ufshcd_config_int_aggr(hba, INT_AGGR_CONFIG);
-@@ -1724,7 +1755,7 @@ static void ufshcd_hba_free(struct ufs_hba *hba)
- void ufshcd_remove(struct ufs_hba *hba)
- {
- 	/* disable interrupts */
--	ufshcd_int_config(hba, UFSHCD_INT_DISABLE);
-+	ufshcd_disable_intr(hba, hba->intr_mask);
- 
- 	ufshcd_hba_stop(hba);
- 	ufshcd_hba_free(hba);
-@@ -1782,6 +1813,9 @@ int ufshcd_init(struct device *dev, struct ufs_hba **hba_handle,
- 	/* Get UFS version supported by the controller */
- 	hba->ufs_version = ufshcd_get_ufs_version(hba);
- 
-+	/* Get Interrupt bit mask per version */
-+	hba->intr_mask = ufshcd_get_intr_mask(hba);
-+
- 	/* Allocate memory for host memory space */
- 	err = ufshcd_memory_alloc(hba);
- 	if (err) {
-diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
-index 6429bed..d98e046 100644
---- a/drivers/scsi/ufs/ufshcd.h
-+++ b/drivers/scsi/ufs/ufshcd.h
-@@ -153,7 +153,7 @@ struct ufs_query {
-  * @ufshcd_tm_wait_queue: wait queue for task management
-  * @tm_condition: condition variable for task management
-  * @ufshcd_state: UFSHCD states
-- * @int_enable_mask: Interrupt Mask Bits
-+ * @intr_mask: Interrupt Mask Bits
-  * @uic_workq: Work queue for UIC completion handling
-  * @feh_workq: Work queue for fatal controller error handling
-  * @errors: HBA errors
-@@ -191,7 +191,7 @@ struct ufs_hba {
- 	unsigned long tm_condition;
- 
- 	u32 ufshcd_state;
--	u32 int_enable_mask;
-+	u32 intr_mask;
- 
- 	/* Work Queues */
- 	struct work_struct uic_workq;
-diff --git a/drivers/scsi/ufs/ufshci.h b/drivers/scsi/ufs/ufshci.h
-index 4a86247..f1e1b74 100644
---- a/drivers/scsi/ufs/ufshci.h
-+++ b/drivers/scsi/ufs/ufshci.h
-@@ -232,10 +232,11 @@ enum {
- /* Interrupt disable masks */
- enum {
- 	/* Interrupt disable mask for UFSHCI v1.0 */
--	INTERRUPT_DISABLE_MASK_10	= 0xFFFF,
-+	INTERRUPT_MASK_ALL_VER_10	= 0x30FFF,
-+	INTERRUPT_MASK_RW_VER_10	= 0x30000,
- 
- 	/* Interrupt disable mask for UFSHCI v1.1 */
--	INTERRUPT_DISABLE_MASK_11	= 0x0,
-+	INTERRUPT_MASK_ALL_VER_11	= 0x31FFF,
- };
- 
- /*
--- 
-1.7.6
-
--- 
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation
+--
+Thanks,
+//richard
