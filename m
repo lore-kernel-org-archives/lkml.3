@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab3EMIhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:37:35 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:41514 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3EMIhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:37:34 -0400
+	id S1754511Ab3EMIkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:40:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54667 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754467Ab3EMIkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 04:40:12 -0400
+Date: Mon, 13 May 2013 09:40:08 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: PINTU KUMAR <pintu_agarwal@yahoo.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [Query] Performance degradation with memory compaction (on QC
+ chip-set)
+Message-ID: <20130513084008.GO11497@suse.de>
+References: <1310394396.24243.YahooMailNeo@web162006.mail.bf1.yahoo.com>
+ <20110711145448.GI15285@suse.de>
+ <1310462107.89450.YahooMailNeo@web162007.mail.bf1.yahoo.com>
+ <20110712093510.GB7529@suse.de>
+ <1310484381.60694.YahooMailNeo@web162011.mail.bf1.yahoo.com>
+ <20110712154404.GD7529@suse.de>
+ <1368414026.58026.YahooMailNeo@web160103.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-In-Reply-To: <519013F3.5@infradead.org>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<519013F3.5@infradead.org>
-Date: Mon, 13 May 2013 10:37:32 +0200
-X-Google-Sender-Auth: F-vsKc-Q8-2MQhcU0ZNxXNFCsxw
-Message-ID: <CAMuHMdVJwdBnvVDaFwBkL=Qy8faZLWeFDSoPCq+WdFTd6C2Csw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1368414026.58026.YahooMailNeo@web160103.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Sun, May 12, 2013 at 08:00:26PM -0700, PINTU KUMAR wrote:
+> Dear Mel Gorman,
+> 
+> I have one question about memory compaction.
+> Kernel version: kernel-3.4 (ARM)
+> Chipset: Qual-Comm MSM8930 dual-core.
+> 
+> We wanted to enable CONFIG_COMPACTION for our product with kernel-3.4.
+> But QC commented that, enabling compaction on their chip-set is causing performance degradation for some streaming scenarios (from the beginning).
+> 
+> I wanted to know is this possible always?
+> We used compaction with exynos processor and did not observe any performance degradation.
+> 
 
-On Mon, May 13, 2013 at 12:13 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 05/12/13 12:30, Geert Uytterhoeven wrote:
->>
->> *** WARNINGS ***
->>
->> 163 regressions:
->>   + mm/slab_common.c: warning: format '%zu' expects argument of type 'size_t', but argument 3 has type 'unsigned int' [-Wformat]:  => 303:6
->
-> How does this happen?  'size' is clearly a size_t in this function so "%zu" is correct.
+I suspect one of their drivers are using high-order allocations and
+hitting compaction as a result. Compaction is not guaranteed to cause
+overhead but if it's in use then the scanning and copying overhead can
+cause problems.
 
-v3.10-rc1/am33_2.0/asb2364_defconfig v3.10-rc1/am33_2.0/asb2303_defconfig
+> Please let me know your comments.
+> It will be helpful to decide on enabling compaction or not.
+> 
 
-> Does some arch (or gcc) confuse these?
+Depends on workload and drivers.
 
-Yes, mn10300 and h8300 compilers tend to give false positives for them.
-
-Since I know you like fixing these warnings ;-), here's the full remaining list
-(ignoring mn10300 and h8300) for v3.10-rc1:
-
-drivers/mtd/maps/solutionengine.c:86:9: warning: format '%lx' expects
-argument of type 'long unsigned int', but argument 2 has type
-'resource_size_t' [-Wformat]: 2 warnings in 2 logs
-        v3.10-rc1/sh4/sh-allyesconfig v3.10-rc1/sh4/sh-allmodconfig
-drivers/mtd/maps/solutionengine.c:86:9: warning: format '%lx' expects
-argument of type 'long unsigned int', but argument 3 has type
-'resource_size_t' [-Wformat]: 2 warnings in 2 logs
-        v3.10-rc1/sh4/sh-allyesconfig v3.10-rc1/sh4/sh-allmodconfig
-arch/xtensa/kernel/pci.c:82:11: warning: format '%ld' expects argument
-of type 'long int', but argument 4 has type 'resource_size_t'
-[-Wformat]: 1 warnings in 1 logs
-        v3.10-rc1/xtensa/xtensa-allmodconfig
-drivers/sh/superhyway/superhyway-sysfs.c:33:1: warning: format '%lx'
-expects argument of type 'long unsigned int', but argument 3 has type
-'resource_size_t' [-Wformat]: 1 warnings in 1 logs
-        v3.10-rc1/sh4/microdev_defconfig
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Mel Gorman
+SUSE Labs
