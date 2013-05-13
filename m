@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab3EMGZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:25:29 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41442 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab3EMGZ2 convert rfc822-to-8bit (ORCPT
+	id S1753653Ab3EMG0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:26:04 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:57267 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3EMG0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:25:28 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] spi/omap2: Let device core handle pinctrl
-Thread-Topic: [PATCH] spi/omap2: Let device core handle pinctrl
-Thread-Index: AQHOSpEtMssOEU4sAUGUr3i0BAEdV5j5FsQg///PQ4CAAKQJQIAEI/qAgAUBrnA=
-Date: Mon, 13 May 2013 06:25:12 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EBEA4CC@DBDE04.ent.ti.com>
-References: <1367868998-12667-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1BAFE6F6C881BF42822005164F1491C33EBE473A@DBDE04.ent.ti.com>
- <20130507085535.GN7478@sirena.org.uk>
- <1BAFE6F6C881BF42822005164F1491C33EBE4E07@DBDE04.ent.ti.com>
- <20130510095629.GM3200@sirena.org.uk>
-In-Reply-To: <20130510095629.GM3200@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 May 2013 02:26:01 -0400
 MIME-Version: 1.0
+Date: Mon, 13 May 2013 14:26:00 +0800
+Message-ID: <CAPgLHd-+10_c9A64OW8QkjgGn+FjrpMQTH+C+Y-HN_fwgQSrKA@mail.gmail.com>
+Subject: [PATCH] rtc: rtc-vr41xx: fix error return code in rtc_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: a.zummo@towertech.it, akpm@linux-foundation.org
+Cc: yongjun_wei@trendmicro.com.cn, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 15:26:29, Mark Brown wrote:
-> On Tue, May 07, 2013 at 10:47:31AM +0000, Hebbar, Gururaja wrote:
-> > On Tue, May 07, 2013 at 14:25:35, Mark Brown wrote:
-> 
-> > > There's also been some discussion about factoring out the suspend/resume
-> > > code since it's going to get equally repetitive.
-> 
-> > Really. Any link/referenceso that I can follow.
-> > But I think each module will have its own work to do. May be I can confirm once 
-> > I look at the factoring-out discussion.
-> 
-> It was part of the threads where the idea of adding the helper for the
-> boilerplate stuff to the core was discussed initially IIRC.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Ok. Thanks. I will check for it.
+Fix to return -EBUSY in the platform irq get error handling
+case instead of 0, as done elsewhere in this function.
 
-> 
-> > > > I will be submitting a patch to enhance the existing pinctrl support for 
-> > > > spi omap2 shortly which does above work.
-> 
-> > > How soon is shortly?
-> 
-> > Since I am adding this Pinctrl PM mode support to many other drivers (i2c, 
-> > cpsw, da8xx-fb, hsmmc, ti-pwm, usb ...), I would say Shortly = 1 week - 10 days.
-> 
-> Well, I guess I'll keep the patch for now and drop it when you send out
-> the PM code.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/rtc/rtc-vr41xx.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Fair enough.
+diff --git a/drivers/rtc/rtc-vr41xx.c b/drivers/rtc/rtc-vr41xx.c
+index 3b5b4fa..54e104e 100644
+--- a/drivers/rtc/rtc-vr41xx.c
++++ b/drivers/rtc/rtc-vr41xx.c
+@@ -339,8 +339,10 @@ static int rtc_probe(struct platform_device *pdev)
+ 		goto err_device_unregister;
+ 
+ 	pie_irq = platform_get_irq(pdev, 1);
+-	if (pie_irq <= 0)
++	if (pie_irq <= 0) {
++		retval = -EBUSY;
+ 		goto err_free_irq;
++	}
+ 
+ 	retval = request_irq(pie_irq, rtclong1_interrupt, 0,
+ 			     "rtclong1", pdev);
 
-> 
-
-
-Regards, 
-Gururaja
