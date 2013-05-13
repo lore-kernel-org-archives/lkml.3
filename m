@@ -1,124 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3EMGDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:03:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60329 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3EMGDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:03:45 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1368422091-959-1-git-send-email-ice799@gmail.com>
-References: <1368422091-959-1-git-send-email-ice799@gmail.com>
+	id S1754015Ab3EMGET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:04:19 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57740 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab3EMGEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 02:04:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86: Reduce duplicated code in the x86_64 context switch path.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 12 May 2013 23:03:31 -0700
-To: Joe Damato <ice799@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-CC: mingo@redhat.com, akpm@linux-foundation.org
-Message-ID: <e3016dd4-99f5-4d32-a802-d4d03bcf470f@email.android.com>
+In-Reply-To: <CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
+References: <cover.1365079581.git.viresh.kumar@linaro.org>
+	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
+	<CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
+	<CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
+	<CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
+Date: Mon, 13 May 2013 11:34:16 +0530
+Message-ID: <CAKohponBfXsy21RTik+jWMukL_VnDNXOL7xmj4sEBF3HEBXqpQ@mail.gmail.com>
+Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        deepthi@linux.vnet.ibm.com
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a net addition in code, and send to only make it harder to understand what is happening.  As such I don't think this is a good idea.
-
-Joe Damato <ice799@gmail.com> wrote:
-
->Signed-off-by: Joe Damato <ice799@gmail.com>
->---
-> arch/x86/include/asm/switch_to.h |   30 ++++++++++++++++++++++++++++++
-> arch/x86/kernel/process_64.c     |   29 ++---------------------------
-> 2 files changed, 32 insertions(+), 27 deletions(-)
+On 22 April 2013 12:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
+>>>>
+>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> Cc: Paul Mackerras <paulus@samba.org>
+>>>> Cc: Olof Johansson <olof@lixom.net>
+>>>> Cc: linuxppc-dev@lists.ozlabs.org
+>>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>>>> ---
+>>>> Compile Tested only.
+>>>>
+>>>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
+>>>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
+>>>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
+>>>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
+>>>>  drivers/cpufreq/Makefile                           |  3 +++
+>>>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
+>>>>  .../cpufreq/pmac32-cpufreq.c                       |  0
+>>>>  .../cpufreq/pmac64-cpufreq.c                       |  0
+>>>>  8 files changed, 29 insertions(+), 34 deletions(-)
+>>>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
+>>>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
+>>>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
+>>>
+>>> Hi Deepthi,
+>>>
+>>> Can you help testing this please?
+>>
+>> Ping!!
 >
->diff --git a/arch/x86/include/asm/switch_to.h
->b/arch/x86/include/asm/switch_to.h
->index 4ec45b3..a322cc6 100644
->--- a/arch/x86/include/asm/switch_to.h
->+++ b/arch/x86/include/asm/switch_to.h
->@@ -124,6 +124,36 @@ do {									\
-> 	       __switch_canary_iparam					  \
-> 	     : "memory", "cc" __EXTRA_CLOBBER)
-> 
->+#define loadsegment_fs(fs, index)					  \
->+	loadsegment(fs, index)
->+
->+#define loadsegment_gs(gs, index)					  \
->+	load_gs_index(index)
->+
->+#define switch_segment(prev, next, index, seg, msr)			       \
->+	do {								       \
->+		/*							       \
->+		 * Segment register != 0 always requires a reload.  Also       \
->+		 * reload when it has changed.  When prev process used 64bit   \
->+		 * base always reload to avoid an information leak.	       \
->+		 */							       \
->+		if (unlikely(index | next->index | prev->seg)) {	       \
->+			loadsegment_##seg(seg, next->index);		       \
->+			/*						       \
->+			 * Check if the user used a selector != 0; if yes      \
->+			 *  clear 64bit base, since overloaded base is always  \
->+			 *  mapped to the Null selector			       \
->+			 */						       \
->+			if (index)					       \
->+			  prev->seg = 0;				       \
->+		}							       \
->+									       \
->+		/* when next process has a 64bit base use it */		       \
->+		if (next->seg)						       \
->+		  wrmsrl(msr, next->seg);				       \
->+		prev->index = index;					       \
->+	} while (0)
->+
-> #endif /* CONFIG_X86_32 */
-> 
-> #endif /* _ASM_X86_SWITCH_TO_H */
->diff --git a/arch/x86/kernel/process_64.c
->b/arch/x86/kernel/process_64.c
->index 355ae06..f41d026 100644
->--- a/arch/x86/kernel/process_64.c
->+++ b/arch/x86/kernel/process_64.c
->@@ -318,34 +318,9 @@ __switch_to(struct task_struct *prev_p, struct
->task_struct *next_p)
-> 
-> 	/*
-> 	 * Switch FS and GS.
->-	 *
->-	 * Segment register != 0 always requires a reload.  Also
->-	 * reload when it has changed.  When prev process used 64bit
->-	 * base always reload to avoid an information leak.
-> 	 */
->-	if (unlikely(fsindex | next->fsindex | prev->fs)) {
->-		loadsegment(fs, next->fsindex);
->-		/*
->-		 * Check if the user used a selector != 0; if yes
->-		 *  clear 64bit base, since overloaded base is always
->-		 *  mapped to the Null selector
->-		 */
->-		if (fsindex)
->-			prev->fs = 0;
->-	}
->-	/* when next process has a 64bit base use it */
->-	if (next->fs)
->-		wrmsrl(MSR_FS_BASE, next->fs);
->-	prev->fsindex = fsindex;
->-
->-	if (unlikely(gsindex | next->gsindex | prev->gs)) {
->-		load_gs_index(next->gsindex);
->-		if (gsindex)
->-			prev->gs = 0;
->-	}
->-	if (next->gs)
->-		wrmsrl(MSR_KERNEL_GS_BASE, next->gs);
->-	prev->gsindex = gsindex;
->+	switch_segment(prev, next, fsindex, fs, MSR_FS_BASE);
->+	switch_segment(prev, next, gsindex, gs, MSR_KERNEL_GS_BASE);
-> 
-> 	switch_fpu_finish(next_p, fpu);
-> 
+> Ping!!
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Hi Benjamin,
+
+Hope you are back from your vacations. Can you give it a try now?
