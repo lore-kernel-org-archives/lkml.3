@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3EMRRZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:17:25 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40084 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3EMRRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:17:22 -0400
-Message-ID: <5191201F.2070606@wwwdotorg.org>
-Date: Mon, 13 May 2013 11:17:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1752220Ab3EMRUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:20:18 -0400
+Received: from mout.gmx.net ([212.227.15.19]:61207 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620Ab3EMRUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 13:20:16 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/Ld0weOl7LazMSlmAOQhIB3DP+yExRSkDJDR/noC
+	KvW7cQkB8Sf8/I
+Message-ID: <519120CC.10403@gmx.de>
+Date: Mon, 13 May 2013 19:20:12 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 01/10] ARM: tegra: finalize USB EHCI and PHY bindings
-References: <1368194051-4925-1-git-send-email-vbyravarasu@nvidia.com> <1368194051-4925-2-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1368194051-4925-2-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: 3.9.0 + CONFIG_X86_INTEL_PSTATE=y  -> ThinkPad T420 with i5 lost
+ ACPI functionality
+References: <5183EC09.9080208@gmx.de> <3715884.H8PIhhjRXL@vostro.rjw.lan> <51911826.907@gmail.com>
+In-Reply-To: <51911826.907@gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 07:54 AM, Venu Byravarasu wrote:
-> The existing Tegra USB bindings have a few issues:
-> 
-> 1) Many properties are documented as being part of the EHCI controller
-> node, yet they apply more to the PHY device. They should be moved.
-> 
-> 2) Some registers in PHY1 are shared with PHY3, and hence PHY3 needs a
-> reg entry to point at PHY1's register space. We can't assume the PHY1
-> driver is present, so the PHY3 driver will directly access those
-> registers.
-> 
-> 3) The list of clocks required by the PHY was missing some required
-> entries.
-> 
-> 4) UTMI PHY Timing parameters are added
-> 
-> 5) VBUS control is now specified using a regulator rather than a plain GPIO
-> 
-> 6) Added nvidia,is-wired property to indicate whether the device is
-> hard wired on the board, or pluggable.
-> 
-> This patch fixes the binding definition to resolve these issues.
+On 05/13/2013 06:43 PM, Dirk Brandewie wrote:
+> I spent some more time looking for a solution to this you can get same
+> behavior
+> by setting a config option in BOINC  "Use at most X % CPU time"
 
-> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
+yes - that's true. But BOINC is just an example.
 
-> +    the USB controller.
-> +  - nvidia,is-wired : boolean. Indicates whether we can do certain kind of power
-> +    optimizations for the devices that are always connected. e.g. modem.
-> +  - dr_mode : dual role mode. Indicates the working mode for the PHY. Can be
-> +    "host", "peripheral", or "otg". Defaults to "host" if not defined.
-> +      host means this is a host controller
-> +      peripheral means it is device controller
-> +      otg means it can operate as either ("on the go")
+If "nice -19 <loooong running background job" is nowadays so uncommon,
+then I'm just curious what's the modern (easy) way of doing that ?
 
-Nit: Please leave a blank line here, to separate the sections/lists.
-
-> +Required properties for dr_mode == otg:
-> +  - vbus-supply: regulator for VBUS
-> \ No newline at end of file
-
-Nit: Since you're reposting this series for other reasons, I'd like to
-fix that "No newline at end of file"; please add a newline here.
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
