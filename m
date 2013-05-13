@@ -1,97 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab3EMBQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 21:16:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59679 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab3EMBQ5 (ORCPT
+	id S1752662Ab3EMBSR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 21:18:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40375 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3EMBSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 21:16:57 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-8f-51903f076a74
-Date: Mon, 13 May 2013 01:16:55 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: [PATCH] mips: fix build error for crash_dump.c in 3.10-rc1
-To: "ralf@linux-mips.org" <ralf@linux-mips.org>
-Cc: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130513011509329@eunb.song
-Msgkey: 20130513011509329@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130513011509329@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <175967.10981368407814645.JavaMail.weblogic@epml07>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Zri67/YRAg9+XjSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGtAkyBQs4K5r/cDUw/uHoYuTkEBJQkWj5/50RxJYQMJHYs+ga
-	G4QtJnHh3nogmwuoZhmjxORz5+CK/i+ZxgLRPJ9R4urlYBCbRUBVouvsSbA4m4C2xNsvD1hB
-	bGEBZ4neB+eYQGwRAX2J/+fesoPYzAI1Et1/FzNCzJGXmHz6MlicV0BQ4uTMJywQu5Qkru9/
-	wAIRV5ZYur6dGSIuITFr+gVWCJtXYkb7U6h6OYlpX9dA1UhLnJ+1gRHmmcXfH0PF+SWO3d4B
-	dA8HWO+T+8EwY3Zv/gL1u4DE1DMHoVrVJdpvTISy+STWLHzLAjNm16nlzDC997fMZYJ4S1Fi
-	SvdDqBe1JL782MeG6i0OINte4s2qmAmMyrOQZGYh6Z6FpBtZzQJGllWMoqkFyQXFSelFhnrF
-	ibnFpXnpesn5uZsYIQmhdwfj7QPWhxiTgTEykVlKNDkfmFDySuINjc2MLExNTI2NzC3NSBNW
-	EudVa7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBYu+OElZJ1vv29X8vsTS55lvTMr7Sd
-	lnRplehTuynn9qu5Piqbo5X8YuORa/Wuk9L5gzvCrOMEb/rqqL9yavmSOFeAPXv1HgUtr6O2
-	m/V88l/xrWE6vFRo4vS/bdICYeUfrfpitGbG6ihsjyy7dJ7rzLGr5YvPHUhUriy87bW70SjB
-	2voJ03slluKMREMt5qLiRACIm6MbHgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/t6brs9hMCDf7OMLC4vGsOmwOjx+dN
-	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
-	GdMmyBQs4Kxo/sPVwPiHo4uRk0NIQEWi5f93RhBbQsBE4v+SaSwQtpjEhXvr2SBq5jNKXL0c
-	DGKzCKhKdJ09CVbDJqAt8fbLA1YQW1jAWaL3wTkmEFtEQF/i/7m37CA2s0CNRPffxYwQc+Ql
-	Jp++DBbnFRCUODnzCdQuJYnr+x+wQMSVJZaub2eGiEtIzJp+gRXC5pWY0f4Uql5OYtrXNVA1
-	0hLnZ21ghLl58ffHUHF+iWO3dwDdwwHW++R+MMyY3Zu/sEHYAhJTzxyEalWXaL8xEcrmk1iz
-	8C0LzJhdp5Yzw/Te3zKXCeItRYkp3Q+hXtSS+PJjHxuqtziAbHuJN6tiJjDKzUKSmYWkexaS
-	bmQ1CxhZVjGKphYkFxQnpVeY6BUn5haX5qXrJefnbmIEp6ZnS3YwNlywPsQowMGoxMO7QHlC
-	oBBrYllxZe4hRgkOZiURXjcGoBBvSmJlVWpRfnxRaU5q8SHGZGD8TWSWEk3OB6bNvJJ4Q2MD
-	Y0NDS3MDU0MjC9KElcR5n7VaBwoJpCeWpGanphakFsFsYeLglGpgDJvflPC1P8PintB5F4W/
-	bjs2P81s3+/Ok5V9ti56YlvxmZcLL/05o1e3ZiqXreHHmeLZiSzpjS5r7p6KX6xywSBVLS7+
-	/o9i58Vrsy34mRN9NTZX/AppX3fqo6G/f1ucaOjcuDBmid+lRwJrinM5/p84JPuWqTDmU6VN
-	z45jhw9rdhcFzzylxFKckWioxVxUnAgAjnMP0JEDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Sun, 12 May 2013 21:18:16 -0400
+Date: Mon, 13 May 2013 11:18:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next stats (Was: Linux 3-10-rc1)
+Message-Id: <20130513111805.391a4d4c605d5cbfc3e8ff4d@canb.auug.org.au>
+In-Reply-To: <CA+55aFwfK661zATyUpjkXJo1av51nmMweYdPJE7Le7S2KS3xwg@mail.gmail.com>
+References: <CA+55aFwfK661zATyUpjkXJo1av51nmMweYdPJE7Le7S2KS3xwg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_May_2013_11_18_05_+1000_2VXNvjecas_Syoqq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4D1HSqR030649
 
+--Signature=_Mon__13_May_2013_11_18_05_+1000_2VXNvjecas_Syoqq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch fixes crash_dump.c build error. Build error logs are as follow.
+On Sat, 11 May 2013 18:00:09 -0700 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> So this is the biggest -rc1 in the last several years (perhaps ever)
 
-arch/mips/kernel/crash_dump.c: In function 'kdump_buf_page_init':
-arch/mips/kernel/crash_dump.c:67: error: implicit declaration of function 'kmalloc'
-arch/mips/kernel/crash_dump.c:67: error: assignment makes pointer from integer without a cast
+ever (see http://neuling.org/linux-next-size.html after today's
+linux-next release).
 
-Signed-off-by: EunBong Song <eunb.song@samsung.com>
----
- arch/mips/kernel/crash_dump.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> Which was unexpected, because while linux-next was fairly big, it
+> wasn't exceptionally so. I'm sure Stephen Rothwell will talk about the
+> statistics of commits that weren't in -next, we'll see if that was the
+> reason..
 
-diff --git a/arch/mips/kernel/crash_dump.c b/arch/mips/kernel/crash_dump.c
-index 35bed0d..3be9e7b 100644
---- a/arch/mips/kernel/crash_dump.c
-+++ b/arch/mips/kernel/crash_dump.c
-@@ -2,6 +2,7 @@
- #include <linux/bootmem.h>
- #include <linux/crash_dump.h>
- #include <asm/uaccess.h>
-+#include <linux/slab.h>
- 
- static int __init parse_savemaxmem(char *p)
- {
--- 
-1.7.0.4
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Since you asked ... :-)
+
+This was the second biggest linux-next ever (in terms of commits) the one
+before v3.8 was somewhat larger).
+
+(No merge commits counted, next-20130429 was the last linux-next before v3.=
+9)
+
+Commits in v3.10-rc1 (relative to v3.9): 11963
+Commits in next-20130429:		 11300
+Commits with the same SHA1:		  9708
+Commits with the same patch_id:		   885	(1)
+Commits with the same subject line:	    91	(1)
+
+(1) not counting those in the lines above.
+
+So commits in -rc1 that were "in" next-20130429:	10684	89.3%
+						(down from 90.6% last time)
+Commits in -rc1 that were not in next-20120722:		 1279	10.7%
+
+Pretty good, but it would be still nice to figure out where the last lot
+came from.  I have the "git log --oneline --no-walk" list if someone wants =
+them.
+
+Some breakdown of that list:
+
+Top ten first word of commit summary:
+
+     27 NVMe
+     29 xfs
+     41 drm
+     47 powerpc
+     59 rbd
+     64 arm
+     78 media
+     84 mips
+     92 SCSI
+    101 btrfs
+
+Top ten authors:
+
+     19 Wang Shilong <wangsl-fnst@cn.fujitsu.com>
+     19 Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+     21 Dave Chinner <dchinner@redhat.com>
+     22 James Smart <james.smart@emulex.com>
+     25 John Crispin <blogic@openwrt.org>
+     26 Steven J. Hill <Steven.Hill@imgtec.com>
+     28 Josef Bacik <jbacik@fusionio.com>
+     31 Hans Verkuil <hans.verkuil@cisco.com>
+     35 Al Viro <viro@zeniv.linux.org.uk>
+     64 Alex Elder <elder@inktank.com>
+
+Top ten commiters:
+
+     29 Ben Myers <bpm@sgi.com>
+     43 Al Viro <viro@zeniv.linux.org.uk>
+     44 Benjamin Herrenschmidt <benh@kernel.crashing.org>
+     54 Sage Weil <sage@inktank.com>
+     59 Linus Torvalds <torvalds@linux-foundation.org>
+     80 Mauro Carvalho Chehab <mchehab@redhat.com>
+     87 Ralf Baechle <ralf@linux-mips.org>
+     92 James Bottomley <JBottomley@Parallels.com>
+     99 Josef Bacik <jbacik@fusionio.com>
+    111 David S. Miller <davem@davemloft.net>
+
+Quite a few of these could be bug fixes (especially DaveM's).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__13_May_2013_11_18_05_+1000_2VXNvjecas_Syoqq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRkD9NAAoJEECxmPOUX5FETQ0P/AmtSnMcBAhagB+vwfe/oAi8
+RPB5nrDH2eabolNn4byVPoTshevkzSNzLAsaXf21R0pZ+aZwTaocdo8jDnjehqEj
+7TkD0NMUX1NadcM/BWBuAYUHpVfXM4qIzDvyb80GUGRYZS3f/gvrY/StTI0vpFlQ
+YAWwt3k5L/efiy5IS+JChiBlZSuV5cGqZt/RhQgaGQXh7P21JVX+MnEsweTr4b9X
+L7U+NjLoVlVuGljSEf0/z6LD17fgLpmksH8DJHG/Q0GruA7iQGyMGPBGCQyz3Qop
+M/N5gflRM3XGT4wtlROJ7UZLXNvaLB9U2FkomcBU2wLTWajGaSnbLeHcQY3/zdr+
+55YgAQRbFNDutqqbhXhyzewHx5FNYr5oc3qBwSV6HfFSbm4tfjOGX9+XMDeOCbxh
+0jgvnd9gzjA1gaB2Wo+v6Ykcx+AD0s4h4T8IPsl0l8yDUyKsKEsll4XzoK1bH8ZP
+SjUuQZNfNHMz4gwCkF3Lj6V0ISxTTlDA8nCfttJOfAmDxRfgcfE0i+Ey59JFUAbL
+Ab2IGCgSre0XKDuzKQIM+obRKznI0rpUlLdv2tEzExW57BFQJXFpSuZs0fe+jqCg
+ARMfDrXFuXyW5R8zQ6Wqzvn9Di3Dssu07A3EOEIUFh9ahB4qyvaipXcT0VM7aDd/
+vtt+HaqtrhhH/b6DV9On
+=lnpq
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_May_2013_11_18_05_+1000_2VXNvjecas_Syoqq--
