@@ -1,230 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab3EMT1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:27:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47450 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab3EMT0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754861Ab3EMT0U (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 13 May 2013 15:26:20 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50757 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab3EMT0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 15:26:16 -0400
 X-IronPort-AV: E=Sophos;i="4.87,663,1363158000"; 
-   d="scan'208";a="46754222"
+   d="scan'208";a="46876040"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv6 11/11] ARM: smp: Remove local timer API
-Date: Mon, 13 May 2013 12:26:15 -0700
-Message-Id: <1368473175-4841-12-git-send-email-sboyd@codeaurora.org>
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: [PATCHv6 00/11] Remove ARM local timer API
+Date: Mon, 13 May 2013 12:26:04 -0700
+Message-Id: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc1.25.g423ecb0.dirty
-In-Reply-To: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
-References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no more users of this API, remove it.
+In light of Mark Rutland's recent work on divorcing the ARM architected
+timers from the ARM local timer API and introducing a generic arch hook for
+broadcast it seems that we should remove the local timer API entirely.
+Doing so will reduce the architecture dependencies of our timer drivers,
+reduce code in ARM core, and simplify timer drivers because they no longer
+go through an architecture layer that is essentially a hotplug notifier.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig                  | 10 ------
- arch/arm/include/asm/localtimer.h | 34 -------------------
- arch/arm/kernel/smp.c             | 69 ---------------------------------------
- 3 files changed, 113 deletions(-)
+Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+be accepted now so that we can clean up the timer drivers that are
+used in both UP and SMP situations. Right now these drivers have to ignore
+the timer setup callback on the boot CPU to avoid registering clockevents
+twice. This is not very symmetric and causes convuluted code that does
+the same thing in two places.
+
+Patches based on next-20130418
+
+I'm still looking for Acks/Tested-by on EXYNOS and PRIMA2.
+
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
+
+Note: A hotplug notifier is used by both x86 for the apb_timer (see 
+apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+metag_generic.c) so this is not new.
+
+Changes since v5:
+ * Rebased onto v3.10-rc1
+ * Rebase caused minor updates to mct patch
+
+Changes since v4:
+ * Rebased onto next-20130418
+ * Rebase caused minor updates to mct patch and twd Kconfig
+
+Changes since v3:
+ * New patch to fix SMP with dummy timers registered after a global timer
+ * Push this_cpu_ptr lower to avoid preemptible false positive warnings
+ * Collected acks/tested-bys
+
+Changes since v2:
+ * Bug fixes in smp_twd from Tony Lindgren's testing
+ * Move smp_twd to use late_time_init hook
+ * Collected Acks
+
+Changes since v1:
+ * Picked up Mark's generic dummy timer driver
+ * Split out omap changes into new patch
+
+Mark Rutland (1):
+  clocksource: add generic dummy timer driver
+
+Stephen Boyd (10):
+  clockevents: Prefer CPU local devices over global devices
+  ARM: smp: Remove duplicate dummy timer implementation
+  ARM: smp_twd: Divorce smp_twd from local timer API
+  ARM: OMAP2+: Divorce from local timer API
+  ARM: EXYNOS4: Divorce mct from local timer API
+  ARM: PRIMA2: Divorce timer-marco from local timer API
+  ARM: msm: Divorce msm_timer from local timer API
+  clocksource: time-armada-370-xp: Fix sparse warning
+  clocksource: time-armada-370-xp: Divorce from local timer API
+  ARM: smp: Remove local timer API
+
+ arch/arm/Kconfig                         |  12 +--
+ arch/arm/include/asm/localtimer.h        |  34 ---------
+ arch/arm/kernel/smp.c                    |  87 ---------------------
+ arch/arm/kernel/smp_twd.c                |  64 ++++++++++------
+ arch/arm/mach-highbank/Kconfig           |   2 +-
+ arch/arm/mach-imx/Kconfig                |   2 +-
+ arch/arm/mach-msm/timer.c                | 126 +++++++++++++++++--------------
+ arch/arm/mach-omap2/Kconfig              |   3 +-
+ arch/arm/mach-omap2/timer.c              |   7 --
+ arch/arm/mach-realview/Kconfig           |   8 +-
+ arch/arm/mach-spear/Kconfig              |   2 +-
+ arch/arm/mach-tegra/Kconfig              |   2 +-
+ arch/arm/mach-ux500/Kconfig              |   2 +-
+ arch/arm/mach-vexpress/Kconfig           |   2 +-
+ arch/arm/mach-zynq/Kconfig               |   2 +-
+ drivers/clocksource/Makefile             |   1 +
+ drivers/clocksource/dummy_timer.c        |  69 +++++++++++++++++
+ drivers/clocksource/exynos_mct.c         |  60 ++++++++++-----
+ drivers/clocksource/time-armada-370-xp.c |  92 +++++++++++-----------
+ drivers/clocksource/timer-marco.c        | 100 +++++++++++++-----------
+ include/linux/time-armada-370-xp.h       |   4 +-
+ kernel/time/tick-common.c                |   5 +-
+ 22 files changed, 340 insertions(+), 346 deletions(-)
  delete mode 100644 arch/arm/include/asm/localtimer.h
+ create mode 100644 drivers/clocksource/dummy_timer.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 177cb39..626a272 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1542,16 +1542,6 @@ config ARM_PSCI
- 	  0022A ("Power State Coordination Interface System Software on
- 	  ARM processors").
- 
--config LOCAL_TIMERS
--	bool "Use local timer interrupts"
--	depends on SMP
--	default y
--	help
--	  Enable support for local timers on SMP platforms, rather then the
--	  legacy IPI broadcast method.  Local timers allows the system
--	  accounting to be spread across the timer interval, preventing a
--	  "thundering herd" at every timer tick.
--
- # The GPIO number here must be sorted by descending number. In case of
- # a multiplatform kernel, we just want the highest value required by the
- # selected platforms.
-diff --git a/arch/arm/include/asm/localtimer.h b/arch/arm/include/asm/localtimer.h
-deleted file mode 100644
-index f77ffc1..0000000
---- a/arch/arm/include/asm/localtimer.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- *  arch/arm/include/asm/localtimer.h
-- *
-- *  Copyright (C) 2004-2005 ARM Ltd.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_ARM_LOCALTIMER_H
--#define __ASM_ARM_LOCALTIMER_H
--
--#include <linux/errno.h>
--
--struct clock_event_device;
--
--struct local_timer_ops {
--	int  (*setup)(struct clock_event_device *);
--	void (*stop)(struct clock_event_device *);
--};
--
--#ifdef CONFIG_LOCAL_TIMERS
--/*
-- * Register a local timer driver
-- */
--int local_timer_register(struct local_timer_ops *);
--#else
--static inline int local_timer_register(struct local_timer_ops *ops)
--{
--	return -ENXIO;
--}
--#endif
--
--#endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4dc883a..54aa994 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -41,7 +41,6 @@
- #include <asm/sections.h>
- #include <asm/tlbflush.h>
- #include <asm/ptrace.h>
--#include <asm/localtimer.h>
- #include <asm/smp_plat.h>
- #include <asm/virt.h>
- #include <asm/mach/arch.h>
-@@ -133,8 +132,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--static void percpu_timer_stop(void);
--
- static int platform_cpu_kill(unsigned int cpu)
- {
- 	if (smp_ops.cpu_kill)
-@@ -178,11 +175,6 @@ int __cpuinit __cpu_disable(void)
- 	migrate_irqs();
- 
- 	/*
--	 * Stop the local timer for this CPU.
--	 */
--	percpu_timer_stop();
--
--	/*
- 	 * Flush user cache and TLB mappings, and then remove this CPU
- 	 * from the vm mask set of all processes.
- 	 *
-@@ -303,8 +295,6 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
- 	store_cpu_topology(cpuid);
- }
- 
--static void percpu_timer_setup(void);
--
- /*
-  * This is the secondary CPU boot entry.  We're using this CPUs
-  * idle thread stack, but a set of temporary page tables.
-@@ -359,11 +349,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	set_cpu_online(cpu, true);
- 	complete(&cpu_running);
- 
--	/*
--	 * Setup the percpu timer for this CPU.
--	 */
--	percpu_timer_setup();
--
- 	local_irq_enable();
- 	local_fiq_enable();
- 
-@@ -410,12 +395,6 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 		max_cpus = ncores;
- 	if (ncores > 1 && max_cpus) {
- 		/*
--		 * Enable the local timer or broadcast device for the
--		 * boot CPU, but only if we have more than one CPU.
--		 */
--		percpu_timer_setup();
--
--		/*
- 		 * Initialise the present map, which describes the set of CPUs
- 		 * actually populated at the present time. A platform should
- 		 * re-initialize the map in the platforms smp_prepare_cpus()
-@@ -491,11 +470,6 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- 	return sum;
- }
- 
--/*
-- * Timer (local or broadcast) support
-- */
--static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
--
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- void tick_broadcast(const struct cpumask *mask)
- {
-@@ -503,49 +477,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
- 
--static struct local_timer_ops *lt_ops;
--
--#ifdef CONFIG_LOCAL_TIMERS
--int local_timer_register(struct local_timer_ops *ops)
--{
--	if (!is_smp() || !setup_max_cpus)
--		return -ENXIO;
--
--	if (lt_ops)
--		return -EBUSY;
--
--	lt_ops = ops;
--	return 0;
--}
--#endif
--
--static void __cpuinit percpu_timer_setup(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	evt->cpumask = cpumask_of(cpu);
--
--	if (lt_ops)
--		lt_ops->setup(evt);
--}
--
--#ifdef CONFIG_HOTPLUG_CPU
--/*
-- * The generic clock events code purposely does not stop the local timer
-- * on CPU_DEAD/CPU_DEAD_FROZEN hotplug events, so we have to do it
-- * manually here.
-- */
--static void percpu_timer_stop(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	if (lt_ops)
--		lt_ops->stop(evt);
--}
--#endif
--
- static DEFINE_RAW_SPINLOCK(stop_lock);
- 
- /*
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
