@@ -1,212 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab3EMOlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:41:21 -0400
-Received: from canardo.mork.no ([148.122.252.1]:57000 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab3EMOlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:41:16 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [v3.10-rc1] WARNING: at kernel/rcutree.c:502
-Organization: m
-References: <87ip2opntp.fsf@nemi.mork.no>
-	<20130512113905.GH3648@linux.vnet.ibm.com>
-	<87li7kp50r.fsf@nemi.mork.no>
-	<20130512172135.GJ3648@linux.vnet.ibm.com>
-	<87a9o0ukll.fsf@nemi.mork.no> <87sj1rydol.fsf@nemi.mork.no>
-Date: Mon, 13 May 2013 16:39:33 +0200
-In-Reply-To: <87sj1rydol.fsf@nemi.mork.no> (=?utf-8?Q?=22Bj=C3=B8rn?=
- Mork"'s message of "Mon, 13
-	May 2013 01:35:22 +0200")
-Message-ID: <87wqr3j656.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	id S1754476Ab3EMOlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:41:07 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40763 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab3EMOlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:41:04 -0400
+Date: Mon, 13 May 2013 18:40:39 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20130513144039.GD16673@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0/kgSOzhNoDC5T3a"
+Content-Disposition: inline
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] SPI updates for v3.10
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
 
-Bj=C3=B8rn Mork <bjorn@mork.no> writes:
+--0/kgSOzhNoDC5T3a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> I was unable to recreate the problem in a virtual machine, which is
-> slightly suspicious.  And bisecting it ended up pointing to a merge
-> commit:=20
->
->  commit ab86e974f04b1cd827a9c7c35273834ebcd9ab38
->  Merge: 8700c95 6f7a05d
->  Author: Linus Torvalds <torvalds@linux-foundation.org>
->  Date:   Tue Apr 30 08:15:40 2013 -0700
->
->      Merge branch 'timers-core-for-linus' of git://git.kernel.org/pub/scm=
-/linux/kernel/git/tip/tip
->  ..
->
->
-> which I don't think makes much sense at all.  The bisect log leading to
-> this was:
->
-> bjorn@canardo:/usr/local/src/build-tmp/linux$ git bisect log
-> # bad: [f722406faae2d073cc1d01063d1123c35425939e] Linux 3.10-rc1
-> # good: [c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1] Linux 3.9
-> git bisect start 'v3.10-rc1' 'v3.9'
-> # bad: [73287a43cc79ca06629a88d1a199cd283f42456a] Merge git://git.kernel.=
-org/pub/scm/linux/kernel/git/davem/net-next
-> git bisect bad 73287a43cc79ca06629a88d1a199cd283f42456a
-> # bad: [5d434fcb255dec99189f1c58a06e4f56e12bf77d] Merge branch 'for-linus=
-' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial
-> git bisect bad 5d434fcb255dec99189f1c58a06e4f56e12bf77d
-> # good: [507ffe4f3840ac24890a8123c702cf1b7fe4d33c] Merge tag 'tty-3.10-rc=
-1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
-> git bisect good 507ffe4f3840ac24890a8123c702cf1b7fe4d33c
-> # good: [4a7b4d2360175f67ab2c58effeeb8362a3057c25] x86: pageattr-test: re=
-move srandom32 call
-> git bisect good 4a7b4d2360175f67ab2c58effeeb8362a3057c25
-> # good: [46d9be3e5eb01f71fc02653755d970247174b400] Merge branch 'for-3.10=
-' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
-> git bisect good 46d9be3e5eb01f71fc02653755d970247174b400
-> # good: [e0972916e8fe943f342b0dd1c9d43dbf5bc261c2] Merge branch 'perf-cor=
-e-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good e0972916e8fe943f342b0dd1c9d43dbf5bc261c2
-> # bad: [ab86e974f04b1cd827a9c7c35273834ebcd9ab38] Merge branch 'timers-co=
-re-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect bad ab86e974f04b1cd827a9c7c35273834ebcd9ab38
-> # good: [8700c95adb033843fc163d112b9d21d4fda78018] Merge branch 'smp-hotp=
-lug-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good 8700c95adb033843fc163d112b9d21d4fda78018
-> # good: [0ed2aef9b3bffe598045b62a31a50d912eee92d8] Merge branch 'fortglx/=
-3.10/time' of git://git.linaro.org/people/jstultz/linux into timers/core
-> git bisect good 0ed2aef9b3bffe598045b62a31a50d912eee92d8
-> # good: [8f294b5a139ee4b75e890ad5b443c93d1e558a8b] hrtimer: Add expiry ti=
-me overflow check in hrtimer_interrupt
-> git bisect good 8f294b5a139ee4b75e890ad5b443c93d1e558a8b
-> # good: [60cf7ea849e77c8782dee147cfb8c38d1984236e] timer_list: Split time=
-r_list_show_tickdevices
-> git bisect good 60cf7ea849e77c8782dee147cfb8c38d1984236e
-> # good: [d2054b2c11682495fca41e9d4092e654df63b517] posix-timers: Remove u=
-nused variable
-> git bisect good d2054b2c11682495fca41e9d4092e654df63b517
-> # good: [6402c7dc2a19c19bd8cdc7d80878b850da418942] Merge branch 'linus' i=
-nto timers/core Reason: Get upstream fixes before adding conflicting code.
-> git bisect good 6402c7dc2a19c19bd8cdc7d80878b850da418942
-> # good: [6f7a05d7018de222e40ca003721037a530979974] clockevents: Set dummy=
- handler on CPU_DEAD shutdown
-> git bisect good 6f7a05d7018de222e40ca003721037a530979974
->
->
-> So there it stands.  I have no clue and I don't think I'm able to
-> provide any clue for anyone else either.  Given that the problem seems
-> to be very consistently reproducible on my laptop, I am a bit puzzled as
-> to how the bisect would fail like that.
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-Hey, hey, hey.  Turns out this wasn't that wrong after all.  That merge
-includes a oneline diff in kernel/cpu/idle.c and it *is* actually this
-diff which trigger the problem for me.  Reverting it, using the attached
-patch, makes the warning go away.  Which means that it had nothing to do
-with your RCU changes.
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
-But I haven't the faintest idea how this is supposed to work, or even
-how to explain the patch properly, so I think I need some help from
-Thomas here.  Unless this makes you understand the real issue?
+are available in the git repository at:
 
-Thomas, why does powertop trigger the
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.10-rc1
 
-  WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48+0x3d/0x125()
+for you to fetch changes up to 88b0357dde1c2721a64268e4601d1c2dec1158b0:
 
-without the attached patch?  And what is the proper resolution?
+  Merge remote-tracking branch 'spi/fix/grant' into spi-linus (2013-05-13 18:27:18 +0400)
 
+----------------------------------------------------------------
 
+spi: Updates for v3.10
 
-Bj=C3=B8rn
+A few driver specific fixes plus improved error handling in the generic
+DT GPIO chipselect handling - not exciting but useful.
 
+----------------------------------------------------------------
+Andreas Larsson (2):
+      spi: Initialize cs_gpio and cs_gpios with -ENOENT
+      spi: Return error from of_spi_register_master on bad "cs-gpios" property
 
+Joachim Eastwood (1):
+      spi/atmel: fix speed_hz check in atmel_spi_transfer()
 
---=-=-=
-Content-Type: text/x-diff; charset=utf-8
-Content-Disposition: inline;
- filename=0001-idle-prevent-rcu_eqs_exit_common-warning.patch
-Content-Transfer-Encoding: quoted-printable
+Manjunathappa, Prakash (1):
+      spi/davinci: fix module build error
 
->From 5ce5497e752980386696c9293b1ae4d703416f38 Mon Sep 17 00:00:00 2001
-From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
-Date: Mon, 13 May 2013 16:03:59 +0200
-Subject: [PATCH] idle: prevent rcu_eqs_exit_common warning
-MIME-Version: 1.0
-Content-Type: text/plain; charset=3DUTF-8
-Content-Transfer-Encoding: 8bit
+Mark Brown (3):
+      Merge branch 'spi/merge' of git://git.secretlab.ca/git/linux into spi-fix-grant
+      Merge remote-tracking branch 'spi/fix/atmel' into spi-linus
+      Merge remote-tracking branch 'spi/fix/grant' into spi-linus
 
-Avoid the following warning when running powertop:
+Richard Genoud (1):
+      spi/spi-atmel: BUG: fix doesn' support 16 bits transfers using PIO
 
-[   49.289034] ------------[ cut here ]------------
-[   49.289055] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48=
-+0x3d/0x125()
-[   49.289059] Modules linked in: msr cpufreq_stats xt_multiport iptable_fi=
-lter ip_tables rfcomm bnep xt_hl binfmt_misc ip6table_filter ip6_tables x_t=
-ables nfsd nfs_acl nfs lockd fscache sunrpc 8021q garp stp llc tun cdc_mbim=
- cdc_ncm cdc_wdm usbnet mii loop fuse btusb bluetooth iTCO_wdt iTCO_vendor_=
-support snd_hda_codec_conexant arc4 iwldvm mac80211 thinkpad_acpi nvram snd=
-_seq_midi snd_seq_midi_event snd_rawmidi snd_hda_intel snd_seq snd_hda_code=
-c snd_hwdep snd_pcm_oss snd_mixer_oss iwlwifi snd_pcm coretemp kvm_intel kv=
-m snd_seq_device evdev psmouse serio_raw lpc_ich mfd_core cfg80211 snd_page=
-_alloc i2c_i801 snd_timer snd soundcore rfkill battery ac acpi_cpufreq mper=
-f i915 wmi video i2c_algo_bit drm_kms_helper button drm i2c_core processor =
-ext4 crc16 jbd2 mbcache nbd sg sr_mod cdrom sd_mod crc_t10dif ahci libahci =
-libata microcode scsi_mod ehci_pci uhci_hcd ehci_hcd usbcore usb_common the=
-rmal thermal_sys e1000e ptp pps_core
-[   49.289244] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-bisect-rcu-=
-warn+ #107
-[   49.289247] Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 )=
- 12/19/2011
-[   49.289251]  ffffffff8157d8c8 ffffffff81801e28 ffffffff8137e4e3 ffffffff=
-81801e68
-[   49.289260]  ffffffff8103094f ffffffff81801e68 0000000000000000 ffff8802=
-3afcd9b0
-[   49.289268]  0000000000000000 0140000000000000 ffff88023bee7700 ffffffff=
-81801e78
-[   49.289276] Call Trace:
-[   49.289285]  [<ffffffff8137e4e3>] dump_stack+0x19/0x1b
-[   49.289293]  [<ffffffff8103094f>] warn_slowpath_common+0x62/0x7b
-[   49.289300]  [<ffffffff8103097d>] warn_slowpath_null+0x15/0x17
-[   49.289306]  [<ffffffff810a9006>] rcu_eqs_exit_common.isra.48+0x3d/0x125
-[   49.289314]  [<ffffffff81079b49>] ? trace_hardirqs_off_caller+0x37/0xa6
-[   49.289320]  [<ffffffff810a9692>] rcu_idle_exit+0x85/0xa8
-[   49.289327]  [<ffffffff8107076e>] trace_cpu_idle_rcuidle+0xae/0xff
-[   49.289334]  [<ffffffff810708b1>] cpu_startup_entry+0x72/0x115
-[   49.289341]  [<ffffffff813689e5>] rest_init+0x149/0x150
-[   49.289347]  [<ffffffff8136889c>] ? csum_partial_copy_generic+0x16c/0x16c
-[   49.289355]  [<ffffffff81a82d34>] start_kernel+0x3f0/0x3fd
-[   49.289362]  [<ffffffff81a8274c>] ? repair_env_string+0x5a/0x5a
-[   49.289368]  [<ffffffff81a82481>] x86_64_start_reservations+0x2a/0x2c
-[   49.289375]  [<ffffffff81a82550>] x86_64_start_kernel+0xcd/0xd1
-[   49.289379] ---[ end trace 07a1cc95e29e9036 ]---
+ drivers/spi/spi-atmel.c   |   51 +++++++++++++++++++++++++++++++++++----------
+ drivers/spi/spi-davinci.c |    2 +-
+ drivers/spi/spi.c         |    9 +++++---
+ include/linux/spi/spi.h   |    4 ++--
+ 4 files changed, 49 insertions(+), 17 deletions(-)
 
-Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
----
- kernel/cpu/idle.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--0/kgSOzhNoDC5T3a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index 8b86c0c..5b9ef3c 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -85,7 +85,7 @@ static void cpu_idle_loop(void)
- 			 * know that the IPI is going to arrive right
- 			 * away
- 			 */
--			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
-+			if (cpu_idle_force_poll) {
- 				cpu_idle_poll();
- 			} else {
- 				current_clr_polling();
---=20
-1.7.10.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRkPtkAAoJELSic+t+oim9QOwP/32M1CQjC4d9ihVYuyWyjTTh
+2uxI37JjtOEiDLzF3csiZyhbNHhrqKXqhiQ3eUWoK6szWmeVEdSiQGhj0f9yaPtc
+t0h34v6ZL82INEVh41Cc85eR3p/V2AwemhHNi/SFUYXDhCe/DXkmN68kPJLiNcgL
+H7LaKmhr7bUAOjFsqqLCLqHVdHd2xU8xoQLWv7p3Xa5h412gavPywbw2TwDwO9ND
+e44qASdJtmTs0VEcf/EWvSmudqGyBfAdw6WB5YmRWo881ax4S+l1dRrwH5XPmcGD
+SeBgLzap2ISaOB99tRSFPmvsQY76uRrr7pT/7Rtp6l/hAocPby/7a3AwCoC6tUjH
+OuVYKbDh7zpBD6QtbPAfvnQFh7OLTBvq7Nn+7FezsCSWevTV9FEnkbl4fQTP2n++
+VMKaYuPv+n0VVquUGRbXgDP685z2oe4mA/DLDwRaAfydgvnMqKJF3alD6cp8J0mY
+BKodoLAKqMVuEn16uq90eF74vbb6Gqu8c0g2m5mhrPuh7lagw7j3VQPjfcx6O373
+4MfDFJI9lCPfGQy2bEomXc63rT1SdtXEb/ee/kWM4HtQrlNTsu4J2ZSyoj5v70dg
+I56BpYy8Jke0QVAI/LVSu+ajmon75GONCTrfhvIu5ix3LTRQR3gNyppFOP1vvw4n
+qQJNESZ0J22LO4by2s4b
+=E11b
+-----END PGP SIGNATURE-----
 
---=-=-=--
+--0/kgSOzhNoDC5T3a--
