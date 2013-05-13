@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3EMPVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 11:21:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13274 "EHLO mx1.redhat.com"
+	id S1754967Ab3EMPVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 11:21:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48911 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab3EMPVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 11:21:33 -0400
-Date: Mon, 13 May 2013 17:17:33 +0200
+	id S1754920Ab3EMPVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 11:21:20 -0400
+Date: Mon, 13 May 2013 17:17:14 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,8 +17,9 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Russell King <linux@arm.linux.org.uk>,
         Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/13] ptrace/x86: cleanup ptrace_set_debugreg()
-Message-ID: <20130513151733.GA6290@redhat.com>
+Subject: [PATCH 05/13] ptrace: Revert "Prepare to fix racy accesses on task
+	breakpoints"
+Message-ID: <20130513151714.GA6263@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,77 +29,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_set_debugreg() is trivial but looks horrible. Kill the
-unnecessary goto's and return's to cleanup the code.
+This reverts commit bf26c018490c2fce7fe9b629083b96ce0e6ad019.
 
-This matches ptrace_get_debugreg() which also needs the trivial
-whitespace cleanups.
+The patch was fine but we can no longer race with SIGKILL after
+9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
+with SIGKILL", the __TASK_TRACED tracee can't be woken up and
+->ptrace_bps[] can't go away.
+
+Now that ptrace_get_breakpoints/ptrace_put_breakpoints have no
+callers, we can kill them and remove task->ptrace_bp_refcnt.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/x86/kernel/ptrace.c |   26 ++++++++------------------
- 1 files changed, 8 insertions(+), 18 deletions(-)
+ include/linux/ptrace.h |   10 ----------
+ include/linux/sched.h  |    3 ---
+ kernel/exit.c          |    2 +-
+ kernel/ptrace.c        |   16 ----------------
+ 4 files changed, 1 insertions(+), 30 deletions(-)
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5c387b3..7461f50 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -703,7 +703,7 @@ restore:
-  */
- static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 89573a3..07d0df6 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -142,9 +142,6 @@ static inline void ptrace_init_task(struct task_struct *child, bool ptrace)
  {
--	struct thread_struct *thread = &(tsk->thread);
-+	struct thread_struct *thread = &tsk->thread;
- 	unsigned long val = 0;
+ 	INIT_LIST_HEAD(&child->ptrace_entry);
+ 	INIT_LIST_HEAD(&child->ptraced);
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-	atomic_set(&child->ptrace_bp_refcnt, 1);
+-#endif
+ 	child->jobctl = 0;
+ 	child->ptrace = 0;
+ 	child->parent = child->real_parent;
+@@ -351,11 +348,4 @@ extern int task_current_syscall(struct task_struct *target, long *callno,
+ 				unsigned long args[6], unsigned int maxargs,
+ 				unsigned long *sp, unsigned long *pc);
  
- 	if (n < HBP_NUM) {
-@@ -713,7 +713,7 @@ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
- 			val = bp->hw.info.address;
- 	} else if (n == 6) {
- 		val = thread->debugreg6;
--	 } else if (n == 7) {
-+	} else if (n == 7) {
- 		val = thread->ptrace_dr7;
- 	}
- 	return val;
-@@ -761,30 +761,20 @@ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
- static int ptrace_set_debugreg(struct task_struct *tsk, int n,
- 			       unsigned long val)
- {
--	struct thread_struct *thread = &(tsk->thread);
--	int rc = 0;
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-extern int ptrace_get_breakpoints(struct task_struct *tsk);
+-extern void ptrace_put_breakpoints(struct task_struct *tsk);
+-#else
+-static inline void ptrace_put_breakpoints(struct task_struct *tsk) { }
+-#endif /* CONFIG_HAVE_HW_BREAKPOINT */
 -
-+	struct thread_struct *thread = &tsk->thread;
- 	/* There are no DR4 or DR5 registers */
--	if (n == 4 || n == 5)
--		return -EIO;
-+	int rc = -EIO;
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..ebdba8a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1406,9 +1406,6 @@ struct task_struct {
+ 	} memcg_batch;
+ 	unsigned int memcg_kmem_skip_account;
+ #endif
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-	atomic_t ptrace_bp_refcnt;
+-#endif
+ #ifdef CONFIG_UPROBES
+ 	struct uprobe_task *utask;
+ #endif
+diff --git a/kernel/exit.c b/kernel/exit.c
+index af2eb3c..0636035 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -819,7 +819,7 @@ void do_exit(long code)
+ 	/*
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
+-	ptrace_put_breakpoints(tsk);
++	flush_ptrace_hw_breakpoint(tsk);
  
--	if (n == 6) {
--		thread->debugreg6 = val;
--		goto ret_path;
--	}
- 	if (n < HBP_NUM) {
- 		rc = ptrace_set_breakpoint_addr(tsk, n, val);
--		if (rc)
--			return rc;
--	}
--	/* All that's left is DR7 */
--	if (n == 7) {
-+	} else if (n == 6) {
-+		thread->debugreg6 = val;
-+		rc = 0;
-+	} else if (n == 7) {
- 		rc = ptrace_write_dr7(tsk, val);
- 		if (!rc)
- 			thread->ptrace_dr7 = val;
- 	}
--
--ret_path:
- 	return rc;
+ 	exit_notify(tsk, group_dead);
+ #ifdef CONFIG_NUMA
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index aed981a..8cc170b 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -1179,19 +1179,3 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+ 	return ret;
  }
- 
+ #endif	/* CONFIG_COMPAT */
+-
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-int ptrace_get_breakpoints(struct task_struct *tsk)
+-{
+-	if (atomic_inc_not_zero(&tsk->ptrace_bp_refcnt))
+-		return 0;
+-
+-	return -1;
+-}
+-
+-void ptrace_put_breakpoints(struct task_struct *tsk)
+-{
+-	if (atomic_dec_and_test(&tsk->ptrace_bp_refcnt))
+-		flush_ptrace_hw_breakpoint(tsk);
+-}
+-#endif /* CONFIG_HAVE_HW_BREAKPOINT */
 -- 
 1.5.5.1
 
