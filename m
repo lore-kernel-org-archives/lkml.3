@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab3EMFWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 01:22:54 -0400
-Received: from ironmail.arrisi.com ([216.234.147.20]:63208 "EHLO arrisi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753548Ab3EMFWv convert rfc822-to-8bit (ORCPT
+	id S1753318Ab3EMFja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 01:39:30 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:28115 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750902Ab3EMFj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 01:22:51 -0400
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 May 2013 01:22:51 EDT
-From: "Sidorov, Andrei" <Andrei.Sidorov@arrisi.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Tony Luck <tony.luck@gmail.com>,
-        "Dmitry Monakhov" <dmonakhov@openvz.org>,
-        "eunb.song@samsung.com" <eunb.song@samsung.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-Thread-Topic: EXT4 panic at jbd2_journal_put_journal_head() in 3.9+
-Thread-Index: AQHOT4cG3Qu8LxaOwUeT0ER5V7BLeQ==
-Date: Mon, 13 May 2013 05:06:36 +0000
-Message-ID: <C0F0BC787567C848B2C90989451123DAE3A4D8@ATLEXMBX4.ARRS.ARRISI.com>
-References: <6719519.5821368147110937.JavaMail.weblogic@epml17>
- <CA+8MBbKHJgnueAurRV1aeeV-NdzRTz_gVwYcJuyDrjJLErtcfg@mail.gmail.com>
- <871u9e6ji1.fsf@openvz.org>
- <CA+8MBbLY1jQCQmBrKdVpihkqFBf93iJKZ7J8E_JXcu9NVeff_w@mail.gmail.com>
- <20130513030712.GC25996@thunk.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [216.234.147.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 May 2013 01:39:28 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+Date: Mon, 13 May 2013 13:39:41 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Wolfram Sang'" <wsa@the-dreams.de>, <linux-kernel@vger.kernel.org>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        <linux-fbdev@vger.kernel.org>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [RFC 32/42] drivers/video: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20130513053939.GA8542@S2101-09.ap.freescale.net>
+References: <1368173847-5661-1-git-send-email-wsa@the-dreams.de>
+ <1368173847-5661-33-git-send-email-wsa@the-dreams.de>
+ <002c01ce4e09$218612b0$64923810$@samsung.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <002c01ce4e09$218612b0$64923810$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, May 11, 2013 at 02:33:56PM +0900, Jingoo Han wrote:
+> On Friday, May 10, 2013 5:17 PM, Wolfram Sang wrote:
+> > 
+> > devm_ioremap_resource does sanity checks on the given resource. No need to
+> > duplicate this in the driver.
+> > 
+> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> 
+> CC'ed Tomi Valkeinen, Shawn Guo, Fabio Estevam
 
-Bitfields are likely to be implemented using read-modify-write semantics.
-Modifications of either b_jlist or b_jmodified must be done under lock
-since they share same uint. I guess this lock is missing somewhere.
-
-Regards,
-Andrei.
-
-On 12.05.2013 20:07, Theodore Ts'o wrote:
-> On Sun, May 12, 2013 at 07:04:45PM -0700, Tony Luck wrote:
->> My git bisect finally competed and points the a finger at:
->>
->> commit ae4647fb7654676fc44a97e86eb35f9f06b99f66
->> Author: Jan Kara <jack@suse.cz>
->> Date:   Fri Apr 12 00:03:42 2013 -0400
->>
->>     jbd2: reduce journal_head size
->>
->>     Remove unused t_cow_tid field (ext4 copy-on-write support doesn't seem
->>     to be happening) and change b_modified and b_jlist to bitfields thus
->>     saving 8 bytes in the structure.
-> Both you and Eunbong Song bisected to the same commit, so presumably
-> the right thing to do at this point is to revert it.  Have you tried
-> reverting the commit and demonstrating that the problem goes away
-> afterwards?
->
-> The reason why I ask is that I'm completely at a lost to understand
-> why this commit could be making a difference.  Loooking at the commit,
-> we're converting two unsigned fields, neither of which use more than 4
-> bits or 1 bits, respectively, to use bitfields instead.  Why this
-> could be causing __journal_remove_journal_head() to fail, especially
-> in the way that it does, isn't making any sense to me.  We are
-> technically accessing jh->b_jlist without first locking
-> jbd2_lock_bh_state(), but (a) it shouldn't make a difference whether
-> we use a bitfield or 32-bit unsigned value, and (b) by the time we get
-> to __journal_remove_journal_head(), nothing should be using the
-> journal head, and we've locked jbd_lock_bh_journal_head(), which
-> should prevent any one else from starting to use the journal head.
->
-> Applying patch where I don't understand how it would make things
-> better, even if it is a revert, scares me.  If we are going to do
-> this, and since I haven't yet been able to reproduce it on my testing
-> setup, could you try taking Linus's just released 3.10-rc1 release,
-> and revert commit ae4647fb765467, and confirm that this avoids the
-> crash which you are seeing?
->
-> Thanks,
->
-> 					- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
