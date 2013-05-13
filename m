@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab3EMJol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:44:41 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41624 "EHLO
+	id S1754700Ab3EMJqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:46:32 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41673 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3EMJoi (ORCPT
+	with ESMTP id S1754095Ab3EMJom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:44:38 -0400
+	Mon, 13 May 2013 05:44:42 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 07/14] ARM: spear: Remove init_irq declaration in machine description
-Date: Mon, 13 May 2013 11:44:06 +0200
-Message-Id: <1368438253-28218-8-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 11/14] ARM: sirf: Remove init_irq declaration in machine description
+Date: Mon, 13 May 2013 11:44:10 +0200
+Message-Id: <1368438253-28218-12-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,90 +36,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 specified") removed the need to explictly setup the init_irq field in
 the machine description when using only irqchip_init. Remove that
-declaration for spear as well.
+declaration for sirf as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-spear/spear1310.c | 1 -
- arch/arm/mach-spear/spear1340.c | 1 -
- arch/arm/mach-spear/spear300.c  | 1 -
- arch/arm/mach-spear/spear310.c  | 1 -
- arch/arm/mach-spear/spear320.c  | 1 -
- arch/arm/mach-spear/spear6xx.c  | 1 -
- 6 files changed, 6 deletions(-)
+ arch/arm/mach-prima2/common.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/arm/mach-spear/spear1310.c b/arch/arm/mach-spear/spear1310.c
-index 9eaac2c..b2da424 100644
---- a/arch/arm/mach-spear/spear1310.c
-+++ b/arch/arm/mach-spear/spear1310.c
-@@ -60,7 +60,6 @@ static void __init spear1310_map_io(void)
- DT_MACHINE_START(SPEAR1310_DT, "ST SPEAr1310 SoC with Flattened Device Tree")
- 	.smp		=	smp_ops(spear13xx_smp_ops),
- 	.map_io		=	spear1310_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear13xx_timer_init,
- 	.init_machine	=	spear1310_dt_init,
- 	.restart	=	spear_restart,
-diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
-index a04a7fe..dae1167 100644
---- a/arch/arm/mach-spear/spear1340.c
-+++ b/arch/arm/mach-spear/spear1340.c
-@@ -155,7 +155,6 @@ static const char * const spear1340_dt_board_compat[] = {
- DT_MACHINE_START(SPEAR1340_DT, "ST SPEAr1340 SoC with Flattened Device Tree")
- 	.smp		=	smp_ops(spear13xx_smp_ops),
- 	.map_io		=	spear13xx_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear13xx_timer_init,
- 	.init_machine	=	spear1340_dt_init,
- 	.restart	=	spear_restart,
-diff --git a/arch/arm/mach-spear/spear300.c b/arch/arm/mach-spear/spear300.c
-index bac56e8..185b9ba 100644
---- a/arch/arm/mach-spear/spear300.c
-+++ b/arch/arm/mach-spear/spear300.c
-@@ -212,7 +212,6 @@ static void __init spear300_map_io(void)
- 
- DT_MACHINE_START(SPEAR300_DT, "ST SPEAr300 SoC with Flattened Device Tree")
- 	.map_io		=	spear300_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear3xx_timer_init,
- 	.init_machine	=	spear300_dt_init,
- 	.restart	=	spear_restart,
-diff --git a/arch/arm/mach-spear/spear310.c b/arch/arm/mach-spear/spear310.c
-index 6ffbc63..ebc07e6 100644
---- a/arch/arm/mach-spear/spear310.c
-+++ b/arch/arm/mach-spear/spear310.c
-@@ -254,7 +254,6 @@ static void __init spear310_map_io(void)
- 
- DT_MACHINE_START(SPEAR310_DT, "ST SPEAr310 SoC with Flattened Device Tree")
- 	.map_io		=	spear310_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear3xx_timer_init,
- 	.init_machine	=	spear310_dt_init,
- 	.restart	=	spear_restart,
-diff --git a/arch/arm/mach-spear/spear320.c b/arch/arm/mach-spear/spear320.c
-index 6eb3eec..1fa4929 100644
---- a/arch/arm/mach-spear/spear320.c
-+++ b/arch/arm/mach-spear/spear320.c
-@@ -269,7 +269,6 @@ static void __init spear320_map_io(void)
- 
- DT_MACHINE_START(SPEAR320_DT, "ST SPEAr320 SoC with Flattened Device Tree")
- 	.map_io		=	spear320_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear3xx_timer_init,
- 	.init_machine	=	spear320_dt_init,
- 	.restart	=	spear_restart,
-diff --git a/arch/arm/mach-spear/spear6xx.c b/arch/arm/mach-spear/spear6xx.c
-index ec8eefb..0359f2e 100644
---- a/arch/arm/mach-spear/spear6xx.c
-+++ b/arch/arm/mach-spear/spear6xx.c
-@@ -423,7 +423,6 @@ static const char *spear600_dt_board_compat[] = {
- 
- DT_MACHINE_START(SPEAR600_DT, "ST SPEAr600 (Flattened Device Tree)")
- 	.map_io		=	spear6xx_map_io,
--	.init_irq	=	irqchip_init,
- 	.init_time	=	spear6xx_timer_init,
- 	.init_machine	=	spear600_dt_init,
- 	.restart	=	spear_restart,
+diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
+index 4f94cd8..52e28cf 100644
+--- a/arch/arm/mach-prima2/common.c
++++ b/arch/arm/mach-prima2/common.c
+@@ -55,7 +55,6 @@ DT_MACHINE_START(ATLAS6_DT, "Generic ATLAS6 (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.nr_irqs	= 128,
+ 	.map_io         = sirfsoc_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= sirfsoc_init_time,
+ 	.init_machine	= sirfsoc_mach_init,
+ 	.init_late	= sirfsoc_init_late,
+@@ -74,7 +73,6 @@ DT_MACHINE_START(PRIMA2_DT, "Generic PRIMA2 (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.nr_irqs	= 128,
+ 	.map_io         = sirfsoc_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= sirfsoc_init_time,
+ 	.dma_zone_size	= SZ_256M,
+ 	.init_machine	= sirfsoc_mach_init,
+@@ -94,7 +92,6 @@ DT_MACHINE_START(MARCO_DT, "Generic MARCO (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.smp            = smp_ops(sirfsoc_smp_ops),
+ 	.map_io         = sirfsoc_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= sirfsoc_init_time,
+ 	.init_machine	= sirfsoc_mach_init,
+ 	.init_late	= sirfsoc_init_late,
 -- 
 1.8.1.2
 
