@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3EMRkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:40:03 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:50684 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3EMRkC (ORCPT
+	id S1753230Ab3EMRna (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:43:30 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63764 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab3EMRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:40:02 -0400
-Message-ID: <51912567.6090507@lwfinger.net>
-Date: Mon, 13 May 2013 12:39:51 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 13 May 2013 13:43:28 -0400
 MIME-Version: 1.0
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: V3.10-rc1 memory leak
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJ-Vmo=HOFqu8vB1=pvz79YwE8qAMDc4ZJACJHaSuxn4S92sFg@mail.gmail.com>
+References: <1320756113.14409.385.camel@x61.thuisdomein> <20111108141647.GA3390@hash.lan>
+ <1342124352.22584.21.camel@x61.thuisdomein> <20120712203837.GA3045@localhost>
+ <4FFFBDD8.6020305@neratec.com> <20120713124134.GA5567@localhost>
+ <1362999998.3137.60.camel@x61.thuisdomein> <1368457391.1350.67.camel@x61.thuisdomein>
+ <CAJ-VmokciVPxzJ0LptdQyL9koa8Bw7ecJdentPH5q9+MQ4=GpA@mail.gmail.com>
+ <5191173D.3070709@gmail.com> <CAJ-Vmo=HOFqu8vB1=pvz79YwE8qAMDc4ZJACJHaSuxn4S92sFg@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Mon, 13 May 2013 10:43:06 -0700
+X-Google-Sender-Auth: y-0rvk4iu6NrH-zjoNlnSuGEhb4
+Message-ID: <CAB=NE6UR+3uadczBt+2n4g8j2e_A6OBJ-+ZJiO4y2g4Z0cFywg@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH] ath5k: Remove AHB bus support.
+To: Adrian Chadd <adrian@freebsd.org>
+Cc: Jonathan Bither <jonbither@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Paul Bolle <pebolle@tiscali.nl>, Jiri Slaby <jirislaby@gmail.com>,
+        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>,
+        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using v3.10-rc1-68-g2d3ec09, I am getting many instances of the following from 
-kmemleak:
+On Mon, May 13, 2013 at 10:09 AM, Adrian Chadd <adrian@freebsd.org> wrote:
+> On 13 May 2013 09:39, Jonathan Bither <jonbither@gmail.com> wrote:
+>
+>>> ... is anyone using this on openwrt?
+>>>
+>> I am.
+>> I am also reworking AR2131X drivers and will submit a patch to linux-mips
+>> shortly.
+>
+> Sweet. Someone say NACK then? :)
 
-unreferenced object 0xffff8800b546dc30 (size 48):
-   comm "systemd-udevd", pid 2181, jiffies 4294899141 (age 274.096s)
-   hex dump (first 32 bytes):
-     00 dc 46 b5 00 88 ff ff d0 ff 5b a0 ff ff ff ff  ..F.......[.....
-     1c 3b 5b a0 ff ff ff ff 12 3a 5b a0 ff ff ff ff  .;[......:[.....
-   backtrace:
-     [<ffffffff81432e81>] kmemleak_alloc+0x21/0x50
-     [<ffffffff81143c2b>] kmem_cache_alloc+0x11b/0x270
-     [<ffffffff810e9ee0>] __trace_define_field+0x40/0xd0
-     [<ffffffff810e9fc5>] trace_define_field+0x55/0x70
-     [<ffffffffa05e6ba0>] 0xffffffffa05e6ba0
-     [<ffffffff810ea735>] event_create_dir+0x2e5/0x480
-     [<ffffffff810ea920>] __trace_add_new_event+0x50/0x80
-     [<ffffffff810eacf9>] __add_event_to_tracers+0x69/0xc0
-     [<ffffffff810eb4e1>] trace_module_notify+0x1e1/0x2f0
-     [<ffffffff8106e8f5>] notifier_call_chain+0x55/0x110
-     [<ffffffff8106eb27>] __blocking_notifier_call_chain+0x67/0xc0
-     [<ffffffff8106eb91>] blocking_notifier_call_chain+0x11/0x20
-     [<ffffffff810af792>] load_module+0x19e2/0x24b0
-     [<ffffffff810b0317>] SyS_init_module+0xb7/0xe0
-     [<ffffffff814499d2>] system_call_fastpath+0x16/0x1b
-     [<ffffffffffffffff>] 0xffffffffffffffff
+NACK, looking forward to the linux-mips patches, in the future however
+we want to avoid these type of placeholder patches.
 
-These appear to be real leaks, but I am not familiar with this section of the 
-code, and they could be false indications.
-
-This mail is sent to all authors of patches incorporated in 
-kernel/trace/trace_events.c in 2013. Kernel 3.9 did not show this problem.
-
-Thanks,
-
-Larry
+  Luis
