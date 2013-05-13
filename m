@@ -1,497 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3EMWoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 18:44:30 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59950 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab3EMWo3 (ORCPT
+	id S1755456Ab3EMW5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 18:57:18 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:37288 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab3EMW5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 18:44:29 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 13 May 2013 15:44:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: johannes.thumshirn@men.de
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: New watchdog driver for MEN A21 watchdogs
-Message-ID: <20130513224440.GA13891@roeck-us.net>
-References: <1368478709-2889-1-git-send-email-johannes.thumshirn@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368478709-2889-1-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 May 2013 18:57:16 -0400
+Message-ID: <1368486003.4020.37.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 3/3] target: simplify target_wait_for_sess_cmds()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Joern Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+Date: Mon, 13 May 2013 16:00:03 -0700
+In-Reply-To: <1368477007-25274-4-git-send-email-joern@logfs.org>
+References: <1368477007-25274-1-git-send-email-joern@logfs.org>
+	 <1368477007-25274-4-git-send-email-joern@logfs.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 10:58:29PM +0200, johannes.thumshirn@men.de wrote:
-> From: Johannes Thumshirn <johannes.thumshirn@men.de>
-> 
-> This patch adds the driver for the watchdog devices found on MEN Mikro
-> Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-> watchdog framework.
-> 
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+On Mon, 2013-05-13 at 16:30 -0400, Joern Engel wrote:
+> The second parameter was always 0, leading to effectively dead code.  It
+> called list_del() and se_cmd->se_tfo->release_cmd(), and had to set a
+> flag to prevent target_release_cmd_kref() from doing the same.
 
-Besides all of its problems, seems to me that could (or should) be a generic gpio
-watchdog driver, possibly with device tree bindings describing how the various 
-gpio pins are used.
+Look again.  The call to transport_wait_for_tasks() was dead code, but
+the wait_for_completion(&se_cmd->cmd_wait_comp) most certainly is not.
 
+> But most
+> of all, it iterated the list without taking se_sess->sess_cmd_lock,
+> leading to races against ABORT and LUN_RESET.
+> 
+
+Ugh.  You'll recall that target_wait_for_sess_cmds() originally did not
+have to take the lock because the list was spliced into
+sess_wait_list.  
+
+When Roland removed sess_wait_list in commit 1c7b13fe, no one re-added
+the lock here.
+
+> Since the whole point of the function is to wait for the list to drain,
+> and potentially print a bit of debug information in case that never
+> happens, I've replaced the wait_for_completion() with 100ms sleep.  The
+> only callpath that would get delayed by this is rmmod, afaics, so I
+> didn't want the overhead of a waitqueue.
+> 
+
+This seems totally wrong..
+
+> Signed-off-by: Joern Engel <joern@logfs.org>
 > ---
->  MAINTAINERS                   |    6 +
->  drivers/watchdog/Kconfig      |    8 +
->  drivers/watchdog/Makefile     |    1 +
->  drivers/watchdog/mena21_wdt.c |  351 +++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 366 insertions(+)
->  create mode 100644 drivers/watchdog/mena21_wdt.c
+>  drivers/infiniband/ulp/srpt/ib_srpt.c  |    2 +-
+>  drivers/scsi/qla2xxx/tcm_qla2xxx.c     |    2 +-
+>  drivers/target/target_core_transport.c |   64 +++++++++-----------------------
+>  include/target/target_core_base.h      |    2 -
+>  include/target/target_core_fabric.h    |    2 +-
+>  5 files changed, 20 insertions(+), 52 deletions(-)
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3d7782b..3e5b3f1 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5291,6 +5291,12 @@ F:	drivers/mtd/
->  F:	include/linux/mtd/
->  F:	include/uapi/mtd/
+
+<SNIP>
+
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 0d46276..5b6dbf9 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -1043,7 +1043,6 @@ void transport_init_se_cmd(
+>  	init_completion(&cmd->transport_lun_fe_stop_comp);
+>  	init_completion(&cmd->transport_lun_stop_comp);
+>  	init_completion(&cmd->t_transport_stop_comp);
+> -	init_completion(&cmd->cmd_wait_comp);
+>  	init_completion(&cmd->task_stop_comp);
+>  	spin_lock_init(&cmd->t_state_lock);
+>  	cmd->transport_state = CMD_T_DEV_ACTIVE;
+> @@ -2219,11 +2218,6 @@ static void target_release_cmd_kref(struct kref *kref)
+>  		se_cmd->se_tfo->release_cmd(se_cmd);
+>  		return;
+>  	}
+> -	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+> -		spin_unlock(&se_sess->sess_cmd_lock);
+> -		complete(&se_cmd->cmd_wait_comp);
+> -		return;
+> -	}
+>  	list_del(&se_cmd->se_cmd_list);
+>  	spin_unlock(&se_sess->sess_cmd_lock);
 >  
-> +MEN A21 WATCHDOG DRIVER
-> +M:  	Johannes Thumshirn <johannes.thumshirn@men.de>
-> +L:	linux-watchdog@vger.kernel.org
-> +S:	Supported
-> +F:	drivers/watchdog/mena21_wdt.c
-> +
->  METAG ARCHITECTURE
->  M:	James Hogan <james.hogan@imgtec.com>
->  S:	Supported
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index e89fc31..192b84d 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
+> @@ -2241,68 +2235,44 @@ int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+>  }
+>  EXPORT_SYMBOL(target_put_sess_cmd);
 >  
->  	  The value can be overridden by the wdt_period command-line parameter.
+> -/* target_sess_cmd_list_set_waiting - Flag all commands in
+> - *         sess_cmd_list to complete cmd_wait_comp.  Set
+> +/* target_sess_cmd_list_set_waiting - Set
+>   *         sess_tearing_down so no more commands are queued.
+>   * @se_sess:	session to flag
+>   */
+>  void target_sess_cmd_list_set_waiting(struct se_session *se_sess)
+>  {
+> -	struct se_cmd *se_cmd;
+>  	unsigned long flags;
 >  
-> +config MEN_A21_WDT
-> +       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-> +       select WATCHDOG_CORE
-> +       help
-> +        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-> +
-> +	If unsure select N here.
-> +
->  # PPC64 Architecture
+>  	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+> -
+>  	WARN_ON(se_sess->sess_tearing_down);
+>  	se_sess->sess_tearing_down = 1;
+> -
+> -	list_for_each_entry(se_cmd, &se_sess->sess_cmd_list, se_cmd_list)
+> -		se_cmd->cmd_wait_set = 1;
+> -
+>  	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+>  }
+>  EXPORT_SYMBOL(target_sess_cmd_list_set_waiting);
 >  
->  config WATCHDOG_RTAS
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index a300b94..bffdcb1 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
->  obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
->  obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
->  obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-> +obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
+>  /* target_wait_for_sess_cmds - Wait for outstanding descriptors
+>   * @se_sess:    session to wait for active I/O
+> - * @wait_for_tasks:	Make extra transport_wait_for_tasks call
+>   */
+> -void target_wait_for_sess_cmds(
+> -	struct se_session *se_sess,
+> -	int wait_for_tasks)
+> +void target_wait_for_sess_cmds(struct se_session *se_sess)
+>  {
+> -	struct se_cmd *se_cmd, *tmp_cmd;
+> -	bool rc = false;
+> -
+> -	list_for_each_entry_safe(se_cmd, tmp_cmd,
+> -				&se_sess->sess_cmd_list, se_cmd_list) {
+> -		list_del(&se_cmd->se_cmd_list);
+> -
+> -		pr_debug("Waiting for se_cmd: %p t_state: %d, fabric state:"
+> -			" %d\n", se_cmd, se_cmd->t_state,
+> -			se_cmd->se_tfo->get_cmd_state(se_cmd));
+> -
+> -		if (wait_for_tasks) {
+> -			pr_debug("Calling transport_wait_for_tasks se_cmd: %p t_state: %d,"
+> -				" fabric state: %d\n", se_cmd, se_cmd->t_state,
+> -				se_cmd->se_tfo->get_cmd_state(se_cmd));
+> -
+> -			rc = transport_wait_for_tasks(se_cmd);
+> -
+> -			pr_debug("After transport_wait_for_tasks se_cmd: %p t_state: %d,"
+> -				" fabric state: %d\n", se_cmd, se_cmd->t_state,
+> -				se_cmd->se_tfo->get_cmd_state(se_cmd));
+> -		}
+> +	struct se_cmd *se_cmd, *last_cmd = NULL;
+> +	unsigned long flags;
 >  
->  # PPC64 Architecture
->  obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-> diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-> new file mode 100644
-> index 0000000..d534f81
-> --- /dev/null
-> +++ b/drivers/watchdog/mena21_wdt.c
-> @@ -0,0 +1,351 @@
-> +/*
-> + * Watchdog driver for the A21 VME CPU Boards
-> + *
-> + * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation
-> + */
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/gpio.h>
-> +#include <linux/delay.h>
-> +#include <linux/reboot.h>
-> +#include <linux/bitops.h>
-> +
-> +static char *reset_causes[] = {
-> +	"Power On Reset",
-> +	"CPU Reset Request",
-> +	"Push Button",
-> +	"FPGA Reset Request",
-> +	"Watchdog",
-> +	"Local Power Bad",
-> +	"Invalid",
-> +	"BDI",
-> +};
-> +
-> +#define GPIO_WD_ENAB	169
-> +#define GPIO_WD_FAST	170
-> +#define GPIO_WD_TRIG	171
-> +
-> +#define GPIO_RST_CAUSE_BASE 166
-> +
-> +struct a21_wdt_drv {
-> +	struct watchdog_device wdt;
-> +	struct mutex lock;
-> +	bool open;
-> +};
-> +
-> +static bool nowayout = WATCHDOG_NOWAYOUT;
-> +module_param(nowayout, bool, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> +			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> +
-> +static ssize_t rebootcause_show(struct device *dev,
-> +				struct device_attribute *attr,
-> +				char *buf)
-> +{
-> +	unsigned int reset = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < 3; i++)
-> +		reset |= !!gpio_get_value(GPIO_RST_CAUSE_BASE + i);
+> -		if (!rc) {
+> -			wait_for_completion(&se_cmd->cmd_wait_comp);
+> -			pr_debug("After cmd_wait_comp: se_cmd: %p t_state: %d"
+> -				" fabric state: %d\n", se_cmd, se_cmd->t_state,
+> -				se_cmd->se_tfo->get_cmd_state(se_cmd));
+> +	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+> +	while (!list_empty(&se_sess->sess_cmd_list)) {
+> +		se_cmd = list_entry(se_sess->sess_cmd_list.next, struct se_cmd,
+> +			se_cmd_list);
+> +		if (se_cmd != last_cmd) { /* print this only once per command */
+> +			pr_debug("Waiting for se_cmd: %p t_state: %d, fabric state: %d\n",
+> +					se_cmd, se_cmd->t_state,
+> +					se_cmd->se_tfo->get_cmd_state(se_cmd));
+> +			last_cmd = se_cmd;
+>  		}
+> -
+> -		se_cmd->se_tfo->release_cmd(se_cmd);
+> +		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+> +		msleep_interruptible(100);
+> +		spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+>  	}
+> +	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+>  }
 
-	The result of !! is 0 or 1, so reset will never be larger than 1.
+So what happens when the backend se_cmd I/O does not complete before the
+msleep finishes..?
 
-	Not sure if using fixed numbers for gpio pins is a good idea or even
-	correct. You might want to pass that by the gpio maintainers.
+It seems totally wrong to drop the initial cmd_wait_set =1 assignment,
+target_release_cmd_kref() completion for cmd_wait_comp, and wait on
+cmd_wait_comp to allow se_cmd to finish processing here.
 
-> +
-> +	if (reset >= 8)
-> +		return -EIO;
-> +
-	Meaning this will never happen.
+Who cares about waitqueue overhead in a shutdown slow path when the
+replacement doesn't address long outstanding commands..?
 
-> +	return sprintf(buf, "%s\n", reset_causes[reset]);
-> +}
-> +static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-> +
-> +static ssize_t active_show(struct device *dev, struct device_attribute *attr,
-> +			   char *buf)
-> +{
-> +	return sprintf(buf, "%d\n", !!gpio_get_value(GPIO_WD_ENAB));
-> +}
-> +static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
-> +
-> +static ssize_t allow_disable_show(struct device *dev,
-> +				  struct device_attribute *attr,
-> +				  char *buf)
-> +{
-> +	return sprintf(buf, "%d\n", !nowayout);
-> +}
-> +static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
-> +
-> +static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
-> +			     char *buf)
-> +{
-> +	return sprintf(buf, "%d\n", !!gpio_get_value(GPIO_WD_FAST));
-> +}
-> +static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
-> +
-> +static int a21_wdt_create_files(struct device *dev)
-> +{
-> +	int ret;
-> +
-> +	ret = device_create_file(dev, &dev_attr_rebootcause);
-> +	if (ret)
-> +		return ret;
-> +	ret = device_create_file(dev, &dev_attr_active);
-> +	if (ret)
-> +		return ret;
-> +	ret = device_create_file(dev, &dev_attr_allow_disable);
-> +	if (ret)
-> +		return ret;
-> +	ret = device_create_file(dev, &dev_attr_fastmode);
+--nab
 
-
-Wonder if the maintainer will let you bypass the infrastructure with those
-attributes. I wouldn't.
-
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static void a21_wdt_remove_files(struct device *dev)
-> +{
-> +	device_remove_file(dev, &dev_attr_rebootcause);
-> +	device_remove_file(dev, &dev_attr_active);
-> +	device_remove_file(dev, &dev_attr_allow_disable);
-> +	device_remove_file(dev, &dev_attr_fastmode);
-> +}
-> +
-> +static int a21_wdt_start(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	drv->open = true;
-
-What is this flag for ?
-
-> +	gpio_set_value(GPIO_WD_ENAB, 1);
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_stop(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	/* We don't stop if WDOG_NO_WAY_OUT is set */
-> +	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	gpio_set_value(GPIO_WD_ENAB, 0);
-> +	drv->open = false;
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_ping(struct watchdog_device *wdt)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	gpio_set_value(GPIO_WD_TRIG, 0);
-> +	msleep(400);
-
-Pretty long sleep. You really want to put applications to sleep for that long
-when pinging the watchdog ? I'd be more than a bit concerned that this might be
-problematic for applications expecting to do something else besides sleeping in
-a watchdog ping call.
-
-> +	gpio_set_value(GPIO_WD_TRIG, 1);
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-> +			       unsigned int timeout)
-> +{
-> +	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-> +
-> +	if (timeout != 1 || timeout != 30) {
-
-Hmmm ... did you ever try to set the timeout ?
-
-> +		pr_err("Only 1 and 30 allowed as timeout\n");
-
-dev_err is preferred for messages, but I wonder what value you expect
-from this message (and other similar messages) in the error log.
-
-> +		return -EINVAL;
-> +	}
-> +
-> +	mutex_lock(&drv->lock);
-> +
-> +	if (timeout == 30)
-> +		gpio_set_value(GPIO_WD_FAST, 1);
-> +	else
-> +		gpio_set_value(GPIO_WD_FAST, 0);
-> +
-> +	wdt->timeout = timeout;
-> +
-> +	mutex_unlock(&drv->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static long a21_wdt_ioctl(struct watchdog_device *wdt, unsigned int cmd,
-> +			 unsigned long arg)
-> +{
-> +	unsigned int timeout;
-> +	int ret;
-> +	int __user *argp = (void __user *) arg;
-> +
-> +	switch (cmd) {
-> +	case WDIOC_GETSUPPORT:
-> +		return copy_to_user(argp,
-> +				     wdt->info, sizeof(struct watchdog_info));
-> +	case WDIOC_KEEPALIVE:
-> +		return a21_wdt_ping(wdt);
-> +	case WDIOC_SETTIMEOUT:
-> +		ret = get_user(timeout, argp);
-> +		if (ret)
-> +			return ret;
-> +		a21_wdt_set_timeout(wdt, timeout);
-> +		/* Fallthrough */
-> +	case WDIOC_GETTIMEOUT:
-> +		return put_user(wdt->timeout, argp);
-> +	case WDIOC_SETOPTIONS: {
-> +		int options;
-> +
-> +		ret = get_user(options, argp);
-> +		if (ret)
-> +			return ret;
-> +		if (options & WDIOS_DISABLECARD)
-> +			a21_wdt_stop(wdt);
-> +		if (options & WDIOS_ENABLECARD)
-> +			a21_wdt_start(wdt);
-> +		break;
-> +	}
-> +	default:
-> +		pr_err("IOCTL 0x%x not understood\n", cmd);
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-What does this function offer that is not in the infrastructure ?
-
-> +
-> +static int a21_wdt_notify_sys(struct notifier_block *notify, unsigned long code,
-> +			void *unused)
-> +{
-> +	if (code == SYS_DOWN || code == SYS_HALT)
-> +		gpio_set_value(GPIO_WD_ENAB, 0);
-> +
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block a21_wdt_notifier = {
-> +	.notifier_call = a21_wdt_notify_sys,
-> +};
-> +
-> +static const struct watchdog_info a21_wdt_info = {
-> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-> +	.identity = "MEN A21 Watchdog",
-> +};
-> +
-> +static const struct watchdog_ops a21_wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = a21_wdt_start,
-> +	.stop = a21_wdt_stop,
-> +	.ping = a21_wdt_ping,
-> +	.set_timeout = a21_wdt_set_timeout,
-> +	.ioctl = a21_wdt_ioctl,
-> +};
-> +
-> +static struct watchdog_device a21_wdt = {
-> +	.info = &a21_wdt_info,
-> +	.ops = &a21_wdt_ops,
-> +	.min_timeout = 1,
-> +	.max_timeout = 30,
-> +};
-> +
-> +static int a21_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct a21_wdt_drv *drv;
-> +	int ret;
-> +
-> +	pr_info("MEN A21 watchdog timer driver enabled\n");
-> +
-pr_ -> dev_ 
-
-> +	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-> +	if (!drv) {
-> +		dev_err(&pdev->dev,
-> +			"Unable to allocate memory for watchdog device\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	mutex_init(&drv->lock);
-> +	watchdog_set_nowayout(&a21_wdt, nowayout);
-> +	watchdog_set_drvdata(&a21_wdt, drv);
-> +
-> +	ret = watchdog_register_device(&a21_wdt);
-> +	if (ret) {
-> +		pr_err("Cannot register watchdog device\n");
-> +		goto err_register_wd;
-> +	}
-> +
-> +	ret = register_reboot_notifier(&a21_wdt_notifier);
-> +	if (ret) {
-> +		pr_err("Cannot register reboot notifier\n");
-> +		goto err_register_notif;
-> +	}
-> +
-> +	ret = a21_wdt_create_files(&pdev->dev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
-> +		goto err_create_sysfs;
-> +	}
-> +
-> +	dev_set_drvdata(&pdev->dev, drv);
-> +
-> +	return 0;
-> +
-> +err_create_sysfs:
-> +	unregister_reboot_notifier(&a21_wdt_notifier);
-> +err_register_notif:
-> +	watchdog_unregister_device(&drv->wdt);
-> +err_register_wd:
-> +	mutex_destroy(&drv->lock);
-> +	devm_kfree(&pdev->dev, drv);
-
-You might want to look into the reasons for using devm_ functions.
-
-> +
-> +	return ret;
-> +}
-> +
-> +static int a21_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-> +
-> +	pr_warn("Unregistering A21 watchdog driver, board may reboot\n");
-> +
-> +	a21_wdt_remove_files(&pdev->dev);
-> +
-> +	watchdog_unregister_device(&drv->wdt);
-> +	unregister_reboot_notifier(&a21_wdt_notifier);
-> +	
-> +	mutex_destroy(&drv->lock);
-> +	devm_kfree(&pdev->dev, drv);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id a21_wdt_ids[] = {
-> +	{ .compatible = "men,a021-wdt" },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver a21_wdt_driver = {
-> +	.probe = a21_wdt_probe,
-> +	.remove = a21_wdt_remove,
-> +	.driver = {
-> +		.name = "a21-watchdog",
-> +		.of_match_table = a21_wdt_ids,
-> +	},
-> +};
-> +
-> +module_platform_driver(a21_wdt_driver);
-> +
-> +MODULE_AUTHOR("MEN Mikro Elektronik");
-> +MODULE_DESCRIPTION("MEN A21 Watchdog");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:a21-watchdog");
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
