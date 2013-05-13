@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab3EMCaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:30:06 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:59712 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab3EMCaF (ORCPT
+	id S1753602Ab3EMCkX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:40:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34533 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab3EMCkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:30:05 -0400
+	Sun, 12 May 2013 22:40:22 -0400
 MIME-Version: 1.0
-Date: Mon, 13 May 2013 10:30:03 +0800
-Message-ID: <CAPgLHd9dfox_xSu3Fb2JD_=UPC=-PVs=juiv3k408D1ns2CVJQ@mail.gmail.com>
-Subject: [PATCH] NVMe: fix error return code in nvme_submit_bio_queue()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: matthew.r.wilcox@intel.com, keith.busch@intel.com,
-        vishal.l.verma@intel.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201305111537.54782.vapier@gentoo.org>
+References: <1368098909-919-1-git-send-email-realmz6@gmail.com>
+	<20130510102706.84061f044d3e59717638b731@canb.auug.org.au>
+	<CAMk6uBk2inVj8Hu8YZ3tQ86OMh-Ub86eJmx9csrmFO+H4zq0rQ@mail.gmail.com>
+	<201305111537.54782.vapier@gentoo.org>
+Date: Mon, 13 May 2013 10:40:21 +0800
+Message-ID: <CAMk6uB=5JzHES+ebiVKXKUTCJZ6smsL84EEwswpmGSZu1TroVA@mail.gmail.com>
+Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.10
+From: Steven Miao <realmz6@gmail.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Bob Liu <lliubbo@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Mike,
 
-Fix to return -ENOMEM in the nvem iod alloc error handling case instead
-of 0(possible overwrite to 0 by above nvme_submit_flush_data()), as done
-elsewhere in this function.
+Yes I did. But they said I need to find another two signatures except
+sonic and bob, and some kernel developers are not in shanghai
+recently. So I need 2 weeks or more to get a kernel.org account.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/block/nvme-core.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+-steven
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 8efdfaa..750c337 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -629,7 +629,7 @@ static int nvme_submit_bio_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
- 	struct nvme_command *cmnd;
- 	struct nvme_iod *iod;
- 	enum dma_data_direction dma_dir;
--	int cmdid, length, result = -ENOMEM;
-+	int cmdid, length, result;
- 	u16 control;
- 	u32 dsmgmt;
- 	int psegs = bio_phys_segments(ns->queue, bio);
-@@ -641,8 +641,10 @@ static int nvme_submit_bio_queue(struct nvme_queue *nvmeq, struct nvme_ns *ns,
- 	}
- 
- 	iod = nvme_alloc_iod(psegs, bio->bi_size, GFP_ATOMIC);
--	if (!iod)
-+	if (!iod) {
-+		result = -ENOMEM;
- 		goto nomem;
-+	}
- 	iod->private = bio;
- 
- 	result = -EBUSY;
-
+On Sun, May 12, 2013 at 3:37 AM, Mike Frysinger <vapier@gentoo.org> wrote:
+> On Thursday 09 May 2013 22:48:54 Steven Miao wrote:
+>> Hi Stephen,
+>
+> please don't top post
+>
+>> Yes, please update the current blackfin tree with:
+>>
+>>   https://github.com/realmz/blackfin-linux.git  blackfin-linus
+>
+> why don't you sign up for an account on kernel.org and host your tree there ?
+> -mike
