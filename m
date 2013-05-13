@@ -1,68 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3EMQJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 12:09:58 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:9509 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755163Ab3EMQJz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 12:09:55 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
-Date: Mon, 13 May 2013 09:09:47 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com>
- <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130510212422.GY3200@sirena.org.uk>
- <7e18bed3-ae6b-4aa0-bf23-b6c61ba8b85b@CO9EHSMHS030.ehs.local>
- <20130512143344.GC3200@sirena.org.uk>
- <9e55c552-ce34-4663-9a57-bf2c626d7d58@TX2EHSMHS008.ehs.local>
- <20130513052135.GD6836@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20130513052135.GD6836@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+	id S1755294Ab3EMQK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 12:10:26 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:53637 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab3EMQJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 12:09:29 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2, part 1 8/9] PCI: make PCI host bridge/bus creating and destroying logic symmetric
+Date: Tue, 14 May 2013 00:08:32 +0800
+Message-Id: <1368461313-4371-9-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
+References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 09:21:35AM +0400, Mark Brown wrote:
-> On Sun, May 12, 2013 at 12:05:04PM -0700, Sören Brinkmann wrote:
-> > On Sun, May 12, 2013 at 06:33:44PM +0400, Mark Brown wrote:
-> 
-> > > No, there's no confusion here - the clocks that are being exposed to
-> > > userspace are the clocks which enter the FPGA.  The driver or whatever
-> > > that understands the FPGA can do what is needed to control them,
-> > > including routing them on to subdevices it instantiates or exposing them
-> > > to userspace.
-> 
-> > Such a driver does not exist in general.
-> > For some IP cores, Linux drivers do exist and then
-> > they are supposed to directly use the CCF, IMHO, no need to expose
-> > things to userspace in that case.
-> > I'm trying to cover cases, in which there is no driver available/needed for
-> > the FPGA design, other than some simple clock controls.
-> 
-> You're not understanding the point here.  If you've got a
-> reprogrammmable FPGA you at least need some way to get the FPGA image in
-> there.  This driver is presumably responsible for instantiating whatever
-> is needed to control what is on the FPGA, that could include punting the
-> clocks to userspace if that's sane.
-Well, that driver actually exists. But that just programs a bitstream
-you give it to program. It does not know anything about the design it
-programs and cannot make any kind of decision whether the clocks should
-be userspace controlled or not.
+This patch makes PCI host bridge/bus creating and destroying logic
+symmetric by using device_initialize()/device_add()/device_del()/put_device()
+pairs as discussed in thread at:
+http://comments.gmane.org/gmane.linux.kernel.pci/22073
 
-	Sören
+It also fixes a bug in error recovery path in pci_create_root_bus()
+which may kfree() an in-use host bridge object.
 
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/probe.c  | 84 +++++++++++++++++++++++-----------------------------
+ drivers/pci/remove.c |  3 +-
+ 2 files changed, 39 insertions(+), 48 deletions(-)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index bc075a3..a2617c2 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -451,7 +451,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
+ 	}
+ }
+ 
+-static struct pci_bus * pci_alloc_bus(void)
++static struct pci_bus *pci_alloc_bus(struct pci_ops *ops, void *sd, int bus)
+ {
+ 	struct pci_bus *b;
+ 
+@@ -464,10 +464,32 @@ static struct pci_bus * pci_alloc_bus(void)
+ 		INIT_LIST_HEAD(&b->resources);
+ 		b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++		b->sysdata = sd;
++		b->ops = ops;
++		b->number = bus;
++		b->busn_res.start = bus;
++		b->busn_res.end = 0xff;
++		b->busn_res.flags = IORESOURCE_BUS;
++		b->dev.class = &pcibus_class;
++		dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
++		device_initialize(&b->dev);
+ 	}
++
+ 	return b;
+ }
+ 
++static void pci_release_host_bridge_dev(struct device *dev)
++{
++	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
++
++	if (bridge->release_fn)
++		bridge->release_fn(bridge);
++
++	pci_free_resource_list(&bridge->windows);
++
++	kfree(bridge);
++}
++
+ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ {
+ 	struct pci_host_bridge *bridge;
+@@ -476,6 +498,10 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+ 	if (bridge) {
+ 		INIT_LIST_HEAD(&bridge->windows);
+ 		bridge->bus = b;
++		bridge->dev.release = pci_release_host_bridge_dev;
++		dev_set_name(&bridge->dev, "pci%04x:%02x",
++			     pci_domain_nr(b), b->number);
++		device_initialize(&bridge->dev);
+ 	}
+ 
+ 	return bridge;
+@@ -628,28 +654,13 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	/*
+ 	 * Allocate a new bus, and inherit stuff from the parent..
+ 	 */
+-	child = pci_alloc_bus();
++	child = pci_alloc_bus(parent->ops, parent->sysdata, busnr);
+ 	if (!child)
+ 		return NULL;
+ 
+ 	child->parent = parent;
+-	child->ops = parent->ops;
+-	child->sysdata = parent->sysdata;
+ 	child->bus_flags = parent->bus_flags;
+-
+-	/* initialize some portions of the bus device, but don't register it
+-	 * now as the parent is not properly set up yet.
+-	 */
+-	child->dev.class = &pcibus_class;
+-	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+-
+-	/*
+-	 * Set up the primary, secondary and subordinate
+-	 * bus numbers.
+-	 */
+-	child->number = child->busn_res.start = busnr;
+ 	child->primary = parent->busn_res.start;
+-	child->busn_res.end = 0xff;
+ 
+ 	if (!bridge) {
+ 		child->dev.parent = parent->bridge;
+@@ -670,7 +681,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	bridge->subordinate = child;
+ 
+ add_dev:
+-	ret = device_register(&child->dev);
++	ret = device_add(&child->dev);
+ 	WARN_ON(ret < 0);
+ 
+ 	pcibios_add_bus(child);
+@@ -1190,18 +1201,6 @@ int pci_cfg_space_size(struct pci_dev *dev)
+ 	return PCI_CFG_SPACE_SIZE;
+ }
+ 
+-static void pci_release_bus_bridge_dev(struct device *dev)
+-{
+-	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
+-
+-	if (bridge->release_fn)
+-		bridge->release_fn(bridge);
+-
+-	pci_free_resource_list(&bridge->windows);
+-
+-	kfree(bridge);
+-}
+-
+ struct pci_dev *pci_alloc_dev(struct pci_bus *bus)
+ {
+ 	struct pci_dev *dev;
+@@ -1688,13 +1687,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
+-	b = pci_alloc_bus();
++	b = pci_alloc_bus(ops, sysdata, bus);
+ 	if (!b)
+ 		return NULL;
+ 
+-	b->sysdata = sysdata;
+-	b->ops = ops;
+-	b->number = b->busn_res.start = bus;
+ 	b2 = pci_find_bus(pci_domain_nr(b), bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+@@ -1706,27 +1702,22 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (!bridge)
+ 		goto err_out;
+ 
+-	bridge->dev.parent = parent;
+-	bridge->dev.release = pci_release_bus_bridge_dev;
+-	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+ 	error = pcibios_root_bridge_prepare(bridge);
+ 	if (error)
+ 		goto bridge_dev_reg_err;
+ 
+-	error = device_register(&bridge->dev);
++	bridge->dev.parent = parent;
++	error = device_add(&bridge->dev);
+ 	if (error)
+ 		goto bridge_dev_reg_err;
++
+ 	b->bridge = get_device(&bridge->dev);
+ 	device_enable_async_suspend(b->bridge);
+ 	pci_set_bus_of_node(b);
+-
+ 	if (!parent)
+ 		set_dev_node(b->bridge, pcibus_to_node(b));
+-
+-	b->dev.class = &pcibus_class;
+ 	b->dev.parent = b->bridge;
+-	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+-	error = device_register(&b->dev);
++	error = device_add(&b->dev);
+ 	if (error)
+ 		goto class_dev_reg_err;
+ 
+@@ -1769,12 +1760,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	return b;
+ 
+ class_dev_reg_err:
+-	put_device(&bridge->dev);
+-	device_unregister(&bridge->dev);
++	device_del(&bridge->dev);
+ bridge_dev_reg_err:
+-	kfree(bridge);
++	put_device(&bridge->dev);
+ err_out:
+-	kfree(b);
++	put_device(&b->dev);
+ 	return NULL;
+ }
+ 
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 8fc54b7..b0ce875 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -52,7 +52,8 @@ void pci_remove_bus(struct pci_bus *bus)
+ 	up_write(&pci_bus_sem);
+ 	pci_remove_legacy_files(bus);
+ 	pcibios_remove_bus(bus);
+-	device_unregister(&bus->dev);
++	device_del(&bus->dev);
++	put_device(&bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+ 
+-- 
+1.8.1.2
 
