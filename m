@@ -1,53 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab3EMOlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:41:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39684 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751435Ab3EMOlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:41:06 -0400
-Message-ID: <1368456065.1913.6.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] mfd: si476x: Do not use binary constants
-From: Joe Perches <joe@perches.com>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Mon, 13 May 2013 07:41:05 -0700
-In-Reply-To: <CAHQ1cqFL4WNq5QfdCk3jWmr0ATEukdrxG0qArn5Zwkj_ZVOxvA@mail.gmail.com>
-References: <1368044622-25645-1-git-send-email-geert@linux-m68k.org>
-	 <1368044622-25645-2-git-send-email-geert@linux-m68k.org>
-	 <CAHQ1cqFL4WNq5QfdCk3jWmr0ATEukdrxG0qArn5Zwkj_ZVOxvA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754603Ab3EMOlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:41:21 -0400
+Received: from canardo.mork.no ([148.122.252.1]:57000 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab3EMOlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:41:16 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: paulmck@linux.vnet.ibm.com
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [v3.10-rc1] WARNING: at kernel/rcutree.c:502
+Organization: m
+References: <87ip2opntp.fsf@nemi.mork.no>
+	<20130512113905.GH3648@linux.vnet.ibm.com>
+	<87li7kp50r.fsf@nemi.mork.no>
+	<20130512172135.GJ3648@linux.vnet.ibm.com>
+	<87a9o0ukll.fsf@nemi.mork.no> <87sj1rydol.fsf@nemi.mork.no>
+Date: Mon, 13 May 2013 16:39:33 +0200
+In-Reply-To: <87sj1rydol.fsf@nemi.mork.no> (=?utf-8?Q?=22Bj=C3=B8rn?=
+ Mork"'s message of "Mon, 13
+	May 2013 01:35:22 +0200")
+Message-ID: <87wqr3j656.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-13 at 07:29 -0700, Andrey Smirnov wrote:
-> On Wed, May 8, 2013 at 1:23 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > Gcc < 4.3 doesn't understand binary constanrs (0b*):
-[]
-> > Hence use hexadecimal constants (0x*) instead.
-[]
-> I really begin to regret my decision to use those constants in place
-> instead of defining a corresponding symbol in a header file. Because
-> now that those binary constants are replaced the code looks a little
-> bit more cryptic. Currently I am doing some additional work on the
-> driver(adding the support of a different chip) and I'll try to make
-> patches to address the issue.
-[]
-> > diff --git a/drivers/mfd/si476x-cmd.c b/drivers/mfd/si476x-cmd.c
-[]
-> > @@ -772,16 +772,16 @@ int si476x_core_cmd_am_rsq_status(struct si476x_core *core,
-[]
-> > +       report->snrhint         = 0x08 & resp[1];
-> > +       report->snrlint         = 0x04 & resp[1];
-> > +       report->rssihint        = 0x02 & resp[1];
-> > +       report->rssilint        = 0x01 & resp[1];
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-You might also want to change all the
-u8 report variables to bool.
+Bj=C3=B8rn Mork <bjorn@mork.no> writes:
+
+> I was unable to recreate the problem in a virtual machine, which is
+> slightly suspicious.  And bisecting it ended up pointing to a merge
+> commit:=20
+>
+>  commit ab86e974f04b1cd827a9c7c35273834ebcd9ab38
+>  Merge: 8700c95 6f7a05d
+>  Author: Linus Torvalds <torvalds@linux-foundation.org>
+>  Date:   Tue Apr 30 08:15:40 2013 -0700
+>
+>      Merge branch 'timers-core-for-linus' of git://git.kernel.org/pub/scm=
+/linux/kernel/git/tip/tip
+>  ..
+>
+>
+> which I don't think makes much sense at all.  The bisect log leading to
+> this was:
+>
+> bjorn@canardo:/usr/local/src/build-tmp/linux$ git bisect log
+> # bad: [f722406faae2d073cc1d01063d1123c35425939e] Linux 3.10-rc1
+> # good: [c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1] Linux 3.9
+> git bisect start 'v3.10-rc1' 'v3.9'
+> # bad: [73287a43cc79ca06629a88d1a199cd283f42456a] Merge git://git.kernel.=
+org/pub/scm/linux/kernel/git/davem/net-next
+> git bisect bad 73287a43cc79ca06629a88d1a199cd283f42456a
+> # bad: [5d434fcb255dec99189f1c58a06e4f56e12bf77d] Merge branch 'for-linus=
+' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial
+> git bisect bad 5d434fcb255dec99189f1c58a06e4f56e12bf77d
+> # good: [507ffe4f3840ac24890a8123c702cf1b7fe4d33c] Merge tag 'tty-3.10-rc=
+1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
+> git bisect good 507ffe4f3840ac24890a8123c702cf1b7fe4d33c
+> # good: [4a7b4d2360175f67ab2c58effeeb8362a3057c25] x86: pageattr-test: re=
+move srandom32 call
+> git bisect good 4a7b4d2360175f67ab2c58effeeb8362a3057c25
+> # good: [46d9be3e5eb01f71fc02653755d970247174b400] Merge branch 'for-3.10=
+' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
+> git bisect good 46d9be3e5eb01f71fc02653755d970247174b400
+> # good: [e0972916e8fe943f342b0dd1c9d43dbf5bc261c2] Merge branch 'perf-cor=
+e-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect good e0972916e8fe943f342b0dd1c9d43dbf5bc261c2
+> # bad: [ab86e974f04b1cd827a9c7c35273834ebcd9ab38] Merge branch 'timers-co=
+re-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect bad ab86e974f04b1cd827a9c7c35273834ebcd9ab38
+> # good: [8700c95adb033843fc163d112b9d21d4fda78018] Merge branch 'smp-hotp=
+lug-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect good 8700c95adb033843fc163d112b9d21d4fda78018
+> # good: [0ed2aef9b3bffe598045b62a31a50d912eee92d8] Merge branch 'fortglx/=
+3.10/time' of git://git.linaro.org/people/jstultz/linux into timers/core
+> git bisect good 0ed2aef9b3bffe598045b62a31a50d912eee92d8
+> # good: [8f294b5a139ee4b75e890ad5b443c93d1e558a8b] hrtimer: Add expiry ti=
+me overflow check in hrtimer_interrupt
+> git bisect good 8f294b5a139ee4b75e890ad5b443c93d1e558a8b
+> # good: [60cf7ea849e77c8782dee147cfb8c38d1984236e] timer_list: Split time=
+r_list_show_tickdevices
+> git bisect good 60cf7ea849e77c8782dee147cfb8c38d1984236e
+> # good: [d2054b2c11682495fca41e9d4092e654df63b517] posix-timers: Remove u=
+nused variable
+> git bisect good d2054b2c11682495fca41e9d4092e654df63b517
+> # good: [6402c7dc2a19c19bd8cdc7d80878b850da418942] Merge branch 'linus' i=
+nto timers/core Reason: Get upstream fixes before adding conflicting code.
+> git bisect good 6402c7dc2a19c19bd8cdc7d80878b850da418942
+> # good: [6f7a05d7018de222e40ca003721037a530979974] clockevents: Set dummy=
+ handler on CPU_DEAD shutdown
+> git bisect good 6f7a05d7018de222e40ca003721037a530979974
+>
+>
+> So there it stands.  I have no clue and I don't think I'm able to
+> provide any clue for anyone else either.  Given that the problem seems
+> to be very consistently reproducible on my laptop, I am a bit puzzled as
+> to how the bisect would fail like that.
+
+Hey, hey, hey.  Turns out this wasn't that wrong after all.  That merge
+includes a oneline diff in kernel/cpu/idle.c and it *is* actually this
+diff which trigger the problem for me.  Reverting it, using the attached
+patch, makes the warning go away.  Which means that it had nothing to do
+with your RCU changes.
+
+But I haven't the faintest idea how this is supposed to work, or even
+how to explain the patch properly, so I think I need some help from
+Thomas here.  Unless this makes you understand the real issue?
+
+Thomas, why does powertop trigger the
+
+  WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48+0x3d/0x125()
+
+without the attached patch?  And what is the proper resolution?
 
 
+
+Bj=C3=B8rn
+
+
+
+--=-=-=
+Content-Type: text/x-diff; charset=utf-8
+Content-Disposition: inline;
+ filename=0001-idle-prevent-rcu_eqs_exit_common-warning.patch
+Content-Transfer-Encoding: quoted-printable
+
+>From 5ce5497e752980386696c9293b1ae4d703416f38 Mon Sep 17 00:00:00 2001
+From: =3D?UTF-8?q?Bj=3DC3=3DB8rn=3D20Mork?=3D <bjorn@mork.no>
+Date: Mon, 13 May 2013 16:03:59 +0200
+Subject: [PATCH] idle: prevent rcu_eqs_exit_common warning
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
+
+Avoid the following warning when running powertop:
+
+[   49.289034] ------------[ cut here ]------------
+[   49.289055] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48=
++0x3d/0x125()
+[   49.289059] Modules linked in: msr cpufreq_stats xt_multiport iptable_fi=
+lter ip_tables rfcomm bnep xt_hl binfmt_misc ip6table_filter ip6_tables x_t=
+ables nfsd nfs_acl nfs lockd fscache sunrpc 8021q garp stp llc tun cdc_mbim=
+ cdc_ncm cdc_wdm usbnet mii loop fuse btusb bluetooth iTCO_wdt iTCO_vendor_=
+support snd_hda_codec_conexant arc4 iwldvm mac80211 thinkpad_acpi nvram snd=
+_seq_midi snd_seq_midi_event snd_rawmidi snd_hda_intel snd_seq snd_hda_code=
+c snd_hwdep snd_pcm_oss snd_mixer_oss iwlwifi snd_pcm coretemp kvm_intel kv=
+m snd_seq_device evdev psmouse serio_raw lpc_ich mfd_core cfg80211 snd_page=
+_alloc i2c_i801 snd_timer snd soundcore rfkill battery ac acpi_cpufreq mper=
+f i915 wmi video i2c_algo_bit drm_kms_helper button drm i2c_core processor =
+ext4 crc16 jbd2 mbcache nbd sg sr_mod cdrom sd_mod crc_t10dif ahci libahci =
+libata microcode scsi_mod ehci_pci uhci_hcd ehci_hcd usbcore usb_common the=
+rmal thermal_sys e1000e ptp pps_core
+[   49.289244] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-bisect-rcu-=
+warn+ #107
+[   49.289247] Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 )=
+ 12/19/2011
+[   49.289251]  ffffffff8157d8c8 ffffffff81801e28 ffffffff8137e4e3 ffffffff=
+81801e68
+[   49.289260]  ffffffff8103094f ffffffff81801e68 0000000000000000 ffff8802=
+3afcd9b0
+[   49.289268]  0000000000000000 0140000000000000 ffff88023bee7700 ffffffff=
+81801e78
+[   49.289276] Call Trace:
+[   49.289285]  [<ffffffff8137e4e3>] dump_stack+0x19/0x1b
+[   49.289293]  [<ffffffff8103094f>] warn_slowpath_common+0x62/0x7b
+[   49.289300]  [<ffffffff8103097d>] warn_slowpath_null+0x15/0x17
+[   49.289306]  [<ffffffff810a9006>] rcu_eqs_exit_common.isra.48+0x3d/0x125
+[   49.289314]  [<ffffffff81079b49>] ? trace_hardirqs_off_caller+0x37/0xa6
+[   49.289320]  [<ffffffff810a9692>] rcu_idle_exit+0x85/0xa8
+[   49.289327]  [<ffffffff8107076e>] trace_cpu_idle_rcuidle+0xae/0xff
+[   49.289334]  [<ffffffff810708b1>] cpu_startup_entry+0x72/0x115
+[   49.289341]  [<ffffffff813689e5>] rest_init+0x149/0x150
+[   49.289347]  [<ffffffff8136889c>] ? csum_partial_copy_generic+0x16c/0x16c
+[   49.289355]  [<ffffffff81a82d34>] start_kernel+0x3f0/0x3fd
+[   49.289362]  [<ffffffff81a8274c>] ? repair_env_string+0x5a/0x5a
+[   49.289368]  [<ffffffff81a82481>] x86_64_start_reservations+0x2a/0x2c
+[   49.289375]  [<ffffffff81a82550>] x86_64_start_kernel+0xcd/0xd1
+[   49.289379] ---[ end trace 07a1cc95e29e9036 ]---
+
+Signed-off-by: Bj=C3=B8rn Mork <bjorn@mork.no>
+---
+ kernel/cpu/idle.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index 8b86c0c..5b9ef3c 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -85,7 +85,7 @@ static void cpu_idle_loop(void)
+ 			 * know that the IPI is going to arrive right
+ 			 * away
+ 			 */
+-			if (cpu_idle_force_poll || tick_check_broadcast_expired()) {
++			if (cpu_idle_force_poll) {
+ 				cpu_idle_poll();
+ 			} else {
+ 				current_clr_polling();
+--=20
+1.7.10.4
+
+
+--=-=-=--
