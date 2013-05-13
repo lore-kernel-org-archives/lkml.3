@@ -1,116 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3EMGVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:21:05 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:56875 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3EMGVE (ORCPT
+	id S1753500Ab3EMGZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:25:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41442 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133Ab3EMGZ2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:21:04 -0400
+	Mon, 13 May 2013 02:25:28 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] spi/omap2: Let device core handle pinctrl
+Thread-Topic: [PATCH] spi/omap2: Let device core handle pinctrl
+Thread-Index: AQHOSpEtMssOEU4sAUGUr3i0BAEdV5j5FsQg///PQ4CAAKQJQIAEI/qAgAUBrnA=
+Date: Mon, 13 May 2013 06:25:12 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EBEA4CC@DBDE04.ent.ti.com>
+References: <1367868998-12667-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1BAFE6F6C881BF42822005164F1491C33EBE473A@DBDE04.ent.ti.com>
+ <20130507085535.GN7478@sirena.org.uk>
+ <1BAFE6F6C881BF42822005164F1491C33EBE4E07@DBDE04.ent.ti.com>
+ <20130510095629.GM3200@sirena.org.uk>
+In-Reply-To: <20130510095629.GM3200@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CADApbehSgR7h2iHhW_QmvO0sTb3zsw6cPh0Dgcbge16PzObFvg@mail.gmail.com>
-References: <1367803801-17111-1-git-send-email-chao.xie@marvell.com>
- <1367803801-17111-4-git-send-email-chao.xie@marvell.com> <CAMPhdO9EFj1YZt3zCD6evrH+t77=hiFj46_LPSM7dGX0rku6Kw@mail.gmail.com>
- <CADApbehSgR7h2iHhW_QmvO0sTb3zsw6cPh0Dgcbge16PzObFvg@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 13 May 2013 14:20:43 +0800
-Message-ID: <CAMPhdO8apwiG22puibsyGLdnmomFHyQcBEp9OO0_iqYwZycdQA@mail.gmail.com>
-Subject: Re: [PATCH V4 3/3] pwm: pxa: add device tree support
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: Chao Xie <chao.xie@marvell.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 1:04 PM, Chao Xie <xiechao.mail@gmail.com> wrote:
->>> +       const struct of_device_id *of_id =
->>> +                       of_match_device(pxa_pwm_of_match, &pdev->dev);
->>> +       unsigned int npwm;
->>> +
->>> +       if (!of_id)
->>> +               return -ENODEV;
->>> +
->>> +       npwm = (unsigned int)of_id->data;
->>> +       pwm->chip.npwm = (npwm & HAS_SECONDARY_PWM) ? 2 : 1;
->>> +
->>> +       return 0;
->>> +}
->>> +
->>>  static int pwm_probe(struct platform_device *pdev)
->>>  {
->>>         const struct platform_device_id *id = platform_get_device_id(pdev);
->>> @@ -144,7 +180,6 @@ static int pwm_probe(struct platform_device *pdev)
->>>         pwm->chip.dev = &pdev->dev;
->>>         pwm->chip.ops = &pxa_pwm_ops;
->>>         pwm->chip.base = -1;
->>> -       pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
->>>
->>>         r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>         if (r == NULL) {
->>> @@ -156,6 +191,20 @@ static int pwm_probe(struct platform_device *pdev)
->>>         if (IS_ERR(pwm->mmio_base))
->>>                 return PTR_ERR(pwm->mmio_base);
->>>
->>> +       if (!id) {
->>> +               if (IS_ENABLED(CONFIG_OF))
->>> +                       ret = pxa_pwm_parse_data_dt(pdev, pwm);
->>> +               else
->>> +                       ret = -ENODEV;
->>> +       } else {
->>> +               pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
->>> +       }
->>
->> ^^ braces not necessarily here, and I'm not really sure if we should check
->> CONFIG_OF firstly, and leave the platform_device_id thing as a legacy
->> fall back, what do you think?
->>
->>   if (IS_ENABLED(CONFIG_OF)) {
->>      ...
->>   } else {
->>     const struct platform_device_id *id = platform_get_device_id(...);
->>     ...
->>   }
->>
-> it has some reasons.
-> You ways works for
->      1. PWM defined in DT configuration file and CONFIG_OF is defined
->      2. CONFIG_OF is not defined.
-> If COFNIG_OF is defined, but PWM is not defined in device tree
-> configuration file. The device
-> can still match the driver is the id_table is matched or name is matched.
-> So I covered addtional situation
->     1. PWM is not defined in DT configuration file but CONFIG_OF is defined.
->
-> So i keep the possiblility that event CONFIG_OF is defined, but PWM is
-> not defined in DT file, and we still can use old way to probe the
-> device.
->
+On Fri, May 10, 2013 at 15:26:29, Mark Brown wrote:
+> On Tue, May 07, 2013 at 10:47:31AM +0000, Hebbar, Gururaja wrote:
+> > On Tue, May 07, 2013 at 14:25:35, Mark Brown wrote:
+> 
+> > > There's also been some discussion about factoring out the suspend/resume
+> > > code since it's going to get equally repetitive.
+> 
+> > Really. Any link/referenceso that I can follow.
+> > But I think each module will have its own work to do. May be I can confirm once 
+> > I look at the factoring-out discussion.
+> 
+> It was part of the threads where the idea of adding the helper for the
+> boilerplate stuff to the core was discussed initially IIRC.
 
-Yeah I was thinking maybe we should not keep the legacy working if
-CONFIG_OF is defined, but that should be OK:
+Ok. Thanks. I will check for it.
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> 
+> > > > I will be submitting a patch to enhance the existing pinctrl support for 
+> > > > spi omap2 shortly which does above work.
+> 
+> > > How soon is shortly?
+> 
+> > Since I am adding this Pinctrl PM mode support to many other drivers (i2c, 
+> > cpsw, da8xx-fb, hsmmc, ti-pwm, usb ...), I would say Shortly = 1 week - 10 days.
+> 
+> Well, I guess I'll keep the patch for now and drop it when you send out
+> the PM code.
 
->>> +
->>> +       if (ret) {
->>> +               dev_err(&pdev->dev, "failed to parse data from device id\n");
->>> +               return ret;
->>> +       }
->>> +
->>>         ret = pwmchip_add(&pwm->chip);
->>>         if (ret < 0) {
->>>                 dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
->>> @@ -181,6 +230,7 @@ static struct platform_driver pwm_driver = {
->>>         .driver         = {
->>>                 .name   = "pxa25x-pwm",
->>>                 .owner  = THIS_MODULE,
->>> +               .of_match_table = pxa_pwm_of_match,
->>>         },
->>>         .probe          = pwm_probe,
->>>         .remove         = pwm_remove,
->>> --
->>> 1.7.4.1
->>>
+Fair enough.
+
+> 
+
+
+Regards, 
+Gururaja
