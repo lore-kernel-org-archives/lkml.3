@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab3EMLcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 07:32:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63059 "EHLO mga03.intel.com"
+	id S1754344Ab3EMLk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 07:40:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32100 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab3EMLcC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 07:32:02 -0400
+	id S1753622Ab3EMLkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 07:40:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
-   d="scan'208";a="301629868"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linux PM list (linux-pm@vger.kernel.org)" <linux-pm@vger.kernel.org>
-CC: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
-Subject: Kobject_uevent in cpufreq.c
-Thread-Topic: Kobject_uevent in cpufreq.c
-Thread-Index: Ac5PzAsHEbqKdSyMS+KKwxMdrUgOtA==
-Date: Mon, 13 May 2013 11:31:57 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59C8D667@BGSMSX101.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="336734653"
+Date: Mon, 13 May 2013 14:44:32 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: implement acpi_os_get_timer() according the spec
+Message-ID: <20130513114432.GK20562@intel.com>
+References: <1368440871-27552-1-git-send-email-mika.westerberg@linux.intel.com>
+ <9521576.ePuIMg9qsX@vostro.rjw.lan>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9521576.ePuIMg9qsX@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, May 13, 2013 at 01:38:46PM +0200, Rafael J. Wysocki wrote:
+> On Monday, May 13, 2013 01:27:51 PM Mika Westerberg wrote:
+> > ACPI Timer() opcode should return monotonically increasing clock with 100ns
+> > granularity. Implement this with the help of ktime_get().
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> That looks reasobable.  Have you tested it?
 
-I am observing an UEvent issue in cpufreq.c. 
-The cpufreq_add_dev() function is called whenever a core is 'onlined'.
-we expect the kobject_uevent() method in cpufreq_add_dev() to
-send an UEvent with KOBJ_ADD as the action parameter.
+Very lightly. Basically I added some debug printks() between two
+successsive calls of Timer() and it seemed like it returned correct time.
 
-But this call fails because of the 'filter function' inside kobject_uevent_env
-inside lib/kobject_uevent.c. The ->filter points to 'dev_uevent_filter' in
-drivers/base/core.c, where the check for 'device_ktype' fails.
-
-Error message:
-kobject: 'cpufreq' (e5bbf290): kobject_uevent_env:
-filter function caused the event to drop!
-
-As far as I can see, we need a kset, and associated filter function
-inside cpufreq.c to get this working. Is this the right way to go ?
-Any other easy/correct ways to get it working ? Please advise.
-
-Thanks,
-Durga
+It is certainly better than returning t+1 every time Timer() is called :)
