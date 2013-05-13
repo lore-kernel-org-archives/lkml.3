@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3EMT3H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:29:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49555 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573Ab3EMT3F (ORCPT
+	id S1755308Ab3EMT3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:29:19 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45581 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab3EMT3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:29:05 -0400
-Message-ID: <51913EFE.6030103@wwwdotorg.org>
-Date: Mon, 13 May 2013 13:29:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: tegra: dalmore: populate key mapping
-References: <1365594454-20614-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1365594454-20614-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 13 May 2013 15:29:16 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: davem@davemloft.net
+Cc: Frank.Li@freescale.com, fabio.estevam@freescale.com, shawn.guo@linaro.org,
+        joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] net: ethernet: freescale: use devm_ioremap_resource()
+Date: Mon, 13 May 2013 21:37:54 +0200
+Message-Id: <1368473874-9569-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 05:47 AM, Laxman Dewangan wrote:
-> Keys on Dalmore interfaced through Tegra KBC controller
-> in key matrix topology.
-> 
-> Add the key mapping for the keys.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> The system is booted on Dalmore SKU1000 with the fastboot.
+Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+also remove tests on 'r' since devm_ioremap_resource() checks for it
+in a better way.
 
-I don't intend applying these two patches.
+Found with coccicheck and this semantic patch:
+ scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-For Dalmore, there are two SKUs, one using KBC and one using GPIOs for
-the buttons/keys. The SKU that uses GPIOs is far more common, so we've
-decided to support that one upstream.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/net/ethernet/freescale/fec_main.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-We aren't actively pursuing Pluto support upstream; it's likely that
-I'll send a patch to remove tegra114-pluto.dts in the near future.
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index aff0310..0afc7ff 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -1843,8 +1843,6 @@ fec_probe(struct platform_device *pdev)
+ 		pdev->id_entry = of_id->data;
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!r)
+-		return -ENXIO;
+ 
+ 	/* Init network device */
+ 	ndev = alloc_etherdev(sizeof(struct fec_enet_private));
+@@ -1861,17 +1859,16 @@ fec_probe(struct platform_device *pdev)
+ 	    (pdev->id_entry->driver_data & FEC_QUIRK_HAS_GBIT))
+ 		fep->pause_flag |= FEC_PAUSE_FLAG_AUTONEG;
+ 
+-	fep->hwp = devm_request_and_ioremap(&pdev->dev, r);
++	fep->hwp = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(fep->hwp)) {
++		ret = PTR_ERR(fep->hwp);
++		goto failed_ioremap;
++	}
+ 	fep->pdev = pdev;
+ 	fep->dev_id = dev_id++;
+ 
+ 	fep->bufdesc_ex = 0;
+ 
+-	if (!fep->hwp) {
+-		ret = -ENOMEM;
+-		goto failed_ioremap;
+-	}
+-
+ 	platform_set_drvdata(pdev, ndev);
+ 
+ 	ret = of_get_phy_mode(pdev->dev.of_node);
+-- 
+1.7.10.4
+
