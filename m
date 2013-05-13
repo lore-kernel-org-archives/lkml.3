@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751120Ab3EMEHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 00:07:22 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34249 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3EMEHU (ORCPT
+	id S1751246Ab3EMEQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 00:16:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab3EMEQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 00:07:20 -0400
-X-AuditID: cbfee690-b7efc6d000006d92-5a-519066f6683c
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Dolev Raviv'" <draviv@codeaurora.org>, linux-scsi@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        "'Santosh Y'" <santoshsy@gmail.com>
-References: <1368368640-10167-1-git-send-email-draviv@codeaurora.org>
- <1368368640-10167-4-git-send-email-draviv@codeaurora.org>
-In-reply-to: <1368368640-10167-4-git-send-email-draviv@codeaurora.org>
-Subject: RE: [PATCH V1 3/8] scsi: ufs: wrap the i/o access operations
-Date: Mon, 13 May 2013 13:07:17 +0900
-Message-id: <002301ce4f8f$5bc02600$13407200$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac5PHOr24XezpGorSfaGQlTKhExNsQAX5w9w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI91vaRMCDbovylqcPdPPZDFx/1l2
-	i8u75rBZdF/fwWZxcO4ZdgdWj8t9vUweO2fdZff4vEkugDmKyyYlNSezLLVI3y6BK2PHvx62
-	glaWiplHrrA3MK5m7mLk5JAQMJH4fPUjlC0mceHeerYuRi4OIYFljBK9s1vYYYqa9l6GSkxn
-	lDhzZi+U84dRYsH/m2BVbAJaEn/fvAEbJSLgKnH+8ys2EJtZoEhi2rUZ7BANjYwSHV96mEAS
-	nAJuEluWrGDpYuTgEAZq2HDXHSTMIqAq8XL5aRYQm1fAVmLtix2MELagxI/J98DKmQXUJaZM
-	yYUYLy+xec1bZpCwBFD40V9dEFNEwEji9qlaiAoRiX0v3jGCHCAhcIxd4sPE3cwQmwQkvk0+
-	xALRKiux6QA0HCQlDq64wTKBUWIWkr2zEPbOQrJ3FpINCxhZVjGKphYkFxQnpReZ6BUn5haX
-	5qXrJefnbmKEROSEHYz3DlgfYkwG2j6RWUo0OR8Y0Xkl8YbGZkYWpiamxkbmlmakCSuJ86q3
-	WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYBQMdbreZ+O6Z2LVvJjrE9faLWP+pjj5kOxK
-	f40nFwNr36rxbbP0VdJbbZrOz1q2Ncn9Sab3WtauA7FG37v+Gsb9e3/zxyNX7u/dE08+0Z4d
-	/iiA907us7abaVUXFpc/WtCqYGVU4fBgZcD+A9aSNhpajvm+IZJL9seyi7tdCv7qJ3Xn4oof
-	JUosxRmJhlrMRcWJAHTr8lHeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd1vaRMCDX4ckbQ4e6afyWLi/rPs
-	Fpd3zWGz6L6+g83i4Nwz7A6sHpf7epk8ds66y+7xeZNcAHNUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPGjn89bAWtLBUzj1xhb2BczdzFyMkhIWAi0bT3MhuELSZx4d56
-	IJuLQ0hgOqPEmTN7oZw/jBIL/t9kB6liE9CS+PvmDVi3iICrxPnPr8C6mQWKJKZdm8EO0dDI
-	KNHxpYcJJMEp4CaxZckKli5GDg5hoIYNd91BwiwCqhIvl59mAbF5BWwl1r7YwQhhC0r8mHwP
-	rJxZQF1iypRciPHyEpvXvGUGCUsAhR/91QUxRQSMJG6fqoWoEJHY9+Id4wRGoVlI5sxCmDML
-	yZxZSDoWMLKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO92fSOxhXNVgcYhTgYFTi4fVQ
-	nBAoxJpYVlyZe4hRgoNZSYR3rxtQiDclsbIqtSg/vqg0J7X4EGMy0JcTmaVEk/OBqSivJN7Q
-	2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhgVdIxlU9zDHv8pZxVe
-	67DtrNDeR7F50/TCcqZ8z17pKOoSaJFrps1gtUG8773iJ0HbAtUNkw2uM2c+UnVRqzE8rHi5
-	PDCuodE9Xixb6HDCBY/rs7c757Y/CF9+PfGx2SWeiZFiXCc5lBdydd7h8nzy0Xz9PIkXm+OM
-	/frWtdanN7tdOfX+kBJLcUaioRZzUXEiAI0izM07AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 13 May 2013 00:16:38 -0400
+Date: Mon, 13 May 2013 14:16:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20130513141629.70e8d36cf81873a8fd56af59@canb.auug.org.au>
+In-Reply-To: <1368411070.929.19.camel@localhost>
+References: <20130513120728.f3f469e5d71b39ec78800175@canb.auug.org.au>
+	<1368411070.929.19.camel@localhost>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_May_2013_14_16_29_+1000_ZZxhVhZfXkJlIp=2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, May 12, 2013, Dolev Raviv wrote:
-Author should be identified here. (From: author...)
-Except last patch of series(8/8), all of patches are not from you.
+--Signature=_Mon__13_May_2013_14_16_29_+1000_ZZxhVhZfXkJlIp=2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Simplify operations with hiding mmio_base.
-> 
-> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
-> Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
-I'm not sure that your signed-off is proper here including (3/8 ~ 6/8)
-And maintainer, Santosh's ack is omitted.
+Hi Eric,
 
-> Tested-by: Maya Erez <merez@codeaurora.org>
-Thanks,
-Seungwon Jeon
+On Sun, 12 May 2013 22:11:10 -0400 Eric Paris <eparis@redhat.com> wrote:
+>
+> I thought I sent you a note asking for audit to get pulled into -next
+> quite a while back.  I'll resend...
 
+You sent an email on Jan 4:
+
+> I know that Al hates audit so I created a new audit tree and decided to
+> start trying to allow him to avoid the problem whenever possible.  So
+> unless Al objects to me going around him except when I touch the VFS can
+> you pull my new tree?
+>
+> git://git.infradead.org/users/eparis/audit.git
+
+To which I replied:
+
+> I really don't like getting new tree requests just as Linus is about to
+> open the merge window.  Al says he will look at this stuff and put it
+> into his audit tree
+> (git://git.kernel.org/pub/scm/linux/kernel/git/viro/audit-current.git#for=
+-next)
+> by tomorrow, so I will wait for that.
+>
+> If you and Al come to some other arrangement, let me know.
+
+I guess it fell through the cracks ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__13_May_2013_14_16_29_+1000_ZZxhVhZfXkJlIp=2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRkGkdAAoJEECxmPOUX5FEweMQAJRMXQObk9HwNS9qd2MU6ENf
+D+eC6qF6vNcXqminox5DOeOKiy74LqH7diZjYkI+1S13QB1ctzdaDObu6isapt/D
+ZOPakWJls5EMgq3Etitq9QYqPD/8q91AIYU5WQJS8lYmbs+YPsRGlCFW+SUmzm1y
+bW0yActMXEQudc4Krw9laR9+e3SErWZ2HeuZvDMuaMrThQ0+ALVH2sID3+nPpUMS
+fxYDYp+y4k6zylMAJTwXDOX41yqRG7i8ooYcQ3CEju1rxUljdtvSRe8qzWD4y14P
+ofLkxkRPZiOZ3sBbveem9yo2hyjvr3n5NLCYrGeAdJyCbNeNjNw3yAkUx4p3KvcS
+kkDcdu68QqqtekPvgwt4wqOawL0zknKnXJSJ9T+rdiolJs5ujvKlr39mHfpWpoFJ
+uX60msNT2MBDeUgwkzW9N+QUFRLnA8FltCYDHQ5mPdLQHqQR6g/Gs20/8aGR+tC/
+Mwnf79tAsMBNar+g3kZp5f+27YgXD2hhXDnOQzT+kZf2ZS4BtJq4DXuhefoyG+le
+25Rhsi44wVgu7YSPflcXt78OOkVYRMNMHESTnHEv8a4+5BWV8ZJEpUYVtbSgGAuk
+QA586bHCm9gFFoKyWVTzV9DYzxVsqmdH3Gw7tc4cmA7DyzMKP82qvJcG05hyFXyd
+lvWSOd1XFIhU/tLSofB8
+=e10X
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_May_2013_14_16_29_+1000_ZZxhVhZfXkJlIp=2--
