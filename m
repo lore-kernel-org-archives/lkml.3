@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab3EMRJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:09:30 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:62483 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3EMRJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:09:27 -0400
+	id S1752254Ab3EMRJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:09:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab3EMRJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 13:09:35 -0400
+Message-ID: <51911E42.7010008@redhat.com>
+Date: Mon, 13 May 2013 12:09:22 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <5191173D.3070709@gmail.com>
-References: <1320756113.14409.385.camel@x61.thuisdomein>
-	<20111108141647.GA3390@hash.lan>
-	<1342124352.22584.21.camel@x61.thuisdomein>
-	<20120712203837.GA3045@localhost>
-	<4FFFBDD8.6020305@neratec.com>
-	<20120713124134.GA5567@localhost>
-	<1362999998.3137.60.camel@x61.thuisdomein>
-	<1368457391.1350.67.camel@x61.thuisdomein>
-	<CAJ-VmokciVPxzJ0LptdQyL9koa8Bw7ecJdentPH5q9+MQ4=GpA@mail.gmail.com>
-	<5191173D.3070709@gmail.com>
-Date: Mon, 13 May 2013 10:09:25 -0700
-X-Google-Sender-Auth: RJacZByJGlX_D8PWj5UhFuvLX20
-Message-ID: <CAJ-Vmo=HOFqu8vB1=pvz79YwE8qAMDc4ZJACJHaSuxn4S92sFg@mail.gmail.com>
-Subject: Re: [PATCH] ath5k: Remove AHB bus support.
-From: Adrian Chadd <adrian@freebsd.org>
-To: Jonathan Bither <jonbither@gmail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Bob Copeland <me@bobcopeland.com>,
-        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>, nbd@openwrt.org,
-        ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Jan Kara <jack@suse.cz>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        EUNBONG SONG <eunb.song@samsung.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-xfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+Subject: Re: EXT4 regression caused 4eec7
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <20130510192747.GA11707@thunk.org> <87y5bm53z3.fsf@openvz.org> <87txm96fkd.fsf@openvz.org> <87mws1eq6y.fsf@openvz.org> <20130511230559.GD26298@thunk.org> <87a9o01siw.fsf@openvz.org> <51911604.2060805@redhat.com> <20130513170124.GJ400@quack.suse.cz>
+In-Reply-To: <20130513170124.GJ400@quack.suse.cz>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2013 09:39, Jonathan Bither <jonbither@gmail.com> wrote:
-
->> ... is anyone using this on openwrt?
+On 5/13/13 12:01 PM, Jan Kara wrote:
+> On Mon 13-05-13 11:34:12, Eric Sandeen wrote:
+>> On 5/12/13 4:01 AM, Dmitry Monakhov wrote:
+>>> In fact '4eec70' are vexing because I have reviewed and tested this patch before
+>>> it was marked as Review-by, but missed the bug. This is because xfstests
+>>> was executed manually logs was full of warnings but tainted flag was not
+>>> checked at the end. 
 >>
-> I am.
-> I am also reworking AR2131X drivers and will submit a patch to linux-mips
-> shortly.
+>> Can you elaborate on this?  What was logged, and is it something we could
+>> try to pick up post-test in xfstests?
+>   Generally I think it might be useful if xfstests would fail / warn if
+> kernel became tainted during the test (e.g. due to WARN_ON or oops, or
+> something like that). It should be even relatively easy to implement
+> (just compare /proc/sys/kernel/tainted before and after each test).
+> 
+> 								Honza
+> 
 
-Sweet. Someone say NACK then? :)
+Ah, right.  That should be easy, I'll see if I can cook that up.
 
-
-
-Adrian
+Thanks,
+-Eric
