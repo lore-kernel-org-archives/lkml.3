@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3EMNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 09:44:16 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:50618 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab3EMNoO (ORCPT
+	id S1753115Ab3EMNqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 09:46:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39598 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab3EMNqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 09:44:14 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: davem@davemloft.net
-Cc: cernekee@gmail.com, sergei.shtylyov@cogentembedded.com, jogo@openwrt.org,
-        joe@perches.com, gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] drivers: net: ethernet: broadcom: bcm63xx: use devm_ioremap_resource()
-Date: Mon, 13 May 2013 15:53:01 +0200
-Message-Id: <1368453181-6637-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 13 May 2013 09:46:06 -0400
+Date: Mon, 13 May 2013 17:45:22 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, wfp5p@virginia.edu,
+        vinod.koul@linux.intel.com, ramesh.babu@intel.com,
+        namartax.kohli@intel.com, yongjun_wei@trendmicro.com.cn,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20130513134522.GH6836@sirena.org.uk>
+References: <CAPgLHd_RTomuGFrwReDt6w9q+nH376W=6hHD4qZ4PGQXRGnJqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Hlh2aiwFLCZwGcpw"
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd_RTomuGFrwReDt6w9q+nH376W=6hHD4qZ4PGQXRGnJqA@mail.gmail.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH -next] ASoC: mid-x86: add missing iounmap() to probe
+ error and remove
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace calls to deprecated devm_request_and_ioremap by devm_ioremap_resource.
-also remove tests on 'res' since devm_ioremap_resource() checks for it
-in a better form.
 
-Found with coccicheck and this semantic patch:
- scripts/coccinelle/api/devm_ioremap_resource.cocci
+--Hlh2aiwFLCZwGcpw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/net/ethernet/broadcom/bcm63xx_enet.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+On Mon, May 13, 2013 at 05:00:44PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Add the missing iounmap() before return from snd_mfld_mc_probe()
+> in the error handling case and to snd_mfld_mc_remove().
 
-diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-index 0b3e23e..0497d0a 100644
---- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-+++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
-@@ -1628,7 +1628,7 @@ static int bcm_enet_probe(struct platform_device *pdev)
- 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	res_irq_rx = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
- 	res_irq_tx = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
--	if (!res_mem || !res_irq || !res_irq_rx || !res_irq_tx)
-+	if (!res_irq || !res_irq_rx || !res_irq_tx)
- 		return -ENODEV;
- 
- 	ret = 0;
-@@ -1641,9 +1641,9 @@ static int bcm_enet_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto out;
- 
--	priv->base = devm_request_and_ioremap(&pdev->dev, res_mem);
--	if (priv->base == NULL) {
--		ret = -ENOMEM;
-+	priv->base = devm_ioremap_resource(&pdev->dev, res_mem);
-+	if (IS_ERR(priv->base)) {
-+		ret = PTR_ERR(priv->base);
- 		goto out;
- 	}
- 
-@@ -1869,12 +1869,10 @@ static int bcm_enet_shared_probe(struct platform_device *pdev)
- 	struct resource *res;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
- 
--	bcm_enet_shared_base = devm_request_and_ioremap(&pdev->dev, res);
--	if (!bcm_enet_shared_base)
--		return -ENOMEM;
-+	bcm_enet_shared_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(bcm_enet_shared_base))
-+		return PTR_ERR(bcm_enet_shared_base);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+A better approach to this sort of issue is to convert to devm_,
+eliminating the possibility of such errors in the future.
 
+--Hlh2aiwFLCZwGcpw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRkO5vAAoJELSic+t+oim97N4P/0aOhaJ031WOfkGPtrtaN33L
+DUMkis68oULRNfUo6JY0Hw7f43XQP7ciBeoeuijdZ0ALuu72eu0WOPQm6eh6fhaY
+aPj2opIZrmoUjTun4YLX8AAqhAb1uj7ZWkgWH1pZa947NkbJP4XOsXFmaQuL5d06
+Vx8ySvSn8qp3BycVsDi8Zm2y4oIUY5RaNqeePYKSQQoLAfaPaxfGZSY8BwZMD6Ed
+TbOEHWeuFPn0NHu4ce0H173ZPIhIaPM2ytJ3RcsAoES5UhyqO5a9E37jWAVonJ2U
+v34DWmTa6Q5eD6Cz7q+asJpUNP+RTKULVSVUHohTK/cFeENItAmyjtpACID3x7pY
+bX03G+Z39MYM2qNWfIqa2UXAtSlwZ2Z36rGr6MMnIzgIQWJDQM+QNsx6hvqmMY/b
+A78VmTk66oEpjhnbdHrpxhL+UVavSwjbYZx9pAtIQydGWixpAxR6kE698bzZ4LLt
+z0fjqqC+y5qLqJAGprNXrTNWAM14sOGY7+mem58W5CWgzg6NB8bqpbonespdmaZG
+MGvFpLOsFeuBQMCxyuiHnQuNhL0DUrnRu4eCSmlRbVfp0DgXkyxOy6AILMID7u/D
+WVOuUIy8wYLfxD7mD5FEs+A8h+plL6FxUbrvxn/y9ur5KyfSP9HoDu17JNhRVNND
+UC1gqLwVO6HxA5gGC65Y
+=aCVU
+-----END PGP SIGNATURE-----
+
+--Hlh2aiwFLCZwGcpw--
