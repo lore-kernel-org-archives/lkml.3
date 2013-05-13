@@ -1,205 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab3EMJfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:35:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21520 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab3EMJeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:34:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,660,1363158000"; 
-   d="scan'208";a="336184379"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
-Subject: [PATCH v2 1/3] driver: add TXT driver in kernel
-Date: Tue, 14 May 2013 01:24:42 +0800
-Message-Id: <1368465884-14779-2-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368465884-14779-1-git-send-email-qiaowei.ren@intel.com>
-References: <1368465884-14779-1-git-send-email-qiaowei.ren@intel.com>
+	id S1753451Ab3EMJiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:38:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41584 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab3EMJiK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 05:38:10 -0400
+Date: Mon, 13 May 2013 11:36:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
+Message-ID: <20130513093624.GC3708@dyad.programming.kicks-ass.net>
+References: <20130510092741.GE3039@dyad.programming.kicks-ass.net>
+ <20130510094053.GF1040@krava.brq.redhat.com>
+ <20130510095345.GG3039@dyad.programming.kicks-ass.net>
+ <20130510101823.GA18427@gmail.com>
+ <20130510102245.GA31235@dyad.programming.kicks-ass.net>
+ <20130510103112.GA18755@gmail.com>
+ <20130510103436.GC31235@dyad.programming.kicks-ass.net>
+ <20130510105536.GA18805@gmail.com>
+ <20130510112756.GH31235@dyad.programming.kicks-ass.net>
+ <20130511075008.GC24435@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130511075008.GC24435@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TXT driver can be used to access below resources:
-  - TXT config space
-  - SMX parameter
+On Sat, May 11, 2013 at 09:50:08AM +0200, Ingo Molnar wrote:
+> That's really a red herring: there's absolutely no reason why the 
+> kernel could not pass back the level of precision it provided.
 
-Intel TXT (Trusted Execution Technology) will provide higher
-assurance of system configuration and initial state as well as
-data reset protection. It also helps solve real end user concerns
-about having confidence that their hardware is running the VMM
-or kernel that it was configured with, especially since they may
-be responsible for providing such assurances to VMs and services
-running on it.
+All I've been saying is that doing random precision without feedback is
+confusing.
 
-See Documentation/intel_txt.txt for more information about
-Intel TXT.
+We also don't really have a good feedback channel for this kind of thing. The
+best I can come up with is tagging each and every sample with the quality it
+represents. I think we can do with only one extra PERF_RECORD_MISC bit, but it
+looks like we're quickly running out of those things.
 
-Intel TXT configuration registers are a subset of chipset registers.
-These chipset registers that interact with SMX are accessed from two
-regions of memory, which represent the public and private configuration
-spaces, by system software using memory read/write protocols.
+But I think the biggest problem is PEBS's inability do deal with REP prefixes;
+see this email from Stephane: https://lkml.org/lkml/2011/2/1/177
 
-Safer Mode Extensions (SMX) provide a processor's programming
-interface in an Intel TXT platform for system software to establish
-a measured environment within the platform to support trust decisions
-by end users.
+It is really unfortunate for PEBS to have such a side-effect; but it makes all
+memset/memcpy/memmove things appear like they have no cost. I'm very sure that
+will surprise a number of people.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Signed-off-by: Xiaoyan Zhang <xiaoyan.zhang@intel.com>
-Signed-off-by: Gang Wei <gang.wei@intel.com>
 ---
- drivers/platform/x86/Kconfig               |    2 +
- drivers/platform/x86/Makefile              |    1 +
- drivers/platform/x86/intel_txt/Kconfig     |   27 ++++++++++++
- drivers/platform/x86/intel_txt/Makefile    |    5 +++
- drivers/platform/x86/intel_txt/txt-sysfs.c |   62 ++++++++++++++++++++++++++++
- 5 files changed, 97 insertions(+)
- create mode 100644 drivers/platform/x86/intel_txt/Kconfig
- create mode 100644 drivers/platform/x86/intel_txt/Makefile
- create mode 100644 drivers/platform/x86/intel_txt/txt-sysfs.c
+ arch/x86/include/asm/perf_event.h         | 4 +++-
+ arch/x86/kernel/cpu/perf_event.c          | 2 ++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 4 +++-
+ include/uapi/linux/perf_event.h           | 1 +
+ 4 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 3338437..2c50e7d 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -693,6 +693,8 @@ config INTEL_IPS
- 	  functionality.  If in doubt, say Y here; it will only load on
- 	  supported platforms.
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 57cb634..6908838 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -205,14 +205,16 @@ static inline u32 get_ibs_caps(void) { return 0; }
+ extern void perf_events_lapic_init(void);
  
-+source "drivers/platform/x86/intel_txt/Kconfig"
+ /*
+- * Abuse bits {3,5} of the cpu eflags register. These flags are otherwise
++ * Abuse bits {3,5,15} of the cpu eflags register. These flags are otherwise
+  * unused and ABI specified to be 0, so nobody should care what we do with
+  * them.
+  *
++ * CONSTANT - the IP has constant skid.
+  * EXACT - the IP points to the exact instruction that triggered the
+  *         event (HW bugs exempt).
+  * VM    - original X86_VM_MASK; see set_linear_ip().
+  */
++#define PERF_EFLAGS_CONSTANT	(1UL << 15)
+ #define PERF_EFLAGS_EXACT	(1UL << 3)
+ #define PERF_EFLAGS_VM		(1UL << 5)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 1025f3c..ca1f7dc 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -2078,6 +2078,8 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
+ 
+ 	if (regs->flags & PERF_EFLAGS_EXACT)
+ 		misc |= PERF_RECORD_MISC_EXACT_IP;
++	else if (regs->flags & PERF_EFLAGS_CONSTANT)
++		misc |= PERF_RECORD_MISC_CONSTANT_SKID;
+ 
+ 	return misc;
+ }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 60250f6..757ecd4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -753,10 +753,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.bp = pebs->bp;
+ 	regs.sp = pebs->sp;
+ 
++	regs.flags &= ~(PERF_EFLAGS_CONSTANT | PERF_EFLAGS_EXACT);
 +
- config IBM_RTL
- 	tristate "Device driver to enable PRTL support"
- 	depends on X86 && PCI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index ace2b38..669b464 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_INTEL_SCU_IPC)	+= intel_scu_ipc.o
- obj-$(CONFIG_INTEL_SCU_IPC_UTIL) += intel_scu_ipcutil.o
- obj-$(CONFIG_INTEL_MFLD_THERMAL) += intel_mid_thermal.o
- obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
-+obj-$(CONFIG_INTEL_TXT_DRIVER)	+= intel_txt/
- obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
- obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
- obj-$(CONFIG_XO15_EBOOK)	+= xo15-ebook.o
-diff --git a/drivers/platform/x86/intel_txt/Kconfig b/drivers/platform/x86/intel_txt/Kconfig
-new file mode 100644
-index 0000000..dd81b21
---- /dev/null
-+++ b/drivers/platform/x86/intel_txt/Kconfig
-@@ -0,0 +1,27 @@
-+#
-+# intel TXT driver configuration
-+#
-+
-+config INTEL_TXT_DRIVER
-+	tristate "INTEL TXT sysfs driver"
-+	default m
-+	depends on INTEL_TXT
-+	select SECURITYFS
-+	---help---
-+	  TXT Driver can be used to access below resources:
-+	    - TXT config space
-+	    - SMX parameter
-+
-+	  Intel TXT configuration registers are a subset of chipset
-+	  registers. These chipset registers that interact with SMX
-+	  are accessed from two regions of memory, which represent
-+	  the public and private configuration spaces, by system
-+	  software using memory read/write protocols.
-+
-+	  Safer Mode Extensions (SMX) provide a processor's programming
-+	  interface in an Intel TXT platform for system software to
-+	  establish a measured environment within the platform to support
-+	  trust decisions by end users.
-+
-+	  To compile this driver as a module, choose M here; the module
-+	  will be called intel_txt.
-diff --git a/drivers/platform/x86/intel_txt/Makefile b/drivers/platform/x86/intel_txt/Makefile
-new file mode 100644
-index 0000000..a130308
---- /dev/null
-+++ b/drivers/platform/x86/intel_txt/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the intel TXT drivers.
-+#
-+obj-$(CONFIG_INTEL_TXT_DRIVER) += intel_txt.o
-+intel_txt-y := txt-sysfs.o
-diff --git a/drivers/platform/x86/intel_txt/txt-sysfs.c b/drivers/platform/x86/intel_txt/txt-sysfs.c
-new file mode 100644
-index 0000000..3ea7307
---- /dev/null
-+++ b/drivers/platform/x86/intel_txt/txt-sysfs.c
-@@ -0,0 +1,62 @@
-+/*
-+ * txt-sysfs.c
-+ *
-+ * This module can be used to access below resources
-+ *   - TXT config space
-+ *   - SMX parameter
-+ *
-+ * Intel TXT (Trusted Execution Technology) will provide higher
-+ * assurance of system configuration and initial state as well as
-+ * data reset protection. It also helps solve real end user concerns
-+ * about having confidence that their hardware is running the VMM
-+ * or kernel that it was configured with, especially since they may
-+ * be responsible for providing such assurances to VMs and services
-+ * running on it.
-+ *
-+ * See Documentation/intel_txt.txt for more information about
-+ * Intel TXT.
-+ *
-+ * Intel TXT configuration registers are a subset of chipset registers.
-+ * These chipset registers that interact with SMX are accessed from two
-+ * regions of memory, which represent the public and private configuration
-+ * spaces, by system software using memory read/write protocols.
-+ *
-+ * Safer Mode Extensions (SMX) provide a processor's programming
-+ * interface in an Intel TXT platform for system software to establish
-+ * a measured environment within the platform to support trust decisions
-+ * by end users.
-+ *
-+ * Data can be found below
-+ *   /sys/devices/platform/intel_txt/...
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/sysfs.h>
-+#include <linux/tboot.h>
-+
-+#define DEV_NAME "intel_txt"
-+static struct platform_device *txt_pdev;
-+
-+static int __init txt_sysfs_init(void)
-+{
-+	if (!tboot_enabled())
-+		return -ENODEV;
-+
-+	txt_pdev = platform_device_register_simple(DEV_NAME, -1, NULL, 0);
-+	if (IS_ERR(txt_pdev))
-+		return PTR_ERR(txt_pdev);
-+
-+	return 0;
-+}
-+
-+static void __exit txt_sysfs_exit(void)
-+{
-+	platform_device_unregister(txt_pdev);
-+}
-+
-+module_init(txt_sysfs_init);
-+module_exit(txt_sysfs_exit);
-+
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+ 	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	else
+-		regs.flags &= ~PERF_EFLAGS_EXACT;
++		regs.flags |= PERF_EFLAGS_CONSTANT;
+ 
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index fb104e5..cb1f70f 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -451,6 +451,7 @@ struct perf_event_mmap_page {
+  * the actual instruction that triggered the event. See also
+  * perf_event_attr::precise_ip.
+  */
++#define PERF_RECORD_MISC_CONSTANT_SKID		(1 << 12)
+ #define PERF_RECORD_MISC_EXACT_IP		(1 << 14)
+ /*
+  * Reserve the last bit to indicate some extended misc field
 
