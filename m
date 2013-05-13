@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab3EMGET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 02:04:19 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:57740 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab3EMGEQ (ORCPT
+	id S1753715Ab3EMGFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 02:05:00 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:54730 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3EMGE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 02:04:16 -0400
+	Mon, 13 May 2013 02:04:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-	<CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
-	<CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
-	<CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
-Date: Mon, 13 May 2013 11:34:16 +0530
-Message-ID: <CAKohponBfXsy21RTik+jWMukL_VnDNXOL7xmj4sEBF3HEBXqpQ@mail.gmail.com>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        deepthi@linux.vnet.ibm.com
-Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org
+Date: Mon, 13 May 2013 14:04:58 +0800
+Message-ID: <CAPgLHd_PuG1en-C_55U5ogBdmPi4KNmwWn+jLLwxh1+tr=aiFQ@mail.gmail.com>
+Subject: [PATCH] staging: slicoss: fix error return code in slic_entry_probe()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, devendra.aaru@gmail.com, peterhuewe@gmx.de,
+        cruzjbishop@gmail.com, wfp5p@virginia.edu
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 April 2013 12:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
->>>>
->>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>> Cc: Paul Mackerras <paulus@samba.org>
->>>> Cc: Olof Johansson <olof@lixom.net>
->>>> Cc: linuxppc-dev@lists.ozlabs.org
->>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>>> ---
->>>> Compile Tested only.
->>>>
->>>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
->>>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
->>>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
->>>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
->>>>  drivers/cpufreq/Makefile                           |  3 +++
->>>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
->>>>  .../cpufreq/pmac32-cpufreq.c                       |  0
->>>>  .../cpufreq/pmac64-cpufreq.c                       |  0
->>>>  8 files changed, 29 insertions(+), 34 deletions(-)
->>>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->>>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->>>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
->>>
->>> Hi Deepthi,
->>>
->>> Can you help testing this please?
->>
->> Ping!!
->
-> Ping!!
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Hi Benjamin,
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-Hope you are back from your vacations. Can you give it a try now?
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/slicoss/slicoss.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index e4b8277..869dcd3 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -3651,17 +3651,20 @@ static int slic_entry_probe(struct pci_dev *pcidev,
+ 
+ 	if (!pci_set_dma_mask(pcidev, DMA_BIT_MASK(64))) {
+ 		pci_using_dac = 1;
+-		if (pci_set_consistent_dma_mask(pcidev, DMA_BIT_MASK(64))) {
++		err = pci_set_consistent_dma_mask(pcidev, DMA_BIT_MASK(64));
++		if (err) {
+ 			dev_err(&pcidev->dev, "unable to obtain 64-bit DMA for "
+ 					"consistent allocations\n");
+ 			goto err_out_disable_pci;
+ 		}
+-	} else if (pci_set_dma_mask(pcidev, DMA_BIT_MASK(32))) {
++	} else {
++		err = pci_set_dma_mask(pcidev, DMA_BIT_MASK(32));
++		if (err) {
++			dev_err(&pcidev->dev, "no usable DMA configuration\n");
++			goto err_out_disable_pci;
++		}
+ 		pci_using_dac = 0;
+ 		pci_set_consistent_dma_mask(pcidev, DMA_BIT_MASK(32));
+-	} else {
+-		dev_err(&pcidev->dev, "no usable DMA configuration\n");
+-		goto err_out_disable_pci;
+ 	}
+ 
+ 	err = pci_request_regions(pcidev, DRV_NAME);
+@@ -3696,6 +3699,7 @@ static int slic_entry_probe(struct pci_dev *pcidev,
+ 	if (!memmapped_ioaddr) {
+ 		dev_err(&pcidev->dev, "cannot remap MMIO region %lx @ %lx\n",
+ 			mmio_len, mmio_start);
++		err = -ENOMEM;
+ 		goto err_out_free_netdev;
+ 	}
+ 
+@@ -3706,8 +3710,8 @@ static int slic_entry_probe(struct pci_dev *pcidev,
+ 	slic_init_adapter(netdev,
+ 			  pcidev, pci_tbl_entry, memmapped_ioaddr, cards_found);
+ 
+-	status = slic_card_locate(adapter);
+-	if (status) {
++	err = slic_card_locate(adapter);
++	if (err) {
+ 		dev_err(&pcidev->dev, "cannot locate card\n");
+ 		goto err_out_free_mmio_region;
+ 	}
+
