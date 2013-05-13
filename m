@@ -1,31 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab3EMOu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:50:59 -0400
-Received: from ip-128-247.fcfm.buap.mx ([148.228.128.247]:35821 "EHLO
-	alumnos.fcfm.buap.mx" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285Ab3EMOu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754429Ab3EMOu5 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 13 May 2013 10:50:57 -0400
-Message-ID: <57640.116.202.0.216.1368437855.squirrel@alumnos.fcfm.buap.mx>
-Date: Mon, 13 May 2013 04:37:35 -0500 (CDT)
-Subject: WINNING NOTIFICATION (CONGRATULATION)
-From: "Shell Petroleum Company" <info@alumnos.fcfm.buap.mx>
-Reply-To: shellpetroleumctld@live.com
-User-Agent: SquirrelMail/1.4.13
+Received: from smtp.citrix.com ([66.165.176.89]:8816 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751775Ab3EMOu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 10:50:56 -0400
+X-IronPort-AV: E=Sophos;i="4.87,662,1363132800"; 
+   d="scan'208";a="24856578"
+Date: Mon, 13 May 2013 15:50:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+In-Reply-To: <20130513140749.GQ6811@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
+References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com> <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com> <20130513140749.GQ6811@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email address have won you 550,000.00 GBP from Shell Petroleum
-Company Limited in this year lucky draw To claim send us your full details
-Name/ Address/ Age/ Sex/ Mobile No./ Occupation/ Account No.
+On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini wrote:
+> > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> > > > When driver load and unload in a loop, pirq will exhaust finally.
+> > > > Try to use the same pirq which was already mapped and binded at first time
+> > > 
+> > > So what happens if I unload and reload two drivers in random order?
+> > > 
+> > > > when driver loaded.
+> > > > 
+> > > > Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> > > > when driver unload, it's always true in second load.
+> > > 
+> > > If my understanding is right the issue at hand is that the caching
+> > > information about the pirq disappears once the driver has been
+> > > unloaded b/c the event's irq-info is removed (as the driver is
+> > > unloaded and free_irq is called).
+> > > 
+> > > Stefano,
+> > > Is there a specific write to the MSI structure that would cause the
+> > > hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+> > > PIRQ in usage?
+> > 
+> > We already have a "free PIRQ" hypercall, it's called
+> > PHYSDEVOP_unmap_pirq and should be called by QEMU.
+> 
+> Considering that we call function that allocates (PHYSDEVOP_get_free_pirq)
+> it in the Linux kernel (and not in QEMU), perhaps that should be done in the
+> Linux kernel as part of xen_destroy_irq()? Or would that confuse QEMU?
+
+I think it would confuse QEMU. It is probably better to let the unmap
+being handled by it.
 
 
+> It looks like QEMU only does that hypercall (via xc_physdev_unmap_pirq)
+> unregister_real_device which is only called during pci unplug?
 
+You are right! I would think that this behaviour is erroneous unless it
+was done on purpose to avoid allocating MSIs twice.
+If that is the case we would need to do something similar in Linux too.
+
+I think that the issue is the mismatch between QEMU's and Linux's
+behaviours: either both should be allocating MSIs once, or they should
+both be allocating and deallocating MSIs every time the driver is loaded
+and unloaded.
+
+
+> > Linux should disable the MSI bit in the PCI config options of the
+> > device:
+> > 
+> > pci_disable_msi -> pci_msi_shutdown -> msi_set_enable(0)
+> 
+> Zhenzhong, does it do that? Looking at the driver it certainly seems that way.
+> > 
+> > That should cause QEMU to issue a xc_physdev_unmap_pirq that actually
+> > unmaps the pirq. If it doesn't, it's a bug :)
+> 
+> <sigh> It doesn't do that. So two bugs:
+>  - QEMU doing that
+>  - Linux kernel doing the hypercall as well.
+
+At first sight I also thought that the Linux kernel was issuing
+PHYSDEVOP_unmap_pirq too but actually Linux is only doing it if
+xen_initial_domain().
