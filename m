@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab3EMR42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:56:28 -0400
+	id S1754080Ab3EMR4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:56:40 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:12675 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3EMR4Z (ORCPT
+	with ESMTP id S1753664Ab3EMR40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:56:25 -0400
+	Mon, 13 May 2013 13:56:26 -0400
 X-IronPort-AV: E=Sophos;i="4.87,663,1363132800"; 
-   d="scan'208";a="23728917"
+   d="scan'208";a="23728919"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <xen-devel@lists.xen.org>
 CC: David Vrabel <david.vrabel@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] timekeeping: sync persistent clock and RTC on system time step changes
-Date: Mon, 13 May 2013 18:56:07 +0100
-Message-ID: <1368467768-2316-3-git-send-email-david.vrabel@citrix.com>
+        "Thomas Gleixner" <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] x86: increase precision of x86_platform.get/set_wallclock()
+Date: Mon, 13 May 2013 18:56:06 +0100
+Message-ID: <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com>
 References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com>
@@ -29,85 +29,269 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Vrabel <david.vrabel@citrix.com>
 
-The persistent clock or the RTC is only synchronized with system time
-every 11 minutes if NTP is running.  This gives a window where the
-persistent clock may be incorrect after a step change in the time
-(such as on first boot).
+All the virtualized platforms (KVM, lguest and Xen) have persistent
+wallclocks that have more than one second of precision.
 
-This particularly affects Xen guests as until an update to the control
-domain's persistent clock, new guests will start with the incorrect
-system time.
+read_persistent_wallclock() and update_persistent_wallclock() allow
+for nanosecond precision but their implementation on x86 with
+x86_platform.get/set_wallclock() only allows for one second precision.
+This means guests may see a wallclock time that is off by up to 1
+second.
 
-When there is a step change in the system time, call
-update_persistent_clock or rtc_set_ntp_time() to synchronize the
-persistent clock or RTC to the new system time.
+Make set_wallclock() and get_wallclock() take a struct timespec
+parameter (which allows for nanosecond precision) so KVM and Xen
+guests may start with a more accurate wallclock time and a Xen dom0
+can maintain a more accurate wallclock for guests.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 ---
- kernel/time/timekeeping.c |   46 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 44 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mc146818rtc.h |    4 ++--
+ arch/x86/include/asm/x86_init.h    |    6 ++++--
+ arch/x86/kernel/kvmclock.c         |    9 +++------
+ arch/x86/kernel/rtc.c              |   17 +++++++----------
+ arch/x86/lguest/boot.c             |    4 ++--
+ arch/x86/platform/efi/efi.c        |   10 ++++++----
+ arch/x86/xen/time.c                |   19 ++++++-------------
+ include/linux/efi.h                |    4 ++--
+ 8 files changed, 32 insertions(+), 41 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 98cd470..56f2349 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -240,12 +240,54 @@ int pvclock_gtod_unregister_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
+diff --git a/arch/x86/include/asm/mc146818rtc.h b/arch/x86/include/asm/mc146818rtc.h
+index d354fb7..a55c7ef 100644
+--- a/arch/x86/include/asm/mc146818rtc.h
++++ b/arch/x86/include/asm/mc146818rtc.h
+@@ -95,8 +95,8 @@ static inline unsigned char current_lock_cmos_reg(void)
+ unsigned char rtc_cmos_read(unsigned char addr);
+ void rtc_cmos_write(unsigned char val, unsigned char addr);
  
-+#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
+-extern int mach_set_rtc_mmss(unsigned long nowtime);
+-extern unsigned long mach_get_cmos_time(void);
++extern int mach_set_rtc_mmss(const struct timespec *now);
++extern void mach_get_cmos_time(struct timespec *now);
+ 
+ #define RTC_IRQ 8
+ 
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index d8d9922..828a156 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -142,6 +142,8 @@ struct x86_cpuinit_ops {
+ 	void (*fixup_cpu_id)(struct cpuinfo_x86 *c, int node);
+ };
+ 
++struct timespec;
 +
-+static void __sync_persistent_clock(struct work_struct *work)
-+{
-+	struct timespec now;
-+	int ret = 0;
-+
-+	getnstimeofday(&now);
-+
-+#ifdef CONFIG_GENERIC_CMOS_UPDATE
-+	ret = update_persistent_clock(now);
-+#endif
-+#ifdef CONFIG_RTC_SYSTOHC
-+	if (ret == -ENODEV)
-+		rtc_set_ntp_time(now);
-+#endif
-+}
-+
-+static DECLARE_DELAYED_WORK(sync_persistent_clock_work, __sync_persistent_clock);
-+
-+static void sync_persistent_clock(struct timekeeper *tk)
-+{
-+	u64 nsecs;
-+	u32 remainder;
-+
-+	/* Many RTCs require updates 500 ms before the next second. */
-+	nsecs = timekeeping_get_ns(tk);
-+	div_u64_rem(nsecs, NSEC_PER_SEC, &remainder);
-+	if (remainder > NSEC_PER_SEC / 2)
-+		nsecs = remainder - NSEC_PER_SEC / 2;
-+	else
-+		nsecs = remainder + NSEC_PER_SEC / 2;
-+
-+	if (system_wq)
-+		schedule_delayed_work(&sync_persistent_clock_work, nsecs_to_jiffies(nsecs));
-+}
-+
-+#endif
-+
- /* must hold timekeeper_lock */
--static void timekeeping_update(struct timekeeper *tk, bool clearntp, bool mirror)
-+static void timekeeping_update(struct timekeeper *tk, bool step, bool mirror)
+ /**
+  * struct x86_platform_ops - platform specific runtime functions
+  * @calibrate_tsc:		calibrate TSC
+@@ -156,8 +158,8 @@ struct x86_cpuinit_ops {
+  */
+ struct x86_platform_ops {
+ 	unsigned long (*calibrate_tsc)(void);
+-	unsigned long (*get_wallclock)(void);
+-	int (*set_wallclock)(unsigned long nowtime);
++	void (*get_wallclock)(struct timespec *ts);
++	int (*set_wallclock)(const struct timespec *ts);
+ 	void (*iommu_shutdown)(void);
+ 	bool (*is_untracked_pat_range)(u64 start, u64 end);
+ 	void (*nmi_init)(void);
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index d2c3812..0db81ab 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -48,10 +48,9 @@ static struct pvclock_wall_clock wall_clock;
+  * have elapsed since the hypervisor wrote the data. So we try to account for
+  * that with system time
+  */
+-static unsigned long kvm_get_wallclock(void)
++static void kvm_get_wallclock(struct timespec *now)
  {
--	if (clearntp) {
-+	if (step) {
- 		tk->ntp_error = 0;
- 		ntp_clear();
-+#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
-+		sync_persistent_clock(tk);
-+#endif
- 	}
- 	update_vsyscall(tk);
- 	update_pvclock_gtod(tk);
+ 	struct pvclock_vcpu_time_info *vcpu_time;
+-	struct timespec ts;
+ 	int low, high;
+ 	int cpu;
+ 
+@@ -64,14 +63,12 @@ static unsigned long kvm_get_wallclock(void)
+ 	cpu = smp_processor_id();
+ 
+ 	vcpu_time = &hv_clock[cpu].pvti;
+-	pvclock_read_wallclock(&wall_clock, vcpu_time, &ts);
++	pvclock_read_wallclock(&wall_clock, vcpu_time, now);
+ 
+ 	preempt_enable();
+-
+-	return ts.tv_sec;
+ }
+ 
+-static int kvm_set_wallclock(unsigned long now)
++static int kvm_set_wallclock(const struct timespec *now)
+ {
+ 	return -1;
+ }
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index 198eb20..0aa2939 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -38,8 +38,9 @@ EXPORT_SYMBOL(rtc_lock);
+  * jump to the next second precisely 500 ms later. Check the Motorola
+  * MC146818A or Dallas DS12887 data sheet for details.
+  */
+-int mach_set_rtc_mmss(unsigned long nowtime)
++int mach_set_rtc_mmss(const struct timespec *now)
+ {
++	unsigned long nowtime = now->tv_sec;
+ 	struct rtc_time tm;
+ 	int retval = 0;
+ 
+@@ -58,7 +59,7 @@ int mach_set_rtc_mmss(unsigned long nowtime)
+ 	return retval;
+ }
+ 
+-unsigned long mach_get_cmos_time(void)
++void mach_get_cmos_time(struct timespec *now)
+ {
+ 	unsigned int status, year, mon, day, hour, min, sec, century = 0;
+ 	unsigned long flags;
+@@ -107,7 +108,8 @@ unsigned long mach_get_cmos_time(void)
+ 	} else
+ 		year += CMOS_YEARS_OFFS;
+ 
+-	return mktime(year, mon, day, hour, min, sec);
++	now->tv_sec = mktime(year, mon, day, hour, min, sec);
++	now->tv_nsec = 0;
+ }
+ 
+ /* Routines for accessing the CMOS RAM/RTC. */
+@@ -135,18 +137,13 @@ EXPORT_SYMBOL(rtc_cmos_write);
+ 
+ int update_persistent_clock(struct timespec now)
+ {
+-	return x86_platform.set_wallclock(now.tv_sec);
++	return x86_platform.set_wallclock(&now);
+ }
+ 
+ /* not static: needed by APM */
+ void read_persistent_clock(struct timespec *ts)
+ {
+-	unsigned long retval;
+-
+-	retval = x86_platform.get_wallclock();
+-
+-	ts->tv_sec = retval;
+-	ts->tv_nsec = 0;
++	x86_platform.get_wallclock(ts);
+ }
+ 
+ 
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index 7114c63..8424d5a 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -882,9 +882,9 @@ int lguest_setup_irq(unsigned int irq)
+  * It would be far better for everyone if the Guest had its own clock, but
+  * until then the Host gives us the time on every interrupt.
+  */
+-static unsigned long lguest_get_wallclock(void)
++static void lguest_get_wallclock(struct timespec *now)
+ {
+-	return lguest_data.time.tv_sec;
++	*now = lguest_data.time;
+ }
+ 
+ /*
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 55856b2..dd3b825 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -352,8 +352,9 @@ static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
+ 	return status;
+ }
+ 
+-int efi_set_rtc_mmss(unsigned long nowtime)
++int efi_set_rtc_mmss(const struct timespec *now)
+ {
++	unsigned long nowtime = now->tv_sec;
+ 	efi_status_t 	status;
+ 	efi_time_t 	eft;
+ 	efi_time_cap_t 	cap;
+@@ -388,7 +389,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
+ 	return 0;
+ }
+ 
+-unsigned long efi_get_time(void)
++void efi_get_time(struct timespec *now)
+ {
+ 	efi_status_t status;
+ 	efi_time_t eft;
+@@ -398,8 +399,9 @@ unsigned long efi_get_time(void)
+ 	if (status != EFI_SUCCESS)
+ 		pr_err("Oops: efitime: can't read time!\n");
+ 
+-	return mktime(eft.year, eft.month, eft.day, eft.hour,
+-		      eft.minute, eft.second);
++	now->tv_sec = mktime(eft.year, eft.month, eft.day, eft.hour,
++			     eft.minute, eft.second);
++	now->tv_nsec = 0;
+ }
+ 
+ /*
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 3d88bfd..a1947ac 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -191,32 +191,25 @@ static void xen_read_wallclock(struct timespec *ts)
+ 	put_cpu_var(xen_vcpu);
+ }
+ 
+-static unsigned long xen_get_wallclock(void)
++static void xen_get_wallclock(struct timespec *now)
+ {
+-	struct timespec ts;
+-
+-	xen_read_wallclock(&ts);
+-	return ts.tv_sec;
++	xen_read_wallclock(now);
+ }
+ 
+-static int xen_set_wallclock(unsigned long now)
++static int xen_set_wallclock(const struct timespec *now)
+ {
+ 	struct xen_platform_op op;
+-	int rc;
+ 
+ 	/* do nothing for domU */
+ 	if (!xen_initial_domain())
+ 		return -1;
+ 
+ 	op.cmd = XENPF_settime;
+-	op.u.settime.secs = now;
+-	op.u.settime.nsecs = 0;
++	op.u.settime.secs = now->tv_sec;
++	op.u.settime.nsecs = now->tv_nsec;
+ 	op.u.settime.system_time = xen_clocksource_read();
+ 
+-	rc = HYPERVISOR_dom0_op(&op);
+-	WARN(rc != 0, "XENPF_settime failed: now=%ld\n", now);
+-
+-	return rc;
++	return HYPERVISOR_dom0_op(&op);
+ }
+ 
+ static struct clocksource xen_clocksource __read_mostly = {
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 2bc0ad7..0068bba 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -594,8 +594,8 @@ extern u64 efi_mem_attribute (unsigned long phys_addr, unsigned long size);
+ extern int __init efi_uart_console_only (void);
+ extern void efi_initialize_iomem_resources(struct resource *code_resource,
+ 		struct resource *data_resource, struct resource *bss_resource);
+-extern unsigned long efi_get_time(void);
+-extern int efi_set_rtc_mmss(unsigned long nowtime);
++extern void efi_get_time(struct timespec *now);
++extern int efi_set_rtc_mmss(const struct timespec *now);
+ extern void efi_reserve_boot_services(void);
+ extern struct efi_memory_map memmap;
+ 
 -- 
 1.7.2.5
 
