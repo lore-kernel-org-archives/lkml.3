@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab3EMD2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 23:28:07 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52834 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab3EMD2F (ORCPT
+	id S1752811Ab3EMD2e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 23:28:34 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50119 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab3EMD2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 23:28:05 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 12 May 2013 20:28:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: Build failures due to commit ea4054a2384 (handle huge number of
- modules)
-Message-ID: <20130513032817.GA17184@roeck-us.net>
-References: <20130508213007.GA11946@roeck-us.net>
- <8761ytnf8f.fsf@rustcorp.com.au>
- <20130509041448.GA11398@roeck-us.net>
- <87ehdb39gu.fsf@rustcorp.com.au>
+	Sun, 12 May 2013 23:28:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehdb39gu.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130513020400.GS25399@ZenIV.linux.org.uk>
+References: <CAAJw_Zv4Cy-fSg24F=7poRNs2oGA=7nuZQtQOyf_-dsStzNpgw@mail.gmail.com>
+	<20130513020400.GS25399@ZenIV.linux.org.uk>
+Date: Mon, 13 May 2013 11:28:30 +0800
+Message-ID: <CAAJw_ZseY94_u_w=P43VeUE2gNZ1qEe9Dpon3q3BEG=MPNp67w@mail.gmail.com>
+Subject: Re: linux-3.10-rc1 procfs interface breaks vmware, eicon, fio ....
+ any fix?
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 11:52:09AM +0930, Rusty Russell wrote:
-> Guenter Roeck <linux@roeck-us.net> writes:
-> > Attached is a failing configuration for x86_64. Note that
-> > drivers/staging/android/logger.c fails to build with this configuration,
-> > so you have to build it with make -i to see the problem.
-> >
-> > Looking through my logs, it seems that the problem may be related to other
-> > build errors. At least in my latest nightly builds there was always some other
-> > build error when this happened.
-> 
-> That would explain it.  Perhaps some kind of race?
-> 
-> I can't see this as a real problem, though.
-> 
-It reduces the value of "make -i" significantly, as it creates lots of false
-compile errors. If you think that is not a problem, fine with me. I can (and do)
-filter the resulting errors from my auto-build scripts by now . That may cause
-the scripts it to miss some real errors, but after all I can only do so much.
-And it does seeem as if no one else cares, or maybe I am the only one seeing
-the problem, so I guess you are right.
+> And now you have a chutzpah to come and
+complain about that? Better yet, we are expected to be working on
+fixing those?
+
+Al,
+
+Complaining about something that I can't fix, yep. But asking you to
+fix those, nop! That's not my intent. All I'm trying to say is there's
+too many out there who don't care about linux-next until the vanilla
+version came out and then everyone (may be just me) complained that it
+doesn't work anymore, So, would it be reasonable to allow the
+old-method to still function may be via CONFIG_OLD_PROCFS but warning
+that the old interface should not be used anymore. That's to allow
+"me" to continue to be able to work on the latest linux-3.10.0-rc1
+while waiting for someone to fix those old modules. Reasonable?
 
 Thanks,
-Guenter
+Jeff
+
+On Mon, May 13, 2013 at 10:04 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, May 13, 2013 at 08:19:46AM +0800, Jeff Chua wrote:
+>> Anyone on lkml working on patches for vmware to make it run on
+>> Linux-3.10-rc1? The recent change in procfs interface breaks vmware,
+>> diva/eicon and fio modules.
+>>
+>> Every modules is now broken and needs to be reworked. Is there a more
+>> subtle way to handle this like give more time to allow developers to
+>> handle the move rather than killing off the "tranditional" procfs
+>> access
+>
+> I might feel bad about those, if not for one thing - their authors
+> had explicitly chosen to keep them out of tree and did not bother
+> to watch what was going on in linux-next - these changes had been
+> there for quite a while.  And now you have a chutzpah to come and
+> complain about that?  Better yet, we are expected to be working on
+> fixing those?  Really?  It's not a rethorical question - I seriously
+> want to know whether I'd misparsed what you meant to say.
