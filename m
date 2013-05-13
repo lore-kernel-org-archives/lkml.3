@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3EMV6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 17:58:38 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59172 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab3EMV6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 17:58:30 -0400
-From: Joern Engel <joern@logfs.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        Joern Engel <joern@logfs.org>
-Subject: [PATCH 2/3] target: close target_put_sess_cmd() vs. core_tmr_abort_task() race v5
-Date: Mon, 13 May 2013 16:30:06 -0400
-Message-Id: <1368477007-25274-3-git-send-email-joern@logfs.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1368477007-25274-1-git-send-email-joern@logfs.org>
-References: <1368477007-25274-1-git-send-email-joern@logfs.org>
+	id S1755252Ab3EMWAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 18:00:21 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:46197 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752338Ab3EMWAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 18:00:20 -0400
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 May 2013 18:00:20 EDT
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Helge Deller <deller@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [GIT PULL] parisc updates for v3.10
+Date: Mon, 13 May 2013 23:53:29 +0200
+Message-ID: <2654532.supg57YsM8@donald.sf-tec.de>
+User-Agent: KMail/4.10.3 (Linux/3.9.1-1.gb6484b6-desktop; KDE/4.10.3; i686; ; )
+In-Reply-To: <20130513204843.GA1858@p100.box>
+References: <20130513204843.GA1858@p100.box>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart3093006.pdgbnbJYAQ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible for one thread to to take se_sess->sess_cmd_lock in
-core_tmr_abort_task() before taking a reference count on
-se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
-se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
 
-This introduces kref_put_spinlock_irqsave() and uses it in
-target_put_sess_cmd() to close the race window.
+--nextPart3093006.pdgbnbJYAQ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Signed-off-by: Joern Engel <joern@logfs.org>
----
- drivers/target/target_core_transport.c |   11 +++++------
- include/linux/kref.h                   |   33 ++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 6 deletions(-)
+> Helge Deller (2):
+>       parisc: make default cross compiler search more robust (v3)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 3243ea7..0d46276 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2213,21 +2213,19 @@ static void target_release_cmd_kref(struct kref *kref)
- {
- 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
- 	struct se_session *se_sess = se_cmd->se_sess;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
- 	if (list_empty(&se_cmd->se_cmd_list)) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		se_cmd->se_tfo->release_cmd(se_cmd);
- 		return;
- 	}
- 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		complete(&se_cmd->cmd_wait_comp);
- 		return;
- 	}
- 	list_del(&se_cmd->se_cmd_list);
--	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+	spin_unlock(&se_sess->sess_cmd_lock);
- 
- 	se_cmd->se_tfo->release_cmd(se_cmd);
- }
-@@ -2238,7 +2236,8 @@ static void target_release_cmd_kref(struct kref *kref)
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
--	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
-+	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
-+			&se_sess->sess_cmd_lock);
- }
- EXPORT_SYMBOL(target_put_sess_cmd);
- 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 4972e6e..7419c02 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -19,6 +19,7 @@
- #include <linux/atomic.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
-+#include <linux/spinlock.h>
- 
- struct kref {
- 	atomic_t refcount;
-@@ -95,6 +96,38 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put_spinlock_irqsave - decrement refcount for object.
-+ * @kref: object.
-+ * @release: pointer to the function that will clean up the object when the
-+ *	     last reference to the object is released.
-+ *	     This pointer is required, and it is not acceptable to pass kfree
-+ *	     in as this function.
-+ * @lock: lock to take in release case
-+ *
-+ * Behaves identical to kref_put with one exception.  If the reference count
-+ * drops to zero, the lock will be taken atomically wrt dropping the reference
-+ * count.  The release function has to call spin_unlock() without _irqrestore.
-+ */
-+static inline int kref_put_spinlock_irqsave(struct kref *kref,
-+		void (*release)(struct kref *kref),
-+		spinlock_t *lock)
-+{
-+	unsigned long flags;
-+
-+	WARN_ON(release == NULL);
-+	if (atomic_add_unless(&kref->refcount, -1, 1))
-+		return 0;
-+	spin_lock_irqsave(lock, flags);
-+	if (atomic_dec_and_test(&kref->refcount)) {
-+		release(kref);
-+		local_irq_restore(flags);
-+		return 1;
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+	return 0;
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
--- 
-1.7.10.4
+Needs CC:stable as without this building 3.9.x is not possible in some 
+configurations.
+
+> John David Anglin (1):
+>       parisc: fix SMP races when updating PTE and TLB entries in entry.S
+
+Possibly also this as it's a bugfix, but Dave is the one who may be judge how 
+"clear" it is.
+
+The same is probably true for these from the first round of updates:
+
+John David Anglin (2):
+      parisc: use long branch in fork_like macro
+Mike Frysinger (1):
+      parisc: fix NATIVE set up in build
+
+While I _really_ appreciate the speedup that recently happened to the parisc 
+development recently I would also appreciate if we can can finally get the 
+bugfix parts of that into stable kernels so we have the non-development tree 
+buildable and working without the need to backport all those stuff by hand.
+
+Eike
+--nextPart3093006.pdgbnbJYAQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEABECAAYFAlGRYOAACgkQXKSJPmm5/E7fQQCePH17LwMNl2xP7CpUp8WOgjnh
+63YAn1ESO0NhtvLZYKfKT8O7H/b+zxgl
+=x2AD
+-----END PGP SIGNATURE-----
+
+--nextPart3093006.pdgbnbJYAQ--
 
