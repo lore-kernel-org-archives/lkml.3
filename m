@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab3EMXnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 19:43:32 -0400
-Received: from mail-gg0-f196.google.com ([209.85.161.196]:39274 "EHLO
-	mail-gg0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab3EMXnb (ORCPT
+	id S1755488Ab3EMXpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 19:45:34 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:44919 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab3EMXpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 19:43:31 -0400
-X-Greylist: delayed 3492 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 May 2013 19:43:31 EDT
-From: Dylan Socolobsky <dsocolobsky@gmail.com>
-To: marek.belisko@gmail.com, devendra.aaru@gmail.com,
-        gregkh@linuxfoundation.org, dsocolobsky@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Staging: ft1000: fix brace coding style in ft1000_dnld.c
-Date: Mon, 13 May 2013 19:42:28 -0300
-Message-Id: <1368484948-8797-1-git-send-email-dsocolobsky@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 13 May 2013 19:45:33 -0400
+Date: Mon, 13 May 2013 14:28:37 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: devel@linuxdriverproject.org,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>
+Subject: Re: [PATCH] staging: comedi: ni_labpc: fix VIRT_TO_BUS dependency
+Message-ID: <20130513212837.GB14092@kroah.com>
+References: <5190B62C.1070704@mev.co.uk>
+ <1368442935-25926-1-git-send-email-abbotti@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368442935-25926-1-git-send-email-abbotti@mev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple patch fixes a brace warning raised by checkpatch.pl in ft1000_dnld.c
+On Mon, May 13, 2013 at 12:02:15PM +0100, Ian Abbott wrote:
+> The "ni_labpc" module acts as a low-level comedi driver for various
+> Nattional Instruments Lab-PC ISA cards if `CONFIG_NI_LABPC_ISA` is
+> enabled, and also as a common module depended on by the "ni_labpc_cs"
+> and "ni_labpc_pci" modules.  For ISA cards, it optionally supports the
+> use of an ISA DMA channel if `CONFIG_ISA_DMA_API` is enabled, using
+> conditionally compiled code.  This conditionally compiled code also
+> relies on `virt_to_bus()`, which only exists if `CONFIG_VIRT_TO_BUS` is
+> enabled.  Therefore, support for ISA DMA should only be compiled in if
+> both `CONFIG_ISA_DMA_API` and `CONFIG_VIRT_TO_BUS` are defined,
+> otherwise the "ni_labpc" module fails to compile on kernels that enable
+> `CONFIG_ISA_DMA_API` but not `CONFIG_VIRT_TO_BUS`.
+> 
+> Conditionally define a new macro `NI_LABPC_ISA_DMA` iff both
+> `CONFIG_ISA_DMA_API` and `CONFIG_VIRT_TO_BUS` are defined, and change
+> the conditional compilation tests to use the new macro instead of
+> `CONFIG_ISA_DMA_API`.
+> 
+> Also, in the "Kconfig", remove the `VIRT_TO_BUS` dependency from the
+> `COMEDI_NI_LABPC_ISA` option since the dependency is now checked at
+> compile time.
+> 
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/Kconfig            |  1 -
+>  drivers/staging/comedi/drivers/ni_labpc.c | 18 +++++++++++-------
+>  2 files changed, 11 insertions(+), 8 deletions(-)
 
-Signed-off-by: Dylan Socolobsky <dsocolobsky@gmail.com>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Ick, no, I'll take Hartley's patch he sent a week or so ago that fixes
+this properly for all architectures.
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-index 47cc365..18a8751 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-@@ -133,9 +133,9 @@ void card_bootload(struct net_device *dev)
- 	size = sizeof(bootimage);
- 
- 	// check for odd word
--	if (size & 0x0003) {
-+	if (size & 0x0003)
- 		size += 4;
--	}
-+
- 	// Provide mutual exclusive access while reading ASIC registers.
- 	spin_lock_irqsave(&info->dpram_lock, flags);
- 
-@@ -345,11 +345,10 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
- 
- 			handshake = get_handshake(dev, HANDSHAKE_DSP_BL_READY);
- 
--			if (handshake == HANDSHAKE_DSP_BL_READY) {
-+			if (handshake == HANDSHAKE_DSP_BL_READY)
- 				put_handshake(dev, HANDSHAKE_DRIVER_READY);
--			} else {
-+			else
- 				Status = FAILURE;
--			}
- 
- 			uiState = STATE_BOOT_DWNLD;
- 
-@@ -538,9 +537,9 @@ int card_download(struct net_device *dev, const u8 *pFileStart,
- 						outw(DWNLD_MAG_PS_HDR_LOC,
- 							 dev->base_addr +
- 							 FT1000_REG_DPRAM_ADDR);
--						if (word_length & 0x01) {
-+						if (word_length & 0x01)
- 							word_length++;
--						}
-+
- 						word_length = word_length / 2;
- 
- 						for (; word_length > 0; word_length--) {	/* In words */
--- 
-1.8.1.4
+thanks,
 
+greg k-h
