@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab3EMMEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:04:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4997 "EHLO mx1.redhat.com"
+	id S1751982Ab3EMMFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:05:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:44463 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab3EMMEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:04:13 -0400
-Message-ID: <5190D6B8.7020905@redhat.com>
-Date: Mon, 13 May 2013 14:04:08 +0200
-From: Peter Rajnoha <prajnoha@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1751160Ab3EMMFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:05:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>, cpufreq@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] cpufreq, ondemand: Remove leftover debug line
+Date: Mon, 13 May 2013 14:14:04 +0200
+Message-ID: <3026061.6K3iqZoMUx@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAOh2x=kLJ3NVN177KTWjZikkZb8Q8RQjye4qrUT=PCdCj2jSgg@mail.gmail.com>
+References: <1368041688-29986-1-git-send-email-bp@alien8.de> <CAOh2x=kLJ3NVN177KTWjZikkZb8Q8RQjye4qrUT=PCdCj2jSgg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, Joe Thornber <thornber@redhat.com>
-Subject: Re: [PATCH 2/2] dmcache: Implement a flush message
-References: <20130508214845.GA7729@blackbox.djwong.org> <20130508220526.GA24132@redhat.com> <20130509203616.GA5713@blackbox.djwong.org> <20130509204751.GB5712@blackbox.djwong.org> <20130510102224.GF20880@debian> <20130510175149.GC5712@blackbox.djwong.org> <20130511152523.GA18988@redhat.com>
-In-Reply-To: <20130511152523.GA18988@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.05.2013 17:25, Mike Snitzer wrote:> On Fri, May 10 2013 at  1:51pm
--0400,
-> Darrick J. Wong <darrick.wong@oracle.com> wrote:
->
-...
->> afaict, there isn't anything in the initscripts that tears down dm
-devices
->> prior to invoking reboot(), and the kernel drivers don't have reboot
-notifiers
->> to flush things out either.  I've been told that lvm does this, but I
-don't see
->> anything in the Ubuntu or RHEL6 that would suggest a teardown script...
->
-> See:
-https://git.fedorahosted.org/cgit/lvm2.git/commit/?id=c698ee14bbb1310cf2383c8977d14a8e29139f8c
->
-> But I'm not sure which distros have hooked blkdeactivate in (cc'ing
-> prajnoha for his insight).
->
+On Sunday, May 12, 2013 08:46:34 PM Viresh Kumar wrote:
+> On Thu, May 9, 2013 at 1:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> > From: Borislav Petkov <bp@suse.de>
+> >
+> > I don't see how the virtual address of the tuners pointer would be of
+> > any help to anyone so remove it.
+> >
+> > Signed-off-by: Borislav Petkov <bp@suse.de>
+> > ---
+> >  drivers/cpufreq/cpufreq_ondemand.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> > index b0ffef96bf77..4b9bb5def6f1 100644
+> > --- a/drivers/cpufreq/cpufreq_ondemand.c
+> > +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> > @@ -547,7 +547,6 @@ static int od_init(struct dbs_data *dbs_data)
+> >         tuners->io_is_busy = should_io_be_busy();
+> >
+> >         dbs_data->tuners = tuners;
+> > -       pr_info("%s: tuners %p\n", __func__, tuners);
+> >         mutex_init(&dbs_data->mutex);
+> >         return 0;
+> >  }
+> 
+> Sorry for this message :(
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-The blk-availability initscript/systemd unit that gets called at
-shutdown/reboot and which in turn calls the blkdeactivate is already
-used in RHEL 6.4 onwards and also in Fedora 18 onwards. However, for
-Fedora, you need to enable the systemd unit explicitly at the moment
-(systemctl enable blk-availability.service). To have it enabled by
-default, the distro-wide default systemd configuration needs to be
-edited which is controlled by systemd-preset file (I hope F19 is going
-to have this enabled by default finally).
+Applied to the linux-next branch.
 
-As for any other distros, it's up to the maintainers in that distro to
-make use of the new script - I haven't looked if they started using it
-or not. But upstream already provides it since lvm2 v2.02.98.
+Thanks,
+Rafael
 
-Peter
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
