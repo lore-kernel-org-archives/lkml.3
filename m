@@ -1,85 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3EMRsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 13:48:24 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:29930 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197Ab3EMRsW (ORCPT
+	id S1752732Ab3EMRu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 13:50:27 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36318 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3EMRuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 13:48:22 -0400
-Message-ID: <1368467297.3305.28.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: [PATCH net] sfc: Reduce RX scatter buffer size to multiple of 256
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-net-drivers@solarflare.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <netdev@vger.kernel.org>
-Date: Mon, 13 May 2013 18:48:17 +0100
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 13 May 2013 13:50:24 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
-X-TM-AS-Result: No--5.042700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20130510070959.0af3e35a@tlielax.poochiereds.net>
+References: <1366977861-27678-1-git-send-email-piastry@etersoft.ru>
+	<1366977861-27678-3-git-send-email-piastry@etersoft.ru>
+	<20130510070959.0af3e35a@tlielax.poochiereds.net>
+Date: Mon, 13 May 2013 21:50:23 +0400
+X-Google-Sender-Auth: ozlF-FTcLsODesW3nIRN3imADaA
+Message-ID: <CAKywueSZhYZo-Xc8s2Vv-k8a1LBNr_FGOH0qSMRFKJ1hJrYOUw@mail.gmail.com>
+Subject: Re: [PATCH v6 2/7] VFS: Add O_DENYDELETE support for VFS
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-kernel@vger.kernel.org, linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-efx_start_datapath() asserts that we can fit 2 RX scatter buffers plus
-a software structure, each cache-aligned, into a single page.  Where
-L1_CACHE_BYTES == 256 and PAGE_SIZE == 4096, which is the case on
-s390, this assertion fails.  Reduce EFX_RX_USR_BUF_SIZE to make this
-work.
+2013/5/10 Jeff Layton <jlayton@poochiereds.net>:
+> On Fri, 26 Apr 2013 16:04:16 +0400
+> Pavel Shilovsky <piastry@etersoft.ru> wrote:
+>
+>> Introduce new LOCK_DELETE flock flag that is suggested to be used
+>> internally only to map O_DENYDELETE open flag:
+>>
+>> !O_DENYDELETE -> LOCK_DELETE | LOCK_MAND.
+>>
+>> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+>> ---
+>>  fs/locks.c                       | 53 +++++++++++++++++++++++++++++++++-------
+>>  fs/namei.c                       |  3 +++
+>>  include/linux/fs.h               |  6 +++++
+>>  include/uapi/asm-generic/fcntl.h |  1 +
+>>  4 files changed, 54 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/fs/locks.c b/fs/locks.c
+>> index dbc5557..1cc68a9 100644
+>> --- a/fs/locks.c
+>> +++ b/fs/locks.c
+>> @@ -269,7 +269,7 @@ EXPORT_SYMBOL(locks_copy_lock);
+>>
+>>  static inline int flock_translate_cmd(int cmd) {
+>>       if (cmd & LOCK_MAND)
+>> -             return cmd & (LOCK_MAND | LOCK_RW);
+>> +             return cmd & (LOCK_MAND | LOCK_RW | LOCK_DELETE);
+>>       switch (cmd) {
+>>       case LOCK_SH:
+>>               return F_RDLCK;
+>> @@ -614,6 +614,8 @@ deny_flags_to_cmd(unsigned int flags)
+>>               cmd |= LOCK_READ;
+>>       if (!(flags & O_DENYWRITE))
+>>               cmd |= LOCK_WRITE;
+>> +     if (!(flags & O_DENYDELETE))
+>> +             cmd |= LOCK_DELETE;
+>>
+>>       return cmd;
+>>  }
+>> @@ -836,6 +838,31 @@ out:
+>>       return error;
+>>  }
+>>
+>> +int
+>> +sharelock_may_delete(struct dentry *dentry)
+>> +{
+>> +     struct file_lock **before;
+>> +     int rc = 0;
+>> +
+>> +     if (!IS_SHARELOCK(dentry->d_inode))
+>> +             return rc;
+>> +
+>> +     lock_flocks();
+>> +     for_each_lock(dentry->d_inode, before) {
+>> +             struct file_lock *fl = *before;
+>> +             if (IS_POSIX(fl))
+>> +                     break;
+>> +             if (IS_LEASE(fl))
+>> +                     continue;
+>> +             if (fl->fl_type & LOCK_DELETE)
+>> +                     continue;
+>> +             rc = 1;
+>> +             break;
+>> +     }
+>> +     unlock_flocks();
+>> +     return rc;
+>> +}
+>> +
+>>  /*
+>>   * Determine if a file is allowed to be opened with specified access and share
+>>   * modes. Lock the file and return 0 if checks passed, otherwise return
+>> @@ -850,10 +877,6 @@ sharelock_lock_file(struct file *filp)
+>>       if (!IS_SHARELOCK(filp->f_path.dentry->d_inode))
+>>               return error;
+>>
+>> -     /* Disable O_DENYDELETE support for now */
+>> -     if (filp->f_flags & O_DENYDELETE)
+>> -             return -EINVAL;
+>> -
+>>       error = flock_make_lock(filp, &lock, deny_flags_to_cmd(filp->f_flags));
+>>       if (error)
+>>               return error;
+>> @@ -1717,6 +1740,12 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
+>>       if (!f.file)
+>>               goto out;
+>>
+>> +     /* LOCK_DELETE is defined to be translated from O_DENYDELETE only */
+>> +     if (cmd & LOCK_DELETE) {
+>> +             error = -EINVAL;
+>> +             goto out;
+>> +     }
+>> +
+>>       can_sleep = !(cmd & LOCK_NB);
+>>       cmd &= ~LOCK_NB;
+>>       unlock = (cmd == LOCK_UN);
+>> @@ -2261,10 +2290,16 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+>>               seq_printf(f, "UNKNOWN UNKNOWN  ");
+>>       }
+>>       if (fl->fl_type & LOCK_MAND) {
+>> -             seq_printf(f, "%s ",
+>> -                            (fl->fl_type & LOCK_READ)
+>> -                            ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
+>> -                            : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
+>> +             if (fl->fl_type & LOCK_DELETE)
+>> +                     seq_printf(f, "%s ",
+>> +                             (fl->fl_type & LOCK_READ) ?
+>> +                             (fl->fl_type & LOCK_WRITE) ? "RWDEL" : "RDDEL" :
+>> +                             (fl->fl_type & LOCK_WRITE) ? "WRDEL" : "DEL  ");
+>> +             else
+>> +                     seq_printf(f, "%s ",
+>> +                             (fl->fl_type & LOCK_READ) ?
+>> +                             (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ " :
+>> +                             (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
+>>       } else {
+>>               seq_printf(f, "%s ",
+>>                              (lease_breaking(fl))
+>> diff --git a/fs/namei.c b/fs/namei.c
+>> index dd236fe..a404f7d 100644
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -2220,6 +2220,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
+>>   *  9. We can't remove a root or mountpoint.
+>>   * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
+>>   *     nfs_async_unlink().
+>> + * 11. We can't do it if victim is locked by O_DENYDELETE sharelock.
+>>   */
+>>  static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+>>  {
+>> @@ -2250,6 +2251,8 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+>>               return -ENOENT;
+>>       if (victim->d_flags & DCACHE_NFSFS_RENAMED)
+>>               return -EBUSY;
+>> +     if (sharelock_may_delete(victim))
+>> +             return -ESHAREDENIED;
+>
+>
+> Is there a potential race here?
+>
+> You're holding the parent's i_mutex when setting a lock on this file,
+> but you're not holding it when you test for it here. So it seems
+> possible you could end up granting a O_DENYDELETE open on a file that
+> is in the process of being deleted from the namespace.
 
-This should also be good for performance, as it ensures that each RX
-scatter buffer covers whole cache lines and slightly reduces the use
-of DMA writes that can require a read-modify-write on inter-processor
-links.
+may_delete function is called from vfs_unlnk, vfs_rename and vfs_rmdir
+and in all those places the caller is holding parent's i_mutex. It
+seems that the locking order is correct: we hold parent's i_mutex when
+we set and test sharelocks.
 
-(We could use 2048 - L1_CACHE_BYTES, but EFX_RX_USR_BUF_SIZE also
-affects user-level networking where a larger amount of housekeeping
-data may be needed.  Although this version of the driver does not
-support user-level networking, I prefer to keep scattering behaviour
-consistent with the out-of-tree version.)
+>>       return 0;
+>>  }
+>>
+>> diff --git a/include/linux/fs.h b/include/linux/fs.h
+>> index 24066d2..afd56b1 100644
+>> --- a/include/linux/fs.h
+>> +++ b/include/linux/fs.h
+>> @@ -1006,6 +1006,7 @@ extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
+>>  extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
+>>  extern void locks_delete_block(struct file_lock *waiter);
+>>  extern int sharelock_lock_file(struct file *);
+>> +extern int sharelock_may_delete(struct dentry *);
+>>  extern void lock_flocks(void);
+>>  extern void unlock_flocks(void);
+>>  #else /* !CONFIG_FILE_LOCKING */
+>> @@ -1159,6 +1160,11 @@ static inline int sharelock_lock_file(struct file *filp)
+>>       return 0;
+>>  }
+>>
+>> +static inline int sharelock_may_delete(struct dentry *dentry)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>>  static inline void lock_flocks(void)
+>>  {
+>>  }
+>> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+>> index 5ac0d49..a3e6349 100644
+>> --- a/include/uapi/asm-generic/fcntl.h
+>> +++ b/include/uapi/asm-generic/fcntl.h
+>> @@ -167,6 +167,7 @@ struct f_owner_ex {
+>>                                  blocking */
+>>  #define LOCK_UN              8       /* remove lock */
+>>
+>> +#define LOCK_DELETE  16      /* which allows to delete a file */
+>>  #define LOCK_MAND    32      /* This is a mandatory flock ... */
+>>  #define LOCK_READ    64      /* which allows concurrent read operations */
+>>  #define LOCK_WRITE   128     /* which allows concurrent write operations */
+>
+>
+> --
+> Jeff Layton <jlayton@poochiereds.net>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
----
-Heiko or Geert, please confirm that this really does fix the build
-failure - I don't have an s390 toolchain.
 
-Ben.
 
- drivers/net/ethernet/sfc/net_driver.h |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index 9bd433a..6c8e1a8 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -72,8 +72,10 @@
- /* Maximum possible MTU the driver supports */
- #define EFX_MAX_MTU (9 * 1024)
- 
--/* Size of an RX scatter buffer.  Small enough to pack 2 into a 4K page. */
--#define EFX_RX_USR_BUF_SIZE 1824
-+/* Size of an RX scatter buffer.  Small enough to pack 2 into a 4K page,
-+ * and should be a multiple of the cache line size.
-+ */
-+#define EFX_RX_USR_BUF_SIZE	(2048 - 256)
- 
- /* Forward declare Precision Time Protocol (PTP) support structure. */
- struct efx_ptp_data;
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+--
+Best regards,
+Pavel Shilovsky.
