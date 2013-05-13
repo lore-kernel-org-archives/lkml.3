@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab3EMIxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:53:15 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41288 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab3EMIxN (ORCPT
+	id S1752327Ab3EMIxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:53:25 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61532 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab3EMIxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:53:13 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH] ARM: sunxi: select ARCH_REQUIRE_GPIOLIB
-Date: Mon, 13 May 2013 10:53:08 +0200
-Message-Id: <1368435188-26965-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 13 May 2013 04:53:24 -0400
+X-AuditID: 9c93016f-b7b9bae000002df2-5a-5190aa02d4c3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 12/14] perf ftrace: Use pager for displaying result
+References: <1366705872-12132-1-git-send-email-namhyung@kernel.org>
+	<1366705872-12132-13-git-send-email-namhyung@kernel.org>
+	<20130424141724.GH971@krava.brq.redhat.com>
+	<877gjr9k8q.fsf@sejong.aot.lge.com>
+	<20130426084023.GB1054@krava.brq.redhat.com>
+	<87ip2w98nl.fsf@sejong.aot.lge.com>
+	<20130506113819.GB1093@krava.brq.redhat.com>
+	<871u9i81ih.fsf@sejong.aot.lge.com>
+	<20130510090405.GA1040@krava.brq.redhat.com>
+Date: Mon, 13 May 2013 17:53:22 +0900
+In-Reply-To: <20130510090405.GA1040@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Fri, 10 May 2013 11:04:05 +0200")
+Message-ID: <87txm75khp.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_SUNXI currently doesn't enable a gpiolib, which causes build
-problems when building a kernel with only the sunxi platform enabled.
-Select ARCH_REQUIRE_GPIOLIB to solve this.
+Hi Jiri,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-sunxi/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+On Fri, 10 May 2013 11:04:05 +0200, Jiri Olsa wrote:
+> On Wed, May 08, 2013 at 02:49:10PM +0900, Namhyung Kim wrote:
+> yep, that did it.. seems I'm getting the ftrace output
+> all the time, with:
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index d259c78..5b045e3 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -1,5 +1,6 @@
- config ARCH_SUNXI
- 	bool "Allwinner A1X SOCs" if ARCH_MULTI_V7
-+	select ARCH_REQUIRE_GPIOLIB
- 	select CLKSRC_MMIO
- 	select CLKSRC_OF
- 	select COMMON_CLK
--- 
-1.8.1.2
+Hmm.. this was just a debug patch.  So can you get the ftrace output
+without this patch too?  I suspect there's an unknown problem regarding
+stdio behind my back otherwise.
 
+Thanks,
+Namhyung
