@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3EMC6L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:58:11 -0400
-Received: from ozlabs.org ([203.10.76.45]:48004 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab3EMC50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:57:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Rob Landley <rob@landley.net>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, anup.patel@linaro.org, amit.shah@redhat.com,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: Re: [PATCH V2 2/3] Documentation: virtio: Add emergency write (emerg_wr) config register in virtio console.
-In-Reply-To: <1367902933.18069.212@driftwood>
-References: <1367842791-30285-1-git-send-email-pranavkumar@linaro.org> <1367842791-30285-3-git-send-email-pranavkumar@linaro.org> <1367902933.18069.212@driftwood>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 13 May 2013 10:46:07 +0930
-Message-ID: <87obcf3ciw.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752813Ab3EMDEY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 23:04:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51671 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3EMDEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 23:04:23 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 May 2013 23:04:23 EDT
+X-AuditID: 9c93017d-b7b62ae000004f69-18-519054b0645f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/2] perf top: Fix -E option behavior
+Date: Mon, 13 May 2013 11:49:17 +0900
+Message-Id: <1368413358-11685-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
-> On 05/06/2013 07:19:50 AM, Pranavkumar Sawargaonkar wrote:
->> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
->> Signed-off-by: Anup Patel <anup.patel@linaro.org>
->> ---
->>  Documentation/virtual/virtio-spec.txt |    8 +++++++-
->>  1 file changed, 7 insertions(+), 1 deletion(-)
->> 
->> diff --git a/Documentation/virtual/virtio-spec.txt  
->> b/Documentation/virtual/virtio-spec.txt
->> index 0d6ec85..3ca38f8 100644
->> --- a/Documentation/virtual/virtio-spec.txt
->> +++ b/Documentation/virtual/virtio-spec.txt
->> @@ -1927,11 +1927,16 @@ Ports 2 onwards only if  
->> VIRTIO_CONSOLE_F_MULTIPORT is set
->>      ports; configuration fields nr_ports and max_nr_ports are
->>      valid and control virtqueues will be used.
->> 
->> +  VIRTIO_CONSOLE_F_EMERG_WRITE(2) Device has support for emergency
->> +  write. Configuration filed emerg_wr is valid.
->
-> Emergency?
->
-> Really?
->
-> Out of morbid curiosity, what would constitute an _emergency_ in a  
-> virtual machine logging context?
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Usually, your console device is broken.  Or you can't set it up because
-you can't allocate memory.  Or you oops before it is configured.
+The -E/--entries option controls how many lines to be printed on stdio
+output but it doesn't work as it should be:
 
-Terminology is a tricky thing, but the nuance here is that you don't
-want to use this as your main console.  It may not do anything.  It may
-drop characters.  It's definitely slow.
+If -E option is specified, print that many lines regardless of current
+window size, if not automatically adjust number of lines printed to
+fit into the window size.
 
-Cheers,
-Rusty.
+Reported-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-top.c | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 67bdb9f14ad6..55ecae883e14 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -70,10 +70,11 @@
+ 
+ static volatile int done;
+ 
++#define HEADER_LINE_NR  5
++
+ static void perf_top__update_print_entries(struct perf_top *top)
+ {
+-	if (top->print_entries > 9)
+-		top->print_entries -= 9;
++	top->print_entries = top->winsize.ws_row - HEADER_LINE_NR;
+ }
+ 
+ static void perf_top__sig_winch(int sig __maybe_unused,
+@@ -82,13 +83,6 @@ static void perf_top__sig_winch(int sig __maybe_unused,
+ 	struct perf_top *top = arg;
+ 
+ 	get_term_dimensions(&top->winsize);
+-	if (!top->print_entries
+-	    || (top->print_entries+4) > top->winsize.ws_row) {
+-		top->print_entries = top->winsize.ws_row;
+-	} else {
+-		top->print_entries += 4;
+-		top->winsize.ws_row = top->print_entries;
+-	}
+ 	perf_top__update_print_entries(top);
+ }
+ 
+@@ -296,10 +290,10 @@ static void perf_top__print_sym_table(struct perf_top *top)
+ 				      top->hide_user_symbols,
+ 				      top->hide_kernel_symbols);
+ 	hists__output_recalc_col_len(&top->sym_evsel->hists,
+-				     top->winsize.ws_row - 3);
++				     top->print_entries - printed);
+ 	putchar('\n');
+ 	hists__fprintf(&top->sym_evsel->hists, false,
+-		       top->winsize.ws_row - 4 - printed, win_width, stdout);
++		       top->print_entries - printed, win_width, stdout);
+ }
+ 
+ static void prompt_integer(int *target, const char *msg)
+@@ -477,7 +471,6 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
+ 				perf_top__sig_winch(SIGWINCH, NULL, top);
+ 				sigaction(SIGWINCH, &act, NULL);
+ 			} else {
+-				perf_top__sig_winch(SIGWINCH, NULL, top);
+ 				signal(SIGWINCH, SIG_DFL);
+ 			}
+ 			break;
+-- 
+1.7.11.7
+
