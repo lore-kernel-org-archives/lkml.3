@@ -1,50 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3EMOtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:49:43 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59164 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab3EMOtm (ORCPT
+	id S1754779Ab3EMOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:50:59 -0400
+Received: from ip-128-247.fcfm.buap.mx ([148.228.128.247]:35821 "EHLO
+	alumnos.fcfm.buap.mx" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285Ab3EMOu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:49:42 -0400
-Date: Mon, 13 May 2013 09:21:20 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Joern Engel <joern@lazybastard.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: Convert logging messages
-Message-ID: <20130513132120.GA3525@logfs.org>
-References: <1366394375.3901.36.camel@joe-AO722>
- <20130419165516.GA19480@logfs.org>
- <1366396053.3901.40.camel@joe-AO722>
- <20130422143118.GA12908@logfs.org>
- <1366739994.2036.1.camel@joe-AO722>
- <20130423165132.GA21580@logfs.org>
- <1368431932.5360.25.camel@sauron.fi.intel.com>
+	Mon, 13 May 2013 10:50:57 -0400
+Message-ID: <57640.116.202.0.216.1368437855.squirrel@alumnos.fcfm.buap.mx>
+Date: Mon, 13 May 2013 04:37:35 -0500 (CDT)
+Subject: WINNING NOTIFICATION (CONGRATULATION)
+From: "Shell Petroleum Company" <info@alumnos.fcfm.buap.mx>
+Reply-To: shellpetroleumctld@live.com
+User-Agent: SquirrelMail/1.4.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1368431932.5360.25.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013 10:58:52 +0300, Artem Bityutskiy wrote:
-> 
-> I think the patch is useful so I am taking it to my l2 tree. I do not
-> want to annoy you at all, I just think that it is not fair to drop a
-> tiny, but still useful cleanup just because of a bitten to death
-> indentation question.
+Your Email address have won you 550,000.00 GBP from Shell Petroleum
+Company Limited in this year lucky draw To claim send us your full details
+Name/ Address/ Age/ Sex/ Mobile No./ Occupation/ Account No.
 
-Fair enough.
 
-Jörn
 
---
-Don't worry about people stealing your ideas. If your ideas are any good,
-you'll have to ram them down people's throats.
--- Howard Aiken quoted by Ken Iverson quoted by Jim Horning quoted by
-   Raph Levien, 1979
