@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab3EMFOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 01:14:25 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:41558 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab3EMFOY (ORCPT
+	id S1752993Ab3EMFPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 01:15:01 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:35134 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab3EMFO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 01:14:24 -0400
-To: keescook@chromium.org
-Cc: sfr@canb.auug.org.au, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com,
-        viro@zeniv.linux.org.uk
-Date: Mon, 13 May 2013 01:14:17 -0400 (EDT)
-X-Mailer: TouchDown
-X-Mailer: Zimbra 8.0.3_GA_5664 (MobileSync - TouchDown(MSRPC)/8.1.00052/)
-MIME-Version: 1.0
-Subject: =?utf-8?B?UkU6IGxpbnV4LW5leHQ6IG1hbnVhbCBtZXJnZSBvZiB0aGUgYWtwbSB0cmVlIHdpdGggTGludXMn?=
- =?utf-8?B?IHRyZWU=?=
-Message-ID: <2046909660.224701.1368422057749.JavaMail.root@zmail12.collab.prod.int.phx2.redhat.com>
-Content-Type: multipart/mixed;boundary="__1368422072038TOUCHDOWN_BOUNDARY__"
-From: Eric Paris <eparis@redhat.com>
-In-Reply-To: <CAGXu5j+bxbXrj-Xf38gekusz2jQNWjLVu1i=Wasqhwowhe3QrA@mail.gmail.com>
-References: <20130513120728.f3f469e5d71b39ec78800175@canb.auug.org.au> <1368411070.929.19.camel@localhost> <CAGXu5j+bxbXrj-Xf38gekusz2jQNWjLVu1i=Wasqhwowhe3QrA@mail.gmail.com>
-Thread-Topic: linux-next: manual merge of the akpm tree with Linus' tree
-Thread-Index: 9LCOedwhJPuLy7yP6bj8kHdHV/Bb1A==
+	Mon, 13 May 2013 01:14:59 -0400
+From: Joe Damato <ice799@gmail.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        Joe Damato <ice799@gmail.com>
+Subject: [PATCH] x86: Reduce duplicated code in the x86_64 context switch path.
+Date: Sun, 12 May 2013 22:14:51 -0700
+Message-Id: <1368422091-959-1-git-send-email-ice799@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---__1368422072038TOUCHDOWN_BOUNDARY__
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Signed-off-by: Joe Damato <ice799@gmail.com>
+---
+ arch/x86/include/asm/switch_to.h |   30 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/process_64.c     |   29 ++---------------------------
+ 2 files changed, 32 insertions(+), 27 deletions(-)
 
+diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
+index 4ec45b3..a322cc6 100644
+--- a/arch/x86/include/asm/switch_to.h
++++ b/arch/x86/include/asm/switch_to.h
+@@ -124,6 +124,36 @@ do {									\
+ 	       __switch_canary_iparam					  \
+ 	     : "memory", "cc" __EXTRA_CLOBBER)
+ 
++#define loadsegment_fs(fs, index)					  \
++	loadsegment(fs, index)
++
++#define loadsegment_gs(gs, index)					  \
++	load_gs_index(index)
++
++#define switch_segment(prev, next, index, seg, msr)			       \
++	do {								       \
++		/*							       \
++		 * Segment register != 0 always requires a reload.  Also       \
++		 * reload when it has changed.  When prev process used 64bit   \
++		 * base always reload to avoid an information leak.	       \
++		 */							       \
++		if (unlikely(index | next->index | prev->seg)) {	       \
++			loadsegment_##seg(seg, next->index);		       \
++			/*						       \
++			 * Check if the user used a selector != 0; if yes      \
++			 *  clear 64bit base, since overloaded base is always  \
++			 *  mapped to the Null selector			       \
++			 */						       \
++			if (index)					       \
++			  prev->seg = 0;				       \
++		}							       \
++									       \
++		/* when next process has a 64bit base use it */		       \
++		if (next->seg)						       \
++		  wrmsrl(msr, next->seg);				       \
++		prev->index = index;					       \
++	} while (0)
++
+ #endif /* CONFIG_X86_32 */
+ 
+ #endif /* _ASM_X86_SWITCH_TO_H */
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 355ae06..f41d026 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -318,34 +318,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 
+ 	/*
+ 	 * Switch FS and GS.
+-	 *
+-	 * Segment register != 0 always requires a reload.  Also
+-	 * reload when it has changed.  When prev process used 64bit
+-	 * base always reload to avoid an information leak.
+ 	 */
+-	if (unlikely(fsindex | next->fsindex | prev->fs)) {
+-		loadsegment(fs, next->fsindex);
+-		/*
+-		 * Check if the user used a selector != 0; if yes
+-		 *  clear 64bit base, since overloaded base is always
+-		 *  mapped to the Null selector
+-		 */
+-		if (fsindex)
+-			prev->fs = 0;
+-	}
+-	/* when next process has a 64bit base use it */
+-	if (next->fs)
+-		wrmsrl(MSR_FS_BASE, next->fs);
+-	prev->fsindex = fsindex;
+-
+-	if (unlikely(gsindex | next->gsindex | prev->gs)) {
+-		load_gs_index(next->gsindex);
+-		if (gsindex)
+-			prev->gs = 0;
+-	}
+-	if (next->gs)
+-		wrmsrl(MSR_KERNEL_GS_BASE, next->gs);
+-	prev->gsindex = gsindex;
++	switch_segment(prev, next, fsindex, fs, MSR_FS_BASE);
++	switch_segment(prev, next, gsindex, gs, MSR_KERNEL_GS_BASE);
+ 
+ 	switch_fpu_finish(next_p, fpu);
+ 
+-- 
+1.7.9.5
 
-
-
------Original Message-----
-From: Kees Cook [keescook@chromium.org]
-Received: Monday, 13 May 2013, 12:49am
-To: Eric Paris [eparis@redhat.com]
-CC: Stephen Rothwell [sfr@canb.auug.org.au]; Andrew Morton [akpm@linux-foundation.org]; Linus [torvalds@linux-foundation.org]; Linux-Next [linux-next@vger.kernel.org]; LKML [linux-kernel@vger.kernel.org]; Jeff Layton [jlayton@redhat.com]; Al Viro [viro@zeniv.linux.org.uk]
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-
-
-On Sun, May 12, 2013 at 7:11 PM, Eric Paris <eparis@redhat.com> wrote:
-> On Mon, 2013-05-13 at 12:07 +1000, Stephen Rothwell wrote:
->> Hi Andrew,
->>
->> Today's linux-next merge of the akpm tree got a conflict in
->> kernel/auditsc.c between commit b24a30a73054 ("audit: fix event coverage
->> of AUDIT_ANOM_LINK") from Linus' tree and commit "audit: fix mq_open and
->> mq_unlink to add the MQ root as a hidden parent audit_names record" from
->> the akpm tree.
->
-> Actually, I've already picked the patch up for 3.11.  So Andrew, you can
-> drop it.
->
->> I fixed it up (see below) and can carry the fix as necessary (no action
->> is required).
->>
->> BTW, commit b24a30a73054 from Linus' tree has Eric Paris as Author and
->> Committer, but is only Signed-off-by Kees Cook.  It is part of a long
->> series that did not go anywhere near linus-next.   I do have an audit
->> tree in linux-next
->> (git://git.kernel.org/pub/scm/linux/kernel/git/viro/audit.git#for-next)
->> but that hasn't seen any recent activity.
->
-> I thought I sent you a note asking for audit to get pulled into -next
-> quite a while back.  I'll resend...
->
-
-Hrm, how did the Author get mangled?
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
-
---__1368422072038TOUCHDOWN_BOUNDARY__--
