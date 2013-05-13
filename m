@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3EMUAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 16:00:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45629 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3EMUAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 16:00:11 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/8upj2uuSEOWn9lg19ibtdtY46Vt8jHqM=
-Date: Mon, 13 May 2013 16:00:02 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: dove: add PMU functions to pinctrl
-Message-ID: <20130513200002.GY31290@titan.lakedaemon.net>
-References: <1367883368-27889-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1755252Ab3EMUBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 16:01:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37142 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755032Ab3EMUBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 16:01:20 -0400
+Date: Mon, 13 May 2013 22:01:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule
+In-Reply-To: <alpine.LFD.2.02.1305132138160.2863@ionos>
+Message-ID: <alpine.LNX.2.00.1305132156300.23038@pobox.suse.cz>
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130510002930.GB2394@somewhere> <alpine.LNX.2.00.1305101702250.23038@pobox.suse.cz> <20130510152102.GD22942@pd.tnic> <20130510154349.GB9358@somewhere> <20130510162340.GE22942@pd.tnic>
+ <20130510213851.GC9358@somewhere> <alpine.LNX.2.00.1305131655390.23038@pobox.suse.cz> <alpine.LFD.2.02.1305132138160.2863@ionos>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367883368-27889-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 01:36:08AM +0200, Sebastian Hesselbarth wrote:
-> Dove power management unit can mux some special functions to mpp0-15.
-> This patch adds support to set/get the current PMU function mapped
-> to the corresponding mpp pins. The device tree documentation is also
-> updated accordingly.
+On Mon, 13 May 2013, Thomas Gleixner wrote:
+
+> > > --- a/kernel/time/tick-sched.c
+> > > +++ b/kernel/time/tick-sched.c
+> > > @@ -650,6 +650,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+> > >  
+> > >  			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+> > >  			ts->tick_stopped = 1;
+> > > +			WARN_ON_ONCE(!cpu_online(cpu));
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  .../bindings/pinctrl/marvell,dove-pinctrl.txt      |   49 ++--
->  drivers/pinctrl/mvebu/pinctrl-dove.c               |  244 +++++++++++++++++---
->  2 files changed, 249 insertions(+), 44 deletions(-)
+> So that warning triggers.
+> 
+> >  WARNING: at kernel/time/tick-sched.c:653 tick_nohz_stop_sched_tick+0x38e/0x3a0()
+> 
+> The pre full dyntick idle code bailed out when a cpu was offline. The
+> new fangled can_stop_idle_tick() function dropped that.
+> 
+> Does the patch below fix the issue?
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index bc67d42..00a9a97 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -717,6 +717,7 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+>  	if (unlikely(!cpu_online(cpu))) {
+>  		if (cpu == tick_do_timer_cpu)
+>  			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+> +		return false;
+>  	}
+>  
+>  	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
 
-Sebastian,
+The warning is gone, so it definitely looks like you found a culprit, 
+Thomas, thanks.
 
-Do you intend to have anything depending on these changes in this merge
-window?
+But I am not going to provide my Tested-by: yet, as one of the four 
+suspend-resume cycles I have done during testing of this patch ended up 
+with segfaults when trying to start any userspace binary after resume 
+(i.e. clear memory corruption). The remaining three suspend-resume 
+cycles were fine.
 
-thx,
+Will be looking into this a little bit more.
 
-Jason.
+-- 
+Jiri Kosina
+SUSE Labs
