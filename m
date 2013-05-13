@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3EMTLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:11:47 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:60235 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab3EMTLp (ORCPT
+	id S1754267Ab3EMTJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:09:23 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42826 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab3EMTJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 15:11:45 -0400
-Message-ID: <1368472300.3305.39.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH net] sfc: Reduce RX scatter buffer size to multiple of
- 256
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: David Miller <davem@davemloft.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Mon, 13 May 2013 20:11:40 +0100
-In-Reply-To: <CAMuHMdXnp0z-Tn6KBkPzpbmu1jFpZZaSWRGSggysX5QHNx52ng@mail.gmail.com>
-References: <1368467297.3305.28.camel@bwh-desktop.uk.solarflarecom.com>
-	 <CAMuHMdXnp0z-Tn6KBkPzpbmu1jFpZZaSWRGSggysX5QHNx52ng@mail.gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19862.005
-X-TM-AS-Result: No--24.656000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 13 May 2013 15:09:02 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH RESEND v3 07/11] mm/page_alloc: factor setup_pageset() into pageset_init() and pageset_set_batch()
+Date: Mon, 13 May 2013 12:08:19 -0700
+Message-Id: <1368472103-3427-8-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1368472103-3427-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051319-3620-0000-0000-000002757305
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-13 at 21:02 +0200, Geert Uytterhoeven wrote:
-> Hi Ben,
-> 
-> On Mon, May 13, 2013 at 7:48 PM, Ben Hutchings
-> <bhutchings@solarflare.com> wrote:
-> > efx_start_datapath() asserts that we can fit 2 RX scatter buffers plus
-> > a software structure, each cache-aligned, into a single page.  Where
-> > L1_CACHE_BYTES == 256 and PAGE_SIZE == 4096, which is the case on
-> > s390, this assertion fails.  Reduce EFX_RX_USR_BUF_SIZE to make this
-> > work.
-> >
-> > This should also be good for performance, as it ensures that each RX
-> > scatter buffer covers whole cache lines and slightly reduces the use
-> > of DMA writes that can require a read-modify-write on inter-processor
-> > links.
-> >
-> > (We could use 2048 - L1_CACHE_BYTES, but EFX_RX_USR_BUF_SIZE also
-> > affects user-level networking where a larger amount of housekeeping
-> > data may be needed.  Although this version of the driver does not
-> > support user-level networking, I prefer to keep scattering behaviour
-> > consistent with the out-of-tree version.)
-> >
-> > Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> > Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-> > ---
-> > Heiko or Geert, please confirm that this really does fix the build
-> 
-> Thanks! But unfortunately I still get the same error:
-> 
->   CC [M]  drivers/net/ethernet/sfc/efx.o
-> /scratch/geert/linux/linux-m68k/drivers/net/ethernet/sfc/efx.c: In
-> function 'efx_start_datapath':
-> /scratch/geert/linux/linux-m68k/drivers/net/ethernet/sfc/efx.c:646:3:
-> error: call to '__compiletime_assert_648' declared with attribute
-> error: BUILD_BUG_ON failed: sizeof(struct efx_rx_page_state) +
-> EFX_PAGE_IP_ALIGN + EFX_RX_USR_BUF_SIZE > PAGE_SIZE / 2
-> make[4]: *** [drivers/net/ethernet/sfc/efx.o] Error 1
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-OK, this doesn't work because on s390 EFX_PAGE_IP_ALIGN == 2 (this macro
-is equivalent to NET_IP_ALIGN, though that wasn't always true).  So DMA
-is going to be misaligned on s390 anyway.
-
-I'll see if I can work out a sensible definition that works for s390
-while still being good for x86 and powerpc (which are the two we mostly
-care about).
-
-> > failure - I don't have an s390 toolchain.
-> 
-> http://kernel.org/pub/tools/crosstool/files/bin/
-
-I know, but this still takes time to set up.
-
-Ben.
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3583281..696ce96 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4069,7 +4069,7 @@ static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
+ 	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
+ }
+ 
+-static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
++static void pageset_init(struct per_cpu_pageset *p)
+ {
+ 	struct per_cpu_pages *pcp;
+ 	int migratetype;
+@@ -4078,11 +4078,16 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ 
+ 	pcp = &p->pcp;
+ 	pcp->count = 0;
+-	pageset_set_batch(p, batch);
+ 	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+ 
++static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
++{
++	pageset_init(p);
++	pageset_set_batch(p, batch);
++}
++
+ /*
+  * setup_pagelist_highmark() sets the high water mark for hot per_cpu_pagelist
+  * to the value high for the pageset p.
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.8.2.2
 
