@@ -1,186 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3EMCy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:54:58 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:47120 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3EMCyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:54:52 -0400
-X-Spam-Score: -100.8
-Message-ID: <519055CA.8010202@asianux.com>
-Date: Mon, 13 May 2013 10:54:02 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753044Ab3EMC4h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:56:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28134 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752198Ab3EMC4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 22:56:35 -0400
+X-IronPort-AV: E=Sophos;i="4.87,659,1363104000"; 
+   d="scan'208";a="7252514"
+Message-ID: <5190570C.9010707@cn.fujitsu.com>
+Date: Mon, 13 May 2013 10:59:24 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel: audit_tree: resource management: need put_tree
- and goto Err when failure occures
-References: <517110BA.5070806@asianux.com> <20130422160409.471f6208099a972d26c29fb9@linux-foundation.org> <518B9C32.7050408@asianux.com> <20130509131108.8a70aa5116ff0e3c250feb8b@linux-foundation.org> <518C568E.2040203@asianux.com> <518CC2EA.8080604@asianux.com> <518CD9FC.5040605@asianux.com>
-In-Reply-To: <518CD9FC.5040605@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH v4 00/22] x86, ACPI, numa: Parse numa info early
+References: <1365728168-32067-1-git-send-email-yinghai@kernel.org> <517F7110.6000705@cn.fujitsu.com> <518B645C.10408@cn.fujitsu.com> <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
+In-Reply-To: <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/13 10:55:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/13 10:55:25,
+	Serialize complete at 2013/05/13 10:55:25
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 07:29 PM, Chen Gang wrote:
-> On 05/10/2013 05:50 PM, Chen Gang wrote:
->> On 05/10/2013 10:08 AM, Chen Gang wrote:
->>> On 05/10/2013 04:11 AM, Andrew Morton wrote:
->>>>>>>>> For me, after 'rule->tree = NULL', all things seems fine !!
->>>>> Well, what was wrong before?  Is there some user-triggerable
->>>>> misbehaviour which you observed?  If so, please describe it.
->>>>>
->>>>>
->>>>>
->>
-> 
+Hi Yinghai,
 
-
-If we force 'postponed' to be NUL, and still use the original test plan:
-
->> Test plan:
->>   code preparation:
->>     define a flag varaible.
->>     wait the flag to be true, before lock 'audit_filter_mutex' again. in audit_add_tree_rule()
->>     when evict_trunc() finish, set the flag true.
->>   firstly start: 'rm -rvf /tmp/gchen/linux-next'
->>   then start: 'audit -w /tmp/gchen/linux-next/drivers/char'
->>     (notice the order should not be changed, or all system call will be locked)
-
-If not set 'rule->tree = NULL', it will cause issue: kernel will die !!.
-
-But if set 'rule->tree = NULL', all things seems OK, and the output log
-is just what we expected.
-
----------------------------test result begin--------------------------------
-
-                          task_struct ptr:   function():         action:       related value:
-
-[  627.422698] gchen_tag: ffff88009b8787a0, audit_init_entry(): create entry: ffff88008bc75600
-[  627.422712] gchen_tag: ffff88009b8787a0, audit_receive_filter(): before call, type: 1011
-[  627.422718] gchen_tag: ffff88009b8787a0, audit_add_tree_rule(): enter function
-[  627.422822] ida_remove called for id=0 which is not allocated.
-[  627.422834] gchen_tag: ffff88009b8787a0, audit_add_tree_rule(): begin waiting 100...., rule: ffff88008bc75620
-[  639.421114] gchen_tag: ffff88009b878000, evict_chunk(): enter function postponed:           (null)
-[  639.421197] gchen_tag: ffff88009b878000, evict_chunk(): kill_rull postponed:           (null)
-[  639.421209] gchen_tag: ffff88009b878000, kill_rules(): list_del_init, rule: ffff88008bc75620, tree:           (null)
-[  639.421213] gchen_tag: ffff88009b878000, evict_chunk(): audit_schedule_prune postponed:           (null)
-[  639.421274] gchen_tag: ffff88009b878000, evict_chunk(): set audit_test_count = true, postponed:           (null)
-[  639.421282] gchen_tag: ffff88009b8787a0, audit_add_tree_rule(): end waiting, rule: ffff88008bc75620
-[  639.421289] gchen_tag: ffff88009b8787a0, audit_add_tree_rule(): list empty for rule->rlist and return fail: ffff88008bc75620
-[  639.421364] gchen_tag: ffff88009b8787a0, audit_receive_filter(): after call for failure, type: 1011
-[  639.421369] gchen_tag: ffff88009b8787a0, audit_free_rule(): remove entry: ffff88008bc75600
-
----------------------------test result end----------------------------------
-
-Next, I will try to find a test case to let 'postponed' to NUL by
-itself (not with hard coded by force), then test it again :-).
-
-Thanks.
-
-
-> Oh, sorry again, the 'postponed' in evict_chunk() still has a chance to
-> be NULL: firstly, 'audit_context->in_syscall' also checked in
-> audit_killed_trees(), and also not all tasks are generated by do_fork().
-> 
-> But really, for most cases, the 'postponed' is not NULL, so my test case
-> can not cause issue.
-> 
-> Currently, I just force 'postponed' to be NULL to see the test result... :-)
-> 
-> It seems my original fix is still useful ! ;-)
-> 
-> Thanks.
-> 
->> Oh, sorry, after have a test, the original code is no issue (it is my
->> fault).
->>
->> When the deleting work flow call evict_chunk(), I assume that the
->> 'postponed' can be NULL (at least, in some condition, it can), so
->> kill_rules() can be called directly. But in fact, 'postponed' will
->> never be NULL:
->>
->>   audit_tree depend on CONFIG_AUDIT_TREE which depend on CONFIG_AUDITSYSCALL.
->>   if CONFIG_AUDITSYSCALL defined.
->>     do_fork() -> copy_process() -> audit_alloc() -> alloc 'audit_context'.
->>     so the audit_killed_tree() will return valid pointer to 'postponed'.
->>
->>   although already have quite a few code for 'postponed == NULL', they are really useless now.
->>
->> I also read all other work flow which related with kill_rule(), I can
->> not find any of them can lead audit_add_tree_rule() to cause issue: all
->> work flow related with kill_rule() are protected by audit_cmd_mutex now.
->>
->>
->> Test plan:
->>   code preparation:
->>     define a flag varaible.
->>     wait the flag to be true, before lock 'audit_filter_mutex' again. in audit_add_tree_rule()
->>     when evict_trunc() finish, set the flag true.
->>   firstly start: 'rm -rvf /tmp/gchen/linux-next'
->>   then start: 'audit -w /tmp/gchen/linux-next/drivers/char'
->>     (notice the order should not be changed, or all system call will be locked)
->>
->> Test result:
->>   the evict_chunk() will not call kill_rule() directly, so no issues.
->>   the output sample result like this: ('printk' the related information)
->>
->> ---------------------------sample begin-----------------------------
->>
->> [   85.455891] gchen_tag: ffff880099f0ddc0, audit_init_entry(): create entry: ffff880097ca2800
->> [   85.455900] gchen_tag: ffff880099f0ddc0, audit_receive_filter(): before call, type: 1011
->> [   85.455903] gchen_tag: ffff880099f0ddc0, audit_add_tree_rule(): enter function
->> [   85.455927] ida_remove called for id=0 which is not allocated.
->> [   85.455935] gchen_tag: ffff880099f0ddc0, audit_add_tree_rule(): begin waiting 100...., rule: ffff880097ca2820
->> [   91.425947] gchen_tag: ffff880097995dc0, fsnotify_clear_marks_by_inode(): set audit_test_count = true
->> [   91.425960] gchen_tag: ffff880099f0ddc0, audit_add_tree_rule(): end waiting, rule: ffff880097ca2820
->> [   91.426055] gchen_tag: ffff880099f0ddc0, audit_receive_filter(): after call for succeed, type: 1011
->> [   91.426558] gchen_tag: ffff880097995dc0, kill_rules(): list_del_init, rule: ffff880097ca2820, tree: ffff880099dfff00
->> [   91.426564] gchen_tag: ffff880097995dc0, kill_rules(): remove entry: ffff880097ca2800
->> [   91.431023] gchen_tag: ffff880097995dc0, audit_free_rule(): remove entry: ffff880097ca2800
->>
->> ---------------------------sample end-------------------------------
->>
->>
->> Now, my original fix makes the related code consistent, but the related
->> code maybe be useless now (if what I said is true, in audit, quite a
->> few of code are useless for this reason).
->>
->> I can not be sure whether these useless code will be used, in the
->> future (whether let AUDIT_TREE and AUDIT_WATCH independent on
->> AUDIT_SYSCALL in the future).
->>
->> If it will be used in the future, my fix is useful too, else we'd
->> better to delete the related useless code.
->>
->> Thanks.
->>
->>> I think, it will cause issue (randomly): if when we are using auditctl
->>> to add rule to monitor one file, and at the same time, the other user is
->>> just deleting this file.
+On 05/10/2013 02:24 AM, Yinghai Lu wrote:
+>>> So I suggest to separate the job into 2 parts:
+>>> 1. Push Yinghai's patch1 ~ patch20, without putting pagetable in local
+>>> node.
+>>> And push my work to use SRAT to arrange ZONE_MOVABLE.
+>>> In this case, we can enable memory hotplug in the kernel first.
+>>> 2. Merge patch21 and patch22 into the fixing work I am doing now, and push
+>>> them
+>>> together when finished.
 >>>
->>> I guess, it is why original code need 'if (list_empty(&rule->rlist))'
->>> after lock 'audit_filter_mutex' again.
->>>
->>> Currently, I am just testing for it (and should give a test), and I will
->>> send the test plan and test result within this week (2013-05-12).
->>>
->>>
->>> Thanks.
->>>
->>> -- Chen Gang Asianux Corporation
->>>
+>
+> no, no, no, please do not half-done work.
+>
+> Do it right, and Do it clean.
+>
+
+I'm not saying I want to do it half-way. Putting pagetable in local node
+will make memory hot-remove patch unable to work.
+
+Before removing pages, the kernel first offlines pages. If the offline logic
+fails, the hot-remove cannot work. Since your patches have put node 
+pagetable
+in local node at boot time, this memory cannot be offlined, furthermore,
+it cannot be hot-removed.
+
+The minimum unit of memory online/offline is block. And by default,
+one block contains one section, which by default is 128MB. So if parts
+of a block are pagetable, and the rest parts are movable memory, this
+block cannot be offlined. And as a result, it cannot be removed.
+
+In order to fix it, we have three solutions:
+
+1. Reserve the whole block (128MB), making no user can use the rest
+    parts of the block. And skip them when offlining memory.
+    When all the other blocks are offlined, free the pagetable, and remove
+    all the memory.
+
+    But we may lose some memory for this purpose. 128MB is a little big
+    to waste.
+
+
+2. Migrate movable pages and keep this block online. Although the offline
+    operation fails, it is OK to remove memory.
+
+    But the offline operation will always fail. And generally speaking,
+    there are a lot of reasons of offline failing, it is difficult to
+    detect if it is OK to remove memory.
+
+
+3. Migrate user pages and make this block offline, but the kernel can
+    still use the pagetable in it.
+
+    But this will change the semantics of "offline". I'm not sure if we
+    can do it in this way.
+
+
+4. Do not allocate pagetable to local node when CONFIG_MEMORY_HOTREMOVE
+    is enabled. (I do suggest not to put pagetable in local node in
+    memory hot-remove situation.)
+
+
+How do you think about these 4 solutions above ?
+
+I think I need some advices for this problem in community. Do you have
+any idea to fix this problem if we put pagetable in local node ?
+
+The memory hot-plug guys do want to use memory hot-remove. And I think
+for now, we use solution 4 above. When CONFIG_MEMORY_HOTREMOVE is enabled,
+do not allocate pagetable to local node.
+
+I'm not trying to do it half-way. When we fix this problem, we can allocate
+pagetable to local node again with CONFIG_MEMORY_HOTREMOVE enabled.
+
+Please do give some advices or feedback.
+
+
 >>
->>
-> 
-> 
+>> If you have any thinking of this patch-set, please let me know.
+>
+> Talked to HPA, and he will put my patchset into tip/x86/mm after v3.10-rc1.
+>
+> after that we can work on put pagetable on local node for hotadd path.
+>
+
+hot-add path is another problem. But I think the hot-remove path is more
+urgent now.
 
 
--- 
-Chen Gang
-
-Asianux Corporation
+Thanks. :)
