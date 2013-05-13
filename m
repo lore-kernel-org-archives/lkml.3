@@ -1,107 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab3EMFV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 01:21:56 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:43386 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab3EMFVy (ORCPT
+	id S1753451Ab3EMFV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 01:21:59 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:44217 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab3EMFV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 01:21:54 -0400
+	Mon, 13 May 2013 01:21:56 -0400
 From: Li Zhong <zhong@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linuxppc-dev@lists.ozlabs.org, paulmck@linux.vnet.ibm.com,
         fweisbec@gmail.com, benh@kernel.crashing.org, paulus@samba.org,
         michael@ellerman.id.au, Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 1/5] powerpc: Syscall hooks for context tracking subsystem
-Date: Mon, 13 May 2013 13:21:29 +0800
-Message-Id: <1368422493-9831-2-git-send-email-zhong@linux.vnet.ibm.com>
+Subject: [RFC PATCH v3 2/5] powerpc: Exception hooks for context tracking subsystem
+Date: Mon, 13 May 2013 13:21:30 +0800
+Message-Id: <1368422493-9831-3-git-send-email-zhong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
 References: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051305-9264-0000-0000-000003BBE0DC
+x-cbid: 13051305-6102-0000-0000-0000038285BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the syscall slow path hooks for context tracking subsystem,
-corresponding to
-[PATCH] x86: Syscall hooks for userspace RCU extended QS
-  commit bf5a3c13b939813d28ce26c01425054c740d6731
+This is the exception hooks for context tracking subsystem, including
+data access, program check, single step, instruction breakpoint, machine check,
+alignment, fp unavailable, altivec assist, unknown exception, whose handlers
+might use RCU.
 
-TIF_MEMDIE is moved to the second 16-bits (with value 17), as it seems there
-is no asm code using it. TIF_NOHZ is added to _TIF_SYCALL_T_OR_A, so it is
-better for it to be in the same 16 bits with others in the group, so in the
-asm code, andi. with this group could work.
+This patch corresponds to
+[PATCH] x86: Exception hooks for userspace RCU extended QS
+  commit 6ba3c97a38803883c2eee489505796cb0a727122
+
+But after the exception handling moved to generic code, and some changes in
+following two commits:
+56dd9470d7c8734f055da2a6bac553caf4a468eb
+  context_tracking: Move exception handling to generic code
+6c1e0256fad84a843d915414e4b5973b7443d48d
+  context_tracking: Restore correct previous context state on exception exit
+
+it is able for exception hooks to use the generic code above instead of a
+redundant arch implementation.
 
 Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/powerpc/include/asm/thread_info.h |    7 +++++--
- arch/powerpc/kernel/ptrace.c           |    5 +++++
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/traps.c     |   91 +++++++++++++++++++++++++++++----------
+ arch/powerpc/mm/fault.c         |   16 ++++++-
+ arch/powerpc/mm/hash_utils_64.c |   38 ++++++++++++----
+ 3 files changed, 112 insertions(+), 33 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
-index 8ceea14..ba7b197 100644
---- a/arch/powerpc/include/asm/thread_info.h
-+++ b/arch/powerpc/include/asm/thread_info.h
-@@ -97,7 +97,7 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_PERFMON_CTXSW	6	/* perfmon needs ctxsw calls */
- #define TIF_SYSCALL_AUDIT	7	/* syscall auditing active */
- #define TIF_SINGLESTEP		8	/* singlestepping active */
--#define TIF_MEMDIE		9	/* is terminating due to OOM killer */
-+#define TIF_NOHZ		9	/* in adaptive nohz mode */
- #define TIF_SECCOMP		10	/* secure computing */
- #define TIF_RESTOREALL		11	/* Restore all regs (implies NOERROR) */
- #define TIF_NOERROR		12	/* Force successful syscall return */
-@@ -106,6 +106,7 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation */
- #define TIF_EMULATE_STACK_STORE	16	/* Is an instruction emulation
- 						for stack store? */
-+#define TIF_MEMDIE		17	/* is terminating due to OOM killer */
- 
- /* as above, but as bit values */
- #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
-@@ -124,8 +125,10 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_UPROBE		(1<<TIF_UPROBE)
- #define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
- #define _TIF_EMULATE_STACK_STORE	(1<<TIF_EMULATE_STACK_STORE)
-+#define _TIF_NOHZ		(1<<TIF_NOHZ)
- #define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
--				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
-+				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT | \
-+				 _TIF_NOHZ)
- 
- #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
- 				 _TIF_NOTIFY_RESUME | _TIF_UPROBE)
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 3b14d32..98c2fc1 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -32,6 +32,7 @@
- #include <trace/syscall.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/perf_event.h>
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 83efa2f..9d3c000 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -35,6 +35,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/debugfs.h>
+ #include <linux/ratelimit.h>
 +#include <linux/context_tracking.h>
  
- #include <asm/uaccess.h>
- #include <asm/page.h>
-@@ -1788,6 +1789,8 @@ long do_syscall_trace_enter(struct pt_regs *regs)
+ #include <asm/emulated_ops.h>
+ #include <asm/pgtable.h>
+@@ -668,6 +669,9 @@ int machine_check_generic(struct pt_regs *regs)
+ void machine_check_exception(struct pt_regs *regs)
  {
- 	long ret = 0;
- 
-+	user_exit();
+ 	int recover = 0;
++	enum ctx_state prev_state;
 +
- 	secure_computing_strict(regs->gpr[0]);
++	prev_state = exception_enter();
  
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-@@ -1832,4 +1835,6 @@ void do_syscall_trace_leave(struct pt_regs *regs)
- 	step = test_thread_flag(TIF_SINGLESTEP);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
+ 	__get_cpu_var(irq_stat).mce_exceptions++;
+ 
+@@ -683,7 +687,7 @@ void machine_check_exception(struct pt_regs *regs)
+ 		recover = cur_cpu_spec->machine_check(regs);
+ 
+ 	if (recover > 0)
+-		return;
++		goto exit;
+ 
+ #if defined(CONFIG_8xx) && defined(CONFIG_PCI)
+ 	/* the qspan pci read routines can cause machine checks -- Cort
+@@ -693,20 +697,23 @@ void machine_check_exception(struct pt_regs *regs)
+ 	 * -- BenH
+ 	 */
+ 	bad_page_fault(regs, regs->dar, SIGBUS);
+-	return;
++	goto exit;
+ #endif
+ 
+ 	if (debugger_fault_handler(regs))
+-		return;
++		goto exit;
+ 
+ 	if (check_io_access(regs))
+-		return;
++		goto exit;
+ 
+ 	die("Machine check", regs, SIGBUS);
+ 
+ 	/* Must die if the interrupt is not recoverable */
+ 	if (!(regs->msr & MSR_RI))
+ 		panic("Unrecoverable Machine check");
 +
-+	user_enter();
++exit:
++	exception_exit(prev_state);
  }
+ 
+ void SMIException(struct pt_regs *regs)
+@@ -716,20 +723,31 @@ void SMIException(struct pt_regs *regs)
+ 
+ void unknown_exception(struct pt_regs *regs)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	printk("Bad trap at PC: %lx, SR: %lx, vector=%lx\n",
+ 	       regs->nip, regs->msr, regs->trap);
+ 
+ 	_exception(SIGTRAP, regs, 0, 0);
++
++	exception_exit(prev_state);
+ }
+ 
+ void instruction_breakpoint_exception(struct pt_regs *regs)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	if (notify_die(DIE_IABR_MATCH, "iabr_match", regs, 5,
+ 					5, SIGTRAP) == NOTIFY_STOP)
+-		return;
++		goto exit;
+ 	if (debugger_iabr_match(regs))
+-		return;
++		goto exit;
+ 	_exception(SIGTRAP, regs, TRAP_BRKPT, regs->nip);
++
++exit:
++	exception_exit(prev_state);
+ }
+ 
+ void RunModeException(struct pt_regs *regs)
+@@ -739,15 +757,21 @@ void RunModeException(struct pt_regs *regs)
+ 
+ void __kprobes single_step_exception(struct pt_regs *regs)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	clear_single_step(regs);
+ 
+ 	if (notify_die(DIE_SSTEP, "single_step", regs, 5,
+ 					5, SIGTRAP) == NOTIFY_STOP)
+-		return;
++		goto exit;
+ 	if (debugger_sstep(regs))
+-		return;
++		goto exit;
+ 
+ 	_exception(SIGTRAP, regs, TRAP_TRACE, regs->nip);
++
++exit:
++	exception_exit(prev_state);
+ }
+ 
+ /*
+@@ -1006,34 +1030,37 @@ int is_valid_bugaddr(unsigned long addr)
+ void __kprobes program_check_exception(struct pt_regs *regs)
+ {
+ 	unsigned int reason = get_reason(regs);
++	enum ctx_state prev_state;
+ 	extern int do_mathemu(struct pt_regs *regs);
+ 
++	prev_state = exception_enter();
++
+ 	/* We can now get here via a FP Unavailable exception if the core
+ 	 * has no FPU, in that case the reason flags will be 0 */
+ 
+ 	if (reason & REASON_FP) {
+ 		/* IEEE FP exception */
+ 		parse_fpe(regs);
+-		return;
++		goto exit;
+ 	}
+ 	if (reason & REASON_TRAP) {
+ 		/* Debugger is first in line to stop recursive faults in
+ 		 * rcu_lock, notify_die, or atomic_notifier_call_chain */
+ 		if (debugger_bpt(regs))
+-			return;
++			goto exit;
+ 
+ 		/* trap exception */
+ 		if (notify_die(DIE_BPT, "breakpoint", regs, 5, 5, SIGTRAP)
+ 				== NOTIFY_STOP)
+-			return;
++			goto exit;
+ 
+ 		if (!(regs->msr & MSR_PR) &&  /* not user-mode */
+ 		    report_bug(regs->nip, regs) == BUG_TRAP_TYPE_WARN) {
+ 			regs->nip += 4;
+-			return;
++			goto exit;
+ 		}
+ 		_exception(SIGTRAP, regs, TRAP_BRKPT, regs->nip);
+-		return;
++		goto exit;
+ 	}
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+ 	if (reason & REASON_TM) {
+@@ -1049,7 +1076,7 @@ void __kprobes program_check_exception(struct pt_regs *regs)
+ 		if (!user_mode(regs) &&
+ 		    report_bug(regs->nip, regs) == BUG_TRAP_TYPE_WARN) {
+ 			regs->nip += 4;
+-			return;
++			goto exit;
+ 		}
+ 		/* If usermode caused this, it's done something illegal and
+ 		 * gets a SIGILL slap on the wrist.  We call it an illegal
+@@ -1059,7 +1086,7 @@ void __kprobes program_check_exception(struct pt_regs *regs)
+ 		 */
+ 		if (user_mode(regs)) {
+ 			_exception(SIGILL, regs, ILL_ILLOPN, regs->nip);
+-			return;
++			goto exit;
+ 		} else {
+ 			printk(KERN_EMERG "Unexpected TM Bad Thing exception "
+ 			       "at %lx (msr 0x%x)\n", regs->nip, reason);
+@@ -1083,16 +1110,16 @@ void __kprobes program_check_exception(struct pt_regs *regs)
+ 	switch (do_mathemu(regs)) {
+ 	case 0:
+ 		emulate_single_step(regs);
+-		return;
++		goto exit;
+ 	case 1: {
+ 			int code = 0;
+ 			code = __parse_fpscr(current->thread.fpscr.val);
+ 			_exception(SIGFPE, regs, code, regs->nip);
+-			return;
++			goto exit;
+ 		}
+ 	case -EFAULT:
+ 		_exception(SIGSEGV, regs, SEGV_MAPERR, regs->nip);
+-		return;
++		goto exit;
+ 	}
+ 	/* fall through on any other errors */
+ #endif /* CONFIG_MATH_EMULATION */
+@@ -1103,10 +1130,10 @@ void __kprobes program_check_exception(struct pt_regs *regs)
+ 		case 0:
+ 			regs->nip += 4;
+ 			emulate_single_step(regs);
+-			return;
++			goto exit;
+ 		case -EFAULT:
+ 			_exception(SIGSEGV, regs, SEGV_MAPERR, regs->nip);
+-			return;
++			goto exit;
+ 		}
+ 	}
+ 
+@@ -1114,11 +1141,17 @@ void __kprobes program_check_exception(struct pt_regs *regs)
+ 		_exception(SIGILL, regs, ILL_PRVOPC, regs->nip);
+ 	else
+ 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
++
++exit:
++	exception_exit(prev_state);
+ }
+ 
+ void alignment_exception(struct pt_regs *regs)
+ {
+ 	int sig, code, fixed = 0;
++	enum ctx_state prev_state;
++
++	prev_state = exception_enter();
+ 
+ 	/* We restore the interrupt state now */
+ 	if (!arch_irq_disabled_regs(regs))
+@@ -1131,7 +1164,7 @@ void alignment_exception(struct pt_regs *regs)
+ 	if (fixed == 1) {
+ 		regs->nip += 4;	/* skip over emulated instruction */
+ 		emulate_single_step(regs);
+-		return;
++		goto exit;
+ 	}
+ 
+ 	/* Operand address was bad */
+@@ -1146,6 +1179,9 @@ void alignment_exception(struct pt_regs *regs)
+ 		_exception(sig, regs, code, regs->dar);
+ 	else
+ 		bad_page_fault(regs, regs->dar, sig);
++
++exit:
++	exception_exit(prev_state);
+ }
+ 
+ void StackOverflow(struct pt_regs *regs)
+@@ -1174,23 +1210,34 @@ void trace_syscall(struct pt_regs *regs)
+ 
+ void kernel_fp_unavailable_exception(struct pt_regs *regs)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	printk(KERN_EMERG "Unrecoverable FP Unavailable Exception "
+ 			  "%lx at %lx\n", regs->trap, regs->nip);
+ 	die("Unrecoverable FP Unavailable Exception", regs, SIGABRT);
++
++	exception_exit(prev_state);
+ }
+ 
+ void altivec_unavailable_exception(struct pt_regs *regs)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	if (user_mode(regs)) {
+ 		/* A user program has executed an altivec instruction,
+ 		   but this kernel doesn't support altivec. */
+ 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+-		return;
++		goto exit;
+ 	}
+ 
+ 	printk(KERN_EMERG "Unrecoverable VMX/Altivec Unavailable Exception "
+ 			"%lx at %lx\n", regs->trap, regs->nip);
+ 	die("Unrecoverable VMX/Altivec Unavailable Exception", regs, SIGABRT);
++
++exit:
++	exception_exit(prev_state);
+ }
+ 
+ void vsx_unavailable_exception(struct pt_regs *regs)
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index 229951f..141835b 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -32,6 +32,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/magic.h>
+ #include <linux/ratelimit.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/firmware.h>
+ #include <asm/page.h>
+@@ -193,8 +194,8 @@ static int mm_fault_error(struct pt_regs *regs, unsigned long addr, int fault)
+  * The return value is 0 if the fault was handled, or the signal
+  * number if this is a kernel fault that can't be handled here.
+  */
+-int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
+-			    unsigned long error_code)
++static int __kprobes __do_page_fault(struct pt_regs *regs,
++				unsigned long address, unsigned long error_code)
+ {
+ 	struct vm_area_struct * vma;
+ 	struct mm_struct *mm = current->mm;
+@@ -475,6 +476,17 @@ bad_area_nosemaphore:
+ 
+ }
+ 
++int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
++			    unsigned long error_code)
++{
++	int ret;
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++	ret = __do_page_fault(regs, address, error_code);
++	exception_exit(prev_state);
++	return ret;
++}
++
+ /*
+  * bad_page_fault is called when we have a bad access from the kernel.
+  * It is called from the DSI and ISI handlers in head.S and from some
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index 88ac0ee..d92fb26 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -33,6 +33,7 @@
+ #include <linux/init.h>
+ #include <linux/signal.h>
+ #include <linux/memblock.h>
++#include <linux/context_tracking.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/pgtable.h>
+@@ -962,6 +963,9 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 	const struct cpumask *tmp;
+ 	int rc, user_region = 0, local = 0;
+ 	int psize, ssize;
++	enum ctx_state prev_state;
++
++	prev_state = exception_enter();
+ 
+ 	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
+ 		ea, access, trap);
+@@ -973,7 +977,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 		mm = current->mm;
+ 		if (! mm) {
+ 			DBG_LOW(" user region with no mm !\n");
+-			return 1;
++			rc = 1;
++			goto exit;
+ 		}
+ 		psize = get_slice_psize(mm, ea);
+ 		ssize = user_segment_size(ea);
+@@ -992,19 +997,23 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 		/* Not a valid range
+ 		 * Send the problem up to do_page_fault 
+ 		 */
+-		return 1;
++		rc = 1;
++		goto exit;
+ 	}
+ 	DBG_LOW(" mm=%p, mm->pgdir=%p, vsid=%016lx\n", mm, mm->pgd, vsid);
+ 
+ 	/* Bad address. */
+ 	if (!vsid) {
+ 		DBG_LOW("Bad address!\n");
+-		return 1;
++		rc = 1;
++		goto exit;
+ 	}
+ 	/* Get pgdir */
+ 	pgdir = mm->pgd;
+-	if (pgdir == NULL)
+-		return 1;
++	if (pgdir == NULL) {
++		rc = 1;
++		goto exit;
++	}
+ 
+ 	/* Check CPU locality */
+ 	tmp = cpumask_of(smp_processor_id());
+@@ -1027,7 +1036,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 	ptep = find_linux_pte_or_hugepte(pgdir, ea, &hugeshift);
+ 	if (ptep == NULL || !pte_present(*ptep)) {
+ 		DBG_LOW(" no PTE !\n");
+-		return 1;
++		rc = 1;
++		goto exit;
+ 	}
+ 
+ 	/* Add _PAGE_PRESENT to the required access perm */
+@@ -1038,13 +1048,16 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 	 */
+ 	if (access & ~pte_val(*ptep)) {
+ 		DBG_LOW(" no access !\n");
+-		return 1;
++		rc = 1;
++		goto exit;
+ 	}
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+-	if (hugeshift)
+-		return __hash_page_huge(ea, access, vsid, ptep, trap, local,
++	if (hugeshift) {
++		rc = __hash_page_huge(ea, access, vsid, ptep, trap, local,
+ 					ssize, hugeshift, psize);
++		goto exit;
++	}
+ #endif /* CONFIG_HUGETLB_PAGE */
+ 
+ #ifndef CONFIG_PPC_64K_PAGES
+@@ -1124,6 +1137,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 		pte_val(*(ptep + PTRS_PER_PTE)));
+ #endif
+ 	DBG_LOW(" -> rc=%d\n", rc);
++exit:
++	exception_exit(prev_state);
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(hash_page);
+@@ -1259,6 +1274,9 @@ void flush_hash_range(unsigned long number, int local)
+  */
+ void low_hash_fault(struct pt_regs *regs, unsigned long address, int rc)
+ {
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++
+ 	if (user_mode(regs)) {
+ #ifdef CONFIG_PPC_SUBPAGE_PROT
+ 		if (rc == -2)
+@@ -1268,6 +1286,8 @@ void low_hash_fault(struct pt_regs *regs, unsigned long address, int rc)
+ 			_exception(SIGBUS, regs, BUS_ADRERR, address);
+ 	} else
+ 		bad_page_fault(regs, address, SIGBUS);
++
++	exception_exit(prev_state);
+ }
+ 
+ long hpte_insert_repeating(unsigned long hash, unsigned long vpn,
 -- 
 1.7.9.5
 
