@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3EMJqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 05:46:32 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41673 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3EMJom (ORCPT
+	id S1754714Ab3EMJqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 05:46:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43511 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab3EMJqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 05:44:42 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Christian Daudt <csd@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
-        Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 11/14] ARM: sirf: Remove init_irq declaration in machine description
-Date: Mon, 13 May 2013 11:44:10 +0200
-Message-Id: <1368438253-28218-12-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 13 May 2013 05:46:35 -0400
+Message-ID: <1368438380.2618.52.camel@ThinkPad-T5421>
+Subject: Re: [RFC PATCH v3 2/5] powerpc: Exception hooks for context
+ tracking subsystem
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, paulus@samba.org,
+        michael@ellerman.id.au
+Date: Mon, 13 May 2013 17:46:20 +0800
+In-Reply-To: <1368435991.19924.35.camel@pasglop>
+References: <1368422493-9831-1-git-send-email-zhong@linux.vnet.ibm.com>
+	 <1368422493-9831-3-git-send-email-zhong@linux.vnet.ibm.com>
+	 <1368424667.19924.26.camel@pasglop>
+	 <1368434680.2618.33.camel@ThinkPad-T5421>
+	 <1368435991.19924.35.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051309-1396-0000-0000-000002F5C600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
-specified") removed the need to explictly setup the init_irq field in
-the machine description when using only irqchip_init. Remove that
-declaration for sirf as well.
+On Mon, 2013-05-13 at 19:06 +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-05-13 at 16:44 +0800, Li Zhong wrote:
+> > Yes, the above and hash_page() are two C functions for a same exception.
+> > And the exception hooks enable RCU usage in those C codes. But for asm
+> > codes, I think we could assume that there would be no RCU usage there,
+> > so we don't need wrap them in the hooks.
+> 
+> hash_page() won't start a new RCU, at least not in its current incarnation,
+> the only thing I can see it ever doing would be to take some RCU read locks one
+> day (it doesn't today).
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-prima2/common.c | 3 ---
- 1 file changed, 3 deletions(-)
+Seems I added the hooks because of the trace point of hcall
+entry/exit ...
 
-diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
-index 4f94cd8..52e28cf 100644
---- a/arch/arm/mach-prima2/common.c
-+++ b/arch/arm/mach-prima2/common.c
-@@ -55,7 +55,6 @@ DT_MACHINE_START(ATLAS6_DT, "Generic ATLAS6 (Flattened Device Tree)")
- 	/* Maintainer: Barry Song <baohua.song@csr.com> */
- 	.nr_irqs	= 128,
- 	.map_io         = sirfsoc_map_io,
--	.init_irq	= irqchip_init,
- 	.init_time	= sirfsoc_init_time,
- 	.init_machine	= sirfsoc_mach_init,
- 	.init_late	= sirfsoc_init_late,
-@@ -74,7 +73,6 @@ DT_MACHINE_START(PRIMA2_DT, "Generic PRIMA2 (Flattened Device Tree)")
- 	/* Maintainer: Barry Song <baohua.song@csr.com> */
- 	.nr_irqs	= 128,
- 	.map_io         = sirfsoc_map_io,
--	.init_irq	= irqchip_init,
- 	.init_time	= sirfsoc_init_time,
- 	.dma_zone_size	= SZ_256M,
- 	.init_machine	= sirfsoc_mach_init,
-@@ -94,7 +92,6 @@ DT_MACHINE_START(MARCO_DT, "Generic MARCO (Flattened Device Tree)")
- 	/* Maintainer: Barry Song <baohua.song@csr.com> */
- 	.smp            = smp_ops(sirfsoc_smp_ops),
- 	.map_io         = sirfsoc_map_io,
--	.init_irq	= irqchip_init,
- 	.init_time	= sirfsoc_init_time,
- 	.init_machine	= sirfsoc_mach_init,
- 	.init_late	= sirfsoc_init_late,
--- 
-1.8.1.2
+Thanks, Zhong
+
+> 
+> low_hash_fault() is a different beast. It will typically kill things, thus
+> involving sending signals etc... RCU might well be involved.
+> 
+> Cheers,
+> Ben.
+> 
+> 
+
 
