@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3EMOPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 10:15:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56385 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751846Ab3EMOPd (ORCPT
+	id S1753060Ab3EMOQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 10:16:51 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2343 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751446Ab3EMOQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 10:15:33 -0400
-Date: Mon, 13 May 2013 10:15:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: linux fddl <fddllinux@gmail.com>
-cc: linux-usb@vger.kernel.org, <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: usb: why we need a msleep(5) in ehci_bus_suspend/resume
-In-Reply-To: <CAGALBbBJuVRcG9zcqcTSNHJ4FsyE9DuHhvzRZQdEePEq=GXMFg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1305131014060.1389-100000@iolanthe.rowland.org>
+	Mon, 13 May 2013 10:16:50 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+CC: Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
+        David Rientjes <rientjes@google.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: [RFC PATCH 0/2] return value from shrinkers
+Date: Mon, 13 May 2013 16:16:33 +0200
+Message-ID: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013, linux fddl wrote:
+Hi,
 
-> Hi,
-> 
->   From the ehci-hub.c, I find that ehci_bus_suspend/resume have some
-> code like this:
-> 
-> if (time_before(jiffies, ehci->netx_statechange))
->     msleep(5);
-> ...
-> ehci->next_statechange = jiffies + msec_to_jiffies(10);
-> 
-> and
-> 
-> if (time_before(jiffies, ehci->netx_statechange))
->     msleep(5);
-> ...
-> ehci->next_statechange = jiffies + msec_to_jiffies(5);
-> 
-> but I don't know why such a short sleep is needed, and why one is
-> [ehci->next_statechange = jiffies + msec_to_jiffies(10)] and the other is
-> [ehci->next_statechange = jiffies + msec_to_jiffies(5)],
-> I googled for a long time, but it seems that there is no explanation.
-> 
->   Anyone knows why and can give any explanation?
+In a previous discussion on lkml it was noted that the shrinkers use the
+magic value "-1" to signal that something went wrong.
 
-At this point I don't think anybody knows.  The person who originally
-wrote that code died a few years ago.
+This patch-set implements the suggestion of instead using errno.h values
+to return something more meaningful.
 
-Alan Stern
+The first patch simply changes the check from -1 to any negative value and
+updates the comment accordingly.
+
+The second patch updates the shrinkers to return an errno.h value instead
+of -1. Since this one spans over many different areas I need input on what is
+a meaningful return value. Right now I used -EBUSY on everything for consitency.
+
+What do you say? Is this a good idea or does it make no sense at all?
+
+Thanks!
+
+-Oskar
+
+Oskar Andero (2):
+  mm: vmscan: let any negative return value from shrinker mean error
+  Clean-up shrinker return values
+
+ drivers/staging/android/ashmem.c     | 2 +-
+ drivers/staging/zcache/zcache-main.c | 2 +-
+ fs/gfs2/glock.c                      | 2 +-
+ fs/gfs2/quota.c                      | 2 +-
+ fs/nfs/dir.c                         | 2 +-
+ fs/ubifs/shrinker.c                  | 2 +-
+ include/linux/shrinker.h             | 5 +++--
+ mm/vmscan.c                          | 2 +-
+ net/sunrpc/auth.c                    | 2 +-
+ 9 files changed, 11 insertions(+), 10 deletions(-)
+
+-- 
+1.8.1.5
 
