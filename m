@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3EMKSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 06:18:12 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:56817 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3EMKSL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 06:18:11 -0400
+	id S1753438Ab3EMKSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 06:18:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58401 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752707Ab3EMKSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 06:18:41 -0400
+Date: Mon, 13 May 2013 12:18:39 +0200
+From: Jan Kara <jack@suse.cz>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, xfs@oss.sgi.com
+Subject: Re: [Patch] quota: do not leak info to user-space
+Message-ID: <20130513101839.GE400@quack.suse.cz>
+References: <1368177873-4819-1-git-send-email-amwang@redhat.com>
+ <20130513100423.GD400@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvyKANuy_vezO+E1aL3FzvdjiNgCD3j-BVGSyL_ne015Xw@mail.gmail.com>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	<alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
-	<CAFLxGvzA5nzpQjOKWgz0nBKG2s3gPspted-25uduqkr7_ySj6A@mail.gmail.com>
-	<CAMuHMdWt0i6Q+i9Qh+tMs910a388NoddhHmq2LGr50f1=dJPvQ@mail.gmail.com>
-	<38896893-83c7-4eb4-848a-bb35663d945b@email.android.com>
-	<CAFLxGvyKANuy_vezO+E1aL3FzvdjiNgCD3j-BVGSyL_ne015Xw@mail.gmail.com>
-Date: Mon, 13 May 2013 12:18:10 +0200
-X-Google-Sender-Auth: 86kMkn-o2u4bxrkGBDhtELtUoaI
-Message-ID: <CAMuHMdVnbbJDq0vcc4e-NCWFUqgAzv3YU470B3jGFDN0xR+E=A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        User-mode Linux Kernel Development 
-	<user-mode-linux-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130513100423.GD400@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 12:07 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Mon, May 13, 2013 at 11:54 AM, Michael Ellerman
-> <michael@ellerman.id.au> wrote:
+On Mon 13-05-13 12:04:23, Jan Kara wrote:
+> On Fri 10-05-13 17:24:33, Cong Wang wrote:
+> > From: Cong Wang <amwang@redhat.com>
+> > 
+> > There is a hole in struct fs_quota_stat, so we have to
+> > zero the struct on stack before copying it to user-space.
+> > 
+> > Cc: Jan Kara <jack@suse.cz>
+> > Signed-off-by: Cong Wang <amwang@redhat.com>
+>   Good point. I've merged the patch.
+  Ah, now I've noticed that XFS (the only user of the callback you are
+fixing) is zeroing the structure on its own (xfs_qm_scall_getqstat). So
+there's no real problem. I'm somewhat wondering whether clearing the field
+in the place where you did it isn't more future-proof but usually we don't
+pass in prezeroed buffers so I've decided to leave things as they are.
 
->> Possibly. We're cross compiling these on powerpc so perhaps we need to update the cross compiler.
->
-> Looks like you are the first man on planet earth who tries do build
-> UML/x86 on powerpc. :D
+								Honza
 
-Well, it used to work: http://kisskb.ellerman.id.au/kisskb/target/2974/
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> BTW for XFS folks: The structure definition looks somewhat odd (unaligned
+> definition of qs_flags, qs_uquota starts only at 32-bit boundary although
+> it has 64-bit fields in it) and I wouldn't be surprised if it needed compat
+> wrapper for 32-bit apps on some architectures...
+> 
+> 								Honza
+> > 
+> > ---
+> > diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+> > index c7314f1..2b0c182 100644
+> > --- a/fs/quota/quota.c
+> > +++ b/fs/quota/quota.c
+> > @@ -211,6 +211,7 @@ static int quota_getxstate(struct super_block *sb, void __user *addr)
+> >  
+> >  	if (!sb->s_qcop->get_xstate)
+> >  		return -ENOSYS;
+> > +	memset(&fqs, 0, sizeof(fqs));
+> >  	ret = sb->s_qcop->get_xstate(sb, &fqs);
+> >  	if (!ret && copy_to_user(addr, &fqs, sizeof(fqs)))
+> >  		return -EFAULT;
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
