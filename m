@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3EMT2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 15:28:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47461 "EHLO
+	id S1755269Ab3EMT2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 15:28:07 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47450 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab3EMT0S (ORCPT
+	with ESMTP id S1754645Ab3EMT0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 May 2013 15:26:18 -0400
 X-IronPort-AV: E=Sophos;i="4.87,663,1363158000"; 
-   d="scan'208";a="46754214"
+   d="scan'208";a="46754215"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Barry Song <baohua.song@csr.com>
-Subject: [PATCHv6 07/11] ARM: PRIMA2: Divorce timer-marco from local timer API
-Date: Mon, 13 May 2013 12:26:11 -0700
-Message-Id: <1368473175-4841-8-git-send-email-sboyd@codeaurora.org>
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Subject: [PATCHv6 08/11] ARM: msm: Divorce msm_timer from local timer API
+Date: Mon, 13 May 2013 12:26:12 -0700
+Message-Id: <1368473175-4841-9-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.rc1.25.g423ecb0.dirty
 In-Reply-To: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
 References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
@@ -23,125 +24,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the marco local timers from the local timer API. This
-will allow us to remove ARM local timer support in the near future
-and gets us closer to moving this driver to drivers/clocksource.
+Separate the msm_timer from the local timer API. This will allow
+us to remove ARM local timer support in the near future and gets
+us closer to moving this driver to drivers/clocksource.
 
-Cc: Barry Song <baohua.song@csr.com>
+Acked-by: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clocksource/timer-marco.c | 100 ++++++++++++++++++++------------------
- 1 file changed, 54 insertions(+), 46 deletions(-)
+ arch/arm/mach-msm/timer.c | 126 +++++++++++++++++++++++++---------------------
+ 1 file changed, 70 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
-index 97738db..ba97bc1 100644
---- a/drivers/clocksource/timer-marco.c
-+++ b/drivers/clocksource/timer-marco.c
-@@ -10,6 +10,7 @@
- #include <linux/interrupt.h>
- #include <linux/clockchips.h>
- #include <linux/clocksource.h>
-+#include <linux/cpu.h>
- #include <linux/bitops.h>
- #include <linux/irq.h>
- #include <linux/clk.h>
-@@ -18,7 +19,6 @@
- #include <linux/of_irq.h>
- #include <linux/of_address.h>
- #include <asm/sched_clock.h>
--#include <asm/localtimer.h>
- #include <asm/mach/time.h>
+diff --git a/arch/arm/mach-msm/timer.c b/arch/arm/mach-msm/timer.c
+index 284313f..df947aa 100644
+--- a/arch/arm/mach-msm/timer.c
++++ b/arch/arm/mach-msm/timer.c
+@@ -16,6 +16,7 @@
  
- #define SIRFSOC_TIMER_32COUNTER_0_CTRL			0x0000
-@@ -151,13 +151,7 @@ static void sirfsoc_clocksource_resume(struct clocksource *cs)
- 		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
+ #include <linux/clocksource.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+@@ -25,7 +26,6 @@
+ #include <linux/of_irq.h>
+ 
+ #include <asm/mach/time.h>
+-#include <asm/localtimer.h>
+ #include <asm/sched_clock.h>
+ 
+ #include "common.h"
+@@ -49,7 +49,7 @@ static void __iomem *sts_base;
+ 
+ static irqreturn_t msm_timer_interrupt(int irq, void *dev_id)
+ {
+-	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++	struct clock_event_device *evt = dev_id;
+ 	/* Stop the timer tick */
+ 	if (evt->mode == CLOCK_EVT_MODE_ONESHOT) {
+ 		u32 ctrl = readl_relaxed(event_base + TIMER_ENABLE);
+@@ -101,18 +101,7 @@ static void msm_timer_set_mode(enum clock_event_mode mode,
+ 	writel_relaxed(ctrl, event_base + TIMER_ENABLE);
  }
  
--static struct clock_event_device sirfsoc_clockevent = {
--	.name = "sirfsoc_clockevent",
--	.rating = 200,
--	.features = CLOCK_EVT_FEAT_ONESHOT,
--	.set_mode = sirfsoc_timer_set_mode,
--	.set_next_event = sirfsoc_timer_set_next_event,
+-static struct clock_event_device msm_clockevent = {
+-	.name		= "gp_timer",
+-	.features	= CLOCK_EVT_FEAT_ONESHOT,
+-	.rating		= 200,
+-	.set_next_event	= msm_timer_set_next_event,
+-	.set_mode	= msm_timer_set_mode,
 -};
-+static struct clock_event_device __percpu *sirfsoc_clockevent;
+-
+-static union {
+-	struct clock_event_device *evt;
+-	struct clock_event_device * __percpu *percpu_evt;
+-} msm_evt;
++static struct clock_event_device __percpu *msm_evt;
  
- static struct clocksource sirfsoc_clocksource = {
- 	.name = "sirfsoc_clocksource",
-@@ -173,11 +167,8 @@ static struct irqaction sirfsoc_timer_irq = {
- 	.name = "sirfsoc_timer0",
- 	.flags = IRQF_TIMER | IRQF_NOBALANCING,
- 	.handler = sirfsoc_timer_interrupt,
--	.dev_id = &sirfsoc_clockevent,
+ static void __iomem *source_base;
+ 
+@@ -138,37 +127,65 @@ static struct clocksource msm_clocksource = {
+ 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
  };
  
 -#ifdef CONFIG_LOCAL_TIMERS
--
- static struct irqaction sirfsoc_timer1_irq = {
- 	.name = "sirfsoc_timer1",
- 	.flags = IRQF_TIMER | IRQF_NOBALANCING,
-@@ -186,56 +177,77 @@ static struct irqaction sirfsoc_timer1_irq = {
- 
- static int __cpuinit sirfsoc_local_timer_setup(struct clock_event_device *ce)
++static int msm_timer_irq;
++static int msm_timer_has_ppi;
++
+ static int __cpuinit msm_local_timer_setup(struct clock_event_device *evt)
  {
 -	/* Use existing clock_event for cpu 0 */
 -	if (!smp_processor_id())
 -		return 0;
+-
+-	evt->irq = msm_clockevent.irq;
+-	evt->name = "local_timer";
+-	evt->features = msm_clockevent.features;
+-	evt->rating = msm_clockevent.rating;
 +	int cpu = smp_processor_id();
-+	struct irqaction *action;
++	int err;
 +
-+	if (cpu == 0)
-+		action = &sirfsoc_timer_irq;
-+	else
-+		action = &sirfsoc_timer1_irq;
++	evt->irq = msm_timer_irq;
++	evt->name = "msm_timer";
++	evt->features = CLOCK_EVT_FEAT_ONESHOT;
++	evt->rating = 200;
+ 	evt->set_mode = msm_timer_set_mode;
+ 	evt->set_next_event = msm_timer_set_next_event;
++	evt->cpumask = cpumask_of(cpu);
++
++	clockevents_config_and_register(evt, GPT_HZ, 4, 0xffffffff);
++
++	if (msm_timer_has_ppi) {
++		enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
++	} else {
++		err = request_irq(evt->irq, msm_timer_interrupt,
++				IRQF_TIMER | IRQF_NOBALANCING |
++				IRQF_TRIGGER_RISING, "gp_timer", evt);
++		if (err)
++			pr_err("request_irq failed\n");
++	}
  
--	ce->irq = sirfsoc_timer1_irq.irq;
-+	ce->irq = action->irq;
- 	ce->name = "local_timer";
--	ce->features = sirfsoc_clockevent.features;
--	ce->rating = sirfsoc_clockevent.rating;
-+	ce->features = CLOCK_EVT_FEAT_ONESHOT;
-+	ce->rating = 200;
- 	ce->set_mode = sirfsoc_timer_set_mode;
- 	ce->set_next_event = sirfsoc_timer_set_next_event;
--	ce->shift = sirfsoc_clockevent.shift;
--	ce->mult = sirfsoc_clockevent.mult;
--	ce->max_delta_ns = sirfsoc_clockevent.max_delta_ns;
--	ce->min_delta_ns = sirfsoc_clockevent.min_delta_ns;
-+	clockevents_calc_mult_shift(ce, CLOCK_TICK_RATE, 60);
-+	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
-+	ce->min_delta_ns = clockevent_delta2ns(2, ce);
-+	ce->cpumask = cpumask_of(cpu);
- 
--	sirfsoc_timer1_irq.dev_id = ce;
--	BUG_ON(setup_irq(ce->irq, &sirfsoc_timer1_irq));
--	irq_set_affinity(sirfsoc_timer1_irq.irq, cpumask_of(1));
-+	action->dev_id = ce;
-+	BUG_ON(setup_irq(ce->irq, action));
-+	irq_set_affinity(action->irq, cpumask_of(cpu));
- 
- 	clockevents_register_device(ce);
+-	*__this_cpu_ptr(msm_evt.percpu_evt) = evt;
+-	clockevents_config_and_register(evt, GPT_HZ, 4, 0xf0000000);
+-	enable_percpu_irq(evt->irq, IRQ_TYPE_EDGE_RISING);
  	return 0;
  }
  
--static void sirfsoc_local_timer_stop(struct clock_event_device *ce)
-+static void __cpuinit sirfsoc_local_timer_stop(struct clock_event_device *ce)
+-static void msm_local_timer_stop(struct clock_event_device *evt)
++static void __cpuinit msm_local_timer_stop(struct clock_event_device *evt)
  {
-+	int cpu = smp_processor_id();
-+
- 	sirfsoc_timer_count_disable(1);
- 
--	remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
-+	if (cpu == 0)
-+		remove_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq);
-+	else
-+		remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+ 	disable_percpu_irq(evt->irq);
  }
  
--static struct local_timer_ops sirfsoc_local_timer_ops __cpuinitdata = {
--	.setup	= sirfsoc_local_timer_setup,
--	.stop	= sirfsoc_local_timer_stop,
-+static int __cpuinit sirfsoc_cpu_notify(struct notifier_block *self,
+-static struct local_timer_ops msm_local_timer_ops __cpuinitdata = {
+-	.setup	= msm_local_timer_setup,
+-	.stop	= msm_local_timer_stop,
++static int __cpuinit msm_timer_cpu_notify(struct notifier_block *self,
 +					   unsigned long action, void *hcpu)
 +{
 +	/*
@@ -150,66 +151,84 @@ index 97738db..ba97bc1 100644
 +	 */
 +	switch (action & ~CPU_TASKS_FROZEN) {
 +	case CPU_STARTING:
-+		sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
++		msm_local_timer_setup(this_cpu_ptr(msm_evt));
 +		break;
 +	case CPU_DYING:
-+		sirfsoc_local_timer_stop(this_cpu_ptr(sirfsoc_clockevent));
++		msm_local_timer_stop(this_cpu_ptr(msm_evt));
 +		break;
 +	}
 +
 +	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block sirfsoc_cpu_nb __cpuinitdata = {
-+	.notifier_call = sirfsoc_cpu_notify,
++static struct notifier_block msm_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = msm_timer_cpu_notify,
  };
 -#endif /* CONFIG_LOCAL_TIMERS */
  
- static void __init sirfsoc_clockevent_init(void)
+ static notrace u32 msm_sched_clock_read(void)
  {
--	clockevents_calc_mult_shift(&sirfsoc_clockevent, CLOCK_TICK_RATE, 60);
--
--	sirfsoc_clockevent.max_delta_ns =
--		clockevent_delta2ns(-2, &sirfsoc_clockevent);
--	sirfsoc_clockevent.min_delta_ns =
--		clockevent_delta2ns(2, &sirfsoc_clockevent);
--
--	sirfsoc_clockevent.cpumask = cpumask_of(0);
--	clockevents_register_device(&sirfsoc_clockevent);
--#ifdef CONFIG_LOCAL_TIMERS
--	local_timer_register(&sirfsoc_local_timer_ops);
--#endif
-+	sirfsoc_clockevent = alloc_percpu(struct clock_event_device);
-+	BUG_ON(!sirfsoc_clockevent);
+@@ -178,38 +195,35 @@ static notrace u32 msm_sched_clock_read(void)
+ static void __init msm_timer_init(u32 dgt_hz, int sched_bits, int irq,
+ 				  bool percpu)
+ {
+-	struct clock_event_device *ce = &msm_clockevent;
+ 	struct clocksource *cs = &msm_clocksource;
+-	int res;
++	int res = 0;
 +
-+	BUG_ON(register_cpu_notifier(&sirfsoc_cpu_nb));
++	msm_timer_irq = irq;
++	msm_timer_has_ppi = percpu;
 +
-+	/* Immediately configure the timer on the boot CPU */
-+	sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
- }
++	msm_evt = alloc_percpu(struct clock_event_device);
++	if (!msm_evt) {
++		pr_err("memory allocation failed for clockevents\n");
++		goto err;
++	}
  
- /* initialize the kernel jiffy timer source */
-@@ -273,8 +285,6 @@ static void __init sirfsoc_marco_timer_init(void)
+-	ce->cpumask = cpumask_of(0);
+-	ce->irq = irq;
++	if (percpu)
++		res = request_percpu_irq(irq, msm_timer_interrupt,
++					 "gp_timer", msm_evt);
  
- 	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
- 
--	BUG_ON(setup_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq));
--
- 	sirfsoc_clockevent_init();
- }
- 
-@@ -288,11 +298,9 @@ static void __init sirfsoc_of_timer_init(struct device_node *np)
- 	if (!sirfsoc_timer_irq.irq)
- 		panic("No irq passed for timer0 via DT\n");
- 
+-	clockevents_config_and_register(ce, GPT_HZ, 4, 0xffffffff);
+-	if (percpu) {
+-		msm_evt.percpu_evt = alloc_percpu(struct clock_event_device *);
+-		if (!msm_evt.percpu_evt) {
+-			pr_err("memory allocation failed for %s\n", ce->name);
++	if (res) {
++		pr_err("request_percpu_irq failed\n");
++	} else {
++		res = register_cpu_notifier(&msm_timer_cpu_nb);
++		if (res) {
++			free_percpu_irq(irq, msm_evt);
+ 			goto err;
+ 		}
+-		*__this_cpu_ptr(msm_evt.percpu_evt) = ce;
+-		res = request_percpu_irq(ce->irq, msm_timer_interrupt,
+-					 ce->name, msm_evt.percpu_evt);
+-		if (!res) {
+-			enable_percpu_irq(ce->irq, IRQ_TYPE_EDGE_RISING);
 -#ifdef CONFIG_LOCAL_TIMERS
- 	sirfsoc_timer1_irq.irq = irq_of_parse_and_map(np, 1);
- 	if (!sirfsoc_timer1_irq.irq)
- 		panic("No irq passed for timer1 via DT\n");
+-			local_timer_register(&msm_local_timer_ops);
 -#endif
+-		}
+-	} else {
+-		msm_evt.evt = ce;
+-		res = request_irq(ce->irq, msm_timer_interrupt,
+-				  IRQF_TIMER | IRQF_NOBALANCING |
+-				  IRQF_TRIGGER_RISING, ce->name, &msm_evt.evt);
++
++		/* Immediately configure the timer on the boot CPU */
++		msm_local_timer_setup(__this_cpu_ptr(msm_evt));
+ 	}
  
- 	sirfsoc_marco_timer_init();
- }
+-	if (res)
+-		pr_err("request_irq failed for %s\n", ce->name);
+ err:
+ 	writel_relaxed(TIMER_ENABLE_EN, source_base + TIMER_ENABLE);
+ 	res = clocksource_register_hz(cs, dgt_hz);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
