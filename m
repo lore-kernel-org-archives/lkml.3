@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3EMMBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 08:01:22 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56598 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3EMMBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 08:01:18 -0400
-X-AuditID: 85900ec0-d4ccab900000151e-a3-5190d60b3076
-Subject: [PATCH 3/3] [CLEANUP/SPARSE] tracing/kprobes: Make print_*probe_event
- static
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Date: Mon, 13 May 2013 20:58:39 +0900
-Message-ID: <20130513115839.6545.83067.stgit@mhiramat-M0-7522>
-In-Reply-To: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
-References: <20130513115824.6545.47677.stgit@mhiramat-M0-7522>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753442Ab3EMMB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 08:01:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62901 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967Ab3EMMBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 08:01:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,662,1363158000"; 
+   d="scan'208";a="333210125"
+Message-ID: <1368446463.16445.90.camel@intelbox>
+Subject: Re: [PATCH 01/11] time: add *_to_jiffies_min helpers to guarantee a
+ minimum duration
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>
+Date: Mon, 13 May 2013 15:01:03 +0300
+In-Reply-To: <20130513101707.53259093@endymion.delvare>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+	 <20130513101707.53259093@endymion.delvare>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to sparse warning, print_*probe_event static because
-those functions are not directly called from outside.
+On Mon, 2013-05-13 at 10:17 +0200, Jean Delvare wrote:
+> BTW...
+> 
+> On Fri, 10 May 2013 15:13:19 +0300, Imre Deak wrote:
+> > +#define __define_time_to_jiffies_min(tname, ttype)			\
+> > +static inline unsigned long						\
+> > +tname ## _to_jiffies_min(const ttype m)					\
+> > +{									\
+> > +	return max_t(long, MAX_JIFFY_OFFSET, tname ## _to_jiffies(m) + 1);\
+> > +}
+> 
+> How would this work at all? Isn't it going to just return
+> MAX_JIFFY_OFFSET all the time?
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kprobe.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yes, that's a mistake, I meant here min_t.
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 81c5109..9f46e98 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -962,7 +962,7 @@ kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- }
- 
- /* Event entry printers */
--enum print_line_t
-+static enum print_line_t
- print_kprobe_event(struct trace_iterator *iter, int flags,
- 		   struct trace_event *event)
- {
-@@ -998,7 +998,7 @@ partial:
- 	return TRACE_TYPE_PARTIAL_LINE;
- }
- 
--enum print_line_t
-+static enum print_line_t
- print_kretprobe_event(struct trace_iterator *iter, int flags,
- 		      struct trace_event *event)
- {
+--Imre
+
 
