@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3EMIlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 04:41:49 -0400
+	id S1753451Ab3EMIlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 04:41:55 -0400
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61465 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3EMIlr (ORCPT
+	with ESMTP id S1752210Ab3EMIls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 04:41:47 -0400
-X-AuditID: 9c93016f-b7b9bae000002df2-5b-5190a7498c4d
+	Mon, 13 May 2013 04:41:48 -0400
+X-AuditID: 9c93016f-b7b9bae000002df2-5c-5190a749c8c6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,10 +15,12 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 1/2] perf report: Add --percent-limit option
-Date: Mon, 13 May 2013 17:41:42 +0900
-Message-Id: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 2/2] perf top: Add --percent-limit option
+Date: Mon, 13 May 2013 17:41:43 +0900
+Message-Id: <1368434503-29373-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
+References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,502 +29,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Namhyung Kim <namhyung.kim@lge.com>
 
 The --percent-limit option is for not showing small overheaded entries
-in the output.  Maybe we want to set a certain default value like 0.1.
+in the output.
 
 Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  4 ++
- tools/perf/builtin-diff.c                |  2 +-
- tools/perf/builtin-report.c              | 21 +++++++--
- tools/perf/builtin-top.c                 |  4 +-
- tools/perf/ui/browsers/hists.c           | 79 +++++++++++++++++++++++++++-----
- tools/perf/ui/gtk/hists.c                | 13 ++++--
- tools/perf/ui/stdio/hist.c               |  7 ++-
- tools/perf/util/hist.h                   | 10 ++--
- 8 files changed, 115 insertions(+), 25 deletions(-)
+ tools/perf/Documentation/perf-top.txt |  4 ++++
+ tools/perf/builtin-top.c              | 17 +++++++++++++++--
+ tools/perf/ui/browsers/hists.c        | 16 ++++++++++++++--
+ tools/perf/util/top.h                 |  1 +
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 7d5f4f38aa52..66dab7410c1d 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -210,6 +210,10 @@ OPTIONS
- 	Demangle symbol names to human readable form. It's enabled by default,
- 	disable with --no-demangle.
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 9f1a2fe54757..7fdd1909e376 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -155,6 +155,10 @@ Default is to monitor all CPUS.
+ 
+ 	Default: fractal,0.5,callee.
  
 +--percent-limit::
 +	Do not show entries which have an overhead under that percent.
 +	(Default: 0).
 +
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-annotate[1]
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index cabbea5f0bc2..a9d63c1c64c5 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -457,7 +457,7 @@ static void hists__process(struct hists *old, struct hists *new)
- 		hists__output_resort(new);
- 	}
- 
--	hists__fprintf(new, true, 0, 0, stdout);
-+	hists__fprintf(new, true, 0, 0, 0, stdout);
- }
- 
- static int __cmd_diff(void)
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 0f0cf2472d9d..0a4979bdd4c4 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -52,6 +52,7 @@ struct perf_report {
- 	symbol_filter_t		annotate_init;
- 	const char		*cpu_list;
- 	const char		*symbol_filter_str;
-+	float			min_percent;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-@@ -456,7 +457,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
- 			continue;
- 
- 		hists__fprintf_nr_sample_events(rep, hists, evname, stdout);
--		hists__fprintf(hists, true, 0, 0, stdout);
-+		hists__fprintf(hists, true, 0, 0, rep->min_percent, stdout);
- 		fprintf(stdout, "\n\n");
- 	}
- 
-@@ -575,8 +576,8 @@ static int __cmd_report(struct perf_report *rep)
- 	if (use_browser > 0) {
- 		if (use_browser == 1) {
- 			ret = perf_evlist__tui_browse_hists(session->evlist,
--							help,
--							NULL,
-+							help, NULL,
-+							rep->min_percent,
- 							&session->header.env);
- 			/*
- 			 * Usually "ret" is the last pressed key, and we only
-@@ -587,7 +588,7 @@ static int __cmd_report(struct perf_report *rep)
- 
- 		} else if (use_browser == 2) {
- 			perf_evlist__gtk_browse_hists(session->evlist, help,
--						      NULL);
-+						      NULL, rep->min_percent);
- 		}
- 	} else
- 		perf_evlist__tty_browse_hists(session->evlist, rep, help);
-@@ -698,6 +699,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
- 	return 0;
- }
- 
-+static int
-+parse_percent_limit(const struct option *opt, const char *str,
-+		    int unset __maybe_unused)
-+{
-+	struct perf_report *rep = opt->value;
-+
-+	rep->min_percent = strtof(str, NULL);
-+	return 0;
-+}
-+
- int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_session *session;
-@@ -807,6 +818,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
- 		    "Disable symbol demangling"),
- 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
-+	OPT_CALLBACK(0, "percent-limit", &report, "percent",
-+		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_END()
- 	};
+ INTERACTIVE PROMPTING KEYS
+ --------------------------
  
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c2c973476479..19fe25f6e4f0 100644
+index 19fe25f6e4f0..f036af9b6f09 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -296,7 +296,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
+@@ -296,7 +296,8 @@ static void perf_top__print_sym_table(struct perf_top *top)
  				     top->print_entries - printed);
  	putchar('\n');
  	hists__fprintf(&top->sym_evsel->hists, false,
--		       top->print_entries - printed, win_width, stdout);
-+		       top->print_entries - printed, win_width, 0, stdout);
+-		       top->print_entries - printed, win_width, 0, stdout);
++		       top->print_entries - printed, win_width,
++		       top->min_percent, stdout);
  }
  
  static void prompt_integer(int *target, const char *msg)
-@@ -580,7 +580,7 @@ static void *display_thread_tui(void *arg)
+@@ -580,7 +581,7 @@ static void *display_thread_tui(void *arg)
  	list_for_each_entry(pos, &top->evlist->entries, node)
  		pos->hists.uid_filter_str = top->record_opts.target.uid_str;
  
--	perf_evlist__tui_browse_hists(top->evlist, help, &hbt,
-+	perf_evlist__tui_browse_hists(top->evlist, help, &hbt, 0,
+-	perf_evlist__tui_browse_hists(top->evlist, help, &hbt, 0,
++	perf_evlist__tui_browse_hists(top->evlist, help, &hbt, top->min_percent,
  				      &top->session->header.env);
  
  	done = 1;
+@@ -1021,6 +1022,16 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 	return record_parse_callchain_opt(opt, arg, unset);
+ }
+ 
++static int
++parse_percent_limit(const struct option *opt, const char *arg,
++		    int unset __maybe_unused)
++{
++	struct perf_top *top = opt->value;
++
++	top->min_percent = strtof(arg, NULL);
++	return 0;
++}
++
+ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int status;
+@@ -1106,6 +1117,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
++	OPT_CALLBACK(0, "percent-limit", &top, "percent",
++		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_END()
+ 	};
+ 	const char * const top_usage[] = {
 diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index a4268cab1921..9dfde61505cc 100644
+index 9dfde61505cc..fc0bd3843d34 100644
 --- a/tools/perf/ui/browsers/hists.c
 +++ b/tools/perf/ui/browsers/hists.c
-@@ -25,6 +25,8 @@ struct hist_browser {
- 	struct map_symbol   *selection;
- 	int		     print_seq;
- 	bool		     show_dso;
-+	float		     min_pcnt;
-+	u64		     nr_pcnt_entries;
+@@ -310,6 +310,8 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
+ 		"Or reduce the sampling frequency.");
+ }
+ 
++static void hist_browser__update_pcnt_entries(struct hist_browser *hb);
++
+ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			     struct hist_browser_timer *hbt)
+ {
+@@ -333,9 +335,18 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 		key = ui_browser__run(&browser->b, delay_secs);
+ 
+ 		switch (key) {
+-		case K_TIMER:
++		case K_TIMER: {
++			u64 nr_entries;
+ 			hbt->timer(hbt->arg);
+-			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
++
++			if (browser->min_pcnt) {
++				hist_browser__update_pcnt_entries(browser);
++				nr_entries = browser->nr_pcnt_entries;
++			} else {
++				nr_entries = browser->hists->nr_entries;
++			}
++
++			ui_browser__update_nr_entries(&browser->b, nr_entries);
+ 
+ 			if (browser->hists->stats.nr_lost_warned !=
+ 			    browser->hists->stats.nr_events[PERF_RECORD_LOST]) {
+@@ -347,6 +358,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			hists__browser_title(browser->hists, title, sizeof(title), ev_name);
+ 			ui_browser__show_title(&browser->b, title);
+ 			continue;
++		}
+ 		case 'D': { /* Debug */
+ 			static int seq;
+ 			struct hist_entry *h = rb_entry(browser->b.top,
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index f0a862539ba9..df46be93d902 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -36,6 +36,7 @@ struct perf_top {
+ 	int		   realtime_prio;
+ 	int		   sym_pcnt_filter;
+ 	const char	   *sym_filter;
++	float		   min_percent;
  };
  
- extern void hist_browser__init_hpp(void);
-@@ -317,6 +319,8 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 
- 	browser->b.entries = &browser->hists->entries;
- 	browser->b.nr_entries = browser->hists->nr_entries;
-+	if (browser->min_pcnt)
-+		browser->b.nr_entries = browser->nr_pcnt_entries;
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -795,10 +799,15 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
- 
- 	for (nd = browser->top; nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+		float percent = h->stat.period * 100.0 /
-+					hb->hists->stats.total_period;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		if (percent < hb->min_pcnt)
-+			continue;
-+
- 		row += hist_browser__show_entry(hb, h, row);
- 		if (row == browser->height)
- 			break;
-@@ -807,10 +816,18 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
- 	return row;
- }
- 
--static struct rb_node *hists__filter_entries(struct rb_node *nd)
-+static struct rb_node *hists__filter_entries(struct rb_node *nd,
-+					     struct hists *hists,
-+					     float min_pcnt)
- {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+		float percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
-+
-+		if (percent < min_pcnt)
-+			return NULL;
-+
- 		if (!h->filtered)
- 			return nd;
- 
-@@ -820,11 +837,16 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd)
- 	return NULL;
- }
- 
--static struct rb_node *hists__filter_prev_entries(struct rb_node *nd)
-+static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
-+						  struct hists *hists,
-+						  float min_pcnt)
- {
- 	while (nd != NULL) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		if (!h->filtered)
-+		float percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
-+
-+		if (!h->filtered && percent >= min_pcnt)
- 			return nd;
- 
- 		nd = rb_prev(nd);
-@@ -839,6 +861,9 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
- 	struct hist_entry *h;
- 	struct rb_node *nd;
- 	bool first = true;
-+	struct hist_browser *hb;
-+
-+	hb = container_of(browser, struct hist_browser, b);
- 
- 	if (browser->nr_entries == 0)
- 		return;
-@@ -847,13 +872,15 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
- 
- 	switch (whence) {
- 	case SEEK_SET:
--		nd = hists__filter_entries(rb_first(browser->entries));
-+		nd = hists__filter_entries(rb_first(browser->entries),
-+					   hb->hists, hb->min_pcnt);
- 		break;
- 	case SEEK_CUR:
- 		nd = browser->top;
- 		goto do_offset;
- 	case SEEK_END:
--		nd = hists__filter_prev_entries(rb_last(browser->entries));
-+		nd = hists__filter_prev_entries(rb_last(browser->entries),
-+						hb->hists, hb->min_pcnt);
- 		first = false;
- 		break;
- 	default:
-@@ -896,7 +923,8 @@ do_offset:
- 					break;
- 				}
- 			}
--			nd = hists__filter_entries(rb_next(nd));
-+			nd = hists__filter_entries(rb_next(nd), hb->hists,
-+						   hb->min_pcnt);
- 			if (nd == NULL)
- 				break;
- 			--offset;
-@@ -929,7 +957,8 @@ do_offset:
- 				}
- 			}
- 
--			nd = hists__filter_prev_entries(rb_prev(nd));
-+			nd = hists__filter_prev_entries(rb_prev(nd), hb->hists,
-+							hb->min_pcnt);
- 			if (nd == NULL)
- 				break;
- 			++offset;
-@@ -1098,14 +1127,17 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 
- static int hist_browser__fprintf(struct hist_browser *browser, FILE *fp)
- {
--	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries));
-+	struct rb_node *nd = hists__filter_entries(rb_first(browser->b.entries),
-+						   browser->hists,
-+						   browser->min_pcnt);
- 	int printed = 0;
- 
- 	while (nd) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 
- 		printed += hist_browser__fprintf_entry(browser, h, fp);
--		nd = hists__filter_entries(rb_next(nd));
-+		nd = hists__filter_entries(rb_next(nd), browser->hists,
-+					   browser->min_pcnt);
- 	}
- 
- 	return printed;
-@@ -1324,11 +1356,25 @@ close_file_and_continue:
- 	return ret;
- }
- 
-+static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
-+{
-+	u64 nr_entries = 0;
-+	struct rb_node *nd = rb_first(&hb->hists->entries);
-+
-+	while (nd) {
-+		nr_entries++;
-+		nd = hists__filter_entries(rb_next(nd), hb->hists,
-+					   hb->min_pcnt);
-+	}
-+
-+	hb->nr_pcnt_entries = nr_entries;
-+}
- 
- static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 				    const char *helpline, const char *ev_name,
- 				    bool left_exits,
- 				    struct hist_browser_timer *hbt,
-+				    float min_pcnt,
- 				    struct perf_session_env *env)
- {
- 	struct hists *hists = &evsel->hists;
-@@ -1345,6 +1391,11 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 	if (browser == NULL)
- 		return -1;
- 
-+	if (min_pcnt) {
-+		browser->min_pcnt = min_pcnt;
-+		hist_browser__update_pcnt_entries(browser);
-+	}
-+
- 	fstack = pstack__new(2);
- 	if (fstack == NULL)
- 		goto out;
-@@ -1684,6 +1735,7 @@ struct perf_evsel_menu {
- 	struct ui_browser b;
- 	struct perf_evsel *selection;
- 	bool lost_events, lost_events_warned;
-+	float min_pcnt;
- 	struct perf_session_env *env;
- };
- 
-@@ -1777,6 +1829,7 @@ browse_hists:
- 			ev_name = perf_evsel__name(pos);
- 			key = perf_evsel__hists_browse(pos, nr_events, help,
- 						       ev_name, true, hbt,
-+						       menu->min_pcnt,
- 						       menu->env);
- 			ui_browser__show_title(&menu->b, title);
- 			switch (key) {
-@@ -1838,6 +1891,7 @@ static bool filter_group_entries(struct ui_browser *self __maybe_unused,
- static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 					   int nr_entries, const char *help,
- 					   struct hist_browser_timer *hbt,
-+					   float min_pcnt,
- 					   struct perf_session_env *env)
- {
- 	struct perf_evsel *pos;
-@@ -1851,6 +1905,7 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			.nr_entries = nr_entries,
- 			.priv	    = evlist,
- 		},
-+		.min_pcnt = min_pcnt,
- 		.env = env,
- 	};
- 
-@@ -1869,6 +1924,7 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  struct hist_browser_timer *hbt,
-+				  float min_pcnt,
- 				  struct perf_session_env *env)
- {
- 	int nr_entries = evlist->nr_entries;
-@@ -1880,7 +1936,8 @@ single_entry:
- 		const char *ev_name = perf_evsel__name(first);
- 
- 		return perf_evsel__hists_browse(first, nr_entries, help,
--						ev_name, false, hbt, env);
-+						ev_name, false, hbt, min_pcnt,
-+						env);
- 	}
- 
- 	if (symbol_conf.event_group) {
-@@ -1896,5 +1953,5 @@ single_entry:
- 	}
- 
- 	return __perf_evlist__tui_browse_hists(evlist, nr_entries, help,
--					       hbt, env);
-+					       hbt, min_pcnt, env);
- }
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 6f259b3d14e2..9708dd5fb8f3 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -124,7 +124,8 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_us;
- }
- 
--static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
-+static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
-+				 float min_pcnt)
- {
- 	struct perf_hpp_fmt *fmt;
- 	GType col_types[MAX_COLUMNS];
-@@ -189,10 +190,15 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 		GtkTreeIter iter;
-+		float percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		if (percent < min_pcnt)
-+			continue;
-+
- 		gtk_list_store_append(store, &iter);
- 
- 		col_idx = 0;
-@@ -222,7 +228,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- 
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 				  const char *help,
--				  struct hist_browser_timer *hbt __maybe_unused)
-+				  struct hist_browser_timer *hbt __maybe_unused,
-+				  float min_pcnt)
- {
- 	struct perf_evsel *pos;
- 	GtkWidget *vbox;
-@@ -286,7 +293,7 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 							GTK_POLICY_AUTOMATIC,
- 							GTK_POLICY_AUTOMATIC);
- 
--		perf_gtk__show_hists(scrolled_window, hists);
-+		perf_gtk__show_hists(scrolled_window, hists, min_pcnt);
- 
- 		tab_label = gtk_label_new(evname);
- 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index ff1f60cf442e..ae7a75432249 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -334,7 +334,7 @@ static int hist_entry__fprintf(struct hist_entry *he, size_t size,
- }
- 
- size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
--		      int max_cols, FILE *fp)
-+		      int max_cols, float min_pcnt, FILE *fp)
- {
- 	struct perf_hpp_fmt *fmt;
- 	struct sort_entry *se;
-@@ -440,10 +440,15 @@ size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- print_entries:
- 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+		float percent = h->stat.period * 100.0 /
-+					hists->stats.total_period;
- 
- 		if (h->filtered)
- 			continue;
- 
-+		if (percent < min_pcnt)
-+			continue;
-+
- 		ret += hist_entry__fprintf(h, max_cols, hists, fp);
- 
- 		if (max_rows && ++nr_rows >= max_rows)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index bd81d799a1bf..2d3790fd99bb 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -115,7 +115,7 @@ void events_stats__inc(struct events_stats *stats, u32 type);
- size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
- 
- size_t hists__fprintf(struct hists *self, bool show_header, int max_rows,
--		      int max_cols, FILE *fp);
-+		      int max_cols, float min_pcnt, FILE *fp);
- 
- int hist_entry__inc_addr_samples(struct hist_entry *self, int evidx, u64 addr);
- int hist_entry__annotate(struct hist_entry *self, size_t privsize);
-@@ -195,6 +195,7 @@ int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
- 				  struct hist_browser_timer *hbt,
-+				  float min_pcnt,
- 				  struct perf_session_env *env);
- int script_browse(const char *script_opt);
- #else
-@@ -202,6 +203,7 @@ static inline
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __maybe_unused,
- 				  const char *help __maybe_unused,
- 				  struct hist_browser_timer *hbt __maybe_unused,
-+				  float min_pcnt __maybe_unused,
- 				  struct perf_session_env *env __maybe_unused)
- {
- 	return 0;
-@@ -229,12 +231,14 @@ static inline int script_browse(const char *script_opt __maybe_unused)
- 
- #ifdef GTK2_SUPPORT
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
--				  struct hist_browser_timer *hbt __maybe_unused);
-+				  struct hist_browser_timer *hbt __maybe_unused,
-+				  float min_pcnt);
- #else
- static inline
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
- 				  const char *help __maybe_unused,
--				  struct hist_browser_timer *hbt __maybe_unused)
-+				  struct hist_browser_timer *hbt __maybe_unused,
-+				  float min_pcnt __maybe_unused)
- {
- 	return 0;
- }
+ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size);
 -- 
 1.7.11.7
 
