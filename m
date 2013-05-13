@@ -1,116 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3EMCWl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:22:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51941 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab3EMCWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:22:40 -0400
-Date: Mon, 13 May 2013 03:22:45 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1305130311280.15866@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753297Ab3EMC1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:27:25 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:47592 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab3EMC1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 22:27:24 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-759925859-1368411765=:15866"
+In-Reply-To: <1367803801-17111-4-git-send-email-chao.xie@marvell.com>
+References: <1367803801-17111-1-git-send-email-chao.xie@marvell.com> <1367803801-17111-4-git-send-email-chao.xie@marvell.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 13 May 2013 10:27:03 +0800
+Message-ID: <CAMPhdO9EFj1YZt3zCD6evrH+t77=hiFj46_LPSM7dGX0rku6Kw@mail.gmail.com>
+Subject: Re: [PATCH V4 3/3] pwm: pxa: add device tree support
+To: Chao Xie <chao.xie@marvell.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chao Xie <xiechao.mail@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, May 6, 2013 at 9:30 AM, Chao Xie <chao.xie@marvell.com> wrote:
+> Add the deice tree support for pwm-pxa.
+>
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  drivers/pwm/pwm-pxa.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 51 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
+> index aa4bea7..c8d59a2 100644
+> --- a/drivers/pwm/pwm-pxa.c
+> +++ b/drivers/pwm/pwm-pxa.c
+> @@ -9,6 +9,8 @@
+>   *
+>   * 2008-02-13  initial version
+>   *             eric miao <eric.miao@marvell.com>
+> + * 2013-04-24   add device tree support
+> + *             Chao Xie <chao.xie@marvell.com>
+>   */
+>
+>  #include <linux/module.h>
+> @@ -18,6 +20,8 @@
+>  #include <linux/err.h>
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/pwm.h>
+>
+>  #include <asm/div64.h>
+> @@ -124,6 +128,38 @@ static struct pwm_ops pxa_pwm_ops = {
+>         .owner = THIS_MODULE,
+>  };
+>
+> +static const struct of_device_id pxa_pwm_of_match[] = {
+> +       {
+> +               .compatible = "marvell,pxa25x-pwm",
+> +       }, {
+> +               .compatible = "marvell,pxa27x-pwm",
+> +               .data = (void *)HAS_SECONDARY_PWM
+> +       }, {
+> +               .compatible = "marvell,pxa168-pwm",
+> +       }, {
+> +               .compatible = "marvell,pxa910-pwm",
+> +       },
+> +       {}
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, pxa_pwm_of_match);
+> +
+> +static int pxa_pwm_parse_data_dt(struct platform_device *pdev,
+> +                               struct pxa_pwm_chip *pwm)
+> +{
+> +       const struct of_device_id *of_id =
+> +                       of_match_device(pxa_pwm_of_match, &pdev->dev);
+> +       unsigned int npwm;
+> +
+> +       if (!of_id)
+> +               return -ENODEV;
+> +
+> +       npwm = (unsigned int)of_id->data;
+> +       pwm->chip.npwm = (npwm & HAS_SECONDARY_PWM) ? 2 : 1;
+> +
+> +       return 0;
+> +}
+> +
+>  static int pwm_probe(struct platform_device *pdev)
+>  {
+>         const struct platform_device_id *id = platform_get_device_id(pdev);
+> @@ -144,7 +180,6 @@ static int pwm_probe(struct platform_device *pdev)
+>         pwm->chip.dev = &pdev->dev;
+>         pwm->chip.ops = &pxa_pwm_ops;
+>         pwm->chip.base = -1;
+> -       pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
+>
+>         r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         if (r == NULL) {
+> @@ -156,6 +191,20 @@ static int pwm_probe(struct platform_device *pdev)
+>         if (IS_ERR(pwm->mmio_base))
+>                 return PTR_ERR(pwm->mmio_base);
+>
+> +       if (!id) {
+> +               if (IS_ENABLED(CONFIG_OF))
+> +                       ret = pxa_pwm_parse_data_dt(pdev, pwm);
+> +               else
+> +                       ret = -ENODEV;
+> +       } else {
+> +               pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
+> +       }
 
---29444707-759925859-1368411765=:15866
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+^^ braces not necessarily here, and I'm not really sure if we should check
+CONFIG_OF firstly, and leave the platform_device_id thing as a legacy
+fall back, what do you think?
 
+  if (IS_ENABLED(CONFIG_OF)) {
+     ...
+  } else {
+    const struct platform_device_id *id = platform_get_device_id(...);
+    ...
+  }
 
-Hi Linus,
-
-just a few straggling fixes I hoovered up, and an intel fixes pull from 
-Daniel which fixes some regressions, and some mgag200 fixes from Matrox.
-
-Dave.
-
-
-The following changes since commit 307b9c022720f9de90d58e51743e01e9a42aec59:
-
-  qxl: update to new idr interfaces. (2013-05-03 10:37:20 +1000)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux.git drm-next
-
-for you to fetch changes up to 9f1d036648c1c5ed81b0e98d7a06d55df972701e:
-
-  drm/mgag200: Fix framebuffer base address programming (2013-05-13 12:17:32 +1000)
-
-----------------------------------------------------------------
-Ben Widawsky (1):
-      Revert "drm/i915: Calculate correct stolen size for GEN7+"
-
-Chris Cummins (1):
-      drm: Use names of ioctls in debug traces
-
-Chris Wilson (1):
-      drm/i915: Always normalize return timeout for wait_timeout_ioctl
-
-Christopher Harvey (4):
-      drm/mgag200: Don't change unrelated registers during modeset
-      drm/mgag200: Fix writes into MGA1064_PIX_CLK_CTL register
-      drm/mgag200: Convert counter delays to jiffies
-      drm/mgag200: Fix framebuffer base address programming
-
-Damien Lespiau (2):
-      drm: Add missing break in the command line mode parsing code
-      drm: Don't prune modes loudly when a connector is disconnected
-
-Daniel Vetter (3):
-      drm/mm: fix dump table BUG
-      drm: don't check modeset locks in panic handler
-      Revert "drm/i915: revert eDP bpp clamping code changes"
-
-Dave Airlie (1):
-      Merge branch 'for-linux-next' of git://people.freedesktop.org/~danvet/drm-intel into drm-next
-
-Imre Deak (1):
-      drm/i915: hsw: fix link training for eDP on port-A
-
-Jani Nikula (1):
-      drm/i915: clear the stolen fb before resuming
-
-Kees Cook (1):
-      drm: refactor call to request_module
-
-Lespiau, Damien (2):
-      drm: Make the HPD status updates debug logs more readable
-      drm: Only print a debug message when the polled connector has changed
-
-Ville Syrjälä (3):
-      drm/i915: Fix pipe enabled mask for pipe C in WM calculations
-      drm: Add kernel-doc for drm_fb_helper_funcs->initial_config
-      drm: Remove pointless '-' characters from drm_fb_helper documentation
-
- drivers/gpu/drm/drm_crtc.c             |  5 ++
- drivers/gpu/drm/drm_crtc_helper.c      | 27 +++++++---
- drivers/gpu/drm/drm_drv.c              | 20 +++++---
- drivers/gpu/drm/drm_encoder_slave.c    |  6 +--
- drivers/gpu/drm/drm_mm.c               | 34 +++++++------
- drivers/gpu/drm/drm_modes.c            |  1 +
- drivers/gpu/drm/i915/i915_gem.c        |  8 ++-
- drivers/gpu/drm/i915/i915_gem_gtt.c    | 15 +-----
- drivers/gpu/drm/i915/i915_reg.h        |  2 -
- drivers/gpu/drm/i915/intel_ddi.c       |  5 ++
- drivers/gpu/drm/i915/intel_dp.c        | 77 ++++++++++++++++++-----------
- drivers/gpu/drm/i915/intel_drv.h       |  1 +
- drivers/gpu/drm/i915/intel_fb.c        | 16 +++++-
- drivers/gpu/drm/i915/intel_pm.c        | 44 ++++++++---------
- drivers/gpu/drm/mgag200/mgag200_mode.c | 90 ++++++++++++++++++++--------------
- include/drm/drmP.h                     |  3 +-
- include/drm/drm_fb_helper.h            | 15 +++---
- 17 files changed, 213 insertions(+), 156 deletions(-)
---29444707-759925859-1368411765=:15866--
+> +
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "failed to parse data from device id\n");
+> +               return ret;
+> +       }
+> +
+>         ret = pwmchip_add(&pwm->chip);
+>         if (ret < 0) {
+>                 dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
+> @@ -181,6 +230,7 @@ static struct platform_driver pwm_driver = {
+>         .driver         = {
+>                 .name   = "pxa25x-pwm",
+>                 .owner  = THIS_MODULE,
+> +               .of_match_table = pxa_pwm_of_match,
+>         },
+>         .probe          = pwm_probe,
+>         .remove         = pwm_remove,
+> --
+> 1.7.4.1
+>
