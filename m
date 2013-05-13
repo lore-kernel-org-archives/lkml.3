@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3EMKV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 06:21:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58497 "EHLO mx2.suse.de"
+	id S1754665Ab3EMKWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 06:22:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58525 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3EMKV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 06:21:27 -0400
+	id S1753799Ab3EMKV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 06:21:29 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
         Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>
@@ -19,84 +19,126 @@ Cc: Theodore Tso <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
         Linux-ext4 <linux-ext4@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/4] Obey mark_page_accessed hint given by filesystems v2
-Date: Mon, 13 May 2013 11:21:18 +0100
-Message-Id: <1368440482-27909-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/4] mm: pagevec: Defer deciding what LRU to add a page to until pagevec drain time
+Date: Mon, 13 May 2013 11:21:20 +0100
+Message-Id: <1368440482-27909-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1368440482-27909-1-git-send-email-mgorman@suse.de>
+References: <1368440482-27909-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is in need of Tested-by's and some reviewing before it can be
-pushed anywhere. The performance of the tests I ran were not sensitive
-to the premature reclaim of buffer pages although I was able to show
-the average age of buffer pages is now higher as expected. Also note the
-comments I make about the average age of file pages versus buffer pages
-at the end of this mail that I'd like filesystem people to think about.
+mark_page_accessed cannot activate an inactive page that is located on
+an inactive LRU pagevec. Hints from filesystems may be ignored as a
+result. In preparation for fixing that problem, this patch removes the
+per-LRU pagevecs and leaves just one pagevec. The final LRU the page is
+added to is deferred until the pagevec is drained.
 
-Changelog since V1
-o Add tracepoint to model age of page types			(mel)
+This means that fewer pagevecs are available and potentially there is
+greater contention on the LRU lock. However, this only applies in the case
+where there is an almost perfect mix of file, anon, active and inactive
+pages being added to the LRU. In practice I expect that we are adding
+stream of pages of a particular time and that the changes in contention
+will barely be measurable.
 
-Andrew Perepechko reported a problem whereby pages are being prematurely
-evicted as the mark_page_accessed() hint is ignored for pages that are
-currently on a pagevec -- http://www.spinics.net/lists/linux-ext4/msg37340.html .
-Alexey Lyahkov and Robin Dong have also reported problems recently that
-could be due to hot pages reaching the end of the inactive list too quickly
-and be reclaimed.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ mm/swap.c | 37 +++++++++++++++++--------------------
+ 1 file changed, 17 insertions(+), 20 deletions(-)
 
-Rather than addressing this on a per-filesystem basis, this series aims
-to fix the mark_page_accessed() interface by deferring what LRU a page
-is added to pagevec drain time and allowing mark_page_accessed() to call
-SetPageActive on a pagevec page.
-
-Patch 1 adds two tracepoints for LRU page activation and insertion. Using
-	these processes it's possible to build a model of pages in the
-	LRU that can be processed offline.
-
-Patch 2 defers making the decision on what LRU to add a page to until when
-	the pagevec is drained.
-
-Patch 3 searches the local pagevec for pages to mark PageActive on
-	mark_page_accessed. The changelog explains why only the local
-	pagevec is examined.
-
-Patch 4 tidies up the API.
-
-postmark, a dd-based test and fs-mark both single and threaded mode were
-run but none of them showed any performance degradation or gain as a result
-of the patch.
-
-Using patch 1, I built a *very* basic model of the LRU to examine
-offline what the average age of different page types on the LRU were in
-milliseconds. Of course, capturing the trace distorts the test as it's
-written to local disk but it does not matter for the purposes of this test.
-The average age of pages in milliseconds were
-
-				    vanilla deferdrain
-Average age mapped anon:               1454       1855
-Average age mapped file:             127841     143755
-Average age unmapped anon:               85        157
-Average age unmapped file:            73633      39368
-Average age unmapped buffers:         74054     116636
-
-The LRU activity was mostly files which you'd expect for a dd-based
-workload. Note that the average age of buffer pages is increased by the
-series and it is expected this is due to the fact that the buffer pages are
-now getting added to the active list when drained from the pagevecs. Note
-that the average age of the unmapped file data is decreased as they are
-still added to the inactive list and are reclaimed before the buffers. There
-is no guarantee this is a universal win for all workloads and it would be
-nice if the filesystem people gave some thought as to whether this decision
-is generally a win or a loss.
-
- fs/cachefiles/rdwr.c           | 30 ++++----------
- fs/nfs/dir.c                   |  7 +---
- include/linux/pagevec.h        | 34 +---------------
- include/trace/events/pagemap.h | 89 ++++++++++++++++++++++++++++++++++++++++++
- mm/swap.c                      | 82 +++++++++++++++++++++++++-------------
- 5 files changed, 154 insertions(+), 88 deletions(-)
- create mode 100644 include/trace/events/pagemap.h
-
+diff --git a/mm/swap.c b/mm/swap.c
+index c612a6a..0911579 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -39,7 +39,7 @@
+ /* How many pages do we try to swap or page in/out together? */
+ int page_cluster;
+ 
+-static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
++static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
+ static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+ static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+ 
+@@ -460,13 +460,18 @@ EXPORT_SYMBOL(mark_page_accessed);
+  */
+ void __lru_cache_add(struct page *page, enum lru_list lru)
+ {
+-	struct pagevec *pvec = &get_cpu_var(lru_add_pvecs)[lru];
++	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
++
++	if (is_active_lru(lru))
++		SetPageActive(page);
++	else
++		ClearPageActive(page);
+ 
+ 	page_cache_get(page);
+ 	if (!pagevec_space(pvec))
+ 		__pagevec_lru_add(pvec, lru);
+ 	pagevec_add(pvec, page);
+-	put_cpu_var(lru_add_pvecs);
++	put_cpu_var(lru_add_pvec);
+ }
+ EXPORT_SYMBOL(__lru_cache_add);
+ 
+@@ -479,13 +484,11 @@ void lru_cache_add_lru(struct page *page, enum lru_list lru)
+ {
+ 	if (PageActive(page)) {
+ 		VM_BUG_ON(PageUnevictable(page));
+-		ClearPageActive(page);
+ 	} else if (PageUnevictable(page)) {
+ 		VM_BUG_ON(PageActive(page));
+-		ClearPageUnevictable(page);
+ 	}
+ 
+-	VM_BUG_ON(PageLRU(page) || PageActive(page) || PageUnevictable(page));
++	VM_BUG_ON(PageLRU(page));
+ 	__lru_cache_add(page, lru);
+ }
+ 
+@@ -586,15 +589,10 @@ static void lru_deactivate_fn(struct page *page, struct lruvec *lruvec,
+  */
+ void lru_add_drain_cpu(int cpu)
+ {
+-	struct pagevec *pvecs = per_cpu(lru_add_pvecs, cpu);
+-	struct pagevec *pvec;
+-	int lru;
++	struct pagevec *pvec = &per_cpu(lru_add_pvec, cpu);
+ 
+-	for_each_lru(lru) {
+-		pvec = &pvecs[lru - LRU_BASE];
+-		if (pagevec_count(pvec))
+-			__pagevec_lru_add(pvec, lru);
+-	}
++	if (pagevec_count(pvec))
++		__pagevec_lru_add(pvec, NR_LRU_LISTS);
+ 
+ 	pvec = &per_cpu(lru_rotate_pvecs, cpu);
+ 	if (pagevec_count(pvec)) {
+@@ -793,17 +791,16 @@ void lru_add_page_tail(struct page *page, struct page *page_tail,
+ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+ 				 void *arg)
+ {
+-	enum lru_list lru = (enum lru_list)arg;
+-	int file = is_file_lru(lru);
+-	int active = is_active_lru(lru);
++	enum lru_list requested_lru = (enum lru_list)arg;
++	int file = page_is_file_cache(page);
++	int active = PageActive(page);
++	enum lru_list lru = page_lru(page);
+ 
+-	VM_BUG_ON(PageActive(page));
++	WARN_ON_ONCE(requested_lru < NR_LRU_LISTS && requested_lru != lru);
+ 	VM_BUG_ON(PageUnevictable(page));
+ 	VM_BUG_ON(PageLRU(page));
+ 
+ 	SetPageLRU(page);
+-	if (active)
+-		SetPageActive(page);
+ 	add_page_to_lru_list(page, lruvec, lru);
+ 	update_page_reclaim_stat(lruvec, file, active);
+ 	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
 -- 
 1.8.1.4
 
