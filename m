@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab3EMNAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 09:00:50 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:58743 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab3EMNAt (ORCPT
+	id S1753174Ab3EMNDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 09:03:19 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:39080 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285Ab3EMNDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 09:00:49 -0400
+	Mon, 13 May 2013 09:03:18 -0400
+Date: Mon, 13 May 2013 15:03:13 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Tony Jones <tonyj@suse.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Wu Zhangjin <wuzhangjin@gmail.com>,
+        David Daney <david.daney@cavium.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] s390/ftrace: fix mcount adjustment
+Message-ID: <20130513130313.GB4290@osiris>
 MIME-Version: 1.0
-In-Reply-To: <20130513125452.GA9769@samfundet.no>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	<alpine.DEB.2.00.1305122244300.5463@ayla.of.borg>
-	<20130513125452.GA9769@samfundet.no>
-Date: Mon, 13 May 2013 15:00:49 +0200
-X-Google-Sender-Auth: 5uFgrIXa15Z4gKESWlt_0UTD89k
-Message-ID: <CAMuHMdXtYCgCfdowx8v1ZwEfv-Bd1=_XK-UG+8k72YAdyTCJ+g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (avr)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051312-0342-0000-0000-00000501386D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 2:54 PM, Hans-Christian Egtvedt
-<egtvedt@samfundet.no> wrote:
-> Around Sun 12 May 2013 22:45:01 +0200 or thereabout, Geert Uytterhoeven wrote:
->> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
->>> However, the full list of errors isn't that unmanageable, so I'm following
->>> up with a digested list...
->>
->> (.init.text+0x540): undefined reference to `atmel_default_console_device': 1 errors in 1 logs
->>       v3.10-rc1/avr32/avr32-allnoconfig
->>       Patch sent last February
->
-> I recall to have acked patch(es) related to the serial (console) driver.
+Hi,
 
-Sure, but so far arch/avr doesn't fall under my jurisdiction, so I
-haven't sent it
-upstream yet ;-)
+Tony Jones reported a bug which _seems_ to be present on MIPS64 as
+well: http://lkml.indiana.edu/hypermail/linux/kernel/1301.1/02107.html
 
-Anyway, it seems I have accumulated too many patches for exotic
-arches, so I plan
-to create an exotic-arch-fixes branch, to be pulled by Linus in a few rcs...
+(don't know if it was fixed in the meantime, the asm code wasn't changed
+recently though).
 
-> It is caused by CONFIG_SERIAL_ATMEL no set in .config, but the machine code
-> still writes to atmel_default_console_device when you call
-> at32_setup_serial_console().
->
-> Two ways to fix, either select the SERIAL_ATMEL symbol or ifdef around the
-> atmel_default_console_device assignment in the machine code.
+So just for reference here the s390 fix:
 
-Yep, my patch did the latter.
+>From 6a07176c14b6318667f1ebd8c09c7bb4c30d78a0 Mon Sep 17 00:00:00 2001
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+Date: Mon, 13 May 2013 14:48:52 +0200
+Subject: [PATCH] s390/ftrace: fix mcount adjustment
 
-Gr{oetje,eeting}s,
+Tony Jones reported that the ftrace self tests on s390 do not work:
 
-                        Geert
+<6>Testing dynamic ftrace ops #1: (0 0 0 0 0) FAILED!
+<6>Testing tracer irqsoff:
+<3>failed to start irqsoff tracer
+<4>.. no entries found ..FAILED!
+<6>Testing tracer wakeup:
+<3>failed to start wakeup tracer
+<4>.. no entries found ..FAILED!
+<6>Testing tracer function_graph:
+<4>Failed to init function_graph tracer, init returned -19
+<4>FAILED!
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+This happens because we forgot to adjust the instruction pointer that gets
+passed to the ftrace trace function by MCOUNT_INSN_SIZE.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+In addition change MCOUNT_INSN_SIZE to the correct value on 31 bit.
+It only worked so far because the to be patched instruction was identical.
+
+Reported-by: Tony Jones <tonyj@suse.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/s390/include/asm/ftrace.h | 12 +++++++-----
+ arch/s390/kernel/mcount.S      |  2 ++
+ arch/s390/kernel/mcount64.S    |  2 ++
+ 3 files changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/arch/s390/include/asm/ftrace.h b/arch/s390/include/asm/ftrace.h
+index b7931fa..bf246da 100644
+--- a/arch/s390/include/asm/ftrace.h
++++ b/arch/s390/include/asm/ftrace.h
+@@ -9,11 +9,6 @@ struct dyn_arch_ftrace { };
+ 
+ #define MCOUNT_ADDR ((long)_mcount)
+ 
+-#ifdef CONFIG_64BIT
+-#define MCOUNT_INSN_SIZE  12
+-#else
+-#define MCOUNT_INSN_SIZE  20
+-#endif
+ 
+ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ {
+@@ -21,4 +16,11 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ }
+ 
+ #endif /* __ASSEMBLY__ */
++
++#ifdef CONFIG_64BIT
++#define MCOUNT_INSN_SIZE  12
++#else
++#define MCOUNT_INSN_SIZE  22
++#endif
++
+ #endif /* _ASM_S390_FTRACE_H */
+diff --git a/arch/s390/kernel/mcount.S b/arch/s390/kernel/mcount.S
+index 4567ce2..08dcf21 100644
+--- a/arch/s390/kernel/mcount.S
++++ b/arch/s390/kernel/mcount.S
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <asm/asm-offsets.h>
++#include <asm/ftrace.h>
+ 
+ 	.section .kprobes.text, "ax"
+ 
+@@ -33,6 +34,7 @@ ENTRY(ftrace_caller)
+ 	la	%r2,0(%r14)
+ 	st	%r0,__SF_BACKCHAIN(%r15)
+ 	la	%r3,0(%r3)
++	ahi	%r2,-MCOUNT_INSN_SIZE
+ 	l	%r14,0b-0b(%r1)
+ 	l	%r14,0(%r14)
+ 	basr	%r14,%r14
+diff --git a/arch/s390/kernel/mcount64.S b/arch/s390/kernel/mcount64.S
+index 1133219..1c52eae 100644
+--- a/arch/s390/kernel/mcount64.S
++++ b/arch/s390/kernel/mcount64.S
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <asm/asm-offsets.h>
++#include <asm/ftrace.h>
+ 
+ 	.section .kprobes.text, "ax"
+ 
+@@ -29,6 +30,7 @@ ENTRY(ftrace_caller)
+ 	stg	%r1,__SF_BACKCHAIN(%r15)
+ 	lgr	%r2,%r14
+ 	lg	%r3,168(%r15)
++	aghi	%r2,-MCOUNT_INSN_SIZE
+ 	larl	%r14,ftrace_trace_function
+ 	lg	%r14,0(%r14)
+ 	basr	%r14,%r14
+-- 
+1.8.1.6
+
