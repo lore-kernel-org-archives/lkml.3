@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3EMC4h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 May 2013 22:56:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28134 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198Ab3EMC4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 May 2013 22:56:35 -0400
-X-IronPort-AV: E=Sophos;i="4.87,659,1363104000"; 
-   d="scan'208";a="7252514"
-Message-ID: <5190570C.9010707@cn.fujitsu.com>
-Date: Mon, 13 May 2013 10:59:24 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753636Ab3EMC53 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 May 2013 22:57:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:50686 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782Ab3EMC50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 May 2013 22:57:26 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Cc: kvmarm@lists.cs.columbia.edu, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        anup.patel@linaro.org, amit.shah@redhat.com,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Subject: Re: [PATCH V2 2/3] Documentation: virtio: Add emergency write (emerg_wr) config register in virtio console.
+In-Reply-To: <1367842791-30285-3-git-send-email-pranavkumar@linaro.org>
+References: <1367842791-30285-1-git-send-email-pranavkumar@linaro.org> <1367842791-30285-3-git-send-email-pranavkumar@linaro.org>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 13 May 2013 12:22:07 +0930
+Message-ID: <8761yn382w.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH v4 00/22] x86, ACPI, numa: Parse numa info early
-References: <1365728168-32067-1-git-send-email-yinghai@kernel.org> <517F7110.6000705@cn.fujitsu.com> <518B645C.10408@cn.fujitsu.com> <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
-In-Reply-To: <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 10:55:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/13 10:55:25,
-	Serialize complete at 2013/05/13 10:55:25
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
+Pranavkumar Sawargaonkar <pranavkumar@linaro.org> writes:
+> Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+> Signed-off-by: Anup Patel <anup.patel@linaro.org>
+> ---
+>  Documentation/virtual/virtio-spec.txt |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 
-On 05/10/2013 02:24 AM, Yinghai Lu wrote:
->>> So I suggest to separate the job into 2 parts:
->>> 1. Push Yinghai's patch1 ~ patch20, without putting pagetable in local
->>> node.
->>> And push my work to use SRAT to arrange ZONE_MOVABLE.
->>> In this case, we can enable memory hotplug in the kernel first.
->>> 2. Merge patch21 and patch22 into the fixing work I am doing now, and push
->>> them
->>> together when finished.
->>>
->
-> no, no, no, please do not half-done work.
->
-> Do it right, and Do it clean.
->
+OK, I applied this to the lyx master, with three changes:
+1) Changed "filed" to "field".
+2) Added ", or even acknowledging the feature" after "without
+   initializing virtio queues".
+3) Added an initial point to the Device Initialization section:
 
-I'm not saying I want to do it half-way. Putting pagetable in local node
-will make memory hot-remove patch unable to work.
+   1. If the VIRTIO_CONSOLE_F_EMERG_WRITE feature is offered, the
+   emerg_wr field of the configuration can be written at any time. Thus
+   it should work for very early boot debugging output as well as
+   catastophic OS failures (eg. virtio ring corruption).
 
-Before removing pages, the kernel first offlines pages. If the offline logic
-fails, the hot-remove cannot work. Since your patches have put node 
-pagetable
-in local node at boot time, this memory cannot be offlined, furthermore,
-it cannot be hot-removed.
+Thanks,
+Rusty.
 
-The minimum unit of memory online/offline is block. And by default,
-one block contains one section, which by default is 128MB. So if parts
-of a block are pagetable, and the rest parts are movable memory, this
-block cannot be offlined. And as a result, it cannot be removed.
-
-In order to fix it, we have three solutions:
-
-1. Reserve the whole block (128MB), making no user can use the rest
-    parts of the block. And skip them when offlining memory.
-    When all the other blocks are offlined, free the pagetable, and remove
-    all the memory.
-
-    But we may lose some memory for this purpose. 128MB is a little big
-    to waste.
-
-
-2. Migrate movable pages and keep this block online. Although the offline
-    operation fails, it is OK to remove memory.
-
-    But the offline operation will always fail. And generally speaking,
-    there are a lot of reasons of offline failing, it is difficult to
-    detect if it is OK to remove memory.
-
-
-3. Migrate user pages and make this block offline, but the kernel can
-    still use the pagetable in it.
-
-    But this will change the semantics of "offline". I'm not sure if we
-    can do it in this way.
-
-
-4. Do not allocate pagetable to local node when CONFIG_MEMORY_HOTREMOVE
-    is enabled. (I do suggest not to put pagetable in local node in
-    memory hot-remove situation.)
-
-
-How do you think about these 4 solutions above ?
-
-I think I need some advices for this problem in community. Do you have
-any idea to fix this problem if we put pagetable in local node ?
-
-The memory hot-plug guys do want to use memory hot-remove. And I think
-for now, we use solution 4 above. When CONFIG_MEMORY_HOTREMOVE is enabled,
-do not allocate pagetable to local node.
-
-I'm not trying to do it half-way. When we fix this problem, we can allocate
-pagetable to local node again with CONFIG_MEMORY_HOTREMOVE enabled.
-
-Please do give some advices or feedback.
-
-
->>
->> If you have any thinking of this patch-set, please let me know.
->
-> Talked to HPA, and he will put my patchset into tip/x86/mm after v3.10-rc1.
->
-> after that we can work on put pagetable on local node for hotadd path.
->
-
-hot-add path is another problem. But I think the hot-remove path is more
-urgent now.
-
-
-Thanks. :)
+> diff --git a/Documentation/virtual/virtio-spec.txt b/Documentation/virtual/virtio-spec.txt
+> index 0d6ec85..3ca38f8 100644
+> --- a/Documentation/virtual/virtio-spec.txt
+> +++ b/Documentation/virtual/virtio-spec.txt
+> @@ -1927,11 +1927,16 @@ Ports 2 onwards only if VIRTIO_CONSOLE_F_MULTIPORT is set
+>      ports; configuration fields nr_ports and max_nr_ports are
+>      valid and control virtqueues will be used.
+>  
+> +  VIRTIO_CONSOLE_F_EMERG_WRITE(2) Device has support for emergency
+> +  write. Configuration filed emerg_wr is valid.
+> +
+>    Device configuration layout The size of the console is supplied
+>    in the configuration space if the VIRTIO_CONSOLE_F_SIZE feature
+>    is set. Furthermore, if the VIRTIO_CONSOLE_F_MULTIPORT feature
+>    is set, the maximum number of ports supported by the device can
+> -  be fetched.struct virtio_console_config {
+> +  be fetched. If VIRTIO_CONSOLE_F_EMERG_WRITE is set then one can
+> +  use emergency write to output single character without initializing
+> +  virtio queues. struct virtio_console_config {
+>  
+>  	u16 cols;
+>  
+> @@ -1941,6 +1946,7 @@ Ports 2 onwards only if VIRTIO_CONSOLE_F_MULTIPORT is set
+>  
+>  	u32 max_nr_ports;
+>  
+> +	u32 emerg_wr;
+>  };
+>  
+>    Device Initialization
+> -- 
+> 1.7.9.5
