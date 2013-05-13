@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3EMN7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 09:59:33 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:55215 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3EMN7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 09:59:30 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>, EUNBONG SONG <eunb.song@samsung.com>,
-        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-xfs\@vger.kernel.org" <linux-xfs@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: EXT4 regression caused 4eec7
-In-Reply-To: <20130513135221.GE4845@thunk.org>
-References: <31302271.2821368363898561.JavaMail.weblogic@epml17> <20130513131809.GG400@quack.suse.cz> <20130513133036.GB4845@thunk.org> <87bo8fxa92.fsf@openvz.org> <20130513135221.GE4845@thunk.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 13 May 2013 17:59:25 +0400
-Message-ID: <878v3jx9oi.fsf@openvz.org>
+	id S1753956Ab3EMN7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 09:59:51 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:41553 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753906Ab3EMN7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 09:59:49 -0400
+Date: Mon, 13 May 2013 08:59:48 -0500
+From: Robin Holt <holt@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Robin Holt <holt@sgi.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: Full dynticks needs evtdesc set before marking cpu online.
+Message-ID: <20130513135948.GF3658@sgi.com>
+References: <20130508235736.GT3658@sgi.com>
+ <alpine.LFD.2.02.1305131119180.2863@ionos>
+ <20130513125514.GE3658@sgi.com>
+ <alpine.LFD.2.02.1305131501210.2863@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1305131501210.2863@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013 09:52:21 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Mon, May 13, 2013 at 05:47:05PM +0400, Dmitry Monakhov wrote:
-> > In fact generic/299 always succeed for me, but it produce warning
-> > WARNING: at fs/ext4/inode.c:3218 ext4_ext_direct_IO
-> > and complains from slab debug. But it was missed because i've missed
-> > this error in the logs and forget to check /proc/sys/kernel/tained.
+On Mon, May 13, 2013 at 03:03:55PM +0200, Thomas Gleixner wrote:
+> On Mon, 13 May 2013, Robin Holt wrote:
 > 
-> This is how it's failing for me....
-Because you ask questions, but do not read answers :)
-http://marc.info/?l=linux-ext4&m=136580060822252&w=2
-http://marc.info/?l=linux-ext4&m=136610044500931&w=2
+> > On Mon, May 13, 2013 at 11:21:00AM +0200, Thomas Gleixner wrote:
+> > > On Wed, 8 May 2013, Robin Holt wrote:
+> > > 
+> > > > Thomas,
+> > > > 
+> > > > We are seeing failures booting medium sized machines which I think is
+> > > > a change in expectations that dyntick put on x86's start_secondary.
+> > > > 
+> > > > During boot of cpus, we see an occassional panic in tick_do_broadcast at
+> > > 
+> > > http://lkml.indiana.edu/hypermail/linux/kernel/1305.0/01818.html
+> > > 
+> > > Will hit Linus tree soon.
+> > 
+> > I think this is really due to a sequence in start_secondary.  The cpu
+> > has been marked as online, but its evtdesc has not been initialized.
+> > I sent a followup to this with a hack/patch.
 > 
-> generic/299		[23:06:27][  109.243220] fio (3376) used greatest stack depth: 5240 bytes left
-> [  109.252757] fio (3380) used greatest stack depth: 5140 bytes left
-> [  109.307227] fio (3374) used greatest stack depth: 4944 bytes left
->  [23:08:10] [failed, exit status 1] - output mismatch (see /root/xfstests/results/generic/299.out.bad)
->     --- tests/generic/299.out	2013-04-05 21:41:17.000000000 -0400
->     +++ /root/xfstests/results/generic/299.out.bad	2013-05-11 23:08:10.835356876 -0400
->     @@ -3,3 +3,6 @@
->      Run fio with random aio-dio pattern
->      
->      Start fallocate/truncate loop
->     +./common/rc: line 2055:  3335 Segmentation fault      "$@" >> $seqres.full 2>&1
->     +failed: '/root/xfstests/bin/fio /tmp/3135-299.fio'
->     +(see /root/xfstests/results/generic/299.full for details)
->      ...
->      (Run 'diff -u tests/generic/299.out /root/xfstests/results/generic/299.out.bad' to see the entire diff)
-> 
-> I haven't had a chance to investigate the core dump yet....
-> 
->   	      	       	  	      	  - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> No, the real issue is that I messed up the cpumask conversion in the
+> broadcast code, i.e. using alloc instead of zalloc, which allocated
+> nonzeroed memory for the cpumasks, so any random bit set will crash
+> the machine. Your patch is just papering over the issue.
+
+I believe I understand now.  What would be the downside of moving
+the initialization to before marking the cpu online?  It seems like a
+reasonable this to expect as well in spite of it not being the right
+fix to the other bug.
+
+Thanks,
+Robin
