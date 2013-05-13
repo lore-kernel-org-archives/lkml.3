@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3EMUVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 16:21:04 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26875 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755286Ab3EMUVC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 16:21:02 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX197WWS+r+948iZhNkFNcdEFEijvd9U7KgM=
-Date: Mon, 13 May 2013 16:20:56 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: dove: add si5351 clock driver to CuBox DT
-Message-ID: <20130513202056.GC31290@titan.lakedaemon.net>
-References: <1367342675-15312-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752552Ab3EMUaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 16:30:18 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48126 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab3EMUaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 16:30:17 -0400
+Date: Mon, 13 May 2013 16:30:06 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: Jan Kara <jack@suse.cz>, EUNBONG SONG <eunb.song@samsung.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: EXT4 regression caused 4eec7
+Message-ID: <20130513203006.GA20102@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dmitry Monakhov <dmonakhov@openvz.org>, Jan Kara <jack@suse.cz>,
+	EUNBONG SONG <eunb.song@samsung.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-xfs@vger.kernel.org" <linux-xfs@vger.kernel.org>,
+	Dave Chinner <david@fromorbit.com>
+References: <31302271.2821368363898561.JavaMail.weblogic@epml17>
+ <20130513131809.GG400@quack.suse.cz>
+ <20130513133036.GB4845@thunk.org>
+ <87bo8fxa92.fsf@openvz.org>
+ <20130513135221.GE4845@thunk.org>
+ <878v3jx9oi.fsf@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367342675-15312-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <878v3jx9oi.fsf@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 30, 2013 at 07:24:35PM +0200, Sebastian Hesselbarth wrote:
-> This patch adds the device tree node for si5351 clock generator
-> and the corresponding oscillator connected to it. It also limits
-> i2c frequency to 100kHz as there are bus locks reported on higher
-> frequencies.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/dove-cubox.dts |   51 +++++++++++++++++++++++++++++++++++++-
->  1 files changed, 50 insertions(+), 1 deletions(-)
+On Mon, May 13, 2013 at 05:59:25PM +0400, Dmitry Monakhov wrote:
+> > This is how it's failing for me....
+> Because you ask questions, but do not read answers :)
+> http://marc.info/?l=linux-ext4&m=136580060822252&w=2
+> http://marc.info/?l=linux-ext4&m=136610044500931&w=2
 
-Applied to mvebu/dt
+Sorry, I thought I was running with the updated fio, but apparently I
+was using an old xfstests.tar.gz tarball on my KVM image.  Mea culpa....
 
-thx,
-
-Jason.
+    	     	 		 	 - Ted
