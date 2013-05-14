@@ -1,75 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab3ENQdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:33:31 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:54782 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194Ab3ENQd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:33:29 -0400
-Date: Tue, 14 May 2013 18:33:18 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (cris)
-Message-ID: <20130514163318.GQ8853@axis.com>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
- <alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
- <alpine.DEB.2.00.1305122242430.5463@ayla.of.borg>
- <CAMuHMdW6p6tP=wwBNV9uAAbwwgpyzMiPxsBSJNOUazhznYC4iQ@mail.gmail.com>
+	id S1755664Ab3ENQfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:35:34 -0400
+Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:56592 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751701Ab3ENQfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:35:31 -0400
+Date: Tue, 14 May 2013 18:24:50 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: hein_tibosch@yahoo.es, michal.simek@xilinx.com,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2] net/macb: fix ISR clear-on-write behavior only for
+ some SoC
+Message-ID: <20130514162450.GF22508@game.jcrosoft.org>
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
+ <1368536416-18364-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdW6p6tP=wwBNV9uAAbwwgpyzMiPxsBSJNOUazhznYC4iQ@mail.gmail.com>
+In-Reply-To: <1368536416-18364-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 7372955540902685548
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 02:06:51PM +0200, Geert Uytterhoeven wrote:
-> On Sun, May 12, 2013 at 10:44 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > drivers/video/console/fonts.c:71:2: error: #error No fonts configured.: 2 errors in 2 logs
-> >         v3.10-rc1/cris/cris-allmodconfig v3.10-rc1/cris/cris-allyesconfig
-> >
-> >         Fbdev issue?
+On 15:00 Tue 14 May     , Nicolas Ferre wrote:
+> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+> introduces clear-on-write on ISR register. This behavior is not always
+> implemented when using Cadence MACB/GEM and is breaking other platforms.
+> We are using the Design Configuration Register 1 information and a capability
+> property to actually activate this clear-on-write behavior on ISR.
 > 
-> This is caused by cris not using the generic drivers/Kconfig, and thus not
-> traversing drivers/video/console/Kconfig.
-> As the build system does traverse drivers/video/console/Makefile, fonts.c
-> is compiled with an inconsistent configuration.
+> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> ---
+> v2: - use DCFG1 bit 23 integration information instead of device tree
+>       compatibility string to retreive information about c-o-r vs. c-o-w ISR.
+>     - move configuration in macb_init_hw() function instead of probe() - at
+>       "open" time.
 > 
-> Two solutions:
->   1. Add drivers/video/console/Kconfig to arch/cris/Kconfig,
->   2. Switch cris to drivers/Kconfig,
+> As I have changed the most of this patch, I will collect your Ack and feedback
+> just like a new patch. Thanks for your help...
 > 
-> I prefer two, as this is what's done by all (except h8300) other
-> architectures. This will seriously broaden the scope of allmodconfig,
-> though, and require more fixes (e.g. missing <asm/vga.h>).
-
-I would have no objections a conversion of CRIS to use the
-drivers/Kconfig, though it feels a bit strange to compile
-video drivers for SoCs that don't have any video out hardware.
-
-> Note: The decision logic for compiling drivers/video/console/fonts.c is
->       overly complicated, and seems to be buggy for some stuff living
->       outside drivers drivers/video (drivers/media/platform/vivi.c and
->       drivers/staging/media/solo6x10/solo6x10-enc.c). I think this should
->       be resolved in Kconfig logic, using a new FONT_SUPPORT
->       symbol (FONTS is already taken).
+> Bye,
 > 
-> Gr{oetje,eeting}s,
+>  drivers/net/ethernet/cadence/macb.c | 18 ++++++++++++++++--
+>  drivers/net/ethernet/cadence/macb.h |  7 +++++++
+>  2 files changed, 23 insertions(+), 2 deletions(-)
 > 
->                         Geert
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 6be513d..c89aa41 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -485,7 +485,8 @@ static void macb_tx_interrupt(struct macb *bp)
+>  	status = macb_readl(bp, TSR);
+>  	macb_writel(bp, TSR, status);
+>  
+> -	macb_writel(bp, ISR, MACB_BIT(TCOMP));
+> +	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
+> +		macb_writel(bp, ISR, MACB_BIT(TCOMP));
+>  
+>  	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
+>  		(unsigned long)status);
+> @@ -738,7 +739,8 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
+>  			 * now.
+>  			 */
+>  			macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
+> -			macb_writel(bp, ISR, MACB_BIT(RCOMP));
+> +			if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
+> +				macb_writel(bp, ISR, MACB_BIT(RCOMP));
+>  
+>  			if (napi_schedule_prep(&bp->napi)) {
+>  				netdev_vdbg(bp->dev, "scheduling RX softirq\n");
+> @@ -1062,6 +1064,17 @@ static void macb_configure_dma(struct macb *bp)
+>  	}
+>  }
+>  
+> +/*
+> + * Configure peripheral capacities according to integration options used
+> + */
+> +static void macb_configure_caps(struct macb *bp)
+> +{
+> +	if (macb_is_gem(bp)) {
+> +		if (GEM_BF(IRQCOR, gem_readl(bp, DCFG1)) == 0)
+> +			bp->caps |= MACB_CAPS_ISR_CLEAR_ON_WRITE;
+> +	}
+> +}
+> +
+>  static void macb_init_hw(struct macb *bp)
+>  {
+>  	u32 config;
+> @@ -1084,6 +1097,7 @@ static void macb_init_hw(struct macb *bp)
+>  	bp->duplex = DUPLEX_HALF;
+>  
+>  	macb_configure_dma(bp);
+> +	macb_configure_caps(bp);
+>  
+>  	/* Initialize TX and RX buffers */
+>  	macb_writel(bp, RBQP, bp->rx_ring_dma);
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index 993d703..548c0ec 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -300,6 +300,8 @@
+>  #define MACB_REV_SIZE				16
+>  
+>  /* Bitfields in DCFG1. */
+> +#define GEM_IRQCOR_OFFSET			23
+> +#define GEM_IRQCOR_SIZE				1
+>  #define GEM_DBWDEF_OFFSET			25
+>  #define GEM_DBWDEF_SIZE				3
+>  
+> @@ -323,6 +325,9 @@
+>  #define MACB_MAN_READ				2
+>  #define MACB_MAN_CODE				2
+>  
+> +/* Capability mask bits */
+> +#define MACB_CAPS_ISR_CLEAR_ON_WRITE		0x1
+> +
+>  /* Bit manipulation macros */
+>  #define MACB_BIT(name)					\
+>  	(1 << MACB_##name##_OFFSET)
+> @@ -574,6 +579,8 @@ struct macb {
+>  	unsigned int 		speed;
+>  	unsigned int 		duplex;
+>  
+> +	u32			caps;
+> +
+>  	phy_interface_t		phy_interface;
+>  
+>  	/* AT91RM9200 transmit */
+> -- 
+> 1.8.0
 > 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
