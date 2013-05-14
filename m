@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab3ENPjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:39:10 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48319 "EHLO
+	id S932458Ab3ENPo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:44:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48368 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab3ENPjH (ORCPT
+	with ESMTP id S1758039Ab3ENPjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:39:07 -0400
+	Tue, 14 May 2013 11:39:10 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,92 +23,47 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCHv2 00/20] Cleanup irqchip_init calls
-Date: Tue, 14 May 2013 17:38:33 +0200
-Message-Id: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 03/20] ARM: nomadik: Remove init_irq declaration in machine description
+Date: Tue, 14 May 2013 17:38:36 +0200
+Message-Id: <1368545933-7430-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+specified") removed the need to explictly setup the init_irq field in
+the machine description when using only irqchip_init. Remove that
+declaration for nomadik as well.
 
-This is a splitted up version of the patch I previously sent to
-remove the explicit declaration of irqchip_init as the init_irq callback in
-the machine descriptions.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/mach-nomadik/cpu-8815.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Since it was a pretty tricky patch to merge, since it was touching a lot of
-different platforms, I splitted it for each platforms, and rebased it on top
-of 3.10-rc1.
-
-The best way to merge it is probably that each one of us take into their tree
-the patches that are relevant for our architecture and send them to arm-soc
-later on.
-
-Thanks,
-Maxime
-
-Changes from v1:
-  - Removed the dead include of linux/irqchip.h
-  - Splitted the shmobile changes into several patches
-
-Maxime Ripard (20):
-  ARM: sunxi: Remove init_irq declaration in machine description
-  ARM: zynq: Remove init_irq declaration in machine description
-  ARM: nomadik: Remove init_irq declaration in machine description
-  ARM: picoxcell: Remove init_irq declaration in machine description
-  ARM: shmobile: ape6evm: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: kzm9g: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: lager: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: emev2: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: r8a73a4: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: r8a7790: Remove init_irq declaration in machine
-    description
-  ARM: shmobile: sh73a0: Remove init_irq declaration in machine
-    description
-  ARM: bcm281xx: Remove init_irq declaration in machine description
-  ARM: spear: Remove init_irq declaration in machine description
-  ARM: msm: Remove init_irq declaration in machine description
-  ARM: mvebu: Remove init_irq declaration in machine description
-  ARM: mxs: Remove init_irq declaration in machine description
-  ARM: sirf: Remove init_irq declaration in machine description
-  ARM: vexpress: Remove init_irq declaration in machine description
-  ARM: virt: Remove init_irq declaration in machine description
-  ARM: vt8500: Remove init_irq declaration in machine description
-
- arch/arm/mach-bcm/board_bcm.c                  | 2 --
- arch/arm/mach-msm/board-dt-8660.c              | 2 --
- arch/arm/mach-msm/board-dt-8960.c              | 2 --
- arch/arm/mach-mvebu/armada-370-xp.c            | 2 --
- arch/arm/mach-mxs/mach-mxs.c                   | 2 --
- arch/arm/mach-nomadik/cpu-8815.c               | 2 --
- arch/arm/mach-picoxcell/common.c               | 2 --
- arch/arm/mach-prima2/common.c                  | 4 ----
- arch/arm/mach-shmobile/board-ape6evm.c         | 2 --
- arch/arm/mach-shmobile/board-kzm9g-reference.c | 2 --
- arch/arm/mach-shmobile/board-lager.c           | 2 --
- arch/arm/mach-shmobile/setup-emev2.c           | 2 --
- arch/arm/mach-shmobile/setup-r8a73a4.c         | 2 --
- arch/arm/mach-shmobile/setup-r8a7790.c         | 2 --
- arch/arm/mach-shmobile/setup-sh73a0.c          | 2 --
- arch/arm/mach-spear/spear1310.c                | 2 --
- arch/arm/mach-spear/spear1340.c                | 2 --
- arch/arm/mach-spear/spear300.c                 | 2 --
- arch/arm/mach-spear/spear310.c                 | 2 --
- arch/arm/mach-spear/spear320.c                 | 2 --
- arch/arm/mach-spear/spear6xx.c                 | 2 --
- arch/arm/mach-sunxi/sunxi.c                    | 2 --
- arch/arm/mach-vexpress/v2m.c                   | 2 --
- arch/arm/mach-virt/virt.c                      | 2 --
- arch/arm/mach-vt8500/vt8500.c                  | 2 --
- arch/arm/mach-zynq/common.c                    | 2 --
- 26 files changed, 54 deletions(-)
-
+diff --git a/arch/arm/mach-nomadik/cpu-8815.c b/arch/arm/mach-nomadik/cpu-8815.c
+index 59f6ff5..46cce9b 100644
+--- a/arch/arm/mach-nomadik/cpu-8815.c
++++ b/arch/arm/mach-nomadik/cpu-8815.c
+@@ -25,7 +25,6 @@
+ #include <linux/slab.h>
+ #include <linux/irq.h>
+ #include <linux/dma-mapping.h>
+-#include <linux/irqchip.h>
+ #include <linux/platform_data/clk-nomadik.h>
+ #include <linux/platform_data/pinctrl-nomadik.h>
+ #include <linux/pinctrl/machine.h>
+@@ -323,7 +322,6 @@ static const char * cpu8815_board_compat[] = {
+ 
+ DT_MACHINE_START(NOMADIK_DT, "Nomadik STn8815")
+ 	.map_io		= cpu8815_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= cpu8815_timer_init_of,
+ 	.init_machine	= cpu8815_init_of,
+ 	.restart	= cpu8815_restart,
 -- 
 1.8.1.2
 
