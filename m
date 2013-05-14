@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab3ENL7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:59:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51203 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab3ENL7E (ORCPT
+	id S1757381Ab3ENL7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:59:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36902 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab3ENL7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:59:04 -0400
+	Tue, 14 May 2013 07:59:19 -0400
+Date: Tue, 14 May 2013 13:57:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC GIT PULL] sched; Fix a few missing rq clock updates
+Message-ID: <20130514115733.GG15942@dyad.programming.kicks-ass.net>
+References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <002401ce4a0c$12a10ad0$37e32070$@samsung.com>
-References: <002401ce4a0c$12a10ad0$37e32070$@samsung.com>
-Date: Tue, 14 May 2013 13:59:03 +0200
-Message-ID: <CACRpkdZAMq-suW44o_n4ptK8YKjmO+JOUks75R-b7q-S4EC1BQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: u300: remove unnecessary platform_set_drvdata()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 5:44 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+On Fri, Apr 12, 2013 at 01:50:57AM +0200, Frederic Weisbecker wrote:
+> Hi,
+> 
+> So I revisited the rq clock series I had for dynticks. The patches
+> actually were about upstream issues so I refactored the fixes
+> under that angle and gave up with the wrong asumption that rq
+> clock relies on the tick for its updates.
+> 
+> Patches 1-4 fix some missing updates. Additionally I removed
+> 2 of these updates from the previous set:
+> 
+> * No need to update the rq clock on idle_balance() because it should
+> follow a call to deactivate_task() (unless TIF_NEED_RESCHED is set
+> on idle without new task on the runqueue, not sure we want to cover that).
+> 
+> * No need to update for try_to_wake_up_local() -> ttwu_do_wakeup() -> check_preempt_curr()
+>   as it's following deactivate_task().
+> 
+> Patch 5 brings accessors that will be necessary to settle an rq clock
+> debugging engine. What remains is to tag scheduler's entry/exit points
+> and report missing or redundant update_rq_clock() before calls to
+> rq_clock() and rq_clock_task().
 
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
-> (device-core: Ensure drvdata = NULL when no driver is bound).
-> Thus, it is not needed to manually clear the device driver data to NULL.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-
-Patch applied.
+Just noticed this queue was still sitting in the INBOX, I took it and will
+soon-ish hand to Ingo.
 
 Thanks!
-Linus Walleij
