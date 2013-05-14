@@ -1,141 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab3ENOqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:46:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58152 "EHLO mx1.redhat.com"
+	id S932126Ab3ENOsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:48:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11465 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754762Ab3ENOqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:46:32 -0400
-Date: Tue, 14 May 2013 10:46:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH v5 2/8] vmcore: clean up read_vmcore()
-Message-ID: <20130514144602.GB16772@redhat.com>
-References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
- <20130514015717.18697.43144.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514015717.18697.43144.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751936Ab3ENOsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:48:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
+   d="scan'208";a="313414819"
+From: Imre Deak <imre.deak@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH v2 0/8] add *_to_jiffies_timeout helpers to guarantee a minimum duration
+Date: Tue, 14 May 2013 17:48:30 +0300
+Message-Id: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 10:57:17AM +0900, HATAYAMA Daisuke wrote:
-> Rewrite part of read_vmcore() that reads objects in vmcore_list in the
-> same way as part reading ELF headers, by which some duplicated and
-> redundant codes are removed.
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+For a motivation of this pachset see the commit log of patch 1/8.
 
-Looks good to me.
+v2:
+- s/max_t/min_t/ when clamping to MAX_JIFFY_OFFSET
+- change the _min suffix to _timeout (Daniel Vetter)
+- add kerneldoc (Daniel Vetter)
+- turn the macros into uninlined functions
+- don't convert msecs_to_jiffies() users where the intention of +1 was
+  something else (Jean Delvare, Michal Kubecek)
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Imre Deak (8):
+  time: add *_to_jiffies_timeout helpers to guarantee a minimum
+    duration
+  sched: msleep: take msecs_to_jiffies_timeout into use
+  drm/i915: take msecs_to_jiffies_timeout into use
+  media/si4713-i2c: take usecs_to_jiffies_timeout into use
+  usb/isp116x-hcd: take msecs_to_jiffies_timeout into use
+  net/sunrpc: take msecs_to_jiffies_timeout into use
+  net/tipc: take msecs_to_jiffies_timeout into use
+  sound/oxygen_io: take msecs_to_jiffies_timeout into use
 
-Vivek
+ drivers/gpu/drm/i915/intel_drv.h |    2 +-
+ drivers/gpu/drm/i915/intel_i2c.c |    2 +-
+ drivers/media/radio/si4713-i2c.c |    4 ++--
+ drivers/usb/host/isp116x-hcd.c   |    2 +-
+ include/linux/jiffies.h          |    6 ++++++
+ kernel/time.c                    |   27 +++++++++++++++++++++++++++
+ kernel/timer.c                   |    4 ++--
+ net/sunrpc/xprtrdma/verbs.c      |    4 ++--
+ net/tipc/core.h                  |    2 +-
+ sound/pci/oxygen/oxygen_io.c     |    2 +-
+ 10 files changed, 44 insertions(+), 11 deletions(-)
 
-> ---
-> 
->  fs/proc/vmcore.c |   68 ++++++++++++++++--------------------------------------
->  1 files changed, 20 insertions(+), 48 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 69e1198..48886e6 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -119,27 +119,6 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
->  	return read;
->  }
->  
-> -/* Maps vmcore file offset to respective physical address in memroy. */
-> -static u64 map_offset_to_paddr(loff_t offset, struct list_head *vc_list,
-> -					struct vmcore **m_ptr)
-> -{
-> -	struct vmcore *m;
-> -	u64 paddr;
-> -
-> -	list_for_each_entry(m, vc_list, list) {
-> -		u64 start, end;
-> -		start = m->offset;
-> -		end = m->offset + m->size - 1;
-> -		if (offset >= start && offset <= end) {
-> -			paddr = m->paddr + offset - start;
-> -			*m_ptr = m;
-> -			return paddr;
-> -		}
-> -	}
-> -	*m_ptr = NULL;
-> -	return 0;
-> -}
-> -
->  /* Read from the ELF header and then the crash dump. On error, negative value is
->   * returned otherwise number of bytes read are returned.
->   */
-> @@ -148,8 +127,8 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->  {
->  	ssize_t acc = 0, tmp;
->  	size_t tsz;
-> -	u64 start, nr_bytes;
-> -	struct vmcore *curr_m = NULL;
-> +	u64 start;
-> +	struct vmcore *m = NULL;
->  
->  	if (buflen == 0 || *fpos >= vmcore_size)
->  		return 0;
-> @@ -175,33 +154,26 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
->  			return acc;
->  	}
->  
-> -	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
-> -	if (!curr_m)
-> -        	return -EINVAL;
-> -
-> -	while (buflen) {
-> -		tsz = min_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
-> -
-> -		/* Calculate left bytes in current memory segment. */
-> -		nr_bytes = (curr_m->size - (start - curr_m->paddr));
-> -		if (tsz > nr_bytes)
-> -			tsz = nr_bytes;
-> -
-> -		tmp = read_from_oldmem(buffer, tsz, &start, 1);
-> -		if (tmp < 0)
-> -			return tmp;
-> -		buflen -= tsz;
-> -		*fpos += tsz;
-> -		buffer += tsz;
-> -		acc += tsz;
-> -		if (start >= (curr_m->paddr + curr_m->size)) {
-> -			if (curr_m->list.next == &vmcore_list)
-> -				return acc;	/*EOF*/
-> -			curr_m = list_entry(curr_m->list.next,
-> -						struct vmcore, list);
-> -			start = curr_m->paddr;
-> +	list_for_each_entry(m, &vmcore_list, list) {
-> +		if (*fpos < m->offset + m->size) {
-> +			tsz = m->offset + m->size - *fpos;
-> +			if (buflen < tsz)
-> +				tsz = buflen;
-> +			start = m->paddr + *fpos - m->offset;
-> +			tmp = read_from_oldmem(buffer, tsz, &start, 1);
-> +			if (tmp < 0)
-> +				return tmp;
-> +			buflen -= tsz;
-> +			*fpos += tsz;
-> +			buffer += tsz;
-> +			acc += tsz;
-> +
-> +			/* leave now if filled buffer already */
-> +			if (buflen == 0)
-> +				return acc;
->  		}
->  	}
-> +
->  	return acc;
->  }
->  
+-- 
+1.7.10.4
+
