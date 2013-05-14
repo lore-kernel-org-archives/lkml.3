@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab3ENOt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:49:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25274 "EHLO mga01.intel.com"
+	id S932398Ab3ENOuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:50:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8166 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab3ENOtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:49:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
-   d="scan'208";a="337416037"
-From: Imre Deak <imre.deak@intel.com>
+	id S932266Ab3ENOtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:49:43 -0400
+From: Igor Mammedov <imammedo@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net
-Subject: [PATCH v2 7/8] net/tipc: take msecs_to_jiffies_timeout into use
-Date: Tue, 14 May 2013 17:48:37 +0300
-Message-Id: <1368542918-8861-8-git-send-email-imre.deak@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
-References: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
-In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, chuck.anderson@oracle.com
+Subject: [PATCH 1/2] cpu: fix "crash_notes" and "crash_notes_size" leaks in register_cpu()
+Date: Tue, 14 May 2013 16:46:06 +0200
+Message-Id: <1368542767-2126-2-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
+References: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use msecs_to_jiffies_timeout instead of open-coding the same.
+"crash_notes" and "crash_notes_size" are dynamically created
+with device_create_file() but aren't deleted anywhere.
+Define "crash_notes" and "crash_notes_size" statically via
+attribute groups so that device_register would create them
+automatically and files would be destroyed when CPU is destroyed.
 
-Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- net/tipc/core.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/cpu.c |   25 ++++++++++++++++++-------
+ 1 files changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/net/tipc/core.h b/net/tipc/core.h
-index 0207db0..b24e2fc 100644
---- a/net/tipc/core.h
-+++ b/net/tipc/core.h
-@@ -133,7 +133,7 @@ static inline void k_init_timer(struct timer_list *timer, Handler routine,
-  */
- static inline void k_start_timer(struct timer_list *timer, unsigned long msec)
- {
--	mod_timer(timer, jiffies + msecs_to_jiffies(msec) + 1);
-+	mod_timer(timer, jiffies + msecs_to_jiffies_timeout(msec));
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 3d48fc8..8f9e264 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -164,7 +164,24 @@ static ssize_t show_crash_notes_size(struct device *dev,
+ 	return rc;
+ }
+ static DEVICE_ATTR(crash_notes_size, 0400, show_crash_notes_size, NULL);
++
++static struct attribute *crash_note_cpu_attrs[] = {
++	&dev_attr_crash_notes.attr,
++	&dev_attr_crash_notes_size.attr,
++	NULL
++};
++
++static struct attribute_group crash_note_cpu_attr_group = {
++	.attrs = crash_note_cpu_attrs,
++};
++#endif
++
++static const struct attribute_group *common_cpu_attr_groups[] = {
++#ifdef CONFIG_KEXEC
++	&crash_note_cpu_attr_group,
+ #endif
++	NULL
++};
+ 
+ /*
+  * Print cpu online, possible, present, and system maps
+@@ -280,6 +297,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+ 	cpu->dev.bus->uevent = arch_cpu_uevent;
+ #endif
++	cpu->dev.groups = common_cpu_attr_groups;
+ 	error = device_register(&cpu->dev);
+ 	if (!error && cpu->hotpluggable)
+ 		register_cpu_control(cpu);
+@@ -288,13 +306,6 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	if (!error)
+ 		register_cpu_under_node(num, cpu_to_node(num));
+ 
+-#ifdef CONFIG_KEXEC
+-	if (!error)
+-		error = device_create_file(&cpu->dev, &dev_attr_crash_notes);
+-	if (!error)
+-		error = device_create_file(&cpu->dev,
+-					   &dev_attr_crash_notes_size);
+-#endif
+ 	return error;
  }
  
- /**
 -- 
-1.7.10.4
+1.7.1
 
