@@ -1,157 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758304Ab3ENS7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:59:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27168 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754784Ab3ENS71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:59:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
-   d="scan'208";a="313541016"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: Dong Zhu <bluezhudong@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        Richard Cochran <richardcochran@gmail.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Dave, Tushar N" <tushar.n.dave@intel.com>,
-        "Abodunrin, Akeem G" <akeem.g.abodunrin@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH] igb: add a method to get the nic hw time stamping policy
-Thread-Topic: [PATCH] igb: add a method to get the nic hw time stamping
- policy
-Thread-Index: AQHOTlAy97bKChIyG0OhdaLruqvYKZkAqF6AgAFplICAADH4AIAAk3oAgAAm2gCAAF3jAIABjeyAgAAhVEA=
-Date: Tue, 14 May 2013 18:59:24 +0000
-Message-ID: <02874ECE860811409154E81DA85FBB58564E0BA3@ORSMSX104.amr.corp.intel.com>
-References: <20130511140219.GG8399@zhudong.nay.redhat.com>
- <518E7723.5010003@cogentembedded.com>
- <20130512142555.GI8399@zhudong.nay.redhat.com>
- <20130512172446.GA2484@netboy>
- <20130513021236.GJ8399@zhudong.nay.redhat.com>
- <20130513043140.GA2567@netboy>
- <20130513100742.GM8399@zhudong.nay.redhat.com>
- <20130514095155.GO8399@zhudong.nay.redhat.com>
-In-Reply-To: <20130514095155.GO8399@zhudong.nay.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1758270Ab3ENTBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 15:01:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51404 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab3ENTBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 15:01:41 -0400
+Date: Tue, 14 May 2013 12:01:13 -0700
+From: tip-bot for John Stultz <tipbot@zytor.com>
+Message-ID: <tip-b4f711ee03d28f776fd2324fd0bd999cc428e4d2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        kay@vrfy.org, jgunthorpe@obsidianresearch.com, john.stultz@linaro.org,
+        tglx@linutronix.de, feng.tang@intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kay@vrfy.org, jgunthorpe@obsidianresearch.com, john.stultz@linaro.org,
+        tglx@linutronix.de, feng.tang@intel.com
+In-Reply-To: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
+References: <1366828376-18124-1-git-send-email-john.stultz@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] time:
+  Revert ALWAYS_USE_PERSISTENT_CLOCK compile time optimizaitons
+Git-Commit-ID: b4f711ee03d28f776fd2324fd0bd999cc428e4d2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4EIxejG009923
 
-Hello,
+Commit-ID:  b4f711ee03d28f776fd2324fd0bd999cc428e4d2
+Gitweb:     http://git.kernel.org/tip/b4f711ee03d28f776fd2324fd0bd999cc428e4d2
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Wed, 24 Apr 2013 11:32:56 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 14 May 2013 20:54:06 +0200
 
-> -----Original Message-----
-> From: Dong Zhu [mailto:bluezhudong@gmail.com]
-> Sent: Tuesday, May 14, 2013 2:52 AM
-> To: Keller, Jacob E; Ben Hutchings; Vick, Matthew; Richard Cochran
-> Cc: Sergei Shtylyov; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan, Bruce
-> W; Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Waskiewicz
-> Jr, Peter P; Duyck, Alexander H; Ronciak, John; Dave, Tushar N;
-> Abodunrin, Akeem G; David S. Miller; Paul E. McKenney; David Howells;
-> Dave Jones; Thomas Gleixner; linux-kernel@vger.kernel.org; e1000-
-> devel@lists.sourceforge.net; netdev@vger.kernel.org
-> Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping
-> policy
-> 
-> Hi,
-> 
-> > I modified this patch and added the method to igb_get_ts_info
-> function.
-> > For 82576 nic, through this method we can easily check which type of
-> packets
-> > are time stamped now, such as (HWTSTAMP_FILTER_PTP_V1_L4_SYNC
-> and
-> > HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ), then change or disable it
-> up to your requests.
-> > I think it is convenient.The origial GET_TS_INFO method can only show
-> the device‚Äôs
-> > time stamping capabilities which nics supported.
-> 
-> Through this method we can easily check which type of packets are
-> timestamped currently, it is useful because that we use the
-> hwstamp_ctl
-> set time stamping policy first then we could verify what type of packets
-> does the nic timestamp and then do some other testing(regression) for
-> each
-> policy.No matter PTP is running or not we can make sure whether
-> timestamp packets
-> could cause other general network problems through viewing and
-> setting the
-> timestamp policy.
-> 
+time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time optimizaitons
 
-Correct. However, the ioctl already modifies the value of the hwtstamp_config so that it will tell you which packets are being timestamped. As long as the filter is a match for one of the supported filters, it will return that value, otherwise it will return HWTSTAMP_FILTER_SOME. But that means  it will timestamp at least what you request. If you are concerned about returning more specifically what the driver is doing in FILTER_SOME mode, you could extend the filters, and add the one you're missing, but it would need to be common and justified enough... Which it probably isn't as the current list is pretty comprehensive.
+Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
+which enables some minor compile time optimization to avoid
+uncessary code in mostly the suspend/resume path could cause
+problems for userland.
 
-There is no real need to add a second field to get this without setting, as you can simply call it with a new value, and then get the value you need. Effectively, if you don't know the value is correct, just try to set it how you want, and check the return value plus the hwtstamp_config structure which will be MODIFIED by the hwtstamp ioctl.
+In particular, the dependency for RTC_HCTOSYS on
+!ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
+twice and simplifies suspend/resume, has the side effect
+of causing the /sys/class/rtc/rtcN/hctosys flag to always be
+zero, and this flag is commonly used by udev to setup the
+/dev/rtc symlink to /dev/rtcN, which can cause pain for
+older applications.
 
-There is absolutely no reason to add this as a new field which would remove the ability to extend hwtstamp_ioctl in the future should that ever be necessary!!
+While the udev rules could use some work to be less fragile,
+breaking userland should strongly be avoided. Additionally
+the compile time optimizations are fairly minor, and the code
+being optimized is likely to be reworked in the future, so
+lets revert this change.
 
-> My original idea is that:
-> The implementation of this method is calling the ioctl call, in order
-> not to break the userland ABI I use the flags field of hwtstamp_config,
-> as it has no definition yet.
-> 
-That would remove the ability to extend the ioctl when it's really necessary.
+Reported-by: Kay Sievers <kay@vrfy.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: stable <stable@vger.kernel.org> #3.9
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Link: http://lkml.kernel.org/r/1366828376-18124-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/Kconfig     | 1 -
+ drivers/rtc/Kconfig  | 2 --
+ include/linux/time.h | 4 ----
+ kernel/time/Kconfig  | 5 -----
+ 4 files changed, 12 deletions(-)
 
->   - For I350 it only supports two types HWTSTAMP_FILTER_NONE and
-> HWTSTAMP_FILTER_ALL
->     for timestamping. It is easy to handle just return the value to flags.
-> 
->   - For 82576NS it has more individual filters, so I need to do the
->     judement in the igb_ptp_hwtstamp_ioctl function for different nics,
->     the code of judgement might be reduplicated with
-> igb_get_ts_info,then do
->     the OR operation for filters then return to the flags.
-> 
-
-What are you trying to achieve. When you call hwtstamp_ioctl on the igb driver, it will modify the passed in structure (hwtstamp_config) and set it's rx_filter type to the current value after the function is called. Upon return, your application can check the value and then perform regression tests or what have you against that value. You already have this information. You don't need a new method to fix it.
-
-If you are debugging a driver, you can have that driver print data to the kernel print buffer or the ftrace buffer in order to determine what is being done. But your application can already get the set filter and compare to the expected filter. Documentation/timestamping/timestamping.c already shows you how to do this!
-
-> Could tell me whether the above method(ioctl) is feasible and better
-> than this
-> one (ethtool)?
-> 
-> IMO checking this through the ethtool GET_TS_INFO is so convenient
-> without breaking any userland ABIs. Do you think so ?
-> 
-Modifying GET_TS_INFO would be potentially breaking a userland ABI.. Again, no one understands what you are trying to do that can't already be done via hwtstamp_ioctl (unmodified!) We understand what you are wanting, but telling you that it can already be done!
-
-> >
-> > I use the tx_reserved[0] and rx_reserved[0] to restore the
-> hwtstamp_tx_types and
-> > hwtstamp_rx_filters enumeration values.
-> >
-> > I test it on I350 and 82576NS nics and it works as expect.
-> >
-> > Could help reviewing it again ? Any comments would be appreciated.
-> >
-> 
-
-
-- Jake
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5db2117..45c4124 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -108,7 +108,6 @@ config X86
+ 	select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
+ 	select GENERIC_TIME_VSYSCALL if X86_64
+ 	select KTIME_SCALAR if X86_32
+-	select ALWAYS_USE_PERSISTENT_CLOCK
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select HAVE_CONTEXT_TRACKING if X86_64
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 0c81915..b983813 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -20,7 +20,6 @@ if RTC_CLASS
+ config RTC_HCTOSYS
+ 	bool "Set system time from RTC on startup and resume"
+ 	default y
+-	depends on !ALWAYS_USE_PERSISTENT_CLOCK
+ 	help
+ 	  If you say yes here, the system time (wall clock) will be set using
+ 	  the value read from a specified RTC device. This is useful to avoid
+@@ -29,7 +28,6 @@ config RTC_HCTOSYS
+ config RTC_SYSTOHC
+ 	bool "Set the RTC time based on NTP synchronization"
+ 	default y
+-	depends on !ALWAYS_USE_PERSISTENT_CLOCK
+ 	help
+ 	  If you say yes here, the system time (wall clock) will be stored
+ 	  in the RTC specified by RTC_HCTOSYS_DEVICE approximately every 11
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 22d81b3..d5d229b 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -117,14 +117,10 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
+ 
+ extern bool persistent_clock_exist;
+ 
+-#ifdef ALWAYS_USE_PERSISTENT_CLOCK
+-#define has_persistent_clock()	true
+-#else
+ static inline bool has_persistent_clock(void)
+ {
+ 	return persistent_clock_exist;
+ }
+-#endif
+ 
+ extern void read_persistent_clock(struct timespec *ts);
+ extern void read_boot_clock(struct timespec *ts);
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 24510d8..b696922 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -12,11 +12,6 @@ config CLOCKSOURCE_WATCHDOG
+ config ARCH_CLOCKSOURCE_DATA
+ 	bool
+ 
+-# Platforms has a persistent clock
+-config ALWAYS_USE_PERSISTENT_CLOCK
+-	bool
+-	default n
+-
+ # Timekeeping vsyscall support
+ config GENERIC_TIME_VSYSCALL
+ 	bool
