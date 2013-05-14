@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3ENReu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:34:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab3ENRet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:34:49 -0400
-Message-ID: <51927531.8010507@redhat.com>
-Date: Tue, 14 May 2013 13:32:33 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755975Ab3ENRgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:36:43 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:60864 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab3ENRgl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 13:36:41 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC 4/4] mm: free reclaimed pages instantly without depending
- next reclaim
-References: <1368411048-3753-1-git-send-email-minchan@kernel.org> <1368411048-3753-5-git-send-email-minchan@kernel.org>
-In-Reply-To: <1368411048-3753-5-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130514101608.60c64b73.akpm@linux-foundation.org>
+References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
+ <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
+ <CAH9NwWc+BP5ZbHwmMZ4AisviDHM-GizTmZO6vwxtd=ntYUAk=A@mail.gmail.com>
+ <CAH9NwWceaA0MPGj65fOhmECL8A522qngU3RHGZ++Uz-6mVKKAg@mail.gmail.com>
+ <CAK5ve-JmVes+OA3MRyoZEo_Fz8_RHpdqmcTxNwwrUAnADpqvyw@mail.gmail.com>
+ <CAH9NwWeMMYzvE0VVMCYmF9oXA-wBiW-BnwoK1q7mjUkE4JF9uw@mail.gmail.com>
+ <CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com>
+ <CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
+ <CAK5ve-JqvOHQR+eSaq7HJ3rsaxj-kuhKw2skOa74+Sc=WqxTAQ@mail.gmail.com> <20130514101608.60c64b73.akpm@linux-foundation.org>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 14 May 2013 10:36:19 -0700
+Message-ID: <CAK5ve-+jBNTLrU5jRqj7LyxrQBWAE7GC634qYRJ4zDy2_LqgcA@mail.gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/2013 10:10 PM, Minchan Kim wrote:
-> Normally, file I/O for reclaiming is asynchronous so that
-> when page writeback is completed, reclaimed page will be
-> rotated into LRU tail for fast reclaiming in next turn.
-> But it makes unnecessary CPU overhead and more iteration with higher
-> priority of reclaim could reclaim too many pages than needed
-> pages.
+On Tue, May 14, 2013 at 10:16 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 14 May 2013 10:12:04 -0700 Bryan Wu <cooloney@gmail.com> wrote:
 >
-> This patch frees reclaimed pages by paging out instantly without
-> rotating back them into LRU's tail when the I/O is completed so
-> that we can get out of reclaim loop as soon as poosbile and avoid
-> unnecessary CPU overhead for moving them.
+>> On Tue, May 14, 2013 at 12:06 AM, Christian Gmeiner
+>> <christian.gmeiner@gmail.com> wrote:
+>> > 2013/5/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
+>> >> 2013/3/8 Christian Gmeiner <christian.gmeiner@gmail.com>:
+>> >>> 2013/3/5 Bryan Wu <cooloney@gmail.com>:
+>> >>>> On Sun, Mar 3, 2013 at 11:40 PM, Christian Gmeiner
+>> >>>> <christian.gmeiner@gmail.com> wrote:
+>> >>>>> ping
+>> >>>>> --
+>>
+>> I found this patch is still in linux-next, I'm not sure whether it
+>> will be merged into 3.10 like a bug fixing. We need to wait Andrew's
+>> reply. I'm OK to pick up and send out to Linus as a bug fixing.
 >
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> whome, I'd forgotten I had this.  I stuck a cc:stable on the end and
+> shall send it in to Linus in the next 3.10 batch, OK?
+>
 
-I like this approach and am looking forward to your v2 series,
-with the reworked patch 3/4.
+No problem for me at all. I bet it's OK for Christian as well, since
+merging into 3.10-rc1 has no difference with merging into 3.10-rc2 or
+later. It will eventually show up in 3.10 release.
 
+Thanks,
+-Bryan
