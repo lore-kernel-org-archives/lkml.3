@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab3ENPu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:50:58 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:61378 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab3ENPu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:50:56 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91/trivial: typo in GEM compatible string
-Date: Tue, 14 May 2013 17:50:54 +0200
-Message-ID: <1368546654-20120-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
+	id S1758090Ab3ENPvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:51:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1452 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756596Ab3ENPvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:51:13 -0400
+Date: Tue, 14 May 2013 11:51:11 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        amorgan@redhat.com, cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-ID: <20130514155111.GJ680@redhat.com>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20130514150539.GA26090@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514150539.GA26090@sergelap>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- Documentation/devicetree/bindings/net/macb.txt | 2 +-
- arch/arm/boot/dts/sama5d3.dtsi                 | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Tue, May 14, 2013 at 10:05:39AM -0500, Serge Hallyn wrote:
+> so now that the device cgroup properly respects hierarchy, not allowing
+> a cgroup to be given greater permission than its parent, should we consider
+> relaxing the capability checks?
+> 
+> There are two capable(CAP_SYS_ADMIN) checks in deice_cgroup.c: one in
+> devcgroup_can_attach() to protect changing another task's cgroup, and
+> one in devcgroup_update_access() to protect writes to the devices.allow
+> and devices.deny files.
+> 
+> I think the first should be changed to a check for ns_capable() to
+> the victim's user_ns.  Something like 
+> 
+> --- a/security/device_cgroup.c
+> +++ b/security/device_cgroup.c
+> @@ -70,10 +70,16 @@ static int devcgroup_can_attach(struct cgroup *new_cgrp,
+>                                 struct cgroup_taskset *set)
+>  {
+>         struct task_struct *task = cgroup_taskset_first(set);
+> +       struct user_namespace *ns;
+> +       int ret = -EPERM;
+> 
+> -       if (current != task && !capable(CAP_SYS_ADMIN))
+> -               return -EPERM;
+> -       return 0;
+> +       if (current == task)
+> +               return 0;
+> +
+> +       ns = userns_get(task);;
+> +       ret = ns_capable(ns, CAP_SYS_ADMIN) ? 0 : -EPERM;
+> +       put_user_ns(ns);
+> +       return ret;
+>  }
 
-diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
-index 44afa0e..4ff6504 100644
---- a/Documentation/devicetree/bindings/net/macb.txt
-+++ b/Documentation/devicetree/bindings/net/macb.txt
-@@ -4,7 +4,7 @@ Required properties:
- - compatible: Should be "cdns,[<chip>-]{macb|gem}"
-   Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
-   Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb".
--  Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
-+  Use "cdns,pc302-gem" for Picochip picoXcell pc302 and later devices based on
-   the Cadence GEM, or the generic form: "cdns,gem".
- - reg: Address and length of the register set for the device
- - interrupts: Should contain macb interrupt
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 2e643ea..5fce96b 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -156,7 +156,7 @@
- 			};
- 
- 			macb0: ethernet@f0028000 {
--				compatible = "cnds,pc302-gem", "cdns,gem";
-+				compatible = "cdns,pc302-gem", "cdns,gem";
- 				reg = <0xf0028000 0x100>;
- 				interrupts = <34 4 3>;
- 				pinctrl-names = "default";
+wouldn't this allow a userns root to move a task in the same userns into
+a parent cgroup? I believe than anything but moving down the hierarchy
+would be very complicated to verify (how far up can you go).
+
+> For the second, the hierarchy support should let us ignore concerns
+> about unprivileged users escalating privilege, but I'm trying to decide
+> whether we  need to worry about the sendmail capability class of bugs.
+
+You have a pointer for more information on those?
+
+> My sense is actually the answer is no, and we can drop the capable()
+> check altogether.  The reason is that while userspace frequently doesn't
+> properly handle a failing system call due to unexpected lack of partial
+> privilege, I wouldn't expect any setuid root program to ignore failure
+> to open or mknod a device file (and proceed into a bad failure mode).
+> Does this sound rasonable, or a recipe for disaster?
+
+The second case sounds ok to me
+
 -- 
-1.8.0
+Aristeu
 
