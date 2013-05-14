@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3ENJfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:35:25 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58384 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab3ENJfX (ORCPT
+	id S1756920Ab3ENJkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:40:43 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:38191 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579Ab3ENJkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:35:23 -0400
+	Tue, 14 May 2013 05:40:41 -0400
+Date: Tue, 14 May 2013 10:40:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH 8/9] pinctrl: abx500: Rejiggle platform data and DT
+ initialisation
+Message-ID: <20130514094036.GI3297@gmail.com>
+References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
+ <1368019749-19455-9-git-send-email-lee.jones@linaro.org>
+ <CACRpkdZTU1gv3onjFF4eqxv-o1BQwd48u4gQ9NWqryWoMiKTDQ@mail.gmail.com>
+ <20130514084756.GE3297@gmail.com>
+ <CACRpkdbhHnrN3MGufubyYLNXdcCgZ2OpQ4a2CG6bwPJk88DZRg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 14 May 2013 02:34:51 -0700
-Message-ID: <CAPM31RLwbrfGT8UUajmuUYVu6VmtQwr6fjAc8MJqvAWE2N_F8Q@mail.gmail.com>
-Subject: Re: [patch 0/8]: use runnable load avg in balance
-To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdbhHnrN3MGufubyYLNXdcCgZ2OpQ4a2CG6bwPJk88DZRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 8:17 AM, Alex Shi <alex.shi@intel.com> wrote:
-> This patchset bases on tip/sched/core.
->
-> This version changed the runnable load avg value setting for new task
-> in patch 3rd.
->
-> We also tried to include blocked load avg in balance. but find many benchmark
-> performance dropping. Guess the too bigger cpu load drive task to be waken
-> on remote CPU, and cause wrong decision in periodic balance.
+On Tue, 14 May 2013, Linus Walleij wrote:
 
-Fundamentally, I think we should be exploring this space.
+> On Tue, May 14, 2013 at 10:47 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Tue, 14 May 2013, Linus Walleij wrote:
+> >
+> >> On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> >>
+> >> > A pointer to GPIO platform data is always passed to the driver now, so
+> >> > there's little point in checking for 'pdata' and executing the DT case if
+> >> > it's not there. The difference between booting with DT and !DT is when
+> >> > booting with DT, plat_id is not populated. Thus, in the DT case we have
+> >> > to use a DT match table in order to find out which platform we're
+> >> > executing on. So, we're changing the semantics here to only use the
+> >> > match table if no plat_id is supplied though platform data.
+> >> >
+> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >>
+> >> Is this really included in the [0/9] fire alarm wrapper statement
+> >> "Important ux500 fixups due for the v3.10 -rc:s"?
+> >>
+> >> It seems more like a random refactoring to me.
+> >>
+> >> The commit message fails to specify which regression this
+> >> is fixing, like if it's causing an oops or so.
+> >>
+> >> So I've tentatively applied it to the pinctrl devel branch for
+> >> v3.11 unless something comes up...
+> >
+> > Perhaps the commit message is a bit weak, but yes, it _needs_ to go
+> > into v3.10, or this driver will be _broken_ when we boot with DT.
+> >
+> > Please apply this to your -fixes branch.
+> 
+> Quting myself from above:
+>   "The commit message fails to specify which regression this
+>   is fixing, like if it's causing an oops or so."
+> 
+> I'm happy to apply it but what do I write in the commit message?
 
-While it's perhaps not surprising that it's not a drop-in, since the
-current code was tuned always considering the instaneous balance, it
-seems the likely path to increased balance stability.
+Platform Data is invariably populated for this driver, even when
+booting with Device Tree. Thus the Device Tree probing code encased
+within the first check for Platform Data will never executed, causing
+the driver to fail when DT is enabled.
 
-Although, if the code is yielding substantive benefits in its current
-form we should consider merging it in the interim.
+This patch fixes the aforementioned regression by rejigging the
+probe() semantics to attempt to extract a platform ID from Device Tree
+if one can not be sourced from platform data.
 
-> I retested on Intel core2, NHM, SNB, IVB, 2 and 4 sockets machines with
-> benchmark kbuild, aim7, dbench, tbench, hackbench, oltp, and netperf loopback
-> etc. The performance is better now.
->
-> On SNB EP 4 sockets machine, the hackbench increased about 50%, and result
-> become stable. on other machines, hackbench increased about 2~10%.
-> oltp increased about 30% in NHM EX box.
-> netperf loopback also increased on SNB EP 4 sockets box.
-> no clear changes on other benchmarks.
->
-> Michael Wang had tested previous version on pgbench on his box:
-> https://lkml.org/lkml/2013/4/2/1022
->
-> And Morten tested previous version too.
-> http://comments.gmane.org/gmane.linux.kernel/1463371
->
-> Thanks comments from Peter, Paul, Morten, Miacheal and Preeti.
-> And more comments are appreciated!
->
-> Regards
-> Alex
->
-> [patch v6 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
-> [patch v6 2/8] sched: move few runnable tg variables into CONFIG_SMP
-> [patch v6 3/8] sched: set initial value of runnable avg for new
-> [patch v6 4/8] sched: fix slept time double counting in enqueue
-> [patch v6 5/8] sched: update cpu load after task_tick.
-> [patch v6 6/8] sched: compute runnable load avg in cpu_load and
-> [patch v6 7/8] sched: consider runnable load average in move_tasks
-> [patch v6 8/8] sched: remove blocked_load_avg in tg
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
