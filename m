@@ -1,101 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab3ENBTt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:19:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13689 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab3ENBTp (ORCPT
+	id S1756004Ab3ENBTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:19:40 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49048 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886Ab3ENBTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:45 -0400
-X-AuditID: cbfee68e-b7f276d000002279-a8-5191912caf36
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: add PM dependency to PM_GENERIC_DOMAINS for
- Exynos4210
-Date: Tue, 14 May 2013 10:19:40 +0900
-Message-id: <001a01ce5041$1b9ddd30$52d99790$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5QQPv+I07TYJ0PRkOy30RMNp0g0w==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zfV2diRMDDR5fMre4vPASq0Xvgqts
-	FpseX2O1uLxrDpvFjPP7mBxYPTYvqffo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujM3L3jAX
-	fOWveLr0LUsDYwdfFyMHh4SAicSVBZpdjJxAppjEhXvr2boYuTiEBJYxSkz4Pp0ZImEiMev7
-	AlaIxCJGiZ7OL8wQzi9GidXtfWBVbAJqEl++HGYHsUUENCSe7j7CCFLELNDLKPFtwlOwhLBA
-	mMTJT1/YQGwWAVWJvovvweK8ApYSK+6vZISwBSV+TL7HAmIzC2hJrN95nAnClpfYvOYt1EkK
-	EjvOvmaEWKYn0XdwJjNEjYjEvhfvwBZLCGxil3jV+osdYpmAxLfJh1ggfpaV2HQAao6kxMEV
-	N1gmMIrNQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYIXHWt4Px
-	5gHrQ4zJQOsnMkuJJucD4zSvJN7Q2MzIwtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYw+Ze1beOf7r+A88XSuZMA+Q+XpbW9Xf9y17aFd7OyTx3bcSdj7Xlw2
-	2W6OivH1esPDS4sNj1neqjDoy37JcD3TXuMii9C5c5ybf5tculKbdeDhPfmta/xKDi+x/7zs
-	k0NUfsUstgduezdsncD5q8Hmc+BnvjsTP53JXHY1NsNXxiq6cIfIm9VnlFiKMxINtZiLihMB
-	tOdh3skCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jAV2diRMDDe5sMra4vPASq0Xvgqts
-	FpseX2O1uLxrDpvFjPP7mBxYPTYvqffo27KK0ePzJrkA5qgGRpuM1MSU1CKF1Lzk/JTMvHRb
-	Je/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoJVKCmWJOaVAoYDE4mIlfTtME0JD3HQt
-	YBojdH1DguB6jAzQQMI6xozNy94wF3zlr3i69C1LA2MHXxcjJ4eEgInErO8LWCFsMYkL99az
-	dTFycQgJLGKU6On8wgzh/GKUWN3exwxSxSagJvHly2F2EFtEQEPi6e4jjCBFzAK9jBLfJjwF
-	SwgLhEmc/PSFDcRmEVCV6Lv4HizOK2ApseL+SkYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWve
-	MkOcpCCx4+xrRohlehJ9B2cyQ9SISOx78Y5xAqPALCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4o
-	TkrPNdQrTswtLs1L10vOz93ECI7jZ1I7GFc2WBxiFOBgVOLhbaibGCjEmlhWXJl7iFGCg1lJ
-	hHc/L1CINyWxsiq1KD++qDQntfgQYzLQpxOZpUST84EpJq8k3tDYxMzI0sjMwsjE3Jw0YSVx
-	3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGJm/N3jeXbSyVk9tofl5TYUb0dHWb/zYPh49oHVZ
-	UVrNRPPg3SNz2f0iHxU94bzQ4bD0byBD+YqulMqsvOJ70/IS6npzPzSF3v6Vu7Q4Ik5WN6n7
-	vVdn38XP5kt3td2btu3Os4w1J5OzS56HxnBOs7qqL/1oBd+CVyeu5ef6SV84lSMe80QqUoml
-	OCPRUIu5qDgRAHBEyXMnAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 13 May 2013 21:19:30 -0400
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org
+Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 19/21] aio/usb: Update cancellation for new synchonization
+Date: Mon, 13 May 2013 18:18:56 -0700
+Message-Id: <1368494338-7069-20-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PM_GENERIC_DOMAINS needs PM dependency.
+Previous patch got rid of kiocb->ki_users; this was done by having
+kiocb_cancel()/aio_complete() explicitly synchronize with each other.
 
-Fixed build warning as below:
+The new rule is that when a driver calls aio_complete(), after
+aio_complete() returns ki_cancel cannot be running and it's safe to
+dispose of kiocb->priv. But, this means ki_cancel() won't be able to
+call aio_complete() itself, or aio_complete() will deadlock.
 
-warning: (PLAT_S3C64XX && CPU_EXYNOS4210) selects PM_GENERIC_DOMAINS which has unmet direct dependencies (PM)
-warning: (PLAT_S3C64XX && CPU_EXYNOS4210) selects PM_GENERIC_DOMAINS which has unmet direct dependencies (PM)
-arch/arm/kernel/return_address.c:63:2: warning: #warning "TODO: return_address should use unwind tables" [-Wcpp]
-drivers/base/power/domain.c: In function '__pm_genpd_add_device':
-drivers/base/power/domain.c:1422:2: error: implicit declaration of function 'genpd_acquire_lock'
-[-Werror=implicit-function-declaration]
-drivers/base/power/domain.c:1466:2: error: implicit declaration of function 'genpd_release_lock'
-[-Werror=implicit-function-declaration]
-drivers/base/power/domain.c: In function 'pm_genpd_add_subdomain':
-drivers/base/power/domain.c:1649:3: error: implicit declaration of function 'genpd_sd_counter_inc'
-[-Werror=implicit-function-declaration]
-drivers/base/power/domain.c: In function 'pm_genpd_remove_subdomain':
-drivers/base/power/domain.c:1721:4: error: implicit declaration of function 'genpd_sd_counter_dec'
-[-Werror=implicit-function-declaration]
-drivers/base/power/domain.c: In function 'pm_genpd_attach_cpuidle':
-drivers/base/power/domain.c:1887:2: error: implicit declaration of function 'genpd_recalc_cpu_exit_latency'
-[-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
+So, update the driver.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Selvan Mani <smani@micron.com>
+Cc: Sam Bradshaw <sbradshaw@micron.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
 ---
- arch/arm/mach-exynos/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/usb/gadget/inode.c | 61 +++++++++++++++++++++-------------------------
+ 1 file changed, 28 insertions(+), 33 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index d19edff..1f7ddb2 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -34,7 +34,7 @@ config CPU_EXYNOS4210
- 	default y
- 	depends on ARCH_EXYNOS4
- 	select ARM_CPU_SUSPEND if PM
--	select PM_GENERIC_DOMAINS
-+	select PM_GENERIC_DOMAINS if PM
- 	select S5P_PM if PM
- 	select S5P_SLEEP if PM
- 	select SAMSUNG_DMADEV
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index f255ad7..69adb87 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -522,6 +522,7 @@ struct kiocb_priv {
+ 	const struct iovec	*iv;
+ 	unsigned long		nr_segs;
+ 	unsigned		actual;
++	int			status;
+ };
+ 
+ static int ep_aio_cancel(struct kiocb *iocb)
+@@ -577,14 +578,26 @@ static void ep_user_copy_worker(struct work_struct *work)
+ 	struct kiocb_priv *priv = container_of(work, struct kiocb_priv, work);
+ 	struct mm_struct *mm = priv->mm;
+ 	struct kiocb *iocb = priv->iocb;
+-	size_t ret;
+ 
+-	use_mm(mm);
+-	ret = ep_copy_to_user(priv);
+-	unuse_mm(mm);
++	if (priv->iv && priv->actual) {
++		size_t ret;
++
++		use_mm(mm);
++		ret = ep_copy_to_user(priv);
++		unuse_mm(mm);
++
++		if (!priv->status)
++			priv->status = ret;
++		/*
++		 * completing the iocb can drop the ctx and mm, don't touch mm
++		 * after
++		 */
++	}
+ 
+-	/* completing the iocb can drop the ctx and mm, don't touch mm after */
+-	aio_complete(iocb, ret, ret);
++
++	/* aio_complete() reports bytes-transferred _and_ faults */
++	aio_complete(iocb, priv->actual ? priv->actual : priv->status,
++		     priv->status);
+ 
+ 	kfree(priv->buf);
+ 	kfree(priv);
+@@ -596,36 +609,18 @@ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
+ 	struct kiocb_priv	*priv = iocb->private;
+ 	struct ep_data		*epdata = priv->epdata;
+ 
+-	/* lock against disconnect (and ideally, cancel) */
+-	spin_lock(&epdata->dev->lock);
+-	priv->req = NULL;
+-	priv->epdata = NULL;
+-
+-	/* if this was a write or a read returning no data then we
+-	 * don't need to copy anything to userspace, so we can
+-	 * complete the aio request immediately.
+-	 */
+-	if (priv->iv == NULL || unlikely(req->actual == 0)) {
+-		kfree(req->buf);
+-		kfree(priv);
+-		iocb->private = NULL;
+-		/* aio_complete() reports bytes-transferred _and_ faults */
+-		aio_complete(iocb, req->actual ? req->actual : req->status,
+-				req->status);
+-	} else {
+-		/* ep_copy_to_user() won't report both; we hide some faults */
+-		if (unlikely(0 != req->status))
+-			DBG(epdata->dev, "%s fault %d len %d\n",
+-				ep->name, req->status, req->actual);
+-
+-		priv->buf = req->buf;
+-		priv->actual = req->actual;
+-		schedule_work(&priv->work);
+-	}
+-	spin_unlock(&epdata->dev->lock);
++	priv->buf	= req->buf;
++	priv->actual	= req->actual;
++	priv->status	= req->status;
+ 
+ 	usb_ep_free_request(ep, req);
+ 	put_ep(epdata);
++
++	if ((priv->iv && priv->actual) ||
++	    iocb->ki_cancel == KIOCB_CANCELLING)
++		schedule_work(&priv->work);
++	else
++		ep_user_copy_worker(&priv->work);
+ }
+ 
+ static ssize_t
 -- 
-1.7.2.5
-
+1.8.2.1
 
