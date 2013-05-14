@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414Ab3ENCaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 22:30:24 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:60237 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab3ENCaU (ORCPT
+	id S1756262Ab3ENC3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 22:29:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50332 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756148Ab3ENC2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 22:30:20 -0400
-MIME-Version: 1.0
-Date: Tue, 14 May 2013 10:30:19 +0800
-Message-ID: <CAPgLHd_DjX-Bfdf9p6k2t_fy+SjgQanuJjX_WxA1tqewwRe1HA@mail.gmail.com>
-Subject: [PATCH v2] mtd: fsmc_nand: fix error return code in fsmc_nand_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: dwmw2@infradead.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        artem.bityutskiy@linux.intel.com, linus.walleij@linaro.org,
-        viresh.kumar@linaro.org, vipin.kumar@st.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-mtd@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 13 May 2013 22:28:51 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/7] PCI: fix pci dev add and remove sequence
+Date: Mon, 13 May 2013 19:28:19 -0700
+Message-Id: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+The patchset is started while we try to address double remove pci
+devices via sysfs that is found by Gu.
 
-Fix to return -ENODEV in the dma channel request error handling
-case instead of 0, as done elsewhere in this function.
+main point is from Bjorn that add reference for bus, and he also
+pointed out that release should be done in pci_release_device.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
-v1 -> v2: set ret for error cases only
----
- drivers/mtd/nand/fsmc_nand.c | 2 ++
- 1 file changed, 2 insertions(+)
+After reviewing the add and remove path, found more problem that
+need to be addressed, like
+1. proc attach/detach is not balanced
+2. stop_and_remove device is not multiple calling safe.
 
-diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
-index 0e5a1d9..95e1768 100644
---- a/drivers/mtd/nand/fsmc_nand.c
-+++ b/drivers/mtd/nand/fsmc_nand.c
-@@ -1035,12 +1035,14 @@ static int __init fsmc_nand_probe(struct platform_device *pdev)
- 		host->read_dma_chan = dma_request_channel(mask, filter,
- 				pdata->read_dma_priv);
- 		if (!host->read_dma_chan) {
-+			ret = -ENODEV;
- 			dev_err(&pdev->dev, "Unable to get read dma channel\n");
- 			goto err_req_read_chnl;
- 		}
- 		host->write_dma_chan = dma_request_channel(mask, filter,
- 				pdata->write_dma_priv);
- 		if (!host->write_dma_chan) {
-+			ret = -ENODEV;
- 			dev_err(&pdev->dev, "Unable to get write dma channel\n");
- 			goto err_req_write_chnl;
- 		}
+Also found sriov VFs add path has problem, it call pci_bus_add_device
+to early, and it will make VF's driver get probed before PF's driver
+probing is done. That will also have nested lock problem.
 
+Please consider those patches to be 3.10 materials.
+
+Thanks
+
+Yinghai
+
+  PCI: move back pci_proc_attach_devices calling
+  PCI: move resources and bus_list releasing to pci_release_dev
+  PCI: Detach driver in pci_stop_device
+  PCI: Fix racing for pci device removing via sysfs
+  PCI, ACPI: Don't glue ACPI dev with pci VFs
+  PCI: Make sure VF's driver get attached after PF's
+  PCI: use pf as dma_dev for vf that does not have func0 sibling
