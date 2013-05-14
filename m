@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab3ENPrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:47:49 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50113 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757958Ab3ENPrr (ORCPT
+	id S1758008Ab3ENPtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:49:49 -0400
+Received: from [207.46.163.27] ([207.46.163.27]:35615 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754468Ab3ENPtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:47:47 -0400
-Date: Tue, 14 May 2013 08:47:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130514154728.GC4442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130514145119.GC19669@dyad.programming.kicks-ass.net>
+	Tue, 14 May 2013 11:49:47 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh95h668h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh19b6n1155h)
+Date: Tue, 14 May 2013 17:49:08 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514145119.GC19669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051415-3620-0000-0000-00000279213F
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Christian Daudt <csd@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-sh@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 02/20] ARM: zynq: Remove init_irq declaration in machine
+ description
+References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com> <1368545933-7430-3-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1368545933-7430-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <4e7a6946-b165-4440-9785-e0d538b608e0@CO9EHSMHS013.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 04:51:20PM +0200, Peter Zijlstra wrote:
-> > In theory, yes.  In practice, this requires lots of lock acquisitions
-> > and releases on large systems, including some global locks.  The weight
-> > could be reduced, but...
-> > 
-> > What I would like to do instead would be to specify expedited grace
-> > periods during boot.
+On 05/14/2013 05:38 PM, Maxime Ripard wrote:
+> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+> specified") removed the need to explictly setup the init_irq field in
+> the machine description when using only irqchip_init. Remove that
+> declaration for zynq as well.
 > 
-> But why, surely going idle without any RCU callbacks isn't completely unheard
-> of, even outside of the boot process?
-
-Yep, and RCU has special-cased that for quite some time.
-
-> Being able to quickly drop out of the RCU state machinery would be a good thing IMO.
-
-And this is currently possible -- this is the job of rcu_idle_enter()
-and friends.  And it works well, at least when I get my "if" statements
-set up correctly (hence the earlier patch).
-
-Or are you seeing a slowdown even with that earlier patch applied?  If so,
-please let me know what you are seeing.
-
-> >  The challenge here appears to be somehow telling
-> > RCU when boot is done.  The APIs are there from an RCU viewpoint:  boot
-> > with rcupdate.rcu_expedited=1, then, once boot is complete (whatever
-> > that means on your platform) "echo 0 > /sys/kernel/rcu_expedited".
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Acked-by: Michal Simek <monstr@monstr.eu>
+> ---
+>  arch/arm/mach-zynq/common.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
-> Ha, and here you assume userspace is sane and co-operative. Fail in my book ;-)
+> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+> index 5bfe703..4c0199b8 100644
+> --- a/arch/arm/mach-zynq/common.c
+> +++ b/arch/arm/mach-zynq/common.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/of.h>
+> -#include <linux/irqchip.h>
+>  
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/map.h>
+> @@ -106,7 +105,6 @@ static const char * const zynq_dt_match[] = {
+>  MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
+>  	.smp		= smp_ops(zynq_smp_ops),
+>  	.map_io		= zynq_map_io,
+> -	.init_irq	= irqchip_init,
+>  	.init_machine	= zynq_init_machine,
+>  	.init_time	= zynq_timer_init,
+>  	.dt_compat	= zynq_dt_match,
+> 
 
-If they are insane or uncooperative, they pay the price.  ;-)
+Subject should contain v2 but anyway I have added it my zynq repo.
 
-							Thanx, Paul
+Thanks,
+Michal
+
 
