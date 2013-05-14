@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab3ENPjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:39:16 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48402 "EHLO
+	id S1758104Ab3ENPjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:39:20 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48442 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab3ENPjN (ORCPT
+	with ESMTP id S1753369Ab3ENPjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:39:13 -0400
+	Tue, 14 May 2013 11:39:17 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 06/20] ARM: shmobile: kzm9g: Remove init_irq declaration in machine description
-Date: Tue, 14 May 2013 17:38:39 +0200
-Message-Id: <1368545933-7430-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 09/20] ARM: shmobile: r8a73a4: Remove init_irq declaration in machine description
+Date: Tue, 14 May 2013 17:38:42 +0200
+Message-Id: <1368545933-7430-10-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -40,29 +40,29 @@ declaration for shmobile as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-shmobile/board-kzm9g-reference.c | 2 --
+ arch/arm/mach-shmobile/setup-r8a73a4.c | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/mach-shmobile/board-kzm9g-reference.c b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-index aefa50d..b7ee96e 100644
---- a/arch/arm/mach-shmobile/board-kzm9g-reference.c
-+++ b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-@@ -24,7 +24,6 @@
- #include <linux/gpio.h>
- #include <linux/io.h>
+diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
+index c5a75a7..0b78896 100644
+--- a/arch/arm/mach-shmobile/setup-r8a73a4.c
++++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
+@@ -18,7 +18,6 @@
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  */
  #include <linux/irq.h>
 -#include <linux/irqchip.h>
- #include <linux/input.h>
+ #include <linux/kernel.h>
  #include <linux/of_platform.h>
- #include <linux/pinctrl/machine.h>
-@@ -100,7 +99,6 @@ DT_MACHINE_START(KZM9G_DT, "kzm9g-reference")
- 	.map_io		= sh73a0_map_io,
- 	.init_early	= sh73a0_init_delay,
- 	.nr_irqs	= NR_IRQS_LEGACY,
+ #include <linux/platform_data/irq-renesas-irqc.h>
+@@ -194,7 +193,6 @@ static const char *r8a73a4_boards_compat_dt[] __initdata = {
+ };
+ 
+ DT_MACHINE_START(R8A73A4_DT, "Generic R8A73A4 (Flattened Device Tree)")
 -	.init_irq	= irqchip_init,
- 	.init_machine	= kzm_init,
+ 	.init_machine	= r8a73a4_add_standard_devices_dt,
  	.init_time	= shmobile_timer_init,
- 	.dt_compat	= kzm9g_boards_compat_dt,
+ 	.dt_compat	= r8a73a4_boards_compat_dt,
 -- 
 1.8.1.2
 
