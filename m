@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3ENAwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:52:15 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37968 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755604Ab3ENAwN (ORCPT
+	id S1755797Ab3ENA4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:56:08 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61561 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab3ENA4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:52:13 -0400
-Message-ID: <51918ABB.5030501@linaro.org>
-Date: Mon, 13 May 2013 17:52:11 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Mon, 13 May 2013 20:56:06 -0400
+X-AuditID: 9c930197-b7b76ae000003523-21-51918ba44a32
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
+References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
+	<20130513141117.GC17814@two.firstfloor.org>
+Date: Tue, 14 May 2013 09:56:04 +0900
+In-Reply-To: <20130513141117.GC17814@two.firstfloor.org> (Andi Kleen's message
+	of "Mon, 13 May 2013 16:11:17 +0200")
+Message-ID: <87hai65qhn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 3/3] x86/xen: sync the CMOS RTC as well as the Xen wallclock
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1368467768-2316-4-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 10:56 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
+Hi Andi,
+
+On Mon, 13 May 2013 16:11:17 +0200, Andi Kleen wrote:
+> On Mon, May 13, 2013 at 05:41:42PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> The --percent-limit option is for not showing small overheaded entries
+>> in the output.  Maybe we want to set a certain default value like 0.1.
+>> 
+>> Cc: Andi Kleen <andi@firstfloor.org>
 >
-> If NTP is used in dom0 and it is synchronized to its clock source,
-> then the kernel will periodically synchronize the Xen wallclock with
-> the system time.  Updates to the Xen wallclock do not persist across
-> reboots, so also synchronize the CMOS RTC (as on bare metal).
+> I like the option, but 0 is not a good default.
+> Make it 1 or something.
 
-Sorry again, not getting this one either.
-
-So normally in this case we're using the Xen wallclock as the underlying 
-source for the persistent_clock here, my understanding is we use this 
-instead of the standard cmos, because we get benefits of using the 
-hypervisor's sense of time instead of the bare hardware, and allows for 
-virtualization of the persistent clock.
-
-But the problem is that even if Dom0 tries to set the xen persistent 
-clock, it doesn't actually update anything in the underlying hardware?  
-So here you instead try to sync the underlying hardware cmos from the 
-same Xen dom0 environment?
-
-Honestly, it seems a little strange to me. If you're running as dom0, 
-why does HYPERVISOR_dom0_op() not cause the hypervisor to set the cmos 
-its virtualizing? This seems to mess with the proper virtualization 
-layering.
-
-I'd appreciate some more details and maybe some feedback from other xen 
-folks here to make sure this really makes sense.
-
-thanks
--john
-
+Thanks.  I just wanted to reserve same behavior since I didn't know
+what's the reasonable default value.  We might use a config variable for
+this to customize the default value.
 
 >
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->   arch/x86/xen/time.c |   11 ++++++++++-
->   1 files changed, 10 insertions(+), 1 deletions(-)
+> Perhaps a better heuristic would be 
+> percent < threshold || samples < sample-threshold
+> with sample-threshold being several hundred at least.
 >
-> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-> index a1947ac..4656165 100644
-> --- a/arch/x86/xen/time.c
-> +++ b/arch/x86/xen/time.c
-> @@ -14,6 +14,7 @@
->   #include <linux/kernel_stat.h>
->   #include <linux/math64.h>
->   #include <linux/gfp.h>
-> +#include <linux/mc146818rtc.h>
->   
->   #include <asm/pvclock.h>
->   #include <asm/xen/hypervisor.h>
-> @@ -199,17 +200,25 @@ static void xen_get_wallclock(struct timespec *now)
->   static int xen_set_wallclock(const struct timespec *now)
->   {
->   	struct xen_platform_op op;
-> +	int ret;
->   
->   	/* do nothing for domU */
->   	if (!xen_initial_domain())
->   		return -1;
->   
-> +	/* Set the Xen wallclock. */
->   	op.cmd = XENPF_settime;
->   	op.u.settime.secs = now->tv_sec;
->   	op.u.settime.nsecs = now->tv_nsec;
->   	op.u.settime.system_time = xen_clocksource_read();
->   
-> -	return HYPERVISOR_dom0_op(&op);
-> +	ret = HYPERVISOR_dom0_op(&op);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Set the hardware RTC. */
-> +	return mach_set_rtc_mmss(now);
-> +
->   }
->   
->   static struct clocksource xen_clocksource __read_mostly = {
+> A very small number of hits on something is usually quite much useless,
+> unless your original event was extremly rare in the beginning
+> (but then it's unclear if the profile is any useful)
 
+Looks reasonable, but I know there's also some users who use the perf
+tools lightly.  A several hundreds sample-threshold looks too harsh to
+them IMHO.  In addition, it should handle tracepoints.
+
+Thanks,
+Namhyung
