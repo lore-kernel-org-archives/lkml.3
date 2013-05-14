@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab3ENQJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:09:27 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48345 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757499Ab3ENQJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:09:07 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] ext4 updates for 3.10-rc2
-cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 14 May 2013 12:09:02 -0400
-Message-ID: <nsxsj1po869.fsf@lambda.thunk.org>
+	id S932483Ab3ENQJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:09:06 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:37900 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab3ENQJF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:09:05 -0400
+From: "Mehaffey, John" <John_Mehaffey@mentor.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: "tim.bird@am.sony.com" <tim.bird@am.sony.com>, "wd@denx.de" <wd@denx.de>,
+        "mzjro@0pointer.net" <mzjro@0pointer.net>,
+        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
+        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
+        "yoush@cs.msu.su" <yoush@cs.msu.su>,
+        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
+        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
+        "systemd-devel@lists.freedesktop.org" 
+	<systemd-devel@lists.freedesktop.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Subject: RE: 2013 Plumber's CFP: Fastboot
+Thread-Topic: 2013 Plumber's CFP: Fastboot
+Thread-Index: Ac5QL8BaNyuX4Q42TyivWIVMiXMwVAAwCcOA//+VVxU=
+Date: Tue, 14 May 2013 16:08:52 +0000
+Message-ID: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D248C@NA-MBX-03.mgc.mentorg.com>
+References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>,<CAFLxGvxUFBHV4Y9vEVvhRR73tgLKFiRxHKo2F9p_5ZtYDDC_fw@mail.gmail.com>
+In-Reply-To: <CAFLxGvxUFBHV4Y9vEVvhRR73tgLKFiRxHKo2F9p_5ZtYDDC_fw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [147.34.91.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@mit.edu
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-OriginalArrivalTime: 14 May 2013 16:08:54.0532 (UTC) FILETIME=[54FE5C40:01CE50BD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: richard -rw- weinberger [richard.weinberger@gmail.com]
+> Sent: Tuesday, May 14, 2013 8:10 AM
+> To: Mehaffey, John
+> Cc: tim.bird@am.sony.com; wd@denx.de; mzjro@0pointer.net; Kay.Sievers@vrfy.org; Pomerantz, Brian; yoush@cs.msu.su; u-boot@lists.denx.de; genivi-dev@mail.genivi.org; systemd-devel@lists.freedesktop.org; celinux-dev@lists.celinuxforum.org; linux-kernel@vger.kernel.org; linux-embedded@vger.kernel.org
+> Subject: Re: 2013 Plumber's CFP: Fastboot
+> 
+> On Tue, May 14, 2013 at 1:51 AM, Mehaffey, John
+> <John_Mehaffey@mentor.com> wrote:
+> > Hello All,
+> >
+> > I am proposing a microconference on fastboot at the Linux Plumber's conference 2013 in New Orleans. The goal is to get to sub 1S boot times for a large (IVI) system using NAND flash. This pushes the state of the art, and will require innovative solutions in may areas of Linux plumbing, including bootloader, kernel init, UBI, and systemd.
+> >
+> > Note that fastboot improvements will (generally) help all architectures so I am not limiting this to automotive systems.
+> >
+> > Please visit http://wiki.linuxplumbersconf.org/2013:fastboot for more information or if you want to submit a topic.
+> >
+> > If you want to reply to this message, please trim the cc list!
+> 
+> Why trimming the CC? Changing the CC list is a _very_ bad habit.
 
-The following changes since commit 0d606e2c9fccdd4e67febf1e2da500e1bfe9e045:
+Thanks for the advice.
 
-  ext4: fix type-widening bug in inode table readahead code (2013-04-23 08:59:35 -0400)
+> Anyway, a few notes on UBI fastmap.
+> Before we talk about optimizing it we have to make sure that it is stable.
+> Currently it has not much users because embedded folks are a few
+> kernel releases behind.
+> I expect that we'll face some issues (hey it's software!). Instead of
+> making the code more complicated we have to
+> make very sure that it works well.
+> Fastmap got much more complicated than I thought while developing the
+> first proof of concept implementation.
 
-are available in the git repository at:
+This is good software practice, but is out of scope for this uconf. Fastmap will be getting more usage in the future as systems deploy using it.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
+I think that low-hanging fruit to speed things up, such as Brian's RB-tree lookup, can proceed in parallel with testing and stabilization (hey, it's open-source software :)
 
-for you to fetch changes up to e2555fde4159467fb579e6ae3c0a8fc33015d0f5:
+> We also have to think more about userland support, e.g. making tools
+> like ubinize fastmap aware...
+> User want ready to use fastmap UBI images and not images which have to
+> be converted by the kernel on the very first boot.
+> 
+> Sharing UBI EBA table between U-Boot and the kernel would be a nice
+> feature, but we also have to make sure
+> that we can share the EBA table between two kernels (think of kexec).
+> So, a more general solution is needed.
+> 
+> --
+> Thanks,
+> //richard
 
-  jbd,jbd2: fix oops in jbd2_journal_put_journal_head() (2013-05-13 09:45:01 -0400)
+Thanks for your feedback, I agree that these are things that should also be looked at!
 
-----------------------------------------------------------------
-Fixed regressions (two stability regressions and a performance
-regression) introduced during the 3.10-rc1 merge window.  Also
-included is a bug fix relating to allocating blocks after resizing an
-ext3 file system when using the ext4 file system driver.
+-mehaf
 
-----------------------------------------------------------------
-Jan Kara (1):
-      jbd,jbd2: fix oops in jbd2_journal_put_journal_head()
-
-Lachlan McIlroy (1):
-      ext4: limit group search loop for non-extent files
-
-Theodore Ts'o (1):
-      ext4: revert "ext4: use io_end for multiple bios"
-
-Yan, Zheng (1):
-      ext4: fix fio regression
-
- fs/ext4/ext4.h               |   8 +--
- fs/ext4/extents.c            |   9 ++--
- fs/ext4/extents_status.c     |  17 ++++--
- fs/ext4/extents_status.h     |   3 +-
- fs/ext4/file.c               |   4 +-
- fs/ext4/inode.c              |  85 ++++++++++++++----------------
- fs/ext4/mballoc.c            |   6 ++-
- fs/ext4/page-io.c            | 121 ++++++++++++++++---------------------------
- include/linux/journal-head.h |   8 ++-
- include/trace/events/ext4.h  |   4 +-
- 10 files changed, 119 insertions(+), 146 deletions(-)
