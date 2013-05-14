@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab3ENP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:58:16 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:45091 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab3ENP6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:58:15 -0400
-Date: Tue, 14 May 2013 08:58:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        dirk@gouders.net, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [GIT PULL] workqueue fixes for v3.10-rc1
-Message-ID: <20130514155810.GF6795@mtj.dyndns.org>
+	id S1758143Ab3ENP6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:58:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758107Ab3ENP6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:58:30 -0400
+Date: Tue, 14 May 2013 11:57:55 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
+Subject: Re: [PATCH v5 5/8] vmcore: allocate ELF note segment in the 2nd
+ kernel vmalloc memory
+Message-ID: <20130514155755.GH13674@redhat.com>
+References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
+ <20130514015734.18697.32447.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130514015734.18697.32447.stgit@localhost6.localdomain6>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Tue, May 14, 2013 at 10:57:35AM +0900, HATAYAMA Daisuke wrote:
 
-Please pull from the following branch to receive a fix for
-workqueue_congested() regression which broke fscache.
+[..]
+> +/* Merges all the PT_NOTE headers into one. */
+> +static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+> +					   char **notesegptr, size_t *notesegsz,
+> +					   struct list_head *vc_list)
+> +{
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.10-fixes
+Given that we are copying notes in second kernel, we are not using vc_list
+in merge_note_headers() any more. So remove vc_list from paramter list
+here.
 
-Thanks.
+For local parameters we could simply use notes_buf (instead of notesgptr)
+and notes_sz (instead of notesgsz). It seems mroe readable.
 
-  workqueue: workqueue_congested() shouldn't translate WORK_CPU_UNBOUND into node number (2013-05-10 11:10:17 -0700)
-
-----------------------------------------------------------------
-Tejun Heo (1):
-      workqueue: workqueue_congested() shouldn't translate WORK_CPU_UNBOUND into node number
-
- kernel/workqueue.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 4aa9f5b..1ae6028 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4311,6 +4311,12 @@ bool current_is_workqueue_rescuer(void)
-  * no synchronization around this function and the test result is
-  * unreliable and only useful as advisory hints or for debugging.
-  *
-+ * If @cpu is WORK_CPU_UNBOUND, the test is performed on the local CPU.
-+ * Note that both per-cpu and unbound workqueues may be associated with
-+ * multiple pool_workqueues which have separate congested states.  A
-+ * workqueue being congested on one CPU doesn't mean the workqueue is also
-+ * contested on other CPUs / NUMA nodes.
-+ *
-  * RETURNS:
-  * %true if congested, %false otherwise.
-  */
-@@ -4321,6 +4327,9 @@ bool workqueue_congested(int cpu, struct workqueue_struct *wq)
- 
- 	rcu_read_lock_sched();
- 
-+	if (cpu == WORK_CPU_UNBOUND)
-+		cpu = smp_processor_id();
-+
- 	if (!(wq->flags & WQ_UNBOUND))
- 		pwq = per_cpu_ptr(wq->cpu_pwqs, cpu);
- 	else
+Thanks
+Vivek
