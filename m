@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab3ENP6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:58:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758107Ab3ENP6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:58:30 -0400
-Date: Tue, 14 May 2013 11:57:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH v5 5/8] vmcore: allocate ELF note segment in the 2nd
- kernel vmalloc memory
-Message-ID: <20130514155755.GH13674@redhat.com>
-References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
- <20130514015734.18697.32447.stgit@localhost6.localdomain6>
+	id S1758187Ab3ENP6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:58:42 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54619 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758146Ab3ENP6j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:58:39 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514015734.18697.32447.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
+ <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
+Message-ID: <20130514155835.10068.93655@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 3/9] clk: ux500: Provide device enumeration number suffix for
+ SMSC911x
+Date: Tue, 14 May 2013 08:58:35 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 10:57:35AM +0900, HATAYAMA Daisuke wrote:
+Quoting Lee Jones (2013-05-08 06:29:03)
+> First Ethernet device has a ".0" appended onto the device name. It
+> appears that we need this in order to obtain the correct clock.
+> 
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-[..]
-> +/* Merges all the PT_NOTE headers into one. */
-> +static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
-> +					   char **notesegptr, size_t *notesegsz,
-> +					   struct list_head *vc_list)
-> +{
+Looks good to me.  Can I take this into clk-next or are you looking for
+an Ack?
 
-Given that we are copying notes in second kernel, we are not using vc_list
-in merge_note_headers() any more. So remove vc_list from paramter list
-here.
+Regards,
+Mike
 
-For local parameters we could simply use notes_buf (instead of notesgptr)
-and notes_sz (instead of notesgsz). It seems mroe readable.
-
-Thanks
-Vivek
+> ---
+>  drivers/clk/ux500/u8500_clk.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
+> index 0b4f35a..80069c3 100644
+> --- a/drivers/clk/ux500/u8500_clk.c
+> +++ b/drivers/clk/ux500/u8500_clk.c
+> @@ -325,7 +325,7 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
+>         clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", clkrst3_base,
+>                                 BIT(0), 0);
+>         clk_register_clkdev(clk, "fsmc", NULL);
+> -       clk_register_clkdev(clk, NULL, "smsc911x");
+> +       clk_register_clkdev(clk, NULL, "smsc911x.0");
+>  
+>         clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", clkrst3_base,
+>                                 BIT(1), 0);
+> -- 
+> 1.7.10.4
