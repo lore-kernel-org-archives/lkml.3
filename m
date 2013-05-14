@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab3ENP2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:28:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48798 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab3ENP2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:28:36 -0400
-Message-ID: <519257FC.8070708@zytor.com>
-Date: Tue, 14 May 2013 08:27:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757997Ab3ENP3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:29:21 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:38042 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab3ENP3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:29:18 -0400
+Message-ID: <5192584C.1060003@lwfinger.net>
+Date: Tue, 14 May 2013 10:29:16 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        tboot-devel@lists.sourceforge.net,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
-Subject: Re: [PATCH] x86: add a new SMP bring up way for tboot case
-References: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Kernel 3.10-rc1 build warning on 32-bit ppc associated with commit
+ 3925f46
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 02:21 PM, Qiaowei Ren wrote:
-> tboot provides a better AP wakeup mechanism based on cpu MWAIT
-> feature for OS/VMM. With this mechanism, system will boot faster
-> and will NOT require VT to be enabled. But it requires that
-> OS/VMM must have support it, otherwise system can never boot up.
-> 
-> Once this mechanism is enabled, tboot will put APs waiting in
-> MWAIT loops before launching kernel. kernel can check the new
-> flag field in v6 tboot shared page for the hint. If the bit
-> TB_FLAG_AP_WAKE_SUPPORT in flag field is set, kernel BSP has
-> to write the monitored memory (tboot->ap_wake_trigger) to bring
-> APs out of MWAIT loops. The sipi vector should be written in
-> tboot->ap_wake_addr before waking up APs.
-> 
+Hi,
 
-This really needs a *detailed* specification about the state the CPU is
-parked in.  Most BIOSes do in fact park the CPUs in an mwait loop, but
-we can't use it because the CPU state they are parked in is ill-defined.
+When building 3.10-rc1 on a PowerBook G4, I get the following warning:
 
-This is a good idea, but please write (or point to) a spec about what
-the parked CPU state looks like and how the OS gets control.  From the
-*looks* of the code I assume it is entered in 16-bit real mode but then
-it is important to know what parts of the register state are well-defined.
+cc1: warnings being treated as errors
+arch/powerpc/perf/core-book3s.c: In function ‘power_pmu_bhrb_read’:
+arch/powerpc/perf/core-book3s.c:1479: error: integer constant is too large for 
+‘long’ type
+make[2]: *** [arch/powerpc/perf/core-book3s.o] Error 1
+make[1]: *** [arch/powerpc/perf] Error 2
+make[1]: *** Waiting for unfinished jobs....
+   LD      arch/powerpc/platforms/powermac/built-in.o
+   LD      arch/powerpc/platforms/built-in.o
+make[1]: Leaving directory `/home/finger/wireless-testing'
+make: *** [debian/stamp/build/kernel] Error 2
 
-> +#define TB_FLAG_AP_WAKE_SUPPORT 0X00000001
+The code in question came from commit 3925f46 entitled "powerpc/perf: Enable 
+branch stack sampling framework". The gcc version is 4.4.5 running with a Mint 9 
+distribution.
 
-Minor nit: please lower-case the hexadecimal x.
+I have disabled the "-Werror" switch so that the build can continue. That 
+Kconfig question about disabling WERROR is a bit confusing with its double 
+negative construction.
 
-	-hpa
+Thanks,
 
+Larry
