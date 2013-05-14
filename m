@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab3ENQxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:53:33 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33182 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758213Ab3ENQxa (ORCPT
+	id S1758258Ab3ENQxk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:53:40 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:56151 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758213Ab3ENQxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:53:30 -0400
+	Tue, 14 May 2013 12:53:36 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -15,10 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [RFC PATCH v2, part 2 13/18] PCI, DRM: use hotplug-safe iterators to walk PCI buses
-Date: Wed, 15 May 2013 00:51:57 +0800
-Message-Id: <1368550322-1045-13-git-send-email-jiang.liu@huawei.com>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: [RFC PATCH v2, part 2 14/18] PCI, EDAC: use hotplug-safe PCI bus iterators to walk PCI buses
+Date: Wed, 15 May 2013 00:51:58 +0800
+Message-Id: <1368550322-1045-14-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
 References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
@@ -26,34 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance DRM drvier to use hotplug-safe iterators to walk PCI buses.
+Enhance EDAC drviers to use hotplug-safe iterators to walk PCI buses.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: linux-edac@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/gpu/drm/drm_fops.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/edac/i7core_edac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
-index 13fdcd1..04f3bcd 100644
---- a/drivers/gpu/drm/drm_fops.c
-+++ b/drivers/gpu/drm/drm_fops.c
-@@ -357,9 +357,11 @@ static int drm_open_helper(struct inode *inode, struct file *filp,
- 			pci_dev_put(pci_dev);
- 		}
- 		if (!dev->hose) {
--			struct pci_bus *b = pci_bus_b(pci_root_buses.next);
--			if (b)
-+			struct pci_bus *b = pci_get_next_root_bus(NULL);
-+			if (b) {
- 				dev->hose = b->sysdata;
-+				pci_bus_put(b);
-+			}
- 		}
- 	}
- #endif
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 0ec3e95..39d5823 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1296,7 +1296,7 @@ static unsigned i7core_pci_lastbus(void)
+ 	int last_bus = 0, bus;
+ 	struct pci_bus *b = NULL;
+ 
+-	while ((b = pci_find_next_bus(b)) != NULL) {
++	for_each_pci_root_bus(b)
+ 		bus = b->number;
+ 		edac_dbg(0, "Found bus %d\n", bus);
+ 		if (bus > last_bus)
 -- 
 1.8.1.2
 
