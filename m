@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab3ENPjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:39:23 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48479 "EHLO
+	id S932367Ab3ENPje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:39:34 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48556 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab3ENPjV (ORCPT
+	with ESMTP id S932254Ab3ENPj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:39:21 -0400
+	Tue, 14 May 2013 11:39:28 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 12/20] ARM: bcm281xx: Remove init_irq declaration in machine description
-Date: Tue, 14 May 2013 17:38:45 +0200
-Message-Id: <1368545933-7430-13-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 18/20] ARM: vexpress: Remove init_irq declaration in machine description
+Date: Tue, 14 May 2013 17:38:51 +0200
+Message-Id: <1368545933-7430-19-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,34 +36,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 specified") removed the need to explictly setup the init_irq field in
 the machine description when using only irqchip_init. Remove that
-declaration for bcm281xx as well.
+declaration for vexpress as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Christian Daudt <csd@broadcom.com>
+Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- arch/arm/mach-bcm/board_bcm.c | 2 --
+ arch/arm/mach-vexpress/v2m.c | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/board_bcm.c b/arch/arm/mach-bcm/board_bcm.c
-index 22e8421..2859932 100644
---- a/arch/arm/mach-bcm/board_bcm.c
-+++ b/arch/arm/mach-bcm/board_bcm.c
-@@ -15,7 +15,6 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/platform_device.h>
--#include <linux/irqchip.h>
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index 8802030..d601697 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -9,7 +9,6 @@
  #include <linux/clocksource.h>
- 
- #include <asm/mach/arch.h>
-@@ -54,7 +53,6 @@ static void __init board_init(void)
- static const char * const bcm11351_dt_compat[] = { "bcm,bcm11351", NULL, };
- 
- DT_MACHINE_START(BCM11351_DT, "Broadcom Application Processor")
--	.init_irq = irqchip_init,
- 	.init_time = clocksource_of_init,
- 	.init_machine = board_init,
- 	.dt_compat = bcm11351_dt_compat,
+ #include <linux/smp.h>
+ #include <linux/init.h>
+-#include <linux/irqchip.h>
+ #include <linux/of_address.h>
+ #include <linux/of_fdt.h>
+ #include <linux/of_irq.h>
+@@ -458,7 +457,6 @@ DT_MACHINE_START(VEXPRESS_DT, "ARM-Versatile Express")
+ 	.smp		= smp_ops(vexpress_smp_ops),
+ 	.map_io		= v2m_dt_map_io,
+ 	.init_early	= v2m_dt_init_early,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= v2m_dt_timer_init,
+ 	.init_machine	= v2m_dt_init,
+ MACHINE_END
 -- 
 1.8.1.2
 
