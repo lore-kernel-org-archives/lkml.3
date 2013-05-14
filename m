@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab3ENOwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:52:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46392 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757477Ab3ENOwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:52:53 -0400
-Date: Tue, 14 May 2013 16:52:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
- root caches
-Message-ID: <20130514145252.GT5198@dhcp22.suse.cz>
-References: <1368535118-27369-1-git-send-email-avagin@openvz.org>
- <20130514144031.GR5198@dhcp22.suse.cz>
- <20130514144427.GS5198@dhcp22.suse.cz>
- <51924EE3.9020708@parallels.com>
+	id S1757740Ab3ENOx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:53:28 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48475
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755664Ab3ENOx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:53:27 -0400
+Date: Tue, 14 May 2013 16:51:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
+ delay from HZ
+Message-ID: <20130514145119.GC19669@dyad.programming.kicks-ass.net>
+References: <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130412235401.GA8140@jtriplet-mobl1>
+ <20130413063804.GV29861@linux.vnet.ibm.com>
+ <20130413181800.GA12096@leaf>
+ <20130413193425.GY29861@linux.vnet.ibm.com>
+ <20130413195336.GA14799@leaf>
+ <20130413220943.GB29861@linux.vnet.ibm.com>
+ <20130514122049.GH15942@dyad.programming.kicks-ass.net>
+ <20130514141245.GA4442@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51924EE3.9020708@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130514141245.GA4442@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-05-13 18:49:07, Glauber Costa wrote:
-> On 05/14/2013 06:44 PM, Michal Hocko wrote:
-> > On Tue 14-05-13 16:40:31, Michal Hocko wrote:
-> >> On Tue 14-05-13 16:38:38, Andrey Vagin wrote:
-> >>> struct memcg_cache_params has a union. Different parts of this union are
-> >>> used for root and non-root caches. A part with destroying work is used only
-> >>> for non-root caches.
-> >>
-> >> but memcg_update_cache_size is called only for !root caches AFAICS
-> >> (check memcg_update_all_caches)
-> > 
-> > Ohh, I am blind. memcg_update_all_caches skips all !root caches.
-> > Then the patch looks correct. If Glauber has nothing against then thise
-> > should be marked for stable (3.9)
-> > 
-> This was recently introduced by the commit that moved the initialization
-> earlier (15cf17d26e08ee9). It basically moved too much, and I didn't
-> catch it. If that patch is in 3.9, then yes, this needs to go to stable.
-> Otherwise it is not affected.
+> In theory, yes.  In practice, this requires lots of lock acquisitions
+> and releases on large systems, including some global locks.  The weight
+> could be reduced, but...
+> 
+> What I would like to do instead would be to specify expedited grace
+> periods during boot.
 
-git describe tells it was merged in v3.9-rc2~7
+But why, surely going idle without any RCU callbacks isn't completely unheard
+of, even outside of the boot process?
 
-> However, I do remember Andrey telling me that he hit this bug in both
-> 3.9 and 3.10-rc1, so yes, stable it is.
+Being able to quickly drop out of the RCU state machinery would be a good thing IMO.
 
--- 
-Michal Hocko
-SUSE Labs
+>  The challenge here appears to be somehow telling
+> RCU when boot is done.  The APIs are there from an RCU viewpoint:  boot
+> with rcupdate.rcu_expedited=1, then, once boot is complete (whatever
+> that means on your platform) "echo 0 > /sys/kernel/rcu_expedited".
+
+Ha, and here you assume userspace is sane and co-operative. Fail in my book ;-)
