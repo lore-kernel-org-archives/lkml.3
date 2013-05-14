@@ -1,118 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab3ENLtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:49:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45594 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3ENLtu (ORCPT
+	id S1757343Ab3ENLuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:50:01 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34095 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3ENLt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:49:50 -0400
-Message-ID: <519224D8.5090704@gmail.com>
-Date: Tue, 14 May 2013 19:49:44 +0800
+	Tue, 14 May 2013 07:49:57 -0400
+Message-ID: <519224DF.3070807@gmail.com>
+Date: Tue, 14 May 2013 19:49:51 +0800
 From: majianpeng <majianpeng@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
 To: Catalin Marinas <catalin.marinas@arm.com>
 CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] mm/kmemleak.c: Use list_for_each_entry_safe to reconstruct
- function scan_gray_list
+Subject: [PATCH 3/3] mm/kmemleak.c: Merge the consecutive scan-areas.
 Content-Type: multipart/mixed;
- boundary="------------020009070502010607090301"
+ boundary="------------040500070602080603020209"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------020009070502010607090301
+--------------040500070602080603020209
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 
+If the scan-areas are adjacent,it can merge in order to reduce memomy.
+And using pr_warn instead of pr_warning.
+
 Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
 ---
- mm/kmemleak.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ mm/kmemleak.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index b1525db..f0ece93 100644
+index f0ece93..9590a57 100644
 --- a/mm/kmemleak.c
 +++ b/mm/kmemleak.c
-@@ -1225,22 +1225,16 @@ static void scan_gray_list(void)
-      * from inside the loop. The kmemleak objects cannot be freed from
-      * outside the loop because their use_count was incremented.
-      */
--    object = list_entry(gray_list.next, typeof(*object), gray_list);
--    while (&object->gray_list != &gray_list) {
-+    list_for_each_entry_safe(object, tmp, &gray_list, gray_list) {
-         cond_resched();
- 
-         /* may add new objects to the list */
-         if (!scan_should_stop())
-             scan_object(object);
- 
--        tmp = list_entry(object->gray_list.next, typeof(*object),
--                 gray_list);
--
-         /* remove the object from the list and release it */
-         list_del(&object->gray_list);
-         put_object(object);
--
--        object = tmp;
+@@ -746,24 +746,36 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
+         return;
      }
-     WARN_ON(!list_empty(&gray_list));
- }
+ 
+-    area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
+-    if (!area) {
+-        pr_warning("Cannot allocate a scan area\n");
+-        goto out;
+-    }
+-
+     spin_lock_irqsave(&object->lock, flags);
+     if (ptr + size > object->pointer + object->size) {
+         kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
+         dump_object_info(object);
+-        kmem_cache_free(scan_area_cache, area);
+         goto out_unlock;
+     }
++    hlist_for_each_entry(area, &object->area_list, node) {
++        if (ptr + size == area->start) {
++            area->start = ptr;
++            area->size += size;
++            goto out_unlock;
++        } else if (ptr == area->start + area->size) {
++            area->size += size;
++            goto out_unlock;
++        }
++
++    }
++    spin_unlock_irqrestore(&object->lock, flags);
++
++    area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
++    if (!area) {
++        pr_warn("Cannot allocate a scan area\n");
++        goto out;
++    }
+ 
+     INIT_HLIST_NODE(&area->node);
+     area->start = ptr;
+     area->size = size;
+ 
++    spin_lock_irqsave(&object->lock, flags);
+     hlist_add_head(&area->node, &object->area_list);
+ out_unlock:
+     spin_unlock_irqrestore(&object->lock, flags);
 -- 
 1.8.3.rc1.44.gb387c77
 
 
---------------020009070502010607090301
+--------------040500070602080603020209
 Content-Type: text/x-patch;
- name="0002-mm-kmemleak.c-Use-list_for_each_entry_safe-to-recons.patch"
+ name="0003-mm-kmemleak.c-Merge-the-consecutive-scan-areas.patch"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment;
- filename*0="0002-mm-kmemleak.c-Use-list_for_each_entry_safe-to-recons.pa";
- filename*1="tch"
+ filename*0="0003-mm-kmemleak.c-Merge-the-consecutive-scan-areas.patch"
 
->From 095c9fc03bacb14a896cc9b56c7e2e3843c6051b Mon Sep 17 00:00:00 2001
+>From a76e17c129d2f779f1588aa7ae319b76854068eb Mon Sep 17 00:00:00 2001
 From: Jianpeng Ma <majianpeng@gmail.com>
-Date: Tue, 14 May 2013 15:36:14 +0800
-Subject: [PATCH 2/3] mm/kmemleak.c: Use list_for_each_entry_safe to
- reconstruct function scan_gray_list.
+Date: Tue, 14 May 2013 19:32:06 +0800
+Subject: [PATCH 3/3] mm/kmemleak.c: Merge the consecutive scan-areas.
+
+If the scan-areas are adjacent,it can merge in order to reduce memomy.
+And using pr_warn instead of pr_warning.
 
 Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
 ---
- mm/kmemleak.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ mm/kmemleak.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index b1525db..f0ece93 100644
+index f0ece93..9590a57 100644
 --- a/mm/kmemleak.c
 +++ b/mm/kmemleak.c
-@@ -1225,22 +1225,16 @@ static void scan_gray_list(void)
- 	 * from inside the loop. The kmemleak objects cannot be freed from
- 	 * outside the loop because their use_count was incremented.
- 	 */
--	object = list_entry(gray_list.next, typeof(*object), gray_list);
--	while (&object->gray_list != &gray_list) {
-+	list_for_each_entry_safe(object, tmp, &gray_list, gray_list) {
- 		cond_resched();
- 
- 		/* may add new objects to the list */
- 		if (!scan_should_stop())
- 			scan_object(object);
- 
--		tmp = list_entry(object->gray_list.next, typeof(*object),
--				 gray_list);
--
- 		/* remove the object from the list and release it */
- 		list_del(&object->gray_list);
- 		put_object(object);
--
--		object = tmp;
+@@ -746,24 +746,36 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
+ 		return;
  	}
- 	WARN_ON(!list_empty(&gray_list));
- }
+ 
+-	area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
+-	if (!area) {
+-		pr_warning("Cannot allocate a scan area\n");
+-		goto out;
+-	}
+-
+ 	spin_lock_irqsave(&object->lock, flags);
+ 	if (ptr + size > object->pointer + object->size) {
+ 		kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
+ 		dump_object_info(object);
+-		kmem_cache_free(scan_area_cache, area);
+ 		goto out_unlock;
+ 	}
++	hlist_for_each_entry(area, &object->area_list, node) {
++		if (ptr + size == area->start) {
++			area->start = ptr;
++			area->size += size;
++			goto out_unlock;
++		} else if (ptr == area->start + area->size) {
++			area->size += size;
++			goto out_unlock;
++		}
++
++	}
++	spin_unlock_irqrestore(&object->lock, flags);
++
++	area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
++	if (!area) {
++		pr_warn("Cannot allocate a scan area\n");
++		goto out;
++	}
+ 
+ 	INIT_HLIST_NODE(&area->node);
+ 	area->start = ptr;
+ 	area->size = size;
+ 
++	spin_lock_irqsave(&object->lock, flags);
+ 	hlist_add_head(&area->node, &object->area_list);
+ out_unlock:
+ 	spin_unlock_irqrestore(&object->lock, flags);
 -- 
 1.8.3.rc1.44.gb387c77
 
 
---------------020009070502010607090301--
+--------------040500070602080603020209--
