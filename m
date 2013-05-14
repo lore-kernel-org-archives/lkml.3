@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3ENBkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:40:55 -0400
-Received: from bosmailout12.eigbox.net ([66.96.186.12]:52955 "EHLO
-	bosmailout12.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab3ENBkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:40:53 -0400
-X-Greylist: delayed 2480 seconds by postgrey-1.27 at vger.kernel.org; Mon, 13 May 2013 21:40:53 EDT
-X-Authority-Analysis: v=2.0 cv=dt1Z+ic4 c=1 sm=1
- a=i0WiXTmbFXIwRF3IvSVw8w==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=MiQ8TEe4tdQA:10 a=8nJEP1OIZ-IA:10 a=flkWhlLGwC4A:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=jAfPOIUMAAAA:8 a=BoYRlNAJlvoDRk6VjrIA:9
- a=wPNLvfGTeEIA:10 a=gE_ZUhsuebIA:10 a=eBvjjtMVdWwtQGedh7GyLg==:117
-X-EN-OrigOutIP: 10.20.18.5
-X-EN-IMPSID: bczT1l00C06Zqne01czTot
-Message-ID: <51918C23.7040106@yahoo.es>
-Date: Tue, 14 May 2013 08:58:11 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1755806Ab3ENBrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:47:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17348 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755499Ab3ENBrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 21:47:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,666,1363158000"; 
+   d="scan'208";a="241068021"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: RE: [PATCH v2 2/3] driver: provide sysfs interfaces to access TXT
+ config space
+Thread-Topic: [PATCH v2 2/3] driver: provide sysfs interfaces to access TXT
+ config space
+Thread-Index: AQHOT70fNvMSPAhjXUm++YIFBSpTUZkC2teAgAENAuA=
+Date: Tue, 14 May 2013 01:46:49 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AE7E4@SHSMSX102.ccr.corp.intel.com>
+References: <1368465884-14779-1-git-send-email-qiaowei.ren@intel.com>
+	 <1368465884-14779-3-git-send-email-qiaowei.ren@intel.com>
+ <1368466508.2425.50.camel@x230>
+In-Reply-To: <1368466508.2425.50.camel@x230>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: michal.simek@xilinx.com, Ludovic Desroches <ludovic.desroches@atmel.com>,
-        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com>
-In-Reply-To: <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.60.61
-X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4E1lZ8n004636
 
-On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->
->> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->> introduces clear-on-write on ISR register. This behavior is not always
->> implemented when using Cadence MACB/GEM and is breaking other platforms.
->> We are using a new Device Tree compatibility string and a capability
->> property to actually activate this clear-on-write behavior on ISR.
->>
->> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> can we detect it via the IP?
+On 2013-05-14, Matthew Garrett wrote:
+> On Tue, 2013-05-14 at 01:24 +0800, Qiaowei Ren wrote:
+> > These interfaces are located
+> > in /sys/devices/platform/intel_txt/config,
+> > and including totally 37 files, providing access to Intel TXT
+> > configuration registers.
+> 
+> Do you have any example userspace code using these features?
 
-This was my first proposal, have it based on the value of MACB's
-register 'MID' (offset 0x00fc, lower 16 bits).
-On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
+You mean test programs using these sysfs files? Currently I just did some simple demos like the following:
 
-So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revision
-equals to 0x00000119?
+cat config/STS_private_open
+echo 1 > CMD_CLOSE_PRIVATE
+cat config/STS_private_open
 
->> ---
->> Documentation/devicetree/bindings/net/macb.txt |  2 ++
->> drivers/net/ethernet/cadence/macb.c            | 15 +++++++++++++--
->> drivers/net/ethernet/cadence/macb.h            |  5 +++++
->> 3 files changed, 20 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
->> index 44afa0e..13ec4f6 100644
->>
->> <snip>
->>
->> @@ -1474,6 +1476,10 @@ static const struct of_device_id macb_dt_ids[] = {
->> 	{ .compatible = "cdns,macb" },
->> 	{ .compatible = "cdns,pc302-gem" },
->> 	{ .compatible = "cdns,gem" },
->> +	{
->> +		.compatible = "cdns,zynq-7000-gem",
->> +		.data = (void *)MACB_CAPS_ISR_CLEAR_ON_WRITE,
->> +	},
->> 	{ /* sentinel */ }
->> };
->> MODULE_DEVICE_TABLE(of, macb_dt_ids);
->> @@ -1484,6 +1490,7 @@ static int __init macb_probe(struct platform_device *pdev)
->> 	struct macb_platform_data *pdata;
->> 	struct resource *regs;
->> 	struct net_device *dev;
->> +	const struct of_device_id *dev_id;
->> 	struct macb *bp;
->> 	struct phy_device *phydev;
->> 	u32 config;
->> @@ -1558,6 +1565,10 @@ static int __init macb_probe(struct platform_device *pdev)
->>
->> 	dev->base_addr = regs->start;
->>
->> +	dev_id = of_match_device(macb_dt_ids, &pdev->dev);
-As avr32 doesn't yet define CONFIG_OF:
-    macb.c:1601: error:  'macb_dt_ids' undeclared
+cat config/STS_ locality_1_open
+echo 1 > CMD_CLOSE_LOCALITY1
+cat config/ STS_ locality_1_open
+echo 1 > CMD_OPEN_LOCALITY1
+cat config/ STS_ locality_1_open
 
-Hein
+Thanks,
+Qiaowei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
