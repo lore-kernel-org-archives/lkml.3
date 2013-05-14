@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab3ENJ0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:26:20 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:38938 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab3ENJ0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:26:19 -0400
-Date: Tue, 14 May 2013 10:26:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 9/9] mfd: ab8500-core: Pass GPADC compatible string to
- MFD core
-Message-ID: <20130514092614.GH3297@gmail.com>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
- <1368019749-19455-10-git-send-email-lee.jones@linaro.org>
- <CACRpkdY8SLRR0HQvD5AFUeNeeHRVt3XM-MOkwJs_h_EfeRctKw@mail.gmail.com>
+	id S1756833Ab3ENJbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:31:04 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:54734 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756693Ab3ENJbB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 05:31:01 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 14 May 2013 11:30:32 +0200
+Subject: Re: [PATCH] iio: STMicroelectronics: remove three useless selects
+Thread-Topic: [PATCH] iio: STMicroelectronics: remove three useless selects
+Thread-Index: Ac5Qha6UdlXdH42BToGA2LVqe2W4QQ==
+Message-ID: <1426549.ftB3AjjfpY@elitebook-8460p>
+References: <1368522350.1350.98.camel@x61.thuisdomein>
+In-Reply-To: <1368522350.1350.98.camel@x61.thuisdomein>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: KMail/4.8.5 (Linux/3.2.0-41-generic; KDE/4.8.5; x86_64; ; )
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdY8SLRR0HQvD5AFUeNeeHRVt3XM-MOkwJs_h_EfeRctKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 May 2013, Linus Walleij wrote:
+Hi Paul,
 
-> On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Acked-by: Denis Ciocca <denis.ciocca@st.com>
+
+Thanks,
+Denis
+
+On Tuesday, May 14, 2013 11:05:50 AM Paul Bolle wrote:
+> Drivers for STMicroelectronics accelerometers, gyroscopes, and
+> magnetometers were added in v3.9. They all have a (similar) select
+> statement in their Kconfig files for a non-existant Kconfig symbol.
+> These select statements can safely be removed.
 > 
-> > When booting with Device Tree enabled the MFD core uses each device's
-> > compatible string to find and allocate its associated of_node pointer,
-> > which in turn is passed to the driver via the platform_device struct.
-> > Without it, the driver won't be able to interrogate the Device Tree or
-> > locate suitable regulators and will most likely fail to probe.
-> >
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Untested.
 > 
-> Can you explain what regression this is causing since the GPADC
-> driver (drivers/mfd/ab8500-gpadc.c) does not support device tree
-
-Yes it does. :)
-
-> probing and does not have an .of_match_table defined in it's
-> driver struct? I mean, what could possibly match that
-> compatible string? The .name field will take care of naming
-> the device does it not?
-
-You only need that stuff if you require _extra_ bindings. Things like
-regulators and interrupt numbers are configured behind the scenes.
-
-> For non-emergency merging though:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-If we don't put this into v3.10-rcX, then the GPADC driver will be
-broken in v3.10 when booting with DT.
-
-> Since it matches the example in
-> Documentation/devicetree/bindings/mfd/ab8500.txt
+> 1) Perhaps it was intended (in development versions of these drivers) to
+> have separate buffer and core drivers. One hint is that in the buffer
+> related source files one can find the usual MODULE_* macros. Those
+> macros can also be found in the core source files. I do wonder what
+> happens at build time now these drivers have two copies of these macros.
 > 
-> But for this to make sense the AB8500 ADC driver needs
-> to be augmented for DT probing and preferrably also moved
-> to drivers/adc and made to utilize that subsystem.
-
-Not sure I understand the reasoning for this. It works well as a plain
-MFD device.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  drivers/iio/accel/Kconfig        | 1 -
+>  drivers/iio/gyro/Kconfig         | 1 -
+>  drivers/iio/magnetometer/Kconfig | 1 -
+>  3 files changed, 3 deletions(-)
+> 
+> diff --git a/drivers/iio/accel/Kconfig b/drivers/iio/accel/Kconfig
+> index bb59496..719d83f 100644
+> --- a/drivers/iio/accel/Kconfig
+> +++ b/drivers/iio/accel/Kconfig
+> @@ -28,7 +28,6 @@ config IIO_ST_ACCEL_3AXIS
+>  	select IIO_ST_ACCEL_I2C_3AXIS if (I2C)
+>  	select IIO_ST_ACCEL_SPI_3AXIS if (SPI_MASTER)
+>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
+> -	select IIO_ST_ACCEL_BUFFER if (IIO_TRIGGERED_BUFFER)
+>  	help
+>  	  Say yes here to build support for STMicroelectronics accelerometers:
+>  	  LSM303DLH, LSM303DLHC, LIS3DH, LSM330D, LSM330DL, LSM330DLC,
+> diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
+> index 6be4628..b8daf1b 100644
+> --- a/drivers/iio/gyro/Kconfig
+> +++ b/drivers/iio/gyro/Kconfig
+> @@ -47,7 +47,6 @@ config IIO_ST_GYRO_3AXIS
+>  	select IIO_ST_GYRO_I2C_3AXIS if (I2C)
+>  	select IIO_ST_GYRO_SPI_3AXIS if (SPI_MASTER)
+>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
+> -	select IIO_ST_GYRO_BUFFER if (IIO_TRIGGERED_BUFFER)
+>  	help
+>  	  Say yes here to build support for STMicroelectronics gyroscopes:
+>  	  L3G4200D, LSM330DL, L3GD20, L3GD20H, LSM330DLC, L3G4IS, LSM330.
+> diff --git a/drivers/iio/magnetometer/Kconfig
+> b/drivers/iio/magnetometer/Kconfig
+ index bd1cfb6..c332b0a 100644
+> --- a/drivers/iio/magnetometer/Kconfig
+> +++ b/drivers/iio/magnetometer/Kconfig
+> @@ -32,7 +32,6 @@ config IIO_ST_MAGN_3AXIS
+>  	select IIO_ST_MAGN_I2C_3AXIS if (I2C)
+>  	select IIO_ST_MAGN_SPI_3AXIS if (SPI_MASTER)
+>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
+> -	select IIO_ST_MAGN_BUFFER if (IIO_TRIGGERED_BUFFER)
+>  	help
+>  	  Say yes here to build support for STMicroelectronics magnetometers:
+>  	  LSM303DLHC, LSM303DLM, LIS3MDL.
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
