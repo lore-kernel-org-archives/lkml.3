@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab3ENKqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:46:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:61647 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab3ENKqp (ORCPT
+	id S1756223Ab3ENKrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:47:00 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:35204 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab3ENKq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:46:45 -0400
+	Tue, 14 May 2013 06:46:57 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH 3/5] media: i2c: tvp7002: rearrange header inclusion alphabetically
-Date: Tue, 14 May 2013 16:15:32 +0530
-Message-Id: <1368528334-13595-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 4/5] media: i2c: tvp7002: add support for asynchronous probing
+Date: Tue, 14 May 2013 16:15:33 +0530
+Message-Id: <1368528334-13595-5-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368528334-13595-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368528334-13595-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,8 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-This patch rearranges the header inclusion alphabetically
-and also removes unnecessary includes.
+Both synchronous and asynchronous tvp7002 subdevice probing is supported by
+this patch.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
@@ -43,35 +43,41 @@ Cc: Sakari Ailus <sakari.ailus@iki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: davinci-linux-open-source@linux.davincidsp.com
 ---
- drivers/media/i2c/tvp7002.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/i2c/tvp7002.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
-index f339e6f..f4114bf 100644
+index f4114bf..d5113d1 100644
 --- a/drivers/media/i2c/tvp7002.c
 +++ b/drivers/media/i2c/tvp7002.c
-@@ -24,17 +24,17 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
-+
- #include <linux/delay.h>
- #include <linux/i2c.h>
--#include <linux/slab.h>
--#include <linux/videodev2.h>
- #include <linux/module.h>
+@@ -31,6 +31,7 @@
  #include <linux/v4l2-dv-timings.h>
-+
- #include <media/tvp7002.h>
--#include <media/v4l2-device.h>
- #include <media/v4l2-chip-ident.h>
--#include <media/v4l2-common.h>
- #include <media/v4l2-ctrls.h>
-+#include <media/v4l2-device.h>
-+
- #include "tvp7002_reg.h"
  
- MODULE_DESCRIPTION("TI TVP7002 Video and Graphics Digitizer driver");
+ #include <media/tvp7002.h>
++#include <media/v4l2-async.h>
+ #include <media/v4l2-chip-ident.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
+@@ -1073,6 +1074,11 @@ static int tvp7002_probe(struct i2c_client *c, const struct i2c_device_id *id)
+ 	}
+ 	v4l2_ctrl_handler_setup(&device->hdl);
+ 
++	device->sd.dev = &c->dev;
++	error = v4l2_async_register_subdev(&device->sd);
++	if (error)
++		goto error;
++
+ 	return 0;
+ 
+ error:
+@@ -1097,6 +1103,7 @@ static int tvp7002_remove(struct i2c_client *c)
+ 
+ 	v4l2_dbg(1, debug, sd, "Removing tvp7002 adapter"
+ 				"on address 0x%x\n", c->addr);
++	v4l2_async_unregister_subdev(&device->sd);
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+ 	media_entity_cleanup(&device->sd.entity);
+ #endif
 -- 
 1.7.4.1
 
