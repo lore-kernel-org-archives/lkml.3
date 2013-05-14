@@ -1,149 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab3ENAfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:35:12 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48324 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3ENAfJ (ORCPT
+	id S1755378Ab3ENAj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:39:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:65091 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3ENAj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:35:09 -0400
-Date: Tue, 14 May 2013 09:35:04 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Christian Daudt <csd@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 05/14] ARM: shmobile: Remove init_irq declaration in
- machine description
-Message-ID: <20130514003504.GE12228@verge.net.au>
-References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
- <1368438253-28218-6-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368438253-28218-6-git-send-email-maxime.ripard@free-electrons.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 May 2013 20:39:27 -0400
+X-AuditID: cbfee68e-b7f276d000002279-67-519187bdd540
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Laurent Navet'" <laurent.navet@gmail.com>, nico@fluxnic.net,
+        cjb@laptop.org
+Cc: andrew@lunn.ch, thomas.petazzoni@free-electrons.com, jason@lakedaemon.net,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>
+References: <1368369860-32085-1-git-send-email-laurent.navet@gmail.com>
+In-reply-to: <1368369860-32085-1-git-send-email-laurent.navet@gmail.com>
+Subject: Re: [PATCH] drivers: mmc: host: use devm_ioremap_resource()
+Date: Tue, 14 May 2013 09:39:25 +0900
+Message-id: <001601ce503b$7bfd1840$73f748c0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGa9h0TvmcQNByFJ8FdRzkk/aiUkJlqihdQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+Zvu7e9omBBj/7NS3O3z3EbLH99UY2
+	i8Yll1ksLi+8xGrR2Hqb2eLyrjlsFkf+9zNazHvxgs3i5J9eRounD5qYHLg8np1oZ/N4suki
+	o8fOWXfZPRoOnGfxOHRlLaPHnWt72Dx27vjM5NG3ZRWjx+dNcgGcUVw2Kak5mWWpRfp2CVwZ
+	hw68YC74wlFx83ofYwPjbPYuRk4OCQETiVWXPjBD2GISF+6tZ+ti5OIQEljGKHHm3n+4orWP
+	Z7JDJKYzSlx9f4cZwvnFKLG/qY0NpIpNQE3iy5fDYB0iAv4Sm7qOM4IUMQtcYZSYvaGPCSQh
+	JOAusb39Jdg+TgEPiQvXW1m7GDk4hAVcJK5f1wMJswioSvzq2sUKYvMKWErc7XjMDmELSvyY
+	fI8FxGYW0JJYv/M4E4QtL7F5zVuoFxQkdpx9zQhxg5HEwZ2vWSFqRCT2vXgHdo+EwEIOiY7m
+	X2wQywQkvk0+xAJyg4SArMSmA1BzJCUOrrjBMoFRYhaS1bOQrJ6FZPUsJCsWMLKsYhRNLUgu
+	KE5KLzLSK07MLS7NS9dLzs/dxAhJA307GG8esD7EmAy0fiKzlGhyPjCN5JXEGxqbGVmYmpga
+	G5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUbVY9hljs5Awe0bGCfNZ
+	Z1peG2qfe9j438vvSu+6x5L6ql9N7EInH7t0aX/y0Y0Cu/r4Xr3alFz2e52j/voHUdvEn9pl
+	Fs8PXMWtNrX7crLm9tjD96abna2U4upU/W0jyr9PP0Zu4azdTutWx+q32dRe7ijZF55z3//R
+	4cXrvx1+WbVBZPWHQiWW4oxEQy3mouJEALf1f2QZAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMKsWRmVeSWpSXmKPExsVy+t9jQd297RMDDRqXq1icv3uI2WL7641s
+	Fo1LLrNYXF54idWisfU2s8XlXXPYLI7872e0mPfiBZvFyT+9jBZPHzQxOXB5PDvRzubxZNNF
+	Ro+ds+6yezQcOM/icejKWkaPO9f2sHns3PGZyaNvyypGj8+b5AI4oxoYbTJSE1NSixRS85Lz
+	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOATlVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZhw68IK54AtHxc3rfYwNjLPZuxg5OSQETCTWPp4JZYtJ
+	XLi3nq2LkYtDSGA6o8TV93eYIZxfjBL7m9rYQKrYBNQkvnw5DNYhIuAvsanrOCNIEbPAFUaJ
+	2Rv6mEASQgLuEtvbXzKD2JwCHhIXrreydjFycAgLuEhcv64HEmYRUJX41bWLFcTmFbCUuNvx
+	mB3CFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zBCXKkjsOPuaEeIGI4mDO1+zQtSISOx78Y5x
+	AqPQLCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4yz6R2MK5s
+	sDjEKMDBqMTD21A3MVCINbGsuDL3EKMEB7OSCO9+XqAQb0piZVVqUX58UWlOavEhxmSgTycy
+	S4km5wMTYF5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MDbt
+	rCvXPGfbo18ZwvM6fnfO1JQ6nbRZzKxchjx109wyZ/PIbO9TmszstFP59NZUvmqec4l28oYx
+	p/mit09MWSv1QTZq4TaHbZIchvf27Q88JRznWix7wuiTVPZXqf/bVSbtbGL6a3ZBJjjoTPgO
+	w6CSHf6LbmycnCXKEt+afZjNpsT+pmyGEktxRqKhFnNRcSIAMLlrJnYDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 11:44:04AM +0200, Maxime Ripard wrote:
-> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
-> specified") removed the need to explictly setup the init_irq field in
-> the machine description when using only irqchip_init. Remove that
-> declaration for shmobile as well.
+Sunday, May 12, 2013 11:44 PM, Laurent Navet wrote:
+> 
+> eplace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
-Hi Maxime,
+CC'ed Sachin Kamat
 
-If possible, I would prefer separate patches for each board and SoC.
+Fix the typo: eplace -> replace
 
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Found with coccicheck and this semantic patch:
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci
+> 
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+
+It looks good.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
 > ---
->  arch/arm/mach-shmobile/board-ape6evm.c         | 1 -
->  arch/arm/mach-shmobile/board-kzm9g-reference.c | 1 -
->  arch/arm/mach-shmobile/board-lager.c           | 1 -
->  arch/arm/mach-shmobile/setup-emev2.c           | 1 -
->  arch/arm/mach-shmobile/setup-r8a73a4.c         | 1 -
->  arch/arm/mach-shmobile/setup-r8a7790.c         | 1 -
->  arch/arm/mach-shmobile/setup-sh73a0.c          | 1 -
->  7 files changed, 7 deletions(-)
+>  drivers/mmc/host/mvsdio.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/arm/mach-shmobile/board-ape6evm.c b/arch/arm/mach-shmobile/board-ape6evm.c
-> index 55b8c9f..913ce31 100644
-> --- a/arch/arm/mach-shmobile/board-ape6evm.c
-> +++ b/arch/arm/mach-shmobile/board-ape6evm.c
-> @@ -87,7 +87,6 @@ static const char *ape6evm_boards_compat_dt[] __initdata = {
->  };
->  
->  DT_MACHINE_START(APE6EVM_DT, "ape6evm")
-> -	.init_irq	= irqchip_init,
->  	.init_time	= shmobile_timer_init,
->  	.init_machine	= ape6evm_add_standard_devices,
->  	.dt_compat	= ape6evm_boards_compat_dt,
-> diff --git a/arch/arm/mach-shmobile/board-kzm9g-reference.c b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> index aefa50d..eaec498 100644
-> --- a/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> +++ b/arch/arm/mach-shmobile/board-kzm9g-reference.c
-> @@ -100,7 +100,6 @@ DT_MACHINE_START(KZM9G_DT, "kzm9g-reference")
->  	.map_io		= sh73a0_map_io,
->  	.init_early	= sh73a0_init_delay,
->  	.nr_irqs	= NR_IRQS_LEGACY,
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= kzm_init,
->  	.init_time	= shmobile_timer_init,
->  	.dt_compat	= kzm9g_boards_compat_dt,
-> diff --git a/arch/arm/mach-shmobile/board-lager.c b/arch/arm/mach-shmobile/board-lager.c
-> index f587187..c384c9f 100644
-> --- a/arch/arm/mach-shmobile/board-lager.c
-> +++ b/arch/arm/mach-shmobile/board-lager.c
-> @@ -39,7 +39,6 @@ static const char *lager_boards_compat_dt[] __initdata = {
->  };
->  
->  DT_MACHINE_START(LAGER_DT, "lager")
-> -	.init_irq	= irqchip_init,
->  	.init_time	= r8a7790_timer_init,
->  	.init_machine	= lager_add_standard_devices,
->  	.dt_compat	= lager_boards_compat_dt,
-> diff --git a/arch/arm/mach-shmobile/setup-emev2.c b/arch/arm/mach-shmobile/setup-emev2.c
-> index 899a86c..098ca63 100644
-> --- a/arch/arm/mach-shmobile/setup-emev2.c
-> +++ b/arch/arm/mach-shmobile/setup-emev2.c
-> @@ -454,7 +454,6 @@ DT_MACHINE_START(EMEV2_DT, "Generic Emma Mobile EV2 (Flattened Device Tree)")
->  	.smp		= smp_ops(emev2_smp_ops),
->  	.init_early	= emev2_init_delay,
->  	.nr_irqs	= NR_IRQS_LEGACY,
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= emev2_add_standard_devices_dt,
->  	.dt_compat	= emev2_boards_compat_dt,
->  MACHINE_END
-> diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> index c5a75a7..6b19d50 100644
-> --- a/arch/arm/mach-shmobile/setup-r8a73a4.c
-> +++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> @@ -194,7 +194,6 @@ static const char *r8a73a4_boards_compat_dt[] __initdata = {
->  };
->  
->  DT_MACHINE_START(R8A73A4_DT, "Generic R8A73A4 (Flattened Device Tree)")
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= r8a73a4_add_standard_devices_dt,
->  	.init_time	= shmobile_timer_init,
->  	.dt_compat	= r8a73a4_boards_compat_dt,
-> diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c b/arch/arm/mach-shmobile/setup-r8a7790.c
-> index 49de2d5..d639aad 100644
-> --- a/arch/arm/mach-shmobile/setup-r8a7790.c
-> +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
-> @@ -142,7 +142,6 @@ static const char *r8a7790_boards_compat_dt[] __initdata = {
->  };
->  
->  DT_MACHINE_START(R8A7790_DT, "Generic R8A7790 (Flattened Device Tree)")
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= r8a7790_add_standard_devices_dt,
->  	.init_time	= r8a7790_timer_init,
->  	.dt_compat	= r8a7790_boards_compat_dt,
-> diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
-> index fdf3894..3a7d24a 100644
-> --- a/arch/arm/mach-shmobile/setup-sh73a0.c
-> +++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-> @@ -1035,7 +1035,6 @@ DT_MACHINE_START(SH73A0_DT, "Generic SH73A0 (Flattened Device Tree)")
->  	.map_io		= sh73a0_map_io,
->  	.init_early	= sh73a0_init_delay,
->  	.nr_irqs	= NR_IRQS_LEGACY,
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= sh73a0_add_standard_devices_dt,
->  	.dt_compat	= sh73a0_boards_compat_dt,
->  MACHINE_END
-> -- 
-> 1.8.1.2
+> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+> index 8960fc8..a66ee4b 100644
+> --- a/drivers/mmc/host/mvsdio.c
+> +++ b/drivers/mmc/host/mvsdio.c
+> @@ -758,9 +758,9 @@ static int __init mvsd_probe(struct platform_device *pdev)
 > 
+>  	spin_lock_init(&host->lock);
+> 
+> -	host->base = devm_request_and_ioremap(&pdev->dev, r);
+> -	if (!host->base) {
+> -		ret = -ENOMEM;
+> +	host->base = devm_ioremap_resource(&pdev->dev, r);
+> +	if (IS_ERR(host->base)) {
+> +		ret = PTR_ERR(host->base);
+>  		goto out;
+>  	}
+> 
+> --
+> 1.7.10.4
+
