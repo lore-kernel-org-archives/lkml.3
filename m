@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab3ENRJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:09:45 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:42439 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757020Ab3ENRJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:09:34 -0400
-X-IronPort-AV: E=Sophos;i="4.87,671,1363132800"; 
-   d="scan'208";a="25168255"
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        <linux-acpi@vger.kernel.org>, <xen-devel@lists.xensource.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Liang Tang <liang.tang@oracle.com>
-Subject: [PATCH 2/2] xen/acpi/sleep: Register to the acpi_suspend_lowlevel a callback.
-Date: Tue, 14 May 2013 13:09:17 -0400
-Message-ID: <1368551357-3903-3-git-send-email-benjamin.guthro@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368551357-3903-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1368551357-3903-1-git-send-email-benjamin.guthro@citrix.com>
+	id S1756530Ab3ENRM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:12:29 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:46391 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab3ENRM1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 13:12:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.204.241.11]
+In-Reply-To: <CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
+References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
+ <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
+ <CAH9NwWc+BP5ZbHwmMZ4AisviDHM-GizTmZO6vwxtd=ntYUAk=A@mail.gmail.com>
+ <CAH9NwWceaA0MPGj65fOhmECL8A522qngU3RHGZ++Uz-6mVKKAg@mail.gmail.com>
+ <CAK5ve-JmVes+OA3MRyoZEo_Fz8_RHpdqmcTxNwwrUAnADpqvyw@mail.gmail.com>
+ <CAH9NwWeMMYzvE0VVMCYmF9oXA-wBiW-BnwoK1q7mjUkE4JF9uw@mail.gmail.com>
+ <CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com> <CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 14 May 2013 10:12:04 -0700
+Message-ID: <CAK5ve-JqvOHQR+eSaq7HJ3rsaxj-kuhKw2skOa74+Sc=WqxTAQ@mail.gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: akpm <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Tue, May 14, 2013 at 12:06 AM, Christian Gmeiner
+<christian.gmeiner@gmail.com> wrote:
+> 2013/5/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
+>> 2013/3/8 Christian Gmeiner <christian.gmeiner@gmail.com>:
+>>> 2013/3/5 Bryan Wu <cooloney@gmail.com>:
+>>>> On Sun, Mar 3, 2013 at 11:40 PM, Christian Gmeiner
+>>>> <christian.gmeiner@gmail.com> wrote:
+>>>>> ping
+>>>>> --
 
-We piggyback on "x86/acpi: Provide registration for acpi_suspend_lowlevel."
-to register a Xen version of the callback. The callback does not
-do anything special - except it omits the x86_acpi_suspend_lowlevel.
-It does that b/c during suspend it tries to save cr8 values (which
-the hypervisor does not support), and then on resume path the
-cr3, cr8, idt, and gdt are all resumed which clashes with what
-the hypervisor has set up for the guest.
+I found this patch is still in linux-next, I'm not sure whether it
+will be merged into 3.10 like a bug fixing. We need to wait Andrew's
+reply. I'm OK to pick up and send out to Linus as a bug fixing.
 
-Signed-off-by: Liang Tang <liang.tang@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Ben Guthro <benjamin.guthro@citrix.com>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
----
- include/xen/acpi.h |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+Thanks,
+-Bryan
 
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 68d73d0..46aa3d1 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -78,11 +78,25 @@ static inline int xen_acpi_get_pxm(acpi_handle h)
- int xen_acpi_notify_hypervisor_state(u8 sleep_state,
- 				     u32 pm1a_cnt, u32 pm1b_cnd);
- 
-+static inline int xen_acpi_suspend_lowlevel(void)
-+{
-+	/*
-+	* Xen will save and restore CPU context, so
-+	* we can skip that and just go straight to
-+	* the suspend.
-+	*/
-+	acpi_enter_sleep_state(ACPI_STATE_S3);
-+	return 0;
-+}
-+
- static inline void xen_acpi_sleep_register(void)
- {
--	if (xen_initial_domain())
-+	if (xen_initial_domain()) {
- 		acpi_os_set_prepare_sleep(
- 			&xen_acpi_notify_hypervisor_state);
-+
-+		acpi_suspend_lowlevel = xen_acpi_suspend_lowlevel;
-+	}
- }
- #else
- static inline void xen_acpi_sleep_register(void)
--- 
-1.7.9.5
-
+>>>>> Christian Gmeiner, MSc
+>>>>>
+>>>>>
+>>>>> 2013/2/23 Christian Gmeiner <christian.gmeiner@gmail.com>:
+>>>>>> 2013/2/15 Bryan Wu <cooloney@gmail.com>:
+>>>>>>> On Wed, Feb 13, 2013 at 7:58 AM, Christian Gmeiner
+>>>>>>> <christian.gmeiner@gmail.com> wrote:
+>>>>>>>> During the development of this driver an in-house register
+>>>>>>>> documentation was used. The last weeks some integration tests
+>>>>>>>> were done and this problem was found. It turned out that
+>>>>>>>> the released register documentation is wrong.
+>>>>>>>>
+>>>>>>>> The fix is very simple: shift all masks by one.
+>>>>>>>>
+>>>>>>>> Our customers can control LEDs from userspace via Java,
+>>>>>>>> C++ or what every. They have running/working applications where
+>>>>>>>> they want to control led_3 but led_2 get's used.
+>>>>>>>> I got a bug report in our in-house bug tracker so it would be
+>>>>>>>> great to fix this upstream.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+>>>>>>>
+>>>>>>> Thanks, Christian.
+>>>>>>>
+>>>>>>> And Andrew, are you going to take care of this patch? Or I will merge this.
+>>>>>>>
+>>>>>>
+>>>>>> Whats the current state of the patch? Hope we can get it into 3.9 :)
+>>>>>>
+>>>>
+>>>> I think this patch is already in linux-next via Andrew's tree (commit
+>>>> 023206171f235f93f26c314f76f5405a3077aaba). So it will be merged into
+>>>> 3.10 I guess, but not 3.9.
+>>>>
+>>>> Or I can send out this patch to Linus as a fix and ask Andrew to drop
+>>>> this from his tree.
+>>>>
+>>>
+>>> I am fine with the current situation and 3.10 is fine too.
+>>>
+>>
+>> 3.10-rc1 is out but my patch is missing. What happened?
+>>
+>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?id=refs%2Ftags%2Fv3.10-rc1&qt=author&q=gmeiner
+>>
+>
+> ping
+> --
+> Christian Gmeiner, MSc
