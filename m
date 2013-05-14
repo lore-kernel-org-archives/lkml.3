@@ -1,89 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3ENJkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:40:43 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:38191 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756579Ab3ENJkl (ORCPT
+	id S1756960Ab3ENJoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:44:34 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38510 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579Ab3ENJoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:40:41 -0400
-Date: Tue, 14 May 2013 10:40:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 8/9] pinctrl: abx500: Rejiggle platform data and DT
- initialisation
-Message-ID: <20130514094036.GI3297@gmail.com>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
- <1368019749-19455-9-git-send-email-lee.jones@linaro.org>
- <CACRpkdZTU1gv3onjFF4eqxv-o1BQwd48u4gQ9NWqryWoMiKTDQ@mail.gmail.com>
- <20130514084756.GE3297@gmail.com>
- <CACRpkdbhHnrN3MGufubyYLNXdcCgZ2OpQ4a2CG6bwPJk88DZRg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbhHnrN3MGufubyYLNXdcCgZ2OpQ4a2CG6bwPJk88DZRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 May 2013 05:44:32 -0400
+Message-ID: <1368524655.2618.100.camel@ThinkPad-T5421>
+Subject: Re: [PATCH 1/3] x86/sched/context_tracking: Call new
+ schedule_preempt_user() from entry_64.S
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 14 May 2013 17:44:15 +0800
+In-Reply-To: <1368457419.6828.31.camel@gandalf.local.home>
+References: <20130510211225.594959788@goodmis.org>
+	 <20130510211825.341015861@goodmis.org>
+	 <1368438990.2618.55.camel@ThinkPad-T5421>
+	 <1368457419.6828.31.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051409-7014-0000-0000-000003048A84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 May 2013, Linus Walleij wrote:
-
-> On Tue, May 14, 2013 at 10:47 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Tue, 14 May 2013, Linus Walleij wrote:
-> >
-> >> On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >>
-> >> > A pointer to GPIO platform data is always passed to the driver now, so
-> >> > there's little point in checking for 'pdata' and executing the DT case if
-> >> > it's not there. The difference between booting with DT and !DT is when
-> >> > booting with DT, plat_id is not populated. Thus, in the DT case we have
-> >> > to use a DT match table in order to find out which platform we're
-> >> > executing on. So, we're changing the semantics here to only use the
-> >> > match table if no plat_id is supplied though platform data.
-> >> >
-> >> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >>
-> >> Is this really included in the [0/9] fire alarm wrapper statement
-> >> "Important ux500 fixups due for the v3.10 -rc:s"?
-> >>
-> >> It seems more like a random refactoring to me.
-> >>
-> >> The commit message fails to specify which regression this
-> >> is fixing, like if it's causing an oops or so.
-> >>
-> >> So I've tentatively applied it to the pinctrl devel branch for
-> >> v3.11 unless something comes up...
-> >
-> > Perhaps the commit message is a bit weak, but yes, it _needs_ to go
-> > into v3.10, or this driver will be _broken_ when we boot with DT.
-> >
-> > Please apply this to your -fixes branch.
+On Mon, 2013-05-13 at 11:03 -0400, Steven Rostedt wrote:
+> On Mon, 2013-05-13 at 17:56 +0800, Li Zhong wrote:
 > 
-> Quting myself from above:
->   "The commit message fails to specify which regression this
->   is fixing, like if it's causing an oops or so."
+> > > All this before schedule_user() was able to call user_exit() and take us
+> > > out of dynamic tick user context.
+> > 
+> > Maybe we could just disable function trace for schedule_user()? 
+> > 
+> > It seems that function trace might use RCU, at least in __schedule()
+> > when calling preempt_enable(), and if preemption is really enabled. 
 > 
-> I'm happy to apply it but what do I write in the commit message?
+> There is a small use of rcu scheduling (preempt disable/enable) in
+> function tracing. One is for perf and dynamic call traces and some hash
+> code (multiple users of the function tracer). But those are the unique
+> cases, and I really do not want to remove this function just for the non
+> common case. Function tracing has proven extremely useful in debugging
+> RCU and context tracking. By adding notrace, it's a lost cause.
 
-Platform Data is invariably populated for this driver, even when
-booting with Device Tree. Thus the Device Tree probing code encased
-within the first check for Platform Data will never executed, causing
-the driver to fail when DT is enabled.
+OK, so it seems a bad idea to disable trace here. 
 
-This patch fixes the aforementioned regression by rejigging the
-probe() semantics to attempt to extract a platform ID from Device Tree
-if one can not be sourced from platform data.
+However, as schedule is traced, so we might get something like 
+.schedule <-.schedule_user to know that schedule_user is called?
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 
+> Not to mention, adding trace_printk() there will break it too, and that
+> does not use any RCU but still disables preemption because the writing
+> to the ring buffer requires staying on the same CPU.
+> 
+I guess you mean the preemption enable after buffer written might cause
+a task migration, and break the pair of user_enter/user_exit?
+
+Then how about adding trace_printk() after user_exit() there?
+
+> > 
+> > user_exit() is used to allow RCU usage after that (with rcu_user_exit).
+> > RCU usage is not allowed before that because cpu is in user eqs. And if
+> > function trace needs use RCU, then it seems user_exit() itself or its
+> > callers couldn't be function traced.
+> 
+> And it can't be debugged either.
+> 
+> I can probably black list those functions manually, such that only the
+> main function tracer can trace it, all others will not. In otherwords, I
+> can have it such that function tracer will not trace those functions for
+> perf, dynamic function tracers, or anything that requires changing the
+> function list.
+
+I'm totally lost. Need some more time to read the trace code (please
+forgive me for the silly questions in this mail...)
+
+By "main function tracer", do you mean the function_trace_call()? And I
+don't understand how to black list some functions manually?
+
+If function_trace_call() is the main function tracer you mentioned,
+there is preemption disable/enable in it. schedule might happen where
+preemption is enabled. Or maybe you mean we should make all those
+functions called with preemption disabled(or irqs disabled)?  
+
+Then syscall_trace_enter(), syscall_trace_leave(), do_notify_resume(),
+need be converted the similar way as schedule_preempt_user() did? 
+
+Thanks, Zhong
+
+> I could probably also add a heavier weight synchronize_sched() that even
+> synchronizes cpus in userspace.
+> 
+> > 
+> > If __schedule() in preempt_enable() is the only place function trace
+> > uses RCU, then after converting to schedule_preempt_user(), it is safe
+> > as irqs are disabled for __schedule() to happen. But user_exit() itself
+> > and some other callers might still need function trace be disabled.
+> 
+> The above makes no sense to me. function tracing didn't break, but the
+> user_exit() did because of a preemption in the wrong place, as there was
+> no protection there to prevent an unnecessary preemption.
+> 
+> 
+> -- Steve
+> 
+> 
+
+
