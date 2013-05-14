@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab3ENRVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:21:08 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:38997 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab3ENRVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:21:06 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>,
-        trivial@kernel.org
-Subject: [PATCH, v2] ARM: omap2: gpmc: fix compilation warning
-Date: Tue, 14 May 2013 19:20:43 +0200
-Message-Id: <1368552043-3764-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130508222639.GM32546@atomide.com>
-References: <20130508222639.GM32546@atomide.com>
+	id S1755656Ab3ENRYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:24:13 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41031 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3ENRYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 13:24:12 -0400
+Message-ID: <51927339.5070402@linaro.org>
+Date: Tue, 14 May 2013 10:24:09 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: David Vrabel <david.vrabel@citrix.com>
+CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86/xen: sync the CMOS RTC as well as the Xen wallclock
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1368467768-2316-4-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Stehlé <v-stehle@ti.com>
+On 05/13/2013 10:56 AM, David Vrabel wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
+>
+> If NTP is used in dom0 and it is synchronized to its clock source,
+> then the kernel will periodically synchronize the Xen wallclock with
+> the system time.  Updates to the Xen wallclock do not persist across
+> reboots, so also synchronize the CMOS RTC (as on bare metal).
+>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>   arch/x86/xen/time.c |   11 ++++++++++-
+>   1 files changed, 10 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index a1947ac..4656165 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -14,6 +14,7 @@
+>   #include <linux/kernel_stat.h>
+>   #include <linux/math64.h>
+>   #include <linux/gfp.h>
+> +#include <linux/mc146818rtc.h>
+>   
+>   #include <asm/pvclock.h>
+>   #include <asm/xen/hypervisor.h>
+> @@ -199,17 +200,25 @@ static void xen_get_wallclock(struct timespec *now)
+>   static int xen_set_wallclock(const struct timespec *now)
+>   {
+>   	struct xen_platform_op op;
+> +	int ret;
+>   
+>   	/* do nothing for domU */
+>   	if (!xen_initial_domain())
+>   		return -1;
+>   
+> +	/* Set the Xen wallclock. */
+>   	op.cmd = XENPF_settime;
+>   	op.u.settime.secs = now->tv_sec;
+>   	op.u.settime.nsecs = now->tv_nsec;
+>   	op.u.settime.system_time = xen_clocksource_read();
+>   
+> -	return HYPERVISOR_dom0_op(&op);
+> +	ret = HYPERVISOR_dom0_op(&op);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Set the hardware RTC. */
+> +	return mach_set_rtc_mmss(now);
 
-Fix the following compilation warning:
+Sorry, just noticed one more thing while applying this. Do all Xen 
+systems run on hardware that has the conventional CMOS clock?
 
-  arch/arm/mach-omap2/gpmc.c: In function 'gpmc_probe_generic_child':
-  arch/arm/mach-omap2/gpmc.c:1477:4: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'resource_size_t' [-Wformat]
+What happens if the bare-metal needs to use efi_set_rtc() or 
+vrtc_set_mmss() ?
 
-Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
-Cc: trivial@kernel.org
----
+thanks
+-john
 
-Tony wrote:
-> You should just change the format for dev_err instead of the casting.
-
-Hi,
-
-Sorry for the late answer; it seems this is a bit more complicated after all,
-as res.start can be 32b or 64b in LPAE. The common solution seems to be: cast
-to long long in all cases and print accordingly. Would you like this better?
-
-Best regards,
-
-V.
-
-
- arch/arm/mach-omap2/gpmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index 6c4da12..e74501e 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1473,8 +1473,8 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
- 	 */
- 	ret = gpmc_cs_remap(cs, res.start);
- 	if (ret < 0) {
--		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%x\n",
--			cs, res.start);
-+		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%llx\n",
-+			cs, (long long)res.start);
- 		goto err;
- 	}
- 
--- 
-1.7.10.4
 
