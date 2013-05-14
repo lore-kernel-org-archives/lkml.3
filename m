@@ -1,59 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab3ENTkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 15:40:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47528 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376Ab3ENTkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 15:40:06 -0400
-Date: Tue, 14 May 2013 21:41:19 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jan Beulich <JBeulich@suse.com>
-Subject: Re: [PATCH v2] AHCI: Make distinct names for ports in
- /proc/interrupts
-Message-ID: <20130514194118.GA20747@dhcp-26-207.brq.redhat.com>
-References: <20130429101237.GA27738@dhcp-26-207.brq.redhat.com>
- <51803A7F.8080608@pobox.com>
- <20130507083836.GA18862@dhcp-26-207.brq.redhat.com>
- <20130514185642.GT6795@mtj.dyndns.org>
+	id S1758329Ab3ENTnI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 15:43:08 -0400
+Received: from nm39-vm5.bullet.mail.gq1.yahoo.com ([98.136.217.108]:38694 "EHLO
+	nm39-vm5.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757596Ab3ENTnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 15:43:06 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 May 2013 15:43:06 EDT
+X-Yahoo-Newman-Id: 200757.26895.bm@smtp214.mail.gq1.yahoo.com
+Message-ID: <200757.26895.bm@smtp214.mail.gq1.yahoo.com>
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: BRm.IEgVM1mjnKCgnpp66yNwKlsOwH0GSrHHGQtbQUN5Xu1
+ UCle38wfq.cifoBZKaFcFm8LXhv63DQcUvuRa.sOWBvjUKcYIf3fgcL2bDtS
+ z.dRB9pWL3lqAMK5W.tdYOPL4A.dcb1lVKgLlSTPJhQ0kWlnGRciboxcZSLZ
+ rNe7acvqUX3Hca9KVVewh8ClvnVOcYYGr3fPkPeqpEorgUlE.50R8l_XBHol
+ mYD9_spdrqgs6_JWN_.adYy4bfs8ijUn6ASPe.ou4PH1OqbiAa5hx26Ogw4N
+ BlLvqbhlmZIB5fSCt3IKGokx7YPJ3nPCwVBIoU2vLr3R3VdYoCQeS9qux5Ko
+ dGCCtg7Um7IyV3tMr_dxSjAcNS.hQeNe0w3_s3jP4C71rgylv9X6rNVIB1mH
+ dENuA3lAA28zZJO9pPYA.95Sn3gXjgh3_duIbMd3JU2zMYNxkpCfKtR1wrzL
+ VEkhpe6Z5IHvdLbO5MQc-
+X-Yahoo-SMTP: zww1jGyswBCHxPHDNlUCDQPNKuROOpKsNi3Nc0aOa.N3HFvx
+X-Rocket-Received: from User (jenny_max675@24.8.80.174 with )
+        by smtp214.mail.gq1.yahoo.com with SMTP; 14 May 2013 12:36:21 -0700 PDT
+Reply-To: <offcefile001@yahoo.com.hk>
+From: "Chris Morgan" <jenny_max675@outlook.com>
+Subject: I Await Your Response
+Date: Tue, 14 May 2013 06:59:02 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514185642.GT6795@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0103_01C2A9A6.5234B4B8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 11:56:42AM -0700, Tejun Heo wrote:
-> On Tue, May 07, 2013 at 10:38:37AM +0200, Alexander Gordeev wrote:
-> > Currently all interrupts assigned to AHCI ports show up in
-> > '/proc/interrupts' as 'ahci'. This fix adds port numbers as
-> > suffixes and hence makes the descriptions distinct.
-> > 
-> > Reported-by: Jan Beulich <JBeulich@suse.com>
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> 
-> Patch doesn't apply.  Can you please refresh it on top of the
-> following git branch?
+This is a multi-part message in MIME format.
 
-Well, this patch is on top of a previously posted another patch
-"[PATCH RFC 1/1] AHCI: Optimize interrupt processing". Jeff said
-he applied the latter, but I did not notice it made to his repo.
+------=_NextPart_000_0103_01C2A9A6.5234B4B8
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Would you consider to accept "AHCI: Optimize interrupt processing"
-patch first, or still refresh this one?
+I have attached a very important letter to this mail. Read thoroughly and reply back.
 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.11
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+------=_NextPart_000_0103_01C2A9A6.5234B4B8
+Content-Type: application/octet-stream;
+	name="Letter from Chris Morgan.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Letter from Chris Morgan.rtf"
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZuaWxcZmNoYXJzZXQwIENhbGlicmk7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTEwO31cdmlld2tpbmQ0XHVjMVxw
+YXJkXHNhMjAwXHNsMjc2XHNsbXVsdDFcbGFuZzlcZjBcZnMyMiBUaGlzIGlz
+IHRvIGludGltYXRlIHlvdSBvZiBhIHZlcnkgaW1wb3J0YW50IGluZm9ybWF0
+aW9uIHdoaWNoIHdpbGwgYmUgb2YgYSBncmVhdCBoZWxwIHRvIHJlZGVlbSB5
+b3UgZnJvbSBhbGwgdGhlIGRpZmZpY3VsdGllcyB5b3UgaGF2ZSBiZWVuIGV4
+cGVyaWVuY2luZyBpbiBnZXR0aW5nIHlvdXIgbG9uZyBvdmVyIGR1ZSBJbmhl
+cml0YW5jZSBwYXltZW50IHZhbHVlZCBhdCAkNDUgbWlsbGlvbiBkdWUgdG8g
+ZXhjZXNzaXZlIGRlbWFuZCBmb3IgbW9uZXkgZnJvbSB5b3UgYnkgYm90aCBj
+b3JydXB0IEJhbmsgb2ZmaWNpYWxzIGFuZCBDb3VyaWVyIENvbXBhbmllcyBh
+ZnRlciB3aGljaCB5b3VyIGZ1bmQgcmVtYWluIHVucGFpZCB0byB5b3UuXHBh
+cg0KXHBhcg0KSSBhbSBSZXYuIENocmlzIE1vcmdhbiwgSGVhZCwgRWxlY3Ry
+b25pYyBQYXltZW50cyBVbml0ICggQy5CLk4pXHBhcg0KQmUgaW5mb3JtZWQg
+dGhhdCB5b3VyIGZ1bmRzICQ0NSBNaWxsaW9uIGRvbGxhcnMsIHdpbGwgZGVs
+aXZlciB0byB5b3UgdGhyb3VnaCBvdXIgQ29uc3VsdGFudCBmcm9tIE5pZ2Vy
+aWEgdG8geW91ciBkb29yIHN0ZXAgaW4geW91ciBhYm92ZSBhZGRyZXNzIGlu
+IHlvdXIgY291bnRyeS5ccGFyDQpccGFyDQpTbyB5b3Ugc2hvdWxkIHJlY29u
+ZmlybSB5b3VyIGNvbnRhY3QgYWRkcmVzcyB3aGVyZSB0aGUgQ29uc3VsdGFu
+dCB3aWxsIGRlbGl2ZXIgdGhlIHBhY2thZ2UgKGNhc2gpLGFuZCBmb3IgeW91
+ciBpbmZvcm1hdGlvbiB0aGUgQ29uc3VsdGFudCBkb2VzIG5vdCBrbm93IHRo
+ZSBjb250ZW50IG9mIHRoZSBjb25zaWdubWVudCBmb3Igc2VjdXJpdHkgcmVh
+c29uLCBiZWNhdXNlIGlmIHRoZSBDb25zdWx0YW50IGtub3dzIHdoYXQgdGhl
+IGNvbnRlbnQgaXMgYWxsIGFib3V0LCB0aGUgQ29uc3VsdGFudCBtaWdodCBE
+aXZlcnQgdGhlIG1vbmV5IHRvIGFuIHVuZGVzaWduYXRlZCBhY2NvdW50IG9y
+IHZhdWx0LlxwYXINCk5PVEU6IElGIFlPVSBIQVZFIEFOWSBUUkFOU0FDVElP
+TiBXSVRIIEFOWSBCQU5LIEFST1VORCBUSEUgR0xPQkFMLCBET05ccnF1b3Rl
+IFQgSEVTSVRBVEUgVE8gSU5GT1JNIFVTLCBTTyBXRSBDQU4gQ0hFQ0sgT04g
+SVQgQU5EIEtOT1cgSUYgSVQgSVMgR0VOVUlORS5ccGFyDQpccGFyDQpSZXNl
+bmQgeW91ciBjZWxsIHBob25lIG51bWJlciBzbyB0aGF0IGFzIHNvb24gYXMg
+dGhlIENvbnN1bHRhbnQgYXJyaXZlcyBhdCB0aGUgQWlycG9ydCBpbiB5b3Vy
+IGNvdW50cnksIEhlIHdpbGwgY2FsbCB5b3UgdG8gbG9jYXRlIHlvdSBmb3Ig
+dGhlIGRlbGl2ZXJ5LlxwYXINCldoYXQgaSBuZWVkIGZyb20geW91IG5vdyBp
+cyBhbnkgZm9ybSBvZiB5b3VyIGlkZW50aWZpY2F0aW9uIGZvclxwYXINCmV4
+YW1wbGU6XHBhcg0KMS4gWU9VUiBOQU1FOi4uLi4uLi4uLi4uLi4uLi4uLi4u
+Li4uLi4uLi4uLlxwYXINCjIuIFlPVVIgQUREUkVTUzouLi4uLi4uLi4uLi4u
+Li4uLi4uLi4uLi4uLi4uLlxwYXINCjMuIFlPVVIgVEVMRVBIT05FIC4uLi4u
+Li4uLi4uLi4uLi4uLi4uLi4uLi4uIFxwYXINCjUuIEFHRS4uLi4uLi4uLi4u
+Li4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLlxwYXINCjYuIFNFWDouLi4u
+Li4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uXHBhcg0KNy4gWU9V
+UiBPQ0NVUEFUSU9OLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi5ccGFyDQo4
+LiBBIGNvcHkgb2YgeW91ciBpZGVudGlmaWNhdGlvbiBjYXJkLi4uLi4uLi4u
+Li4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uXHBhcg0KXHBhcg0KWW91IGFy
+ZSBhZHZpY2UgdG8gY29uc3RhbnRseSB1cGRhdGUgbWUgdW50aWwgYWZ0ZXIg
+eW91IGhhdmUgcmVjZWl2ZWQgeW91ciBwYWNrYWdlIChjYXNoKSBmcm9tIHRo
+ZSBsIENvbnN1bHRhbnQgYXQgeW91ciBkb29yIHN0ZXAsIFNvIHRoYXQgaSBj
+YW4gdXBkYXRlIHRoZSBvZmZpY2Ugb2YgdGhlIENvbnN1bHRhbnQgaGVyZSBp
+biBOaWdlcmlhIHRvIGhhdmUgYSB0cmFuc2FjdGlvbiByZWNvcmQgYW5kIGNs
+b3NlIHlvdXIgZmlsZSBhY2NvcmRpbmdseS5ccGFyDQpccGFyDQpGaW5hbGx5
+LCBiZSB3YXJuZWQgYWJvdXQgYW55IHBlcnNvbiBvciBvZmZpY2lhbCB0aGF0
+IHdpbGwgaW5zdGlnYXRlIHlvdSB0byBjb250cmFkaWN0IHRoaXMgaXNzdWUs
+IHRoaXMgd2lsbCBkZWZpbml0ZWx5IHN1YmplY3QgeW91ciBwYXltZW50IHRv
+IGRlYWRsb2NrIGlmIHlvdSBhcmUgYSBwYXJ0eS5ccGFyDQpMb29raW5nIGZv
+cndhcmQgdG8geW91ciB1cmdlbnQgcmVzcG9uZCBhbmQgQ29uZ3JhdHVsYXRp
+b25zLiBQbGVhc2UgZG8gY2FsbCBtZSBvbiBteSBkaXJlY3QgdGVsZXBob25l
+IG51bWJlcjogKzIzNCA4MTQyNDA4MzQyIGltbWVkaWF0ZWx5IHlvdSByZWNl
+aXZlIHRoaXMgbWFpbC5ccGFyDQpccGFyDQpccGFyDQpTaW5jZXJlbHksXHBh
+cg0KUmV2LiBDaHJpcyBNb3JnYW5ccGFyDQpIZWFkLCBFbGVjdHJvbmljIFBh
+eW1lbnRzIFVuaXQgKCBDLkIuTilccGFyDQorMjM0IDgxNDI0MDgzNDJccGFy
+DQp9DQoA
+
+------=_NextPart_000_0103_01C2A9A6.5234B4B8--
