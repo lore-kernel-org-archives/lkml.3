@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3ENDzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 23:55:46 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43346 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751788Ab3ENDzo (ORCPT
+	id S1756037Ab3END4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 23:56:55 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:55977 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab3END4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 23:55:44 -0400
-X-Sasl-enc: fQcRX0Pez3OiRuhxu909JLQ35Aya/aXT62W3e7X8dga9 1368503742
-Message-ID: <5191B5C4.2020609@signal11.us>
-Date: Mon, 13 May 2013 23:55:48 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Mon, 13 May 2013 23:56:53 -0400
 MIME-Version: 1.0
-To: David Hauweele <david@hauweele.net>
-CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
- line enabled
-References: <1368112788-25701-1-git-send-email-david@hauweele.net> <1368112788-25701-2-git-send-email-david@hauweele.net>
-In-Reply-To: <1368112788-25701-2-git-send-email-david@hauweele.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5191AD65.7090105@huawei.com>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+	<1368498506-25857-3-git-send-email-yinghai@kernel.org>
+	<5191AD65.7090105@huawei.com>
+Date: Mon, 13 May 2013 20:56:53 -0700
+X-Google-Sender-Auth: bRegfUiIK-2dlbHp2TiizZ_DsyE
+Message-ID: <CAE9FiQWty+iSv3RdfesoyDZ3q15QeX4fJGFcXS8PxTCese-XzQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] PCI: move resources and bus_list releasing to pci_release_dev
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/9/13 11:19 AM, David Hauweele wrote:
-> Disabling the interrupt line could miss an IRQ and leave the line into a
-> low state hence locking the driver.
+On Mon, May 13, 2013 at 8:20 PM, Yijing Wang <wangyijing@huawei.com> wrote:
+> On 2013/5/14 10:28, Yinghai Lu wrote:
+>> We should not release resource in pci_destroy that is too early
 >
+> Hi Yinghai,
+>    "too early" means that after pci_stop_dev(), if someone else
+> hold the device reference, it still care the device resource ? e.g.?
 
-Have you observed this? My understanding is that the interrupt won't be 
-lost but instead delayed until enable_irq() is called.
+I don't mean that.
 
-I got this pattern from the other 802.15.4 drivers. Perhaps my 
-understanding is wrong.
+>
+>> as there could be still other use hold reference.
 
+purpose is:
+move res releasing as late as possible. so pci_stop_and_remove_bus_device
+could be called several times for nested removing via sys.
 
-> Signed-off-by: David Hauweele <david@hauweele.net>
-> ---
->   drivers/net/ieee802154/mrf24j40.c |    7 +------
->   1 file changed, 1 insertion(+), 6 deletions(-)
->
-> diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-> index 1e3ddf3..6ef32f7 100644
-> --- a/drivers/net/ieee802154/mrf24j40.c
-> +++ b/drivers/net/ieee802154/mrf24j40.c
-> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
->   {
->   	struct mrf24j40 *devrec = data;
->
-> -	disable_irq_nosync(irq);
-> -
->   	schedule_work(&devrec->irqwork);
->
->   	return IRQ_HANDLED;
-> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
->   	/* Read the interrupt status */
->   	ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
->   	if (ret)
-> -		goto out;
-> +		return;
->
->   	/* Check for TX complete */
->   	if (intstat & 0x1)
-> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
->   	/* Check for Rx */
->   	if (intstat & 0x8)
->   		schedule_work(&devrec->rxwork);
-> -
-> -out:
-> -	enable_irq(devrec->spi->irq);
->   }
->
->   static void mrf24j40_rxwork(struct work_struct *work)
->
-
+Yinghai
