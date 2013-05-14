@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab3ENWCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 18:02:23 -0400
-Received: from mailout.micron.com ([137.201.242.129]:38275 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758423Ab3ENWCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 18:02:22 -0400
-Message-ID: <5192ACB6.5000302@micron.com>
-Date: Tue, 14 May 2013 14:29:26 -0700
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1758626Ab3ENWEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 18:04:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34877 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758432Ab3ENWET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 18:04:19 -0400
+Date: Wed, 15 May 2013 00:04:14 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, EUNBONG SONG <eunb.song@samsung.com>,
+        Jan Kara <jack@suse.cz>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-xfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
+Subject: Re: EXT4 regression caused 4eec7
+Message-ID: <20130514220414.GD10769@quack.suse.cz>
+References: <6719519.5821368147110937.JavaMail.weblogic@epml17>
+ <20130510192747.GA11707@thunk.org>
+ <87y5bm53z3.fsf@openvz.org>
+ <87txm96fkd.fsf@openvz.org>
+ <87mws1eq6y.fsf@openvz.org>
+ <20130511230559.GD26298@thunk.org>
+ <87a9o01siw.fsf@openvz.org>
 MIME-Version: 1.0
-To: <axboe@kernel.dk>
-CC: <linux-kernel@vger.kernel.org>, <asamymuthupa@mcrion.com>
-Subject: [PATCH][TRIVIAL] mtip32xx: Fix NULL pointer dereference during module
- unload
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19866.002
-X-TM-AS-Result: No-9.190000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9o01siw.fsf@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An open file-handle to one or more of the driver exported debugfs
-nodes causes raciness in recursive removal during module unload;
-sometimes a stale parent dentry is dereferenced when more than 1
-pci device is present.
+On Sun 12-05-13 13:01:11, Dmitry Monakhov wrote:
+> On Sat, 11 May 2013 19:05:59 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
+> > On Sat, May 11, 2013 at 03:00:53PM +0400, Dmitry Monakhov wrote:
+> > > I've bisected ext4 related issue. It is appeared that it is pure ext4
+> > > specific. Regression caused by  following commit
+> > > commit 4eec708d263f0ee10861d69251708a225b64cac7
+> > > Author: Jan Kara <jack@suse.cz>
+> > > Date:   Thu Apr 11 23:56:53 2013 -0400
+> > >     ext4: use io_end for multiple bios
+> > 
+> > Hmm... the next question is why did I see this in my testing.  Did you
+> > find this on ia64, or x86?
+> No simple x86_64. 
+> > Also what about the slab corruption which
+> > you saw when running XFS; was that unrelated?
+> My theory about mysterious corruption in mm layer which broke everything
+> was wrong. We have to absolutely independent regressions in  different
+> filesystems:
+> * Slub corruption on XFS
+>   - testcase: xfstests/generic/007
+>   - bad commit: 666d64 
+>   - LINK: https://lkml.org/lkml/2013/5/11/154
+> 
+> * Slub corruption on EXT4
+>   - testcase: xfstests/generic/299
+>   - bad commit: 4eec70
+>   - link: https://lkml.org/lkml/2013/5/11/37
+>   - fix: https://lkml.org/lkml/2013/5/11/142
+> 
+> In fact '4eec70' are vexing because I have reviewed and tested this patch
+> before it was marked as Review-by, but missed the bug. This is because
+> xfstests was executed manually logs was full of warnings but tainted flag
+> was not checked at the end. To prevent this thing in future I'll always
+> use my local autotest(http://autotest.github.io/) farm next time.
+  OK, so I finally nailed this down. DIO code has that peculiarity that it
+doesn't call ->end_io callback when no IO was actually submitted. As a
+bonus the generic code does a cleanup of generic stuff that is otherwise left
+to ->end_io callback. Since I need to do io_end cleanup in ->end_io callback
+I have to compensate for that in ext4_ext_direct_IO(). Sadly I've got the
+condition wrong and also forgot that generic code already decremented
+i_dio_count in the error failure case so cleanup sometimes happened twice.
+I'll add fixed version of the patch back in my series (since the patch got
+reverted upstream).
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
----
-diff --git a/drivers/block/mtip32xx/mtip32xx.c
-b/drivers/block/mtip32xx/mtip32xx.c
-index 847107e..e366c74 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -3002,7 +3002,8 @@ static int mtip_hw_debugfs_init(struct driver_data
-*dd)
-
- static void mtip_hw_debugfs_exit(struct driver_data *dd)
- {
--	debugfs_remove_recursive(dd->dfs_node);
-+	if (dd->dfs_node)
-+		debugfs_remove_recursive(dd->dfs_node);
- }
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
