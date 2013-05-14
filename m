@@ -1,70 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3ENMXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:23:02 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47733
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752594Ab3ENMXA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:23:00 -0400
-Date: Tue, 14 May 2013 14:20:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130514122049.GH15942@dyad.programming.kicks-ass.net>
-References: <20130412231846.GA20038@linux.vnet.ibm.com>
- <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
+	id S1757042Ab3ENMX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:23:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754535Ab3ENMX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 08:23:27 -0400
+Date: Tue, 14 May 2013 14:23:25 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 9/9] mm: vmscan: Move logic from balance_pgdat() to
+ kswapd_shrink_zone()
+Message-ID: <20130514122325.GP5198@dhcp22.suse.cz>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+ <1368432760-21573-10-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130413220943.GB29861@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1368432760-21573-10-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 03:09:43PM -0700, Paul E. McKenney wrote:
-> > How are those CPUs going idle without first telling RCU that they're
-> > quiesced?  Seems like, during boot at least, you want RCU to use its
-> > idle==quiesced logic to proactively note continuously-quiescent states.
-> > Ideally, you should not hit the FQS code at all during boot.
+On Mon 13-05-13 09:12:40, Mel Gorman wrote:
+> balance_pgdat() is very long and some of the logic can and should
+> be internal to kswapd_shrink_zone(). Move it so the flow of
+> balance_pgdat() is marginally easier to follow.
 > 
-> FQS is RCU's idle==quiesced logic.  ;-)
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Looks good
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/vmscan.c | 110 +++++++++++++++++++++++++++++-------------------------------
+>  1 file changed, 54 insertions(+), 56 deletions(-)
 > 
-> In theory, RCU could add logic at idle entry to report a quiescent state,
-> in fact CONFIG_RCU_FAST_NO_HZ used to do exactly that.  In practice,
-> this is not good for energy efficiency at runtime for a goodly number
-> of workloads, which is why CONFIG_RCU_FAST_NO_HZ now relies on callback
-> numbering and FQS.
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index e65fe46..0ba9d3a 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2705,18 +2705,53 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>   * This is used to determine if the scanning priority needs to be raised.
+>   */
+>  static bool kswapd_shrink_zone(struct zone *zone,
+> +			       int classzone_idx,
+>  			       struct scan_control *sc,
+>  			       unsigned long lru_pages,
+>  			       unsigned long *nr_attempted)
+>  {
+>  	unsigned long nr_slab;
+> +	int testorder = sc->order;
+> +	unsigned long balance_gap;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	struct shrink_control shrink = {
+>  		.gfp_mask = sc->gfp_mask,
+>  	};
+> +	bool lowmem_pressure;
+>  
+>  	/* Reclaim above the high watermark. */
+>  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+> +
+> +	/*
+> +	 * Kswapd reclaims only single pages with compaction enabled. Trying
+> +	 * too hard to reclaim until contiguous free pages have become
+> +	 * available can hurt performance by evicting too much useful data
+> +	 * from memory. Do not reclaim more than needed for compaction.
+> +	 */
+> +	if (IS_ENABLED(CONFIG_COMPACTION) && sc->order &&
+> +			compaction_suitable(zone, sc->order) !=
+> +				COMPACT_SKIPPED)
+> +		testorder = 0;
+> +
+> +	/*
+> +	 * We put equal pressure on every zone, unless one zone has way too
+> +	 * many pages free already. The "too many pages" is defined as the
+> +	 * high wmark plus a "gap" where the gap is either the low
+> +	 * watermark or 1% of the zone, whichever is smaller.
+> +	 */
+> +	balance_gap = min(low_wmark_pages(zone),
+> +		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+> +		KSWAPD_ZONE_BALANCE_GAP_RATIO);
+> +
+> +	/*
+> +	 * If there is no low memory pressure or the zone is balanced then no
+> +	 * reclaim is necessary
+> +	 */
+> +	lowmem_pressure = (buffer_heads_over_limit && is_highmem(zone));
+> +	if (!lowmem_pressure && zone_balanced(zone, testorder,
+> +						balance_gap, classzone_idx))
+> +		return true;
+> +
+>  	shrink_zone(zone, sc);
+>  
+>  	reclaim_state->reclaimed_slab = 0;
+> @@ -2731,6 +2766,18 @@ static bool kswapd_shrink_zone(struct zone *zone,
+>  
+>  	zone_clear_flag(zone, ZONE_WRITEBACK);
+>  
+> +	/*
+> +	 * If a zone reaches its high watermark, consider it to be no longer
+> +	 * congested. It's possible there are dirty pages backed by congested
+> +	 * BDIs but as pressure is relieved, speculatively avoid congestion
+> +	 * waits.
+> +	 */
+> +	if (!zone->all_unreclaimable &&
+> +	    zone_balanced(zone, testorder, 0, classzone_idx)) {
+> +		zone_clear_flag(zone, ZONE_CONGESTED);
+> +		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
+> +	}
+> +
+>  	return sc->nr_scanned >= sc->nr_to_reclaim;
+>  }
+>  
+> @@ -2866,8 +2913,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  		 */
+>  		for (i = 0; i <= end_zone; i++) {
+>  			struct zone *zone = pgdat->node_zones + i;
+> -			int testorder;
+> -			unsigned long balance_gap;
+>  
+>  			if (!populated_zone(zone))
+>  				continue;
+> @@ -2888,61 +2933,14 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  			sc.nr_reclaimed += nr_soft_reclaimed;
+>  
+>  			/*
+> -			 * We put equal pressure on every zone, unless
+> -			 * one zone has way too many pages free
+> -			 * already. The "too many pages" is defined
+> -			 * as the high wmark plus a "gap" where the
+> -			 * gap is either the low watermark or 1%
+> -			 * of the zone, whichever is smaller.
+> -			 */
+> -			balance_gap = min(low_wmark_pages(zone),
+> -				(zone->managed_pages +
+> -					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+> -				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+> -			/*
+> -			 * Kswapd reclaims only single pages with compaction
+> -			 * enabled. Trying too hard to reclaim until contiguous
+> -			 * free pages have become available can hurt performance
+> -			 * by evicting too much useful data from memory.
+> -			 * Do not reclaim more than needed for compaction.
+> +			 * There should be no need to raise the scanning
+> +			 * priority if enough pages are already being scanned
+> +			 * that that high watermark would be met at 100%
+> +			 * efficiency.
+>  			 */
+> -			testorder = order;
+> -			if (IS_ENABLED(CONFIG_COMPACTION) && order &&
+> -					compaction_suitable(zone, order) !=
+> -						COMPACT_SKIPPED)
+> -				testorder = 0;
+> -
+> -			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+> -			    !zone_balanced(zone, testorder,
+> -					   balance_gap, end_zone)) {
+> -				/*
+> -				 * There should be no need to raise the
+> -				 * scanning priority if enough pages are
+> -				 * already being scanned that high
+> -				 * watermark would be met at 100% efficiency.
+> -				 */
+> -				if (kswapd_shrink_zone(zone, &sc, lru_pages,
+> -						       &nr_attempted))
+> -					raise_priority = false;
+> -			}
+> -
+> -			if (zone->all_unreclaimable) {
+> -				if (end_zone && end_zone == i)
+> -					end_zone--;
+> -				continue;
+> -			}
+> -
+> -			if (zone_balanced(zone, testorder, 0, end_zone))
+> -				/*
+> -				 * If a zone reaches its high watermark,
+> -				 * consider it to be no longer congested. It's
+> -				 * possible there are dirty pages backed by
+> -				 * congested BDIs but as pressure is relieved,
+> -				 * speculatively avoid congestion waits
+> -				 * or writing pages from kswapd context.
+> -				 */
+> -				zone_clear_flag(zone, ZONE_CONGESTED);
+> -				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
+> +			if (kswapd_shrink_zone(zone, end_zone, &sc,
+> +					lru_pages, &nr_attempted))
+> +				raise_priority = false;
+>  		}
+>  
+>  		/*
+> -- 
+> 1.8.1.4
+> 
 
-OK, so bear with me.. I've missed a few months of RCU so I might not be as
-up-to-date as I'd like to be.
-
-So going by the above; FAST_NO_HZ used to kick RCU into quiescence on entering
-NO_HZ. This made some ARM people happy but made the rest of the world sad
-because of immense idle-entry times.
-
-The above implies you've changed this about to allow CPUs to go idle without
-reporting home but instead rely on Forced Quiescent States to push the remote
-idle cpus into quiescence.
-
-Now I understand that advancing the RCU state machine and processing callbacks
-takes time; however at boot (and possibly thereafter) we have the special case
-where we have no pending RCU state.
-
-Could we not, under those circumstances, quickly remove the CPU from the RCU
-state machine so that FQS aren't required to prod quite as much remote state?
+-- 
+Michal Hocko
+SUSE Labs
