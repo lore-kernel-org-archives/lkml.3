@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757079Ab3ENP0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:26:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48168 "EHLO mx2.suse.de"
+	id S1756872Ab3ENP2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:28:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48798 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab3ENP0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:26:38 -0400
-Date: Tue, 14 May 2013 16:26:35 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
-Subject: Re: [RFC][PATCH 4/7] break out mapping "freepage" code
-Message-ID: <20130514152635.GV11497@suse.de>
-References: <20130507211954.9815F9D1@viggo.jf.intel.com>
- <20130507212000.59652B69@viggo.jf.intel.com>
+	id S1751427Ab3ENP2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:28:36 -0400
+Message-ID: <519257FC.8070708@zytor.com>
+Date: Tue, 14 May 2013 08:27:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130507212000.59652B69@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        tboot-devel@lists.sourceforge.net,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH] x86: add a new SMP bring up way for tboot case
+References: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 07, 2013 at 02:20:00PM -0700, Dave Hansen wrote:
+On 05/14/2013 02:21 PM, Qiaowei Ren wrote:
+> tboot provides a better AP wakeup mechanism based on cpu MWAIT
+> feature for OS/VMM. With this mechanism, system will boot faster
+> and will NOT require VT to be enabled. But it requires that
+> OS/VMM must have support it, otherwise system can never boot up.
 > 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
+> Once this mechanism is enabled, tboot will put APs waiting in
+> MWAIT loops before launching kernel. kernel can check the new
+> flag field in v6 tboot shared page for the hint. If the bit
+> TB_FLAG_AP_WAKE_SUPPORT in flag field is set, kernel BSP has
+> to write the monitored memory (tboot->ap_wake_trigger) to bring
+> APs out of MWAIT loops. The sipi vector should be written in
+> tboot->ap_wake_addr before waking up APs.
 > 
-> __remove_mapping() only deals with pages with mappings, meaning
-> page cache and swap cache.
-> 
-> At this point, the page has been removed from the mapping's radix
-> tree, and we need to ensure that any fs-specific (or swap-
-> specific) resources are freed up.
-> 
-> We will be using this function from a second location in a
-> following patch.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-I used up all my complaining about naming beans in the last patch and do
-not have a better suggestion for the new helper so ...
+This really needs a *detailed* specification about the state the CPU is
+parked in.  Most BIOSes do in fact park the CPUs in an mwait loop, but
+we can't use it because the CPU state they are parked in is ill-defined.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+This is a good idea, but please write (or point to) a spec about what
+the parked CPU state looks like and how the OS gets control.  From the
+*looks* of the code I assume it is entered in 16-bit real mode but then
+it is important to know what parts of the register state are well-defined.
 
--- 
-Mel Gorman
-SUSE Labs
+> +#define TB_FLAG_AP_WAKE_SUPPORT 0X00000001
+
+Minor nit: please lower-case the hexadecimal x.
+
+	-hpa
+
