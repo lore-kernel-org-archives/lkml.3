@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab3ENOzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:55:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46523 "EHLO mx2.suse.de"
+	id S1757477Ab3ENO4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:56:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54511 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab3ENOzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:55:41 -0400
-Date: Tue, 14 May 2013 15:55:37 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
-Subject: Re: [RFC][PATCH 1/7] defer clearing of page_private() for swap cache
- pages
-Message-ID: <20130514145537.GS11497@suse.de>
-References: <20130507211954.9815F9D1@viggo.jf.intel.com>
- <20130507211955.7DF88A4F@viggo.jf.intel.com>
+	id S1751160Ab3ENO4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:56:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
+   d="scan'208";a="333896509"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: RE: [PATCH] x86: add a new SMP bring up way for tboot case
+Thread-Topic: [PATCH] x86: add a new SMP bring up way for tboot case
+Thread-Index: AQHOUKduon4Pn56HmkychJPawPQVZJkEKT0AgACbFFA=
+Date: Tue, 14 May 2013 14:56:05 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9AF06B@SHSMSX102.ccr.corp.intel.com>
+References: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
+ <20130514133834.GA28834@pd.tnic>
+In-Reply-To: <20130514133834.GA28834@pd.tnic>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130507211955.7DF88A4F@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4EEuNai008185
 
-On Tue, May 07, 2013 at 02:19:55PM -0700, Dave Hansen wrote:
+On 2013-05-14, Borislav Petkov wrote:
+> On Wed, May 15, 2013 at 05:21:25AM +0800, Qiaowei Ren wrote:
+> > diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index
+> > f84fe00..0ec1947 100644
+> > --- a/arch/x86/kernel/tboot.c
+> > +++ b/arch/x86/kernel/tboot.c
+> > @@ -101,6 +101,8 @@ void __init tboot_probe(void)
+> >  	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
+> >  	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
+> >  	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
+> > +	if (tboot->version >= 6)
+> > +		pr_info("flags: 0x%08x\n", tboot->flags);
 > 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> There are only two callers of swapcache_free() which actually
-> pass in a non-NULL 'struct page'.  Both of them
-> (__remove_mapping and delete_from_swap_cache())  create a
-> temporary on-stack 'swp_entry_t' and set entry.val to
-> page_private().
-> 
-> They need to do this since __delete_from_swap_cache() does
-> set_page_private(page, 0) and destroys the information.
-> 
-> However, I'd like to batch a few of these operations on several
-> pages together in a new version of __remove_mapping(), and I
-> would prefer not to have to allocate temporary storage for
-> each page.  The code is pretty ugly, and it's a bit silly
-> to create these on-stack 'swp_entry_t's when it is so easy to
-> just keep the information around in 'struct page'.
-> 
-> There should not be any danger in doing this since we are
-> absolutely on the path of freeing these page.  There is no
-> turning back, and no other rerferences can be obtained
-> after it comes out of the radix tree.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> This should be pr_debug like the rest, no?
 
-On it's own, this patch looks like it has a lot missing but when
-combined with patch 2, it starts making sense so
+Well. pr_debug is ok.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+Qiaowei
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
