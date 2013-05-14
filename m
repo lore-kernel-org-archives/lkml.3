@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3ENQUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:20:54 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:33695 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab3ENQUv (ORCPT
+	id S1755022Ab3ENQWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:22:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40467 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3ENQWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:20:51 -0400
-Date: Tue, 14 May 2013 17:20:46 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Christian Daudt <csd@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 04/20] ARM: picoxcell: Remove init_irq declaration in
- machine description
-Message-ID: <20130514162046.GA16346@page>
-References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
- <1368545933-7430-5-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 14 May 2013 12:22:44 -0400
+Date: Tue, 14 May 2013 11:22:38 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        amorgan@redhat.com, cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-ID: <20130514162238.GA9056@sergelap>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20130514150539.GA26090@sergelap>
+ <20130514155111.GJ680@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368545933-7430-5-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <20130514155111.GJ680@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+Quoting Aristeu Rozanski (aris@redhat.com):
+> On Tue, May 14, 2013 at 10:05:39AM -0500, Serge Hallyn wrote:
+> > so now that the device cgroup properly respects hierarchy, not allowing
+> > a cgroup to be given greater permission than its parent, should we consider
+> > relaxing the capability checks?
+> > 
+> > There are two capable(CAP_SYS_ADMIN) checks in deice_cgroup.c: one in
+> > devcgroup_can_attach() to protect changing another task's cgroup, and
+> > one in devcgroup_update_access() to protect writes to the devices.allow
+> > and devices.deny files.
+> > 
+> > I think the first should be changed to a check for ns_capable() to
+> > the victim's user_ns.  Something like 
+> > 
+> > --- a/security/device_cgroup.c
+> > +++ b/security/device_cgroup.c
+> > @@ -70,10 +70,16 @@ static int devcgroup_can_attach(struct cgroup *new_cgrp,
+> >                                 struct cgroup_taskset *set)
+> >  {
+> >         struct task_struct *task = cgroup_taskset_first(set);
+> > +       struct user_namespace *ns;
+> > +       int ret = -EPERM;
+> > 
+> > -       if (current != task && !capable(CAP_SYS_ADMIN))
+> > -               return -EPERM;
+> > -       return 0;
+> > +       if (current == task)
+> > +               return 0;
+> > +
+> > +       ns = userns_get(task);;
+> > +       ret = ns_capable(ns, CAP_SYS_ADMIN) ? 0 : -EPERM;
+> > +       put_user_ns(ns);
+> > +       return ret;
+> >  }
+> 
+> wouldn't this allow a userns root to move a task in the same userns into
+> a parent cgroup? I believe than anything but moving down the hierarchy
+> would be very complicated to verify (how far up can you go).
 
-Thanks for this, I'll add it to my tree.  I've modified it slightly to 
-kill off the other irq includes, hopefully that's okay with you.
+But only if they are able to open the tasks file for writing, which
+they shouldn't be able to do, right?
 
-Thanks,
+> > For the second, the hierarchy support should let us ignore concerns
+> > about unprivileged users escalating privilege, but I'm trying to decide
+> > whether we  need to worry about the sendmail capability class of bugs.
+> 
+> You have a pointer for more information on those?
 
-Jamie
+Darn - unfortunately the best description of it, which was at
+http://userweb.kernel.org/~morgan/sendmail-capabilities-war-story.html
+is no longer there since userweb was taken down, and it was never
+captured by archive.org.  There's a brief description in
+http://lwn.net/Articles/280279/ at the paragraph starting with "The
+memory of the sendmail-capabilities bug from 2000..."
 
-8<---
+> > My sense is actually the answer is no, and we can drop the capable()
+> > check altogether.  The reason is that while userspace frequently doesn't
+> > properly handle a failing system call due to unexpected lack of partial
+> > privilege, I wouldn't expect any setuid root program to ignore failure
+> > to open or mknod a device file (and proceed into a bad failure mode).
+> > Does this sound rasonable, or a recipe for disaster?
+> 
+> The second case sounds ok to me
 
->From 4b83f75a7af388aaf5f79ccf72c37074bc9166da Mon Sep 17 00:00:00 2001
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-Date: Tue, 14 May 2013 17:38:37 +0200
-Subject: [PATCH] ARM: picoxcell: Remove init_irq declaration in machine
- description
-
-Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
-specified") removed the need to explictly setup the init_irq field in
-the machine description when using only irqchip_init. Remove that
-declaration for picoxcell as well.
-
-[ jiles: removed other, unused irq includes. ]
-
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Jamie Iles <jamie@jamieiles.com>
----
- arch/arm/mach-picoxcell/common.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/arm/mach-picoxcell/common.c b/arch/arm/mach-picoxcell/common.c
-index f6f71bb..b069fa6 100644
---- a/arch/arm/mach-picoxcell/common.c
-+++ b/arch/arm/mach-picoxcell/common.c
-@@ -8,12 +8,8 @@
-  * All enquiries to support@picochip.com
-  */
- #include <linux/delay.h>
--#include <linux/irq.h>
--#include <linux/irqchip.h>
--#include <linux/irqdomain.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
--#include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/dw_apb_timer.h>
- 
-@@ -85,7 +81,6 @@ static void picoxcell_wdt_restart(char mode, const char *cmd)
- DT_MACHINE_START(PICOXCELL, "Picochip picoXcell")
- 	.map_io		= picoxcell_map_io,
- 	.nr_irqs	= NR_IRQS_LEGACY,
--	.init_irq	= irqchip_init,
- 	.init_time	= dw_apb_timer_init,
- 	.init_machine	= picoxcell_init_machine,
- 	.dt_compat	= picoxcell_dt_match,
--- 
-1.8.1.2
-
+-serge
