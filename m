@@ -1,72 +1,2011 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3ENLor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:44:47 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:56081 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab3ENLop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:44:45 -0400
-Message-ID: <51922394.2020002@huawei.com>
-Date: Tue, 14 May 2013 19:44:20 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1757037Ab3ENLsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:48:10 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:37597 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab3ENLsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 07:48:07 -0400
+Date: Tue, 14 May 2013 14:48:02 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
+Subject: parisc boot crash on 3.10-rc1+git
+Message-ID: <alpine.SOC.1.00.1305141432120.9094@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LSM <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Ivan Bulatovic <combuster@archlinux.us>
-Subject: [PATCH] cgroup: initialize xattr before calling d_instantiate()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_create_file() calls d_instantiate(), which may decide to look
-at the xattrs on the file. Smack always does this and SELinux can be
-configured to do so.
+I saw parsic fixes in todays git and gave my RP3440 a test. It did not 
+work - first a __schedule_bug, then a lot of warnings from 
+drivers/pci/search.c (2 different places) and finally a kernel panic.
 
-But cgroup_add_file() didn't initialize xattrs before calling
-cgroup_create_file(), which finally leads to dereferencing NULL
-dentry->d_fsdata.
+Main Menu: Enter command or menu > bo
 
-This bug has been there since cgroup xattr was introduced.
+Interact with IPL (Y, N, or Cancel)?> y
 
-Cc: <stable@vger.kernel.org> # 3.8.x
-Reported-by: Ivan Bulatovic <combuster@archlinux.us>
-Reported-by: Casey Schaufler <casey@schaufler-ca.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+Booting... 
+Boot IO Dependent Code (IODC) revision 1
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 2a99262..38b1365 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2699,13 +2699,14 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 		goto out;
- 	}
- 
-+	cfe->type = (void *)cft;
-+	cfe->dentry = dentry;
-+	dentry->d_fsdata = cfe;
-+	simple_xattrs_init(&cfe->xattrs);
-+
- 	mode = cgroup_file_mode(cft);
- 	error = cgroup_create_file(dentry, mode | S_IFREG, cgrp->root->sb);
- 	if (!error) {
--		cfe->type = (void *)cft;
--		cfe->dentry = dentry;
--		dentry->d_fsdata = cfe;
--		simple_xattrs_init(&cfe->xattrs);
- 		list_add_tail(&cfe->node, &parent->files);
- 		cfe = NULL;
- 	}
+
+HARD Booted.
+palo ipl 1.18 root@rp3440 K nov   28 08:41:24 EET 2012
+
+
+Partition Start(MB) End(MB) Id Type
+
+
+1               1      32   f0 Palo
+
+
+2              33     224   83 ext2
+
+
+3             225   31696   83 ext2
+
+
+4           31697   34715   82 swap
+
+
+PALO(F0) partition contains:
+
+
+Information: No console specified on kernel command line. This is normal.
+
+PALO will choose the console currently used by firmware (serial).Current command line:
+
+2/vmlinux root=/dev/sdb3 console=ttyS0
+
+ 0: 2/vmlinux
+
+ 1: root=/dev/sdb3
+
+ 2: console=ttyS0
+
+
+<#>    edit the numbered field
+
+'b'    boot with this command line
+
+'r'    restore command line
+
+'l'    list dir
+
+? 0 2
+
+console=ttyS0 1
+
+Current command line:
+
+2/vmlinux root=/dev/sdb3 console=ttyS1
+
+ 0: 2/vmlinux
+
+ 1: root=/dev/sdb3
+
+ 2: console=ttyS1
+
+
+<#>    edit the numbered field
+
+'b'    boot with this command line
+
+'r'    restore command line
+
+'l'    list dir
+
+? 0 b
+
+
+Command line for kernel: 'root=/dev/sdb3 console=ttyS1 palo_kernel=2/vmlinux'
+
+Selected kernel: /vmlinux from partition 2
+
+ELF64 executable
+
+Entry 00100000 first 00100000 n 4
+
+Segment 0 load 00100000 size 5349376 mediaptr 0x1000
+
+Segment 1 load 00657bd0 size 460536 mediaptr 0x51bbd0
+
+Segment 2 load 006cc000 size 127840 mediaptr 0x58d000
+
+Segment 3 load 006ec000 size 23400 mediaptr 0x5ad000
+
+Branching to kernel entry point 0x00100000.  If this is the last
+
+message you see, you may need to switch your console.  This is
+
+a common symptom -- search the FAQ and mailing list at parisc-linux.org
+
+
+Linux version 3.10.0-rc1-00087-g674825d (mroos@rp3440) (gcc version 4.6.3 (Gentoo 4.6.3 p1.9) ) #28 Tue May 14 14:13:02 EEST 2013
+unwind_init: start = 0x40541000, end = 0x405753b0, entries = 13371
+FP[0] enabled: Rev 1 Model 20
+The 64-bit Kernel has started...
+Default page size is 4KB.
+bootconsole [ttyB0] enabled
+Initialized PDC Console for debugging.
+Determining PDC firmware type: 64 bit PAT.
+model 00008860 00000491 00000000 00000002 3e45475d0860fe3d 100000f0 00000008 000000b2 000000b2
+vers  00000302
+CPUID vers 20 rev 5 (0x00000285)
+capabilities 0x35
+model 9000/800/rp3410  
+parisc_cache_init: Only equivalent aliasing supported!
+Memory Ranges:
+ 0) Start 0x0000000000000000 End 0x000000003fffffff Size   1024 MB
+ 1) Start 0x0000004040000000 End 0x000000407fdfffff Size   1022 MB
+Total Memory: 2046 MB
+Built 2 zonelists in Zone order, mobility grouping on.  Total pages: 516615
+Kernel command line: root=/dev/sdb3 console=ttyS1 palo_kernel=2/vmlinux
+PID hash table entries: 4096 (order: 3, 32768 bytes)
+Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes)
+Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes)
+Sorting __ex_table...
+Memory: 2053004k/2095104k available (3701k kernel code, 42100k reserved, 1472k data, 152k init)
+virtual kernel memory layout:
+   vmalloc : 0x0000000000008000 - 0x000000003f000000   (1007 MB)
+   memory  : 0x0000000040000000 - 0x00000040bfe00000   (264190 MB)
+     .init : 0x00000000406cc000 - 0x00000000406f2000   ( 152 kB)
+     .data : 0x000000004049d4e8 - 0x000000004060d810   (1472 kB)
+     .text : 0x0000000040100000 - 0x000000004049d4e8   (3701 kB)
+SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=8
+NR_IRQS:80
+Console: colour dummy device 160x64
+Calibrating delay loop... 1594.36 BogoMIPS (lpj=3188736)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 256
+BUG: scheduling while atomic: swapper/0/0x0000000d
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.10.0-rc1-00087-g674825d #28
+Backtrace:
+ [<0000000040114c90>] show_stack+0x20/0x38
+ [<000000004030066c>] dump_stack+0x3c/0x50
+ [<000000004016b6a8>] __schedule_bug+0x70/0x98
+ [<000000004010fde0>] __schedule+0x368/0x398
+ [<000000004010ff40>] schedule+0x38/0x90
+ [<0000000040110184>] schedule_preempt_disabled+0x2c/0x50
+ [<000000004010bc30>] rest_init+0xe0/0x108
+ [<00000000406ccd50>] start_kernel+0x550/0x578
+ [<00000000404972bc>] packet_ioctl+0x22c/0x238
+ [<000000004047a2a4>] ip_mroute_getsockopt+0x114/0x138
+ [<0000000040469de8>] ip_mc_msfget+0x1c0/0x1e0
+ [<000000004045428c>] raw_ioctl+0x104/0x120
+ [<0000000040452860>] raw_probe_proto_opt+0x88/0x130
+
+devtmpfs: initialized
+NET: Registered protocol family 16
+Searching for devices...
+Found devices:
+1. Storm Peak Slow DC- at 0xfffffffffe780000 [128] { 0, 0x0, 0x886, 0x00004 }
+2. Everest Mako Memory at 0xfffffffffed08000 [8] { 1, 0x0, 0x0af, 0x00009 }
+3. Pluto BC McKinley Port at 0xfffffffffed00000 [0] { 12, 0x0, 0x880, 0x0000c }
+4. Mercury PCI Bridge at 0xfffffffffed20000 [0/0] { 13, 0x0, 0x783, 0x0000a }
+5. Mercury PCI Bridge at 0xfffffffffed22000 [0/1] { 13, 0x0, 0x783, 0x0000a }
+6. Mercury PCI Bridge at 0xfffffffffed24000 [0/2] { 13, 0x0, 0x783, 0x0000a }
+7. Mercury PCI Bridge at 0xfffffffffed26000 [0/3] { 13, 0x0, 0x783, 0x0000a }
+8. Mercury PCI Bridge at 0xfffffffffed28000 [0/4] { 13, 0x0, 0x783, 0x0000a }
+9. Mercury PCI Bridge at 0xfffffffffed2c000 [0/6] { 13, 0x0, 0x783, 0x0000a }
+10. Mercury PCI Bridge at 0xfffffffffed2e000 [0/7] { 13, 0x0, 0x783, 0x0000a }
+11. BMC IPMI Mgmt Ctlr at 0xfffffff0f05b0000 [16] { 15, 0x0, 0x004, 0x000c0 }
+Enabling PDC_PAT chassis codes support v0.05
+CPU(s): 1 x PA8800 (Mako) at 799.999900 MHz
+Setting cache flush threshold to 2000000 (1 CPUs online)
+SBA found Pluto 2.3 at 0xfffffffffed00000
+Mercury version TR3.2 (0x32) found at 0xfffffffffed20000
+LBA 0:0: PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+pci_bus 0000:00: root bus resource [mem 0xffffffff80000000-0xffffffff8fffffff] (bus address [0x80000000-0x8fffffff])
+pci_bus 0000:00: root bus resource [mem 0xffffff0004000000-0xffffff0fffffffff]
+pci_bus 0000:00: root bus resource [bus 00-07]
+Mercury version TR3.2 (0x32) found at 0xfffffffffed22000
+LBA 0:1: PCI host bridge to bus 0000:20
+pci_bus 0000:20: root bus resource [io  0x10000-0x1ffff] (bus address [0x0000-0xffff])
+pci_bus 0000:20: root bus resource [mem 0xffffffff90000000-0xffffffff9fffffff] (bus address [0x90000000-0x9fffffff])
+pci_bus 0000:20: root bus resource [mem 0xffffff1004000000-0xffffff1fffffffff]
+pci_bus 0000:20: root bus resource [bus 20-27]
+Mercury version TR3.2 (0x32) found at 0xfffffffffed24000
+LBA 0:2: PCI host bridge to bus 0000:40
+pci_bus 0000:40: root bus resource [io  0x20000-0x2ffff] (bus address [0x0000-0xffff])
+pci_bus 0000:40: root bus resource [mem 0xffffffffa0000000-0xffffffffafffffff] (bus address [0xa0000000-0xafffffff])
+pci_bus 0000:40: root bus resource [mem 0xffffff2004000000-0xffffff2fffffffff]
+pci_bus 0000:40: root bus resource [bus 40-47]
+Mercury version TR3.2 (0x32) found at 0xfffffffffed26000
+LBA 0:3: PCI host bridge to bus 0000:60
+pci_bus 0000:60: root bus resource [io  0x30000-0x3ffff] (bus address [0x0000-0xffff])
+pci_bus 0000:60: root bus resource [mem 0xffffffffb0000000-0xffffffffbfffffff] (bus address [0xb0000000-0xbfffffff])
+pci_bus 0000:60: root bus resource [mem 0xffffff3004000000-0xffffff3fffffffff]
+pci_bus 0000:60: root bus resource [bus 60-67]
+Mercury version TR3.2 (0x32) found at 0xfffffffffed28000
+LBA 0:4: PCI host bridge to bus 0000:80
+pci_bus 0000:80: root bus resource [io  0x40000-0x4ffff] (bus address [0x0000-0xffff])
+pci_bus 0000:80: root bus resource [mem 0xffffffffc0000000-0xffffffffcfffffff] (bus address [0xc0000000-0xcfffffff])
+pci_bus 0000:80: root bus resource [mem 0xffffff4004000000-0xffffff4fffffffff]
+pci_bus 0000:80: root bus resource [bus 80-87]
+Mercury version TR3.2 (0x32) found at 0xfffffffffed2c000
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 0000000000000000 0000000000000000 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000007fd13470
+r20-23  000000007fd13440 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 0000000000000000 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 000000000000011c
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c3 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 000000007fc88c00 000000007fc88c00 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040607a50 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 000000007fc88c00 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 000000000000012f
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c4 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 000000007fc89400 000000007fc89400 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040607a50 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 000000007fc89400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 0000000000000145
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c5 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 000000007fc89c00 000000007fc89c00 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040607a50 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 000000007fc89c00 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 000000000000015c
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c6 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 000000007fd12400 000000007fd12400 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040607a50 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 000000007fd12400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 0000000000000172
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c7 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:110
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111001100001111 Tainted: G        W   
+r00-03  000000ff0804f30f 000000007fc58ca0 0000000040327f0c 000000007fc58d40
+r04-07  00000000406a9250 000000007fd12c00 000000007fd12c00 0000000000000000
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 000000007fc58aa8
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040607a50 000000007fd13428 000000007fd13418 00000000418170e0
+r24-27  0000000000000000 00000000000000c0 000000007fd12c00 00000000406a9250
+r28-31  0000000000000100 000000007fc58d10 000000007fc58dd0 0000000000000187
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327eb8 0000000040327ebc
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d58
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 5555555555555555
+ IAOQ[0]: pci_find_next_bus+0xa0/0xb0
+ IAOQ[1]: pci_find_next_bus+0xa4/0xb0
+ RP(r2): pci_find_bus+0x44/0xa0
+Backtrace:
+ [<0000000040327f0c>] pci_find_bus+0x44/0xa0
+ [<000000004031f26c>] pci_create_root_bus+0x9c/0x448
+ [<00000000406dee8c>] lba_driver_probe+0x484/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+---[ end trace 3621c5f12f0e44c8 ]---
+LBA 0:6: PCI host bridge to bus 0000:c0
+pci_bus 0000:c0: root bus resource [io  0x50000-0x5ffff] (bus address [0x0000-0xffff])
+pci_bus 0000:c0: root bus resource [mem 0xffffffffe0000000-0xffffffffefffffff] (bus address [0xe0000000-0xefffffff])
+pci_bus 0000:c0: root bus resource [mem 0xffffff6004000000-0xffffff6fffffffff]
+pci_bus 0000:c0: root bus resource [bus c0-c7]
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000000 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000040607a50
+r20-23  0000000040607a50 fffffffff4050005 0000000000000040 0000000000000060
+r24-27  0000000000000000 0000000000000000 000000007fd13400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d40 000000007fc58e10 00000000000001a1
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44c9 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000008 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000008 000000007fd13400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d40 000000007fc58e10 00000000000001b7
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44ca ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000010 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000010 000000007fd13400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d40 000000007fc58e10 00000000000001cc
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44cb ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000018 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000018 000000007fd13400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d40 000000007fc58e10 00000000000001e1
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44cc ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000020 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000020 000000007fd13400 00000000406a9250
+r28-31  0000000000000100 000000007fc58d40 000000007fc58e10 00000000000001f6
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44cd ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000028 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000028 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 000000000000020a
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44ce ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000030 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000030 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 0000000000000220
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44cf ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000038 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000038 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 0000000000000235
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d0 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000040 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000040 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 000000000000024a
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d1 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000048 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000048 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 0000000000000260
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d2 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000050 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000050 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 0000000000000275
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d3 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000058 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000058 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 000000000000028a
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d4 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000060 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000060 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 000000000000029f
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d5 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000068 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000068 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 00000000000002b4
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d6 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000070 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000070 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 00000000000002c9
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d7 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000078 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000078 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 00000000000002de
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d8 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000080 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000080 000000007fd13400 00000000406a9250
+r28-31  0000000000000200 000000007fc58d40 000000007fc58e10 00000000000002f5
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44d9 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000088 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000088 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 0000000000000309
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44da ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000090 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000090 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 000000000000031f
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44db ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  0000000000000098 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 0000000000000098 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 0000000000000335
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44dc ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000a0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000a0 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 000000000000034a
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44dd ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000a8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000a8 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 0000000000000360
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44de ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000b0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000b0 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 0000000000000374
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44df ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000b8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000b8 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 000000000000038a
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e0 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000c0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000c0 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 00000000000003a0
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e1 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000c8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000c8 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 00000000000003b4
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e2 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000d0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000d0 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 00000000000003ca
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e3 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000d8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000d8 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 00000000000003e0
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e4 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000e0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000e0 000000007fd13400 00000000406a9250
+r28-31  0000000000000300 000000007fc58d40 000000007fc58e10 00000000000003f5
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e5 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000e8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000e8 000000007fd13400 00000000406a9250
+r28-31  0000000000000400 000000007fc58d40 000000007fc58e10 000000000000040c
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e6 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000f0 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000f0 000000007fd13400 00000000406a9250
+r28-31  0000000000000400 000000007fc58d40 000000007fc58e10 0000000000000421
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e7 ]---
+------------[ cut here ]------------
+WARNING: at drivers/pci/search.c:137
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001000000000000001111 Tainted: G        W   
+r00-03  000000000804000f 000000007fc58cc0 000000004010c3e4 000000007fc58d70
+r04-07  00000000406a9250 000000007fd13400 000000007fd13400 000000007fd13400
+r08-11  00000000000000f8 00000000405f98a0 00000000000000c0 00000000406c8250
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 0000000000000000
+r20-23  0000000040607a50 fffffffff4050005 000000007fc58e38 0000000000000004
+r24-27  0000000000000000 00000000000000f8 000000007fd13400 00000000406a9250
+r28-31  0000000000000400 000000007fc58d40 000000007fc58e10 0000000000000435
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 0000000040327e08 0000000040327e0c
+ IIR: 03ffe01f    ISR: 0000000010340000  IOR: 000000ff16058d98
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 0000000000000001
+ IAOQ[0]: pci_get_slot+0xe0/0xf0
+ IAOQ[1]: pci_get_slot+0xe4/0xf0
+ RP(r2): pci_scan_single_device+0x3c/0x120
+Backtrace:
+ [<000000004010c3e4>] pci_scan_single_device+0x3c/0x120
+ [<000000004031ed58>] pci_scan_slot+0x68/0x158
+ [<000000004031fd0c>] pci_scan_child_bus+0x54/0x130
+ [<00000000406deec0>] lba_driver_probe+0x4b8/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+
+---[ end trace 3621c5f12f0e44e8 ]---
+------------[ cut here ]------------
+kernel BUG at mm/vmalloc.c:1339!
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+task: 000000007fc54000 ti: 000000007fc58000 task.ti: 000000007fc58000
+
+     YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+PSW: 00001000000001001111111100001111 Tainted: G        W   
+r00-03  000000ff0804ff0f 000000007fc58c10 00000000401cc1ac 000000007fc58c90
+r04-07  00000000406a9250 0000000000000001 0000000000000001 000000007fc88138
+r08-11  00000000000000d0 0000000040112c44 000000003f000000 0000000000008000
+r12-15  00000000406b6250 00000000406b6250 00000000406f0768 0000000000000000
+r16-19  00000000f0d00b0c 00000000000130e4 0000000000000000 000000000800000f
+r20-23  0000000040112c44 00000000000000d0 000000003f000000 0000000000008000
+r24-27  0000000000000001 0000000000000001 0000000000001000 00000000406a9250
+r28-31  0000000000000400 000000007fc58c60 000000007fc58d50 000000000000044b
+sr00-03  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+sr04-07  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+
+IASQ: 0000000000000000 0000000000000000 IAOQ: 00000000401cb094 00000000401cb098
+ IIR: 03ffe01f    ISR: 0000000000000000  IOR: 0000000000000000
+ CPU:        0   CR30: 000000007fc58000 CR31: fffffff0f0e098e0
+ ORIG_R28: 00000000000c6000
+ IAOQ[0]: __get_vm_area_node.isra.22+0x1dc/0x1f8
+ IAOQ[1]: __get_vm_area_node.isra.22+0x1e0/0x1f8
+ RP(r2): get_vm_area+0x3c/0x50
+Backtrace:
+ [<00000000401cc1ac>] get_vm_area+0x3c/0x50
+ [<0000000040112c44>] __ioremap+0x184/0x210
+ [<00000000406dea5c>] lba_driver_probe+0x54/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+ [<000000004037a018>] bus_add_driver+0x188/0x358
+ [<000000004037b764>] driver_register+0x9c/0x1c8
+ [<000000004011b2c8>] register_parisc_driver+0x58/0xb8
+ [<00000000406defa4>] lba_init+0x24/0x38
+ [<00000000406cf18c>] parisc_init+0x2e4/0x318
+ [<0000000040111774>] do_one_initcall+0x54/0x1c0
+ [<00000000406ccec0>] do_basic_setup+0x148/0x1a8
+
+CPU: 0 PID: 1 Comm: swapper Tainted: G        W    3.10.0-rc1-00087-g674825d #28
+Backtrace:
+ [<0000000040114c90>] show_stack+0x20/0x38
+ [<000000004030066c>] dump_stack+0x3c/0x50
+ [<0000000040114b58>] die_if_kernel.part.3+0xe0/0x1f8
+ [<0000000040114d20>] die_if_kernel+0x58/0xb0
+ [<0000000040114e7c>] handle_break+0x104/0x128
+ [<000000004011575c>] handle_interruption+0x49c/0x7b8
+ [<00000000401cb094>] __get_vm_area_node.isra.22+0x1dc/0x1f8
+ [<00000000401cc1ac>] get_vm_area+0x3c/0x50
+ [<0000000040112c44>] __ioremap+0x184/0x210
+ [<00000000406dea5c>] lba_driver_probe+0x54/0x578
+ [<000000004011a634>] parisc_driver_probe+0x3c/0x68
+ [<000000004037ad34>] really_probe+0x94/0x2d0
+ [<000000004037b124>] driver_probe_device+0x34/0x48
+ [<000000004037b22c>] __driver_attach+0xf4/0x100
+ [<00000000403787f8>] bus_for_each_dev+0x90/0xe8
+ [<000000004037a7bc>] driver_attach+0x34/0x48
+
+Kernel panic - not syncing: Fatal exception in interrupt
+
 -- 
-1.8.0.2
+Meelis Roos (mroos@linux.ee)
