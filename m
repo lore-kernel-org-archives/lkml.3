@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab3ENNIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 09:08:36 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:62310 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3ENNIe (ORCPT
+	id S1757385Ab3ENNQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 09:16:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20019 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab3ENNQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 09:08:34 -0400
+	Tue, 14 May 2013 09:16:17 -0400
+Date: Tue, 14 May 2013 09:16:11 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        chuck.anderson@oracle.com
+Subject: Re: [PATCH 1/2] cpu: fix "crash_notes" leak in register_cpu()
+Message-ID: <20130514131611.GD5558@phenom.dumpdata.com>
+References: <20130513133128.GJ6811@phenom.dumpdata.com>
+ <1368482732-25554-2-git-send-email-imammedo@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130514130906.7f9525bf@corrin.poochiereds.net>
-References: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
-	<20130510102754.184cd90d@corrin.poochiereds.net>
-	<20130514105119.66a5bc3f@corrin.poochiereds.net>
-	<CAH2r5msxb+zB6av5wz5_55MbhCR4FWjJpnyP=vzg-=48gg3vkQ@mail.gmail.com>
-	<20130514130906.7f9525bf@corrin.poochiereds.net>
-Date: Tue, 14 May 2013 08:08:34 -0500
-Message-ID: <CAH2r5mv7xTzgsc4rJDp62-Vjzcn0JcZckxFyPbU5h3TDHdUmHg@mail.gmail.com>
-Subject: Re: Mount failure due to restricted access to a point along the mount path
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-cifs@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sjayaraman@novell.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368482732-25554-2-git-send-email-imammedo@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well at least for SMB2 we know they should be ok
+On Tue, May 14, 2013 at 12:05:31AM +0200, Igor Mammedov wrote:
+> "crash_notes" is dinamically created with device_create_file() but
+                   ^^^^^^^^^^^-dynamically
+> isn't anywhere deleted.
+> Define "crash_notes" statically via attribute groups so that
+> device_register would create it automatically and file would be
+> destroyed when CPU is destroyed.
 
-On Tue, May 14, 2013 at 6:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Tue, 14 May 2013 05:44:48 -0500
-> Steve French <smfrench@gmail.com> wrote:
->
->> On Tue, May 14, 2013 at 3:51 AM, Jeff Layton <jlayton@redhat.com> wrote:
->> > On Fri, 10 May 2013 10:27:54 -0400
->> > Jeff Layton <jlayton@redhat.com> wrote:
->> >
->> >> On Fri, 10 May 2013 16:13:30 +0200
->> >> Miklos Szeredi <miklos@szeredi.hu> wrote:
->> >>
->> >> > Hi,
->> >> >
->> >> > A while ago this was discussed:
->> >> >
->> >> >   http://thread.gmane.org/gmane.linux.kernel.cifs/7779
->> >> >
->> >> > This is essentially a regression introduced by the shared superblock
->> >> > changes in 3.0 and several SUSE customers are complaining about it.
->> >> > I've created a temporary fix which reverts 29 commits related to the
->> >> > shared superblock changes.  It works, but it's obviously not a
->> >> > permanent fix, especially since we definitely don't want to diverge
->> >> > from mainline.
->> >> >
->> >> > Is this issue being worked on?  Don't other distros have similar reports?
->> >> >
->> >> > Thanks,
->> >> > Miklos
->> >>
->> >> I don't know of anyone currently working on it. There are a couple of
->> >> possible approaches to fixing it, I think:
->> >>
->> >> 1) if the dentries to get down to the root of the mount don't already
->> >> exist, then attach some sort of "placeholder" inode that can be fleshed
->> >> out later if and when the dentry is accessed via other means.
->> >>
->> >> 2) do something like what NFS does (see commit 54ceac45). This becomes
->> >> a bit more complicated due to the fact that the server may not hand out
->> >> real inode numbers and we sometimes have to fake them up.
->> >>
->> >> #1 is probably simpler to implement, but I'll confess that I haven't
->> >> thought through all of the potential problems with it.
->> >>
->> >
->> > So, giving this some more thought, I think #2 is really the correct way
->> > to fix this. Here's the main problem though:
->> >
->> > Suppose someone mounts:
->> >
->> >     //server/share/foo/bar/baz
->> >
->> > We make the sb->s_root point to the top level share, and then create a
->> > disconnected dentry for "baz" to return from ->mount.
->> >
->> > Then, a little while later, //server/share gets mounted separately and
->> > a user walks down to /foo/bar/baz within the same share.
->> >
->> > How do we ensure that we don't end up with two "baz" dentries in this
->> > situation? With NFS, we can be reasonably sure that there's a 1:1
->> > correspondance of filehandle to inode.
->> >
->> > Under CIFS, it's possible that it's faking up inode numbers if the
->> > server doesn't provide them via a UniqueID field. The only real
->> > identifying info we have for the inode in that case is the pathname.
->>
->> Since this (support for server generated inode numbers) is most common
->> case (especially with SMB2 and later) - I don't mind making dependency
->> on the server supporting UniqueID for this.
->
-> There are still some problems even when the server does supply them. We
-> sometimes find that they aren't suitable for various reasons or aren't
-> to be trusted, and the client disables server inode numbers on the fly.
->
-> What do you do at that point if you already have 2 mounts sharing the
-> superblock?
->
-> --
-> Jeff Layton <jlayton@redhat.com>
-
-
-
--- 
-Thanks,
-
-Steve
+I had to modify it a bit to work with v3.10-rc1 (It is missing
+the dev_attr_crash_notes_size), but otherwise it worked nicely.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+>  drivers/base/cpu.c |   21 +++++++++++++++++----
+>  1 files changed, 17 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index fb10728..02e4d73 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -132,8 +132,24 @@ static ssize_t show_crash_notes(struct device *dev, struct device_attribute *att
+>  	return rc;
+>  }
+>  static DEVICE_ATTR(crash_notes, 0400, show_crash_notes, NULL);
+> +
+> +static struct attribute *crash_note_cpu_attrs[] = {
+> +	&dev_attr_crash_notes.attr,
+> +	NULL
+> +};
+> +
+> +static struct attribute_group crash_note_cpu_attr_group = {
+> +	.attrs = crash_note_cpu_attrs,
+> +};
+>  #endif
+>  
+> +static const struct attribute_group *common_cpu_attr_groups[] = {
+> +#ifdef CONFIG_KEXEC
+> +	&crash_note_cpu_attr_group,
+> +#endif
+> +	NULL
+> +};
+> +
+>  /*
+>   * Print cpu online, possible, present, and system maps
+>   */
+> @@ -248,6 +264,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+>  #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
+>  	cpu->dev.bus->uevent = arch_cpu_uevent;
+>  #endif
+> +	cpu->dev.groups = common_cpu_attr_groups;
+>  	error = device_register(&cpu->dev);
+>  	if (!error && cpu->hotpluggable)
+>  		register_cpu_control(cpu);
+> @@ -256,10 +273,6 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+>  	if (!error)
+>  		register_cpu_under_node(num, cpu_to_node(num));
+>  
+> -#ifdef CONFIG_KEXEC
+> -	if (!error)
+> -		error = device_create_file(&cpu->dev, &dev_attr_crash_notes);
+> -#endif
+>  	return error;
+>  }
+>  
+> -- 
+> 1.7.1
+> 
