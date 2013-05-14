@@ -1,50 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab3ENA5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:57:51 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:61337 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab3ENA5t (ORCPT
+	id S1755760Ab3ENA6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:58:54 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45557 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab3ENA6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:57:49 -0400
-Date: Tue, 14 May 2013 02:57:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: dynticks: CONFIG_VIRT_CPU_ACCOUNTING +  CONFIG_CONTEXT_TRACKING
- breaks accounting on core2 CPUs only
-Message-ID: <20130514005744.GA12749@somewhere>
-References: <1368346669.5998.13.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368346669.5998.13.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 May 2013 20:58:52 -0400
+From: zwu.kernel@gmail.com
+To: viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, sekharan@us.ibm.com, linuxram@us.ibm.com,
+        david@fromorbit.com, dsterba@suse.cz, gregkh@linuxfoundation.org,
+        paulmck@linux.vnet.ibm.com, chris.mason@fusionio.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v2 00/12] VFS hot tracking
+Date: Tue, 14 May 2013 08:59:32 +0800
+Message-Id: <1368493184-5939-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051400-3620-0000-0000-000002768E89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 10:17:49AM +0200, Mike Galbraith wrote:
-> Greetings,
-> 
-> Turning on new NO_HZ feature on my Q6600 box in master, I see that tasks
-> accrue zero utime/stime.  However, the same exact kernel on E5620 box
-> works fine, so it would appear there's a CPU dependency somewhere.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Ah indeed, I just managed to reproduce the same issue.
+  The patchset is trying to introduce hot tracking function in
+VFS layer, which will keep track of real disk I/O in memory.
+By it, you will easily know more details about disk I/O, and
+then detect where disk I/O hot spots are. Also, specific FS
+can take use of it to do accurate defragment, and hot relocation
+support, etc.
 
-> 
-> Is core2 expected to go dysfunctional with context tracking enabled?
-> CONFIG_VIRT_CPU_ACCOUNTING alone works fine in 3.9-stable, turn on
-> CONFIG_CONTEXT_TRACKING_FORCE, and CPU accounting stops working on core2
-> boxen only, same exact kernel continues to work just fine on E5620
-> (Westmere) box.
+  After V1 was sent out, Chandra Seetharaman has reviewed and
+made a lot of comments, thanks a lot to him. Not it's time to
+send out its V2 for external review, any comments or ideas are
+appreciated, thanks.
 
-There was no known issue with core2. The box where I'm seeing the it
-is a Phenom quad core that had NR_CPUS=2. May be the issue is more
-likely to happen with this low number. I don't know.
+NOTE:
 
-I'm investigating further.
+  The patchset can be obtained via my kernel dev git on github:
+git://github.com/wuzhy/kernel.git hot_tracking
+  If you're interested, you can also review them via
+https://github.com/wuzhy/kernel/commits/hot_tracking
 
-Thanks.
+  For how to use and more other info and performance report,
+please check hot_tracking.txt in Documentation and following
+links:
+  1.) http://lwn.net/Articles/525651/
+  2.) https://lkml.org/lkml/2012/12/20/199
+
+Changelog from v1:
+ - Refactored to be under RCU [Chandra Seetharaman]
+ - Merged some code changes [Chandra Seetharaman]
+ - Fixed some issues [Chandra Seetharaman]
+
+v1:
+ - Solved 64 bits inode number issue. [David Sterba]
+ - Embed struct hot_type in struct file_system_type [Darrick J. Wong]
+ - Cleanup Some issues [David Sterba]
+ - Use a static hot debugfs root [Greg KH]
+
+rfcv4:
+ - Introduce hot func registering framework [Zhiyong]
+ - Remove global variable for hot tracking [Zhiyong]
+ - Add btrfs hot tracking support [Zhiyong]
+
+rfcv3:
+ 1.) Rewritten debugfs support based seq_file operation. [Dave Chinner]
+ 2.) Refactored workqueue support. [Dave Chinner]
+ 3.) Turn some Micro into be tunable [Zhiyong, Liu Zheng]
+       TIME_TO_KICK, and HEAT_UPDATE_DELAY
+ 4.) Cleanedup a lot of other issues [Dave Chinner]
+
+rfcv2:
+ 1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
+ 2.) Added memory shrinker [Dave Chinner]
+ 3.) Converted to one workqueue to update map info periodically [Dave Chinner]
+ 4.) Cleanedup a lot of other issues [Dave Chinner]
+
+rfcv1:
+ 1.) Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
+ 2.) The first three patches can probably just be flattened into one.
+                                        [Marco Stornelli , Dave Chinner]
+
+Zhi Yong Wu (12):
+  VFS hot tracking: introduce some data structures
+  VFS hot tracking: add i/o freq tracking hooks
+  VFS hot tracking: add one workqueue to update hot map
+  VFS hot tracking: register one shrinker
+  VFS hot tracking, rcu: introduce one rcu macro for list
+  VFS hot tracking, seq_file: introduce one set of rcu seq_list
+    interfaces
+  VFS hot tracking: add debugfs support
+  VFS hot tracking: add one ioctl interface
+  VFS hot tracking, procfs: add two proc interfaces
+  VFS hot tracking, btrfs: add hot tracking support
+  VFS hot tracking: add documentation
+  VFS hot tracking: add fs hot type support
+
+ Documentation/filesystems/00-INDEX         |    2 +
+ Documentation/filesystems/hot_tracking.txt |  256 ++++++
+ fs/Makefile                                |    2 +-
+ fs/btrfs/ctree.h                           |    1 +
+ fs/btrfs/super.c                           |   22 +-
+ fs/compat_ioctl.c                          |    5 +
+ fs/dcache.c                                |    2 +
+ fs/direct-io.c                             |    5 +
+ fs/hot_tracking.c                          | 1320 ++++++++++++++++++++++++++++
+ fs/hot_tracking.h                          |   67 ++
+ fs/ioctl.c                                 |   70 ++
+ fs/namei.c                                 |    2 +
+ fs/seq_file.c                              |   37 +
+ include/linux/fs.h                         |    5 +
+ include/linux/hot_tracking.h               |  175 ++++
+ include/linux/rculist.h                    |    5 +
+ include/linux/seq_file.h                   |    7 +
+ kernel/sysctl.c                            |   14 +
+ mm/filemap.c                               |    6 +
+ mm/page-writeback.c                        |   12 +
+ mm/readahead.c                             |    6 +
+ 21 files changed, 2019 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/filesystems/hot_tracking.txt
+ create mode 100644 fs/hot_tracking.c
+ create mode 100644 fs/hot_tracking.h
+ create mode 100644 include/linux/hot_tracking.h
+
+-- 
+1.7.11.7
+
