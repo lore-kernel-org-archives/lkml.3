@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab3ENKBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:01:23 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:51223 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281Ab3ENKBR (ORCPT
+	id S932335Ab3ENKBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:01:35 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:52721 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313Ab3ENKBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:01:17 -0400
+	Tue, 14 May 2013 06:01:30 -0400
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
         Kukjin Kim <kgene.kim@samsung.com>,
         Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH V4 25/30] thermal: exynos: Add a compensation logic on swapped e-fuse values
-Date: Tue, 14 May 2013 15:28:55 +0530
-Message-Id: <1368525540-15034-26-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH V4 28/30] thermal: exynos: Support for TMU regulator defined at device tree
+Date: Tue, 14 May 2013 15:28:58 +0530
+Message-Id: <1368525540-15034-29-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1368525540-15034-1-git-send-email-amit.daniel@samsung.com>
 References: <1368525540-15034-1-git-send-email-amit.daniel@samsung.com>
@@ -23,71 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds compensation logic on swapped e-fuse values with boundary
-conditions. Currently, e-fused trim values for sensor0 is swapped with
-sensor2 so the logic in this patch is needed. sensor1 e-fused trim value is
-correct.
+TMU probe function now checks for a device tree defined regulator.
+For compatibility reasons it is allowed to probe driver even without
+this regulator defined.
 
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      |   23 +++++++++++++++++++++--
- drivers/thermal/samsung/exynos_tmu_data.h |    1 +
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ .../devicetree/bindings/thermal/exynos-thermal.txt |    4 +++
+ drivers/thermal/samsung/exynos_tmu.c               |   23 ++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+index 970eeba..ff62f7a 100644
+--- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
++++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+@@ -14,6 +14,9 @@
+ - interrupts : Should contain interrupt for thermal system
+ - clocks : The main clock for TMU device
+ - clock-names : Thermal system clock name
++- vtmu-supply: This entry is optional and provides the regulator node supplying
++		voltage to TMU. If needed this entry can be placed inside
++		board/platform specific dts file.
+ 
+ Example 1):
+ 
+@@ -25,6 +28,7 @@ Example 1):
+ 		clocks = <&clock 383>;
+ 		clock-names = "tmu_apbif";
+ 		status = "disabled";
++		vtmu-supply = <&tmu_regulator_node>;
+ 	};
+ 
+ Example 2):
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 671061b..f32d275 100644
+index ad57d2d..498ca56 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -137,7 +137,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+@@ -29,6 +29,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include "exynos_thermal_common.h"
+ #include "exynos_tmu.h"
+@@ -48,6 +49,7 @@
+  * @clk: pointer to the clock structure.
+  * @temp_error1: fused value of the first point trim.
+  * @temp_error2: fused value of the second point trim.
++ * @regulator: pointer to the TMU regulator structure.
+  * @reg_conf: pointer to structure to register with core thermal.
+  */
+ struct exynos_tmu_data {
+@@ -61,6 +63,7 @@ struct exynos_tmu_data {
+ 	struct mutex lock;
+ 	struct clk *clk;
+ 	u8 temp_error1, temp_error2;
++	struct regulator *regulator;
+ 	struct thermal_sensor_conf *reg_conf;
+ };
+ 
+@@ -500,10 +503,27 @@ static int exynos_map_dt_data(struct platform_device *pdev)
  	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
  	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	const struct exynos_tmu_registers *reg = pdata->registers;
--	unsigned int status, trim_info, con;
-+	unsigned int status, trim_info = 0, con;
- 	unsigned int rising_threshold = 0, falling_threshold = 0;
- 	int ret = 0, threshold_code, i, trigger_levs = 0;
+ 	struct resource res;
++	int ret;
  
-@@ -156,7 +156,26 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		__raw_writel(1, data->base + reg->triminfo_ctrl);
+ 	if (!data)
+ 		return -ENODEV;
  
- 	/* Save trimming info in order to perform calibration */
--	trim_info = readl(data->base + reg->triminfo_data);
-+	if (data->soc == SOC_ARCH_EXYNOS5440) {
-+		/*
-+		 * For exynos5440 soc triminfo value is swapped between TMU0 and
-+		 * TMU2, so the below logic is needed.
-+		 */
-+		switch (data->id) {
-+		case 0:
-+			trim_info = readl(data->base +
-+			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
-+			break;
-+		case 1:
-+			trim_info = readl(data->base + reg->triminfo_data);
-+			break;
-+		case 2:
-+			trim_info = readl(data->base -
-+			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
++	/*
++	 * Try enabling the regulator if found
++	 * TODO: Add regulator as an SOC feature, so that regulator enable
++	 * is a compulsory call.
++	 */
++	data->regulator = devm_regulator_get(&pdev->dev, "vtmu");
++	if (!IS_ERR(data->regulator)) {
++		ret = regulator_enable(data->regulator);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to enable vtmu\n");
++			return ret;
 +		}
 +	} else {
-+		trim_info = readl(data->base + reg->triminfo_data);
++		dev_info(&pdev->dev, "Regulator node (vtmu) not found\n");
 +	}
- 	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
- 	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
- 				EXYNOS_TMU_TEMP_MASK);
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index eb7250d..a1cc8ab 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.h
-+++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -127,6 +127,7 @@
- #define EXYNOS5440_TMU_TH_RISE2_SHIFT		16
- #define EXYNOS5440_TMU_TH_RISE3_SHIFT		24
- #define EXYNOS5440_TMU_TH_RISE4_SHIFT		24
-+#define EXYNOS5440_EFUSE_SWAP_OFFSET		8
++
+ 	data->id = of_alias_get_id(pdev->dev.of_node, "tmuctrl");
+ 	if (data->id < 0)
+ 		data->id = 0;
+@@ -668,6 +688,9 @@ static int exynos_tmu_remove(struct platform_device *pdev)
  
- #if defined(CONFIG_CPU_EXYNOS4210)
- extern struct exynos_tmu_platform_data const exynos4210_default_tmu_data;
+ 	clk_unprepare(data->clk);
+ 
++	if (!IS_ERR(data->regulator))
++		regulator_disable(data->regulator);
++
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
 -- 
 1.7.1
 
