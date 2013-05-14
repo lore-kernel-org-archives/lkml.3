@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab3ENVjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 17:39:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65293 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758059Ab3ENVjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 17:39:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,672,1363158000"; 
-   d="scan'208";a="313615050"
-Message-ID: <5192AEF4.1070905@intel.com>
-Date: Tue, 14 May 2013 14:39:00 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758610Ab3ENVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 17:42:58 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:31540 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758357Ab3ENVm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 17:42:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYOAJyuklF5LKxY/2dsb2JhbABagwc3glO4N4UcBAGBARd0gh8BAQQBJxMcIwULCAMOCgklDwUlAw0BExOIBgUNvVIEFo1rgR0Hg1UDlzOKGYclgyEq
+Date: Wed, 15 May 2013 07:42:51 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zach Brown <zab@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [RFC v0 0/4] sys_copy_range() rough draft
+Message-ID: <20130514214251.GK29466@dastard>
+References: <1368566126-17610-1-git-send-email-zab@redhat.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
-References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
-In-Reply-To: <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368566126-17610-1-git-send-email-zab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 12:59 PM, Yinghai Lu wrote:
-> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
-> <alexander.h.duyck@intel.com> wrote:
->> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
->>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
->>> <alexander.h.duyck@intel.com> wrote:
->>>> I'm sorry, but what is the point of this patch?  With device assignment
->>>> it is always possible to have VFs loaded and the PF driver unloaded
->>>> since you cannot remove the VFs if they are assigned to a VM.
->>> unload PF driver will not call pci_disable_sriov?
->> You cannot call pci_disable_sriov because you will panic all of the
->> guests that have devices assigned.
-> ixgbe_remove did call pci_disable_sriov...
->
-> for guest panic, that is another problem.
-> just like you pci passthrough with real pci device and hotremove the
-> card in host.
->
-> ...
+On Tue, May 14, 2013 at 02:15:22PM -0700, Zach Brown wrote:
+> We've been talking about implementing some form of bulk data copy
+> offloading for a while now.  BTRFS and OCFS2 implement forms of copy
+> offloading with ioctls, NFS 4.2 will include a byte-granular COPY
+> operation, and the SCSI XCOPY command is being implemented now that
+> Windows can issue it.
+> 
+> In the past we've discussed promoting the ocfs2 reflink ioctl into a
+> system call that would create a new file and implicitly copy the
+> source data into the new file:
+> https://lkml.org/lkml/2009/9/14/481
+> 
+> These draft patches take the simpler approach of only copying data
+> between existing files.  The patches 1) make a system call out of the
+> btrfs CLONE_RANGE ioctl, 2) implement the btrfs .copy_range method with
+> the ioctl's guts, 3) implement the nfs .copy_range by sending a COPY
+> op, and 4) serve the COPY op in nfsd by calling the .copy_range method
+> again.
+> 
+> The nfs patch is an untested hack.  I'm happy to beat it in to shape
+> but I'll need some guidance.
+> 
+> I'd like strong review feedback on the interfaces, here are some
+> possible topics:
+> 
+> a) Hopefully being able to specify a portion of the data to copy will
+> avoid *huge* syscall latencies and the motivation for new async
+> semantics.
+> 
+> b) The BTRFS ioctl and nfs COPY let you specify a count of 0 to copy
+> from the start offset to the end of the file.  Does anyone have a
+> strong feeling about this?  I'm leaning towards not bothering with it
+> in the syscall interface.
+> 
+> c) I chose to return partial progess in the ssize_t return code.  This
+> limits the length of the range and the size_t count argument can be too
+> large and return errors, much like other io syscalls.  This seemed
+> less awful than some extra argument with a pointer to a status value.
+> 
+> d) I'm dreading mentioning a vector of ranges to copy in one syscall
+> because I don't want to think about overlaping ranges and file systems
+> that use range locks -- xfs for now, but more if Jan gets his way.
 
-I suggest you take another look.  In ixgbe_disable_sriov, which is the
-function that is called we do a check for assigned VFs.  If they are
-assigned then we do not call pci_disable_sriov.
+XFS doesn't use range locks (yet).
 
->
->> So how does your patch actually fix this problem?  It seems like it is
->> just avoiding it.
-> yes, until the first one is done.
+> I'd rather that we get some experience with this simpler syscall before
+> taking on that headache.
+> 
+> I'm sure I'm forgetting some other details.
+> 
+> I'm going to keep hacking away at this.  My next step is to get ext4
+> supporting .copy_range, probably with a quick hack to copy the
+> contents of bios.  Hopefully that'll give enough time to also integrate
+> review feedback.
 
-Avoiding the issue doesn't fix the underlying problem and instead you
-are likely just introducing more bugs as a result.
+Wouldn't the easiest "support all filesystems" hack just be to add
+a destination offset parameter to do_splice_direct() and call that
+when the filesystem doesn't supply a ->copy_range method? i.e. use
+the mechanisms we already have for copying from one file to another
+via the page cache as efficiently as possible?
 
->> From what I can tell your problem is originating in pci_call_probe.  I
->> believe it is calling work_on_cpu and that doesn't seem correct since
->> the work should be taking place on a CPU already local to the PF. You
->> might want to look there to see why you are trying to schedule work on a
->> CPU which should be perfectly fine for you to already be doing your work on.
-> it always try to go with local cpu with same pxm.
+Cheers,
 
-The problem is we really shouldn't be calling work_for_cpu in this case
-since we are already on the correct CPU.  What probably should be
-happening is that pci_call_probe should be doing a check to see if the
-current CPU is already contained within the device node map and if so
-just call local_pci_probe directly.  That way you can avoid deadlocking
-the system by trying to flush the CPU queue of the CPU you are currently on.
-
-Thanks,
-
-Alex
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
