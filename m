@@ -1,408 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab3ENTHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 15:07:44 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:50810 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3ENTHm (ORCPT
+	id S1757777Ab3ENTJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 15:09:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23743 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab3ENTJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 15:07:42 -0400
-From: johannes.thumshirn@men.de
-To: wim@iguana.be
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH v2] watchdog: New watchdog driver for MEN A21 watchdogs
-Date: Tue, 14 May 2013 21:09:49 +0200
-Message-Id: <1368558589-3156-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <20130513224440.GA13891@roeck-us.net>
-References: <20130513224440.GA13891@roeck-us.net>
+	Tue, 14 May 2013 15:09:49 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=K9uRuNqwL0EA:10 a=xpG5au4uAAAA:8 a=Q_H5z4C_nENv4zizw70A:9 a=QEXdDO2ut3YA:10 a=nQwg26TaHBUA:10 a=wcHngVRCsZMdY4_A:21 a=nzFTkYqKDlugSXEy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368558586.6828.53.camel@gandalf.local.home>
+Subject: Re: V3.10-rc1 memory leak
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 14 May 2013 15:09:46 -0400
+In-Reply-To: <51912567.6090507@lwfinger.net>
+References: <51912567.6090507@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
+On Mon, 2013-05-13 at 15:06 -0400, Larry Finger wrote:
+> Using v3.10-rc1-68-g2d3ec09, I am getting many instances of the following from 
+> kmemleak:
+> 
+> unreferenced object 0xffff8800b546dc30 (size 48):
+>    comm "systemd-udevd", pid 2181, jiffies 4294899141 (age 274.096s)
+>    hex dump (first 32 bytes):
+>      00 dc 46 b5 00 88 ff ff d0 ff 5b a0 ff ff ff ff  ..F.......[.....
+>      1c 3b 5b a0 ff ff ff ff 12 3a 5b a0 ff ff ff ff  .;[......:[.....
+>    backtrace:
+>      [<ffffffff81432e81>] kmemleak_alloc+0x21/0x50
+>      [<ffffffff81143c2b>] kmem_cache_alloc+0x11b/0x270
+>      [<ffffffff810e9ee0>] __trace_define_field+0x40/0xd0
+>      [<ffffffff810e9fc5>] trace_define_field+0x55/0x70
+>      [<ffffffffa05e6ba0>] 0xffffffffa05e6ba0
+>      [<ffffffff810ea735>] event_create_dir+0x2e5/0x480
+>      [<ffffffff810ea920>] __trace_add_new_event+0x50/0x80
+>      [<ffffffff810eacf9>] __add_event_to_tracers+0x69/0xc0
+>      [<ffffffff810eb4e1>] trace_module_notify+0x1e1/0x2f0
+>      [<ffffffff8106e8f5>] notifier_call_chain+0x55/0x110
+>      [<ffffffff8106eb27>] __blocking_notifier_call_chain+0x67/0xc0
+>      [<ffffffff8106eb91>] blocking_notifier_call_chain+0x11/0x20
+>      [<ffffffff810af792>] load_module+0x19e2/0x24b0
+>      [<ffffffff810b0317>] SyS_init_module+0xb7/0xe0
+>      [<ffffffff814499d2>] system_call_fastpath+0x16/0x1b
+>      [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> These appear to be real leaks, but I am not familiar with this section of the 
+> code, and they could be false indications.
 
-This patch adds the driver for the watchdog devices found on MEN Mikro
-Elektronik A21 VMEbus CPU Carrier Boards. It has DT-support and uses the
-watchdog framework.
+They are false positives. Yesterday and today I've been looking at these
+trying to find where the leak is. I actually discovered a leak elsewhere
+that's been there for a while (and fixed it), but it had nothing to do
+with these.
 
-Revision 2:
-* Removed unneeded open flag in struct a21_wdt_drv
-* Corrected 3bit reason code from gpio
-* Additional sysfs files are now part of watchdog sysfs
-* Changed OFF/ON delay in ping from 400ms to 10ns
-* Reworked timeout setting
-* Removed a21_wdt_ioctl(...)
+Finally, as I was suspecting that these were false positives, I broke
+down and added the following code:
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- MAINTAINERS                   |    6 +
- drivers/watchdog/Kconfig      |    8 ++
- drivers/watchdog/Makefile     |    1 +
- drivers/watchdog/mena21_wdt.c |  305 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 320 insertions(+)
- create mode 100644 drivers/watchdog/mena21_wdt.c
++++ b/kernel/trace/trace_events.c
+@@ -863,15 +863,15 @@ static int f_show(struct seq_file *m, void *v)
+                array_descriptor = NULL;
+ 
+        if (!array_descriptor)
+-               seq_printf(m, "\tfield:%s %s;\toffset:%u;\tsize:%u;\tsigned:%d;
++               seq_printf(m, "\tfield:%s %s;\toffset:%u;\tsize:%u;\tsigned:%d;
+                           field->type, field->name, field->offset,
+-                          field->size, !!field->is_signed);
++                          field->size, !!field->is_signed, field);
+        else
+-               seq_printf(m, "\tfield:%.*s %s%s;\toffset:%u;\tsize:%u;\tsigned
++               seq_printf(m, "\tfield:%.*s %s%s;\toffset:%u;\tsize:%u;\tsigned
+                           (int)(array_descriptor - field->type),
+                           field->type, field->name,
+                           array_descriptor, field->offset,
+-                          field->size, !!field->is_signed);
++                          field->size, !!field->is_signed, field);
+ 
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3d7782b..3e5b3f1 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5291,6 +5291,12 @@ F:	drivers/mtd/
- F:	include/linux/mtd/
- F:	include/uapi/mtd/
- 
-+MEN A21 WATCHDOG DRIVER
-+M:	Johannes Thumshirn <johannes.thumshirn@men.de>
-+L:	linux-watchdog@vger.kernel.org
-+S:	Supported
-+F:	drivers/watchdog/mena21_wdt.c
-+
- METAG ARCHITECTURE
- M:	James Hogan <james.hogan@imgtec.com>
- S:	Supported
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index e89fc31..192b84d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -1172,6 +1172,14 @@ config BOOKE_WDT_DEFAULT_TIMEOUT
- 
- 	  The value can be overridden by the wdt_period command-line parameter.
- 
-+config MEN_A21_WDT
-+       tristate "MEN A21 VME CPU Carrier Board Watchdog Timer"
-+       select WATCHDOG_CORE
-+       help
-+        Watchdog driver for MEN A21 VMEbus CPU Carrier Boards.
-+
-+	If unsure select N here.
-+
- # PPC64 Architecture
- 
- config WATCHDOG_RTAS
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..bffdcb1 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -143,6 +143,7 @@ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
- obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
- obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
- obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
-+obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
- 
- # PPC64 Architecture
- obj-$(CONFIG_WATCHDOG_RTAS) += wdrtas.o
-diff --git a/drivers/watchdog/mena21_wdt.c b/drivers/watchdog/mena21_wdt.c
-new file mode 100644
-index 0000000..9c5bf32
---- /dev/null
-+++ b/drivers/watchdog/mena21_wdt.c
-@@ -0,0 +1,305 @@
-+/*
-+ * Watchdog driver for the A21 VME CPU Boards
-+ *
-+ * Copyright (C) 2013 MEN Mikro Elektronik Nuernberg GmbH
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation
-+ */
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+#include <linux/uaccess.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
-+#include <linux/reboot.h>
-+#include <linux/bitops.h>
-+
-+static char *reset_causes[] = {
-+	"Power On Reset",
-+	"CPU Reset Request",
-+	"Push Button",
-+	"FPGA Reset Request",
-+	"Watchdog",
-+	"Local Power Bad",
-+	"Invalid",
-+	"BDI",
-+};
-+
-+#define GPIO_WD_ENAB	169
-+#define GPIO_WD_FAST	170
-+#define GPIO_WD_TRIG	171
-+
-+#define GPIO_RST_CAUSE_BASE 166
-+
-+struct a21_wdt_drv {
-+	struct watchdog_device wdt;
-+	struct mutex lock;
-+};
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+			    __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+static ssize_t rebootcause_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	unsigned int reset = 0;
-+	int i;
-+
-+	for (i = 0; i < 3; i++)
-+		reset |= gpio_get_value(GPIO_RST_CAUSE_BASE + i)
-+			 ? (1 << i) : 0;
-+
-+	if (reset >= 8)
-+		return -EIO;
-+
-+	return sprintf(buf, "%s\n", reset_causes[reset]);
-+}
-+static DEVICE_ATTR(rebootcause, S_IRUGO, rebootcause_show, NULL);
-+
-+static ssize_t active_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!gpio_get_value(GPIO_WD_ENAB));
-+}
-+static DEVICE_ATTR(active, S_IRUGO, active_show, NULL);
-+
-+static ssize_t allow_disable_show(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	return sprintf(buf, "%d\n", !nowayout);
-+}
-+static DEVICE_ATTR(allow_disable, S_IRUGO, allow_disable_show, NULL);
-+
-+static ssize_t fastmode_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	return sprintf(buf, "%d\n", !!gpio_get_value(GPIO_WD_FAST));
-+}
-+static DEVICE_ATTR(fastmode, S_IRUGO, fastmode_show, NULL);
-+
-+static int a21_wdt_create_files(struct watchdog_device *wdev)
-+{
-+	int ret;
-+
-+	ret = device_create_file(wdev->dev, &dev_attr_rebootcause);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_active);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_allow_disable);
-+	if (ret)
-+		return ret;
-+	ret = device_create_file(wdev->dev, &dev_attr_fastmode);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static void a21_wdt_remove_files(struct watchdog_device *wdev)
-+{
-+	device_remove_file(wdev->dev, &dev_attr_rebootcause);
-+	device_remove_file(wdev->dev, &dev_attr_active);
-+	device_remove_file(wdev->dev, &dev_attr_allow_disable);
-+	device_remove_file(wdev->dev, &dev_attr_fastmode);
-+}
-+
-+static int a21_wdt_start(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_stop(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	/* We don't stop if WDOG_NO_WAY_OUT is set */
-+	if (test_bit(WDOG_NO_WAY_OUT, &wdt->status))
-+		return -EINVAL;
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_ENAB, 0);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_ping(struct watchdog_device *wdt)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	mutex_lock(&drv->lock);
-+
-+	gpio_set_value(GPIO_WD_TRIG, 0);
-+	ndelay(10);
-+	gpio_set_value(GPIO_WD_TRIG, 1);
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_set_timeout(struct watchdog_device *wdt,
-+			       unsigned int timeout)
-+{
-+	struct a21_wdt_drv *drv = watchdog_get_drvdata(wdt);
-+
-+	if (timeout != 1 && timeout != 30) {
-+		dev_err(wdt->dev, "Only 1 and 30 allowed as timeout\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&drv->lock);
-+
-+	if (timeout == 30)
-+		gpio_set_value(GPIO_WD_FAST, 1);
-+	else
-+		gpio_set_value(GPIO_WD_FAST, 0);
-+
-+	wdt->timeout = timeout;
-+
-+	mutex_unlock(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static int a21_wdt_notify_sys(struct notifier_block *notify, unsigned long code,
-+			void *unused)
-+{
-+	if (code == SYS_DOWN || code == SYS_HALT)
-+		gpio_set_value(GPIO_WD_ENAB, 0);
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block a21_wdt_notifier = {
-+	.notifier_call = a21_wdt_notify_sys,
-+};
-+
-+static const struct watchdog_info a21_wdt_info = {
-+	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
-+	.identity = "MEN A21 Watchdog",
-+};
-+
-+static const struct watchdog_ops a21_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = a21_wdt_start,
-+	.stop = a21_wdt_stop,
-+	.ping = a21_wdt_ping,
-+	.set_timeout = a21_wdt_set_timeout,
-+};
-+
-+static struct watchdog_device a21_wdt = {
-+	.info = &a21_wdt_info,
-+	.ops = &a21_wdt_ops,
-+	.min_timeout = 1,
-+	.max_timeout = 30,
-+};
-+
-+static int a21_wdt_probe(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv;
-+	int ret;
-+
-+	dev_info(&pdev->dev, "MEN A21 watchdog timer driver enabled\n");
-+
-+	drv = devm_kzalloc(&pdev->dev, sizeof(struct a21_wdt_drv), GFP_KERNEL);
-+	if (!drv) {
-+		dev_err(&pdev->dev,
-+			"Unable to allocate memory for watchdog device\n");
-+		return -ENOMEM;
-+	}
-+
-+	mutex_init(&drv->lock);
-+	watchdog_set_nowayout(&a21_wdt, nowayout);
-+	watchdog_set_drvdata(&a21_wdt, drv);
-+
-+	ret = watchdog_register_device(&a21_wdt);
-+	if (ret) {
-+		pr_err("Cannot register watchdog device\n");
-+		goto err_register_wd;
-+	}
-+
-+	ret = register_reboot_notifier(&a21_wdt_notifier);
-+	if (ret) {
-+		pr_err("Cannot register reboot notifier\n");
-+		goto err_register_notif;
-+	}
-+
-+	ret = a21_wdt_create_files(&a21_wdt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot create sysfs entries\n");
-+		goto err_create_sysfs;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, drv);
-+
-+	return 0;
-+
-+err_create_sysfs:
-+	unregister_reboot_notifier(&a21_wdt_notifier);
-+err_register_notif:
-+	watchdog_unregister_device(&drv->wdt);
-+err_register_wd:
-+	mutex_destroy(&drv->lock);
-+
-+	return ret;
-+}
-+
-+static int a21_wdt_remove(struct platform_device *pdev)
-+{
-+	struct a21_wdt_drv *drv = dev_get_drvdata(&pdev->dev);
-+
-+	pr_warn("Unregistering A21 watchdog driver, board may reboot\n");
-+
-+	a21_wdt_remove_files(&drv->wdt);
-+
-+	watchdog_unregister_device(&drv->wdt);
-+	unregister_reboot_notifier(&a21_wdt_notifier);
-+
-+	mutex_destroy(&drv->lock);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id a21_wdt_ids[] = {
-+	{ .compatible = "men,a021-wdt" },
-+	{ },
-+};
-+
-+static struct platform_driver a21_wdt_driver = {
-+	.probe = a21_wdt_probe,
-+	.remove = a21_wdt_remove,
-+	.driver = {
-+		.name = "a21-watchdog",
-+		.of_match_table = a21_wdt_ids,
-+	},
-+};
-+
-+module_platform_driver(a21_wdt_driver);
-+
-+MODULE_AUTHOR("MEN Mikro Elektronik");
-+MODULE_DESCRIPTION("MEN A21 Watchdog");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:a21-watchdog");
--- 
-1.7.9.5
+Which adds the field pointer to the output of the fields in the format
+files. And sure enough, it proved to be a false positive:
+
+# cat /debug/kmemleak
+unreferenced object 0xffff8800769f7438 (size 48):
+  comm "modprobe", pid 881, jiffies 4294691017 (age 716.781s)
+  hex dump (first 32 bytes):
+    90 98 04 a0 ff ff ff ff 08 74 9f 76 00 88 ff ff  .........t.v....
+    b6 52 04 a0 ff ff ff ff ba 52 04 a0 ff ff ff ff  .R.......R......
+  backtrace:
+    [<ffffffff814b52ef>] kmemleak_alloc+0x73/0x98
+    [<ffffffff8111ffcc>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+    [<ffffffff8112092f>] kmem_cache_alloc+0xb9/0x142
+    [<ffffffff810d0e2e>] __trace_define_field+0x3c/0xbd
+    [<ffffffff810d0f0c>] trace_define_field+0x5d/0x5f
+    [<ffffffffa005a166>] 0xffffffffa005a166
+    [<ffffffff810d19dc>] event_create_dir+0x31c/0x381
+    [<ffffffff810d1ae3>] __add_event_to_tracers+0xa2/0xbd
+    [<ffffffff810d1cc6>] trace_module_notify+0x1c8/0x26f
+    [<ffffffff814d219d>] notifier_call_chain+0x37/0x63
+    [<ffffffff8105c29c>] __blocking_notifier_call_chain+0x4b/0x60
+    [<ffffffff8105c2c5>] blocking_notifier_call_chain+0x14/0x16
+    [<ffffffff8108fe59>] load_module+0x1d55/0x20a9
+    [<ffffffff81090286>] SyS_init_module+0xd9/0xdb
+    [<ffffffff814d5694>] tracesys+0xdd/0xe2
+    [<ffffffffffffffff>] 0xffffffffffffffff
+[...]
+
+# find /debug/tracing/events/ -name format |xargs grep ffff8800769f7438
+/debug/tracing/events/drm/drm_vblank_event_delivered/format:	field:pid_t pid;	offset:8;	size:4;	signed:1;ffff8800769f7438
+
+Thus, what it is complaining about being leaked, is currently being
+used.
+
+I guess it's because the fields are stored on the "event class"
+structure of the module. That is, the struct ftrace_event_class, which
+is part of the module data section:
+
+struct ftrace_event_class {
+        char                    *system;
+        void                    *probe;
+#ifdef CONFIG_PERF_EVENTS
+        void                    *perf_probe;
+#endif
+        int                     (*reg)(struct ftrace_event_call *event,
+                                       enum trace_reg type, void *data);
+        int                     (*define_fields)(struct ftrace_event_call *);
+        struct list_head        *(*get_fields)(struct ftrace_event_call *);
+        struct list_head        fields;
+        int                     (*raw_init)(struct ftrace_event_call *);
+};
+
+
+The list_head fields holds the fields and these are used to print out
+the formats. For some reason, kmemleak is missing that the fields are
+being assigned to this list on module load.
+
+Catalin, have any idea why kmemleak is not detecting that the field is
+being referenced?
+
+kernel/trace/trace_events.c: __trace_define_field()
+
+        list_add(&field->link, head);
+
+-- Steve
+
+
+> 
+> This mail is sent to all authors of patches incorporated in 
+> kernel/trace/trace_events.c in 2013. Kernel 3.9 did not show this problem.
+
 
