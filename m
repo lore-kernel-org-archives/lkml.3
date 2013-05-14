@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3ENPEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:04:33 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:47285 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab3ENPEb (ORCPT
+	id S1757945Ab3ENPFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:05:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39809 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757842Ab3ENPFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:04:31 -0400
+	Tue, 14 May 2013 11:05:47 -0400
+Date: Tue, 14 May 2013 10:05:39 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        amorgan@sergelap, cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-ID: <20130514150539.GA26090@sergelap>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <874ne5n6zv.fsf@octavius.laptop.org>
-References: <1368517100-22243-1-git-send-email-adam.lee@canonical.com>
-	<20130514075333.GA22435@adam-laptop>
-	<874ne5n6zv.fsf@octavius.laptop.org>
-Date: Tue, 14 May 2013 08:04:29 -0700
-X-Google-Sender-Auth: BiG5cycNOWhzfatKhEa3F1Q5K5A
-Message-ID: <CAD=FV=VF2cVMR+2p5BTidOPKV0kAqJVGRxWYV4WRPu6qjkE+Vw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: Add a capability for disabling mmc cards
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        nico@fluxnic.net, Alim Akhtar <alim.akhtar@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121022134536.172969567@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris / Adam,
+Hi,
 
-On Tue, May 14, 2013 at 4:19 AM, Chris Ball <cjb@laptop.org> wrote:
-> This has already been NACKed by Nicolas:
->
-> https://patchwork.kernel.org/patch/1359121/
->
-> (At least, I think it has -- your forward doesn't include the patch
-> itself.)
+so now that the device cgroup properly respects hierarchy, not allowing
+a cgroup to be given greater permission than its parent, should we consider
+relaxing the capability checks?
 
-Yup, it got NAKed.  Unless something has changed I think that
-interested parties will need to carry this as a local patch.
+There are two capable(CAP_SYS_ADMIN) checks in deice_cgroup.c: one in
+devcgroup_can_attach() to protect changing another task's cgroup, and
+one in devcgroup_update_access() to protect writes to the devices.allow
+and devices.deny files.
 
--Doug
+I think the first should be changed to a check for ns_capable() to
+the victim's user_ns.  Something like 
+
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -70,10 +70,16 @@ static int devcgroup_can_attach(struct cgroup *new_cgrp,
+                                struct cgroup_taskset *set)
+ {
+        struct task_struct *task = cgroup_taskset_first(set);
++       struct user_namespace *ns;
++       int ret = -EPERM;
+
+-       if (current != task && !capable(CAP_SYS_ADMIN))
+-               return -EPERM;
+-       return 0;
++       if (current == task)
++               return 0;
++
++       ns = userns_get(task);;
++       ret = ns_capable(ns, CAP_SYS_ADMIN) ? 0 : -EPERM;
++       put_user_ns(ns);
++       return ret;
+ }
+
+ /*
+
+For the second, the hierarchy support should let us ignore concerns
+about unprivileged users escalating privilege, but I'm trying to decide
+whether we  need to worry about the sendmail capability class of bugs.
+My sense is actually the answer is no, and we can drop the capable()
+check altogether.  The reason is that while userspace frequently doesn't
+properly handle a failing system call due to unexpected lack of partial
+privilege, I wouldn't expect any setuid root program to ignore failure
+to open or mknod a device file (and proceed into a bad failure mode).
+Does this sound rasonable, or a recipe for disaster?
+
+-serge
