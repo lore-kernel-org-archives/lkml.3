@@ -1,220 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638Ab3ENKZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:25:05 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50977 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab3ENKZC (ORCPT
+	id S1752307Ab3ENKcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:32:13 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:48396 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab3ENKcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:25:02 -0400
-Date: Tue, 14 May 2013 03:24:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [v3.10-rc1] WARNING: at kernel/rcutree.c:502
-Message-ID: <20130514102452.GA28945@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <87ip2opntp.fsf@nemi.mork.no>
- <20130512113905.GH3648@linux.vnet.ibm.com>
- <87li7kp50r.fsf@nemi.mork.no>
- <20130512172135.GJ3648@linux.vnet.ibm.com>
- <87a9o0ukll.fsf@nemi.mork.no>
- <87sj1rydol.fsf@nemi.mork.no>
- <87wqr3j656.fsf@nemi.mork.no>
- <519169BF.4080208@linux.vnet.ibm.com>
+	Tue, 14 May 2013 06:32:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <519169BF.4080208@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051410-2398-0000-0000-000014516DA0
+In-Reply-To: <kmrak0$ip1$1@ger.gmane.org>
+References: <kmrak0$ip1$1@ger.gmane.org>
+Date: Tue, 14 May 2013 18:32:11 +0800
+Message-ID: <CACVXFVNQVbe6MjWd9sH4wMK9fRCqxdvX2qSrep9GPfPPWOJ54A@mail.gmail.com>
+Subject: Re: Yet another page fault deadlock
+From: Ming Lei <tom.leiming@gmail.com>
+To: Dmitry Maluka <D.Maluka@adbglobal.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 04:01:27AM +0530, Srivatsa S. Bhat wrote:
-> On 05/13/2013 08:09 PM, Bjørn Mork wrote:
-> > Bjørn Mork <bjorn@mork.no> writes:
-> > 
-> >> I was unable to recreate the problem in a virtual machine, which is
-> >> slightly suspicious.  And bisecting it ended up pointing to a merge
-> >> commit: 
-> >>
-> >>  commit ab86e974f04b1cd827a9c7c35273834ebcd9ab38
-> >>  Merge: 8700c95 6f7a05d
-> >>  Author: Linus Torvalds <torvalds@linux-foundation.org>
-> >>  Date:   Tue Apr 30 08:15:40 2013 -0700
-> >>
-> >>      Merge branch 'timers-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> >>  ..
-> >>
-> >>
-> >> which I don't think makes much sense at all.  The bisect log leading to
-> >> this was:
-> >>
-> >> bjorn@canardo:/usr/local/src/build-tmp/linux$ git bisect log
-> >> # bad: [f722406faae2d073cc1d01063d1123c35425939e] Linux 3.10-rc1
-> >> # good: [c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1] Linux 3.9
-> >> git bisect start 'v3.10-rc1' 'v3.9'
-> >> # bad: [73287a43cc79ca06629a88d1a199cd283f42456a] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-> >> git bisect bad 73287a43cc79ca06629a88d1a199cd283f42456a
-> >> # bad: [5d434fcb255dec99189f1c58a06e4f56e12bf77d] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial
-> >> git bisect bad 5d434fcb255dec99189f1c58a06e4f56e12bf77d
-> >> # good: [507ffe4f3840ac24890a8123c702cf1b7fe4d33c] Merge tag 'tty-3.10-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty
-> >> git bisect good 507ffe4f3840ac24890a8123c702cf1b7fe4d33c
-> >> # good: [4a7b4d2360175f67ab2c58effeeb8362a3057c25] x86: pageattr-test: remove srandom32 call
-> >> git bisect good 4a7b4d2360175f67ab2c58effeeb8362a3057c25
-> >> # good: [46d9be3e5eb01f71fc02653755d970247174b400] Merge branch 'for-3.10' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
-> >> git bisect good 46d9be3e5eb01f71fc02653755d970247174b400
-> >> # good: [e0972916e8fe943f342b0dd1c9d43dbf5bc261c2] Merge branch 'perf-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> >> git bisect good e0972916e8fe943f342b0dd1c9d43dbf5bc261c2
-> >> # bad: [ab86e974f04b1cd827a9c7c35273834ebcd9ab38] Merge branch 'timers-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> >> git bisect bad ab86e974f04b1cd827a9c7c35273834ebcd9ab38
-> >> # good: [8700c95adb033843fc163d112b9d21d4fda78018] Merge branch 'smp-hotplug-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> >> git bisect good 8700c95adb033843fc163d112b9d21d4fda78018
-> >> # good: [0ed2aef9b3bffe598045b62a31a50d912eee92d8] Merge branch 'fortglx/3.10/time' of git://git.linaro.org/people/jstultz/linux into timers/core
-> >> git bisect good 0ed2aef9b3bffe598045b62a31a50d912eee92d8
-> >> # good: [8f294b5a139ee4b75e890ad5b443c93d1e558a8b] hrtimer: Add expiry time overflow check in hrtimer_interrupt
-> >> git bisect good 8f294b5a139ee4b75e890ad5b443c93d1e558a8b
-> >> # good: [60cf7ea849e77c8782dee147cfb8c38d1984236e] timer_list: Split timer_list_show_tickdevices
-> >> git bisect good 60cf7ea849e77c8782dee147cfb8c38d1984236e
-> >> # good: [d2054b2c11682495fca41e9d4092e654df63b517] posix-timers: Remove unused variable
-> >> git bisect good d2054b2c11682495fca41e9d4092e654df63b517
-> >> # good: [6402c7dc2a19c19bd8cdc7d80878b850da418942] Merge branch 'linus' into timers/core Reason: Get upstream fixes before adding conflicting code.
-> >> git bisect good 6402c7dc2a19c19bd8cdc7d80878b850da418942
-> >> # good: [6f7a05d7018de222e40ca003721037a530979974] clockevents: Set dummy handler on CPU_DEAD shutdown
-> >> git bisect good 6f7a05d7018de222e40ca003721037a530979974
-> >>
-> >>
-> >> So there it stands.  I have no clue and I don't think I'm able to
-> >> provide any clue for anyone else either.  Given that the problem seems
-> >> to be very consistently reproducible on my laptop, I am a bit puzzled as
-> >> to how the bisect would fail like that.
-> > 
-> > Hey, hey, hey.  Turns out this wasn't that wrong after all.  That merge
-> > includes a oneline diff in kernel/cpu/idle.c and it *is* actually this
-> > diff which trigger the problem for me.  Reverting it, using the attached
-> > patch, makes the warning go away.  Which means that it had nothing to do
-> > with your RCU changes.
-> > 
-> > But I haven't the faintest idea how this is supposed to work, or even
-> > how to explain the patch properly, so I think I need some help from
-> > Thomas here.  Unless this makes you understand the real issue?
-> > 
-> > Thomas, why does powertop trigger the
-> > 
-> >   WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48+0x3d/0x125()
-> > 
-> > without the attached patch?  And what is the proper resolution?
-> > 
-> 
-> The problem appears to be in the cpu idle poll implementation. You can trigger
-> this problem by passing idle=poll in the kernel cmd-line as well, right?
-> 
-> I think I understand what is going on here. Can you please try the fix below?
-> (It is only compile-tested since its very late here and I really need to get
-> some sleep!).
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
-> 
-> ----------------------------------------------------------------------->
-> 
-> 
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] rcu/idle: Wrap cpu-idle poll mode within rcu_idle_enter/exit
-> 
-> Bjørn Mork reported the following warning when running powertop.
-> 
-> [   49.289034] ------------[ cut here ]------------
-> [   49.289055] WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48+0x3d/0x125()
-> [   49.289059] Modules linked in: msr cpufreq_stats xt_multiport iptable_filter ip_tables rfcomm bnep xt_hl binfmt_misc ip6table_filter ip6_tables x_tables nfsd nfs_acl nfs lockd fscache sunrpc 8021q garp stp llc tun cdc_mbim cdc_ncm cdc_wdm usbnet mii loop fuse btusb bluetooth iTCO_wdt iTCO_vendor_support snd_hda_codec_conexant arc4 iwldvm mac80211 thinkpad_acpi nvram snd_seq_midi snd_seq_midi_event snd_rawmidi snd_hda_intel snd_seq snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss iwlwifi snd_pcm coretemp kvm_intel kvm snd_seq_device evdev psmouse serio_raw lpc_ich mfd_core cfg80211 snd_page_alloc i2c_i801 snd_timer snd soundcore rfkill battery ac acpi_cpufreq mperf i915 wmi video i2c_algo_bit drm_kms_helper button drm i2c_core processor ext4 crc16 jbd2 mbcache nbd sg sr_mod cdrom sd_mod crc_t10dif ahci libahci libata microcode scsi_mod ehci_pci uhci_hcd ehci_hcd usbcore usb_common thermal thermal_sys e1000e ptp pps_core
-> [   49.289244] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-bisect-rcu-warn+ #107
-> [   49.289247] Hardware name: LENOVO 2776LEG/2776LEG, BIOS 6EET55WW (3.15 ) 12/19/2011
-> [   49.289251]  ffffffff8157d8c8 ffffffff81801e28 ffffffff8137e4e3 ffffffff81801e68
-> [   49.289260]  ffffffff8103094f ffffffff81801e68 0000000000000000 ffff88023afcd9b0
-> [   49.289268]  0000000000000000 0140000000000000 ffff88023bee7700 ffffffff81801e78
-> [   49.289276] Call Trace:
-> [   49.289285]  [<ffffffff8137e4e3>] dump_stack+0x19/0x1b
-> [   49.289293]  [<ffffffff8103094f>] warn_slowpath_common+0x62/0x7b
-> [   49.289300]  [<ffffffff8103097d>] warn_slowpath_null+0x15/0x17
-> [   49.289306]  [<ffffffff810a9006>] rcu_eqs_exit_common.isra.48+0x3d/0x125
-> [   49.289314]  [<ffffffff81079b49>] ? trace_hardirqs_off_caller+0x37/0xa6
-> [   49.289320]  [<ffffffff810a9692>] rcu_idle_exit+0x85/0xa8
-> [   49.289327]  [<ffffffff8107076e>] trace_cpu_idle_rcuidle+0xae/0xff
-> [   49.289334]  [<ffffffff810708b1>] cpu_startup_entry+0x72/0x115
-> [   49.289341]  [<ffffffff813689e5>] rest_init+0x149/0x150
-> [   49.289347]  [<ffffffff8136889c>] ? csum_partial_copy_generic+0x16c/0x16c
-> [   49.289355]  [<ffffffff81a82d34>] start_kernel+0x3f0/0x3fd
-> [   49.289362]  [<ffffffff81a8274c>] ? repair_env_string+0x5a/0x5a
-> [   49.289368]  [<ffffffff81a82481>] x86_64_start_reservations+0x2a/0x2c
-> [   49.289375]  [<ffffffff81a82550>] x86_64_start_kernel+0xcd/0xd1
-> [   49.289379] ---[ end trace 07a1cc95e29e9036 ]---
-> 
-> The warning is that 'rdtp->dynticks' has an unexpected value, which roughly
-> translates to - the calls to rcu_idle_enter() and rcu_idle_exit() were not
-> made in the correct order, or otherwise messed up.
-> 
-> And Bjørn's painstaking debugging indicated that this happens when the idle
-> loop enters the poll mode. Looking at the poll function cpu_idle_poll(), and
-> the implementation of trace_cpu_idle_rcuidle(), the problem becomes very clear:
-> cpu_idle_poll() lacks calls to rcu_idle_enter/exit(), and trace_cpu_idle_rcuidle()
-> calls them in the reverse order - first rcu_idle_exit(), and then rcu_idle_enter().
-> Hence the even/odd alternative sequencing of rdtp->dynticks goes for a toss.
-> 
-> And powertop readily triggers this because powertop uses the idle-tracing
-> infrastructure extensively.
-> 
-> So, to fix this, wrap the code in cpu_idle_poll() within rcu_idle_enter/exit(),
-> so that it blends properly with the calls inside trace_cpu_idle_rcuidle() and
-> thus get the function ordering right.
-> 
-> Reported-by: Bjørn Mork <bjorn@mork.no>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On Tue, May 14, 2013 at 2:13 AM, Dmitry Maluka <D.Maluka@adbglobal.com> wrote:
+> Hi,
+>
+> Sometimes we run into an interesting deadlock on mm->mmap_sem. I see it
+> is similar to these deadlocks:
+>
+> https://lkml.org/lkml/2005/2/22/123
+> https://lkml.org/lkml/2001/9/17/105
+>
+> in the sense that it is too triggered by page faults and is explained by
+> "fair" rwsem semantics (pending write lock blocks further read locks).
+>
+> First, let me describe the prerequisites. It is an embedded MIPS
+> platform. We have 2 custom kernel drivers (call them A and B):
+>
+> - Driver A implements hardware encryption/decryption. It acts both as a
+> char device driver and as an in-kernel library with an API allowing
+> other kernel modules to encrypt/decrypt data. Important point: driver A
+> uses a single mutex (call it A_mutex) to protect all its operations,
+> regardless of whether they are requested by user space or by another
+> kernel module.
+>
+> - Driver B is a block device driver implementing a transparent encrypted
+> storage. It uses driver A's in-kernel API for encryption during write
+> and decryption during read.
+>
+> We have squashfs mounted on a block device provided by driver B. And we
+> have a user-space process with a plenty of threads in it (call them
+> thread 1, 2, 3, ...).
+>
+> Now, the sequence leading to the deadlock:
+>
+> 1. Thread 1 needs to encrypt or decrypt some data. It uses char device
+> interface provided by driver A. Upon driver entry, it first locks A_mutex.
+>
+> 2. Thread 2 reads from a mmap'ed file on squashfs. Page fault is
+> generated. do_page_fault() read-locks mm->mmap_sem. Then squashfs
+> filemap fault handler is called, then read request is sent to driver B,
+> then driver B calls an API function from driver A. This function first
+> tries to lock A_mutex, and hangs on it.
+>
+> 3. Thread 3 does a syscall which requires mm->mmap_sem write-locked
+> (sometimes it is mmap, sometimes mprotect). It hangs on mm->mmap_sem.
+>
+> 4. Thread 1 proceeds with handling the request from user space from step
+> 1. During copy_to_user() or copy_from_user() page fault is generated.
+> do_page_fault() tries to read-lock mm->mmap_sem and hangs on it.
 
-Looks good!  The reason this work is that cpu_idle_poll() cannot be
-invoked from irq.  If that could happen, then the rcu_idle_exit() would
-tell RCU that it was idle despite the fact that it was still executing
-within an irq handler.  If this instead could be executed from within
-an irq handler, RCU_NONIDLE() would need to be used instead.
+If the user buffer passed to driver A is mapped against file on the block
+device, single thread 1 may still deadlock on the mutex A.
 
-So:
+>
+> This deadlock does not happen if we memset() the entire user space
+> buffer in thread 1 before doing the syscall. I.e. we make sure that the
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+It can't be avoided 100% with the memset() workaround since the user
+buffer might be swapped out.
 
-> ---
-> 
->  kernel/cpu/idle.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-> index 8b86c0c..d5585f5 100644
-> --- a/kernel/cpu/idle.c
-> +++ b/kernel/cpu/idle.c
-> @@ -40,11 +40,13 @@ __setup("hlt", cpu_idle_nopoll_setup);
-> 
->  static inline int cpu_idle_poll(void)
->  {
-> +	rcu_idle_enter();
->  	trace_cpu_idle_rcuidle(0, smp_processor_id());
->  	local_irq_enable();
->  	while (!need_resched())
->  		cpu_relax();
->  	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
-> +	rcu_idle_exit();
->  	return 1;
->  }
-> 
-> 
-> 
-> 
+> buffer is fully mapped before the request to driver A, preventing demand
+> paging during copy_to/from_user(). We are currently using it as a
+> workaround.
+>
+> So... I realize that in our case the deadlock is caused by our
+> proprietary component (driver A) whose authors were smart guys but not
+> farsighted enough to anticipate this scenario. Now we are considering
+> reworking driver A to make all copy_to/from_user() calls without A_mutex
+> locked. This should remove the deadlock source, AFAICS.
 
+Looks there are some similar examples, one of them is b31ca3f5df( sysfs:
+fix deadlock).
+
+>
+> However, it looks like a general internal kernel architecture problem.
+> The whole page fault handling procedure is done with mm->mmap_sem
+> read-held, and due to rwsem semantics, down_read/down_write/down_read
+> deadlock may happen if two threads are getting page fault and a third
+> thread is trying to write-lock mm->mmap_sem. So all the code performing
+> page fault handling procedure should be especially careful about
+> avoiding such deadlock. But this is a complex procedure involving
+> different subsystems, particularly, arbitrary block device driver. So
+> any block device driver should be implemented with this in mind. While
+> this is probably not documented anywhere.
+
+Maybe it is good to document the lock usage, but the rule isn't much
+complicated: if one lock may be held under mmap_sem, the lock can't be
+held before copy_to/from_user(), :-)
+
+
+Thanks,
+-- 
+Ming Lei
