@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab3ENAkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:40:51 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36369 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab3ENAku (ORCPT
+	id S1755549Ab3ENAln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:41:43 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:49676 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab3ENAlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:40:50 -0400
-Message-ID: <5191880F.3030308@linaro.org>
-Date: Mon, 13 May 2013 17:40:47 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] timekeeping: sync persistent clock and RTC on system
- time step changes
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1368467768-2316-3-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 May 2013 20:41:42 -0400
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: apw@canonical.com, joe@perches.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: add check for wrong "if (IS_ERR_OR_NULL(<foo>)) return PTR_ERR(<foo>)" uses
+Date: Tue, 14 May 2013 03:41:37 +0300
+Message-Id: <1368492098-3140-1-git-send-email-ruslan.bilovol@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 10:56 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> The persistent clock or the RTC is only synchronized with system time
-> every 11 minutes if NTP is running.  This gives a window where the
-> persistent clock may be incorrect after a step change in the time
-> (such as on first boot).
->
-> This particularly affects Xen guests as until an update to the control
-> domain's persistent clock, new guests will start with the incorrect
-> system time.
->
-> When there is a step change in the system time, call
-> update_persistent_clock or rtc_set_ntp_time() to synchronize the
-> persistent clock or RTC to the new system time.
+This was many times discussed by Russell King
+and I also was about wrong usage of IS_ERR_OR_NULL()
+in my patch. So I added this check and other people will
+be at least warned about potentially wrong usage
+of mentioned macro.
 
-I'm sorry, this isn't quite making sense to me. Could you further 
-describe the exact problematic behavior you're seeing here, and why its 
-a problem?
+Quoting Russell:
+| Well, the whole reasoning here is that IS_ERR_OR_NULL() is far too easy
+| to get wrong - there are too many of this kind of crap in the kernel:
+|
+| 	foo = some_func();
+| 	if (IS_ERR_OR_NULL(foo))
+| 		return PTR_ERR(foo);
+|
+| which is wrong, because if foo _is_ NULL, the function doesn't return an
+| error, it returns success instead.  Of course, if some_func() never ever
+| returns NULL in the first place, that can't happen, but then the additional
+| test there for a NULL pointer is, to put it bluntly, total bollocks.
 
-You seem to be saying we should always set the RTC any time settimeofday 
-is called (regardless of the NTP sync state), which doesn't seem right 
-to me. Also I worry that this would cause the RTC to be set when the RTC 
-hctosys() code (or hwclock) sets the time to the RTC clock, which is a 
-bit circular.
+The full discussion may be found here:
+http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874
 
-I suspect once the problem is better understood, there will be a better 
-solution then trying to always set the RTC on any settimeofday() call.
+Tested on:
++	if (IS_ERR_OR_NULL(soc_dev))
++		return PTR_ERR(soc_dev);
++
++	if (IS_ERR_OR_NULL(soc_dev))
++		return soc_dev ? PTR_ERR(soc_dev) : -ENODEV;
 
-thanks
--john
+The result is:
 
+WARNING: Use of IS_ERR_OR_NULL is usually wrong: see http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874
++	if (IS_ERR_OR_NULL(soc_dev))
++		return PTR_ERR(soc_dev);
 
+Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+---
 
->
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->   kernel/time/timekeeping.c |   46 +++++++++++++++++++++++++++++++++++++++++++-
->   1 files changed, 44 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 98cd470..56f2349 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -240,12 +240,54 @@ int pvclock_gtod_unregister_notifier(struct notifier_block *nb)
->   }
->   EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
->   
-> +#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
-> +
-> +static void __sync_persistent_clock(struct work_struct *work)
-> +{
-> +	struct timespec now;
-> +	int ret = 0;
-> +
-> +	getnstimeofday(&now);
-> +
-> +#ifdef CONFIG_GENERIC_CMOS_UPDATE
-> +	ret = update_persistent_clock(now);
-> +#endif
-> +#ifdef CONFIG_RTC_SYSTOHC
-> +	if (ret == -ENODEV)
-> +		rtc_set_ntp_time(now);
-> +#endif
-> +}
-> +
-> +static DECLARE_DELAYED_WORK(sync_persistent_clock_work, __sync_persistent_clock);
-> +
-> +static void sync_persistent_clock(struct timekeeper *tk)
-> +{
-> +	u64 nsecs;
-> +	u32 remainder;
-> +
-> +	/* Many RTCs require updates 500 ms before the next second. */
-> +	nsecs = timekeeping_get_ns(tk);
-> +	div_u64_rem(nsecs, NSEC_PER_SEC, &remainder);
-> +	if (remainder > NSEC_PER_SEC / 2)
-> +		nsecs = remainder - NSEC_PER_SEC / 2;
-> +	else
-> +		nsecs = remainder + NSEC_PER_SEC / 2;
-> +
-> +	if (system_wq)
-> +		schedule_delayed_work(&sync_persistent_clock_work, nsecs_to_jiffies(nsecs));
-> +}
-> +
-> +#endif
-> +
->   /* must hold timekeeper_lock */
-> -static void timekeeping_update(struct timekeeper *tk, bool clearntp, bool mirror)
-> +static void timekeeping_update(struct timekeeper *tk, bool step, bool mirror)
->   {
-> -	if (clearntp) {
-> +	if (step) {
->   		tk->ntp_error = 0;
->   		ntp_clear();
-> +#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
-> +		sync_persistent_clock(tk);
-> +#endif
->   	}
->   	update_vsyscall(tk);
->   	update_pvclock_gtod(tk);
+I'm not very experienced in the perl, so feel free to
+comment this patch or fix it :)
+
+ scripts/checkpatch.pl |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b954de5..6ec71bd 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3262,6 +3262,15 @@ sub process {
+ 			}
+ 		}
+ 
++# check for wrong "if (IS_ERR_OR_NULL(<foo>)) return PTR_ERR(<foo>)" uses
++		if ($prevline =~ /\bif\s*\(\s*IS_ERR_OR_NULL\s*\(\s*($Lval)\s*\)\s*\)/) {
++			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
++			if ($line =~ /\b(\s*PTR_ERR)$expr/) {
++				WARN('IS_ERR_OR_NULL',
++				     "Use of IS_ERR_OR_NULL is usually wrong: see http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874\n" . $hereprev);
++			}
++		}
++
+ # prefer usleep_range over udelay
+ 		if ($line =~ /\budelay\s*\(\s*(\d+)\s*\)/) {
+ 			# ignore udelay's < 10, however
+-- 
+1.7.9.5
 
