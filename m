@@ -1,54 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab3ENRQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:16:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51192 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3ENRQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:16:09 -0400
-Date: Tue, 14 May 2013 10:16:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
-Message-Id: <20130514101608.60c64b73.akpm@linux-foundation.org>
-In-Reply-To: <CAK5ve-JqvOHQR+eSaq7HJ3rsaxj-kuhKw2skOa74+Sc=WqxTAQ@mail.gmail.com>
-References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
-	<CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
-	<CAH9NwWc+BP5ZbHwmMZ4AisviDHM-GizTmZO6vwxtd=ntYUAk=A@mail.gmail.com>
-	<CAH9NwWceaA0MPGj65fOhmECL8A522qngU3RHGZ++Uz-6mVKKAg@mail.gmail.com>
-	<CAK5ve-JmVes+OA3MRyoZEo_Fz8_RHpdqmcTxNwwrUAnADpqvyw@mail.gmail.com>
-	<CAH9NwWeMMYzvE0VVMCYmF9oXA-wBiW-BnwoK1q7mjUkE4JF9uw@mail.gmail.com>
-	<CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com>
-	<CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
-	<CAK5ve-JqvOHQR+eSaq7HJ3rsaxj-kuhKw2skOa74+Sc=WqxTAQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755822Ab3ENRQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:16:30 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42555 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752727Ab3ENRQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 13:16:28 -0400
+Message-ID: <51927159.8090300@linux.vnet.ibm.com>
+Date: Tue, 14 May 2013 10:16:09 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] checkpatch: avoid warning on page flag acessors
+References: <1368549951-1170-1-git-send-email-cody@linux.vnet.ibm.com> <1368551211-6213-1-git-send-email-cody@linux.vnet.ibm.com> <1368551598.23335.4.camel@joe-AO722>
+In-Reply-To: <1368551598.23335.4.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051417-9360-0000-0000-0000122A3287
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 May 2013 10:12:04 -0700 Bryan Wu <cooloney@gmail.com> wrote:
+On 05/14/2013 10:13 AM, Joe Perches wrote:
+> I think you need to delete the ", leave the | and remove the ?
+> Dunno where that " came from.
 
-> On Tue, May 14, 2013 at 12:06 AM, Christian Gmeiner
-> <christian.gmeiner@gmail.com> wrote:
-> > 2013/5/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
-> >> 2013/3/8 Christian Gmeiner <christian.gmeiner@gmail.com>:
-> >>> 2013/3/5 Bryan Wu <cooloney@gmail.com>:
-> >>>> On Sun, Mar 3, 2013 at 11:40 PM, Christian Gmeiner
-> >>>> <christian.gmeiner@gmail.com> wrote:
-> >>>>> ping
-> >>>>> --
-> 
-> I found this patch is still in linux-next, I'm not sure whether it
-> will be merged into 3.10 like a bug fixing. We need to wait Andrew's
-> reply. I'm OK to pick up and send out to Linus as a bug fixing.
-
-whome, I'd forgotten I had this.  I stuck a cc:stable on the end and
-shall send it in to Linus in the next 3.10 batch, OK?
+Ya. commit goof on my part, see v3
 
