@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab3ENRoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:44:44 -0400
-Received: from sentry-two.sandia.gov ([132.175.109.14]:60779 "EHLO
-	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3ENRom (ORCPT
+	id S1756917Ab3ENRqC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:46:02 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:58501 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab3ENRqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:44:42 -0400
-X-WSS-ID: 0MMSUMG-0B-0E0-02
-X-M-MSG: 
-X-Server-Uuid: AF72F651-81B1-4134-BA8C-A8E1A4E620FF
-Message-ID: <519277F6.4060808@sandia.gov>
-Date: Tue, 14 May 2013 11:44:22 -0600
-From: "Jim Schutt" <jaschut@sandia.gov>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402
- Thunderbird/17.0.5
+	Tue, 14 May 2013 13:46:00 -0400
 MIME-Version: 1.0
-To: "Alex Elder" <elder@inktank.com>
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libceph: ceph_pagelist_append might sleep while
- atomic
-References: <1368110565-125922-1-git-send-email-jaschut@sandia.gov>
- <519269F2.1000907@inktank.com>
-In-Reply-To: <519269F2.1000907@inktank.com>
-X-TMWD-Spam-Summary: TS=20130514174422; ID=1; SEV=2.3.1;
- DFV=B2013022509; IFV=NA; AIF=B2013022509; RPD=5.03.0010; ENG=NA;
- RPDID=7374723D303030312E30413031303230322E35313932373746362E303035343A534346535441543838363133332C73733D312C6667733D30;
- CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
-X-MMS-Spam-Filter-ID: B2013022509_5.03.0010
-X-WSS-ID: 7D8CA87C2IW2788614-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-RSA-Inspected: yes
-X-RSA-Classifications: public
-X-RSA-Action: allow
+In-Reply-To: <1368542918-8861-5-git-send-email-imre.deak@intel.com>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+	<1368542918-8861-1-git-send-email-imre.deak@intel.com>
+	<1368542918-8861-5-git-send-email-imre.deak@intel.com>
+Date: Tue, 14 May 2013 13:45:58 -0400
+Message-ID: <CAC-25o-iHZikYLhBo_ckB07y7GgiVn4-9uhc7yN9iZiZC171jw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/8] media/si4713-i2c: take usecs_to_jiffies_timeout
+ into use
+From: "edubezval@gmail.com" <edubezval@gmail.com>
+To: Imre Deak <imre.deak@intel.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 10:44 AM, Alex Elder wrote:
-> On 05/09/2013 09:42 AM, Jim Schutt wrote:
->> Ceph's encode_caps_cb() worked hard to not call __page_cache_alloc while
->> holding a lock, but it's spoiled because ceph_pagelist_addpage() always
->> calls kmap(), which might sleep.  Here's the result:
-> 
-> I finally took a close look at this today, Jim.  Sorry
-> for the delay.
-> 
+Imre,
 
-No worries - thanks for taking a look.
+On Tue, May 14, 2013 at 10:48 AM, Imre Deak <imre.deak@intel.com> wrote:
+> Use usecs_to_jiffies_timeout instead of open-coding the same.
+>
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
 
-> The issue is formatting the reconnect message--which will
-> hold an arbitrary amount of data and therefore which we'll
-> need to do some allocation (and kmap) for--in the face of
-> having to hold the flock spinlock while doing so.
-> 
-> And as you found, ceph_pagelist_addpage(), which is called
-> by ceph_pagelist_append(), calls kmap() even if it doesn't
-> need to allocate anything.  This means that despite reserving
-> the pages, those pages are in the free list and because they'll
-> need to be the subject of kmap() their preallocation doesn't
-> help.
-> 
-> Your solution was to pre-allocate a buffer, format the locks
-> into that buffer while holding the lock, then append the
-> buffer contents to a pagelist after releasing the lock.  You
-> check for a changing (increasing) lock count while you format
-> the locks, which is good.
-> 
-> So...  Given that, I think your change looks good.  It's a shame
-> we can't format directly into the pagelist buffer but this won't
-> happen much so it's not a big deal.  I have a few small suggestions,
-> below.
-> 
-> I do find some byte order bugs though.   They aren't your doing,
-> but I think they ought to be fixed first, as a separate patch
-> that would precede this one.  The bug is that the lock counts
-> that are put into the buffer (num_fcntl_locks and num_flock_locks)
-> are not properly byte-swapped.  I'll point it out inline
-> in your code, below.
-> 
-> I'll say that what you have is OK.  Consider my suggestions, and
-> if you choose not to fix the byte order bugs, please let me know.
+Acked-by: Eduardo Valentin <edubezval@gmail.com>
 
-I'll happily fix up a v2 series with your suggestions addressed.
-Thanks for catching those issues.  Stay tuned...
-
-Thanks -- Jim
+> ---
+>  drivers/media/radio/si4713-i2c.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/media/radio/si4713-i2c.c b/drivers/media/radio/si4713-i2c.c
+> index fe16088..e12f058 100644
+> --- a/drivers/media/radio/si4713-i2c.c
+> +++ b/drivers/media/radio/si4713-i2c.c
+> @@ -233,7 +233,7 @@ static int si4713_send_command(struct si4713_device *sdev, const u8 command,
+>
+>         /* Wait response from interrupt */
+>         if (!wait_for_completion_timeout(&sdev->work,
+> -                               usecs_to_jiffies(usecs) + 1))
+> +                               usecs_to_jiffies_timeout(usecs)))
+>                 v4l2_warn(&sdev->sd,
+>                                 "(%s) Device took too much time to answer.\n",
+>                                 __func__);
+> @@ -470,7 +470,7 @@ static int si4713_wait_stc(struct si4713_device *sdev, const int usecs)
+>
+>         /* Wait response from STC interrupt */
+>         if (!wait_for_completion_timeout(&sdev->work,
+> -                       usecs_to_jiffies(usecs) + 1))
+> +                       usecs_to_jiffies_timeout(usecs)))
+>                 v4l2_warn(&sdev->sd,
+>                         "%s: device took too much time to answer (%d usec).\n",
+>                                 __func__, usecs);
+> --
+> 1.7.10.4
+>
 
 
+
+-- 
+Eduardo Bezerra Valentin
