@@ -1,115 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab3ENQJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:09:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50005 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754980Ab3ENQJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:09:05 -0400
-Date: Tue, 14 May 2013 18:08:59 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
- root caches
-Message-ID: <20130514160859.GC5055@dhcp22.suse.cz>
-References: <1368535118-27369-1-git-send-email-avagin@openvz.org>
+	id S1755576Ab3ENQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:09:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48345 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757499Ab3ENQJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:09:07 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] ext4 updates for 3.10-rc2
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 14 May 2013 12:09:02 -0400
+Message-ID: <nsxsj1po869.fsf@lambda.thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368535118-27369-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-05-13 16:38:38, Andrey Vagin wrote:
-> struct memcg_cache_params has a union. Different parts of this union are
-> used for root and non-root caches. A part with destroying work is used only
-> for non-root caches.
-> 
-> [  115.096202] BUG: unable to handle kernel paging request at 0000000fffffffe0
-> [  115.096785] IP: [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-> [  115.097024] PGD 7ace1067 PUD 0
-> [  115.097024] Oops: 0000 [#4] SMP
-> [  115.097024] Modules linked in: netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag ip6table_filter ip6_tables i2c_piix4 virtio_net virtio_balloon microcode i2c_core pcspkr floppy
-> [  115.097024] CPU: 0 PID: 1929 Comm: lt-vzctl Tainted: G      D      3.10.0-rc1+ #2
-> [  115.097024] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  115.097024] task: ffff88007b5aaee0 ti: ffff88007bf0c000 task.ti: ffff88007bf0c000
-> [  115.097024] RIP: 0010<ffffffff8116b641>]  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-> [  115.097024] RSP: 0018:ffff88007bf0de68  EFLAGS: 00010202
-> [  115.097024] RAX: 0000000fffffffe0 RBX: 00007fff4014f200 RCX: 0000000000000300
-> [  115.097024] RDX: 0000000000000005 RSI: 00000000000000d0 RDI: ffff88007d001300
-> [  115.097024] RBP: ffff88007bf0dea8 R08: 00007f849c3141b7 R09: ffffffff8118e100
-> [  115.097024] R10: 0000000000000001 R11: 0000000000000246 R12: 00000000000000d0
-> [  115.097024] R13: 0000000fffffffe0 R14: ffff88007d001300 R15: 0000000000001000
-> [  115.097024] FS:  00007f849cbb8b40(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-> [  115.097024] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  115.097024] CR2: 0000000fffffffe0 CR3: 000000007bc38000 CR4: 00000000000006f0
-> [  115.097024] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  115.097024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  115.097024] Stack:
-> [  115.097024]  ffffffff8118e100 ffffffff81149ea1 0000000000000008 00007fff4014f200
-> [  115.097024]  00007fff4014f200 0000000000000000 0000000000000000 0000000000001000
-> [  115.097024]  ffff88007bf0dee8 ffffffff8118e100 ffff880037598e00 00007fff4014f200
-> [  115.097024] Call Trace:
-> [  115.097024]  [<ffffffff8118e100>] ? getname_flags.part.34+0x30/0x140
-> [  115.097024]  [<ffffffff81149ea1>] ? vma_rb_erase+0x121/0x210
-> [  115.097024]  [<ffffffff8118e100>] getname_flags.part.34+0x30/0x140
-> [  115.097024]  [<ffffffff8118e248>] getname+0x38/0x60
-> [  115.097024]  [<ffffffff81181d55>] do_sys_open+0xc5/0x1e0
-> [  115.097024]  [<ffffffff81181e92>] SyS_open+0x22/0x30
-> [  115.097024]  [<ffffffff8161cb82>] system_call_fastpath+0x16/0x1b
-> [  115.097024] Code: f4 53 48 83 ec 18 8b 05 8e 53 b7 00 4c 8b 4d 08 21 f0 a8 10 74 0d 4c 89 4d c0 e8 1b 76 4a 00 4c 8b 4d c0 e9 92 00 00 00 4d 89 f5 <4d> 8b 45 00 65 4c 03 04 25 48 cd 00 00 49 8b 50 08 4d 8b 38 49
-> [  115.097024] RIP  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-> [  115.097024]  RSP <ffff88007bf0de68>
-> [  115.097024] CR2: 0000000fffffffe0
-> [  115.121352] ---[ end trace 16bb8e8408b97d0e ]---
-> 
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Glauber Costa <glommer@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Forgot to add
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-+
-Cc: stable # 3.9
+The following changes since commit 0d606e2c9fccdd4e67febf1e2da500e1bfe9e045:
 
-Thanks
-> ---
->  mm/memcontrol.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index cb1c9de..764b9e4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3141,8 +3141,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
->  			return -ENOMEM;
->  		}
->  
-> -		INIT_WORK(&s->memcg_params->destroy,
-> -				kmem_cache_destroy_work_func);
->  		s->memcg_params->is_root_cache = true;
->  
->  		/*
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  ext4: fix type-widening bug in inode table readahead code (2013-04-23 08:59:35 -0400)
 
--- 
-Michal Hocko
-SUSE Labs
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
+
+for you to fetch changes up to e2555fde4159467fb579e6ae3c0a8fc33015d0f5:
+
+  jbd,jbd2: fix oops in jbd2_journal_put_journal_head() (2013-05-13 09:45:01 -0400)
+
+----------------------------------------------------------------
+Fixed regressions (two stability regressions and a performance
+regression) introduced during the 3.10-rc1 merge window.  Also
+included is a bug fix relating to allocating blocks after resizing an
+ext3 file system when using the ext4 file system driver.
+
+----------------------------------------------------------------
+Jan Kara (1):
+      jbd,jbd2: fix oops in jbd2_journal_put_journal_head()
+
+Lachlan McIlroy (1):
+      ext4: limit group search loop for non-extent files
+
+Theodore Ts'o (1):
+      ext4: revert "ext4: use io_end for multiple bios"
+
+Yan, Zheng (1):
+      ext4: fix fio regression
+
+ fs/ext4/ext4.h               |   8 +--
+ fs/ext4/extents.c            |   9 ++--
+ fs/ext4/extents_status.c     |  17 ++++--
+ fs/ext4/extents_status.h     |   3 +-
+ fs/ext4/file.c               |   4 +-
+ fs/ext4/inode.c              |  85 ++++++++++++++----------------
+ fs/ext4/mballoc.c            |   6 ++-
+ fs/ext4/page-io.c            | 121 ++++++++++++++++---------------------------
+ include/linux/journal-head.h |   8 ++-
+ include/trace/events/ext4.h  |   4 +-
+ 10 files changed, 119 insertions(+), 146 deletions(-)
