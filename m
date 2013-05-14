@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab3ENIMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:12:22 -0400
-Received: from bosmailout07.eigbox.net ([66.96.189.7]:48649 "EHLO
-	bosmailout07.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab3ENIMS (ORCPT
+	id S1756572Ab3ENIOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:14:05 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:57800 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751102Ab3ENIOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:12:18 -0400
-X-Greylist: delayed 2381 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 May 2013 04:12:18 EDT
-X-Authority-Analysis: v=2.0 cv=dt1Z+ic4 c=1 sm=1
- a=i0WiXTmbFXIwRF3IvSVw8w==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=MiQ8TEe4tdQA:10 a=8nJEP1OIZ-IA:10 a=flkWhlLGwC4A:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=jAfPOIUMAAAA:8 a=IAQ8FGQyo4-b2CIacq4A:9
- a=wPNLvfGTeEIA:10 a=gE_ZUhsuebIA:10 a=hsonH7E3nOZjOFuRJksPKA==:117
-X-EN-OrigOutIP: 10.20.18.18
-X-EN-IMPSID: bjYc1l0020PPbB601jYcra
-Message-ID: <5191E855.5090908@yahoo.es>
-Date: Tue, 14 May 2013 15:31:33 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <5191E53B.9000106@yahoo.es> <C35C1E42-FCD6-4EE7-902B-FE01F362CD40@jcrosoft.com>
-In-Reply-To: <C35C1E42-FCD6-4EE7-902B-FE01F362CD40@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 May 2013 04:14:02 -0400
+Message-ID: <1368519240.1350.91.camel@x61.thuisdomein>
+Subject: [PATCH v2] Blackfin: bf537: rename "CONFIG_ADT7310" and friends
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Date: Tue, 14 May 2013 10:14:00 +0200
+In-Reply-To: <1368479743.1350.79.camel@x61.thuisdomein>
+References: <1368479743.1350.79.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.60.61
-X-EN-OrigHost: unknown
+X-OriginalArrivalTime: 14 May 2013 08:14:00.0641 (UTC) FILETIME=[FD4FA310:01CE507A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/14/2013 3:22 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On May 14, 2013, at 3:18 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
->
->> On 5/14/2013 1:52 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
->>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->>>>>
->>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>>>> introduces clear-on-write on ISR register. This behavior is not always
->>>>>> implemented when using Cadence MACB/GEM and is breaking other platforms.
->>>>>> We are using a new Device Tree compatibility string and a capability
->>>>>> property to actually activate this clear-on-write behavior on ISR.
->>>>>>
->>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>> can we detect it via the IP?
->>>> This was my first proposal, have it based on the value of MACB's
->>>> register 'MID' (offset 0x00fc, lower 16 bits).
->>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
->>>>
->>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revision
->>>> equals to 0x00000119?
->>> so no it will not work
->>>
->>> as the gem on sama5 is 00020119
->>>
->>> so version 0x119 too
->>>
->>> nico
->> All right, that's a pity.
->>
->> The only issue that remains then is the obligation to use CONFIG_OF,
->> or:
->>
->> +#if defined(CONFIG_OF)
->> +	dev_id = of_match_device(macb_dt_ids, &pdev->dev);
->> +	if (dev_id)
->> +		bp->caps = (u32)dev_id->data;
->> +
->> +#endif
->>
->> ?
-> no need as of_match_device is a inline of !OF
-Sorry, here's the complete compiler error:
-drivers/net/ethernet/cadence/macb.c: In function 'macb_probe':
-drivers/net/ethernet/cadence/macb.c:1601: error: 'macb_dt_ids' undeclared (first use in this function)
+In v3.10-rc1 the Analog Devices ADT7310/ADT7410 temperature sensor
+driver was removed as an IIO driver. But it was apparently overlooked to
+rename four references to CONFIG_ADT7310 and CONFIG_ADT7410 to
+CONFIG_SENSORS_ADT7310 and CONFIG_SENSORS_ADT7410 respectively. Do so
+now. Use the IS_ENABLED() macro, while we're at it.
 
-Earlier, 'macb_dt_ids' is only defined when using OF
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) The previous version ("Blackfin: bf537: rename "CONFIG_ADT7410"")
+assumed an earlier patch had been applied upstream. That patch can be
+found at https://lkml.org/lkml/2013/3/25/194 . But it is actually only
+applied locally, on a branch that I use to do patches like these. It was
+trivial to squash both patches into one patch.
 
-Best regards,
-Hein
+1) Still untested. The choice for SENSORS_ADT7310 and SENSORS_ADT7410 is
+still just educated guesswork.
+
+2) It was commit cddc1424f39e7c04045a6431eaf13a003fb8335a ("staging:iio:
+Remove adt7410 driver") that triggered this patch.
+
+ arch/blackfin/mach-bf537/boards/stamp.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 759a430..90d2ab1 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -701,7 +701,7 @@ static struct bfin5xx_spi_chip ad7816_spi_chip_info = {
+ };
+ #endif
+ 
+-#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_ADT7310)
+ static unsigned long adt7310_platform_data[3] = {
+ /* INT bound temperature alarm event. line 1 */
+ 	IRQ_PG4, IRQF_TRIGGER_LOW,
+@@ -1063,7 +1063,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+ 	},
+ #endif
+ 
+-#if defined(CONFIG_ADT7310) || defined(CONFIG_ADT7310_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_ADT7310)
+ 	{
+ 		.modalias = "adt7310",
+ 		.max_speed_hz = 1000000,
+@@ -2161,7 +2161,7 @@ static struct platform_device ad5398_userspace_consumer_device = {
+ #endif
+ #endif
+ 
+-#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_ADT7410)
+ /* INT bound temperature alarm event. line 1 */
+ static unsigned long adt7410_platform_data[2] = {
+ 	IRQ_PG4, IRQF_TRIGGER_LOW,
+@@ -2229,7 +2229,7 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
+ 	},
+ #endif
+ 
+-#if defined(CONFIG_ADT7410) || defined(CONFIG_ADT7410_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_ADT7410)
+ 	{
+ 		I2C_BOARD_INFO("adt7410", 0x48),
+ 		/* CT critical temperature event. line 0 */
+-- 
+1.7.11.7
 
