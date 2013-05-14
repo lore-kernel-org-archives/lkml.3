@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab3ENShW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:37:22 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:47640 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757767Ab3ENShV (ORCPT
+	id S1758003Ab3ENSlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:41:03 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:65157 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab3ENSlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:37:21 -0400
+	Tue, 14 May 2013 14:41:01 -0400
+Date: Tue, 14 May 2013 14:41:12 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        chuck.anderson@oracle.com
+Subject: Re: [PATCH 0/2 v2] cpu: fix leaks and udev race in register_cpu()
+Message-ID: <20130514184112.GA726@kroah.com>
+References: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CALZVapkH9KN=w_+zVNc2Bgza_HqojA8xt8R+iTeas9x7s5R06Q@mail.gmail.com>
-References: <CALZVapkH9KN=w_+zVNc2Bgza_HqojA8xt8R+iTeas9x7s5R06Q@mail.gmail.com>
-From: Javier Domingo <javierdo1@gmail.com>
-Date: Tue, 14 May 2013 20:36:59 +0200
-Message-ID: <CALZVapn-3CLWeScaMcB9kmao_OfSR6_SvRm9_zCgxR7p3sygqQ@mail.gmail.com>
-Subject: Re: Kernel OOPS using auditd Debian 3.2 on a /sys file audit
-To: linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't get any reply, is this mailing list still valid, or should I
-ask elsewhere? (this is a ping message)
+On Tue, May 14, 2013 at 04:46:05PM +0200, Igor Mammedov wrote:
+> 1. move "crash_notes" and "crash_notes_size" to static attributes to
+> guarantee that it's destroyed with CPU on unregister.
+> 
+> 2. fixes race between hotplugged CPU and onlining it via udev,
+> described at https://lkml.org/lkml/2012/4/30/193
+> 
+> Igor Mammedov (2):
+>   cpu: fix "crash_notes" and "crash_notes_size" leaks in register_cpu()
+>   cpu: make sure that cpu/online file created before KOBJ_ADD is
+>     emitted
+> 
+>  drivers/base/cpu.c |   59 ++++++++++++++++++++++++++++++++++-----------------
+>  1 files changed, 39 insertions(+), 20 deletions(-)
 
-Javier Domingo
+Nice, give me a few days to catch up with my patch queue, and I'll apply
+this.
 
-
-2013/5/2 Javier Domingo <javierdo1@gmail.com>:
-> Hi,
->
-> I am currently having problems with the cpu scaling (something is
-> touching the /sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq),
-> and I decided to use inotify to seek if something was being changed or
-> not.
->
-> This gave no problems to me, but something is writing just before me,
-> and I can't know from the inotifywait cmd who. Then, I found auditdl,
-> so I put this command onto it:
->
-> # auditctl -w /sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq
->
-> And just after this, this totally blocking OOPS was triggered:
-> [ 5072.685483] BUG: unable to handle kernel NULL pointer dereference
-> at 0000000000000038
-> [ 5072.714302] IP: [<ffffffff8114f06c>] sysfs_dentry_revalidate+0x9/0xa2
-> [ 5072.741249] PGD 12eca4067 PUD 12ec62067 PMD 0
-> [ 5072.768102] Oops: 0000 [#1] SMP
->
-> I tried to make sysrq, but didn't work. I have repeated several times
-> this and it always crashes. I am attaching the photo of the second
-> time because it is much longer than the second one.
->
-> Hope this helps on something!
->
-> Javier Domingo
+greg k-h
