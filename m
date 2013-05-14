@@ -1,83 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab3ENKvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:51:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2739 "EHLO mga01.intel.com"
+	id S1756981Ab3ENKv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:51:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35614 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab3ENKvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:51:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,670,1363158000"; 
-   d="scan'208";a="333806045"
-Message-ID: <5192173C.1070808@intel.com>
-Date: Tue, 14 May 2013 03:51:40 -0700
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1754024Ab3ENKv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 06:51:56 -0400
+Date: Tue, 14 May 2013 12:51:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/9] mm: vmscan: Decide whether to compact the pgdat
+ based on reclaim progress
+Message-ID: <20130514105154.GN5198@dhcp22.suse.cz>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+ <1368432760-21573-5-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Dong Zhu <bluezhudong@gmail.com>
-CC: Jacob Keller <Jacob.e.keller@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping policy
-References: <20130511140219.GG8399@zhudong.nay.redhat.com> <518E7723.5010003@cogentembedded.com> <20130512142555.GI8399@zhudong.nay.redhat.com> <20130512172446.GA2484@netboy> <20130513021236.GJ8399@zhudong.nay.redhat.com> <20130513043140.GA2567@netboy> <20130513100742.GM8399@zhudong.nay.redhat.com> <20130514095155.GO8399@zhudong.nay.redhat.com>
-In-Reply-To: <20130514095155.GO8399@zhudong.nay.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368432760-21573-5-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 02:51 AM, Dong Zhu wrote:
-> Hi,
->
->> I modified this patch and added the method to igb_get_ts_info function.
->> For 82576 nic, through this method we can easily check which type of packets
->> are time stamped now, such as (HWTSTAMP_FILTER_PTP_V1_L4_SYNC and
->> HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ), then change or disable it up to your requests.
->> I think it is convenient.The origial GET_TS_INFO method can only show the device’s
->> time stamping capabilities which nics supported.
-> Through this method we can easily check which type of packets are
-> timestamped currently, it is useful because that we use the hwstamp_ctl
-> set time stamping policy first then we could verify what type of packets
-> does the nic timestamp and then do some other testing(regression) for each
-> policy.No matter PTP is running or not we can make sure whether timestamp packets
-> could cause other general network problems through viewing and setting the
-> timestamp policy.
+On Mon 13-05-13 09:12:35, Mel Gorman wrote:
+> In the past, kswapd makes a decision on whether to compact memory after the
+> pgdat was considered balanced. This more or less worked but it is late to
+> make such a decision and does not fit well now that kswapd makes a decision
+> whether to exit the zone scanning loop depending on reclaim progress.
+> 
+> This patch will compact a pgdat if at least the requested number of pages
+> were reclaimed from unbalanced zones for a given priority. If any zone is
+> currently balanced, kswapd will not call compaction as it is expected the
+> necessary pages are already available.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I'm trying to follow this thread, and Richard's question keeps coming up 
-in my head, and you've failed to answer it yet.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-What are you trying to fix/solve?
+> ---
+>  mm/vmscan.c | 59 ++++++++++++++++++++++++++++++-----------------------------
+>  1 file changed, 30 insertions(+), 29 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 1c10ee5..cd09803 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2661,7 +2661,8 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>   */
+>  static bool kswapd_shrink_zone(struct zone *zone,
+>  			       struct scan_control *sc,
+> -			       unsigned long lru_pages)
+> +			       unsigned long lru_pages,
+> +			       unsigned long *nr_attempted)
+>  {
+>  	unsigned long nr_slab;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+> @@ -2677,6 +2678,9 @@ static bool kswapd_shrink_zone(struct zone *zone,
+>  	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+>  	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+>  
+> +	/* Account for the number of pages attempted to reclaim */
+> +	*nr_attempted += sc->nr_to_reclaim;
+> +
+>  	if (nr_slab == 0 && !zone_reclaimable(zone))
+>  		zone->all_unreclaimable = 1;
+>  
+> @@ -2724,7 +2728,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  
+>  	do {
+>  		unsigned long lru_pages = 0;
+> +		unsigned long nr_attempted = 0;
+>  		bool raise_priority = true;
+> +		bool pgdat_needs_compaction = (order > 0);
+>  
+>  		sc.nr_reclaimed = 0;
+>  
+> @@ -2774,7 +2780,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  		for (i = 0; i <= end_zone; i++) {
+>  			struct zone *zone = pgdat->node_zones + i;
+>  
+> +			if (!populated_zone(zone))
+> +				continue;
+> +
+>  			lru_pages += zone_reclaimable_pages(zone);
+> +
+> +			/*
+> +			 * If any zone is currently balanced then kswapd will
+> +			 * not call compaction as it is expected that the
+> +			 * necessary pages are already available.
+> +			 */
+> +			if (pgdat_needs_compaction &&
+> +					zone_watermark_ok(zone, order,
+> +						low_wmark_pages(zone),
+> +						*classzone_idx, 0))
+> +				pgdat_needs_compaction = false;
+>  		}
+>  
+>  		/*
+> @@ -2843,7 +2863,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  				 * already being scanned that high
+>  				 * watermark would be met at 100% efficiency.
+>  				 */
+> -				if (kswapd_shrink_zone(zone, &sc, lru_pages))
+> +				if (kswapd_shrink_zone(zone, &sc, lru_pages,
+> +						       &nr_attempted))
+>  					raise_priority = false;
+>  			}
+>  
+> @@ -2896,6 +2917,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  			break;
+>  
+>  		/*
+> +		 * Compact if necessary and kswapd is reclaiming at least the
+> +		 * high watermark number of pages as requsted
+> +		 */
+> +		if (pgdat_needs_compaction && sc.nr_reclaimed > nr_attempted)
+> +			compact_pgdat(pgdat, order);
+> +
+> +		/*
+>  		 * Raise priority if scanning rate is too low or there was no
+>  		 * progress in reclaiming pages
+>  		 */
+> @@ -2904,33 +2932,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  	} while (sc.priority >= 0 &&
+>  		 !pgdat_balanced(pgdat, order, *classzone_idx));
+>  
+> -	/*
+> -	 * If kswapd was reclaiming at a higher order, it has the option of
+> -	 * sleeping without all zones being balanced. Before it does, it must
+> -	 * ensure that the watermarks for order-0 on *all* zones are met and
+> -	 * that the congestion flags are cleared. The congestion flag must
+> -	 * be cleared as kswapd is the only mechanism that clears the flag
+> -	 * and it is potentially going to sleep here.
+> -	 */
+> -	if (order) {
+> -		int zones_need_compaction = 1;
+> -
+> -		for (i = 0; i <= end_zone; i++) {
+> -			struct zone *zone = pgdat->node_zones + i;
+> -
+> -			if (!populated_zone(zone))
+> -				continue;
+> -
+> -			/* Check if the memory needs to be defragmented. */
+> -			if (zone_watermark_ok(zone, order,
+> -				    low_wmark_pages(zone), *classzone_idx, 0))
+> -				zones_need_compaction = 0;
+> -		}
+> -
+> -		if (zones_need_compaction)
+> -			compact_pgdat(pgdat, order);
+> -	}
+> -
+>  out:
+>  	/*
+>  	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+> -- 
+> 1.8.1.4
+> 
 
-It sounds like what you're trying to add can already be retrieved 
-through different mechanisms that already exist.
-
-Please explain what you're trying to accomplish that doesn't already 
-exist today, and why it's important.  If the facility exists already, 
-then use that.  If it's not very usable, it can (maybe) be updated given 
-what's deficient.  If it doesn't exist, then explaining why it needs to 
-exist will help the case for the patches.
-
-Just providing code doesn't help answer the question of what you're 
-trying to do in the first place, and why what already exists isn't good 
-enough.
-
-Regards,
--PJ
+-- 
+Michal Hocko
+SUSE Labs
