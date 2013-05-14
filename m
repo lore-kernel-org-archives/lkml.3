@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab3ENVf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 17:35:29 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57122 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541Ab3ENVf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 17:35:27 -0400
+	id S1758570Ab3ENVjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 17:39:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65293 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758059Ab3ENVjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 17:39:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,672,1363158000"; 
+   d="scan'208";a="313615050"
+Message-ID: <5192AEF4.1070905@intel.com>
+Date: Tue, 14 May 2013 14:39:00 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
-References: <cover.1368485053.git.luto@amacapital.net> <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
- <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com> <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 May 2013 14:35:04 -0700
-Message-ID: <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
-Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
- missing ..._del
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
+In-Reply-To: <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>
->> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+On 05/14/2013 12:59 PM, Yinghai Lu wrote:
+> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
+>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
+>>> <alexander.h.duyck@intel.com> wrote:
+>>>> I'm sorry, but what is the point of this patch?  With device assignment
+>>>> it is always possible to have VFs loaded and the PF driver unloaded
+>>>> since you cannot remove the VFs if they are assigned to a VM.
+>>> unload PF driver will not call pci_disable_sriov?
+>> You cannot call pci_disable_sriov because you will panic all of the
+>> guests that have devices assigned.
+> ixgbe_remove did call pci_disable_sriov...
 >
-> I believe it will break something but we could deal with the fallout
-> once it happens.
+> for guest panic, that is another problem.
+> just like you pci passthrough with real pci device and hotremove the
+> card in host.
+>
+> ...
 
-FWIW, I'm running with this code on my machine right now using the
-radeon driver.  Everything seems fine.  If I build without MTRRs and
-without PAT, though, graphics are slow (as expected).  So I think
-everything's okay.
+I suggest you take another look.  In ixgbe_disable_sriov, which is the
+function that is called we do a check for assigned VFs.  If they are
+assigned then we do not call pci_disable_sriov.
 
---Andy
+>
+>> So how does your patch actually fix this problem?  It seems like it is
+>> just avoiding it.
+> yes, until the first one is done.
+
+Avoiding the issue doesn't fix the underlying problem and instead you
+are likely just introducing more bugs as a result.
+
+>> From what I can tell your problem is originating in pci_call_probe.  I
+>> believe it is calling work_on_cpu and that doesn't seem correct since
+>> the work should be taking place on a CPU already local to the PF. You
+>> might want to look there to see why you are trying to schedule work on a
+>> CPU which should be perfectly fine for you to already be doing your work on.
+> it always try to go with local cpu with same pxm.
+
+The problem is we really shouldn't be calling work_for_cpu in this case
+since we are already on the correct CPU.  What probably should be
+happening is that pci_call_probe should be doing a check to see if the
+current CPU is already contained within the device node map and if so
+just call local_pci_probe directly.  That way you can avoid deadlocking
+the system by trying to flush the CPU queue of the CPU you are currently on.
+
+Thanks,
+
+Alex
