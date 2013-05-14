@@ -1,116 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3ENGNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 02:13:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13545 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab3ENGNO convert rfc822-to-8bit (ORCPT
+	id S1755882Ab3ENGOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 02:14:25 -0400
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:46139 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751177Ab3ENGOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 02:13:14 -0400
-X-IronPort-AV: E=Sophos;i="4.87,668,1363104000"; 
-   d="scan'208";a="7263502"
-Message-ID: <5191D56E.10800@cn.fujitsu.com>
-Date: Tue, 14 May 2013 14:10:54 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 14 May 2013 02:14:23 -0400
+Date: Tue, 14 May 2013 07:52:56 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for
+ some SoC
+Message-ID: <20130514055256.GD22508@game.jcrosoft.org>
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
+ <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com>
+ <51918C23.7040106@yahoo.es>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Zhang Yanfei <zhangyanfei.yes@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] x86, 64bit: Fix a possible bug in switchover in head_64.S
-References: <5190DEA1.7030901@gmail.com> <CAE9FiQUAdTLjvvJRJsergZfpORyuVqneWt7NH_wUGCaS6buK3w@mail.gmail.com>
-In-Reply-To: <CAE9FiQUAdTLjvvJRJsergZfpORyuVqneWt7NH_wUGCaS6buK3w@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 14:12:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 14:12:06
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51918C23.7040106@yahoo.es>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 15153768321699392502
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrjeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月14日 13:51, Yinghai Lu 写道:
-> On Mon, May 13, 2013 at 5:37 AM, Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
->> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On 08:58 Tue 14 May     , Hein Tibosch wrote:
+> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> >
+> >> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+> >> introduces clear-on-write on ISR register. This behavior is not always
+> >> implemented when using Cadence MACB/GEM and is breaking other platforms.
+> >> We are using a new Device Tree compatibility string and a capability
+> >> property to actually activate this clear-on-write behavior on ISR.
+> >>
+> >> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+> >> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > can we detect it via the IP?
 > 
->> It seems line 119 has a potential bug there. For example,
->> the kernel is loaded at physical address 511G+1008M, that is
->>     000000000 111111111 111111000 000000000000000000000
->> and the kernel _end is 512G+2M, that is
->>     000000001 000000000 000000001 000000000000000000000
->> So in this example, when using the 2nd page to setup PUD (line 114~119),
->> rax is 511.
->> In line 118, we put rdx which is the address of the PMD page (the 3rd page)
->> into entry 511 of the PUD table. But in line 119, the entry we calculate from
->> (4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
->> 119 should be wraparound into entry 0 of the PUD table.
->>
->> Sorry for not having a machine with memory exceeding 512GB, so I cannot
->> test to see if my guess is right or not. Please correct me if I am wrong.
->>
->> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> ---
->>  arch/x86/kernel/head_64.S |    7 ++++++-
->>  1 files changed, 6 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
->> index 08f7e80..2395d8f 100644
->> --- a/arch/x86/kernel/head_64.S
->> +++ b/arch/x86/kernel/head_64.S
->> @@ -116,8 +116,13 @@ startup_64:
->>         shrq    $PUD_SHIFT, %rax
->>         andl    $(PTRS_PER_PUD-1), %eax
->>         movq    %rdx, (4096+0)(%rbx,%rax,8)
->> +       cmp     $511, %rax
->> +       je      1f
->>         movq    %rdx, (4096+8)(%rbx,%rax,8)
->> -
->> +       jmp     2f
->> +1:
->> +       movq    %rdx, (4096)(%rbx)
->> +2:
->>         addq    $8192, %rbx
->>         movq    %rdi, %rax
->>         shrq    $PMD_SHIFT, %rdi
+> This was my first proposal, have it based on the value of MACB's
+> register 'MID' (offset 0x00fc, lower 16 bits).
+> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
 > 
-> yes, that is problem.
-> 
-> I did test the code cross before for cross 1T and 2T.
-> maybe we do not access the code during switch...
-> 
+> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revision
+> equals to 0x00000119?
+so no it will not work
 
-Yes, maybe.
+as the gem on sama5 is 00020119
 
-> change could be more simple and avoid jmps.
+so version 0x119 too
+
+nico 
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+
+Best Regards,
+J.
 > 
-> please check attached, and it does not use jmp
-
-Yeah, this is really simpler.
-
+> >> ---
+> >> Documentation/devicetree/bindings/net/macb.txt |  2 ++
+> >> drivers/net/ethernet/cadence/macb.c            | 15 +++++++++++++--
+> >> drivers/net/ethernet/cadence/macb.h            |  5 +++++
+> >> 3 files changed, 20 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+> >> index 44afa0e..13ec4f6 100644
+> >>
+> >> <snip>
+> >>
+> >> @@ -1474,6 +1476,10 @@ static const struct of_device_id macb_dt_ids[] = {
+> >> 	{ .compatible = "cdns,macb" },
+> >> 	{ .compatible = "cdns,pc302-gem" },
+> >> 	{ .compatible = "cdns,gem" },
+> >> +	{
+> >> +		.compatible = "cdns,zynq-7000-gem",
+> >> +		.data = (void *)MACB_CAPS_ISR_CLEAR_ON_WRITE,
+> >> +	},
+> >> 	{ /* sentinel */ }
+> >> };
+> >> MODULE_DEVICE_TABLE(of, macb_dt_ids);
+> >> @@ -1484,6 +1490,7 @@ static int __init macb_probe(struct platform_device *pdev)
+> >> 	struct macb_platform_data *pdata;
+> >> 	struct resource *regs;
+> >> 	struct net_device *dev;
+> >> +	const struct of_device_id *dev_id;
+> >> 	struct macb *bp;
+> >> 	struct phy_device *phydev;
+> >> 	u32 config;
+> >> @@ -1558,6 +1565,10 @@ static int __init macb_probe(struct platform_device *pdev)
+> >>
+> >> 	dev->base_addr = regs->start;
+> >>
+> >> +	dev_id = of_match_device(macb_dt_ids, &pdev->dev);
+> As avr32 doesn't yet define CONFIG_OF:
+>     macb.c:1601: error:  'macb_dt_ids' undeclared
 > 
-> index 08f7e80..321d65e 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -115,8 +115,10 @@ startup_64:
->   movq %rdi, %rax
->   shrq $PUD_SHIFT, %rax
->   andl $(PTRS_PER_PUD-1), %eax
-> - movq %rdx, (4096+0)(%rbx,%rax,8)
-> - movq %rdx, (4096+8)(%rbx,%rax,8)
-> + movq %rdx, 4096(%rbx,%rax,8)
-> + incl %eax
-> + andl $(PTRS_PER_PUD-1), %eax
-> + movq %rdx, 4096(%rbx,%rax,8)
-> 
->   addq $8192, %rbx
->   movq %rdi, %rax
-> 
-> And we need cc to stable.
-
-OK, I will send v2 and cc to stable.
-
-Thanks
-Zhang
+> Hein
