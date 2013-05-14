@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab3ENSIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:08:53 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:58264 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab3ENSIv (ORCPT
+	id S1757534Ab3ENSMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:12:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55609 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754757Ab3ENSMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:08:51 -0400
+	Tue, 14 May 2013 14:12:37 -0400
+Date: Tue, 14 May 2013 19:12:34 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        Jeff Mahoney <jeffm@suse.com>, netdev@vger.kernel.org
+Message-ID: <20130514181234.GH31561@decadent.org.uk>
+References: <1367936303-13386-1-git-send-email-jslaby@suse.cz>
+ <1367936303-13386-15-git-send-email-jslaby@suse.cz>
+ <20130507192938.GA3599@netboy>
+ <51924819.3060907@suse.cz>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1368515328-31535-3-git-send-email-draviv@codeaurora.org>
-References: <1368515328-31535-1-git-send-email-draviv@codeaurora.org>
-	<1368515328-31535-3-git-send-email-draviv@codeaurora.org>
-Date: Tue, 14 May 2013 11:08:49 -0700
-Message-ID: <CAOesGMij6oKDr0BCRAnmz-r48S5FzzMcU_iyCyCyqkafWsmyNA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/9] Documentation: devicetree: Add DT bindings for UFS
- host controller
-From: Olof Johansson <olof@lixom.net>
-To: Dolev Raviv <draviv@codeaurora.org>
-Cc: linux-scsi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        "moderated list:OPEN FIRMWARE AND..." 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51924819.3060907@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH 15/15] ptp: PTP_1588_CLOCK_PCH depends on x86
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 12:08 AM, Dolev Raviv <draviv@codeaurora.org> wrote:
-> Compatible list is used in commit 03b1781 but is not documented.
-> Add necessary device tree bindings to describe on-chip UFS host
-> controllers.
->
-> Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
->
-> diff --git a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
-> new file mode 100644
-> index 0000000..20468b2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
-> @@ -0,0 +1,16 @@
-> +* Universal Flash Storage (UFS) Host Controller
-> +
-> +UFSHC nodes are defined to describe on-chip UFS host controllers.
-> +Each UFS controller instance should have its own node.
-> +
-> +Required properties:
-> +- compatible        : compatible list, contains "jedec,ufs-1.1"
-> +- interrupts        : <interrupt mapping for UFS host controller IRQ>
-> +- reg               : <registers mapping>
-> +
-> +Example:
-> +       ufshc@0xfc598000 {
-> +               compatible = "jedec,ufs-1.1";
+On Tue, May 14, 2013 at 04:20:09PM +0200, Jiri Slaby wrote:
+> On 05/07/2013 09:29 PM, Richard Cochran wrote:
+> > On Tue, May 07, 2013 at 04:18:23PM +0200, Jiri Slaby wrote:
+> >> From: Jeff Mahoney <jeffm@suse.com>
+> >>
+> >> The PCH EG20T is only compatible with Intel Atom processors so it
+> >> should depend on x86.
+> > 
+> > This patch has been submitted before,
+> > 
+> >    https://patchwork.kernel.org/patch/2069071/
+> > 
+> > and at that time the reaction was that it is good to have drivers
+> > cross-compiled, if only for code quality reasons.
+> 
+> Hmm, then it depends whether the kernel is for users or for developers.
+> I, as a user, do not really want to compile drivers with allmodconfig
+> which I have no way to load/use.
+> 
+> And allmodconfig is basically what we, users (SUSE distributors in this
+> case) do. So having this driver being built makes our life harder (in
+> the meaning we have to have specific rules about disabling unwanted
+> drivers from configs).
 
-Hmm.
+Wearing my Debian hat, I agree with this.  Perhaps we could define a
+CONFIG_BUILD_TEST symbol for people who want to do that, and then
+make drivers for hardware that's only found in x86 systems (for
+example) depend on X86 || BUILD_TEST.
 
-Does jedec really specify the programming interface of this type of
-device, register layout and meaning? It seems to be more about the
-command set and electrical/connectivity specifications, no?
+Ben.
 
+> And, developers should have a testbed where they build 32bit configs.
+> And we actually have that for -next AFAIU.
 
--Olof
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
