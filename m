@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab3ENSwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:52:55 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:57584 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab3ENSww (ORCPT
+	id S1758194Ab3ENSxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:53:31 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:49123 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755376Ab3ENSxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:52:52 -0400
+	Tue, 14 May 2013 14:53:30 -0400
+Date: Tue, 14 May 2013 11:53:25 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Marc Dionne <marc.c.dionne@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: Make schedule_work() available again to non
+ GPL modules
+Message-ID: <20130514185325.GS6795@mtj.dyndns.org>
+References: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
 MIME-Version: 1.0
-In-Reply-To: <51926CF6.1050706@gmail.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
-	<1368461313-4371-4-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com>
-	<5191F53E.4000305@cn.fujitsu.com>
-	<51925136.5050302@gmail.com>
-	<CAE9FiQWO-jR5y35kKiW0m6gVR54ZyRsBsdhP4BmFLSsDzCS3rA@mail.gmail.com>
-	<51926CF6.1050706@gmail.com>
-Date: Tue, 14 May 2013 11:52:51 -0700
-X-Google-Sender-Auth: B4G0C1FuPLyZ_ZK5mlDh7UgWLQw
-Message-ID: <CAE9FiQWXN_ETRFPb5oFx-6LXyuHviX3h3NXCQKjcxtv2Uma-JA@mail.gmail.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to
- pci_alloc_dev(bus) instead
-From: Yinghai Lu <yinghai@kernel.org>
-To: Liu Jiang <liuj97@gmail.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Airlie <airlied@linux.ie>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367876695-3697-1-git-send-email-marc.dionne@your-file-system.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 9:57 AM, Liu Jiang <liuj97@gmail.com> wrote:
-> On Tue 14 May 2013 11:10:33 PM CST, Yinghai Lu wrote:
->>
->> On Tue, May 14, 2013 at 7:59 AM, Liu Jiang <liuj97@gmail.com> wrote:
->>>
->>> On 05/14/2013 04:26 PM, Gu Zheng wrote:
->>>      I suggest to use pci_release_dev() instead because it also needs to
->>> release OF related resources.
->>> I will update it in next version.
->>>
->>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>> index bc075a3..2ac6338 100644
->>> --- a/drivers/pci/probe.c
->>> +++ b/drivers/pci/probe.c
->>> @@ -1281,7 +1281,7 @@ static struct pci_dev *pci_scan_device(struct
->>> pci_bus
->>> *bus
->>>          pci_set_of_node(dev);
->>>
->>>          if (pci_setup_device(dev)) {
->>> -               kfree(dev);
->>> +               pci_release_dev(&dev->dev);
->>>                  return NULL;
->>
->>
->> no, should move pci_set_of_node calling into pci_setup_device.
->>
->> Yinghai
->
->
-> I'm not sure whether we should call pci_set_of_node() for SR-IOV devices
-> too,
-> any suggestions here?
+On Mon, May 06, 2013 at 05:44:55PM -0400, Marc Dionne wrote:
+> Commit 8425e3d5bdbe ("workqueue: inline trivial wrappers") changed
+> schedule_work() and schedule_delayed_work() to inline wrappers,
+> but these rely on some symbols that are EXPORT_SYMBOL_GPL, while
+> the original functions were EXPORT_SYMBOL.  This has the effect of
+> changing the licensing requirement for these functions and making
+> them unavailable to non GPL modules.
+> 
+> Make them available again by removing the restriction on the
+> required symbols.
+> 
+> Signed-off-by: Marc Dionne <marc.dionne@your-file-system.com>
 
-or just move down pci_set_of_node after pci_setup_device?
+Applied to wq/for-3.10-fixes.
 
-anyway that is another bug.
+Thanks.
 
-Yinghai
+-- 
+tejun
