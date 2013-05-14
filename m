@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3ENCJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 22:09:15 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:59853 "EHLO
+	id S1755773Ab3ENCKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 22:10:06 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60661 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab3ENCJM (ORCPT
+	with ESMTP id S1755953Ab3ENCJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 22:09:12 -0400
-X-AuditID: 9c93017d-b7b62ae000004f69-62-51919cc5856d
+	Mon, 13 May 2013 22:09:14 -0400
+X-AuditID: 9c93017d-b7b62ae000004f69-71-51919cc5b271
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/9] perf hists: Move locking to its call-sites
-Date: Tue, 14 May 2013 11:09:02 +0900
-Message-Id: <1368497347-9628-5-git-send-email-namhyung@kernel.org>
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 9/9] perf top: Reuse report.percent-limit config variable
+Date: Tue, 14 May 2013 11:09:07 +0900
+Message-Id: <1368497347-9628-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1368497347-9628-1-git-send-email-namhyung@kernel.org>
 References: <1368497347-9628-1-git-send-email-namhyung@kernel.org>
@@ -27,115 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-It's a preparation patch to eliminate unneeded locking in the perf
-report path.
+Make the config variable also works for perf top.
 
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 26 ++++++++++++++------------
- tools/perf/builtin-top.c    |  3 +++
- tools/perf/util/hist.c      |  6 +-----
- 3 files changed, 18 insertions(+), 17 deletions(-)
+ tools/perf/builtin-top.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index d45bf9b0361d..63febd24e912 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -297,6 +297,7 @@ static int process_sample_event(struct perf_tool *tool,
- {
- 	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct addr_location al;
-+	int ret;
- 
- 	if (perf_event__preprocess_sample(event, machine, &al, sample,
- 					  rep->annotate_init) < 0) {
-@@ -311,28 +312,29 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
- 		return 0;
- 
-+	pthread_mutex_lock(&evsel->hists.lock);
-+
- 	if (sort__mode == SORT_MODE__BRANCH) {
--		if (perf_report__add_branch_hist_entry(tool, &al, sample,
--						       evsel, machine)) {
-+		ret = perf_report__add_branch_hist_entry(tool, &al, sample,
-+							 evsel, machine);
-+		if (ret < 0)
- 			pr_debug("problem adding lbr entry, skipping event\n");
--			return -1;
--		}
- 	} else if (rep->mem_mode == 1) {
--		if (perf_report__add_mem_hist_entry(tool, &al, sample,
--						    evsel, machine, event)) {
-+		ret = perf_report__add_mem_hist_entry(tool, &al, sample,
-+						      evsel, machine, event);
-+		if (ret < 0)
- 			pr_debug("problem adding mem entry, skipping event\n");
--			return -1;
--		}
- 	} else {
- 		if (al.map != NULL)
- 			al.map->dso->hit = 1;
- 
--		if (perf_evsel__add_hist_entry(evsel, &al, sample, machine)) {
-+		ret = perf_evsel__add_hist_entry(evsel, &al, sample, machine);
-+		if (ret < 0)
- 			pr_debug("problem incrementing symbol period, skipping event\n");
--			return -1;
--		}
- 	}
--	return 0;
-+	pthread_mutex_unlock(&evsel->hists.lock);
-+
-+	return ret;
- }
- 
- static int process_read_event(struct perf_tool *tool,
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 5cd41ec43ce1..c2c973476479 100644
+index f036af9b6f09..73fd40da47ba 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -245,8 +245,11 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- {
- 	struct hist_entry *he;
- 
-+	pthread_mutex_lock(&evsel->hists.lock);
- 	he = __hists__add_entry(&evsel->hists, al, NULL, sample->period,
- 				sample->weight);
-+	pthread_mutex_unlock(&evsel->hists.lock);
-+
- 	if (he == NULL)
- 		return NULL;
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 7e0fa628e9ab..b11a6cfdb414 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -347,8 +347,6 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	struct hist_entry *he;
- 	int cmp;
- 
--	pthread_mutex_lock(&hists->lock);
--
- 	p = &hists->entries_in->rb_node;
- 
- 	while (*p != NULL) {
-@@ -394,14 +392,12 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 
- 	he = hist_entry__new(entry);
- 	if (!he)
--		goto out_unlock;
-+		return NULL;
- 
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
- 	hist_entry__add_cpumode_period(he, al->cpumode, period);
--out_unlock:
--	pthread_mutex_unlock(&hists->lock);
- 	return he;
+@@ -1032,6 +1032,19 @@ parse_percent_limit(const struct option *opt, const char *arg,
+ 	return 0;
  }
  
++static int perf_top_config(const char *var, const char *value, void *cb)
++{
++	/* share report config variables */
++	if (!strcmp(var, "report.percent-limit")) {
++		struct perf_top *top = cb;
++
++		top->min_percent = strtof(value, NULL);
++		return 0;
++	}
++
++	return perf_default_config(var, value, cb);
++}
++
+ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int status;
+@@ -1132,6 +1145,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	symbol_conf.exclude_other = false;
+ 
++	perf_config(perf_top_config, &top);
++
+ 	argc = parse_options(argc, argv, options, top_usage, 0);
+ 	if (argc)
+ 		usage_with_options(top_usage, options);
 -- 
 1.7.11.7
 
