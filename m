@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab3ENPDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:03:43 -0400
-Received: from mail-ye0-f172.google.com ([209.85.213.172]:60226 "EHLO
-	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3ENPDl (ORCPT
+	id S1757868Ab3ENPEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:04:16 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:49956 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757463Ab3ENPEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:03:41 -0400
-Date: Tue, 14 May 2013 08:03:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 17/21] Percpu tag allocator
-Message-ID: <20130514150335.GA6795@mtj.dyndns.org>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
- <1368494338-7069-18-git-send-email-koverstreet@google.com>
+	Tue, 14 May 2013 11:04:15 -0400
+Message-ID: <5192523B.7030805@parallels.com>
+Date: Tue, 14 May 2013 19:03:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368494338-7069-18-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oskar Andero <oskar.andero@sonymobile.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC PATCH 0/2] return value from shrinkers
+References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 06:18:54PM -0700, Kent Overstreet wrote:
-> +struct tag_pool {
-> +	unsigned			watermark;
-> +	unsigned			nr_tags;
-> +
-> +	struct tag_cpu_freelist		*tag_cpu;
-> +
-> +	struct {
-> +		/* Global freelist */
-> +		unsigned		nr_free;
-> +		unsigned		*free;
-> +		spinlock_t		lock;
-> +		struct list_head	wait;
-> +	} ____cacheline_aligned;
-> +};
+On 05/13/2013 06:16 PM, Oskar Andero wrote:
+> Hi,
+> 
+> In a previous discussion on lkml it was noted that the shrinkers use the
+> magic value "-1" to signal that something went wrong.
+> 
+> This patch-set implements the suggestion of instead using errno.h values
+> to return something more meaningful.
+> 
+> The first patch simply changes the check from -1 to any negative value and
+> updates the comment accordingly.
+> 
+> The second patch updates the shrinkers to return an errno.h value instead
+> of -1. Since this one spans over many different areas I need input on what is
+> a meaningful return value. Right now I used -EBUSY on everything for consitency.
+> 
+> What do you say? Is this a good idea or does it make no sense at all?
+> 
+> Thanks!
+> 
 
-Come on, Kent.  No comment at all in the whole posting and no
-justification for the patch or explanation of use cases?
+Right now me and Dave are completely reworking the way shrinkers
+operate. I suggest, first of all, that you take a look at that cautiously.
 
--- 
-tejun
+On the specifics of what you are doing here, what would be the benefit
+of returning something other than -1 ? Is there anything we would do
+differently for a return value lesser than 1?
+
+So far, shrink_slab behaves the same, you are just expanding the test.
+If you really want to push this through, I would suggest coming up with
+a more concrete reason for why this is wanted.
+
