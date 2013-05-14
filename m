@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802Ab3ENO7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:59:14 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:55758 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3ENO7M (ORCPT
+	id S1757864Ab3ENO72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:59:28 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1502 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757829Ab3ENO70 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:59:12 -0400
-Message-ID: <51925136.5050302@gmail.com>
-Date: Tue, 14 May 2013 22:59:02 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Tue, 14 May 2013 10:59:26 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <5192512C.6080006@broadcom.com>
+Date: Tue, 14 May 2013 07:58:52 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130404
+ Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Airlie <airlied@linux.ie>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)
- instead
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-4-git-send-email-jiang.liu@huawei.com> <CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com> <5191F53E.4000305@cn.fujitsu.com>
-In-Reply-To: <5191F53E.4000305@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Maxime Ripard" <maxime.ripard@free-electrons.com>
+cc: "Michal Simek" <michal.simek@xilinx.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Jamie Iles" <jamie@jamieiles.com>,
+        "Simon Horman" <horms@verge.net.au>,
+        "Magnus Damm" <magnus.damm@gmail.com>,
+        "Viresh Kumar" <viresh.kumar@linaro.org>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Jason Cooper" <jason@lakedaemon.net>, "Andrew Lunn" <andrew@lunn.ch>,
+        "Gregory Clement" <gregory.clement@free-electrons.com>,
+        "Shawn Guo" <shawn.guo@linaro.org>, "Barry Song" <baohua.song@csr.com>,
+        "Tony Prisk" <linux@prisktech.co.nz>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Arnd Bergmann" <arnd@arndb.de>, "Olof Johansson" <olof@lixom.net>
+Subject: Re: [PATCH 06/14] ARM: bcm281xx: Remove init_irq declaration in
+ machine description
+References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1368438253-28218-7-git-send-email-maxime.ripard@free-electrons.com>
+ <519147C6.6080004@broadcom.com> <5191F503.2070301@free-electrons.com>
+In-Reply-To: <5191F503.2070301@free-electrons.com>
+X-WSS-ID: 7D8C8FE731W19198462-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 04:26 PM, Gu Zheng wrote:
-> On 05/14/2013 01:23 AM, Yinghai Lu wrote:
+On 13-05-14 01:25 AM, Maxime Ripard wrote:
+> Hi Christian,
 >
->> On Mon, May 13, 2013 at 9:08 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
->>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>> index 4f0bc0a..bc075a3 100644
->>> --- a/drivers/pci/probe.c
->>> +++ b/drivers/pci/probe.c
->>> @@ -1131,6 +1131,7 @@ static void pci_release_dev(struct device *dev)
->>>          struct pci_dev *pci_dev;
+> Le 13/05/2013 22:06, Christian Daudt a écrit :
+>> On 13-05-13 02:44 AM, Maxime Ripard wrote:
+>>> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+>>> specified") removed the need to explictly setup the init_irq field in
+>>> the machine description when using only irqchip_init. Remove that
+>>> declaration for bcm281xx as well.
 >>>
->>>          pci_dev = to_pci_dev(dev);
->>> +       pci_bus_put(pci_dev->bus);
->>>          pci_release_capabilities(pci_dev);
->>>          pci_release_of_node(pci_dev);
->>>          kfree(pci_dev);
->>> @@ -1269,11 +1270,10 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
->>>          if (!pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000))
->>>                  return NULL;
+>>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>>> ---
+>>>    arch/arm/mach-bcm/board_bcm.c | 1 -
+>>>    1 file changed, 1 deletion(-)
 >>>
->>> -       dev = alloc_pci_dev();
->>> +       dev = pci_alloc_dev(bus);
->>>          if (!dev)
->>>                  return NULL;
->>>
->>> -       dev->bus = bus;
->>>          dev->devfn = devfn;
->>>          dev->vendor = l & 0xffff;
->>>          dev->device = (l >> 16) & 0xffff;
->> in pci_setup_device() fail path, it release the ref to that bus.
-> Yes, you're right, we need to release the bus' ref if pci_setup_device() failed.
-Hi Zheng,
-     I suggest to use pci_release_dev() instead because it also needs to 
-release OF related resources.
-I will update it in next version.
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index bc075a3..2ac6338 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1281,7 +1281,7 @@ static struct pci_dev *pci_scan_device(struct 
-pci_bus *bus
-         pci_set_of_node(dev);
-
-         if (pci_setup_device(dev)) {
--               kfree(dev);
-+               pci_release_dev(&dev->dev);
-                 return NULL;
-         }
-
-
-> hanks for your correction.:)
+>>> diff --git a/arch/arm/mach-bcm/board_bcm.c
+>>> b/arch/arm/mach-bcm/board_bcm.c
+>>> index 22e8421..24556cf 100644
+>>> --- a/arch/arm/mach-bcm/board_bcm.c
+>>> +++ b/arch/arm/mach-bcm/board_bcm.c
+>>> @@ -54,7 +54,6 @@ static void __init board_init(void)
+>>>    static const char * const bcm11351_dt_compat[] = { "bcm,bcm11351",
+>>> NULL, };
+>>>      DT_MACHINE_START(BCM11351_DT, "Broadcom Application Processor")
+>>> -    .init_irq = irqchip_init,
+>>>        .init_time = clocksource_of_init,
+>>>        .init_machine = board_init,
+>>>        .dt_compat = bcm11351_dt_compat,
+>> Acked-by: Christian Daudt <csd@broadcom.com>
+> Thanks!
 >
-> Best regards,
-> Gu
->
->> Yinghai
->>
->
+> I forgot to remove the include of irqchip.h into all these patches, so
+> I'll send a v2, and I guess you could probably merge it through your
+> tree after that directly.
+Ok. will do.
+
+  thanks,
+    csd
+
+
 
