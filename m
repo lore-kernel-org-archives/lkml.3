@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab3ENRgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:36:43 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:60864 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab3ENRgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:36:41 -0400
+	id S1756291Ab3ENRhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:37:43 -0400
+Received: from 8bytes.org ([85.214.48.195]:52007 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462Ab3ENRhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 13:37:42 -0400
+Date: Tue, 14 May 2013 19:37:39 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
+ as with v3.9
+Message-ID: <20130514173739.GH24440@8bytes.org>
+References: <87r4hdjsu5.fsf@nemi.mork.no>
+ <20130512113157.GG3648@linux.vnet.ibm.com>
+ <20130512182935.GD24440@8bytes.org>
+ <20130512205747.GK3648@linux.vnet.ibm.com>
+ <20130512213430.GE24440@8bytes.org>
+ <20130513013518.GM3648@linux.vnet.ibm.com>
+ <20130513140005.GA9165@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130514101608.60c64b73.akpm@linux-foundation.org>
-References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
- <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
- <CAH9NwWc+BP5ZbHwmMZ4AisviDHM-GizTmZO6vwxtd=ntYUAk=A@mail.gmail.com>
- <CAH9NwWceaA0MPGj65fOhmECL8A522qngU3RHGZ++Uz-6mVKKAg@mail.gmail.com>
- <CAK5ve-JmVes+OA3MRyoZEo_Fz8_RHpdqmcTxNwwrUAnADpqvyw@mail.gmail.com>
- <CAH9NwWeMMYzvE0VVMCYmF9oXA-wBiW-BnwoK1q7mjUkE4JF9uw@mail.gmail.com>
- <CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com>
- <CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
- <CAK5ve-JqvOHQR+eSaq7HJ3rsaxj-kuhKw2skOa74+Sc=WqxTAQ@mail.gmail.com> <20130514101608.60c64b73.akpm@linux-foundation.org>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 14 May 2013 10:36:19 -0700
-Message-ID: <CAK5ve-+jBNTLrU5jRqj7LyxrQBWAE7GC634qYRJ4zDy2_LqgcA@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130513140005.GA9165@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue May 14 19:37:40 2013
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5192766423671048821419
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 10:16 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 14 May 2013 10:12:04 -0700 Bryan Wu <cooloney@gmail.com> wrote:
->
->> On Tue, May 14, 2013 at 12:06 AM, Christian Gmeiner
->> <christian.gmeiner@gmail.com> wrote:
->> > 2013/5/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
->> >> 2013/3/8 Christian Gmeiner <christian.gmeiner@gmail.com>:
->> >>> 2013/3/5 Bryan Wu <cooloney@gmail.com>:
->> >>>> On Sun, Mar 3, 2013 at 11:40 PM, Christian Gmeiner
->> >>>> <christian.gmeiner@gmail.com> wrote:
->> >>>>> ping
->> >>>>> --
->>
->> I found this patch is still in linux-next, I'm not sure whether it
->> will be merged into 3.10 like a bug fixing. We need to wait Andrew's
->> reply. I'm OK to pick up and send out to Linus as a bug fixing.
->
-> whome, I'd forgotten I had this.  I stuck a cc:stable on the end and
-> shall send it in to Linus in the next 3.10 batch, OK?
->
+Hi Paul,
 
-No problem for me at all. I bet it's OK for Christian as well, since
-merging into 3.10-rc1 has no difference with merging into 3.10-rc2 or
-later. It will eventually show up in 3.10 release.
+On Mon, May 13, 2013 at 07:00:05AM -0700, Paul E. McKenney wrote:
+> rcu: Fix comparison sense in rcu_needs_cpu()
+> 
+> Commit c0f4dfd4f (rcu: Make RCU_FAST_NO_HZ take advantage of numbered
+> callbacks) introduced a bug that can result in excessively long grace
+> periods.  This bug reverse the senes of the "if" statement checking
+> for lazy callbacks, so that RCU takes a lazy approach when there are
+> in fact non-lazy callbacks.  This can result in excessive boot, suspend,
+> and resume times.
+> 
+> This commit therefore fixes the sense of this "if" statement.
+> 
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Reported-by: Bjørn Mork <bjorn@mork.no>
+> Reported-by: Joerg Roedel <joro@8bytes.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Thanks,
--Bryan
+Just tested the patch, it fixes the long boot delay for me. Thanks for
+fixing this.
+
+Tested-by: Joerg Roedel <joro@8bytes.org>
+
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 641991d..63098a5 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -1692,7 +1692,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
+>  	rdtp->last_accelerate = jiffies;
+>  
+>  	/* Request timer delay depending on laziness, and round. */
+> -	if (rdtp->all_lazy) {
+> +	if (!rdtp->all_lazy) {
+>  		*dj = round_up(rcu_idle_gp_delay + jiffies,
+>  			       rcu_idle_gp_delay) - jiffies;
+>  	} else {
+> 
+
