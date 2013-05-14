@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab3ENKCU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:02:20 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59725 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932322Ab3ENKCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:02:16 -0400
-Message-ID: <51920B8E.4020101@mev.co.uk>
-Date: Tue, 14 May 2013 11:01:50 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130410 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: [PATCH] staging: comedi: ni_labpc: fix VIRT_TO_BUS dependency
-References: <5190B62C.1070704@mev.co.uk> <1368442935-25926-1-git-send-email-abbotti@mev.co.uk> <20130513212837.GB14092@kroah.com>
-In-Reply-To: <20130513212837.GB14092@kroah.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932317Ab3ENKBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:01:30 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:65347 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab3ENKB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 06:01:26 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH V4 27/30] Documentation: thermal: Explain the exynos thermal driver model
+Date: Tue, 14 May 2013 15:28:57 +0530
+Message-Id: <1368525540-15034-28-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1368525540-15034-1-git-send-email-amit.daniel@samsung.com>
+References: <1368525540-15034-1-git-send-email-amit.daniel@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-05-13 22:28, Greg Kroah-Hartman wrote:
-> On Mon, May 13, 2013 at 12:02:15PM +0100, Ian Abbott wrote:
->> The "ni_labpc" module acts as a low-level comedi driver for various
->> Nattional Instruments Lab-PC ISA cards if `CONFIG_NI_LABPC_ISA` is
->> enabled, and also as a common module depended on by the "ni_labpc_cs"
->> and "ni_labpc_pci" modules.  For ISA cards, it optionally supports the
->> use of an ISA DMA channel if `CONFIG_ISA_DMA_API` is enabled, using
->> conditionally compiled code.  This conditionally compiled code also
->> relies on `virt_to_bus()`, which only exists if `CONFIG_VIRT_TO_BUS` is
->> enabled.  Therefore, support for ISA DMA should only be compiled in if
->> both `CONFIG_ISA_DMA_API` and `CONFIG_VIRT_TO_BUS` are defined,
->> otherwise the "ni_labpc" module fails to compile on kernels that enable
->> `CONFIG_ISA_DMA_API` but not `CONFIG_VIRT_TO_BUS`.
->>
->> Conditionally define a new macro `NI_LABPC_ISA_DMA` iff both
->> `CONFIG_ISA_DMA_API` and `CONFIG_VIRT_TO_BUS` are defined, and change
->> the conditional compilation tests to use the new macro instead of
->> `CONFIG_ISA_DMA_API`.
->>
->> Also, in the "Kconfig", remove the `VIRT_TO_BUS` dependency from the
->> `COMEDI_NI_LABPC_ISA` option since the dependency is now checked at
->> compile time.
->>
->> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->> ---
->>   drivers/staging/comedi/Kconfig            |  1 -
->>   drivers/staging/comedi/drivers/ni_labpc.c | 18 +++++++++++-------
->>   2 files changed, 11 insertions(+), 8 deletions(-)
->
-> Ick, no, I'll take Hartley's patch he sent a week or so ago that fixes
-> this properly for all architectures.
+This patch updates the documentation to explain the driver model
+and file layout.
 
-Okay, I completely forgot about that patch!  I think the Kconfig part of 
-my patch is still valid though, so I'll repost that part.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ Documentation/thermal/exynos_thermal |   43 ++++++++++++++++++++++++++-------
+ 1 files changed, 34 insertions(+), 9 deletions(-)
 
+diff --git a/Documentation/thermal/exynos_thermal b/Documentation/thermal/exynos_thermal
+index 2b46f67..9010c44 100644
+--- a/Documentation/thermal/exynos_thermal
++++ b/Documentation/thermal/exynos_thermal
+@@ -1,17 +1,17 @@
+-Kernel driver exynos4_tmu
++Kernel driver exynos_tmu
+ =================
+ 
+ Supported chips:
+-* ARM SAMSUNG EXYNOS4 series of SoC
+-  Prefix: 'exynos4-tmu'
++* ARM SAMSUNG EXYNOS4, EXYNOS5 series of SoC
+   Datasheet: Not publicly available
+ 
+ Authors: Donggeun Kim <dg77.kim@samsung.com>
++Authors: Amit Daniel <amit.daniel@samsung.com>
+ 
+-Description
+------------
++TMU controller Description:
++---------------------------
+ 
+-This driver allows to read temperature inside SAMSUNG EXYNOS4 series of SoC.
++This driver allows to read temperature inside SAMSUNG EXYNOS4/5 series of SoC.
+ 
+ The chip only exposes the measured 8-bit temperature code value
+ through a register.
+@@ -34,9 +34,9 @@ The three equations are:
+   TI2: Trimming info for 85 degree Celsius (stored at TRIMINFO register)
+        Temperature code measured at 85 degree Celsius which is unchanged
+ 
+-TMU(Thermal Management Unit) in EXYNOS4 generates interrupt
++TMU(Thermal Management Unit) in EXYNOS4/5 generates interrupt
+ when temperature exceeds pre-defined levels.
+-The maximum number of configurable threshold is four.
++The maximum number of configurable threshold is five.
+ The threshold levels are defined as follows:
+   Level_0: current temperature > trigger_level_0 + threshold
+   Level_1: current temperature > trigger_level_1 + threshold
+@@ -47,6 +47,31 @@ The threshold levels are defined as follows:
+   through the corresponding registers.
+ 
+ When an interrupt occurs, this driver notify kernel thermal framework
+-with the function exynos4_report_trigger.
++with the function exynos_report_trigger.
+ Although an interrupt condition for level_0 can be set,
+ it can be used to synchronize the cooling action.
++
++TMU driver description:
++-----------------------
++
++The exynos thermal driver is structured as,
++
++					Kernel Core thermal framework
++				(thermal_core.c, step_wise.c, cpu_cooling.c)
++								^
++								|
++								|
++TMU configuration data -------> TMU Driver  <------> Exynos Core thermal wrapper
++(exynos_tmu_data.c)	      (exynos_tmu.c)	   (exynos_thermal_common.c)
++(exynos_tmu_data.h)	      (exynos_tmu.h)	   (exynos_thermal_common.h)
++
++a) TMU configuration data: This consist of TMU register offsets/bitfields
++		described through structure exynos_tmu_registers. Also several
++		other platform data (struct exynos_tmu_platform_data) members
++		are used to configure the TMU.
++b) TMU driver: This component initialises the TMU controller and sets different
++		thresholds. It invokes core thermal implementation with the call
++		exynos_report_trigger.
++c) Exynos Core thermal wrapper: This provides 3 wrapper function to use the
++		Kernel core thermal framework. They are exynos_unregister_thermal,
++		exynos_register_thermal and exynos_report_trigger.
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.7.1
+
