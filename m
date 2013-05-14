@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab3ENR5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:57:37 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59184 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757462Ab3ENR5f (ORCPT
+	id S1758079Ab3ENR6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:58:10 -0400
+Received: from mail-gh0-f170.google.com ([209.85.160.170]:44509 "EHLO
+	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab3ENR6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:57:35 -0400
-Date: Tue, 14 May 2013 12:29:39 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        target-devel <target-devel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] target: simplify target_wait_for_sess_cmds()
-Message-ID: <20130514162939.GA32463@logfs.org>
-References: <1368477007-25274-1-git-send-email-joern@logfs.org>
- <1368477007-25274-4-git-send-email-joern@logfs.org>
- <1368486003.4020.37.camel@haakon3.risingtidesystems.com>
- <20130513220057.GA24539@logfs.org>
- <1368500924.11576.16.camel@haakon3.risingtidesystems.com>
+	Tue, 14 May 2013 13:58:06 -0400
+Date: Tue, 14 May 2013 10:57:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH V5 5/5] fbcon: queue work on power efficient wq
+Message-ID: <20130514175759.GK6795@mtj.dyndns.org>
+References: <cover.1366803121.git.viresh.kumar@linaro.org>
+ <89924f001e3ddd66ab41a16500569a976ea846fd.1366803121.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1368500924.11576.16.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <89924f001e3ddd66ab41a16500569a976ea846fd.1366803121.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013 20:08:44 -0700, Nicholas A. Bellinger wrote:
-> On Mon, 2013-05-13 at 18:00 -0400, Jörn Engel wrote:
-> > 
-> > I agree that the overhead doesn't matter.  The msleep(100) spells this
-> > out rather explicitly.  What does matter is that a) the patch retains
-> > old behaviour with much simpler code and b) it fixes a race that kills
-> > the machine.  I can live without a, but very much want to keep b. ;)
+On Wed, Apr 24, 2013 at 05:12:57PM +0530, Viresh Kumar wrote:
+> fbcon uses workqueues and it has no real dependency of scheduling these on the
+> cpu which scheduled them.
 > 
-> Fucking around with ->sess_cmd_lock during each loop of ->sess_cmd_list
-> in target_wait_for_sess_cmds is not simpler code..
+> On a idle system, it is observed that and idle cpu wakes up many times just to
+> service this work. It would be better if we can schedule it on a cpu which the
+> scheduler believes to be the most appropriate one.
+> 
+> This patch replaces system_wq with system_power_efficient_wq.
+> 
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: linux-fbdev@vger.kernel.org
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-I could argue that fucking around with ->sess_cmd_lock during each
-loop is simpler than the communication through cmd_wait_set and
-cmd_wait_comp.  But simplicity is ultimately subjective and we can
-argue all day.
+Dave, applied this to wq/for-3.11.  Please holler if you want this to
+be routed differently.
 
- drivers/infiniband/ulp/srpt/ib_srpt.c  |    2 +-
- drivers/scsi/qla2xxx/tcm_qla2xxx.c     |    2 +-
- drivers/target/target_core_transport.c |   64 +++++++++-----------------------
- include/target/target_core_base.h      |    2 -
- include/target/target_core_fabric.h    |    2 +-
- 5 files changed, 20 insertions(+), 52 deletions(-)
+Thanks!
 
-But diffstat is reasonably objective.  Do you really want me to come
-up with an alternative patch that adds code instead of removing it?
-
-Jörn
-
---
-Simplicity is prerequisite for reliability.
--- Edsger W. Dijkstra
+-- 
+tejun
