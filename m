@@ -1,87 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757864Ab3ENO72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:59:28 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1502 "EHLO mms1.broadcom.com"
+	id S1757900Ab3ENO7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:59:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2548 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757829Ab3ENO70 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:59:26 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <5192512C.6080006@broadcom.com>
-Date: Tue, 14 May 2013 07:58:52 -0700
-From: "Christian Daudt" <csd@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130404
- Thunderbird/17.0.5
+	id S1757831Ab3ENO7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:59:40 -0400
+Date: Tue, 14 May 2013 10:59:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        Rik Van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v5 4/8] vmalloc: introduce remap_vmalloc_range_partial
+Message-ID: <20130514145906.GD16772@redhat.com>
+References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
+ <20130514015729.18697.88256.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: "Maxime Ripard" <maxime.ripard@free-electrons.com>
-cc: "Michal Simek" <michal.simek@xilinx.com>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        "Jamie Iles" <jamie@jamieiles.com>,
-        "Simon Horman" <horms@verge.net.au>,
-        "Magnus Damm" <magnus.damm@gmail.com>,
-        "Viresh Kumar" <viresh.kumar@linaro.org>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Jason Cooper" <jason@lakedaemon.net>, "Andrew Lunn" <andrew@lunn.ch>,
-        "Gregory Clement" <gregory.clement@free-electrons.com>,
-        "Shawn Guo" <shawn.guo@linaro.org>, "Barry Song" <baohua.song@csr.com>,
-        "Tony Prisk" <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Arnd Bergmann" <arnd@arndb.de>, "Olof Johansson" <olof@lixom.net>
-Subject: Re: [PATCH 06/14] ARM: bcm281xx: Remove init_irq declaration in
- machine description
-References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com>
- <1368438253-28218-7-git-send-email-maxime.ripard@free-electrons.com>
- <519147C6.6080004@broadcom.com> <5191F503.2070301@free-electrons.com>
-In-Reply-To: <5191F503.2070301@free-electrons.com>
-X-WSS-ID: 7D8C8FE731W19198462-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514015729.18697.88256.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-05-14 01:25 AM, Maxime Ripard wrote:
-> Hi Christian,
->
-> Le 13/05/2013 22:06, Christian Daudt a écrit :
->> On 13-05-13 02:44 AM, Maxime Ripard wrote:
->>> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
->>> specified") removed the need to explictly setup the init_irq field in
->>> the machine description when using only irqchip_init. Remove that
->>> declaration for bcm281xx as well.
->>>
->>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->>> ---
->>>    arch/arm/mach-bcm/board_bcm.c | 1 -
->>>    1 file changed, 1 deletion(-)
->>>
->>> diff --git a/arch/arm/mach-bcm/board_bcm.c
->>> b/arch/arm/mach-bcm/board_bcm.c
->>> index 22e8421..24556cf 100644
->>> --- a/arch/arm/mach-bcm/board_bcm.c
->>> +++ b/arch/arm/mach-bcm/board_bcm.c
->>> @@ -54,7 +54,6 @@ static void __init board_init(void)
->>>    static const char * const bcm11351_dt_compat[] = { "bcm,bcm11351",
->>> NULL, };
->>>      DT_MACHINE_START(BCM11351_DT, "Broadcom Application Processor")
->>> -    .init_irq = irqchip_init,
->>>        .init_time = clocksource_of_init,
->>>        .init_machine = board_init,
->>>        .dt_compat = bcm11351_dt_compat,
->> Acked-by: Christian Daudt <csd@broadcom.com>
-> Thanks!
->
-> I forgot to remove the include of irqchip.h into all these patches, so
-> I'll send a v2, and I guess you could probably merge it through your
-> tree after that directly.
-Ok. will do.
+On Tue, May 14, 2013 at 10:57:29AM +0900, HATAYAMA Daisuke wrote:
+> We want to allocate ELF note segment buffer on the 2nd kernel in
+> vmalloc space and remap it to user-space in order to reduce the risk
+> that memory allocation fails on system with huge number of CPUs and so
+> with huge ELF note segment that exceeds 11-order block size.
+> 
+> Although there's already remap_vmalloc_range for the purpose of
+> remapping vmalloc memory to user-space, we need to specify user-space
+> range via vma. Mmap on /proc/vmcore needs to remap range across
+> multiple objects, so the interface that requires vma to cover full
+> range is problematic.
+> 
+> This patch introduces remap_vmalloc_range_partial that receives
+> user-space range as a pair of base address and size and can be used
+> for mmap on /proc/vmcore case.
+> 
+> remap_vmalloc_range is rewritten using remap_vmalloc_range_partial.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 
-  thanks,
-    csd
+This also needs ACK of VM folks. CCing some of them.
 
+Thanks
+Vivek
 
+> ---
+> 
+>  include/linux/vmalloc.h |    4 +++
+>  mm/vmalloc.c            |   63 +++++++++++++++++++++++++++++++++--------------
+>  2 files changed, 48 insertions(+), 19 deletions(-)
+> 
+> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+> index 7d5773a..dd0a2c8 100644
+> --- a/include/linux/vmalloc.h
+> +++ b/include/linux/vmalloc.h
+> @@ -82,6 +82,10 @@ extern void *vmap(struct page **pages, unsigned int count,
+>  			unsigned long flags, pgprot_t prot);
+>  extern void vunmap(const void *addr);
+>  
+> +extern int remap_vmalloc_range_partial(struct vm_area_struct *vma,
+> +				       unsigned long uaddr, void *kaddr,
+> +				       unsigned long size);
+> +
 
+>  extern int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+>  							unsigned long pgoff);
+>  void vmalloc_sync_all(void);
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 3875fa2..d9a9f4f6 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2148,42 +2148,44 @@ finished:
+>  }
+>  
+>  /**
+> - *	remap_vmalloc_range  -  map vmalloc pages to userspace
+> - *	@vma:		vma to cover (map full range of vma)
+> - *	@addr:		vmalloc memory
+> - *	@pgoff:		number of pages into addr before first page to map
+> + *	remap_vmalloc_range_partial  -  map vmalloc pages to userspace
+> + *	@vma:		vma to cover
+> + *	@uaddr:		target user address to start at
+> + *	@kaddr:		virtual address of vmalloc kernel memory
+> + *	@size:		size of map area
+>   *
+>   *	Returns:	0 for success, -Exxx on failure
+>   *
+> - *	This function checks that addr is a valid vmalloc'ed area, and
+> - *	that it is big enough to cover the vma. Will return failure if
+> - *	that criteria isn't met.
+> + *	This function checks that @kaddr is a valid vmalloc'ed area,
+> + *	and that it is big enough to cover the range starting at
+> + *	@uaddr in @vma. Will return failure if that criteria isn't
+> + *	met.
+>   *
+>   *	Similar to remap_pfn_range() (see mm/memory.c)
+>   */
+> -int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+> -						unsigned long pgoff)
+> +int remap_vmalloc_range_partial(struct vm_area_struct *vma, unsigned long uaddr,
+> +				void *kaddr, unsigned long size)
+>  {
+>  	struct vm_struct *area;
+> -	unsigned long uaddr = vma->vm_start;
+> -	unsigned long usize = vma->vm_end - vma->vm_start;
+>  
+> -	if ((PAGE_SIZE-1) & (unsigned long)addr)
+> +	size = PAGE_ALIGN(size);
+> +
+> +	if (((PAGE_SIZE-1) & (unsigned long)uaddr) ||
+> +	    ((PAGE_SIZE-1) & (unsigned long)kaddr))
+>  		return -EINVAL;
+>  
+> -	area = find_vm_area(addr);
+> +	area = find_vm_area(kaddr);
+>  	if (!area)
+>  		return -EINVAL;
+>  
+>  	if (!(area->flags & VM_USERMAP))
+>  		return -EINVAL;
+>  
+> -	if (usize + (pgoff << PAGE_SHIFT) > area->size - PAGE_SIZE)
+> +	if (kaddr + size > area->addr + area->size)
+>  		return -EINVAL;
+>  
+> -	addr += pgoff << PAGE_SHIFT;
+>  	do {
+> -		struct page *page = vmalloc_to_page(addr);
+> +		struct page *page = vmalloc_to_page(kaddr);
+>  		int ret;
+>  
+>  		ret = vm_insert_page(vma, uaddr, page);
+> @@ -2191,14 +2193,37 @@ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+>  			return ret;
+>  
+>  		uaddr += PAGE_SIZE;
+> -		addr += PAGE_SIZE;
+> -		usize -= PAGE_SIZE;
+> -	} while (usize > 0);
+> +		kaddr += PAGE_SIZE;
+> +		size -= PAGE_SIZE;
+> +	} while (size > 0);
+>  
+>  	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL(remap_vmalloc_range_partial);
+> +
+> +/**
+> + *	remap_vmalloc_range  -  map vmalloc pages to userspace
+> + *	@vma:		vma to cover (map full range of vma)
+> + *	@addr:		vmalloc memory
+> + *	@pgoff:		number of pages into addr before first page to map
+> + *
+> + *	Returns:	0 for success, -Exxx on failure
+> + *
+> + *	This function checks that addr is a valid vmalloc'ed area, and
+> + *	that it is big enough to cover the vma. Will return failure if
+> + *	that criteria isn't met.
+> + *
+> + *	Similar to remap_pfn_range() (see mm/memory.c)
+> + */
+> +int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+> +						unsigned long pgoff)
+> +{
+> +	return remap_vmalloc_range_partial(vma, vma->vm_start,
+> +					   addr + (pgoff << PAGE_SHIFT),
+> +					   vma->vm_end - vma->vm_start);
+> +}
+>  EXPORT_SYMBOL(remap_vmalloc_range);
+>  
+>  /*
