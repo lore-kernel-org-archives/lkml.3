@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758406Ab3ENUKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 16:10:06 -0400
-Received: from mout.gmx.net ([212.227.17.22]:62064 "EHLO mout.gmx.net"
+	id S1758417Ab3ENUTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 16:19:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46827 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757478Ab3ENUKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 16:10:05 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+Ik7gHQTSIO/2dDZeXRsAGyjSNlwSPJ52Cs/1Cav
-	FGhjNq93TY5idY
-Message-ID: <51929A16.8050306@gmx.de>
-Date: Tue, 14 May 2013 22:09:58 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
+	id S1755376Ab3ENUTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 16:19:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC PATCH v2, part 2 12/18] PCI, ACPI: use hotplug-safe iterators to walk PCI buses
+Date: Tue, 14 May 2013 22:28:11 +0200
+Message-ID: <4477970.CvMHDHr0Cv@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1368550322-1045-12-git-send-email-jiang.liu@huawei.com>
+References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com> <1368550322-1045-12-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: v3.10: unmount won't work
-References: <51928CB5.2050406@gmx.de>
-In-Reply-To: <51928CB5.2050406@gmx.de>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 09:12 PM, Toralf Förster wrote:
-> At a stable 32 bit stable Gentoo with kernel v3.10-rc1-113-ga2c7a54 I cannot umount an (EXT4) fs
-> which was created in a file located in a tmpfs partition and loop mounted  :
+On Wednesday, May 15, 2013 12:51:56 AM Jiang Liu wrote:
+> Enhance ACPI reset drvier to use hotplug-safe iterators to walk PCI buses.
 > 
-> That file system was used to hold victims files shared via NFSv4 to an user mode linux 
-> on which trinity was used to fuzz testing a patched UML guest kernel.
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
-FWIW the numbers are really wrong for /mnt/trinity
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-# df -m /mnt/trinity/
-Filesystem     1M-blocks  Used Available Use% Mounted on
-/dev/loop0        183851 31165    143325  18% /mnt/trinity
-
-b/c 257 MB were specified for the file in which the EXT4FS was created:
-
-# ls -lh /mnt/ramdisk/disk0
--rw-r--r-- 1 tfoerste users 257M May 14 20:56 /mnt/ramdisk/disk0
-
-here is the corresponding code snippet :
-	FS="ext4"
-        dd if=/dev/zero of=/mnt/ramdisk/disk0 bs=1M count=257 2>/dev/null || return 2
-        yes | /sbin/mkfs.$FS /mnt/ramdisk/disk0 1>/dev/null || return 3
-        sudo su -c "mount -o loop /mnt/ramdisk/disk0 /mnt/trinity/; chmod 777 /mnt/trinity" || return 4
-
+> ---
+>  drivers/acpi/reboot.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/reboot.c b/drivers/acpi/reboot.c
+> index a6c77e8b..532dd6d 100644
+> --- a/drivers/acpi/reboot.c
+> +++ b/drivers/acpi/reboot.c
+> @@ -33,7 +33,7 @@ void acpi_reboot(void)
+>  	switch (rr->space_id) {
+>  	case ACPI_ADR_SPACE_PCI_CONFIG:
+>  		/* The reset register can only live on bus 0. */
+> -		bus0 = pci_find_bus(0, 0);
+> +		bus0 = pci_get_bus(0, 0);
+>  		if (!bus0)
+>  			return;
+>  		/* Form PCI device/function pair. */
+> @@ -43,6 +43,7 @@ void acpi_reboot(void)
+>  		/* Write the value that resets us. */
+>  		pci_bus_write_config_byte(bus0, devfn,
+>  				(rr->address & 0xffff), reset_value);
+> +		pci_bus_put(bus0);
+>  		break;
+>  
+>  	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+> 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
