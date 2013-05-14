@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab3ENDPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 23:15:02 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:39059 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab3ENDPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 23:15:00 -0400
+	id S1755863Ab3ENDSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 23:18:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31002 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755609Ab3ENDSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 May 2013 23:18:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,666,1363104000"; 
+   d="scan'208";a="7261978"
+Message-ID: <5191AC7B.3010701@cn.fujitsu.com>
+Date: Tue, 14 May 2013 11:16:11 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <100D68C7BA14664A8938383216E40DE027F80E97@fmsmsx111.amr.corp.intel.com>
-References: <1368419898-25493-1-git-send-email-sachin.kamat@linaro.org>
-	<100D68C7BA14664A8938383216E40DE027F80E97@fmsmsx111.amr.corp.intel.com>
-Date: Tue, 14 May 2013 08:44:59 +0530
-Message-ID: <CAK9yfHxfu-M-78mkp29d8tTStOjDjNRmPDTkQQbcn5D8WnY-KA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] NVMe: Remove redundant version.h header include
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vishal.l.verma@linux.intel.com" <vishal.l.verma@linux.intel.com>,
-        "Busch, Keith" <keith.busch@intel.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs/fat: Use fat_msg() to replace printk() in __fat_fs_error()
+References: <5190AAB9.5080904@cn.fujitsu.com> <87obcfqldw.fsf@devron.myhome.or.jp>
+In-Reply-To: <87obcfqldw.fsf@devron.myhome.or.jp>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/14 11:17:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/14 11:17:14,
+	Serialize complete at 2013/05/14 11:17:14
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2013 19:20, Wilcox, Matthew R <matthew.r.wilcox@intel.com> wrote:
-> I can't apply this patch.  Instead of following what it says in MAINTAINERS, you've sent it to my Exchange address.  And now it's all mangled.
+On 05/13/2013 05:28 PM, OGAWA Hirofumi wrote:
 
-I ran the get_maintainer.pl on the patch and this is what it gave me:
+> Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+> 
+>> >From 87141ec058aad35ac55bc7c3fc2eb378566a5a6a Mon Sep 17 00:00:00 2001
+>> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Date: Mon, 13 May 2013 17:48:19 +0900
+>> Subject: [PATCH] fs/fat: Use fat_msg() to replace printk() in __fat_fs_error()
+> 
+>> -		printk(KERN_ERR "FAT-fs (%s): error, %pV\n", sb->s_id, &vaf);
+>> +		fat_msg(sb, KERN_ERR, "error, %pV", &vaf);
+>>  		va_end(args);
+> 
+> I'm assuming nested "%pV" is works fine. If so,
 
-scripts/get_maintainer.pl
-0001-NVMe-Remove-redundant-version.h-header-include.patch
-Matthew Wilcox <matthew.r.wilcox@intel.com> (commit_signer:6/7=86%)
-Vishal Verma <vishal.l.verma@linux.intel.com> (commit_signer:5/7=71%)
-Keith Busch <keith.busch@intel.com> (commit_signer:3/7=43%)
-Sachin Kamat <sachin.kamat@linaro.org> (commit_signer:1/7=14%)
-linux-kernel@vger.kernel.org (open list)
+It works fine, I've tested this.
 
-I think with Dan's patch [1] it should provide the right info.
-Resending this patch to the list pointed out by you.
+> 
+> Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
-[1] https://lkml.org/lkml/2013/5/13/302
+Thanks!
+
+Best regards,
+Gu
+
+> 
+>> @@ -38,8 +38,7 @@ void __fat_fs_error(struct super_block *sb, int report, const char *fmt, ...)
+>>  		panic("FAT-fs (%s): fs panic from previous error\n", sb->s_id);
+>>  	else if (opts->errors == FAT_ERRORS_RO && !(sb->s_flags & MS_RDONLY)) {
+>>  		sb->s_flags |= MS_RDONLY;
+>> -		printk(KERN_ERR "FAT-fs (%s): Filesystem has been "
+>> -				"set read-only\n", sb->s_id);
+>> +		fat_msg(sb, KERN_ERR, "Filesystem has been set read-only");
+>>  	}
+>>  }
+>>  EXPORT_SYMBOL_GPL(__fat_fs_error);
+> 
 
 
->
-> NVM EXPRESS DRIVER
-> M:      Matthew Wilcox <willy@linux.intel.com>
-> L:      linux-nvme@lists.infradead.org
-
--- 
-With warm regards,
-Sachin
