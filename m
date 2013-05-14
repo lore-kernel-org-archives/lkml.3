@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab3ENJT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:19:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35574 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756309Ab3ENJT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:19:26 -0400
-Message-ID: <5192017D.6060108@ti.com>
-Date: Tue, 14 May 2013 14:48:53 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1756846Ab3ENJUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:20:04 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:37391 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab3ENJUC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 05:20:02 -0400
+Date: Tue, 14 May 2013 10:19:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: sameo@linux.intel.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de
+Subject: [GIT PULL] MFD: Fixes due for the v3.10 -rc:s
+Message-ID: <20130514091956.GG3297@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, <gg@slimlogic.co.uk>
-CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
-        <ldewangan@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <ruchika@ti.com>, <tony@atomide.com>,
-        <sameo@linux.intel.com>
-Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
-References: <1362662506-14823-4-git-send-email-kishon@ti.com> <1367846225-15685-1-git-send-email-kishon@ti.com> <20130506144010.GF13472@opensource.wolfsonmicro.com> <51888D55.3090907@ti.com> <20130507075824.GM7478@sirena.org.uk> <5188CD9C.6010602@ti.com> <20130507104502.GQ7478@sirena.org.uk>
-In-Reply-To: <20130507104502.GQ7478@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 May 2013 04:15 PM, Mark Brown wrote:
-> On Tue, May 07, 2013 at 03:17:08PM +0530, Kishon Vijay Abraham I wrote:
->> On Tuesday 07 May 2013 01:28 PM, Mark Brown wrote:
->
->>>> The platform can provide it's own vbus control in which case this is
->>>> not needed.
->
->>> So why is there no interaction with this external VBUS control and how
->>> does the driver distinguish between that and an error getting the
->>> regulator?
->
->> The platform specifies if it provides its own VBUS control by the dt
->> property ti,no_control_vbus. So the driver will give an error only
->> when *ti,no_control_vbus* is not set. Graeme?
->
-> That doesn't answer the question about why there's no interaction with
-> the external control...
->
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-Graeme?
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
--Kishon
+are available in the git repository at:
+
+  git://git.linaro.org/people/ljones/mfd.git for-mfd-fixes
+
+for you to fetch changes up to bc475aeb21c85f956c98014cae887f311c68b192:
+
+  mfd: db8500-prcmu: Supply the pdata_size attribute for db8500-thermal (2013-05-14 09:58:15 +0100)
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      mfd: ab8500: Debugfs code depends on gpadc
+
+Fabio Baltieri (4):
+      mfd: abx500-core: Fix sparse warning
+      mfd: ab8500-sysctrl: Fix sparse warning
+      mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+      mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+
+Lee Jones (3):
+      mfd: ab8500-gpadc: Suppress 'ignoring regulator_enable() return value' warning
+      mfd: ab8500-core: Use the correct driver name when enabling gpio/pinctrl
+      mfd: db8500-prcmu: Supply the pdata_size attribute for db8500-thermal
+
+Linus Walleij (1):
+      mfd: ab8500: Pass AB8500 IRQ to debugfs code by resource
+
+ drivers/mfd/Kconfig          |    2 +-
+ drivers/mfd/ab8500-core.c    |   21 ++++++++++++++++++---
+ drivers/mfd/ab8500-debugfs.c |   16 ++++++++++++----
+ drivers/mfd/ab8500-gpadc.c   |    7 +++++--
+ drivers/mfd/ab8500-sysctrl.c |    9 +++++----
+ drivers/mfd/abx500-core.c    |    2 +-
+ drivers/mfd/db8500-prcmu.c   |    1 +
+ 7 files changed, 43 insertions(+), 15 deletions(-)
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
