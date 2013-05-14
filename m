@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab3ENIXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:23:20 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:40595 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3ENIXS (ORCPT
+	id S1756620Ab3ENIXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:23:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46226 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab3ENIXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:23:18 -0400
+	Tue, 14 May 2013 04:23:25 -0400
+Message-ID: <5191F478.4040800@free-electrons.com>
+Date: Tue, 14 May 2013 10:23:20 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1368019749-19455-3-git-send-email-lee.jones@linaro.org>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
-	<1368019749-19455-3-git-send-email-lee.jones@linaro.org>
-Date: Tue, 14 May 2013 10:23:17 +0200
-Message-ID: <CACRpkdbBh1cF468zMbDNfpgsUKERPHONbLeY=VSDNBhG25B0gg@mail.gmail.com>
-Subject: Re: [PATCH 2/9] mfd: ab8500-core: Use the correct driver name when
- enabling gpio/pinctrl
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
+To: Simon Horman <horms@verge.net.au>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Christian Daudt <csd@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 05/14] ARM: shmobile: Remove init_irq declaration in machine
+ description
+References: <1368438253-28218-1-git-send-email-maxime.ripard@free-electrons.com> <1368438253-28218-6-git-send-email-maxime.ripard@free-electrons.com> <20130514003504.GE12228@verge.net.au>
+In-Reply-To: <20130514003504.GE12228@verge.net.au>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hi Simon,
 
-> When we're using Device Tree to enable GPIO drivers we're forced to be
-> OS agnostic, thus we are forbidden use names like pinctrl as they are
-> specific only to Linux.
+Le 14/05/2013 02:35, Simon Horman a écrit :
+> On Mon, May 13, 2013 at 11:44:04AM +0200, Maxime Ripard wrote:
+>> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+>> specified") removed the need to explictly setup the init_irq field in
+>> the machine description when using only irqchip_init. Remove that
+>> declaration for shmobile as well.
+> 
+> Hi Maxime,
+> 
+> If possible, I would prefer separate patches for each board and SoC.
 
-Oh that depends. I have hade lectures on pin control at the embedded
-systems conference and there I treat it as a neutral term referring to this
-kind of electronic constructions.
+Ok, I'll split this and send it in the v2.
 
-However how something is established in OF ontology I don't know so
-you might be right there, but you're making it sound like
-Documentation/devicetree/bindings/pinctrl/
-should not exist and all those bindings be moved to gpio or
-something if the assumption that "pin control" or the abbreviation
-pinctrl is a Linux-specific term. (Which is not my interpretation.)
+Thanks,
+Maxime
 
-> However, when we are registering devices using
-> internal systems such as MFD or platform registration, we can use such
-> terminology. In this case we can and should use the platform device ID
-> mechanism to specify which device we wish to utilise by detailing
-> pinctrl-<device_name>.
->
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-
-The commit message should state what regression it is actually
-solving. Which is that when using a non-DT boot, the ABx500
-pinctrl devices are not probed, right?
-
-Apart from the commit message:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-On the patch as such.
-
-Yours,
-Linus Walleij
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
