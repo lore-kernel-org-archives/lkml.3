@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab3ENIkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:40:13 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:49876 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab3ENIkK (ORCPT
+	id S1756913Ab3ENIpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:45:45 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:62611 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756719Ab3ENIpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:40:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368019749-19455-9-git-send-email-lee.jones@linaro.org>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
-	<1368019749-19455-9-git-send-email-lee.jones@linaro.org>
-Date: Tue, 14 May 2013 10:40:10 +0200
-Message-ID: <CACRpkdZTU1gv3onjFF4eqxv-o1BQwd48u4gQ9NWqryWoMiKTDQ@mail.gmail.com>
-Subject: Re: [PATCH 8/9] pinctrl: abx500: Rejiggle platform data and DT initialisation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
+	Tue, 14 May 2013 04:45:43 -0400
+Date: Tue, 14 May 2013 09:45:37 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Arnd Bergmann <arnd@arndb.de>,
         Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH 3/9] clk: ux500: Provide device enumeration number suffix
+ for SMSC911x
+Message-ID: <20130514084537.GD3297@gmail.com>
+References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
+ <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaWaEct1My5=gZ7Bbbizqsr3BBNSXiahMn3bS7L-SubLg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaWaEct1My5=gZ7Bbbizqsr3BBNSXiahMn3bS7L-SubLg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > First Ethernet device has a ".0" appended onto the device name. It
+> > appears that we need this in order to obtain the correct clock.
+> >
+> > Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> A pointer to GPIO platform data is always passed to the driver now, so
-> there's little point in checking for 'pdata' and executing the DT case if
-> it's not there. The difference between booting with DT and !DT is when
-> booting with DT, plat_id is not populated. Thus, in the DT case we have
-> to use a DT match table in order to find out which platform we're
-> executing on. So, we're changing the semantics here to only use the
-> match table if no plat_id is supplied though platform data.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Is this really included in the [0/9] fire alarm wrapper statement
-"Important ux500 fixups due for the v3.10 -rc:s"?
+Post -rc1 poke for Mike.
 
-It seems more like a random refactoring to me.
-
-The commit message fails to specify which regression this
-is fixing, like if it's causing an oops or so.
-
-So I've tentatively applied it to the pinctrl devel branch for
-v3.11 unless something comes up...
-
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
