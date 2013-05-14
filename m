@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab3ENBZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:25:12 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:33669 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755732Ab3ENBTJ (ORCPT
+	id S1756380Ab3ENBZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:25:37 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39860 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab3ENBTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:09 -0400
+	Mon, 13 May 2013 21:19:08 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
@@ -18,13 +18,10 @@ Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
         Asai Thambi S P <asamymuthupa@micron.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 04/21] Generic percpu refcounting
-Date: Mon, 13 May 2013 18:18:41 -0700
-Message-Id: <1368494338-7069-5-git-send-email-koverstreet@google.com>
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 03/21] aio: percpu reqs_available
+Date: Mon, 13 May 2013 18:18:40 -0700
+Message-Id: <1368494338-7069-4-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
@@ -32,20 +29,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements a refcount with similar semantics to
-atomic_get()/atomic_dec_and_test() - but percpu.
+See the previous patch ("aio: reqs_active -> reqs_available") for why we
+want to do this - this basically implements a per cpu allocator for
+reqs_available that doesn't actually allocate anything.
 
-It also implements two stage shutdown, as we need it to tear down the
-percpu counts.  Before dropping the initial refcount, you must call
-percpu_ref_kill(); this puts the refcount in "shutting down mode" and
-switches back to a single atomic refcount with the appropriate barriers
-(synchronize_rcu()).
+Note that we need to increase the size of the ringbuffer we allocate,
+since a single thread won't necessarily be able to use all the
+reqs_available slots - some (up to about half) might be on other per cpu
+lists, unavailable for the current thread.
 
-It's also legal to call percpu_ref_kill() multiple times - it only returns
-true once, so callers don't have to reimplement shutdown synchronization.
+We size the ringbuffer based on the nr_events userspace passed to
+io_setup(), so this is a slight behaviour change - but nr_events wasn't
+being used as a hard limit before, it was being rounded up to the next
+page before so this doesn't change the actual semantics.
 
-[akpm@linux-foundation.org: fix build]
-[akpm@linux-foundation.org: coding-style tweak]
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Zach Brown <zab@redhat.com>
 Cc: Felipe Balbi <balbi@ti.com>
@@ -60,303 +57,239 @@ Cc: Sam Bradshaw <sbradshaw@micron.com>
 Cc: Jeff Moyer <jmoyer@redhat.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>
 Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/percpu-refcount.h | 118 +++++++++++++++++++++++++++++++++
- lib/Makefile                    |   2 +-
- lib/percpu-refcount.c           | 140 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 259 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/percpu-refcount.h
- create mode 100644 lib/percpu-refcount.c
+ fs/aio.c | 106 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 99 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/percpu-refcount.h b/include/linux/percpu-refcount.h
-new file mode 100644
-index 0000000..5bd35c7
---- /dev/null
-+++ b/include/linux/percpu-refcount.h
-@@ -0,0 +1,118 @@
-+/*
-+ * Dynamic percpu refcounts:
-+ * (C) 2012 Google, Inc.
-+ * Author: Kent Overstreet <koverstreet@google.com>
-+ *
-+ * This implements a refcount with similar semantics to atomic_t - atomic_inc(),
-+ * atomic_dec_and_test() - but percpu.
-+ *
-+ * There's one important difference between percpu refs and normal atomic_t
-+ * refcounts; you have to keep track of your initial refcount, and then when you
-+ * start shutting down you call percpu_ref_kill() _before_ dropping the initial
-+ * refcount.
-+ *
-+ * Before you call percpu_ref_kill(), percpu_ref_put() does not check for the
-+ * refcount hitting 0 - it can't, if it was in percpu mode. percpu_ref_kill()
-+ * puts the ref back in single atomic_t mode, collecting the per cpu refs and
-+ * issuing the appropriate barriers, and then marks the ref as shutting down so
-+ * that percpu_ref_put() will check for the ref hitting 0.  After it returns,
-+ * it's safe to drop the initial ref.
-+ *
-+ * USAGE:
-+ *
-+ * See fs/aio.c for some example usage; it's used there for struct kioctx, which
-+ * is created when userspaces calls io_setup(), and destroyed when userspace
-+ * calls io_destroy() or the process exits.
-+ *
-+ * In the aio code, kill_ioctx() is called when we wish to destroy a kioctx; it
-+ * calls percpu_ref_kill(), then hlist_del_rcu() and sychronize_rcu() to remove
-+ * the kioctx from the proccess's list of kioctxs - after that, there can't be
-+ * any new users of the kioctx (from lookup_ioctx()) and it's then safe to drop
-+ * the initial ref with percpu_ref_put().
-+ *
-+ * Code that does a two stage shutdown like this often needs some kind of
-+ * explicit synchronization to ensure the initial refcount can only be dropped
-+ * once - percpu_ref_kill() does this for you, it returns true once and false if
-+ * someone else already called it. The aio code uses it this way, but it's not
-+ * necessary if the code has some other mechanism to synchronize teardown.
-+ * around.
-+ */
-+
-+#ifndef _LINUX_PERCPU_REFCOUNT_H
-+#define _LINUX_PERCPU_REFCOUNT_H
-+
-+#include <linux/atomic.h>
-+#include <linux/kernel.h>
+diff --git a/fs/aio.c b/fs/aio.c
+index bde41c1..c341cee 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -26,6 +26,7 @@
+ #include <linux/mm.h>
+ #include <linux/mman.h>
+ #include <linux/mmu_context.h>
 +#include <linux/percpu.h>
-+#include <linux/rcupdate.h>
-+
-+struct percpu_ref {
-+	atomic_t		count;
-+	unsigned __percpu	*pcpu_count;
+ #include <linux/slab.h>
+ #include <linux/timer.h>
+ #include <linux/aio.h>
+@@ -59,6 +60,10 @@ struct aio_ring {
+ 
+ #define AIO_RING_PAGES	8
+ 
++struct kioctx_cpu {
++	unsigned		reqs_available;
 +};
 +
-+int percpu_ref_init(struct percpu_ref *ref);
-+int percpu_ref_tryget(struct percpu_ref *ref);
-+int percpu_ref_put_initial_ref(struct percpu_ref *ref);
-+
-+/**
-+ * percpu_ref_get - increment a dynamic percpu refcount
-+ *
-+ * Analagous to atomic_inc().
-+  */
-+static inline void percpu_ref_get(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+
-+	preempt_disable();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (pcpu_count)
-+		__this_cpu_inc(*pcpu_count);
-+	else
-+		atomic_inc(&ref->count);
-+
-+	preempt_enable();
-+}
-+
-+/**
-+ * percpu_ref_put - decrement a dynamic percpu refcount
-+ *
-+ * Returns true if the result is 0, otherwise false; only checks for the ref
-+ * hitting 0 after percpu_ref_kill() has been called. Analagous to
-+ * atomic_dec_and_test().
-+ */
-+static inline int percpu_ref_put(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+	int ret = 0;
-+
-+	preempt_disable();
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (pcpu_count)
-+		__this_cpu_dec(*pcpu_count);
-+	else
-+		ret = atomic_dec_and_test(&ref->count);
-+
-+	preempt_enable();
-+
-+	return ret;
-+}
-+
-+unsigned percpu_ref_count(struct percpu_ref *ref);
-+int percpu_ref_kill(struct percpu_ref *ref);
-+
-+/**
-+ * percpu_ref_dead - check if a dynamic percpu refcount is shutting down
-+ *
-+ * Returns true if percpu_ref_kill() has been called on @ref, false otherwise.
-+ */
-+static inline int percpu_ref_dead(struct percpu_ref *ref)
-+{
-+	return ref->pcpu_count == NULL;
-+}
-+
-+#endif
-diff --git a/lib/Makefile b/lib/Makefile
-index e9c52e1..25a0ce1 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
--	 earlycpio.o
-+	 earlycpio.o percpu-refcount.o
+ struct kioctx {
+ 	atomic_t		users;
+ 	atomic_t		dead;
+@@ -67,6 +72,13 @@ struct kioctx {
+ 	unsigned long		user_id;
+ 	struct hlist_node	list;
  
- obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
- lib-$(CONFIG_MMU) += ioremap.o
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-new file mode 100644
-index 0000000..4a0155b
---- /dev/null
-+++ b/lib/percpu-refcount.c
-@@ -0,0 +1,140 @@
-+#define pr_fmt(fmt) "%s: " fmt "\n", __func__
++	struct __percpu kioctx_cpu *cpu;
 +
-+#include <linux/kernel.h>
-+#include <linux/percpu-refcount.h>
++	/*
++	 * For percpu reqs_available, number of slots we move to/from global
++	 * counter at a time:
++	 */
++	unsigned		req_batch;
+ 	/*
+ 	 * This is what userspace passed to io_setup(), it's not used for
+ 	 * anything but counting against the global max_reqs quota.
+@@ -94,6 +106,8 @@ struct kioctx {
+ 		 * so we avoid overflowing it: it's decremented (if positive)
+ 		 * when allocating a kiocb and incremented when the resulting
+ 		 * io_event is pulled off the ringbuffer.
++		 *
++		 * We batch accesses to it with a percpu version.
+ 		 */
+ 		atomic_t	reqs_available;
+ 	} ____cacheline_aligned_in_smp;
+@@ -281,6 +295,8 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
+ static void free_ioctx_rcu(struct rcu_head *head)
+ {
+ 	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
 +
-+/*
-+ * The trick to implementing percpu refcounts is shutdown. We can't detect the
-+ * ref hitting 0 on every put - this would require global synchronization and
-+ * defeat the whole purpose of using percpu refs.
-+ *
-+ * What we do is require the user to keep track of the initial refcount; we know
-+ * the ref can't hit 0 before the user drops the initial ref, so as long as we
-+ * convert to non percpu mode before the initial ref is dropped everything
-+ * works.
-+ *
-+ * Converting to non percpu mode is done with some RCUish stuff in
-+ * percpu_ref_kill. Additionally, we need a bias value so that the atomic_t
-+ * can't hit 0 before we've added up all the percpu refs.
-+ */
++	free_percpu(ctx->cpu);
+ 	kmem_cache_free(kioctx_cachep, ctx);
+ }
+ 
+@@ -294,7 +310,7 @@ static void free_ioctx(struct kioctx *ctx)
+ 	struct aio_ring *ring;
+ 	struct io_event res;
+ 	struct kiocb *req;
+-	unsigned head, avail;
++	unsigned cpu, head, avail;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 
+@@ -308,6 +324,13 @@ static void free_ioctx(struct kioctx *ctx)
+ 
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
++	for_each_possible_cpu(cpu) {
++		struct kioctx_cpu *kcpu = per_cpu_ptr(ctx->cpu, cpu);
 +
-+#define PCPU_COUNT_BIAS		(1ULL << 31)
++		atomic_add(kcpu->reqs_available, &ctx->reqs_available);
++		kcpu->reqs_available = 0;
++	}
 +
-+int percpu_ref_tryget(struct percpu_ref *ref)
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
+ 	head = ring->head;
+ 	kunmap_atomic(ring);
+@@ -360,6 +383,18 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	struct kioctx *ctx;
+ 	int err = -ENOMEM;
+ 
++	/*
++	 * We keep track of the number of available ringbuffer slots, to prevent
++	 * overflow (reqs_available), and we also use percpu counters for this.
++	 *
++	 * So since up to half the slots might be on other cpu's percpu counters
++	 * and unavailable, double nr_events so userspace sees what they
++	 * expected: additionally, we move req_batch slots to/from percpu
++	 * counters at a time, so make sure that isn't 0:
++	 */
++	nr_events = max(nr_events, num_possible_cpus() * 4);
++	nr_events *= 2;
++
+ 	/* Prevent overflows */
+ 	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
+ 	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
+@@ -385,10 +420,16 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 
+ 	INIT_LIST_HEAD(&ctx->active_reqs);
+ 
+-	if (aio_setup_ring(ctx) < 0)
++	ctx->cpu = alloc_percpu(struct kioctx_cpu);
++	if (!ctx->cpu)
+ 		goto out_freectx;
+ 
++	if (aio_setup_ring(ctx) < 0)
++		goto out_freepcpu;
++
+ 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
++	ctx->req_batch = (ctx->nr_events - 1) / (num_possible_cpus() * 4);
++	BUG_ON(!ctx->req_batch);
+ 
+ 	/* limit the number of system wide aios */
+ 	spin_lock(&aio_nr_lock);
+@@ -412,6 +453,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ out_cleanup:
+ 	err = -EAGAIN;
+ 	aio_free_ring(ctx);
++out_freepcpu:
++	free_percpu(ctx->cpu);
+ out_freectx:
+ 	kmem_cache_free(kioctx_cachep, ctx);
+ 	pr_debug("error allocating ioctx %d\n", err);
+@@ -510,6 +553,52 @@ void exit_aio(struct mm_struct *mm)
+ 	}
+ }
+ 
++static void put_reqs_available(struct kioctx *ctx, unsigned nr)
 +{
-+	int ret = 1;
++	struct kioctx_cpu *kcpu;
 +
 +	preempt_disable();
++	kcpu = this_cpu_ptr(ctx->cpu);
 +
-+	if (!percpu_ref_dead(ref))
-+		percpu_ref_get(ref);
-+	else
-+		ret = 0;
++	kcpu->reqs_available += nr;
++	while (kcpu->reqs_available >= ctx->req_batch * 2) {
++		kcpu->reqs_available -= ctx->req_batch;
++		atomic_add(ctx->req_batch, &ctx->reqs_available);
++	}
 +
 +	preempt_enable();
++}
 +
++static bool get_reqs_available(struct kioctx *ctx)
++{
++	struct kioctx_cpu *kcpu;
++	bool ret = false;
++
++	preempt_disable();
++	kcpu = this_cpu_ptr(ctx->cpu);
++
++	if (!kcpu->reqs_available) {
++		int old, avail = atomic_read(&ctx->reqs_available);
++
++		do {
++			if (avail < ctx->req_batch)
++				goto out;
++
++			old = avail;
++			avail = atomic_cmpxchg(&ctx->reqs_available,
++					       avail, avail - ctx->req_batch);
++		} while (avail != old);
++
++		kcpu->reqs_available += ctx->req_batch;
++	}
++
++	ret = true;
++	kcpu->reqs_available--;
++out:
++	preempt_enable();
 +	return ret;
 +}
 +
-+unsigned percpu_ref_count(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+	unsigned count = 0;
-+	int cpu;
-+
-+	preempt_disable();
-+
-+	count = atomic_read(&ref->count);
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	if (pcpu_count)
-+		for_each_possible_cpu(cpu)
-+			count += *per_cpu_ptr(pcpu_count, cpu);
-+
-+	preempt_enable();
-+
-+	return count;
-+}
-+
-+/**
-+ * percpu_ref_init - initialize a dynamic percpu refcount
-+ *
-+ * Initializes the refcount in single atomic counter mode with a refcount of 1;
-+ * analagous to atomic_set(ref, 1).
-+ */
-+int percpu_ref_init(struct percpu_ref *ref)
-+{
-+	atomic_set(&ref->count, 1 + PCPU_COUNT_BIAS);
-+
-+	ref->pcpu_count = alloc_percpu(unsigned);
-+	if (!ref->pcpu_count)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+/**
-+ * percpu_ref_kill - prepare a dynamic percpu refcount for teardown
-+ *
-+ * Must be called before dropping the initial ref, so that percpu_ref_put()
-+ * knows to check for the refcount hitting 0. If the refcount was in percpu
-+ * mode, converts it back to single atomic counter mode.
-+ *
-+ * The caller must issue a synchronize_rcu()/call_rcu() before calling
-+ * percpu_ref_put() to drop the initial ref.
-+ *
-+ * Returns true the first time called on @ref and false if @ref is already
-+ * shutting down, so it may be used by the caller for synchronizing other parts
-+ * of a two stage shutdown.
-+ */
-+int percpu_ref_kill(struct percpu_ref *ref)
-+{
-+	unsigned __percpu *pcpu_count;
-+	unsigned __percpu *old;
-+	unsigned count = 0;
-+	int cpu;
-+
-+	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-+
-+	do {
-+		if (!pcpu_count)
-+			return 0;
-+
-+		old = pcpu_count;
-+		pcpu_count = cmpxchg(&ref->pcpu_count, old, NULL);
-+	} while (pcpu_count != old);
-+
-+	synchronize_sched();
-+
-+	for_each_possible_cpu(cpu)
-+		count += *per_cpu_ptr(pcpu_count, cpu);
-+
-+	free_percpu(pcpu_count);
-+
-+	pr_debug("global %lli pcpu %i",
-+		 (int64_t) atomic_read(&ref->count), (int) count);
-+
-+	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
-+
-+	return 1;
-+}
-+
-+/**
-+ * percpu_ref_put_initial_ref - safely drop the initial ref
-+ *
-+ * A percpu refcount needs a shutdown sequence before dropping the initial ref,
-+ * to put it back into single atomic_t mode with the appropriate barriers so
-+ * that percpu_ref_put() can safely check for it hitting 0 - this does so.
-+ *
-+ * Returns true if @ref hit 0.
-+ */
-+int percpu_ref_put_initial_ref(struct percpu_ref *ref)
-+{
-+	if (percpu_ref_kill(ref)) {
-+		return percpu_ref_put(ref);
-+	} else {
-+		WARN_ON(1);
-+		return 0;
-+	}
-+}
+ /* aio_get_req
+  *	Allocate a slot for an aio request.  Increments the ki_users count
+  * of the kioctx so that the kioctx stays around until all requests are
+@@ -524,7 +613,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
+ {
+ 	struct kiocb *req;
+ 
+-	if (atomic_dec_if_positive(&ctx->reqs_available) <= 0)
++	if (!get_reqs_available(ctx))
+ 		return NULL;
+ 
+ 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
+@@ -533,10 +622,9 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
+ 
+ 	atomic_set(&req->ki_users, 2);
+ 	req->ki_ctx = ctx;
+-
+ 	return req;
+ out_put:
+-	atomic_inc(&ctx->reqs_available);
++	put_reqs_available(ctx, 1);
+ 	return NULL;
+ }
+ 
+@@ -625,6 +713,10 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ 	 */
+ 	if (unlikely(xchg(&iocb->ki_cancel,
+ 			  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
++		/*
++		 * Can't use the percpu reqs_available here - could race with
++		 * free_ioctx()
++		 */
+ 		atomic_inc(&ctx->reqs_available);
+ 		/* Still need the wake_up in case free_ioctx is waiting */
+ 		goto put_rq;
+@@ -763,7 +855,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 
+ 	pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
+ 
+-	atomic_add(ret, &ctx->reqs_available);
++	put_reqs_available(ctx, ret);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
+ 
+@@ -1147,7 +1239,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	aio_put_req(req);	/* drop extra ref to req */
+ 	return 0;
+ out_put_req:
+-	atomic_inc(&ctx->reqs_available);
++	put_reqs_available(ctx, 1);
+ 	aio_put_req(req);	/* drop extra ref to req */
+ 	aio_put_req(req);	/* drop i/o ref to req */
+ 	return ret;
 -- 
 1.8.2.1
 
