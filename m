@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab3ENQ5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:57:41 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53592 "EHLO smtp1-g21.free.fr"
+	id S1758229Ab3ENQ7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:59:16 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57418 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757891Ab3ENQ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:57:38 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>
-Subject: [PATCH] ARM: OMAP5: select SCU
-Date: Tue, 14 May 2013 18:57:18 +0200
-Message-Id: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754905Ab3ENQ7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:59:14 -0400
+Message-ID: <51926CB6.7050703@linux.vnet.ibm.com>
+Date: Tue, 14 May 2013 09:56:22 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: avoid warning on page flag acessors
+References: <1368549951-1170-1-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1368549951-1170-1-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051416-9360-0000-0000-0000122A1C3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Stehlé <v-stehle@ti.com>
+On 05/14/2013 09:45 AM, Cody P Schafer wrote:
+> Using Page*() triggers a camelcase warning, but shouldn't.
+>
+> Introduced by be987d9f80354e2e919926349282facd74992f90, which added the
+> other Page flag users.
+>
+> Pipe ('|') at the end of a grouping doesn't cause the grouping to match
+> an emtpy string, use ? after the grouping instead to get the desired
+> behavior.
+>
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>   scripts/checkpatch.pl | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index b954de5..ee24026 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2939,7 +2939,7 @@ sub process {
+>   			my $var = $1;
+>   			if ($var !~ /$Constant/ &&
+>   			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
+> -			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
+> +			    $var !~ /"^(?:Clear|Set|TestClear|TestSet)?Page[A-Z]/ &&
+>   			    !defined $camelcase{$var}) {
+>   				$camelcase{$var} = 1;
+>   				WARN("CAMELCASE",
+>
 
-OMAP5 needs SCU in SMP.
 
-This fixes the following link errors:
+Nix this, appears to still be broken
 
-  arch/arm/mach-omap2/built-in.o: In function `scu_gp_set':
-  arch/arm/mach-omap2/sleep44xx.S:132: undefined reference to `scu_power_mode'
-  arch/arm/mach-omap2/built-in.o: In function `scu_gp_clear':
-  arch/arm/mach-omap2/sleep44xx.S:229: undefined reference to `scu_power_mode'
-  arch/arm/mach-omap2/built-in.o: In function `omap4_smp_prepare_cpus':
-  arch/arm/mach-omap2/omap-smp.c:211: undefined reference to `scu_enable'
-  arch/arm/mach-omap2/built-in.o: In function `omap4_smp_init_cpus':
-  arch/arm/mach-omap2/omap-smp.c:185: undefined reference to `scu_get_core_count'
-
-Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
----
- arch/arm/mach-omap2/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index f49cd51..81690a2 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -109,6 +109,7 @@ config SOC_OMAP5
- 	select ARM_CPU_SUSPEND if PM
- 	select ARM_GIC
- 	select CPU_V7
-+	select HAVE_ARM_SCU if SMP
- 	select HAVE_SMP
- 	select COMMON_CLK
- 	select HAVE_ARM_ARCH_TIMER
--- 
-1.7.10.4
+	WARNING: Avoid CamelCase: <PageBuddy>
+	#51: FILE: mm/page_alloc.c:449:
+	+	VM_BUG_ON(!PageBuddy(page));
+	
+	total: 0 errors, 1 warnings, 46 lines checked
+	
+	/home/cody/mm/0008-page_alloc-add-return_pages_to_zone-when-DYNAMIC_NUM.patch has style problems, please review.
 
