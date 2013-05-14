@@ -1,172 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3ENKv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:51:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35614 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024Ab3ENKv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:51:56 -0400
-Date: Tue, 14 May 2013 12:51:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/9] mm: vmscan: Decide whether to compact the pgdat
- based on reclaim progress
-Message-ID: <20130514105154.GN5198@dhcp22.suse.cz>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
- <1368432760-21573-5-git-send-email-mgorman@suse.de>
+	id S1756315Ab3ENKyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:54:15 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:39403 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab3ENKyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 06:54:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368432760-21573-5-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368518791-26332-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1368518791-26332-1-git-send-email-prabhakar.csengg@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 14 May 2013 16:23:50 +0530
+Message-ID: <CA+V-a8uakxH795-FKmE4arWZZHRracVTuSnoEA7SgOLaCkfrLg@mail.gmail.com>
+Subject: Re: [PATCH v2] media: i2c: tvp514x: add OF support
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 13-05-13 09:12:35, Mel Gorman wrote:
-> In the past, kswapd makes a decision on whether to compact memory after the
-> pgdat was considered balanced. This more or less worked but it is late to
-> make such a decision and does not fit well now that kswapd makes a decision
-> whether to exit the zone scanning loop depending on reclaim progress.
-> 
-> This patch will compact a pgdat if at least the requested number of pages
-> were reclaimed from unbalanced zones for a given priority. If any zone is
-> currently balanced, kswapd will not call compaction as it is expected the
-> necessary pages are already available.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi All,
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+On Tue, May 14, 2013 at 1:36 PM, Lad Prabhakar
+<prabhakar.csengg@gmail.com> wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>
+> add OF support for the tvp514x driver. Alongside this patch
+> removes unnecessary header file inclusion and sorts them alphabetically.
+>
+Ahh just noticed it now, I'll just rebase and resend this patch on [1]
+so that slab.h can also be removed.
 
-> ---
->  mm/vmscan.c | 59 ++++++++++++++++++++++++++++++-----------------------------
->  1 file changed, 30 insertions(+), 29 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1c10ee5..cd09803 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2661,7 +2661,8 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->   */
->  static bool kswapd_shrink_zone(struct zone *zone,
->  			       struct scan_control *sc,
-> -			       unsigned long lru_pages)
-> +			       unsigned long lru_pages,
-> +			       unsigned long *nr_attempted)
->  {
->  	unsigned long nr_slab;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
-> @@ -2677,6 +2678,9 @@ static bool kswapd_shrink_zone(struct zone *zone,
->  	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
->  	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
->  
-> +	/* Account for the number of pages attempted to reclaim */
-> +	*nr_attempted += sc->nr_to_reclaim;
-> +
->  	if (nr_slab == 0 && !zone_reclaimable(zone))
->  		zone->all_unreclaimable = 1;
->  
-> @@ -2724,7 +2728,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  
->  	do {
->  		unsigned long lru_pages = 0;
-> +		unsigned long nr_attempted = 0;
->  		bool raise_priority = true;
-> +		bool pgdat_needs_compaction = (order > 0);
->  
->  		sc.nr_reclaimed = 0;
->  
-> @@ -2774,7 +2780,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
->  
-> +			if (!populated_zone(zone))
-> +				continue;
-> +
->  			lru_pages += zone_reclaimable_pages(zone);
-> +
-> +			/*
-> +			 * If any zone is currently balanced then kswapd will
-> +			 * not call compaction as it is expected that the
-> +			 * necessary pages are already available.
-> +			 */
-> +			if (pgdat_needs_compaction &&
-> +					zone_watermark_ok(zone, order,
-> +						low_wmark_pages(zone),
-> +						*classzone_idx, 0))
-> +				pgdat_needs_compaction = false;
->  		}
->  
->  		/*
-> @@ -2843,7 +2863,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  				 * already being scanned that high
->  				 * watermark would be met at 100% efficiency.
->  				 */
-> -				if (kswapd_shrink_zone(zone, &sc, lru_pages))
-> +				if (kswapd_shrink_zone(zone, &sc, lru_pages,
-> +						       &nr_attempted))
->  					raise_priority = false;
->  			}
->  
-> @@ -2896,6 +2917,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  			break;
->  
->  		/*
-> +		 * Compact if necessary and kswapd is reclaiming at least the
-> +		 * high watermark number of pages as requsted
-> +		 */
-> +		if (pgdat_needs_compaction && sc.nr_reclaimed > nr_attempted)
-> +			compact_pgdat(pgdat, order);
-> +
-> +		/*
->  		 * Raise priority if scanning rate is too low or there was no
->  		 * progress in reclaiming pages
->  		 */
-> @@ -2904,33 +2932,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  	} while (sc.priority >= 0 &&
->  		 !pgdat_balanced(pgdat, order, *classzone_idx));
->  
-> -	/*
-> -	 * If kswapd was reclaiming at a higher order, it has the option of
-> -	 * sleeping without all zones being balanced. Before it does, it must
-> -	 * ensure that the watermarks for order-0 on *all* zones are met and
-> -	 * that the congestion flags are cleared. The congestion flag must
-> -	 * be cleared as kswapd is the only mechanism that clears the flag
-> -	 * and it is potentially going to sleep here.
-> -	 */
-> -	if (order) {
-> -		int zones_need_compaction = 1;
-> -
-> -		for (i = 0; i <= end_zone; i++) {
-> -			struct zone *zone = pgdat->node_zones + i;
-> -
-> -			if (!populated_zone(zone))
-> -				continue;
-> -
-> -			/* Check if the memory needs to be defragmented. */
-> -			if (zone_watermark_ok(zone, order,
-> -				    low_wmark_pages(zone), *classzone_idx, 0))
-> -				zones_need_compaction = 0;
-> -		}
-> -
-> -		if (zones_need_compaction)
-> -			compact_pgdat(pgdat, order);
-> -	}
-> -
->  out:
->  	/*
->  	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
-> -- 
-> 1.8.1.4
-> 
+[1] https://patchwork.kernel.org/patch/2539411/
 
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+--Prabhakar Lad
