@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab3ENBTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:19:17 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:62634 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805Ab3ENBTO (ORCPT
+	id S1756248Ab3ENBYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:24:07 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61110 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab3ENBTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:14 -0400
+	Mon, 13 May 2013 21:19:16 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
@@ -18,10 +18,10 @@ Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
         Asai Thambi S P <asamymuthupa@micron.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 07/21] aio: Don't use ctx->tail unnecessarily
-Date: Mon, 13 May 2013 18:18:44 -0700
-Message-Id: <1368494338-7069-8-git-send-email-koverstreet@google.com>
+        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH 09/21] aio: Kill unneeded kiocb members
+Date: Mon, 13 May 2013 18:18:46 -0700
+Message-Id: <1368494338-7069-10-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
@@ -29,12 +29,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aio_complete() (arguably) needs to keep its own trusted copy of the tail
-pointer, but io_getevents() doesn't have to use it - it's already using
-the head pointer from the ring buffer.
-
-So convert it to use the tail from the ring buffer so it touches fewer
-cachelines and doesn't contend with the cacheline aio_complete() needs.
+The old aio retry infrastucture needed to save the various arguments to
+to aio operations. But with the retry infrastructure gone, we can trim
+struct kiocb quite a bit.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Zach Brown <zab@redhat.com>
@@ -50,104 +47,197 @@ Cc: Sam Bradshaw <sbradshaw@micron.com>
 Cc: Jeff Moyer <jmoyer@redhat.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Theodore Ts'o <tytso@mit.edu>
 ---
- fs/aio.c | 41 +++++++++++++++++++++++------------------
- 1 file changed, 23 insertions(+), 18 deletions(-)
+ fs/aio.c            | 69 +++++++++++++++++++++++++++++++----------------------
+ include/linux/aio.h | 11 ++-------
+ 2 files changed, 42 insertions(+), 38 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 5e1b801..2c9a5ac 100644
+index 73ec062..280b014 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -306,7 +306,8 @@ static void free_ioctx(struct kioctx *ctx)
+@@ -637,8 +637,6 @@ static void kiocb_free(struct kiocb *req)
+ 		eventfd_ctx_put(req->ki_eventfd);
+ 	if (req->ki_dtor)
+ 		req->ki_dtor(req);
+-	if (req->ki_iovec != &req->ki_inline_vec)
+-		kfree(req->ki_iovec);
+ 	kmem_cache_free(kiocb_cachep, req);
+ }
+ 
+@@ -968,24 +966,26 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
+ typedef ssize_t (aio_rw_op)(struct kiocb *, const struct iovec *,
+ 			    unsigned long, loff_t);
+ 
+-static ssize_t aio_setup_vectored_rw(int rw, struct kiocb *kiocb, bool compat)
++static ssize_t aio_setup_vectored_rw(struct kiocb *kiocb,
++				     int rw, char __user *buf,
++				     unsigned long *nr_segs,
++				     struct iovec **iovec,
++				     bool compat)
  {
- 	struct aio_ring *ring;
- 	struct kiocb *req;
--	unsigned cpu, head, avail;
-+	unsigned cpu, avail;
-+	DEFINE_WAIT(wait);
+ 	ssize_t ret;
  
- 	spin_lock_irq(&ctx->ctx_lock);
+-	kiocb->ki_nr_segs = kiocb->ki_nbytes;
++	*nr_segs = kiocb->ki_nbytes;
  
-@@ -327,21 +328,24 @@ static void free_ioctx(struct kioctx *ctx)
- 		kcpu->reqs_available = 0;
+ #ifdef CONFIG_COMPAT
+ 	if (compat)
+ 		ret = compat_rw_copy_check_uvector(rw,
+-				(struct compat_iovec __user *)kiocb->ki_buf,
+-				kiocb->ki_nr_segs, 1, &kiocb->ki_inline_vec,
+-				&kiocb->ki_iovec);
++				(struct compat_iovec __user *)buf,
++				*nr_segs, 1, *iovec, iovec);
+ 	else
+ #endif
+ 		ret = rw_copy_check_uvector(rw,
+-				(struct iovec __user *)kiocb->ki_buf,
+-				kiocb->ki_nr_segs, 1, &kiocb->ki_inline_vec,
+-				&kiocb->ki_iovec);
++				(struct iovec __user *)buf,
++				*nr_segs, 1, *iovec, iovec);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -994,15 +994,17 @@ static ssize_t aio_setup_vectored_rw(int rw, struct kiocb *kiocb, bool compat)
+ 	return 0;
+ }
+ 
+-static ssize_t aio_setup_single_vector(int rw, struct kiocb *kiocb)
++static ssize_t aio_setup_single_vector(struct kiocb *kiocb,
++				       int rw, char __user *buf,
++				       unsigned long *nr_segs,
++				       struct iovec *iovec)
+ {
+-	if (unlikely(!access_ok(!rw, kiocb->ki_buf, kiocb->ki_nbytes)))
++	if (unlikely(!access_ok(!rw, buf, kiocb->ki_nbytes)))
+ 		return -EFAULT;
+ 
+-	kiocb->ki_iovec = &kiocb->ki_inline_vec;
+-	kiocb->ki_iovec->iov_base = kiocb->ki_buf;
+-	kiocb->ki_iovec->iov_len = kiocb->ki_nbytes;
+-	kiocb->ki_nr_segs = 1;
++	iovec->iov_base = buf;
++	iovec->iov_len = kiocb->ki_nbytes;
++	*nr_segs = 1;
+ 	return 0;
+ }
+ 
+@@ -1011,15 +1013,18 @@ static ssize_t aio_setup_single_vector(int rw, struct kiocb *kiocb)
+  *	Performs the initial checks and aio retry method
+  *	setup for the kiocb at the time of io submission.
+  */
+-static ssize_t aio_run_iocb(struct kiocb *req, bool compat)
++static ssize_t aio_run_iocb(struct kiocb *req, unsigned opcode,
++			    char __user *buf, bool compat)
+ {
+ 	struct file *file = req->ki_filp;
+ 	ssize_t ret;
++	unsigned long nr_segs;
+ 	int rw;
+ 	fmode_t mode;
+ 	aio_rw_op *rw_op;
++	struct iovec inline_vec, *iovec = &inline_vec;
+ 
+-	switch (req->ki_opcode) {
++	switch (opcode) {
+ 	case IOCB_CMD_PREAD:
+ 	case IOCB_CMD_PREADV:
+ 		mode	= FMODE_READ;
+@@ -1040,16 +1045,21 @@ rw_common:
+ 		if (!rw_op)
+ 			return -EINVAL;
+ 
+-		ret = (req->ki_opcode == IOCB_CMD_PREADV ||
+-		       req->ki_opcode == IOCB_CMD_PWRITEV)
+-			? aio_setup_vectored_rw(rw, req, compat)
+-			: aio_setup_single_vector(rw, req);
++		ret = (opcode == IOCB_CMD_PREADV ||
++		       opcode == IOCB_CMD_PWRITEV)
++			? aio_setup_vectored_rw(req, rw, buf, &nr_segs,
++						&iovec, compat)
++			: aio_setup_single_vector(req, rw, buf, &nr_segs,
++						  iovec);
+ 		if (ret)
+ 			return ret;
+ 
+ 		ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+-		if (ret < 0)
++		if (ret < 0) {
++			if (iovec != &inline_vec)
++				kfree(iovec);
+ 			return ret;
++		}
+ 
+ 		req->ki_nbytes = ret;
+ 
+@@ -1063,8 +1073,7 @@ rw_common:
+ 		if (rw == WRITE)
+ 			file_start_write(file);
+ 
+-		ret = rw_op(req, req->ki_iovec,
+-			    req->ki_nr_segs, req->ki_pos);
++		ret = rw_op(req, iovec, nr_segs, req->ki_pos);
+ 
+ 		if (rw == WRITE)
+ 			file_end_write(file);
+@@ -1089,6 +1098,9 @@ rw_common:
+ 		return -EINVAL;
  	}
  
--	ring = kmap_atomic(ctx->ring_pages[0]);
--	head = ring->head;
--	kunmap_atomic(ring);
-+	while (1) {
-+		prepare_to_wait(&ctx->wait, &wait, TASK_UNINTERRUPTIBLE);
- 
--	while (atomic_read(&ctx->reqs_available) < ctx->nr_events - 1) {
--		wait_event(ctx->wait,
--			   (head != ctx->tail) ||
--			   (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1));
++	if (iovec != &inline_vec)
++		kfree(iovec);
++
+ 	if (ret != -EIOCBQUEUED) {
+ 		/*
+ 		 * There's no easy way to restart the syscall since other AIO's
+@@ -1160,12 +1172,11 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_obj.user = user_iocb;
+ 	req->ki_user_data = iocb->aio_data;
+ 	req->ki_pos = iocb->aio_offset;
 -
--		avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
-+		ring = kmap_atomic(ctx->ring_pages[0]);
-+		avail = (ring->head <= ring->tail)
-+			 ? ring->tail - ring->head
-+			 : ctx->nr_events - ring->head + ring->tail;
+-	req->ki_buf = (char __user *)(unsigned long)iocb->aio_buf;
+ 	req->ki_nbytes = iocb->aio_nbytes;
+-	req->ki_opcode = iocb->aio_lio_opcode;
  
- 		atomic_add(avail, &ctx->reqs_available);
--		head += avail;
--		head %= ctx->nr_events;
-+		ring->head = ring->tail;
-+		kunmap_atomic(ring);
-+
-+		if (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1)
-+			break;
-+
-+		schedule();
- 	}
-+	finish_wait(&ctx->wait, &wait);
+-	ret = aio_run_iocb(req, compat);
++	ret = aio_run_iocb(req, iocb->aio_lio_opcode,
++			   (char __user *)(unsigned long)iocb->aio_buf,
++			   compat);
+ 	if (ret)
+ 		goto out_put_req;
  
- 	WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr_events - 1);
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 7bb766e..b570472 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -36,6 +36,7 @@ struct kiocb {
+ 	struct kioctx		*ki_ctx;	/* NULL for sync ops */
+ 	kiocb_cancel_fn		*ki_cancel;
+ 	void			(*ki_dtor)(struct kiocb *);
++	void			*private;
  
-@@ -782,7 +786,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 				 struct io_event __user *event, long nr)
- {
- 	struct aio_ring *ring;
--	unsigned head, pos;
-+	unsigned head, tail, pos;
- 	long ret = 0;
- 	int copy_ret;
+ 	union {
+ 		void __user		*user;
+@@ -44,15 +45,7 @@ struct kiocb {
  
-@@ -790,11 +794,12 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	__u64			ki_user_data;	/* user's data for completion */
+ 	loff_t			ki_pos;
+-
+-	void			*private;
+-	/* State that we remember to be able to restart/retry  */
+-	unsigned short		ki_opcode;
+-	size_t			ki_nbytes; 	/* copy of iocb->aio_nbytes */
+-	char 			__user *ki_buf;	/* remaining iocb->aio_buf */
+-	struct iovec		ki_inline_vec;	/* inline vector */
+- 	struct iovec		*ki_iovec;
+- 	unsigned long		ki_nr_segs;
++	size_t			ki_nbytes;	/* copy of iocb->aio_nbytes */
  
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
-+	tail = ring->tail;
- 	kunmap_atomic(ring);
- 
--	pr_debug("h%u t%u m%u\n", head, ctx->tail, ctx->nr_events);
-+	pr_debug("h%u t%u m%u\n", head, tail, ctx->nr_events);
- 
--	if (head == ctx->tail)
-+	if (head == tail)
- 		goto out;
- 
- 	while (ret < nr) {
-@@ -802,8 +807,8 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 		struct io_event *ev;
- 		struct page *page;
- 
--		avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
--		if (head == ctx->tail)
-+		avail = (head <= tail ?  tail : ctx->nr_events) - head;
-+		if (head == tail)
- 			break;
- 
- 		avail = min(avail, nr - ret);
-@@ -834,7 +839,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	kunmap_atomic(ring);
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
--	pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
-+	pr_debug("%li  h%u t%u\n", ret, head, tail);
- 
- 	put_reqs_available(ctx, ret);
- out:
+ 	struct list_head	ki_list;	/* the aio core uses this
+ 						 * for cancellation */
 -- 
 1.8.2.1
 
