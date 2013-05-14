@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411Ab3ENMw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:52:28 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45843 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756770Ab3ENMw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:52:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Viresh Kumar'" <viresh.kumar@linaro.org>, robin.randhawa@arm.com,
-        "'Ben Dooks'" <ben-linux@fluff.org>, linux-pm@vger.kernel.org,
-        patches@linaro.org, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
-        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
-        charles.garcia-tobin@arm.com
-Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
-Date: Tue, 14 May 2013 15:00:59 +0200
-Message-ID: <2001452.Fn2HjLbNED@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <093901ce509f$afe92f40$0fbb8dc0$%kim@samsung.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org> <CAKohponkFB7ND38jv5oGnQLx8cq0b=uHTCmL3EERe6P54ijYhw@mail.gmail.com> <093901ce509f$afe92f40$0fbb8dc0$%kim@samsung.com>
+	id S1757428Ab3ENMwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:52:35 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:59896 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756770Ab3ENMwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 08:52:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1368370791-32630-1-git-send-email-laurent.navet@gmail.com>
+References: <1368370791-32630-1-git-send-email-laurent.navet@gmail.com>
+Date: Tue, 14 May 2013 14:52:31 +0200
+Message-ID: <CACRpkdbbDzudp_W0d1VW1NCMUTHA25v2N3rXopQ+_zGrQB9AyQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: pinctrl: vt8500: use devm_ioremap_resource()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Navet <laurent.navet@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Tony Prisk <linux@prisktech.co.nz>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 14, 2013 09:36:42 PM Kukjin Kim wrote:
-> Viresh Kumar wrote:
-> > 
-> > On 13 May 2013 16:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > That doesn't matter I suppose.  I can take it, but please rebase it on
-> > top
-> > > of current linux-next.
-> > 
-> > I have already done that (attached). But i wasn't sure what Kukjin wants
-> > as
-> > he may report conflicts again and i will ask the same question for 3.12 :)
-> > 
-> Since this missed last time, this would be sent to upstream via samsung tree
-> again. It means the conflicts should be handled by myself.
-> 
-> Rafael, if you don't mind, let me take this into Samsung tree for v3.11.
+On Sun, May 12, 2013 at 4:59 PM, Laurent Navet <laurent.navet@gmail.com> wrote:
 
-Sure, please go ahead.
+> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
 
-Thanks,
-Rafael
+Oh is that deprecated? I had no clue :-/
+Can you point to some rationale about this so I'm not
+totally misguided in my world..?
 
+> Found with coccicheck and this semantic patch:
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci
+>
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Seems OK if the deprecation is ongoing.
+Tony can I have your ACK?
+
+>  drivers/pinctrl/vt8500/pinctrl-wmt.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+> index ab63104..e877082 100644
+> --- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
+> +++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+> @@ -569,10 +569,10 @@ int wmt_pinctrl_probe(struct platform_device *pdev,
+>         struct resource *res;
+>
+>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -       data->base = devm_request_and_ioremap(&pdev->dev, res);
+> -       if (!data->base) {
+> +       data->base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(data->base)) {
+>                 dev_err(&pdev->dev, "failed to map memory resource\n");
+> -               return -EBUSY;
+> +               return PTR_ERR(data->base);
+>         }
+
+Grant is just going to *not* love this type of patches replacing
+nullchecks with IS_ERR() stuff all over the kernel.
+
+We had a discussion whether the compiler can be made to
+annotate and typecheck pointers to avoid doing mistakes with
+pointers containing error codes like this. (Vague but you maybe
+know what I'm after.)
+
+Yours,
+Linus Walleij
