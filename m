@@ -1,136 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab3ENNA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 09:00:29 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:12332 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab3ENNAY (ORCPT
+	id S1757576Ab3ENNAy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 09:00:54 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46484 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756770Ab3ENNAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 09:00:24 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <hein_tibosch@yahoo.es>
-CC: <michal.simek@xilinx.com>, Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <s.trumtrar@pengutronix.de>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2] net/macb: fix ISR clear-on-write behavior only for some SoC
-Date: Tue, 14 May 2013 15:00:16 +0200
-Message-ID: <1368536416-18364-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 14 May 2013 09:00:51 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v1 1/2] ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
+Date: Tue, 14 May 2013 21:00:38 +0800
+Message-Id: <1368536439-19421-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
-introduces clear-on-write on ISR register. This behavior is not always
-implemented when using Cadence MACB/GEM and is breaking other platforms.
-We are using the Design Configuration Register 1 information and a capability
-property to actually activate this clear-on-write behavior on ISR.
+Now the global list acpi_pci_roots pci_root.c is useless, remove it.
 
-Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
-v2: - use DCFG1 bit 23 integration information instead of device tree
-      compatibility string to retreive information about c-o-r vs. c-o-w ISR.
-    - move configuration in macb_init_hw() function instead of probe() - at
-      "open" time.
+ drivers/acpi/pci_root.c | 25 +++----------------------
+ include/acpi/acpi_bus.h |  1 -
+ 2 files changed, 3 insertions(+), 23 deletions(-)
 
-As I have changed the most of this patch, I will collect your Ack and feedback
-just like a new patch. Thanks for your help...
-
-Bye,
-
- drivers/net/ethernet/cadence/macb.c | 18 ++++++++++++++++--
- drivers/net/ethernet/cadence/macb.h |  7 +++++++
- 2 files changed, 23 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 6be513d..c89aa41 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -485,7 +485,8 @@ static void macb_tx_interrupt(struct macb *bp)
- 	status = macb_readl(bp, TSR);
- 	macb_writel(bp, TSR, status);
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index b80e06e..91ddfd6 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -65,10 +65,6 @@ static struct acpi_scan_handler pci_root_handler = {
+ 	.detach = acpi_pci_root_remove,
+ };
  
--	macb_writel(bp, ISR, MACB_BIT(TCOMP));
-+	if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
-+		macb_writel(bp, ISR, MACB_BIT(TCOMP));
+-/* Lock to protect both acpi_pci_roots lists */
+-static DEFINE_MUTEX(acpi_pci_root_lock);
+-static LIST_HEAD(acpi_pci_roots);
+-
+ static DEFINE_MUTEX(osc_lock);
  
- 	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
- 		(unsigned long)status);
-@@ -738,7 +739,8 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
- 			 * now.
- 			 */
- 			macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
--			macb_writel(bp, ISR, MACB_BIT(RCOMP));
-+			if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
-+				macb_writel(bp, ISR, MACB_BIT(RCOMP));
- 
- 			if (napi_schedule_prep(&bp->napi)) {
- 				netdev_vdbg(bp->dev, "scheduling RX softirq\n");
-@@ -1062,6 +1064,17 @@ static void macb_configure_dma(struct macb *bp)
+ /**
+@@ -423,7 +419,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 		}
  	}
+ 
+-	INIT_LIST_HEAD(&root->node);
+ 	root->device = device;
+ 	root->segment = segment & 0xFFFF;
+ 	strcpy(acpi_device_name(device), ACPI_PCI_ROOT_DEVICE_NAME);
+@@ -501,10 +496,6 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	 * TBD: Need PCI interface for enumeration/configuration of roots.
+ 	 */
+ 
+-	mutex_lock(&acpi_pci_root_lock);
+-	list_add_tail(&root->node, &acpi_pci_roots);
+-	mutex_unlock(&acpi_pci_root_lock);
+-
+ 	/*
+ 	 * Scan the Root Bridge
+ 	 * --------------------
+@@ -518,7 +509,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 			    "Bus %04x:%02x not present in PCI namespace\n",
+ 			    root->segment, (unsigned int)root->secondary.start);
+ 		result = -ENODEV;
+-		goto out_del_root;
++		goto end;
+ 	}
+ 
+ 	/* ASPM setting */
+@@ -538,20 +529,13 @@ static int acpi_pci_root_add(struct acpi_device *device,
+ 	if (system_state != SYSTEM_BOOTING) {
+ 		pcibios_resource_survey_bus(root->bus);
+ 		pci_assign_unassigned_bus_resources(root->bus);
+-	}
+-
+-	/* need to after hot-added ioapic is registered */
+-	if (system_state != SYSTEM_BOOTING)
++		/* need to after hot-added ioapic is registered */
+ 		pci_enable_bridges(root->bus);
++	}
+ 
+ 	pci_bus_add_devices(root->bus);
+ 	return 1;
+ 
+-out_del_root:
+-	mutex_lock(&acpi_pci_root_lock);
+-	list_del(&root->node);
+-	mutex_unlock(&acpi_pci_root_lock);
+-
+ end:
+ 	kfree(root);
+ 	return result;
+@@ -568,9 +552,6 @@ static void acpi_pci_root_remove(struct acpi_device *device)
+ 
+ 	pci_remove_root_bus(root->bus);
+ 
+-	mutex_lock(&acpi_pci_root_lock);
+-	list_del(&root->node);
+-	mutex_unlock(&acpi_pci_root_lock);
+ 	kfree(root);
  }
  
-+/*
-+ * Configure peripheral capacities according to integration options used
-+ */
-+static void macb_configure_caps(struct macb *bp)
-+{
-+	if (macb_is_gem(bp)) {
-+		if (GEM_BF(IRQCOR, gem_readl(bp, DCFG1)) == 0)
-+			bp->caps |= MACB_CAPS_ISR_CLEAR_ON_WRITE;
-+	}
-+}
-+
- static void macb_init_hw(struct macb *bp)
- {
- 	u32 config;
-@@ -1084,6 +1097,7 @@ static void macb_init_hw(struct macb *bp)
- 	bp->duplex = DUPLEX_HALF;
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 22ba56e..4eb9a88 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -447,7 +447,6 @@ int register_acpi_bus_type(struct acpi_bus_type *);
+ int unregister_acpi_bus_type(struct acpi_bus_type *);
  
- 	macb_configure_dma(bp);
-+	macb_configure_caps(bp);
- 
- 	/* Initialize TX and RX buffers */
- 	macb_writel(bp, RBQP, bp->rx_ring_dma);
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 993d703..548c0ec 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -300,6 +300,8 @@
- #define MACB_REV_SIZE				16
- 
- /* Bitfields in DCFG1. */
-+#define GEM_IRQCOR_OFFSET			23
-+#define GEM_IRQCOR_SIZE				1
- #define GEM_DBWDEF_OFFSET			25
- #define GEM_DBWDEF_SIZE				3
- 
-@@ -323,6 +325,9 @@
- #define MACB_MAN_READ				2
- #define MACB_MAN_CODE				2
- 
-+/* Capability mask bits */
-+#define MACB_CAPS_ISR_CLEAR_ON_WRITE		0x1
-+
- /* Bit manipulation macros */
- #define MACB_BIT(name)					\
- 	(1 << MACB_##name##_OFFSET)
-@@ -574,6 +579,8 @@ struct macb {
- 	unsigned int 		speed;
- 	unsigned int 		duplex;
- 
-+	u32			caps;
-+
- 	phy_interface_t		phy_interface;
- 
- 	/* AT91RM9200 transmit */
+ struct acpi_pci_root {
+-	struct list_head node;
+ 	struct acpi_device * device;
+ 	struct pci_bus *bus;
+ 	u16 segment;
 -- 
-1.8.0
+1.8.1.2
 
