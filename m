@@ -1,137 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab3ENOtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:49:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55085 "EHLO mx1.redhat.com"
+	id S932320Ab3ENOt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:49:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25274 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932361Ab3ENOto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:49:44 -0400
-From: Igor Mammedov <imammedo@redhat.com>
+	id S932215Ab3ENOtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:49:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
+   d="scan'208";a="337416037"
+From: Imre Deak <imre.deak@intel.com>
 To: linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, chuck.anderson@oracle.com
-Subject: [PATCH 2/2] cpu: make sure that cpu/online file created before KOBJ_ADD is emitted
-Date: Tue, 14 May 2013 16:46:07 +0200
-Message-Id: <1368542767-2126-3-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
-References: <1368542767-2126-1-git-send-email-imammedo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jon Maloy <jon.maloy@ericsson.com>,
+        Allan Stephens <allan.stephens@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        tipc-discussion@lists.sourceforge.net
+Subject: [PATCH v2 7/8] net/tipc: take msecs_to_jiffies_timeout into use
+Date: Tue, 14 May 2013 17:48:37 +0300
+Message-Id: <1368542918-8861-8-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
+References: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
+In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It fixes race between udev and hotplugged CPU registration by defining
-"online" attribute statically, so that device_add() would create it
-before notifying udev about new CPU.
+Use msecs_to_jiffies_timeout instead of open-coding the same.
 
-Original issue report is at https://lkml.org/lkml/2012/4/30/198
-"
-> On Mon, Apr 30, 2012 at 11:36:23AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Hey Greg,
-> >
-> > Hoping you can help with some guidance on how to fix this.
-> >
-> > The issue is with CPU hotplug is that when a CPU goes up
-> > it calls 'arch_register_cpu' which eventually calls
-> > register_cpu. That function does these two things:
-> >
-> > 251         error = device_register(&cpu->dev);
-> > 252         if (!error && cpu->hotpluggable)
-> > 253                 register_cpu_control(cpu);
-> >
-> > and the device_register creates a nice little SysFS directory:
-> >
-> > /sys/devices/system/cpu/cpu2/ which at line 251 has the 'add' attribute
-> > but no 'online' attribute. udev then tries to echo 1 to the 'online'
-> > and it we get:
-> > udevd-work[2421]: error opening ATTR{/sys/devices/system/cpu/cpu2/online} for writing: No such file or directory
-> >
-> > Line 253 creates said 'online' and at that time udev [or the system admin]
-> > can write 1 to 'online' and the CPU goes up.
-> >
-> > So .. any thoughts? Is there some way to inhibit from uevent being sent
-> > until line 253 has run?
-"
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
 ---
- drivers/base/cpu.c |   34 +++++++++++++++++++++-------------
- 1 files changed, 21 insertions(+), 13 deletions(-)
+ net/tipc/core.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 8f9e264..c377673 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -85,18 +85,21 @@ static ssize_t __ref store_online(struct device *dev,
- }
- static DEVICE_ATTR(online, 0644, show_online, store_online);
- 
--static void __cpuinit register_cpu_control(struct cpu *cpu)
--{
--	device_create_file(&cpu->dev, &dev_attr_online);
--}
-+static struct attribute *hotplug_cpu_attrs[] = {
-+	&dev_attr_online.attr,
-+	NULL
-+};
-+
-+static struct attribute_group hotplug_cpu_attr_group = {
-+	.attrs = hotplug_cpu_attrs,
-+};
-+
- void unregister_cpu(struct cpu *cpu)
- {
- 	int logical_cpu = cpu->dev.id;
- 
- 	unregister_cpu_under_node(logical_cpu, cpu_to_node(logical_cpu));
- 
--	device_remove_file(&cpu->dev, &dev_attr_online);
--
- 	device_unregister(&cpu->dev);
- 	per_cpu(cpu_sys_devices, logical_cpu) = NULL;
- 	return;
-@@ -122,11 +125,6 @@ static ssize_t cpu_release_store(struct device *dev,
- static DEVICE_ATTR(probe, S_IWUSR, NULL, cpu_probe_store);
- static DEVICE_ATTR(release, S_IWUSR, NULL, cpu_release_store);
- #endif /* CONFIG_ARCH_CPU_PROBE_RELEASE */
--
--#else /* ... !CONFIG_HOTPLUG_CPU */
--static inline void register_cpu_control(struct cpu *cpu)
--{
--}
- #endif /* CONFIG_HOTPLUG_CPU */
- 
- #ifdef CONFIG_KEXEC
-@@ -183,6 +181,16 @@ static const struct attribute_group *common_cpu_attr_groups[] = {
- 	NULL
- };
- 
-+static const struct attribute_group *hotplugable_cpu_attr_groups[] = {
-+#ifdef CONFIG_KEXEC
-+	&crash_note_cpu_attr_group,
-+#endif
-+#ifdef CONFIG_HOTPLUG_CPU
-+	&hotplug_cpu_attr_group,
-+#endif
-+	NULL
-+};
-+
- /*
-  * Print cpu online, possible, present, and system maps
+diff --git a/net/tipc/core.h b/net/tipc/core.h
+index 0207db0..b24e2fc 100644
+--- a/net/tipc/core.h
++++ b/net/tipc/core.h
+@@ -133,7 +133,7 @@ static inline void k_init_timer(struct timer_list *timer, Handler routine,
   */
-@@ -298,9 +306,9 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
- 	cpu->dev.bus->uevent = arch_cpu_uevent;
- #endif
- 	cpu->dev.groups = common_cpu_attr_groups;
-+	if (cpu->hotpluggable)
-+		cpu->dev.groups = hotplugable_cpu_attr_groups;
- 	error = device_register(&cpu->dev);
--	if (!error && cpu->hotpluggable)
--		register_cpu_control(cpu);
- 	if (!error)
- 		per_cpu(cpu_sys_devices, num) = &cpu->dev;
- 	if (!error)
+ static inline void k_start_timer(struct timer_list *timer, unsigned long msec)
+ {
+-	mod_timer(timer, jiffies + msecs_to_jiffies(msec) + 1);
++	mod_timer(timer, jiffies + msecs_to_jiffies_timeout(msec));
+ }
+ 
+ /**
 -- 
-1.7.1
+1.7.10.4
 
