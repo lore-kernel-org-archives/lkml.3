@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3ENSUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:20:53 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:63274 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab3ENSUu (ORCPT
+	id S1758050Ab3ENSVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:21:10 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:38448 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757923Ab3ENSUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:20:50 -0400
+	Tue, 14 May 2013 14:20:55 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: bob.liu@oracle.com, dan.magenheimer@oracle.com,
         linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         linux-mm@kvack.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/9] xen/tmem: s/disable_// and change the logic.
-Date: Tue, 14 May 2013 14:09:22 -0400
-Message-Id: <1368554966-30469-6-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 9/9] xen/tmem: Don't use self[ballooning|shrinking] if frontswap is off.
+Date: Tue, 14 May 2013 14:09:26 -0400
+Message-Id: <1368554966-30469-10-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
 References: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,98 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variety of disable_[cleancache|frontswap|selfshrinking] are
-making this a bit complex. Just remove the "disable_" part and
-change the logic around for the "nofrontswap" and "nocleancache"
-parameters.
+There is no point. We would just squeeze the guest to put more and
+more pages in the swap disk without any purpose.
+
+The only time it makes sense to use the selfballooning and shrinking
+is when frontswap is being utilized.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/tmem.c |   27 +++++++++++++--------------
- 1 files changed, 13 insertions(+), 14 deletions(-)
+ Documentation/kernel-parameters.txt |    3 ++-
+ drivers/xen/tmem.c                  |    8 ++++++++
+ drivers/xen/xen-selfballoon.c       |   15 ++++++---------
+ 3 files changed, 16 insertions(+), 10 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 3de01ed..6e3b18a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3014,7 +3014,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	tmem.frontswap=0|1 [KNL, XEN]
+ 			Default is on (1). Disable the usage of the frontswap
+-			API to send swap pages to the hypervisor.
++			API to send swap pages to the hypervisor. If disabled
++			the selfballooning and selfshrinking are force disabled.
+ 
+ 	tmem.selfballooning=0|1 [KNL, XEN]
+ 			Default is on (1). Disable the driving of swap pages
 diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
-index 30bf974..411c7e3 100644
+index c1df0ff..18e8bd8 100644
 --- a/drivers/xen/tmem.c
 +++ b/drivers/xen/tmem.c
-@@ -32,15 +32,15 @@ __setup("tmem", enable_tmem);
- #endif
- 
- #ifdef CONFIG_CLEANCACHE
--static bool disable_cleancache __read_mostly;
--static bool disable_selfballooning __read_mostly;
-+static bool cleancache __read_mostly = true;
-+static bool selfballooning __read_mostly = true;
- #ifdef CONFIG_XEN_TMEM_MODULE
--module_param(disable_cleancache, bool, S_IRUGO);
--module_param(disable_selfballooning, bool, S_IRUGO);
-+module_param(cleancache, bool, S_IRUGO);
-+module_param(selfballooning, bool, S_IRUGO);
- #else
- static int __init no_cleancache(char *s)
- {
--	disable_cleancache = true;
-+	cleancache = false;
- 	return 1;
- }
- __setup("nocleancache", no_cleancache);
-@@ -48,13 +48,13 @@ __setup("nocleancache", no_cleancache);
- #endif /* CONFIG_CLEANCACHE */
- 
- #ifdef CONFIG_FRONTSWAP
--static bool disable_frontswap __read_mostly;
-+static bool frontswap __read_mostly = true;
- #ifdef CONFIG_XEN_TMEM_MODULE
--module_param(disable_frontswap, bool, S_IRUGO);
-+module_param(frontswap, bool, S_IRUGO);
- #else
- static int __init no_frontswap(char *s)
- {
--	disable_frontswap = true;
-+	frontswap = false;
- 	return 1;
- }
- __setup("nofrontswap", no_frontswap);
-@@ -62,9 +62,9 @@ __setup("nofrontswap", no_frontswap);
- #endif /* CONFIG_FRONTSWAP */
- 
- #ifdef CONFIG_XEN_SELFBALLOONING
--static bool disable_frontswap_selfshrinking __read_mostly;
-+static bool frontswap_selfshrinking __read_mostly = true;
- #ifdef CONFIG_XEN_TMEM_MODULE
--module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
-+module_param(frontswap_selfshrinking, bool, S_IRUGO);
- #endif
- #endif /* CONFIG_XEN_SELFBALLOONING */
- 
-@@ -395,7 +395,7 @@ static int xen_tmem_init(void)
- 	if (!xen_domain())
- 		return 0;
- #ifdef CONFIG_FRONTSWAP
--	if (tmem_enabled && !disable_frontswap) {
-+	if (tmem_enabled && frontswap) {
- 		char *s = "";
- 		struct frontswap_ops *old_ops =
- 			frontswap_register_ops(&tmem_frontswap_ops);
-@@ -412,7 +412,7 @@ static int xen_tmem_init(void)
- #endif
- #ifdef CONFIG_CLEANCACHE
- 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
--	if (tmem_enabled && !disable_cleancache) {
-+	if (tmem_enabled && cleancache) {
- 		char *s = "";
- 		struct cleancache_ops *old_ops =
- 			cleancache_register_ops(&tmem_cleancache_ops);
-@@ -423,8 +423,7 @@ static int xen_tmem_init(void)
+@@ -403,6 +403,14 @@ static int xen_tmem_init(void)
  	}
  #endif
  #ifdef CONFIG_XEN_SELFBALLOONING
--	xen_selfballoon_init(!disable_selfballooning,
--				!disable_frontswap_selfshrinking);
-+	xen_selfballoon_init(selfballooning, frontswap_selfshrinking);
++	/*
++	 * There is no point of driving pages to the swap system if they
++	 * aren't going anywhere in tmem universe.
++	 */
++	if (!frontswap) {
++		selfshrinking = false;
++		selfballooning = false;
++	}
+ 	xen_selfballoon_init(selfballooning, selfshrinking);
  #endif
  	return 0;
- }
+diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
+index 5d637e2..f70984a8 100644
+--- a/drivers/xen/xen-selfballoon.c
++++ b/drivers/xen/xen-selfballoon.c
+@@ -53,15 +53,12 @@
+  * System configuration note: Selfballooning should not be enabled on
+  * systems without a sufficiently large swap device configured; for best
+  * results, it is recommended that total swap be increased by the size
+- * of the guest memory.  Also, while technically not required to be
+- * configured, it is highly recommended that frontswap also be configured
+- * and enabled when selfballooning is running.  So, selfballooning
+- * is disabled by default if frontswap is not configured and can only
+- * be enabled with the "tmem.selfballooning=1" kernel boot option; similarly
+- * selfballooning is enabled by default if frontswap is configured and
+- * can be disabled with the "tmem.selfballooning=0" kernel boot option.  Finally,
+- * when frontswap is configured,frontswap-selfshrinking can be disabled
+- * with the "tmem.selfshrink=0" kernel boot option.
++ * of the guest memory. Note, that selfballooning should be disabled by default
++ * if frontswap is not configured.  Similarly selfballooning should be enabled
++ * by default if frontswap is configured and can be disabled with the
++ * "tmem.selfballooning=0" kernel boot option.  Finally, when frontswap is
++ * configured, frontswap-selfshrinking can be disabled  with the
++ * "tmem.selfshrink=0" kernel boot option.
+  *
+  * Selfballooning is disallowed in domain0 and force-disabled.
+  *
 -- 
 1.7.7.6
 
