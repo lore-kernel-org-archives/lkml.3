@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab3ENPjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:39:32 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48569 "EHLO
+	id S932439Ab3ENPkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:40:25 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48540 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab3ENPj3 (ORCPT
+	with ESMTP id S932185Ab3ENPj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:39:29 -0400
+	Tue, 14 May 2013 11:39:27 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Michal Simek <michal.simek@xilinx.com>,
@@ -23,9 +23,9 @@ To: Maxime Ripard <maxime.ripard@free-electrons.com>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 19/20] ARM: virt: Remove init_irq declaration in machine description
-Date: Tue, 14 May 2013 17:38:52 +0200
-Message-Id: <1368545933-7430-20-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 17/20] ARM: sirf: Remove init_irq declaration in machine description
+Date: Tue, 14 May 2013 17:38:50 +0200
+Message-Id: <1368545933-7430-18-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,33 +36,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 specified") removed the need to explictly setup the init_irq field in
 the machine description when using only irqchip_init. Remove that
-declaration for virt as well.
+declaration for sirf as well.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Barry Song <Baohua.Song@csr.com>
 ---
- arch/arm/mach-virt/virt.c | 2 --
- 1 file changed, 2 deletions(-)
+ arch/arm/mach-prima2/common.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/arm/mach-virt/virt.c b/arch/arm/mach-virt/virt.c
-index 061f283..bdf05f4 100644
---- a/arch/arm/mach-virt/virt.c
-+++ b/arch/arm/mach-virt/virt.c
-@@ -18,7 +18,6 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- 
+diff --git a/arch/arm/mach-prima2/common.c b/arch/arm/mach-prima2/common.c
+index 4f94cd8..a9f475c 100644
+--- a/arch/arm/mach-prima2/common.c
++++ b/arch/arm/mach-prima2/common.c
+@@ -9,7 +9,6 @@
+ #include <linux/clocksource.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
 -#include <linux/irqchip.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/smp.h>
-@@ -39,7 +38,6 @@ static const char *virt_dt_match[] = {
- extern struct smp_operations virt_smp_ops;
- 
- DT_MACHINE_START(VIRT, "Dummy Virtual Machine")
+ #include <asm/sizes.h>
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -55,7 +54,6 @@ DT_MACHINE_START(ATLAS6_DT, "Generic ATLAS6 (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.nr_irqs	= 128,
+ 	.map_io         = sirfsoc_map_io,
 -	.init_irq	= irqchip_init,
- 	.init_machine	= virt_init,
- 	.smp		= smp_ops(virt_smp_ops),
- 	.dt_compat	= virt_dt_match,
+ 	.init_time	= sirfsoc_init_time,
+ 	.init_machine	= sirfsoc_mach_init,
+ 	.init_late	= sirfsoc_init_late,
+@@ -74,7 +72,6 @@ DT_MACHINE_START(PRIMA2_DT, "Generic PRIMA2 (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.nr_irqs	= 128,
+ 	.map_io         = sirfsoc_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= sirfsoc_init_time,
+ 	.dma_zone_size	= SZ_256M,
+ 	.init_machine	= sirfsoc_mach_init,
+@@ -94,7 +91,6 @@ DT_MACHINE_START(MARCO_DT, "Generic MARCO (Flattened Device Tree)")
+ 	/* Maintainer: Barry Song <baohua.song@csr.com> */
+ 	.smp            = smp_ops(sirfsoc_smp_ops),
+ 	.map_io         = sirfsoc_map_io,
+-	.init_irq	= irqchip_init,
+ 	.init_time	= sirfsoc_init_time,
+ 	.init_machine	= sirfsoc_mach_init,
+ 	.init_late	= sirfsoc_init_late,
 -- 
 1.8.1.2
 
