@@ -1,58 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab3ENMqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:46:53 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:39592 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab3ENMqu (ORCPT
+	id S1757371Ab3ENMqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:46:52 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47257 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3ENMqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:46:50 -0400
-Date: Tue, 14 May 2013 14:46:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC GIT PULL] sched; Fix a few missing rq clock updates
-Message-ID: <20130514124642.GA19321@somewhere>
-References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
- <20130514115733.GG15942@dyad.programming.kicks-ass.net>
+	Tue, 14 May 2013 08:46:49 -0400
+Message-ID: <51923232.2010304@gmail.com>
+Date: Tue, 14 May 2013 20:46:42 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514115733.GG15942@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2, part 1 6/9] ACPI, pci_root: use acpi_handle_print()
+ and pr_xxx() to print messages
+References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-7-git-send-email-jiang.liu@huawei.com> <5034672.tljvClO7po@vostro.rjw.lan>
+In-Reply-To: <5034672.tljvClO7po@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 01:57:33PM +0200, Peter Zijlstra wrote:
-> On Fri, Apr 12, 2013 at 01:50:57AM +0200, Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> > So I revisited the rq clock series I had for dynticks. The patches
-> > actually were about upstream issues so I refactored the fixes
-> > under that angle and gave up with the wrong asumption that rq
-> > clock relies on the tick for its updates.
-> > 
-> > Patches 1-4 fix some missing updates. Additionally I removed
-> > 2 of these updates from the previous set:
-> > 
-> > * No need to update the rq clock on idle_balance() because it should
-> > follow a call to deactivate_task() (unless TIF_NEED_RESCHED is set
-> > on idle without new task on the runqueue, not sure we want to cover that).
-> > 
-> > * No need to update for try_to_wake_up_local() -> ttwu_do_wakeup() -> check_preempt_curr()
-> >   as it's following deactivate_task().
-> > 
-> > Patch 5 brings accessors that will be necessary to settle an rq clock
-> > debugging engine. What remains is to tag scheduler's entry/exit points
-> > and report missing or redundant update_rq_clock() before calls to
-> > rq_clock() and rq_clock_task().
-> 
-> Just noticed this queue was still sitting in the INBOX, I took it and will
-> soon-ish hand to Ingo.
+On 05/14/2013 07:27 AM, Rafael J. Wysocki wrote:
+> On Tuesday, May 14, 2013 12:08:30 AM Jiang Liu wrote:
+>> Use acpi_handle_print() and pr_xxx() to print messages in pci_root.c.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+>> Cc: linux-acpi@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/acpi/pci_root.c | 71 ++++++++++++++++++++++---------------------------
+>>   1 file changed, 32 insertions(+), 39 deletions(-)
+>>
+>> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+>> index 91ddfd6..9ced5c3 100644
+>> --- a/drivers/acpi/pci_root.c
+>> +++ b/drivers/acpi/pci_root.c
+>> @@ -379,23 +379,23 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   	struct acpi_pci_root *root;
+>>   	u32 flags, base_flags;
+>>   	bool is_osc_granted = false;
+>> +	acpi_handle hdl = device->handle;
+> The usual way is to call it 'handle'.  Any reason why not to do it here
+Hi Rafael,
+     Just to avoid splitting some code into two lines, I could to use 
+"handle"
+if preferred.
+>>   	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
+>>   	if (!root)
+>>   		return -ENOMEM;
+>>   
+>>   	segment = 0;
+>> -	status = acpi_evaluate_integer(device->handle, METHOD_NAME__SEG, NULL,
+>> -				       &segment);
+>> +	status = acpi_evaluate_integer(hdl, METHOD_NAME__SEG, NULL, &segment);
+>>   	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
+>> -		printk(KERN_ERR PREFIX "can't evaluate _SEG\n");
+>> +		acpi_handle_err(hdl, "can't evaluate _SEG\n");
+>>   		result = -ENODEV;
+>>   		goto end;
+>>   	}
+>>   
+>>   	/* Check _CRS first, then _BBN.  If no _BBN, default to zero. */
+>>   	root->secondary.flags = IORESOURCE_BUS;
+>> -	status = try_get_root_bridge_busnr(device->handle, &root->secondary);
+>> +	status = try_get_root_bridge_busnr(hdl, &root->secondary);
+>>   	if (ACPI_FAILURE(status)) {
+>>   		/*
+>>   		 * We need both the start and end of the downstream bus range
+>> @@ -404,16 +404,16 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   		 * can do is assume [_BBN-0xFF] or [0-0xFF].
+>>   		 */
+>>   		root->secondary.end = 0xFF;
+>> -		printk(KERN_WARNING FW_BUG PREFIX
+>> -		       "no secondary bus range in _CRS\n");
+>> -		status = acpi_evaluate_integer(device->handle, METHOD_NAME__BBN,
+>> +		acpi_handle_warn(hdl,
+>> +				 FW_BUG "no secondary bus range in _CRS\n");
+>> +		status = acpi_evaluate_integer(hdl, METHOD_NAME__BBN,
+>>   					       NULL, &bus);
+>>   		if (ACPI_SUCCESS(status))
+>>   			root->secondary.start = bus;
+>>   		else if (status == AE_NOT_FOUND)
+>>   			root->secondary.start = 0;
+>>   		else {
+>> -			printk(KERN_ERR PREFIX "can't evaluate _BBN\n");
+>> +			acpi_handle_err(hdl, "can't evaluate _BBN\n");
+>>   			result = -ENODEV;
+>>   			goto end;
+>>   		}
+>> @@ -425,11 +425,11 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>>   	device->driver_data = root;
+>>   
+>> -	printk(KERN_INFO PREFIX "%s [%s] (domain %04x %pR)\n",
+>> +	pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
+>>   	       acpi_device_name(device), acpi_device_bid(device),
+>>   	       root->segment, &root->secondary);
+>>   
+>> -	root->mcfg_addr = acpi_pci_root_get_mcfg_addr(device->handle);
+>> +	root->mcfg_addr = acpi_pci_root_get_mcfg_addr(hdl);
+>>   
+>>   	/*
+>>   	 * All supported architectures that use ACPI have support for
+>> @@ -473,7 +473,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   		dev_info(&device->dev,
+>>   			"Requesting ACPI _OSC control (0x%02x)\n", flags);
+>>   
+>> -		status = acpi_pci_osc_control_set(device->handle, &flags,
+>> +		status = acpi_pci_osc_control_set(hdl, &flags,
+>>   				       OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
+>>   		if (ACPI_SUCCESS(status)) {
+>>   			is_osc_granted = true;
+>> @@ -505,9 +505,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   	 */
+>>   	root->bus = pci_acpi_scan_root(root);
+>>   	if (!root->bus) {
+>> -		printk(KERN_ERR PREFIX
+>> -			    "Bus %04x:%02x not present in PCI namespace\n",
+>> -			    root->segment, (unsigned int)root->secondary.start);
+>> +		acpi_handle_err(hdl,
+>> +			"Bus %04x:%02x not present in PCI namespace\n",
+>> +			root->segment, (unsigned int)root->secondary.start);
+>>   		result = -ENODEV;
+>>   		goto end;
+>>   	}
+>> @@ -517,8 +517,8 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>>   		if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM)
+>>   			pcie_clear_aspm(root->bus);
+>>   	} else {
+>> -		pr_info("ACPI _OSC control for PCIe not granted, "
+>> -			"disabling ASPM\n");
+>> +		acpi_handle_info(hdl,
+>> +			"ACPI _OSC control for PCIe not granted, disabling ASPM\n");
+>>   		pcie_no_aspm();
+>>   	}
+>>   
+>> @@ -571,12 +571,13 @@ static void handle_root_bridge_insertion(acpi_handle handle)
+>>   	struct acpi_device *device;
+>>   
+>>   	if (!acpi_bus_get_device(handle, &device)) {
+>> -		printk(KERN_DEBUG "acpi device exists...\n");
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +				   "acpi device exists...\n");
+> Do we have acpi_handle_dbg()?  If so, why don't you use it here? (And below.)
+> If not, why don't you add it and use it here (and below)?
+acpi_handle_dbg() only generates message if CONFIG_DEBUG is enabled,
+so use pci_handle_printk(KERN_DEBUG, xxx) to keep original behavior.
+Thanks,
+Gerry
+>
+>>   		return;
+>>   	}
+>>   
+>>   	if (acpi_bus_scan(handle))
+>> -		printk(KERN_ERR "cannot add bridge to acpi list\n");
+>> +		acpi_handle_err(handle, "cannot add bridge to acpi list\n");
+>>   }
+>>   
+>>   static void handle_root_bridge_removal(struct acpi_device *device)
+>> @@ -602,7 +603,6 @@ static void handle_root_bridge_removal(struct acpi_device *device)
+>>   static void _handle_hotplug_event_root(struct work_struct *work)
+>>   {
+>>   	struct acpi_pci_root *root;
+>> -	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER };
+>>   	struct acpi_hp_work *hp_work;
+>>   	acpi_handle handle;
+>>   	u32 type;
+>> @@ -613,13 +613,11 @@ static void _handle_hotplug_event_root(struct work_struct *work)
+>>   
+>>   	root = acpi_pci_find_root(handle);
+>>   
+>> -	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>> -
+>>   	switch (type) {
+>>   	case ACPI_NOTIFY_BUS_CHECK:
+>>   		/* bus enumerate */
+>> -		printk(KERN_DEBUG "%s: Bus check notify on %s\n", __func__,
+>> -				 (char *)buffer.pointer);
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +				   "Bus check notify on %s\n", __func__);
+>>   		if (!root)
+>>   			handle_root_bridge_insertion(handle);
+>>   
+>> @@ -627,27 +625,26 @@ static void _handle_hotplug_event_root(struct work_struct *work)
+>>   
+>>   	case ACPI_NOTIFY_DEVICE_CHECK:
+>>   		/* device check */
+>> -		printk(KERN_DEBUG "%s: Device check notify on %s\n", __func__,
+>> -				 (char *)buffer.pointer);
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +				   "Device check notify on %s\n", __func__);
+>>   		if (!root)
+>>   			handle_root_bridge_insertion(handle);
+>>   		break;
+>>   
+>>   	case ACPI_NOTIFY_EJECT_REQUEST:
+>>   		/* request device eject */
+>> -		printk(KERN_DEBUG "%s: Device eject notify on %s\n", __func__,
+>> -				 (char *)buffer.pointer);
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +				   "Device eject notify on %s\n", __func__);
+>>   		if (root)
+>>   			handle_root_bridge_removal(root->device);
+>>   		break;
+>>   	default:
+>> -		printk(KERN_WARNING "notify_handler: unknown event type 0x%x for %s\n",
+>> -				 type, (char *)buffer.pointer);
+>> +		acpi_handle_warn(handle,
+>> +			 "notify_handler: unknown event type 0x%xn", type);
+>>   		break;
+>>   	}
+>>   
+>>   	kfree(hp_work); /* allocated in handle_hotplug_event_bridge */
+>> -	kfree(buffer.pointer);
+>>   }
+>>   
+>>   static void handle_hotplug_event_root(acpi_handle handle, u32 type,
+>> @@ -661,9 +658,6 @@ static acpi_status __init
+>>   find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+>>   {
+>>   	acpi_status status;
+>> -	char objname[64];
+>> -	struct acpi_buffer buffer = { .length = sizeof(objname),
+>> -				      .pointer = objname };
+>>   	int *count = (int *)context;
+>>   
+>>   	if (!acpi_is_root_bridge(handle))
+>> @@ -671,16 +665,15 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+>>   
+>>   	(*count)++;
+>>   
+>> -	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+>> -
+>>   	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+>>   					handle_hotplug_event_root, NULL);
+>>   	if (ACPI_FAILURE(status))
+>> -		printk(KERN_DEBUG "acpi root: %s notify handler is not installed, exit status: %u\n",
+>> -				  objname, (unsigned int)status);
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +			"notify handler is not installed, exit status: %u\n",
+>> +			 (unsigned int)status);
+>>   	else
+>> -		printk(KERN_DEBUG "acpi root: %s notify handler is installed\n",
+>> -				 objname);
+>> +		acpi_handle_printk(KERN_DEBUG, handle,
+>> +				   "notify handler is installed\n");
+>>   
+>>   	return AE_OK;
+>>   }
+> Thanks,
+> Rafael
+>
+>
 
-Thanks a lot!
