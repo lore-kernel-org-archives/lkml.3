@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab3ENPtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:49:49 -0400
-Received: from [207.46.163.27] ([207.46.163.27]:35615 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754468Ab3ENPtr (ORCPT
+	id S1758043Ab3ENPu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:50:58 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:61378 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809Ab3ENPu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:49:47 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzbb2dI98dI9371I1432I4015Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2fh95h668h839h947hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh19b6n1155h)
-Date: Tue, 14 May 2013 17:49:08 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 14 May 2013 11:50:56 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/trivial: typo in GEM compatible string
+Date: Tue, 14 May 2013 17:50:54 +0200
+Message-ID: <1368546654-20120-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Christian Daudt <csd@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-sh@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 02/20] ARM: zynq: Remove init_irq declaration in machine
- description
-References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com> <1368545933-7430-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1368545933-7430-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <4e7a6946-b165-4440-9785-e0d538b608e0@CO9EHSMHS013.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 05:38 PM, Maxime Ripard wrote:
-> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
-> specified") removed the need to explictly setup the init_irq field in
-> the machine description when using only irqchip_init. Remove that
-> declaration for zynq as well.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Acked-by: Michal Simek <monstr@monstr.eu>
-> ---
->  arch/arm/mach-zynq/common.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-> index 5bfe703..4c0199b8 100644
-> --- a/arch/arm/mach-zynq/common.c
-> +++ b/arch/arm/mach-zynq/common.c
-> @@ -25,7 +25,6 @@
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/of.h>
-> -#include <linux/irqchip.h>
->  
->  #include <asm/mach/arch.h>
->  #include <asm/mach/map.h>
-> @@ -106,7 +105,6 @@ static const char * const zynq_dt_match[] = {
->  MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
->  	.smp		= smp_ops(zynq_smp_ops),
->  	.map_io		= zynq_map_io,
-> -	.init_irq	= irqchip_init,
->  	.init_machine	= zynq_init_machine,
->  	.init_time	= zynq_timer_init,
->  	.dt_compat	= zynq_dt_match,
-> 
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ Documentation/devicetree/bindings/net/macb.txt | 2 +-
+ arch/arm/boot/dts/sama5d3.dtsi                 | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Subject should contain v2 but anyway I have added it my zynq repo.
-
-Thanks,
-Michal
-
+diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+index 44afa0e..4ff6504 100644
+--- a/Documentation/devicetree/bindings/net/macb.txt
++++ b/Documentation/devicetree/bindings/net/macb.txt
+@@ -4,7 +4,7 @@ Required properties:
+ - compatible: Should be "cdns,[<chip>-]{macb|gem}"
+   Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
+   Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb".
+-  Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
++  Use "cdns,pc302-gem" for Picochip picoXcell pc302 and later devices based on
+   the Cadence GEM, or the generic form: "cdns,gem".
+ - reg: Address and length of the register set for the device
+ - interrupts: Should contain macb interrupt
+diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
+index 2e643ea..5fce96b 100644
+--- a/arch/arm/boot/dts/sama5d3.dtsi
++++ b/arch/arm/boot/dts/sama5d3.dtsi
+@@ -156,7 +156,7 @@
+ 			};
+ 
+ 			macb0: ethernet@f0028000 {
+-				compatible = "cnds,pc302-gem", "cdns,gem";
++				compatible = "cdns,pc302-gem", "cdns,gem";
+ 				reg = <0xf0028000 0x100>;
+ 				interrupts = <34 4 3>;
+ 				pinctrl-names = "default";
+-- 
+1.8.0
 
