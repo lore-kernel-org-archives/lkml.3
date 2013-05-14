@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab3ENQiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:38:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29455 "EHLO mx1.redhat.com"
+	id S932238Ab3ENQmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:42:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38823 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab3ENQh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:37:59 -0400
+	id S1757590Ab3ENQh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:37:58 -0400
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
-        hughd@google.com, lczerner@redhat.com, ceph-devel@vger.kernel.org
-Subject: [PATCH v4 07/20] ceph: use ->invalidatepage() length argument
-Date: Tue, 14 May 2013 18:37:21 +0200
-Message-Id: <1368549454-8930-8-git-send-email-lczerner@redhat.com>
+        hughd@google.com, lczerner@redhat.com, xfs@oss.sgi.com
+Subject: [PATCH v4 05/20] xfs: use ->invalidatepage() length argument
+Date: Tue, 14 May 2013 18:37:19 +0200
+Message-Id: <1368549454-8930-6-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
 References: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,46 +21,106 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in ceph_invalidatepage().
+use of it in xfs_vm_invalidatepage()
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Acked-by: Sage Weil <sage@inktank.com>
-Cc: ceph-devel@vger.kernel.org
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Cc: xfs@oss.sgi.com
 ---
- fs/ceph/addr.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+v4: use xfs_page_class instead of separate tracepoint
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 168a35a..d953afd 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -164,20 +164,20 @@ static void ceph_invalidatepage(struct page *page, unsigned int offset,
- 	if (!PageDirty(page))
- 		pr_err("%p invalidatepage %p page not dirty\n", inode, page);
- 
--	if (offset == 0)
-+	if (offset == 0 && length == PAGE_CACHE_SIZE)
- 		ClearPageChecked(page);
- 
- 	ci = ceph_inode(inode);
--	if (offset == 0) {
--		dout("%p invalidatepage %p idx %lu full dirty page %u\n",
--		     inode, page, page->index, offset);
-+	if (offset == 0 && length == PAGE_CACHE_SIZE) {
-+		dout("%p invalidatepage %p idx %lu full dirty page\n",
-+		     inode, page, page->index);
- 		ceph_put_wrbuffer_cap_refs(ci, 1, snapc);
- 		ceph_put_snap_context(snapc);
- 		page->private = 0;
- 		ClearPagePrivate(page);
- 	} else {
--		dout("%p invalidatepage %p idx %lu partial dirty page\n",
--		     inode, page, page->index);
-+		dout("%p invalidatepage %p idx %lu partial dirty page %u(%u)\n",
-+		     inode, page, page->index, offset, length);
- 	}
+ fs/xfs/xfs_aops.c  |    9 +++++----
+ fs/xfs/xfs_trace.h |   15 ++++++++++-----
+ 2 files changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+index e426796..55c85ec 100644
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -826,8 +826,9 @@ xfs_vm_invalidatepage(
+ 	unsigned int		offset,
+ 	unsigned int		length)
+ {
+-	trace_xfs_invalidatepage(page->mapping->host, page, offset);
+-	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
++	trace_xfs_invalidatepage(page->mapping->host, page, offset,
++				 length);
++	block_invalidatepage(page, offset, length);
  }
  
+ /*
+@@ -921,7 +922,7 @@ xfs_vm_writepage(
+ 	int			count = 0;
+ 	int			nonblocking = 0;
+ 
+-	trace_xfs_writepage(inode, page, 0);
++	trace_xfs_writepage(inode, page, 0, 0);
+ 
+ 	ASSERT(page_has_buffers(page));
+ 
+@@ -1152,7 +1153,7 @@ xfs_vm_releasepage(
+ {
+ 	int			delalloc, unwritten;
+ 
+-	trace_xfs_releasepage(page->mapping->host, page, 0);
++	trace_xfs_releasepage(page->mapping->host, page, 0, 0);
+ 
+ 	xfs_count_page_state(page, &delalloc, &unwritten);
+ 
+diff --git a/fs/xfs/xfs_trace.h b/fs/xfs/xfs_trace.h
+index 16a8129..7f075ed 100644
+--- a/fs/xfs/xfs_trace.h
++++ b/fs/xfs/xfs_trace.h
+@@ -950,14 +950,16 @@ DEFINE_RW_EVENT(xfs_file_splice_read);
+ DEFINE_RW_EVENT(xfs_file_splice_write);
+ 
+ DECLARE_EVENT_CLASS(xfs_page_class,
+-	TP_PROTO(struct inode *inode, struct page *page, unsigned long off),
+-	TP_ARGS(inode, page, off),
++	TP_PROTO(struct inode *inode, struct page *page, unsigned long off,
++		 unsigned int len),
++	TP_ARGS(inode, page, off, len),
+ 	TP_STRUCT__entry(
+ 		__field(dev_t, dev)
+ 		__field(xfs_ino_t, ino)
+ 		__field(pgoff_t, pgoff)
+ 		__field(loff_t, size)
+ 		__field(unsigned long, offset)
++		__field(unsigned int, length)
+ 		__field(int, delalloc)
+ 		__field(int, unwritten)
+ 	),
+@@ -971,24 +973,27 @@ DECLARE_EVENT_CLASS(xfs_page_class,
+ 		__entry->pgoff = page_offset(page);
+ 		__entry->size = i_size_read(inode);
+ 		__entry->offset = off;
++		__entry->length = len;
+ 		__entry->delalloc = delalloc;
+ 		__entry->unwritten = unwritten;
+ 	),
+ 	TP_printk("dev %d:%d ino 0x%llx pgoff 0x%lx size 0x%llx offset %lx "
+-		  "delalloc %d unwritten %d",
++		  "length %x delalloc %d unwritten %d",
+ 		  MAJOR(__entry->dev), MINOR(__entry->dev),
+ 		  __entry->ino,
+ 		  __entry->pgoff,
+ 		  __entry->size,
+ 		  __entry->offset,
++		  __entry->length,
+ 		  __entry->delalloc,
+ 		  __entry->unwritten)
+ )
+ 
+ #define DEFINE_PAGE_EVENT(name)		\
+ DEFINE_EVENT(xfs_page_class, name,	\
+-	TP_PROTO(struct inode *inode, struct page *page, unsigned long off),	\
+-	TP_ARGS(inode, page, off))
++	TP_PROTO(struct inode *inode, struct page *page, unsigned long off, \
++		 unsigned int len),	\
++	TP_ARGS(inode, page, off, len))
+ DEFINE_PAGE_EVENT(xfs_writepage);
+ DEFINE_PAGE_EVENT(xfs_releasepage);
+ DEFINE_PAGE_EVENT(xfs_invalidatepage);
 -- 
 1.7.7.6
 
