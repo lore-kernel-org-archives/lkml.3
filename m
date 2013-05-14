@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab3ENPR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:17:59 -0400
-Received: from mail-gg0-f182.google.com ([209.85.161.182]:42618 "EHLO
-	mail-gg0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab3ENPR5 (ORCPT
+	id S1757954Ab3ENPTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:19:05 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:62442 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab3ENPTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:17:57 -0400
-Date: Tue, 14 May 2013 08:17:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/workqueue.c: better to free related resources
- when failure occurs in wq_numa_init()
-Message-ID: <20130514151752.GB6795@mtj.dyndns.org>
-References: <51922D30.8000809@asianux.com>
+	Tue, 14 May 2013 11:19:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51922D30.8000809@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CF9D1877D81D214CB0CA0669EFAE020C25AB3277@CMEXMB1.ad.emulex.com>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+	<1368498506-25857-7-git-send-email-yinghai@kernel.org>
+	<CF9D1877D81D214CB0CA0669EFAE020C25AB3277@CMEXMB1.ad.emulex.com>
+Date: Tue, 14 May 2013 08:19:02 -0700
+X-Google-Sender-Auth: pL3PZEKLkk3-WIqTGRO8MJ6uP_I
+Message-ID: <CAE9FiQWiHBvB4Q6Kc+S1jrgr_WO=DEk7pmE_UNc2eFQKpE+-_g@mail.gmail.com>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Perla, Sathya" <Sathya.Perla@emulex.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 08:25:20PM +0800, Chen Gang wrote:
-> 
-> When NUMA node mapping not available for one cpu, need disabling NUMA
-> support and proceed.
-> 
-> Also better to release unused resources (the original code can not
-> cause issue, only waste some memory).
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/workqueue.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 1ae6028..a763079 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4911,6 +4911,9 @@ static void __init wq_numa_init(void)
->  		if (WARN_ON(node == NUMA_NO_NODE)) {
->  			pr_warn("workqueue: NUMA node mapping not available for cpu%d, disabling NUMA support\n", cpu);
->  			/* happens iff arch is bonkers, let's just proceed */
-> +			for_each_node(node)
-> +				free_cpumask_var(tbl[node]);
-> +			kfree(tbl);
+On Tue, May 14, 2013 at 2:46 AM, Perla, Sathya <Sathya.Perla@emulex.com> wrote:
+>
+>> -----Original Message-----
+>> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
+>> owner@vger.kernel.org] On Behalf Of Yinghai Lu
+>>
+>> Found kernel try to load mlx4 drivers for VFs before PF's is really loaded
+>> when the drivers are built-in, and kernel command line include
+>> probe_vfs=63, num_vfs=63.
+>>
+>> It turns that it also happen for hotadd path even drivers are compiled as
+>> modules and if they loaded. Esp some VF share the same driver with PF.
+>>
+>> calling path:
+>>       device driver probe
+>>               ==> pci_enable_sriov
+>>                       ==> virtfn_add
+>>                               ==> pci_dev_add
+>>                               ==> pci_bus_device_add
+>> when pci_bus_device_add is called, the VF's driver will be attached.
+>> and at that time PF's driver does not finish yet.
+>>
+>> Need to move out pci_bus_device_add from virtfn_add and call it later. Fix
+>> the problem for two path, 1. hotadd path: use device_schedule_callback.
+>> 2. for booting path, use initcall to call that for all VF's.
+>>
+>
+> ...
+>>
+>> Index: linux-2.6/drivers/net/ethernet/emulex/benet/be_main.c
+>> ==========================================================
+>> =========
+>> --- linux-2.6.orig/drivers/net/ethernet/emulex/benet/be_main.c
+>> +++ linux-2.6/drivers/net/ethernet/emulex/benet/be_main.c
+>> @@ -4119,6 +4119,7 @@ static int lancer_recover_func(struct be
+>>       if (status)
+>>               goto err;
+>>
+>> +     pci_bus_add_device_vfs(adapter->pdev);
+>>       if (netif_running(adapter->netdev)) {
+>>               status = be_open(adapter->netdev);
+>>               if (status)
+>> @@ -4335,6 +4336,8 @@ static int be_probe(struct pci_dev *pdev
+>>       dev_info(&pdev->dev, "%s: %s %s port %c\n", nic_name(pdev),
+>>                func_name(adapter), mc_name(adapter), port_name);
+>>
+>> +     pci_bus_add_device_vfs(pdev);
+>> +
+>>       return 0;
+>>
+>>  unsetup:
+>> @@ -4406,6 +4409,7 @@ static int be_resume(struct pci_dev *pde
+>>               rtnl_unlock();
+>>       }
+>>
+>> +     pci_bus_add_device_vfs(adapter->pdev);
+>>       schedule_delayed_work(&adapter->func_recovery_work,
+>>                             msecs_to_jiffies(1000));
+>>       netif_device_attach(netdev);
+>
+> I fixed this issue in be2net with the following patch (commit b4c1df93)
+> http://marc.info/?l=linux-netdev&m=136801459808765&w=2
 
-Eh... let's just leave it alone.  The path is taken iff the whole
-thing is seriously broken and we're triggering WARN.  I don't think we
-need to worry about small memory wastage there.
+We should fix that in generic way.
 
-Thanks.
+BTW, Can you please implement sriov_configure like
+intel igb, ixgbe
+qlogic: qlcnic
+...
 
--- 
-tejun
+driver really should not call pci_enable_sriov in probe path.
+
+Yinghai
