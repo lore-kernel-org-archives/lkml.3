@@ -1,223 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab3ENIDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:03:47 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33472 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab3ENIDn (ORCPT
+	id S1756662Ab3ENIGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:06:51 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63948 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756422Ab3ENIGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:03:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368332581-94691-5-git-send-email-dt.tangr@gmail.com>
-References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com>
-	<1368332581-94691-5-git-send-email-dt.tangr@gmail.com>
-Date: Tue, 14 May 2013 10:03:42 +0200
-Message-ID: <CACRpkdZBFbOnQ9rCehO0yKDN7fH9VR3VYCa_NkOGJz7KN+02FQ@mail.gmail.com>
-Subject: Re: [RFC PATCHv3 4/6] clocksource: Add TI-Nspire timer drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Tang <dt.tangr@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 May 2013 04:06:46 -0400
+From: Lad Prabhakar <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: [PATCH v2] media: i2c: tvp514x: add OF support
+Date: Tue, 14 May 2013 13:36:31 +0530
+Message-Id: <1368518791-26332-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 6:22 AM, Daniel Tang <dt.tangr@gmail.com> wrote:
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+add OF support for the tvp514x driver. Alongside this patch
+removes unnecessary header file inclusion and sorts them alphabetically.
 
-A commit message does not hurt.
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+---
+ Tested on da850-evm.
 
->  drivers/clocksource/Makefile               |   1 +
->  drivers/clocksource/nspire-classic-timer.c | 199 +++++++++++++++++++++++++++++
+ RFC v1: https://patchwork.kernel.org/patch/2030061/
+ RFC v2: https://patchwork.kernel.org/patch/2061811/
 
-This subsystem is managed by Thomas Gleixner and John Stultz so you
-should include
-them on the To: line in reviewes.
+ Changes for current version from RFC v2:
+ 1: Fixed review comments pointed by Sylwester.
 
-> +++ b/drivers/clocksource/nspire-classic-timer.c
-(...)
-> +struct nspire_timer {
-> +       void __iomem *base;
-> +       void __iomem *timer1, *timer2;
-> +       void __iomem *interrupt_regs;
-> +
-> +       int irqnr;
-> +
-> +       struct clk *clk;
-> +       struct clock_event_device clkevt;
-> +       struct irqaction clkevt_irq;
-> +
-> +       char clocksource_name[64];
-> +       char clockevent_name[64];
-> +};
-> +
-> +static int nspire_timer_set_event(unsigned long delta,
-> +               struct clock_event_device *dev)
-> +{
-> +       unsigned long flags;
-> +       struct nspire_timer *timer = container_of(dev,
-> +                       struct nspire_timer,
-> +                       clkevt);
-> +
-> +       local_irq_save(flags);
-> +
-> +       writel(delta, timer->timer1 + IO_CURRENT_VAL);
-> +       writel(CNTL_RUN_TIMER | CNTL_DEC | CNTL_MATCH1,
-> +                       timer->timer1 + IO_CONTROL);
-> +
-> +       local_irq_restore(flags);
-> +
-> +       return 0;
-> +}
-> +static void nspire_timer_set_mode(enum clock_event_mode mode,
-> +               struct clock_event_device *evt)
-> +{
-> +       evt->mode = mode;
+ Changes for v2:
+ 1: Listed all the compatible property values in the documentation text file.
+ 2: Removed "-decoder" from compatible property values.
+ 3: Added a reference to the V4L2 DT bindings documentation to explain
+    what the port and endpoint nodes are for.
+ 4: Fixed some Nits pointed by Laurent.
+ 5: Removed unnecessary header file includes and sort them alphabetically.
 
-So you support any mode?
+ .../devicetree/bindings/media/i2c/tvp514x.txt      |   45 ++++++++++++
+ drivers/media/i2c/tvp514x.c                        |   76 +++++++++++++++----
+ 2 files changed, 105 insertions(+), 16 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp514x.txt
 
-Atleast handle CLOCK_EVT_MODE_SHUTDOWN and CLOCK_EVT_UNUSED
-like any well-behaved clock event driver.
+diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+new file mode 100644
+index 0000000..cc09424
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+@@ -0,0 +1,45 @@
++* Texas Instruments TVP514x video decoder
++
++The TVP5146/TVP5146m2/TVP5147/TVP5147m1 device is high quality, single-chip
++digital video decoder that digitizes and decodes all popular baseband analog
++video formats into digital video component. The tvp514x decoder supports analog-
++to-digital (A/D) conversion of component RGB and YPbPr signals as well as A/D
++conversion and decoding of NTSC, PAL and SECAM composite and S-video into
++component YCbCr.
++
++Required Properties :
++- compatible : value should be either one among the following
++	(a) "ti,tvp5146" for tvp5146 decoder.
++	(b) "ti,tvp5146m2" for tvp5146m2 decoder.
++	(c) "ti,tvp5147" for tvp5147 decoder.
++	(d) "ti,tvp5147m1" for tvp5147m1 decoder.
++
++- hsync-active: HSYNC Polarity configuration for endpoint.
++
++- vsync-active: VSYNC Polarity configuration for endpoint.
++
++- pclk-sample: Clock polarity of the endpoint.
++
++
++For further reading of port node refer Documentation/devicetree/bindings/media/
++video-interfaces.txt.
++
++Example:
++
++	i2c0@1c22000 {
++		...
++		...
++		tvp514x@5c {
++			compatible = "ti,tvp5146";
++			reg = <0x5c>;
++
++			port {
++				tvp514x_1: endpoint {
++					hsync-active = <1>;
++					vsync-active = <1>;
++					pclk-sample = <0>;
++				};
++			};
++		};
++		...
++	};
+diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
+index 887bd93..252fe9f 100644
+--- a/drivers/media/i2c/tvp514x.c
++++ b/drivers/media/i2c/tvp514x.c
+@@ -29,21 +29,18 @@
+  *
+  */
+ 
+-#include <linux/i2c.h>
+-#include <linux/slab.h>
+ #include <linux/delay.h>
+-#include <linux/videodev2.h>
++#include <linux/i2c.h>
+ #include <linux/module.h>
+-#include <linux/v4l2-mediabus.h>
++#include <linux/of_device.h>
++#include <linux/slab.h>
+ 
++#include <media/media-entity.h>
++#include <media/tvp514x.h>
+ #include <media/v4l2-async.h>
+-#include <media/v4l2-device.h>
+-#include <media/v4l2-common.h>
+-#include <media/v4l2-mediabus.h>
+-#include <media/v4l2-chip-ident.h>
+ #include <media/v4l2-ctrls.h>
+-#include <media/tvp514x.h>
+-#include <media/media-entity.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-of.h>
+ 
+ #include "tvp514x_regs.h"
+ 
+@@ -1056,6 +1053,40 @@ static struct tvp514x_decoder tvp514x_dev = {
+ 
+ };
+ 
++static struct tvp514x_platform_data *
++tvp514x_get_pdata(struct i2c_client *client)
++{
++	struct tvp514x_platform_data *pdata;
++	struct v4l2_of_endpoint bus_cfg;
++	struct device_node *endpoint;
++	unsigned int flags;
++
++	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
++		return client->dev.platform_data;
++
++	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
++	if (!endpoint)
++		return NULL;
++
++	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
++	flags = bus_cfg.bus.parallel.flags;
++
++	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
++		pdata->hs_polarity = 1;
++
++	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
++		pdata->vs_polarity = 1;
++
++	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
++		pdata->clk_polarity = 1;
++
++	return pdata;
++}
++
+ /**
+  * tvp514x_probe() - decoder driver i2c probe handler
+  * @client: i2c driver client device structure
+@@ -1067,19 +1098,20 @@ static struct tvp514x_decoder tvp514x_dev = {
+ static int
+ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ {
++	struct tvp514x_platform_data *pdata = tvp514x_get_pdata(client);
+ 	struct tvp514x_decoder *decoder;
+ 	struct v4l2_subdev *sd;
+ 	int ret;
+ 
++	if (pdata == NULL) {
++		dev_err(&client->dev, "No platform data\n");
++		return -EINVAL;
++	}
++
+ 	/* Check if the adapter supports the needed features */
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+ 		return -EIO;
+ 
+-	if (!client->dev.platform_data) {
+-		v4l2_err(client, "No platform data!!\n");
+-		return -ENODEV;
+-	}
+-
+ 	decoder = devm_kzalloc(&client->dev, sizeof(*decoder), GFP_KERNEL);
+ 	if (!decoder)
+ 		return -ENOMEM;
+@@ -1091,7 +1123,7 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			sizeof(tvp514x_reg_list_default));
+ 
+ 	/* Copy board specific information here */
+-	decoder->pdata = client->dev.platform_data;
++	decoder->pdata = pdata;
+ 
+ 	/**
+ 	 * Fetch platform specific data, and configure the
+@@ -1240,8 +1272,20 @@ static const struct i2c_device_id tvp514x_id[] = {
+ 
+ MODULE_DEVICE_TABLE(i2c, tvp514x_id);
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id tvp514x_of_match[] = {
++	{ .compatible = "ti,tvp5146", },
++	{ .compatible = "ti,tvp5146m2", },
++	{ .compatible = "ti,tvp5147", },
++	{ .compatible = "ti,tvp5147m1", },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, tvp514x_of_match);
++#endif
++
+ static struct i2c_driver tvp514x_driver = {
+ 	.driver = {
++		.of_match_table = of_match_ptr(tvp514x_of_match),
+ 		.owner = THIS_MODULE,
+ 		.name = TVP514X_MODULE_NAME,
+ 	},
+-- 
+1.7.4.1
 
-> +}
-> +
-> +static irqreturn_t nspire_timer_interrupt(int irq, void *dev_id)
-> +{
-> +       struct nspire_timer *timer = dev_id;
-> +
-> +       writel((1<<0), timer->interrupt_regs + IO_INTR_ACK);
-
-write(0x1, timer->interrupt_regs + IO_INTR_ACK);
-
-is no less intelligible, if you really want to point out that you're
-setting bit 0, include <linux/bitops.h> and use BIT(0).
-
-If there is a status bit you're clearing, maybe you should check
-it first to watch for spurious IRQs?
-
-> +       writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
-> +
-> +       if (timer->clkevt.event_handler)
-> +               timer->clkevt.event_handler(&timer->clkevt);
-> +
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static int __init nspire_timer_add(struct device_node *node)
-> +{
-> +       struct nspire_timer *timer;
-> +       struct resource res;
-> +       int ret;
-> +
-> +       timer = kzalloc(sizeof(*timer), GFP_ATOMIC);
-> +       if (!timer)
-> +               return -ENOMEM;
-> +
-> +       timer->base = of_iomap(node, 0);
-> +       if (!timer->base) {
-> +               ret = -EINVAL;
-> +               goto error_free;
-> +       }
-> +       timer->timer1 = timer->base + IO_TIMER1;
-> +       timer->timer2 = timer->base + IO_TIMER2;
-> +
-> +       timer->clk = of_clk_get(node, 0);
-> +       if (IS_ERR(timer->clk)) {
-> +               ret = PTR_ERR(timer->clk);
-> +               pr_err("Timer clock not found! (error %d)\n", ret);
-> +               goto error_unmap;
-> +       }
-> +
-> +       timer->interrupt_regs = of_iomap(node, 1);
-
-Check for errors.
-
-> +       timer->irqnr = irq_of_parse_and_map(node, 0);
-
-Check for errors.
-
-> +
-> +       of_address_to_resource(node, 0, &res);
-> +       scnprintf(timer->clocksource_name, sizeof(timer->clocksource_name),
-> +                       "%llx.%s_clocksource",
-> +                       (unsigned long long)res.start, node->name);
-> +
-> +       scnprintf(timer->clockevent_name, sizeof(timer->clockevent_name),
-> +                       "%llx.%s_clockevent",
-> +                       (unsigned long long)res.start, node->name);
-> +
-> +       if (timer->interrupt_regs && timer->irqnr) {
-> +               timer->clkevt.name      = timer->clockevent_name;
-> +               timer->clkevt.set_next_event = nspire_timer_set_event;
-> +               timer->clkevt.set_mode  = nspire_timer_set_mode;
-> +               timer->clkevt.rating    = 200;
-> +               timer->clkevt.shift     = 32;
-
-Delete this shift. It will be set by clockevents_config_and_register().
-
-> +               timer->clkevt.cpumask   = cpu_all_mask;
-> +               timer->clkevt.features  =
-> +                       CLOCK_EVT_FEAT_ONESHOT;
-> +
-> +               writel(CNTL_STOP_TIMER, timer->timer1 + IO_CONTROL);
-> +               writel(0, timer->timer1 + IO_DIVIDER);
-
-For a 16-bit counter I don't think it's wise to set the divider to 0
-unless the clock frequency is very low. See further comments
-below. (Assumes this is some prescaler.)
-
-> +               /* Mask out interrupts except the one we're using */
-> +               writel((1<<0), timer->interrupt_regs + IO_INTR_MSK);
-
-Just 0x1 or BIT(0).
-
-> +               writel(0x3F, timer->interrupt_regs + IO_INTR_ACK);
-
-Hm magic number, I guess it's clearing all IRQ lines...
-
-> +
-> +               /* Interrupt to occur when timer value matches 0 */
-> +               writel(0, timer->base + IO_MATCH1);
-> +
-> +               timer->clkevt_irq.name  = timer->clockevent_name;
-> +               timer->clkevt_irq.handler = nspire_timer_interrupt;
-> +               timer->clkevt_irq.dev_id = timer;
-> +               timer->clkevt_irq.flags =
-> +                       IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL;
-> +
-> +               setup_irq(timer->irqnr, &timer->clkevt_irq);
-> +
-> +               clockevents_config_and_register(&timer->clkevt,
-> +                               clk_get_rate(timer->clk), 0x0001, 0xfffe);
-> +               pr_info("Added %s as clockevent\n", timer->clockevent_name);
-> +       }
-> +
-> +       writel(CNTL_RUN_TIMER | CNTL_FOREVER | CNTL_INC,
-> +                       timer->timer2 + IO_CONTROL);
-> +
-> +       clocksource_mmio_init(timer->timer2 + IO_CURRENT_VAL,
-> +                       timer->clocksource_name,
-> +                       clk_get_rate(timer->clk),
-> +                       200, 16,
-> +                       clocksource_mmio_readw_up);
-
-If this timer is really just 16 bits, it's a *pretty* good idea to use
-the prescaler (I guess this is what IO_DIVIDER is) beacuse else you
-will get short sleep times with CONFIG_NO_HZ_IDLE on this system,
-and wake up unnecessarily often.
-
-The same goes for the clock event.
-
-See how we calculate the prescaler in arch/arm/mach-integrator/integrator_ap.c
-for example.
-
-Yours,
-Linus Walleij
