@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3ENKrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:47:00 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:35204 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab3ENKq5 (ORCPT
+	id S1756595Ab3ENKrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:47:20 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:48435 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab3ENKrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:46:57 -0400
+	Tue, 14 May 2013 06:47:17 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,10 +17,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH 4/5] media: i2c: tvp7002: add support for asynchronous probing
-Date: Tue, 14 May 2013 16:15:33 +0530
-Message-Id: <1368528334-13595-5-git-send-email-prabhakar.csengg@gmail.com>
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: [PATCH 5/5] media: i2c: tvp7002: add OF support
+Date: Tue, 14 May 2013 16:15:34 +0530
+Message-Id: <1368528334-13595-6-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368528334-13595-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368528334-13595-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,8 +33,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Both synchronous and asynchronous tvp7002 subdevice probing is supported by
-this patch.
+add OF support for the tvp7002 driver.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
@@ -40,44 +42,185 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: davinci-linux-open-source@linux.davincidsp.com
 ---
- drivers/media/i2c/tvp7002.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/media/i2c/tvp7002.txt      |   42 +++++++++++++
+ drivers/media/i2c/tvp7002.c                        |   64 +++++++++++++++++--
+ 2 files changed, 99 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp7002.txt
 
+diff --git a/Documentation/devicetree/bindings/media/i2c/tvp7002.txt b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+new file mode 100644
+index 0000000..1ebd8b1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
+@@ -0,0 +1,42 @@
++* Texas Instruments TV7002 video decoder
++
++The TVP7002 device supports digitizing of video and graphics signal in RGB and
++YPbPr color space.
++
++Required Properties :
++- compatible : Must be "ti,tvp7002"
++
++- hsync-active: HSYNC Polarity configuration for endpoint.
++
++- vsync-active: VSYNC Polarity configuration for endpoint.
++
++- pclk-sample: Clock polarity of the endpoint.
++
++- ti,tvp7002-fid-polarity: Active-high Field ID polarity of the endpoint.
++
++- ti,tvp7002-sog-polarity: Sync on Green output polarity of the endpoint.
++
++For further reading of port node refer Documentation/devicetree/bindings/media/
++video-interfaces.txt.
++
++Example:
++
++	i2c0@1c22000 {
++		...
++		...
++		tvp7002@5c {
++			compatible = "ti,tvp7002";
++			reg = <0x5c>;
++
++			port {
++				tvp7002_1: endpoint {
++					hsync-active = <1>;
++					vsync-active = <1>;
++					pclk-sample = <0>;
++					ti,tvp7002-fid-polarity;
++					ti,tvp7002-sog-polarity;
++				};
++			};
++		};
++		...
++	};
 diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
-index f4114bf..d5113d1 100644
+index d5113d1..942e0d8 100644
 --- a/drivers/media/i2c/tvp7002.c
 +++ b/drivers/media/i2c/tvp7002.c
-@@ -31,6 +31,7 @@
- #include <linux/v4l2-dv-timings.h>
- 
- #include <media/tvp7002.h>
-+#include <media/v4l2-async.h>
+@@ -35,6 +35,7 @@
  #include <media/v4l2-chip-ident.h>
  #include <media/v4l2-ctrls.h>
  #include <media/v4l2-device.h>
-@@ -1073,6 +1074,11 @@ static int tvp7002_probe(struct i2c_client *c, const struct i2c_device_id *id)
- 	}
- 	v4l2_ctrl_handler_setup(&device->hdl);
++#include <media/v4l2-of.h>
  
-+	device->sd.dev = &c->dev;
-+	error = v4l2_async_register_subdev(&device->sd);
-+	if (error)
-+		goto error;
+ #include "tvp7002_reg.h"
+ 
+@@ -976,6 +977,46 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
+ 	.pad = &tvp7002_pad_ops,
+ };
+ 
++static struct tvp7002_config *
++tvp7002_get_pdata(struct i2c_client *client)
++{
++	struct v4l2_of_endpoint bus_cfg;
++	struct tvp7002_config *pdata;
++	struct device_node *endpoint;
++	unsigned int flags;
 +
- 	return 0;
++	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
++		return client->dev.platform_data;
++
++	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
++	if (!endpoint)
++		return NULL;
++
++	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
++	flags = bus_cfg.bus.parallel.flags;
++
++	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
++		pdata->hs_polarity = 1;
++
++	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
++		pdata->vs_polarity = 1;
++
++	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
++		pdata->clk_polarity = 1;
++
++	pdata->fid_polarity = of_property_read_bool(endpoint,
++						    "ti,tvp7002-fid-polarity");
++
++	pdata->sog_polarity = of_property_read_bool(endpoint,
++						    "ti,tvp7002-sog-polarity");
++
++	return pdata;
++}
++
+ /*
+  * tvp7002_probe - Probe a TVP7002 device
+  * @c: ptr to i2c_client struct
+@@ -987,32 +1028,32 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
+  */
+ static int tvp7002_probe(struct i2c_client *c, const struct i2c_device_id *id)
+ {
++	struct tvp7002_config *pdata = tvp7002_get_pdata(c);
+ 	struct v4l2_subdev *sd;
+ 	struct tvp7002 *device;
+ 	struct v4l2_dv_timings timings;
+ 	int polarity_a;
+ 	int polarity_b;
+ 	u8 revision;
+-
+ 	int error;
  
- error:
-@@ -1097,6 +1103,7 @@ static int tvp7002_remove(struct i2c_client *c)
++	if (pdata == NULL) {
++		dev_err(&c->dev, "No platform data\n");
++		return -EINVAL;
++	}
++
+ 	/* Check if the adapter supports the needed features */
+ 	if (!i2c_check_functionality(c->adapter,
+ 		I2C_FUNC_SMBUS_READ_BYTE | I2C_FUNC_SMBUS_WRITE_BYTE_DATA))
+ 		return -EIO;
  
- 	v4l2_dbg(1, debug, sd, "Removing tvp7002 adapter"
- 				"on address 0x%x\n", c->addr);
-+	v4l2_async_unregister_subdev(&device->sd);
- #if defined(CONFIG_MEDIA_CONTROLLER)
- 	media_entity_cleanup(&device->sd.entity);
- #endif
+-	if (!c->dev.platform_data) {
+-		v4l_err(c, "No platform data!!\n");
+-		return -ENODEV;
+-	}
+-
+ 	device = devm_kzalloc(&c->dev, sizeof(struct tvp7002), GFP_KERNEL);
+ 
+ 	if (!device)
+ 		return -ENOMEM;
+ 
+ 	sd = &device->sd;
+-	device->pdata = c->dev.platform_data;
++	device->pdata = pdata;
+ 	device->current_timings = tvp7002_timings;
+ 
+ 	/* Tell v4l2 the device is ready */
+@@ -1119,9 +1160,18 @@ static const struct i2c_device_id tvp7002_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, tvp7002_id);
+ 
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id tvp7002_of_match[] = {
++	{ .compatible = "ti,tvp7002", },
++	{ /* sentinel */ },
++};
++MODULE_DEVICE_TABLE(of, tvp7002_of_match);
++#endif
++
+ /* I2C driver data */
+ static struct i2c_driver tvp7002_driver = {
+ 	.driver = {
++		.of_match_table = of_match_ptr(tvp7002_of_match),
+ 		.owner = THIS_MODULE,
+ 		.name = TVP7002_MODULE_NAME,
+ 	},
 -- 
 1.7.4.1
 
