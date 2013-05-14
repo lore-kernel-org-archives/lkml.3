@@ -1,239 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab3ENPd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:33:58 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:44985 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab3ENPd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:33:57 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 5/5] media: i2c: tvp7002: add OF support
-Date: Tue, 14 May 2013 17:34:15 +0200
-Message-ID: <4149647.zqpmlIlQDP@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1368528334-13595-6-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368528334-13595-1-git-send-email-prabhakar.csengg@gmail.com> <1368528334-13595-6-git-send-email-prabhakar.csengg@gmail.com>
+	id S1758027Ab3ENPg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:36:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757295Ab3ENPgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:36:25 -0400
+Date: Tue, 14 May 2013 11:35:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
+Subject: Re: [PATCH v5 5/8] vmcore: allocate ELF note segment in the 2nd
+ kernel vmalloc memory
+Message-ID: <20130514153552.GG13674@redhat.com>
+References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
+ <20130514015734.18697.32447.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514015734.18697.32447.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-Thank you for the patch.
-
-On Tuesday 14 May 2013 16:15:34 Lad Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Tue, May 14, 2013 at 10:57:35AM +0900, HATAYAMA Daisuke wrote:
+> The reasons why we don't allocate ELF note segment in the 1st kernel
+> (old memory) on page boundary is to keep backward compatibility for
+> old kernels, and that if doing so, we waste not a little memory due to
+> round-up operation to fit the memory to page boundary since most of
+> the buffers are in per-cpu area.
 > 
-> add OF support for the tvp7002 driver.
+> ELF notes are per-cpu, so total size of ELF note segments depends on
+> number of CPUs. The current maximum number of CPUs on x86_64 is 5192,
+> and there's already system with 4192 CPUs in SGI, where total size
+> amounts to 1MB. This can be larger in the near future or possibly even
+> now on another architecture that has larger size of note per a single
+> cpu. Thus, to avoid the case where memory allocation for large block
+> fails, we allocate vmcore objects on vmalloc memory.
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: davinci-linux-open-source@linux.davincidsp.com
+> This patch adds elfnotesegbuf and elfnotesegbuf_sz variables to keep
+> pointer to the ELF note segment buffer and its size. There's no longer
+> the vmcore object that corresponds to the ELF note segment in
+> vmcore_list. Accordingly, read_vmcore() has new case for ELF note
+> segment and set_vmcore_list_offsets_elf{64,32}() and other helper
+> functions starts calculating offset from sum of size of ELF headers
+> and size of ELF note segment.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 > ---
->  .../devicetree/bindings/media/i2c/tvp7002.txt      |   42 +++++++++++++
->  drivers/media/i2c/tvp7002.c                        |   64 +++++++++++++++--
->  2 files changed, 99 insertions(+), 7 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp7002.txt
 > 
-> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
-> b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt new file mode
-> 100644
-> index 0000000..1ebd8b1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/i2c/tvp7002.txt
-> @@ -0,0 +1,42 @@
-> +* Texas Instruments TV7002 video decoder
-> +
-> +The TVP7002 device supports digitizing of video and graphics signal in RGB
-> and
-> +YPbPr color space.
-> +
-> +Required Properties :
-> +- compatible : Must be "ti,tvp7002"
-> +
-> +- hsync-active: HSYNC Polarity configuration for endpoint.
-> +
-> +- vsync-active: VSYNC Polarity configuration for endpoint.
-> +
-> +- pclk-sample: Clock polarity of the endpoint.
-> +
-> +- ti,tvp7002-fid-polarity: Active-high Field ID polarity of the endpoint.
-> +
-> +- ti,tvp7002-sog-polarity: Sync on Green output polarity of the endpoint.
+>  fs/proc/vmcore.c |  225 ++++++++++++++++++++++++++++++++++++++++--------------
+>  1 files changed, 165 insertions(+), 60 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 48886e6..795efd2 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -34,6 +34,9 @@ static char *elfcorebuf;
+>  static size_t elfcorebuf_sz;
+>  static size_t elfcorebuf_sz_orig;
+>  
+> +static char *elfnotesegbuf;
+> +static size_t elfnotesegbuf_sz;
 
-Would it make sense to define field-active and sog-active properties in the 
-V4L2 bindings instead of having per-chip properties ?
+How about calling these just elfnotes_buf and elfnotes_sz.
 
-> +For further reading of port node refer
-> Documentation/devicetree/bindings/media/ +video-interfaces.txt.
-> +
-> +Example:
-> +
-> +	i2c0@1c22000 {
-> +		...
-> +		...
-> +		tvp7002@5c {
-> +			compatible = "ti,tvp7002";
-> +			reg = <0x5c>;
-> +
-> +			port {
-> +				tvp7002_1: endpoint {
-> +					hsync-active = <1>;
-> +					vsync-active = <1>;
-> +					pclk-sample = <0>;
-> +					ti,tvp7002-fid-polarity;
-> +					ti,tvp7002-sog-polarity;
-> +				};
-> +			};
-> +		};
-> +		...
-> +	};
-> diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
-> index d5113d1..942e0d8 100644
-> --- a/drivers/media/i2c/tvp7002.c
-> +++ b/drivers/media/i2c/tvp7002.c
-> @@ -35,6 +35,7 @@
->  #include <media/v4l2-chip-ident.h>
->  #include <media/v4l2-ctrls.h>
->  #include <media/v4l2-device.h>
-> +#include <media/v4l2-of.h>
-> 
->  #include "tvp7002_reg.h"
-> 
-> @@ -976,6 +977,46 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
->  	.pad = &tvp7002_pad_ops,
->  };
-> 
-> +static struct tvp7002_config *
-> +tvp7002_get_pdata(struct i2c_client *client)
+[..]
+> +/* Merges all the PT_NOTE headers into one. */
+> +static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+> +					   char **notesegptr, size_t *notesegsz,
+> +					   struct list_head *vc_list)
 > +{
-> +	struct v4l2_of_endpoint bus_cfg;
-> +	struct tvp7002_config *pdata;
-> +	struct device_node *endpoint;
-> +	unsigned int flags;
+> +	int i, nr_ptnote=0, rc=0;
+> +	char *tmp;
+> +	Elf64_Ehdr *ehdr_ptr;
+> +	Elf64_Phdr phdr;
+> +	u64 phdr_sz = 0, note_off;
+> +	struct vm_struct *vm;
 > +
-> +	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
-> +		return client->dev.platform_data;
+> +	ehdr_ptr = (Elf64_Ehdr *)elfptr;
 > +
-> +	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	if (!endpoint)
-> +		return NULL;
+> +	/* The first path calculates the number of PT_NOTE entries and
+> +	 * total size of ELF note segment. */
+> +	rc = process_note_headers_elf64(ehdr_ptr, &nr_ptnote, &phdr_sz, NULL);
+> +	if (rc < 0)
+> +		return rc;
 > +
-> +	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return NULL;
+> +	*notesegsz = roundup(phdr_sz, PAGE_SIZE);
+> +	*notesegptr = vzalloc(*notesegsz);
+> +	if (!*notesegptr)
+> +		return -ENOMEM;
 > +
-> +	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
-> +	flags = bus_cfg.bus.parallel.flags;
+> +	vm = find_vm_area(*notesegptr);
+> +	BUG_ON(!vm);
+> +	vm->flags |= VM_USERMAP;
 > +
-> +	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
-> +		pdata->hs_polarity = 1;
-> +
-> +	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
-> +		pdata->vs_polarity = 1;
-> +
-> +	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
-> +		pdata->clk_polarity = 1;
-> +
-> +	pdata->fid_polarity = of_property_read_bool(endpoint,
-> +						    "ti,tvp7002-fid-polarity");
-> +
-> +	pdata->sog_polarity = of_property_read_bool(endpoint,
-> +						    "ti,tvp7002-sog-polarity");
-> +
-> +	return pdata;
-> +}
-> +
->  /*
->   * tvp7002_probe - Probe a TVP7002 device
->   * @c: ptr to i2c_client struct
-> @@ -987,32 +1028,32 @@ static const struct v4l2_subdev_ops tvp7002_ops = {
->   */
->  static int tvp7002_probe(struct i2c_client *c, const struct i2c_device_id
-> *id) {
-> +	struct tvp7002_config *pdata = tvp7002_get_pdata(c);
->  	struct v4l2_subdev *sd;
->  	struct tvp7002 *device;
->  	struct v4l2_dv_timings timings;
->  	int polarity_a;
->  	int polarity_b;
->  	u8 revision;
-> -
->  	int error;
-> 
-> +	if (pdata == NULL) {
-> +		dev_err(&c->dev, "No platform data\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	/* Check if the adapter supports the needed features */
->  	if (!i2c_check_functionality(c->adapter,
->  		I2C_FUNC_SMBUS_READ_BYTE | I2C_FUNC_SMBUS_WRITE_BYTE_DATA))
->  		return -EIO;
-> 
-> -	if (!c->dev.platform_data) {
-> -		v4l_err(c, "No platform data!!\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	device = devm_kzalloc(&c->dev, sizeof(struct tvp7002), GFP_KERNEL);
-> 
->  	if (!device)
->  		return -ENOMEM;
-> 
->  	sd = &device->sd;
-> -	device->pdata = c->dev.platform_data;
-> +	device->pdata = pdata;
->  	device->current_timings = tvp7002_timings;
-> 
->  	/* Tell v4l2 the device is ready */
-> @@ -1119,9 +1160,18 @@ static const struct i2c_device_id tvp7002_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, tvp7002_id);
-> 
-> +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id tvp7002_of_match[] = {
-> +	{ .compatible = "ti,tvp7002", },
-> +	{ /* sentinel */ },
-> +};
-> +MODULE_DEVICE_TABLE(of, tvp7002_of_match);
-> +#endif
-> +
->  /* I2C driver data */
->  static struct i2c_driver tvp7002_driver = {
->  	.driver = {
-> +		.of_match_table = of_match_ptr(tvp7002_of_match),
->  		.owner = THIS_MODULE,
->  		.name = TVP7002_MODULE_NAME,
->  	},
--- 
-Regards,
+> +	/* The second path copies the ELF note segment in the ELF note
+> +	 * segment buffer. */
+> +	rc = process_note_headers_elf64(ehdr_ptr, NULL, NULL, *notesegptr);
 
-Laurent Pinchart
+So same function process_note_headers_elf64() is doing two different
+things based on parameters passed. Please create two new functions
+to do two different things and name these appropriately.
 
+Say
+
+get_elf_note_number_and_size()
+copy_elf_notes()
+
+
+> +	if (rc < 0)
+> +		return rc;
+> +
+>  	/* Prepare merged PT_NOTE program header. */
+>  	phdr.p_type    = PT_NOTE;
+>  	phdr.p_flags   = 0;
+> @@ -304,23 +364,18 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	return 0;
+>  }
+>  
+> -/* Merges all the PT_NOTE headers into one. */
+> -static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+> -						struct list_head *vc_list)
+> +static int __init process_note_headers_elf32(const Elf32_Ehdr *ehdr_ptr,
+> +					     int *nr_ptnotep, u64 *phdr_szp,
+> +					     char *notesegp)
+
+Can you please describe function parameters at the beginning of function
+in a comment. Things are gettting little confusing now.
+
+What does notesegp signify? phdr_szp could be simply *phdr_sz,
+nr_ptnotesp could be *nr_notes. Please simplify the naming a bit.
+Seems too twisted to me.
+
+Thanks
+Vivek
