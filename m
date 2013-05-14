@@ -1,91 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758485Ab3ENUv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 16:51:27 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:35804 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757626Ab3ENUv0 (ORCPT
+	id S1758501Ab3ENU5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 16:57:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26297 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758466Ab3ENU5U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 16:51:26 -0400
-Date: Tue, 14 May 2013 13:51:21 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc2
-Message-ID: <alpine.DEB.2.00.1305141334510.9090@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 14 May 2013 16:57:20 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <370eb593-1a2f-41a6-8b16-163f54634f19@default>
+Date: Tue, 14 May 2013 13:54:41 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: RE: [PATCHv11 3/4] zswap: add to mm/
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51920197.9070105@oracle.com> <20130514160040.GB4024@medulla>
+ <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
+ <20130514172827.GE4024@medulla>
+In-Reply-To: <20130514172827.GE4024@medulla>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+> 
+> On Tue, May 14, 2013 at 09:37:08AM -0700, Dan Magenheimer wrote:
+> > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> > > Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+> > >
+> > > On Tue, May 14, 2013 at 05:19:19PM +0800, Bob Liu wrote:
+> > > > Hi Seth,
+> > >
+> > > Hi Bob, thanks for the review!
+> > >
+> > > >
+> > > > > +	/* reclaim space if needed */
+> > > > > +	if (zswap_is_full()) {
+> > > > > +		zswap_pool_limit_hit++;
+> > > > > +		if (zbud_reclaim_page(tree->pool, 8)) {
+> > > >
+> > > > My idea is to wake up a kernel thread here to do the reclaim.
+> > > > Once zswap is full(20% percent of total mem currently), the kernel
+> > > > thread should reclaim pages from it. Not only reclaim one page, it
+> > > > should depend on the current memory pressure.
+> > > > And then the API in zbud may like this:
+> > > > zbud_reclaim_page(pool, nr_pages_to_reclaim, nr_retry);
+> > >
+> > > So kswapd for zswap.  I'm not opposed to the idea if a case can be
+> > > made for the complexity.  I must say, I don't see that case though.
+> > >
+> > > The policy can evolve as deficiencies are demonstrated and solutions are
+> > > found.
+> >
+> > Hmmm... it is fairly easy to demonstrate the deficiency if
+> > one tries.  I actually first saw it occur on a real (though
+> > early) EL6 system which started some graphics-related service
+> > that caused a very brief swapstorm that was invisible during
+> > normal boot but clogged up RAM with compressed pages which
+> > later caused reduced weird benchmarking performance.
+> 
+> Without any specifics, I'm not sure what I can do with this.
 
-Please pull the following patches from
+Well, I think its customary for the author of a patch to know
+the limitations of the patch.  I suggest you synthesize a
+workload that attempts to measure worst case.  That's exactly
+what I did a year ago that led me to the realization that
+zcache needed to solve some issues before it was ready to
+promote out of staging.
+ 
+> I'm hearing you say that the source of the benchmark degradation
+> are the idle pages in zswap.  In that case, the periodic writeback
+> patches I have in the wings should address this.
+> 
+> I think we are on the same page without realizing it.  Right now
+> zswap supports a kind of "direct reclaim" model at allocation time.
+> The periodic writeback patches will handle the proactive writeback
+> part to free up the zswap pool when it has idle pages in it.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+I don't think we are on the same page though maybe you are heading
+in the same direction now. I won't repeat the comments from the
+previous email.
 
-Yes, this is a much larger pull than I would like after -rc1.  There are a 
-few things included:
+> > I think Mel's unpredictability concern applies equally here...
+> > this may be a "long-term source of bugs and strange memory
+> > management behavior."
+> >
+> > > Can I get your ack on this pending the other changes?
+> >
+> > I'd like to hear Mel's feedback about this, but perhaps
+> > a compromise to allow for zswap merging would be to add
+> > something like the following to zswap's Kconfig comment:
+> >
+> > "Zswap reclaim policy is still primitive.  Until it improves,
+> > zswap should be considered experimental and is not recommended
+> > for production use."
+> 
+> Just for the record, an "experimental" tag in the Kconfig won't
+> work for me.
+>
+> The reclaim policy for zswap is not primitive, it's simple.  There
+> is a difference.  Plus zswap is already runtime disabled by default.
+> If distros/customers enabled it, it is because they purposely
+> enabled it.
 
- - a few fixes for leaks and incorrect assertions
- - a few patches fixing behavior when mapped images are resized
- - handling for cloned/layered images that are flattened out from 
-   underneath the client
+Hmmm... I think you are proposing to users/distros the following
+use model:  "If zswap works for you, turn it on.  If it sucks,
+turn it off.  I can't tell you in advance whether it will work
+or suck for your distro/workload, but it will probably work so
+please try it."
 
-The last bit was non-trivial, and there is some code movement and 
-associated cleanup mixed in.  This was ready and was meant to go in last 
-week but I missed the boat on Friday.  My only excuse is that I was 
-waiting for an all clear from the testing and there were many other shiny 
-things to distract me.
+That sounds awfully experimental to me.
 
-Strictly speaking, handling the flatten case isn't a regression and could 
-wait, so if you like we can try to pull the series apart, but Alex and I 
-would much prefer to have it all in as it is a case real users will hit 
-with 3.10.
+The problem is not simple.  Your solution is simple because
+you are simply pretending that the harder parts of the problem
+don't exist.
 
-Thanks!
-sage
-
-
-----------------------------------------------------------------
-Alex Elder (33):
-      rbd: fix leak of format 2 snapshot context
-      rbd: revalidate only for mapping size changes
-      rbd: update capacity in rbd_dev_refresh()
-      rbd: kill rbd_update_mapping_size()
-      rbd: don't print warning if not mapping a parent
-      rbd: don't look up snapshot id in rbd_dev_mapping_set()
-      rbd: kill rbd_dev_clear_mapping()
-      rbd: always set read-only flag in rbd_add()
-      rbd: set the mapping size and features later
-      rbd: zero format 1 header structure earlier
-      rbd: refactor rbd_header_from_disk()
-      rbd: update in-core header directly
-      rbd: simplify rbd_dev_v1_probe()
-      rbd: get rid of trivial v1 header wrappers
-      rbd: define rbd_dev_v2_header_info()
-      rbd: fix an incorrect assertion condition
-      rbd: support reading parent page data
-      rbd: set mapping read-only flag in rbd_add()
-      rbd: only set up watch for mapped images
-      rbd: kill rbd_img_request_get()
-      libceph: init sent and completed when starting
-      rbd: fix parent request size assumption
-      rbd: support reading parent page data for writes
-      rbd: ignore zero-overlap parent
-      rbd: get parent info on refresh
-      rbd: don't release write request until necessary
-      rbd: define rbd_dev_unparent()
-      rbd: define parent image request routines
-      rbd: reference count parent requests
-      rbd: detect when clone image is flattened
-      rbd: re-submit read request for flattened clone
-      rbd: re-submit write request for flattened clone
-      rbd: re-submit flattened write request (part 2)
-
- drivers/block/rbd.c   | 935 +++++++++++++++++++++++++++++---------------------
- net/ceph/osd_client.c |   5 +-
- 2 files changed, 553 insertions(+), 387 deletions(-)
+Dan
