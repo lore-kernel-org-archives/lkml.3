@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3ENRFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:05:20 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:43200 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3ENRFS (ORCPT
+	id S1756171Ab3ENRH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 13:07:27 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:52134 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3ENRHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:05:18 -0400
-Date: Tue, 14 May 2013 13:05:28 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2, part 2 01/18] PCI: introduce hotplug-safe PCI bus
- iterators
-Message-ID: <20130514170528.GA4030@kroah.com>
-References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 May 2013 13:07:25 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH v2] checkpatch: avoid warning on page flag acessors
+Date: Tue, 14 May 2013 10:06:51 -0700
+Message-Id: <1368551211-6213-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1368549951-1170-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1368549951-1170-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051417-3620-0000-0000-00000279A798
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 12:51:45AM +0800, Jiang Liu wrote:
-> +EXPORT_SYMBOL(pci_bus_exists);
+Using Page*() triggers a camelcase warning, but shouldn't.
 
-EXPORT_SYMBOL_GPL()?  Same for the other new exports?
+be987d9f80354e2e919926349282facd74992f90 added a spurious '"' (double
+quote) breaking the regex.
 
-thanks,
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ scripts/checkpatch.pl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-greg k-h
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b954de5..ee24026 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2939,7 +2939,7 @@ sub process {
+ 			my $var = $1;
+ 			if ($var !~ /$Constant/ &&
+ 			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
+-			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
++			    $var !~ /"^(?:Clear|Set|TestClear|TestSet)?Page[A-Z]/ &&
+ 			    !defined $camelcase{$var}) {
+ 				$camelcase{$var} = 1;
+ 				WARN("CAMELCASE",
+-- 
+1.8.2.2
+
