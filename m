@@ -1,83 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab3ENJr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:47:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:33506 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766Ab3ENJr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:47:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,669,1363132800"; 
-   d="scan'208";a="23881440"
-Message-ID: <5192082D.4020400@citrix.com>
-Date: Tue, 14 May 2013 10:47:25 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1756649Ab3ENJwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:52:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756481Ab3ENJwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 05:52:18 -0400
+Date: Tue, 14 May 2013 17:51:55 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Jacob Keller <Jacob.e.keller@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Akeem G Abodunrin <akeem.g.abodunrin@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH] igb: add a method to get the nic hw time stamping
+ policy
+Message-ID: <20130514095155.GO8399@zhudong.nay.redhat.com>
+References: <20130511140219.GG8399@zhudong.nay.redhat.com>
+ <518E7723.5010003@cogentembedded.com>
+ <20130512142555.GI8399@zhudong.nay.redhat.com>
+ <20130512172446.GA2484@netboy>
+ <20130513021236.GJ8399@zhudong.nay.redhat.com>
+ <20130513043140.GA2567@netboy>
+ <20130513100742.GM8399@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] timekeeping: sync persistent clock and RTC on system
- time step changes
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org>
-In-Reply-To: <5191880F.3030308@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130513100742.GM8399@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/13 01:40, John Stultz wrote:
-> On 05/13/2013 10:56 AM, David Vrabel wrote:
->> From: David Vrabel <david.vrabel@citrix.com>
->>
->> The persistent clock or the RTC is only synchronized with system time
->> every 11 minutes if NTP is running.  This gives a window where the
->> persistent clock may be incorrect after a step change in the time
->> (such as on first boot).
->>
->> This particularly affects Xen guests as until an update to the control
->> domain's persistent clock, new guests will start with the incorrect
->> system time.
->>
->> When there is a step change in the system time, call
->> update_persistent_clock or rtc_set_ntp_time() to synchronize the
->> persistent clock or RTC to the new system time.
+Hi,
+
+> I modified this patch and added the method to igb_get_ts_info function.
+> For 82576 nic, through this method we can easily check which type of packets
+> are time stamped now, such as (HWTSTAMP_FILTER_PTP_V1_L4_SYNC and
+> HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ), then change or disable it up to your requests.
+> I think it is convenient.The origial GET_TS_INFO method can only show the device’s
+> time stamping capabilities which nics supported.
+
+Through this method we can easily check which type of packets are
+timestamped currently, it is useful because that we use the hwstamp_ctl 
+set time stamping policy first then we could verify what type of packets
+does the nic timestamp and then do some other testing(regression) for each
+policy.No matter PTP is running or not we can make sure whether timestamp packets 
+could cause other general network problems through viewing and setting the
+timestamp policy.
+
+My original idea is that:
+The implementation of this method is calling the ioctl call, in order
+not to break the userland ABI I use the flags field of hwtstamp_config, 
+as it has no definition yet.
+
+  - For I350 it only supports two types HWTSTAMP_FILTER_NONE and HWTSTAMP_FILTER_ALL
+    for timestamping. It is easy to handle just return the value to flags.
+
+  - For 82576NS it has more individual filters, so I need to do the
+    judement in the igb_ptp_hwtstamp_ioctl function for different nics, 
+    the code of judgement might be reduplicated with igb_get_ts_info,then do
+    the OR operation for filters then return to the flags.
+
+Could tell me whether the above method(ioctl) is feasible and better than this
+one (ethtool)?
+
+IMO checking this through the ethtool GET_TS_INFO is so convenient
+without breaking any userland ABIs. Do you think so ?
+
 > 
-> I'm sorry, this isn't quite making sense to me. Could you further 
-> describe the exact problematic behavior you're seeing here, and why its 
-> a problem?
+> I use the tx_reserved[0] and rx_reserved[0] to restore the hwtstamp_tx_types and
+> hwtstamp_rx_filters enumeration values.
+> 
+> I test it on I350 and 82576NS nics and it works as expect.
+> 
+> Could help reviewing it again ? Any comments would be appreciated.
+> 
+> 
+> From 8a12932fd2a3bb5ca904bc72b20140247a5d81be Mon Sep 17 00:00:00 2001
+> From: Dong Zhu <bluezhudong@gmail.com>
+> Date: Mon, 13 May 2013 17:27:59 +0800
+> 
+> Currently kernel only support setting the hw time stamping policy
+> through ioctl,now add a method to check which packets(Outgoing and
+> Incoming) are time stamped by nic.
+> 
+> Add this to igb_get_ts_info, we can query this by using the GET_TS_INFO
+> ethtool command. Testing on I350 and 82576NS it seems work well.
+> 
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  drivers/net/ethernet/intel/igb/igb_ethtool.c | 78 +++++++++++++++++++++++++++-
+>  include/uapi/linux/ethtool.h                 |  3 ++
+>  2 files changed, 79 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> index 7876240..49486b8 100644
+> --- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> +++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+> @@ -2327,6 +2327,8 @@ static int igb_get_ts_info(struct net_device *dev,
+>  			   struct ethtool_ts_info *info)
+>  {
+>  	struct igb_adapter *adapter = netdev_priv(dev);
+> +	struct e1000_hw *hw = &adapter->hw;
+> +	u32 regval;
+>  
+>  	switch (adapter->hw.mac.type) {
+>  	case e1000_82575:
+> @@ -2360,10 +2362,29 @@ static int igb_get_ts_info(struct net_device *dev,
+>  
+>  		info->rx_filters = 1 << HWTSTAMP_FILTER_NONE;
+>  
+> +		regval = rd32(E1000_TSYNCTXCTL);
+> +		if (regval & E1000_TSYNCTXCTL_ENABLED)
+> +			info->tx_reserved[0] = 1 << HWTSTAMP_TX_ON;
+> +		else
+> +			info->tx_reserved[0] = 1 << HWTSTAMP_TX_OFF;
+> +
+> +		regval = rd32(E1000_TSYNCRXCTL);
+> +
+>  		/* 82576 does not support timestamping all packets. */
+> -		if (adapter->hw.mac.type >= e1000_82580)
+> +		if (adapter->hw.mac.type >= e1000_82580) {
+>  			info->rx_filters |= 1 << HWTSTAMP_FILTER_ALL;
+> -		else
+> +
+> +			if (!(regval & E1000_TSYNCRXCTL_ENABLED))
+> +				info->rx_reserved[0] =
+> +					1 << HWTSTAMP_FILTER_NONE;
+> +			else if (E1000_TSYNCRXCTL_TYPE_ALL ==
+> +					(regval & E1000_TSYNCRXCTL_TYPE_MASK))
+> +				info->rx_reserved[0] = 1 << HWTSTAMP_FILTER_ALL;
+> +			else
+> +				return -ERANGE;
+> +
+> +			return 0;
+> +		} else {
+>  			info->rx_filters |=
+>  				(1 << HWTSTAMP_FILTER_PTP_V1_L4_SYNC) |
+>  				(1 << HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ) |
+> @@ -2373,6 +2394,59 @@ static int igb_get_ts_info(struct net_device *dev,
+>  				(1 << HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ) |
+>  				(1 << HWTSTAMP_FILTER_PTP_V2_EVENT);
+>  
+> +			if (!(regval & E1000_TSYNCRXCTL_ENABLED)) {
+> +				info->rx_reserved[0] =
+> +					1 << HWTSTAMP_FILTER_NONE;
+> +				return 0;
+> +			}
+> +		}
+> +
+> +		switch (regval & E1000_TSYNCRXCTL_TYPE_MASK) {
+> +		case E1000_TSYNCRXCTL_TYPE_L4_V1:
+> +			regval = rd32(E1000_TSYNCRXCFG);
+> +			if (E1000_TSYNCRXCFG_PTP_V1_SYNC_MESSAGE ==
+> +					(regval &
+> +					 E1000_TSYNCRXCFG_PTP_V1_CTRLT_MASK))
+> +				info->rx_reserved[0] =
+> +					(1 << HWTSTAMP_FILTER_PTP_V1_L4_SYNC);
+> +			else if (E1000_TSYNCRXCFG_PTP_V1_DELAY_REQ_MESSAGE
+> +					== (regval &
+> +					E1000_TSYNCRXCFG_PTP_V1_CTRLT_MASK))
+> +				info->rx_reserved[0] =
+> +					(1 <<
+> +					 HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ);
+> +			else
+> +				return -ERANGE;
+> +			break;
+> +		case E1000_TSYNCRXCTL_TYPE_L2_L4_V2:
+> +			regval = rd32(E1000_TSYNCRXCFG);
+> +			if (E1000_TSYNCRXCFG_PTP_V2_SYNC_MESSAGE ==
+> +					(regval &
+> +					 E1000_TSYNCRXCFG_PTP_V2_MSGID_MASK))
+> +				info->rx_reserved[0] =
+> +					(1 << HWTSTAMP_FILTER_PTP_V2_L2_SYNC) |
+> +					(1 << HWTSTAMP_FILTER_PTP_V2_L4_SYNC);
+> +			else if (E1000_TSYNCRXCFG_PTP_V2_DELAY_REQ_MESSAGE ==
+> +					(regval &
+> +					 E1000_TSYNCRXCFG_PTP_V2_MSGID_MASK))
+> +				info->rx_reserved[0] =
+> +					(1 <<
+> +					 HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ) |
+> +					(1 <<
+> +					 HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ);
+> +			else
+> +				return -ERANGE;
+> +			break;
+> +		case E1000_TSYNCRXCTL_TYPE_EVENT_V2:
+> +			info->rx_reserved[0] =
+> +				(1 << HWTSTAMP_FILTER_PTP_V2_EVENT) |
+> +				(1 << HWTSTAMP_FILTER_PTP_V2_SYNC) |
+> +				(1 << HWTSTAMP_FILTER_PTP_V2_DELAY_REQ);
+> +			break;
+> +		default:
+> +			return -ERANGE;
+> +		}
+> +
+>  		return 0;
+>  	default:
+>  		return -EOPNOTSUPP;
+> diff --git a/include/uapi/linux/ethtool.h b/include/uapi/linux/ethtool.h
+> index 0c9b448..06cdbc0 100644
+> --- a/include/uapi/linux/ethtool.h
+> +++ b/include/uapi/linux/ethtool.h
+> @@ -772,7 +772,10 @@ struct ethtool_sfeatures {
+>   * @so_timestamping: bit mask of the sum of the supported SO_TIMESTAMPING flags
+>   * @phc_index: device index of the associated PHC, or -1 if there is none
+>   * @tx_types: bit mask of the supported hwtstamp_tx_types enumeration values
+> + * @tx_reserved[0]: bit mask of the in use hwtstamp_tx_types enumeration values
+>   * @rx_filters: bit mask of the supported hwtstamp_rx_filters enumeration values
+> + * @rx_reserved[0]: bit mask of the in use hwtstamp_rx_filters enumeration
+> + * values
+>   *
+>   * The bits in the 'tx_types' and 'rx_filters' fields correspond to
+>   * the 'hwtstamp_tx_types' and 'hwtstamp_rx_filters' enumeration values,
+> -- 
+> 1.7.11.7
 
-The Xen wallclock is used as the persistent clock for Xen guests.  This
-is initialized (by Xen) with the CMOS RTC at the start of day.  If the
-RTC is incorrect then guests will see an incorrect wallclock time until
-dom0 has corrected it.
 
-Currently dom0 only updates the Xen wallclock with the 11 min periodic
-work when NTP is synced.  This leaves a window where newly started
-guests will see an incorrect wallclock time.  This can cause guests to
-fail to start correctly if the wallclock is now behind what it was when
-the guest last started. (e.g., fsck of its disk fails as its last mount
-time appears to be far into the future).
-
-Similarly (but less problematic), if a bare metal system is rebooted
-before the RTC is updated it will still have the incorrect time.
-
-> You seem to be saying we should always set the RTC any time settimeofday 
-> is called (regardless of the NTP sync state), which doesn't seem right 
-> to me. Also I worry that this would cause the RTC to be set when the RTC 
-> hctosys() code (or hwclock) sets the time to the RTC clock, which is a 
-> bit circular.
-
-I'm not too concerned about the behaviour of manual syncs of the RTC
-because: a) if the kernel does this automatically then the use of manual
-syncs is no longer necessary; and b) the RTC will still end up with the
-correct time.
-
-> I suspect once the problem is better understood, there will be a better 
-> solution then trying to always set the RTC on any settimeofday() call.
-
-David
+-- 
+Best Regards,
+Dong Zhu
