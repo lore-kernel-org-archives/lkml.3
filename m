@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab3ENMC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:02:57 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:37558 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab3ENMC4 (ORCPT
+	id S1757009Ab3ENMFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:05:04 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:63677 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3ENMFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:02:56 -0400
+	Tue, 14 May 2013 08:05:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1367824503.6190.1.camel@phoenix>
-References: <1367824503.6190.1.camel@phoenix>
-Date: Tue, 14 May 2013 14:02:55 +0200
-Message-ID: <CACRpkdYrN78Oae_4DKh6cdOWxiuNEZCQzicKKoN5dv1ws185LA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: U300: Add proper ifdef guard to fix build error when CONFIG_I2C_STU300=m
+In-Reply-To: <CAPgLHd-av2Yg44ARcSGr_zOajO-U611y3N4_Sn7J5Z+=OfVFcg@mail.gmail.com>
+References: <CAPgLHd-av2Yg44ARcSGr_zOajO-U611y3N4_Sn7J5Z+=OfVFcg@mail.gmail.com>
+Date: Tue, 14 May 2013 14:05:01 +0200
+Message-ID: <CACRpkdZ7i7EBuwqfGZ2Kby6DjTU3vcp89OH+wKx7YSpS4y9DdQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: single: fix error return code in pcs_parse_one_pinctrl_entry()
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 6, 2013 at 9:15 AM, Axel Lin <axel.lin@ingics.com> wrote:
+On Tue, May 7, 2013 at 2:06 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
 
-> I got below build error if CONFIG_I2C_STU300=m.
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
-> ERROR: "i2c_register_board_info" [arch/arm/mach-u300/i2c.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
+> Fix to return a negative error code from the error handling
+> case instead of 0, as done elsewhere in this function.
 >
-> Fix it by adding proper ifdef guard in i2c.h and Makefile.
-> So arch/arm/mach-u300/i2c.c will be compiled when CONFIG_I2C_STU300 is
-> configured as built-in or as a module.
+> Introduced by commit 9dddb4df90d136429b6d6ddefceb49a9b93f6cd1
+> (pinctrl: single: support generic pinconf)
 >
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-This file will be deleted in v3.11, see:
-http://marc.info/?l=linux-arm-kernel&m=136662534118633&w=2
+Thanks, patch applied to fixes with Haojians ACK.
 
 Yours,
 Linus Walleij
