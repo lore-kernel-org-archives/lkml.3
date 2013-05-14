@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3ENBYH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:24:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61110 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab3ENBTQ (ORCPT
+	id S1755795Ab3ENBTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:19:12 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:39390 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656Ab3ENBTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:16 -0400
+	Mon, 13 May 2013 21:19:07 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
@@ -18,10 +18,10 @@ Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
         Asai Thambi S P <asamymuthupa@micron.com>,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 09/21] aio: Kill unneeded kiocb members
-Date: Mon, 13 May 2013 18:18:46 -0700
-Message-Id: <1368494338-7069-10-git-send-email-koverstreet@google.com>
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 02/21] aio: reqs_active -> reqs_available
+Date: Mon, 13 May 2013 18:18:39 -0700
+Message-Id: <1368494338-7069-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
@@ -29,9 +29,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old aio retry infrastucture needed to save the various arguments to
-to aio operations. But with the retry infrastructure gone, we can trim
-struct kiocb quite a bit.
+The number of outstanding kiocbs is one of the few shared things left that
+has to be touched for every kiocb - it'd be nice to make it percpu.
+
+We can make it per cpu by treating it like an allocation problem: we have
+a maximum number of kiocbs that can be outstanding (i.e.  slots) - then we
+just allocate and free slots, and we know how to write per cpu allocators.
+
+So as prep work for that, we convert reqs_active to reqs_available.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 Cc: Zach Brown <zab@redhat.com>
@@ -47,197 +52,132 @@ Cc: Sam Bradshaw <sbradshaw@micron.com>
 Cc: Jeff Moyer <jmoyer@redhat.com>
 Cc: Al Viro <viro@zeniv.linux.org.uk>
 Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- fs/aio.c            | 69 +++++++++++++++++++++++++++++++----------------------
- include/linux/aio.h | 11 ++-------
- 2 files changed, 42 insertions(+), 38 deletions(-)
+ fs/aio.c | 35 ++++++++++++++++++++---------------
+ 1 file changed, 20 insertions(+), 15 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 73ec062..280b014 100644
+index fe794af..bde41c1 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -637,8 +637,6 @@ static void kiocb_free(struct kiocb *req)
- 		eventfd_ctx_put(req->ki_eventfd);
- 	if (req->ki_dtor)
- 		req->ki_dtor(req);
--	if (req->ki_iovec != &req->ki_inline_vec)
--		kfree(req->ki_iovec);
- 	kmem_cache_free(kiocb_cachep, req);
- }
+@@ -89,7 +89,13 @@ struct kioctx {
+ 	struct work_struct	rcu_work;
  
-@@ -968,24 +966,26 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
- typedef ssize_t (aio_rw_op)(struct kiocb *, const struct iovec *,
- 			    unsigned long, loff_t);
+ 	struct {
+-		atomic_t	reqs_active;
++		/*
++		 * This counts the number of available slots in the ringbuffer,
++		 * so we avoid overflowing it: it's decremented (if positive)
++		 * when allocating a kiocb and incremented when the resulting
++		 * io_event is pulled off the ringbuffer.
++		 */
++		atomic_t	reqs_available;
+ 	} ____cacheline_aligned_in_smp;
  
--static ssize_t aio_setup_vectored_rw(int rw, struct kiocb *kiocb, bool compat)
-+static ssize_t aio_setup_vectored_rw(struct kiocb *kiocb,
-+				     int rw, char __user *buf,
-+				     unsigned long *nr_segs,
-+				     struct iovec **iovec,
-+				     bool compat)
- {
- 	ssize_t ret;
+ 	struct {
+@@ -306,19 +312,19 @@ static void free_ioctx(struct kioctx *ctx)
+ 	head = ring->head;
+ 	kunmap_atomic(ring);
  
--	kiocb->ki_nr_segs = kiocb->ki_nbytes;
-+	*nr_segs = kiocb->ki_nbytes;
+-	while (atomic_read(&ctx->reqs_active) > 0) {
++	while (atomic_read(&ctx->reqs_available) < ctx->nr_events - 1) {
+ 		wait_event(ctx->wait,
+ 			   (head != ctx->tail) ||
+-			   (atomic_read(&ctx->reqs_active) <= 0);
++			   (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1));
  
- #ifdef CONFIG_COMPAT
- 	if (compat)
- 		ret = compat_rw_copy_check_uvector(rw,
--				(struct compat_iovec __user *)kiocb->ki_buf,
--				kiocb->ki_nr_segs, 1, &kiocb->ki_inline_vec,
--				&kiocb->ki_iovec);
-+				(struct compat_iovec __user *)buf,
-+				*nr_segs, 1, *iovec, iovec);
- 	else
- #endif
- 		ret = rw_copy_check_uvector(rw,
--				(struct iovec __user *)kiocb->ki_buf,
--				kiocb->ki_nr_segs, 1, &kiocb->ki_inline_vec,
--				&kiocb->ki_iovec);
-+				(struct iovec __user *)buf,
-+				*nr_segs, 1, *iovec, iovec);
- 	if (ret < 0)
- 		return ret;
+ 		avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
  
-@@ -994,15 +994,17 @@ static ssize_t aio_setup_vectored_rw(int rw, struct kiocb *kiocb, bool compat)
- 	return 0;
- }
- 
--static ssize_t aio_setup_single_vector(int rw, struct kiocb *kiocb)
-+static ssize_t aio_setup_single_vector(struct kiocb *kiocb,
-+				       int rw, char __user *buf,
-+				       unsigned long *nr_segs,
-+				       struct iovec *iovec)
- {
--	if (unlikely(!access_ok(!rw, kiocb->ki_buf, kiocb->ki_nbytes)))
-+	if (unlikely(!access_ok(!rw, buf, kiocb->ki_nbytes)))
- 		return -EFAULT;
- 
--	kiocb->ki_iovec = &kiocb->ki_inline_vec;
--	kiocb->ki_iovec->iov_base = kiocb->ki_buf;
--	kiocb->ki_iovec->iov_len = kiocb->ki_nbytes;
--	kiocb->ki_nr_segs = 1;
-+	iovec->iov_base = buf;
-+	iovec->iov_len = kiocb->ki_nbytes;
-+	*nr_segs = 1;
- 	return 0;
- }
- 
-@@ -1011,15 +1013,18 @@ static ssize_t aio_setup_single_vector(int rw, struct kiocb *kiocb)
-  *	Performs the initial checks and aio retry method
-  *	setup for the kiocb at the time of io submission.
-  */
--static ssize_t aio_run_iocb(struct kiocb *req, bool compat)
-+static ssize_t aio_run_iocb(struct kiocb *req, unsigned opcode,
-+			    char __user *buf, bool compat)
- {
- 	struct file *file = req->ki_filp;
- 	ssize_t ret;
-+	unsigned long nr_segs;
- 	int rw;
- 	fmode_t mode;
- 	aio_rw_op *rw_op;
-+	struct iovec inline_vec, *iovec = &inline_vec;
- 
--	switch (req->ki_opcode) {
-+	switch (opcode) {
- 	case IOCB_CMD_PREAD:
- 	case IOCB_CMD_PREADV:
- 		mode	= FMODE_READ;
-@@ -1040,16 +1045,21 @@ rw_common:
- 		if (!rw_op)
- 			return -EINVAL;
- 
--		ret = (req->ki_opcode == IOCB_CMD_PREADV ||
--		       req->ki_opcode == IOCB_CMD_PWRITEV)
--			? aio_setup_vectored_rw(rw, req, compat)
--			: aio_setup_single_vector(rw, req);
-+		ret = (opcode == IOCB_CMD_PREADV ||
-+		       opcode == IOCB_CMD_PWRITEV)
-+			? aio_setup_vectored_rw(req, rw, buf, &nr_segs,
-+						&iovec, compat)
-+			: aio_setup_single_vector(req, rw, buf, &nr_segs,
-+						  iovec);
- 		if (ret)
- 			return ret;
- 
- 		ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
--		if (ret < 0)
-+		if (ret < 0) {
-+			if (iovec != &inline_vec)
-+				kfree(iovec);
- 			return ret;
-+		}
- 
- 		req->ki_nbytes = ret;
- 
-@@ -1063,8 +1073,7 @@ rw_common:
- 		if (rw == WRITE)
- 			file_start_write(file);
- 
--		ret = rw_op(req, req->ki_iovec,
--			    req->ki_nr_segs, req->ki_pos);
-+		ret = rw_op(req, iovec, nr_segs, req->ki_pos);
- 
- 		if (rw == WRITE)
- 			file_end_write(file);
-@@ -1089,6 +1098,9 @@ rw_common:
- 		return -EINVAL;
+-		atomic_sub(avail, &ctx->reqs_active);
++		atomic_add(avail, &ctx->reqs_available);
+ 		head += avail;
+ 		head %= ctx->nr_events;
  	}
  
-+	if (iovec != &inline_vec)
-+		kfree(iovec);
+-	WARN_ON(atomic_read(&ctx->reqs_active) < 0);
++	WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr_events - 1);
+ 
+ 	aio_free_ring(ctx);
+ 
+@@ -382,6 +388,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 	if (aio_setup_ring(ctx) < 0)
+ 		goto out_freectx;
+ 
++	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
 +
- 	if (ret != -EIOCBQUEUED) {
+ 	/* limit the number of system wide aios */
+ 	spin_lock(&aio_nr_lock);
+ 	if (aio_nr + nr_events > aio_max_nr ||
+@@ -484,7 +492,7 @@ void exit_aio(struct mm_struct *mm)
+ 				"exit_aio:ioctx still alive: %d %d %d\n",
+ 				atomic_read(&ctx->users),
+ 				atomic_read(&ctx->dead),
+-				atomic_read(&ctx->reqs_active));
++				atomic_read(&ctx->reqs_available));
  		/*
- 		 * There's no easy way to restart the syscall since other AIO's
-@@ -1160,12 +1172,11 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	req->ki_obj.user = user_iocb;
- 	req->ki_user_data = iocb->aio_data;
- 	req->ki_pos = iocb->aio_offset;
+ 		 * We don't need to bother with munmap() here -
+ 		 * exit_mmap(mm) is coming and it'll unmap everything.
+@@ -516,12 +524,9 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
+ {
+ 	struct kiocb *req;
+ 
+-	if (atomic_read(&ctx->reqs_active) >= ctx->nr_events)
++	if (atomic_dec_if_positive(&ctx->reqs_available) <= 0)
+ 		return NULL;
+ 
+-	if (atomic_inc_return(&ctx->reqs_active) > ctx->nr_events - 1)
+-		goto out_put;
 -
--	req->ki_buf = (char __user *)(unsigned long)iocb->aio_buf;
- 	req->ki_nbytes = iocb->aio_nbytes;
--	req->ki_opcode = iocb->aio_lio_opcode;
+ 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
+ 	if (unlikely(!req))
+ 		goto out_put;
+@@ -531,7 +536,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
  
--	ret = aio_run_iocb(req, compat);
-+	ret = aio_run_iocb(req, iocb->aio_lio_opcode,
-+			   (char __user *)(unsigned long)iocb->aio_buf,
-+			   compat);
- 	if (ret)
- 		goto out_put_req;
+ 	return req;
+ out_put:
+-	atomic_dec(&ctx->reqs_active);
++	atomic_inc(&ctx->reqs_available);
+ 	return NULL;
+ }
  
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 7bb766e..b570472 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -36,6 +36,7 @@ struct kiocb {
- 	struct kioctx		*ki_ctx;	/* NULL for sync ops */
- 	kiocb_cancel_fn		*ki_cancel;
- 	void			(*ki_dtor)(struct kiocb *);
-+	void			*private;
+@@ -602,7 +607,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
  
- 	union {
- 		void __user		*user;
-@@ -44,15 +45,7 @@ struct kiocb {
+ 	/*
+ 	 * Take rcu_read_lock() in case the kioctx is being destroyed, as we
+-	 * need to issue a wakeup after decrementing reqs_active.
++	 * need to issue a wakeup after incrementing reqs_available.
+ 	 */
+ 	rcu_read_lock();
  
- 	__u64			ki_user_data;	/* user's data for completion */
- 	loff_t			ki_pos;
--
--	void			*private;
--	/* State that we remember to be able to restart/retry  */
--	unsigned short		ki_opcode;
--	size_t			ki_nbytes; 	/* copy of iocb->aio_nbytes */
--	char 			__user *ki_buf;	/* remaining iocb->aio_buf */
--	struct iovec		ki_inline_vec;	/* inline vector */
-- 	struct iovec		*ki_iovec;
-- 	unsigned long		ki_nr_segs;
-+	size_t			ki_nbytes;	/* copy of iocb->aio_nbytes */
+@@ -620,7 +625,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ 	 */
+ 	if (unlikely(xchg(&iocb->ki_cancel,
+ 			  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
+-		atomic_dec(&ctx->reqs_active);
++		atomic_inc(&ctx->reqs_available);
+ 		/* Still need the wake_up in case free_ioctx is waiting */
+ 		goto put_rq;
+ 	}
+@@ -758,7 +763,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
  
- 	struct list_head	ki_list;	/* the aio core uses this
- 						 * for cancellation */
+ 	pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
+ 
+-	atomic_sub(ret, &ctx->reqs_active);
++	atomic_add(ret, &ctx->reqs_available);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
+ 
+@@ -1142,7 +1147,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	aio_put_req(req);	/* drop extra ref to req */
+ 	return 0;
+ out_put_req:
+-	atomic_dec(&ctx->reqs_active);
++	atomic_inc(&ctx->reqs_available);
+ 	aio_put_req(req);	/* drop extra ref to req */
+ 	aio_put_req(req);	/* drop i/o ref to req */
+ 	return ret;
 -- 
 1.8.2.1
 
