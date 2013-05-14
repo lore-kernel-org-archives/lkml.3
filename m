@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab3ENQw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:52:58 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:65510 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab3ENQwx (ORCPT
+	id S1758073Ab3ENQxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:53:07 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43391 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757610Ab3ENQxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:52:53 -0400
+	Tue, 14 May 2013 12:53:04 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
@@ -15,11 +15,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         Myron Stowe <myron.stowe@redhat.com>,
         Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [RFC PATCH v2, part 2 06/18] PCI, IA64: use hotplug-safe iterators to walk PCI buses
-Date: Wed, 15 May 2013 00:51:50 +0800
-Message-Id: <1368550322-1045-6-git-send-email-jiang.liu@huawei.com>
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: [RFC PATCH v2, part 2 08/18] PCI, mn10300: use hotplug-safe iterators to walk PCI buses
+Date: Wed, 15 May 2013 00:51:52 +0800
+Message-Id: <1368550322-1045-8-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
 References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com>
@@ -27,68 +27,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance IA64 architecture specific code to use hotplug-safe iterators
-to walk PCI buses.
+Enhance mn10300 architecture specific code to use hotplug-safe
+iterators to walk PCI buses.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-ia64@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/ia64/hp/common/sba_iommu.c   | 2 +-
- arch/ia64/sn/kernel/io_common.c   | 2 +-
- arch/ia64/sn/pci/tioca_provider.c | 3 ++-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ arch/mn10300/unit-asb2305/pci-asb2305.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-index bcda5b2..6faf241 100644
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -2156,7 +2156,7 @@ sba_init(void)
- #ifdef CONFIG_PCI
- 	{
- 		struct pci_bus *b = NULL;
--		while ((b = pci_find_next_bus(b)) != NULL)
-+		for_each_pci_root_bus(b)
- 			sba_connect_bus(b);
- 	}
- #endif
-diff --git a/arch/ia64/sn/kernel/io_common.c b/arch/ia64/sn/kernel/io_common.c
-index 11f2275..87d8d8f 100644
---- a/arch/ia64/sn/kernel/io_common.c
-+++ b/arch/ia64/sn/kernel/io_common.c
-@@ -530,7 +530,7 @@ sn_io_late_init(void)
- 	 * info from the PROM).
- 	 */
- 	bus = NULL;
--	while ((bus = pci_find_next_bus(bus)) != NULL) {
-+	for_each_pci_root_bus(bus) {
- 		bussoft = SN_PCIBUS_BUSSOFT(bus);
- 		nasid = NASID_GET(bussoft->bs_base);
- 		cnode = nasid_to_cnodeid(nasid);
-diff --git a/arch/ia64/sn/pci/tioca_provider.c b/arch/ia64/sn/pci/tioca_provider.c
-index a70b11f..cd8c0fb 100644
---- a/arch/ia64/sn/pci/tioca_provider.c
-+++ b/arch/ia64/sn/pci/tioca_provider.c
-@@ -624,7 +624,7 @@ tioca_bus_fixup(struct pcibus_bussoft *prom_bussoft, struct pci_controller *cont
- 	    nasid_to_cnodeid(tioca_common->ca_closest_nasid);
- 	tioca_common->ca_kernel_private = (u64) tioca_kern;
+diff --git a/arch/mn10300/unit-asb2305/pci-asb2305.c b/arch/mn10300/unit-asb2305/pci-asb2305.c
+index c4e2e79..88c0c52 100644
+--- a/arch/mn10300/unit-asb2305/pci-asb2305.c
++++ b/arch/mn10300/unit-asb2305/pci-asb2305.c
+@@ -207,8 +207,11 @@ fs_initcall(pcibios_assign_resources);
  
--	bus = pci_find_bus(tioca_common->ca_common.bs_persist_segment,
-+	bus = pci_get_bus(tioca_common->ca_common.bs_persist_segment,
- 		tioca_common->ca_common.bs_persist_busnum);
- 	BUG_ON(!bus);
- 	tioca_kern->ca_devices = &bus->devices;
-@@ -632,6 +632,7 @@ tioca_bus_fixup(struct pcibus_bussoft *prom_bussoft, struct pci_controller *cont
- 	/* init GART */
- 
- 	if (tioca_gart_init(tioca_kern) < 0) {
-+		pci_bus_put(bus);
- 		kfree(tioca_kern);
- 		kfree(tioca_common);
- 		return NULL;
+ void __init pcibios_resource_survey(void)
+ {
++	struct pci_bus *bus;
++
+ 	DBG("PCI: Allocating resources\n");
+-	pcibios_allocate_bus_resources(&pci_root_buses);
++	for_each_pci_root_bus(bus)
++		pcibios_allocate_bus_resources(&bus->children);
+ 	pcibios_allocate_resources(0);
+ 	pcibios_allocate_resources(1);
+ }
 -- 
 1.8.1.2
 
