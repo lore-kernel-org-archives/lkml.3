@@ -1,227 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3ENKi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:38:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34992 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221Ab3ENKi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:38:27 -0400
-Date: Tue, 14 May 2013 12:38:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] mm: vmscan: Flatten kswapd priority loop
-Message-ID: <20130514103825.GM5198@dhcp22.suse.cz>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
- <1368432760-21573-4-git-send-email-mgorman@suse.de>
+	id S1752785Ab3ENKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:38:59 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38875 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab3ENKi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 06:38:58 -0400
+Date: Tue, 14 May 2013 03:38:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>
+Subject: Re: Bisected post-3.9 regression: Resume takes 5 times as much time
+ as with v3.9
+Message-ID: <20130514103852.GE17576@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <87r4hdjsu5.fsf@nemi.mork.no>
+ <20130512113157.GG3648@linux.vnet.ibm.com>
+ <87hai8kwgh.fsf@nemi.mork.no>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1368432760-21573-4-git-send-email-mgorman@suse.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87hai8kwgh.fsf@nemi.mork.no>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051410-3620-0000-0000-00000277D6E7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 13-05-13 09:12:34, Mel Gorman wrote:
-> kswapd stops raising the scanning priority when at least SWAP_CLUSTER_MAX
-> pages have been reclaimed or the pgdat is considered balanced. It then
-> rechecks if it needs to restart at DEF_PRIORITY and whether high-order
-> reclaim needs to be reset. This is not wrong per-se but it is confusing
-> to follow and forcing kswapd to stay at DEF_PRIORITY may require several
-> restarts before it has scanned enough pages to meet the high watermark even
-> at 100% efficiency. This patch irons out the logic a bit by controlling
-> when priority is raised and removing the "goto loop_again".
+On Sun, May 12, 2013 at 06:13:34PM +0200, Bjørn Mork wrote:
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 > 
-> This patch has kswapd raise the scanning priority until it is scanning
-> enough pages that it could meet the high watermark in one shrink of the
-> LRU lists if it is able to reclaim at 100% efficiency. It will not raise
-> the scanning prioirty higher unless it is failing to reclaim any pages.
+> > We don't want to back out the RCU_FAST_NO_HZ changes due to their
+> > energy-efficiency benefits.
 > 
-> To avoid infinite looping for high-order allocation requests kswapd will
-> not reclaim for high-order allocations when it has reclaimed at least
-> twice the number of pages as the allocation request.
+> Yes, that's what I assumed.  Just didn't know where to start dissecting
+> it...
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> >  So could you please try out Borislav's
+> > patch below?  He ran into the same issue a few weeks ago, and this
+> > one fixed it for him.
+> >
+> > 							Thanx, Paul
+> >
+> > ------------------------------------------------------------------------
+> >
+> > rcu: Expedite grace periods during suspend/resume
+> >
+> > CONFIG_RCU_FAST_NO_HZ can increase grace-period durations by up to
+> > a factor of four, which can result in long suspend and resume times.
+> > Thus, this commit temporarily switches to expedited grace periods when
+> > suspending the box and return to normal settings when resuming.
+> >
+> > Signed-off-by: Borislav Petkov <bp@suse.de>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index a9610d1..d9604a4 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -53,6 +53,7 @@
+> >  #include <linux/delay.h>
+> >  #include <linux/stop_machine.h>
+> >  #include <linux/random.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #include "rcutree.h"
+> >  #include <trace/events/rcu.h>
+> > @@ -3003,6 +3004,22 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
+> >  	return NOTIFY_OK;
+> >  }
+> >  
+> > +static int rcu_pm_notify(struct notifier_block *self,
+> > +			 unsigned long action, void *hcpu)
+> > +{
+> > +	switch (action) {
+> > +	case PM_HIBERNATION_PREPARE:
+> > +		rcu_expedited = 1;
+> > +		break;
+> > +	case PM_POST_RESTORE:
+> > +		rcu_expedited = 0;
+> > +		break;
+> > +	default:
+> > +		break;
+> > +	}
+> > +	return NOTIFY_OK;
+> > +}
+> > +
+> >  /*
+> >   * Spawn the kthread that handles this RCU flavor's grace periods.
+> >   */
+> > @@ -3243,6 +3260,7 @@ void __init rcu_init(void)
+> >  	 * or the scheduler are operational.
+> >  	 */
+> >  	cpu_notifier(rcu_cpu_notify, 0);
+> > +	pm_notifier(rcu_pm_notify, 0);
+> >  	for_each_online_cpu(cpu)
+> >  		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
+> >  }
+> 
+> 
+> Thanks!  This patch did not make any difference for me by itself, for
+> pretty obvious reasons (I didn't time restore from hibernate - only from
+> suspend). But it pointed me in the right direction.  Applying the
+> attached patch on top of that one fixed the problem.
+> 
+> Note that I'm also changing the restore from hibernate hook. According
+> to Documentation/power/notifiers.txt :
+> 
+>  PM_POST_RESTORE         An error occurred during restore from hibernation.
+>                          Device drivers' restore callbacks have been executed
+>                          and tasks have been thawed.
+> 
+> 
+> I believe Borislav must have meant 
+> 
+>  PM_POST_HIBERNATION     The system memory state has been restored from a
+>                          hibernation image or an error occurred during
+>                          hibernation.  Device drivers' restore callbacks have
+>                          been executed and tasks have been thawed.
+> 
+> in the above patch?
+> 
+> Please include some combination of these patches in your upcoming v3.10
+> fixes.  Thanks.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+I have queued the following patch, thank you, Bjørn!
 
+							Thanx, Paul
+
+> Bjørn
+> 
+
+> >From cf169d21274911fea4b6a89a0a2c7b370d9de441 Mon Sep 17 00:00:00 2001
+> From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+> Date: Sun, 12 May 2013 17:51:10 +0200
+> Subject: [PATCH] rcu: Really switch to expedited grace periods for suspend
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> commit 587ff2cf ("rcu: Expedite grace periods during suspend/resume")
+> enabled expedited grace periods for hibernation, but not for suspend.
+> The same issue applies to both cases, so apply the same logic.
+> 
+> Restoring on post hibernation and post suspend, but not on post
+> restore, which only applies to the restore error case.
+> 
+> Cc: Borislav Petkov <bp@suse.de>
+> Signed-off-by: Bjørn Mork <bjorn@mork.no>
 > ---
->  mm/vmscan.c | 86 +++++++++++++++++++++++++++++--------------------------------
->  1 file changed, 41 insertions(+), 45 deletions(-)
+>  kernel/rcutree.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 26ad67f..1c10ee5 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2654,8 +2654,12 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->  /*
->   * kswapd shrinks the zone by the number of pages required to reach
->   * the high watermark.
-> + *
-> + * Returns true if kswapd scanned at least the requested number of pages to
-> + * reclaim. This is used to determine if the scanning priority needs to be
-> + * raised.
->   */
-> -static void kswapd_shrink_zone(struct zone *zone,
-> +static bool kswapd_shrink_zone(struct zone *zone,
->  			       struct scan_control *sc,
->  			       unsigned long lru_pages)
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 6934238..2dcbf84 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -3103,9 +3103,11 @@ static int rcu_pm_notify(struct notifier_block *self,
 >  {
-> @@ -2675,6 +2679,8 @@ static void kswapd_shrink_zone(struct zone *zone,
->  
->  	if (nr_slab == 0 && !zone_reclaimable(zone))
->  		zone->all_unreclaimable = 1;
-> +
-> +	return sc->nr_scanned >= sc->nr_to_reclaim;
->  }
->  
->  /*
-> @@ -2701,26 +2707,26 @@ static void kswapd_shrink_zone(struct zone *zone,
->  static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  							int *classzone_idx)
->  {
-> -	bool pgdat_is_balanced = false;
->  	int i;
->  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
->  	unsigned long nr_soft_reclaimed;
->  	unsigned long nr_soft_scanned;
->  	struct scan_control sc = {
->  		.gfp_mask = GFP_KERNEL,
-> +		.priority = DEF_PRIORITY,
->  		.may_unmap = 1,
->  		.may_swap = 1,
-> +		.may_writepage = !laptop_mode,
->  		.order = order,
->  		.target_mem_cgroup = NULL,
->  	};
-> -loop_again:
-> -	sc.priority = DEF_PRIORITY;
-> -	sc.nr_reclaimed = 0;
-> -	sc.may_writepage = !laptop_mode;
->  	count_vm_event(PAGEOUTRUN);
->  
->  	do {
->  		unsigned long lru_pages = 0;
-> +		bool raise_priority = true;
-> +
-> +		sc.nr_reclaimed = 0;
->  
->  		/*
->  		 * Scan in the highmem->dma direction for the highest
-> @@ -2762,10 +2768,8 @@ loop_again:
->  			}
->  		}
->  
-> -		if (i < 0) {
-> -			pgdat_is_balanced = true;
-> +		if (i < 0)
->  			goto out;
-> -		}
->  
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
-> @@ -2832,8 +2836,16 @@ loop_again:
->  
->  			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
->  			    !zone_balanced(zone, testorder,
-> -					   balance_gap, end_zone))
-> -				kswapd_shrink_zone(zone, &sc, lru_pages);
-> +					   balance_gap, end_zone)) {
-> +				/*
-> +				 * There should be no need to raise the
-> +				 * scanning priority if enough pages are
-> +				 * already being scanned that high
-> +				 * watermark would be met at 100% efficiency.
-> +				 */
-> +				if (kswapd_shrink_zone(zone, &sc, lru_pages))
-> +					raise_priority = false;
-> +			}
->  
->  			/*
->  			 * If we're getting trouble reclaiming, start doing
-> @@ -2868,46 +2880,29 @@ loop_again:
->  				pfmemalloc_watermark_ok(pgdat))
->  			wake_up(&pgdat->pfmemalloc_wait);
->  
-> -		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
-> -			pgdat_is_balanced = true;
-> -			break;		/* kswapd: all done */
-> -		}
-> -
->  		/*
-> -		 * We do this so kswapd doesn't build up large priorities for
-> -		 * example when it is freeing in parallel with allocators. It
-> -		 * matches the direct reclaim path behaviour in terms of impact
-> -		 * on zone->*_priority.
-> +		 * Fragmentation may mean that the system cannot be rebalanced
-> +		 * for high-order allocations in all zones. If twice the
-> +		 * allocation size has been reclaimed and the zones are still
-> +		 * not balanced then recheck the watermarks at order-0 to
-> +		 * prevent kswapd reclaiming excessively. Assume that a
-> +		 * process requested a high-order can direct reclaim/compact.
->  		 */
-> -		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-> -			break;
-> -	} while (--sc.priority >= 0);
-> -
-> -out:
-> -	if (!pgdat_is_balanced) {
-> -		cond_resched();
-> +		if (order && sc.nr_reclaimed >= 2UL << order)
-> +			order = sc.order = 0;
->  
-> -		try_to_freeze();
-> +		/* Check if kswapd should be suspending */
-> +		if (try_to_freeze() || kthread_should_stop())
-> +			break;
->  
->  		/*
-> -		 * Fragmentation may mean that the system cannot be
-> -		 * rebalanced for high-order allocations in all zones.
-> -		 * At this point, if nr_reclaimed < SWAP_CLUSTER_MAX,
-> -		 * it means the zones have been fully scanned and are still
-> -		 * not balanced. For high-order allocations, there is
-> -		 * little point trying all over again as kswapd may
-> -		 * infinite loop.
-> -		 *
-> -		 * Instead, recheck all watermarks at order-0 as they
-> -		 * are the most important. If watermarks are ok, kswapd will go
-> -		 * back to sleep. High-order users can still perform direct
-> -		 * reclaim if they wish.
-> +		 * Raise priority if scanning rate is too low or there was no
-> +		 * progress in reclaiming pages
->  		 */
-> -		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
-> -			order = sc.order = 0;
-> -
-> -		goto loop_again;
-> -	}
-> +		if (raise_priority || !sc.nr_reclaimed)
-> +			sc.priority--;
-> +	} while (sc.priority >= 0 &&
-> +		 !pgdat_balanced(pgdat, order, *classzone_idx));
->  
->  	/*
->  	 * If kswapd was reclaiming at a higher order, it has the option of
-> @@ -2936,6 +2931,7 @@ out:
->  			compact_pgdat(pgdat, order);
->  	}
->  
-> +out:
->  	/*
->  	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
->  	 * makes a decision on the order we were last reclaiming at. However,
+>  	switch (action) {
+>  	case PM_HIBERNATION_PREPARE:
+> +	case PM_SUSPEND_PREPARE:
+>  		rcu_expedited = 1;
+>  		break;
+> -	case PM_POST_RESTORE:
+> +	case PM_POST_HIBERNATION:
+> +	case PM_POST_SUSPEND:
+>  		rcu_expedited = 0;
+>  		break;
+>  	default:
 > -- 
-> 1.8.1.4
+> 1.7.10.4
 > 
 
--- 
-Michal Hocko
-SUSE Labs
