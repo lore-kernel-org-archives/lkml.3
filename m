@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab3ENN6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 09:58:54 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:39957 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439Ab3ENN6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 09:58:53 -0400
-Date: Tue, 14 May 2013 09:58:50 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable()
-Message-ID: <20130514135850.GG13845@kvack.org>
-References: <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com> <20130205120137.GG21389@suse.de> <20130206004234.GD11197@blaptop> <20130206095617.GN21389@suse.de> <5190AE4F.4000103@cn.fujitsu.com> <20130513091902.GP11497@suse.de> <20130513143757.GP31899@kvack.org> <x49obcfnd6c.fsf@segfault.boston.devel.redhat.com> <20130513150147.GQ31899@kvack.org> <5191926A.2090608@cn.fujitsu.com>
+	id S1757601Ab3ENOA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:00:57 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:47816 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab3ENOA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:00:56 -0400
+Date: Tue, 14 May 2013 16:00:50 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: "Mehaffey, John" <John_Mehaffey@mentor.com>
+Cc: "tim.bird@am.sony.com" <tim.bird@am.sony.com>, "wd@denx.de" <wd@denx.de>,
+        "mzjro@0pointer.net" <mzjro@0pointer.net>,
+        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
+        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
+        "yoush@cs.msu.su" <yoush@cs.msu.su>,
+        "systemd-devel@lists.freedesktop.org" 
+	<systemd-devel@lists.freedesktop.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
+        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>
+Subject: Re: [U-Boot] 2013 Plumber's CFP: Fastboot
+Message-ID: <20130514160050.38d591d3@skate>
+In-Reply-To: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
+References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5191926A.2090608@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 09:24:58AM +0800, Tang Chen wrote:
-> Hi Mel, Benjamin, Jeff,
-> 
-> On 05/13/2013 11:01 PM, Benjamin LaHaise wrote:
-> >On Mon, May 13, 2013 at 10:54:03AM -0400, Jeff Moyer wrote:
-> >>How do you propose to move the ring pages?
-> >
-> >It's the same problem as doing a TLB shootdown: flush the old pages from
-> >userspace's mapping, copy any existing data to the new pages, then
-> >repopulate the page tables.  It will likely require the addition of
-> >address_space_operations for the mapping, but that's not too hard to do.
-> >
-> 
-> I think we add migrate_unpin() callback to decrease page->count if 
-> necessary,
-> and migrate the page to a new page, and add migrate_pin() callback to pin
-> the new page again.
+Dear Mehaffey, John,
 
-You can't just decrease the page count for this to work.  The pages are 
-pinned because aio_complete() can occur at any time and needs to have a 
-place to write the completion events.  When changing pages, aio has to 
-take the appropriate lock when changing one page for another.
+On Mon, 13 May 2013 23:51:46 +0000, Mehaffey, John wrote:
 
-> The migrate procedure will work just as before. We use callbacks to 
-> decrease
-> the page->count before migration starts, and increase it when the migration
-> is done.
-> 
-> And migrate_pin() and migrate_unpin() callbacks will be added to
-> struct address_space_operations.
+> I am proposing a microconference on fastboot at the Linux Plumber's
+> conference 2013 in New Orleans. The goal is to get to sub 1S boot
+> times for a large (IVI) system using NAND flash. This pushes the
+> state of the art, and will require innovative solutions in may areas
+> of Linux plumbing, including bootloader, kernel init, UBI, and
+> systemd.
 
-I think the existing migratepage operation in address_space_operations can 
-be used.  Does it get called when hot unplug occurs?  That is: is testing 
-with the migrate_pages syscall similar enough to the memory removal case?
+Beware that the 'fastboot' you're talking about (making Linux boot
+fast), especially written this way, may easily be confused with
+'fastboot', which is the Android-specific protocol to flash a system
+through USB (see
+http://en.wikipedia.org/wiki/Android_software_development#Fastboot).
 
-		-ben
+Besides this minor comment, I'm looking forward for the notes of this
+discussion on this very interesting topic.
 
-> Is that right ?
-> 
-> If so, I'll be working on it.
-> 
-> Thanks. :)
+Best regards,
 
+Thomas
 -- 
-"Thought is the essence of where you are now."
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
