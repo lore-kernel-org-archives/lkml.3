@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab3ENMmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:42:06 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:55938 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab3ENMmE (ORCPT
+	id S1757401Ab3ENMqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:46:53 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39592 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab3ENMqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:42:04 -0400
-Message-ID: <51923114.2070701@gmail.com>
-Date: Tue, 14 May 2013 20:41:56 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Tue, 14 May 2013 08:46:50 -0400
+Date: Tue, 14 May 2013 14:46:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC GIT PULL] sched; Fix a few missing rq clock updates
+Message-ID: <20130514124642.GA19321@somewhere>
+References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
+ <20130514115733.GG15942@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2, part 1 5/9] ACPI, PCI: remove unused global list acpi_pci_roots
- in pci_root.c
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-6-git-send-email-jiang.liu@huawei.com> <1598495.v92I2Ljz9W@vostro.rjw.lan>
-In-Reply-To: <1598495.v92I2Ljz9W@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514115733.GG15942@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14 May 2013 07:28:45 AM CST, Rafael J. Wysocki wrote:
-> On Tuesday, May 14, 2013 12:08:29 AM Jiang Liu wrote:
->> Now the global list acpi_pci_roots pci_root.c is useless, remove it.
->
-> Well, are patches [1-4/9] needed for that or does it apply without them?
-Hi Rafael,
-       This two patches have no dependency on others.
-       Thanks!
+On Tue, May 14, 2013 at 01:57:33PM +0200, Peter Zijlstra wrote:
+> On Fri, Apr 12, 2013 at 01:50:57AM +0200, Frederic Weisbecker wrote:
+> > Hi,
+> > 
+> > So I revisited the rq clock series I had for dynticks. The patches
+> > actually were about upstream issues so I refactored the fixes
+> > under that angle and gave up with the wrong asumption that rq
+> > clock relies on the tick for its updates.
+> > 
+> > Patches 1-4 fix some missing updates. Additionally I removed
+> > 2 of these updates from the previous set:
+> > 
+> > * No need to update the rq clock on idle_balance() because it should
+> > follow a call to deactivate_task() (unless TIF_NEED_RESCHED is set
+> > on idle without new task on the runqueue, not sure we want to cover that).
+> > 
+> > * No need to update for try_to_wake_up_local() -> ttwu_do_wakeup() -> check_preempt_curr()
+> >   as it's following deactivate_task().
+> > 
+> > Patch 5 brings accessors that will be necessary to settle an rq clock
+> > debugging engine. What remains is to tag scheduler's entry/exit points
+> > and report missing or redundant update_rq_clock() before calls to
+> > rq_clock() and rq_clock_task().
+> 
+> Just noticed this queue was still sitting in the INBOX, I took it and will
+> soon-ish hand to Ingo.
 
->
-> Rafael
->
->
-
+Thanks a lot!
