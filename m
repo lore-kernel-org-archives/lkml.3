@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab3ENUfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 16:35:23 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:41509 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab3ENUfW (ORCPT
+	id S1758470Ab3ENUfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 16:35:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60305 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758419Ab3ENUfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 16:35:22 -0400
+	Tue, 14 May 2013 16:35:46 -0400
+Date: Tue, 14 May 2013 21:30:28 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: V3.10-rc1 memory leak
+Message-ID: <20130514203028.GA2997@MacBook-Pro.local>
+References: <51912567.6090507@lwfinger.net>
+ <1368558586.6828.53.camel@gandalf.local.home>
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <20130514181318.10068.79002@quantum>
-References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com>
-	<1366388904-13903-3-git-send-email-james.hogan@imgtec.com>
-	<20130514181318.10068.79002@quantum>
-Date: Tue, 14 May 2013 21:35:20 +0100
-X-Google-Sender-Auth: PgiNNeFKXGwXiJktNbKCrXK5P6o
-Message-ID: <CAAG0J9_ScDGDvk4NF_ojLb1MgB0mA60htR3ay2Z4EvFvNRT1Dw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] clk: add support for clock reparent on set_rate
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368558586.6828.53.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2013 19:13, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting James Hogan (2013-04-19 09:28:23)
->> Add core support to allow clock implementations to select the best
->> parent clock when rounding a rate, e.g. the one which can provide the
->> closest clock rate to that requested. This is by way of adding a new
->> clock op, determine_rate(), which is like round_rate() but has an extra
->> parameter to allow the clock implementation to optionally select a
->> different parent clock. The core then takes care of reparenting the
->> clock when setting the rate.
->>
->
-> Hi James,
->
-> Can you rebase this onto -rc1?  It does not apply cleanly.
+Hi Steve,
 
-Hi Mike,
+On Tue, May 14, 2013 at 08:09:46PM +0100, Steven Rostedt wrote:
+> # find /debug/tracing/events/ -name format |xargs grep ffff8800769f7438
+> /debug/tracing/events/drm/drm_vblank_event_delivered/format:	field:pid_t pid;	offset:8;	size:4;	signed:1;ffff8800769f7438
+> 
+> Thus, what it is complaining about being leaked, is currently being
+> used.
+> 
+> I guess it's because the fields are stored on the "event class"
+> structure of the module. That is, the struct ftrace_event_class, which
+> is part of the module data section:
+> 
+> struct ftrace_event_class {
+>         char                    *system;
+>         void                    *probe;
+> #ifdef CONFIG_PERF_EVENTS
+>         void                    *perf_probe;
+> #endif
+>         int                     (*reg)(struct ftrace_event_call *event,
+>                                        enum trace_reg type, void *data);
+>         int                     (*define_fields)(struct ftrace_event_call *);
+>         struct list_head        *(*get_fields)(struct ftrace_event_call *);
+>         struct list_head        fields;
+>         int                     (*raw_init)(struct ftrace_event_call *);
+> };
+> 
+> 
+> The list_head fields holds the fields and these are used to print out
+> the formats. For some reason, kmemleak is missing that the fields are
+> being assigned to this list on module load.
+> 
+> Catalin, have any idea why kmemleak is not detecting that the field is
+> being referenced?
 
-Sure, I rebased onto clk-next the other day so I'll update to rc1 and
-resubmit tomorrow.
+I just got a patch today:
 
-Cheers
-James
+https://lkml.org/lkml/2013/5/10/607
+
+which could be related. If Rusty doesn't push it I'll do. But please let
+me know if it does not solve the problem.
+
+Thanks.
+
+-- 
+Catalin
