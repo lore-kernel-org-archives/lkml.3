@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab3ENOIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:08:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624Ab3ENOIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:08:24 -0400
-Message-ID: <5192454D.5030805@redhat.com>
-Date: Tue, 14 May 2013 09:08:13 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1757524Ab3ENONN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:13:13 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:60677 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015Ab3ENONM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:13:12 -0400
+Date: Tue, 14 May 2013 16:13:07 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/3] x86/sched/context_tracking: Call new
+ schedule_preempt_user() from entry_64.S
+Message-ID: <20130514141306.GB19719@somewhere>
+References: <20130510211225.594959788@goodmis.org>
+ <20130510211825.341015861@goodmis.org>
 MIME-Version: 1.0
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-CC: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        EUNBONG SONG <eunb.song@samsung.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-xfs@vger.kernel.org, Dave Chinner <david@fromorbit.com>
-Subject: Re: EXT4 regression caused 4eec7
-References: <6719519.5821368147110937.JavaMail.weblogic@epml17> <20130510192747.GA11707@thunk.org> <87y5bm53z3.fsf@openvz.org> <87txm96fkd.fsf@openvz.org> <87mws1eq6y.fsf@openvz.org> <20130511230559.GD26298@thunk.org> <87a9o01siw.fsf@openvz.org> <51911604.2060805@redhat.com> <20130513170124.GJ400@quack.suse.cz> <51911E42.7010008@redhat.com> <874ne6xcgr.fsf@openvz.org>
-In-Reply-To: <874ne6xcgr.fsf@openvz.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130510211825.341015861@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/14/13 2:11 AM, Dmitry Monakhov wrote:
-> On Mon, 13 May 2013 12:09:22 -0500, Eric Sandeen <sandeen@redhat.com> wrote:
->> On 5/13/13 12:01 PM, Jan Kara wrote:
->>> On Mon 13-05-13 11:34:12, Eric Sandeen wrote:
->>>> On 5/12/13 4:01 AM, Dmitry Monakhov wrote:
->>>>> In fact '4eec70' are vexing because I have reviewed and tested this patch before
->>>>> it was marked as Review-by, but missed the bug. This is because xfstests
->>>>> was executed manually logs was full of warnings but tainted flag was not
->>>>> checked at the end. 
->>>>
->>>> Can you elaborate on this?  What was logged, and is it something we could
->>>> try to pick up post-test in xfstests?
->>>   Generally I think it might be useful if xfstests would fail / warn if
->>> kernel became tainted during the test (e.g. due to WARN_ON or oops, or
->>> something like that). It should be even relatively easy to implement
->>> (just compare /proc/sys/kernel/tainted before and after each test).
->>>
->>> 								Honza
->>>
->>
->> Ah, right.  That should be easy, I'll see if I can cook that up.
-> Also we can use abrt's kernel-oops handler to collect messages.
+On Fri, May 10, 2013 at 05:12:26PM -0400, Steven Rostedt wrote:
+> +/*
+> + * This is a entry point to the scheduler() just before going
+> + * back to user space. This is called with irqs disabled
+> + * which prevents races with the CONTEXT_TRACKING updates.
+> + */
+> +asmlinkage void __sched schedule_preempt_user(void)
+> +{
+> +	enum ctx_state prev_state;
+> +
+> +	prev_state = exception_enter();
+> +
+> +	local_irq_enable();
+> +	__schedule();
+> +	local_irq_disable();
+> +
+> +	exception_exit(prev_state);
+> +}
 
-I sent a pretty simple patch to just check the sysctl to the xfs list
-yesterday.
+Ok I just had a look at how ARM and PPC64 are handling user preemption and it seems
+that irqs are disabled around the call to schedule() on these archs too. Although
+do_work_pending() in ARM surprisingly doesn't re-enable irqs before calling schedule?
 
--Eric
+Anyway having irqs disabled around user preemption seem to be a requirement to make
+sure the TIF_NEED_RESCHED check is not racy against irqs and return to userspace.
+So I guess we can keep the above function as it is.
 
+But perhaps we should queue this for 3.11 given that it's a bit of a sensitive change
+in the x86 user return path.
+
+Look, I'm just going to make a seperate pull request with this patch based on 3.10-rc1
+and let Ingo choose the target.
+
+(Meanwhile I still think it would be a good idea to keep LOCKDEP_SYS_EXIT in the loop :-)
+
+Thanks!
