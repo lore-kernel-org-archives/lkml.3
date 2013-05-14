@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab3ENSGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:06:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12785 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab3ENSGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:06:45 -0400
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        Eric Paris <eparis@redhat.com>
-Subject: [PATCH] fork: reorder permissions when violating number of processes limits
-Date: Tue, 14 May 2013 14:06:11 -0400
-Message-Id: <1368554771-19738-1-git-send-email-eparis@redhat.com>
+	id S1757481Ab3ENSIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:08:53 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:58264 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab3ENSIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 14:08:51 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <1368515328-31535-3-git-send-email-draviv@codeaurora.org>
+References: <1368515328-31535-1-git-send-email-draviv@codeaurora.org>
+	<1368515328-31535-3-git-send-email-draviv@codeaurora.org>
+Date: Tue, 14 May 2013 11:08:49 -0700
+Message-ID: <CAOesGMij6oKDr0BCRAnmz-r48S5FzzMcU_iyCyCyqkafWsmyNA@mail.gmail.com>
+Subject: Re: [PATCH V2 2/9] Documentation: devicetree: Add DT bindings for UFS
+ host controller
+From: Olof Johansson <olof@lixom.net>
+To: Dolev Raviv <draviv@codeaurora.org>
+Cc: linux-scsi@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        "moderated list:OPEN FIRMWARE AND..." 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a task is attempting to violate the RLIMIT_NPROC limit we have a
-check to see if the task is sufficiently priviledged.  The check first
-looks at CAP_SYS_ADMIN, then CAP_SYS_RESOURCE, then if the task is
-uid=0.  A result is that tasks which are allowed by the uid=0 check are
-first checked against the security subsystem.  This results in the
-security subsystem auditting a denial for sys_admin and sys_resource and
-then the task passing the uid=0 check.  This patch rearrainges the code
-to first check uid=0, since if we pass that we shouldn't hit the
-security system at all.  We then check sys_resource, since it is the
-smallest capability which will solve the problem.  Lastly we check the
-fallback everything cap_sysadmin.  We don't want to give this capability
-many places since it is so powerful.  This will eliminate many of the
-false positive/needless denial messages we get when a root task tries to
-violate the nproc limit.  (note that kthreads count against root, so on
-a sufficiently large machine we can actually get past the default limits
-before any userspace tasks are launched.)
+On Tue, May 14, 2013 at 12:08 AM, Dolev Raviv <draviv@codeaurora.org> wrote:
+> Compatible list is used in commit 03b1781 but is not documented.
+> Add necessary device tree bindings to describe on-chip UFS host
+> controllers.
+>
+> Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+>
+> diff --git a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
+> new file mode 100644
+> index 0000000..20468b2
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
+> @@ -0,0 +1,16 @@
+> +* Universal Flash Storage (UFS) Host Controller
+> +
+> +UFSHC nodes are defined to describe on-chip UFS host controllers.
+> +Each UFS controller instance should have its own node.
+> +
+> +Required properties:
+> +- compatible        : compatible list, contains "jedec,ufs-1.1"
+> +- interrupts        : <interrupt mapping for UFS host controller IRQ>
+> +- reg               : <registers mapping>
+> +
+> +Example:
+> +       ufshc@0xfc598000 {
+> +               compatible = "jedec,ufs-1.1";
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
- kernel/fork.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Hmm.
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 987b28a..09dbda3 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1199,8 +1199,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	retval = -EAGAIN;
- 	if (atomic_read(&p->real_cred->user->processes) >=
- 			task_rlimit(p, RLIMIT_NPROC)) {
--		if (!capable(CAP_SYS_ADMIN) && !capable(CAP_SYS_RESOURCE) &&
--		    p->real_cred->user != INIT_USER)
-+		if (p->real_cred->user != INIT_USER &&
-+		    !capable(CAP_SYS_RESOURCE) && !capable(CAP_SYS_ADMIN))
- 			goto bad_fork_free;
- 	}
- 	current->flags &= ~PF_NPROC_EXCEEDED;
--- 
-1.8.2.1
+Does jedec really specify the programming interface of this type of
+device, register layout and meaning? It seems to be more about the
+command set and electrical/connectivity specifications, no?
 
+
+-Olof
