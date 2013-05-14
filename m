@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218Ab3ENPK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:10:59 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:48432 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757752Ab3ENPK5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:10:57 -0400
+	id S1757827Ab3ENPOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:14:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40450 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab3ENPOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:14:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
+   d="scan'208";a="302300044"
+Date: Tue, 14 May 2013 23:11:07 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: David Vrabel <david.vrabel@citrix.com>,
+        John Stultz <john.stultz@linaro.org>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130514151107.GA6661@feng-snb>
 MIME-Version: 1.0
-In-Reply-To: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
-References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
-Date: Tue, 14 May 2013 17:10:55 +0200
-Message-ID: <CAFLxGvxUFBHV4Y9vEVvhRR73tgLKFiRxHKo2F9p_5ZtYDDC_fw@mail.gmail.com>
-Subject: Re: 2013 Plumber's CFP: Fastboot
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "Mehaffey, John" <John_Mehaffey@mentor.com>
-Cc: "tim.bird@am.sony.com" <tim.bird@am.sony.com>, "wd@denx.de" <wd@denx.de>,
-        "mzjro@0pointer.net" <mzjro@0pointer.net>,
-        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
-        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
-        "yoush@cs.msu.su" <yoush@cs.msu.su>,
-        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
-        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
-        "systemd-devel@lists.freedesktop.org" 
-	<systemd-devel@lists.freedesktop.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 1:51 AM, Mehaffey, John
-<John_Mehaffey@mentor.com> wrote:
-> Hello All,
->
-> I am proposing a microconference on fastboot at the Linux Plumber's conference 2013 in New Orleans. The goal is to get to sub 1S boot times for a large (IVI) system using NAND flash. This pushes the state of the art, and will require innovative solutions in may areas of Linux plumbing, including bootloader, kernel init, UBI, and systemd.
->
-> Note that fastboot improvements will (generally) help all architectures so I am not limiting this to automotive systems.
->
-> Please visit http://wiki.linuxplumbersconf.org/2013:fastboot for more information or if you want to submit a topic.
->
-> If you want to reply to this message, please trim the cc list!
+Bcc: 
+Subject: Re: [PATCH 2/3] timekeeping: sync persistent clock and RTC on system time step changes
+Reply-To: 
 
-Why trimming the CC? Changing the CC list is a _very_ bad habit.
+Hi David,
 
-Anyway, a few notes on UBI fastmap.
-Before we talk about optimizing it we have to make sure that it is stable.
-Currently it has not much users because embedded folks are a few
-kernel releases behind.
-I expect that we'll face some issues (hey it's software!). Instead of
-making the code more complicated we have to
-make very sure that it works well.
-Fastmap got much more complicated than I thought while developing the
-first proof of concept implementation.
+> From: David Vrabel <david.vrabel@citrix.com>
+> Date: 2013/5/14
+> Subject: Re: [PATCH 2/3] timekeeping: sync persistent clock and RTC on
+> system time step changes
+> To: John Stultz <john.stultz@linaro.org>
+> Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>, Konrad
+> Rzeszutek Wilk <konrad.wilk@oracle.com>, Thomas Gleixner
+> <tglx@linutronix.de>, "linux-kernel@vger.kernel.org"
+> <linux-kernel@vger.kernel.org>
+> 
+> 
+> On 14/05/13 01:40, John Stultz wrote:
+> > On 05/13/2013 10:56 AM, David Vrabel wrote:
+> >> From: David Vrabel <david.vrabel@citrix.com>
+> >>
+> >> The persistent clock or the RTC is only synchronized with system time
+> >> every 11 minutes if NTP is running.  This gives a window where the
+> >> persistent clock may be incorrect after a step change in the time
+> >> (such as on first boot).
+> >>
+> >> This particularly affects Xen guests as until an update to the control
+> >> domain's persistent clock, new guests will start with the incorrect
+> >> system time.
+> >>
+> >> When there is a step change in the system time, call
+> >> update_persistent_clock or rtc_set_ntp_time() to synchronize the
+> >> persistent clock or RTC to the new system time.
+> >
+> > I'm sorry, this isn't quite making sense to me. Could you further
+> > describe the exact problematic behavior you're seeing here, and why its
+> > a problem?
+> 
+> The Xen wallclock is used as the persistent clock for Xen guests.  This
+> is initialized (by Xen) with the CMOS RTC at the start of day.  If the
+> RTC is incorrect then guests will see an incorrect wallclock time until
+> dom0 has corrected it.
+> 
+> Currently dom0 only updates the Xen wallclock with the 11 min periodic
+> work when NTP is synced.  This leaves a window where newly started
+> guests will see an incorrect wallclock time.  This can cause guests to
+> fail to start correctly if the wallclock is now behind what it was when
+> the guest last started. (e.g., fsck of its disk fails as its last mount
+> time appears to be far into the future).
 
-We also have to think more about userland support, e.g. making tools
-like ubinize fastmap aware...
-User want ready to use fastmap UBI images and not images which have to
-be converted by the kernel on the very first boot.
+Is it possible for Xen to resync its wallclock time from the RTC device
+whenever it gets a request of starting a new guest? as usually a new
+guest OS needs to get the time base from Xen's wallclock anyway.
 
-Sharing UBI EBA table between U-Boot and the kernel would be a nice
-feature, but we also have to make sure
-that we can share the EBA table between two kernels (think of kexec).
-So, a more general solution is needed.
-
---
 Thanks,
-//richard
+Feng
+
