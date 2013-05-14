@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab3ENMIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:08:00 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:64756 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab3ENMH6 (ORCPT
+	id S1756483Ab3ENMMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:12:34 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:46634 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3ENMMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:07:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368123170-22906-1-git-send-email-dianders@chromium.org>
-References: <1368039168-24447-1-git-send-email-dianders@chromium.org>
-	<1368123170-22906-1-git-send-email-dianders@chromium.org>
-Date: Tue, 14 May 2013 14:07:58 +0200
-Message-ID: <CACRpkdZ3grCyf3x5dEbT6hAVDkpM3mwibVO5kT0Lv=a09-zBPA@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: exynos: Select PINCTRL_EXYNOS for exynos4/5 at
- chip level
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 May 2013 08:12:33 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: grant.likely@linaro.org, linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] drivers: gpio: gpio-msm-v1.c: use devm_ioremap_resource()
+Date: Tue, 14 May 2013 14:21:25 +0200
+Message-Id: <1368534085-32582-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 9, 2013 at 8:12 PM, Doug Anderson <dianders@chromium.org> wrote:
+Replace calls to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+Found with coccicheck and this semantic patch:
+ scripts/coccinelle/api/devm_ioremap_resource.cocci
 
-> Previously if you had MACH_EXYNOS5_DT but not MACH_EXYNOS4_DT you'd be
-> missing the pincontrol definitions.  Move PINCTRL selects to the arch
-> level since we should be enabling the code for all exynos variants.
->
-> Update the PINCTRL descriptions to indicate that PINCTRL_EXYNOS is not
-> for exynos5440.  Also add basic dependencies for the PINCTRL_EXYNOS
-> kernel config.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v3:
-> - Moved to chip level as per Tomasz.
-> - Update PINCTRL Kconfig for exynos.
->
-> Changes in v2:
-> - Moved to the arch level as suggested by Olof.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/gpio/gpio-msm-v1.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org> for the pinctrl
-part, I guess this will be merged through the Samsung tree?
+diff --git a/drivers/gpio/gpio-msm-v1.c b/drivers/gpio/gpio-msm-v1.c
+index c798585..c0ead43 100644
+--- a/drivers/gpio/gpio-msm-v1.c
++++ b/drivers/gpio/gpio-msm-v1.c
+@@ -652,14 +652,14 @@ static int __devinit gpio_msm_v1_probe(struct platform_device *pdev)
+ 		return irq2;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	base1 = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base1)
+-		return -EADDRNOTAVAIL;
++	base1 = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base1))
++		return PTR_ERR(base1);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	base2 = devm_request_and_ioremap(&pdev->dev, res);
+-	if (!base2)
+-		return -EADDRNOTAVAIL;
++	base2 = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base2))
++		return PTR_ERR(base2);
+ 
+ 	for (i = FIRST_GPIO_IRQ; i < FIRST_GPIO_IRQ + NR_GPIO_IRQS; i++) {
+ 		if (i - FIRST_GPIO_IRQ >=
+-- 
+1.7.10.4
 
-Yours,
-Linus Walleij
