@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab3ENA5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:57:32 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:34504 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3ENA53 (ORCPT
+	id S1755826Ab3ENA5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:57:51 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:61337 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab3ENA5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:57:29 -0400
-Message-ID: <51918BF6.3020702@linaro.org>
-Date: Mon, 13 May 2013 17:57:26 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Mon, 13 May 2013 20:57:49 -0400
+Date: Tue, 14 May 2013 02:57:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: dynticks: CONFIG_VIRT_CPU_ACCOUNTING +  CONFIG_CONTEXT_TRACKING
+ breaks accounting on core2 CPUs only
+Message-ID: <20130514005744.GA12749@somewhere>
+References: <1368346669.5998.13.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: increase precision of x86_platform.get/set_wallclock()
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368346669.5998.13.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 10:56 AM, David Vrabel wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> All the virtualized platforms (KVM, lguest and Xen) have persistent
-> wallclocks that have more than one second of precision.
->
-> read_persistent_wallclock() and update_persistent_wallclock() allow
-> for nanosecond precision but their implementation on x86 with
-> x86_platform.get/set_wallclock() only allows for one second precision.
-> This means guests may see a wallclock time that is off by up to 1
-> second.
->
-> Make set_wallclock() and get_wallclock() take a struct timespec
-> parameter (which allows for nanosecond precision) so KVM and Xen
-> guests may start with a more accurate wallclock time and a Xen dom0
-> can maintain a more accurate wallclock for guests.
->
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+On Sun, May 12, 2013 at 10:17:49AM +0200, Mike Galbraith wrote:
+> Greetings,
+> 
+> Turning on new NO_HZ feature on my Q6600 box in master, I see that tasks
+> accrue zero utime/stime.  However, the same exact kernel on E5620 box
+> works fine, so it would appear there's a CPU dependency somewhere.
 
-This one looks pretty good.
-Lets circle around on the other two and if after that they still don't 
-make sense, I'll just queue this one.
+Ah indeed, I just managed to reproduce the same issue.
 
-Sorry if I'm being thick headed.
+> 
+> Is core2 expected to go dysfunctional with context tracking enabled?
+> CONFIG_VIRT_CPU_ACCOUNTING alone works fine in 3.9-stable, turn on
+> CONFIG_CONTEXT_TRACKING_FORCE, and CPU accounting stops working on core2
+> boxen only, same exact kernel continues to work just fine on E5620
+> (Westmere) box.
 
-thanks
--john
+There was no known issue with core2. The box where I'm seeing the it
+is a Phenom quad core that had NR_CPUS=2. May be the issue is more
+likely to happen with this low number. I don't know.
 
+I'm investigating further.
+
+Thanks.
