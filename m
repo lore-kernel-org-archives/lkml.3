@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab3ENL7W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:59:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36902 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab3ENL7T (ORCPT
+	id S1757389Ab3ENMCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:02:32 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:49291 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab3ENMCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:59:19 -0400
-Date: Tue, 14 May 2013 13:57:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [RFC GIT PULL] sched; Fix a few missing rq clock updates
-Message-ID: <20130514115733.GG15942@dyad.programming.kicks-ass.net>
-References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
+	Tue, 14 May 2013 08:02:31 -0400
+X-Nat-Received: from [202.181.97.72]:58532 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1368532949.16903
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [3.10-rc1 PATCH] devtmpfs: Fix kmemcheck warning.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201305142102.IHI86995.LFFVOHtOFSJQMO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 14 May 2013 21:02:25 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 14052013 #9976473, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 01:50:57AM +0200, Frederic Weisbecker wrote:
-> Hi,
-> 
-> So I revisited the rq clock series I had for dynticks. The patches
-> actually were about upstream issues so I refactored the fixes
-> under that angle and gave up with the wrong asumption that rq
-> clock relies on the tick for its updates.
-> 
-> Patches 1-4 fix some missing updates. Additionally I removed
-> 2 of these updates from the previous set:
-> 
-> * No need to update the rq clock on idle_balance() because it should
-> follow a call to deactivate_task() (unless TIF_NEED_RESCHED is set
-> on idle without new task on the runqueue, not sure we want to cover that).
-> 
-> * No need to update for try_to_wake_up_local() -> ttwu_do_wakeup() -> check_preempt_curr()
->   as it's following deactivate_task().
-> 
-> Patch 5 brings accessors that will be necessary to settle an rq clock
-> debugging engine. What remains is to tag scheduler's entry/exit points
-> and report missing or redundant update_rq_clock() before calls to
-> rq_clock() and rq_clock_task().
+I got below warning.
 
-Just noticed this queue was still sitting in the INBOX, I took it and will
-soon-ish hand to Ingo.
+  WARNING: kmemcheck: Caught 8-bit read from uninitialized memory (ffff88007ae384d8)
+  00000000000000000000000000000000d884e37a0088ffff006f665f64657669
+   i i i i i i i i i i i i i i i i i i i i i i i i u u u u u u u u
+                                                   ^
+  RIP: 0010:[<ffffffff81169c2d>]  [<ffffffff81169c2d>] copy_mount_options+0xfd/0x1b0
+  RSP: 0000:ffff88007ae37d68  EFLAGS: 00010286
+  RAX: 0000000000000000 RBX: ffff88007ae37da0 RCX: 00000000000000ff
+  RDX: ffff88007ae384d8 RSI: 0000000000000000 RDI: ffff88007ad776e0
+  RBP: ffff88007ae37d88 R08: 0000000000000000 R09: ffffffff81ca0130
+  R10: 000000000007f000 R11: 0000000000080000 R12: 0000000000000920
+  R13: 0000000000001000 R14: ffff88007ad77000 R15: 0000000000000000
+  FS:  0000000000000000(0000) GS:ffff88007b200000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: ffff88007ac28404 CR3: 0000000001c0b000 CR4: 00000000000407f0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff4ff0 DR7: 0000000000000400
+   [<ffffffff8116d31d>] SyS_mount+0x6d/0xe0
+   [<ffffffff813bddd2>] devtmpfsd+0x62/0x170
+   [<ffffffff81065f3e>] kthread+0xee/0x100
+   [<ffffffff817a746c>] ret_from_fork+0x7c/0xb0
+   [<ffffffffffffffff>] 0xffffffffffffffff
 
-Thanks!
+Below patch fixes this warning, but is simpler fix
+
+-	char options[] = "mode=0755";
++	static char options[PAGE_SIZE] = "mode=0755";
+
+better?
+--------------------
+>From 4e768f2e7ea75786a69baae52469e1662244d933 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Wed, 14 May 2013 16:32:05 +0900
+Subject: [PATCH] devfs: Fix kmemcheck warning.
+
+The "void __user *data" argument passed to mount() has to be PAGE_SIZE bytes of
+initialized memory region.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ drivers/base/devtmpfs.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 7413d06..59a2baf 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -375,12 +375,24 @@ static int handle(const char *name, umode_t mode, kuid_t uid, kgid_t gid,
+ 
+ static int devtmpfsd(void *p)
+ {
+-	char options[] = "mode=0755";
++	char *options;
+ 	int *err = p;
+ 	*err = sys_unshare(CLONE_NEWNS);
+ 	if (*err)
+ 		goto out;
++	/*
++	 * The options argument has to be PAGE_SIZE bytes of initialized memory
++	 * region, or kmemcheck will complain "read from uninitialized memory"
++	 * because copy_mount_options() tries to copy PAGE_SIZE bytes.
++	 */
++	options = (char *) __get_free_page(GFP_KERNEL | __GFP_ZERO);
++	if (!options) {
++		*err = -ENOMEM;
++		goto out;
++	}
++	strcpy(options, "mode=0755");
+ 	*err = sys_mount("devtmpfs", "/", "devtmpfs", MS_SILENT, options);
++	free_page((unsigned long) options);
+ 	if (*err)
+ 		goto out;
+ 	sys_chdir("/.."); /* will traverse into overmounted root */
+-- 
+1.7.1
