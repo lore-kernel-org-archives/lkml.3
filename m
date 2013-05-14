@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab3ENKov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:44:51 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:57270 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3ENKot (ORCPT
+	id S1754131Ab3ENKpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:45:52 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:31142 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab3ENKpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:44:49 -0400
+	Tue, 14 May 2013 06:45:51 -0400
+X-Spam-Score: -100.8
+Message-ID: <519215AC.4010109@asianux.com>
+Date: Tue, 14 May 2013 18:45:00 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130514105119.66a5bc3f@corrin.poochiereds.net>
-References: <CAJfpegtADAJ+7-DiFvrgWU1N5Fsd_CCQryT0mpx6VOJ=8ikKsA@mail.gmail.com>
-	<20130510102754.184cd90d@corrin.poochiereds.net>
-	<20130514105119.66a5bc3f@corrin.poochiereds.net>
-Date: Tue, 14 May 2013 05:44:48 -0500
-Message-ID: <CAH2r5msxb+zB6av5wz5_55MbhCR4FWjJpnyP=vzg-=48gg3vkQ@mail.gmail.com>
-Subject: Re: Mount failure due to restricted access to a point along the mount path
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-cifs@vger.kernel.org,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        sjayaraman@novell.com
+To: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] kernel/irqdesc.c: not checking whether failure occurs
+ for alloc_desc() in early_irq_init().
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 3:51 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Fri, 10 May 2013 10:27:54 -0400
-> Jeff Layton <jlayton@redhat.com> wrote:
->
->> On Fri, 10 May 2013 16:13:30 +0200
->> Miklos Szeredi <miklos@szeredi.hu> wrote:
->>
->> > Hi,
->> >
->> > A while ago this was discussed:
->> >
->> >   http://thread.gmane.org/gmane.linux.kernel.cifs/7779
->> >
->> > This is essentially a regression introduced by the shared superblock
->> > changes in 3.0 and several SUSE customers are complaining about it.
->> > I've created a temporary fix which reverts 29 commits related to the
->> > shared superblock changes.  It works, but it's obviously not a
->> > permanent fix, especially since we definitely don't want to diverge
->> > from mainline.
->> >
->> > Is this issue being worked on?  Don't other distros have similar reports?
->> >
->> > Thanks,
->> > Miklos
->>
->> I don't know of anyone currently working on it. There are a couple of
->> possible approaches to fixing it, I think:
->>
->> 1) if the dentries to get down to the root of the mount don't already
->> exist, then attach some sort of "placeholder" inode that can be fleshed
->> out later if and when the dentry is accessed via other means.
->>
->> 2) do something like what NFS does (see commit 54ceac45). This becomes
->> a bit more complicated due to the fact that the server may not hand out
->> real inode numbers and we sometimes have to fake them up.
->>
->> #1 is probably simpler to implement, but I'll confess that I haven't
->> thought through all of the potential problems with it.
->>
->
-> So, giving this some more thought, I think #2 is really the correct way
-> to fix this. Here's the main problem though:
->
-> Suppose someone mounts:
->
->     //server/share/foo/bar/baz
->
-> We make the sb->s_root point to the top level share, and then create a
-> disconnected dentry for "baz" to return from ->mount.
->
-> Then, a little while later, //server/share gets mounted separately and
-> a user walks down to /foo/bar/baz within the same share.
->
-> How do we ensure that we don't end up with two "baz" dentries in this
-> situation? With NFS, we can be reasonably sure that there's a 1:1
-> correspondance of filehandle to inode.
->
-> Under CIFS, it's possible that it's faking up inode numbers if the
-> server doesn't provide them via a UniqueID field. The only real
-> identifying info we have for the inode in that case is the pathname.
+Hello Maintainers:
 
-Since this (support for server generated inode numbers) is most common
-case (especially with SMB2 and later) - I don't mind making dependency
-on the server supporting UniqueID for this.
+For early_irq_init(), it may be failure (can return an error code), and
+for alloc_desc(), also may return 'NULL' when '-ENOMEM'.
+
+But it seems the authors are sure that early_irq_init() are always
+success, is it correct ? (or early_irq_init() will never be used ?)
+
+I think, it is better to also check alloc_desc() return value in
+early_irq_init().
+
+Please help check when you have time.
+
+
+Thanks.
 -- 
-Thanks,
+Chen Gang
 
-Steve
+Asianux Corporation
