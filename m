@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab3ENAHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:07:01 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:47002 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754940Ab3ENAHA (ORCPT
+	id S1755529Ab3ENAH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:07:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45972 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab3ENAH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:07:00 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        olof@lixom.net, dianders@chromium.org, patches@linaro.org
-Subject: Re: [PATCH] ARM: EXYNOS: Update defconfig for Arndale and Origen board
-References: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-Date: Mon, 13 May 2013 17:06:56 -0700
-In-Reply-To: <1368168599-28507-1-git-send-email-tushar.behera@linaro.org>
-	(Tushar Behera's message of "Fri, 10 May 2013 12:19:59 +0530")
-Message-ID: <87sj1qzaov.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 13 May 2013 20:07:56 -0400
+Date: Tue, 14 May 2013 10:07:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: comment on the watchdog tree
+Message-Id: <20130514100744.0b7ba62711c972e0847f8e09@canb.auug.org.au>
+In-Reply-To: <20130513121742.GZ14155@spo001.leaseweb.com>
+References: <20130513094339.b93a7a4ccf73ccb7fff86d03@canb.auug.org.au>
+	<20130513121742.GZ14155@spo001.leaseweb.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__14_May_2013_10_07_44_+1000_C1=nX.n8hHghv6gJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tushar Behera <tushar.behera@linaro.org> writes:
+--Signature=_Tue__14_May_2013_10_07_44_+1000_C1=nX.n8hHghv6gJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> It updates following drivers for EXYNOS based DT platform.
+Hi Wim,
+
+On Mon, 13 May 2013 14:17:42 +0200 Wim Van Sebroeck <wim@iguana.be> wrote:
 >
-> * S5M8767 driver
-> * MAX8997 driver
-> * MMC SDHCI driver
->
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> > Since the watchdog tree now consists only of merge commits (relative to
+> > v3.10-rc1), you might as well just reset it to v3.10-rc1 and have a nice
+> > clean tree to start from.
+>=20
+> Absolutely correct. I fixed it.
 
-I tested this using v3.10-rc1 on Arndale, but still don't get any
-support for the wired network.  Do you know if this is a Kconfig issue,
-or a missing driver?
+Excellent, thanks.
 
-I suspect it may be related to the various "unable to find transceiver
-of type USB2 PHY" messages I'm seeing?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
+--Signature=_Tue__14_May_2013_10_07_44_+1000_C1=nX.n8hHghv6gJ
+Content-Type: application/pgp-signature
 
-Kevin
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRkYBQAAoJEECxmPOUX5FEcTwP/Am5VBW0VjJUSr4YdppV60Ny
+HQ34xcuWUofVYgDA0SexVPcWScYkwYVQ5u9e0/u6n1ZM0PkKJ3NIk+KBfi8PqmNK
+pNokhQxF5Wh3lw1P6n5lc61RI3Yl3fol25++zaydN5dWvCi0VMRLoIlONExA/OE1
+ZZFEVkvwSyEyj+sITiyU3PJ35c1W3DnvvGInCAbD5hLGcpzExKeMj/Wjppr+iksl
+SWf+SjL/4rGDOr+ymwJ0An4IxDTRhbbaoSFYrcw+4RyPePc6N7RvM3bPGhvbq2fH
+HFubZnus9xfSz/n6F7mZIgJfQRcO2cfXRK4nwirPWPmLSnrHwvBjiw/eeVj421fN
+AbRbSRRBD1W2tymOcM+1nyW+2RgFgS6PxSe+XWCiE8XqWz/DVlxcA5CpE7EZAvZj
+7nr9Ac4qUTLQdKSILGPIuobMJsLChc545EFsXpweJkX9Hi6PCde5ujiqUOdnRofX
+4L9D+BW4KaRDNG1T68juFSuwTAqsiSr9Xs6yFgD+Fbf8bO1JnwW9AkVhlYvfBu7l
+hyRHpvFqltpoVFFkPgZIFWV6nOXt+0qwkKAH9TZ7gkYrDulCYmQk2obYTAdR93KZ
+uMHWhzuoZFBR09Y8jhfx3Q76u5MnRvb0s0A72ek4PngBoxcs7sfwT9Z/84fwYkWR
+6mT/4cZy0ZdwPgvUL8Wh
+=fntt
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_May_2013_10_07_44_+1000_C1=nX.n8hHghv6gJ--
