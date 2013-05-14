@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab3ENJym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:54:42 -0400
-Received: from abc.logicbricks.com ([89.201.165.132]:44916 "EHLO
-	abc.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3ENJyl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:54:41 -0400
-Content-Class: urn:content-classes:message
-Subject: fb driver for logiCVC
+	id S1756964Ab3ENJzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:55:37 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46954 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756481Ab3ENJzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 05:55:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,669,1363132800"; 
+   d="scan'208";a="25062326"
+Message-ID: <51920A15.6050605@citrix.com>
+Date: Tue, 14 May 2013 10:55:33 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 14 May 2013 11:54:20 +0200
-Message-ID: <9D79B9A9194389468A922F618415D0A401229E7E@abc.xylon.local>
-X-MS-Has-Attach: 
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-MS-TNEF-Correlator: 
-Thread-Topic: fb driver for logiCVC
-thread-index: Ac5QiQF1GNqyW2J4Sbu6O4LqbZasDQ==
-From: "Davor Joja" <Davor.Joja@logicbricks.com>
-To: <linux-kernel@vger.kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 3/3] x86/xen: sync the CMOS RTC as well as the Xen wallclock
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com> <51918ABB.5030501@linaro.org>
+In-Reply-To: <51918ABB.5030501@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 14/05/13 01:52, John Stultz wrote:
+> On 05/13/2013 10:56 AM, David Vrabel wrote:
+>> From: David Vrabel <david.vrabel@citrix.com>
+>>
+>> If NTP is used in dom0 and it is synchronized to its clock source,
+>> then the kernel will periodically synchronize the Xen wallclock with
+>> the system time.  Updates to the Xen wallclock do not persist across
+>> reboots, so also synchronize the CMOS RTC (as on bare metal).
+> 
+> Sorry again, not getting this one either.
+> 
+> So normally in this case we're using the Xen wallclock as the underlying 
+> source for the persistent_clock here, my understanding is we use this 
+> instead of the standard cmos, because we get benefits of using the 
+> hypervisor's sense of time instead of the bare hardware, and allows for 
+> virtualization of the persistent clock.
+> 
+> But the problem is that even if Dom0 tries to set the xen persistent 
+> clock, it doesn't actually update anything in the underlying hardware?  
+> So here you instead try to sync the underlying hardware cmos from the 
+> same Xen dom0 environment?
 
-Can I get suggestion how to send driver to this list which consists of
-several files and folders, as one (big) patch or as described in
-"how-to" as link to some ftp or git?
-My previous mail has not been replied, because of link to driver or
-other issue (tested on kernel 3.8)?
+Yes.
 
-Thanks!
+> Honestly, it seems a little strange to me. If you're running as dom0, 
+> why does HYPERVISOR_dom0_op() not cause the hypervisor to set the cmos 
+> its virtualizing? This seems to mess with the proper virtualization 
+> layering.
 
-Regards,
-Davor
+As Jan says the hypervisor only drives a minimal set of hardware,
+everything else is made accessible to dom0 for it to control.
 
------ Disclaimer -----
-This e-mail message and its attachments may contain privileged and/or confidential information. Please do not read the message if You are not its designated recipient. If You have received this message by mistake, please inform its sender and destroy the original message and its attachments without reading or storing of any kind. Any unauthorized use, distribution, reproduction or publication of this message is forbidden.
------ Pravne napomene ----- 
-Ova elektronicka poruka i njeni prilozi mogu sadrzavati povlastene informacije i/ili povjerljive informacije. Molimo Vas da poruku ne citate ako niste njen naznaceni primatelj. Ako ste ovu poruku primili greskom, molimo Vas da o tome obavijestite posiljatelja i da izvornu poruku i njene privitke unistite bez citanja ili bilo kakvog pohranjivanja. Svaka neovlastena upotreba, distribucija, reprodukcija ili priopcavanje ove poruke zabranjena je. 
+I think this makes sense as it allows us to reuse the existing RTC
+drivers etc. in the Linux kernel, instead of having to reimplement them
+in the hypervisor.
+
+David
