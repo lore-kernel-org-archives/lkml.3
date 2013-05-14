@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3ENDh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 23:37:59 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33444 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab3ENDh5 (ORCPT
+	id S1756031Ab3ENDzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 23:55:46 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43346 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751788Ab3ENDzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 23:37:57 -0400
+	Mon, 13 May 2013 23:55:44 -0400
+X-Sasl-enc: fQcRX0Pez3OiRuhxu909JLQ35Aya/aXT62W3e7X8dga9 1368503742
+Message-ID: <5191B5C4.2020609@signal11.us>
+Date: Mon, 13 May 2013 23:55:48 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CA+2_TiZ3dECAW8LV-Es=BjHCwgWw69zbWkr73at+0_c-EaDHmA@mail.gmail.com>
-References: <1367416573-5430-1-git-send-email-rlove@google.com>
-	<20130513214216.GA23743@kroah.com>
-	<CA+2_TiZ3dECAW8LV-Es=BjHCwgWw69zbWkr73at+0_c-EaDHmA@mail.gmail.com>
-Date: Tue, 14 May 2013 11:37:56 +0800
-Message-ID: <CAG9bXvkH0L5FjkU3-=3X3zwp3vw8U7+jJRYp28GFXjLkQKBL5g@mail.gmail.com>
-Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
-From: Raul Xiong <raulxiong@gmail.com>
-To: Neil Zhang <glacier1980@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Robert Love <rlove@google.com>,
-        Shankar Brahadeeswaran <shankoo77@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        devel <devel@driverdev.osuosl.org>, Hugh Dickins <hughd@google.com>,
-        Anjana V Kumar <anjanavk12@gmail.com>, Dad <akpm@linux-foundation.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Hauweele <david@hauweele.net>
+CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
+ line enabled
+References: <1368112788-25701-1-git-send-email-david@hauweele.net> <1368112788-25701-2-git-send-email-david@hauweele.net>
+In-Reply-To: <1368112788-25701-2-git-send-email-david@hauweele.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/14 Neil Zhang <glacier1980@gmail.com>:
-> 2013/5/14 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
->> On Wed, May 01, 2013 at 09:56:13AM -0400, Robert Love wrote:
->>> Don't acquire ashmem_mutex in ashmem_shrink if we've somehow recursed
->>> into the
->>> shrinker code from within ashmem. Just bail out, avoiding a deadlock.
->>> This is
->>> fine, as ashmem cache pruning is advisory anyhow.
->>>
->>> Signed-off-by: Robert Love <rlove@google.com>
->>> ---
->>>  drivers/staging/android/ashmem.c | 6 +++++-
->>>  1 file changed, 5 insertions(+), 1 deletion(-)
->>
->> Based on Andrew's review comments, I'll drop this from my queue and wait
->> for a "better" fix for this.
->>
->> thanks,
->>
->> greg k-h
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+On 5/9/13 11:19 AM, David Hauweele wrote:
+> Disabling the interrupt line could miss an IRQ and leave the line into a
+> low state hence locking the driver.
 >
-> We found the similar issue these days.
-> Add RaulXiong to paste the call stack.
+
+Have you observed this? My understanding is that the interrupt won't be 
+lost but instead delayed until enable_irq() is called.
+
+I got this pattern from the other 802.15.4 drivers. Perhaps my 
+understanding is wrong.
+
+
+> Signed-off-by: David Hauweele <david@hauweele.net>
+> ---
+>   drivers/net/ieee802154/mrf24j40.c |    7 +------
+>   1 file changed, 1 insertion(+), 6 deletions(-)
 >
-> Best Regards,
-> Neil Zhang
+> diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+> index 1e3ddf3..6ef32f7 100644
+> --- a/drivers/net/ieee802154/mrf24j40.c
+> +++ b/drivers/net/ieee802154/mrf24j40.c
+> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
+>   {
+>   	struct mrf24j40 *devrec = data;
+>
+> -	disable_irq_nosync(irq);
+> -
+>   	schedule_work(&devrec->irqwork);
+>
+>   	return IRQ_HANDLED;
+> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>   	/* Read the interrupt status */
+>   	ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
+>   	if (ret)
+> -		goto out;
+> +		return;
+>
+>   	/* Check for TX complete */
+>   	if (intstat & 0x1)
+> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>   	/* Check for Rx */
+>   	if (intstat & 0x8)
+>   		schedule_work(&devrec->rxwork);
+> -
+> -out:
+> -	enable_irq(devrec->spi->irq);
+>   }
+>
+>   static void mrf24j40_rxwork(struct work_struct *work)
+>
 
-Hi all,
-I just encountered this deadlock during some stress test and it can be
-described clearly by below function stack. Please check and suggest a
-formal fix for it.
-
-[<c05d3370>] (__schedule) from [<c05d3818>]
-[<c05d3818>] (schedule_preempt_disabled) from [<c05d2578>]
-[<c05d2578>] (__mutex_lock_slowpath) from [<c05d263c>]
-[<c05d263c>] (mutex_lock) from [<c0441dd8>]
-[<c0441dd8>] (ashmem_shrink) from [<c01ae00c>]
-[<c01ae00c>] (shrink_slab) from [<c01b0ec8>]
-[<c01b0ec8>] (try_to_free_pages) from [<c01a65ec>]
-[<c01a65ec>] (__alloc_pages_nodemask) from [<c01d0414>]
-[<c01d0414>] (new_slab) from [<c05cf3a0>]
-[<c05cf3a0>] (__slab_alloc.isra.46.constprop.52) from [<c01d08cc>]
-[<c01d08cc>] (kmem_cache_alloc) from [<c01b1f6c>]
-[<c01b1f6c>] (shmem_alloc_inode) from [<c01e8d18>]
-[<c01e8d18>] (alloc_inode) from [<c01ea3c4>]
-[<c01ea3c4>] (new_inode_pseudo) from [<c01ea404>]
-[<c01ea404>] (new_inode) from [<c01b157c>]
-[<c01b157c>] (shmem_get_inode) from [<c01b3eac>]
-[<c01b3eac>] (shmem_file_setup) from [<c0441d1c>]
-[<c0441d1c>] (ashmem_mmap) from [<c01c1908>]
-[<c01c1908>] (mmap_region) from [<c01c1eac>]
-[<c01c1eac>] (sys_mmap_pgoff) from [<c0112d80>]
-
-Thanks,
-Raul Xiong
