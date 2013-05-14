@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab3ENKPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:15:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43979 "EHLO
+	id S932217Ab3ENKPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:15:42 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56164 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab3ENKOI (ORCPT
+	with ESMTP id S1756776Ab3ENKOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:14:08 -0400
-X-AuditID: 9c930197-b7b76ae000003523-43-51920e6a01f4
+	Tue, 14 May 2013 06:14:06 -0400
+X-AuditID: 9c930197-b7b76ae000003523-3c-51920e6a2dfd
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/15] perf tools: Add document for perf-ftrace command
-Date: Tue, 14 May 2013 19:13:58 +0900
-Message-Id: <1368526439-31966-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/15] perf ftrace: Add 'show' sub-command
+Date: Tue, 14 May 2013 19:13:54 +0900
+Message-Id: <1368526439-31966-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
 References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
@@ -29,134 +29,502 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
+The ftrace show subcommand is for viewing recorded ftrace files.  It
+enters perf.data.dir directory and open perf.header file to find out
+necessary information.  And then read out per-cpu trace records using
+kbuffer helper and print them to stdout in time order.
+
+It only shows its basic form so function graph doesn't show duration/
+overhead and no leaf entry handling is provided yet.  Maybe it can be
+handled by a proper plugin in the libtraceevent.
+
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-ftrace.txt | 114 +++++++++++++++++++++++++++++++
- 1 file changed, 114 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-ftrace.txt
+ tools/perf/builtin-ftrace.c | 427 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 425 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-ftrace.txt b/tools/perf/Documentation/perf-ftrace.txt
-new file mode 100644
-index 000000000000..e102ccc6daa7
---- /dev/null
-+++ b/tools/perf/Documentation/perf-ftrace.txt
-@@ -0,0 +1,114 @@
-+perf-ftrace(1)
-+==============
+diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
+index 4392e08d545a..86e730dde23a 100644
+--- a/tools/perf/builtin-ftrace.c
++++ b/tools/perf/builtin-ftrace.c
+@@ -13,6 +13,7 @@
+ #include <signal.h>
+ #include <fcntl.h>
+ #include <dirent.h>
++#include <sys/mman.h>
+ 
+ #include "util/debug.h"
+ #include "util/parse-options.h"
+@@ -21,6 +22,8 @@
+ #include "util/thread_map.h"
+ #include "util/cpumap.h"
+ #include "util/trace-event.h"
++#include "../lib/traceevent/kbuffer.h"
++#include "../lib/traceevent/event-parse.h"
+ 
+ 
+ #define DEFAULT_TRACER  "function_graph"
+@@ -31,6 +34,7 @@ struct perf_ftrace {
+ 	struct perf_target target;
+ 	const char *tracer;
+ 	const char *dirname;
++	struct pevent *pevent;
+ };
+ 
+ static bool done;
+@@ -786,6 +790,371 @@ out_reset:
+ }
+ 
+ static int
++function_handler(struct trace_seq *s, struct pevent_record *record,
++		 struct event_format *event, void *context __maybe_unused)
++{
++	struct pevent *pevent = event->pevent;
++	unsigned long long function;
++	const char *func;
 +
-+NAME
-+----
-+perf-ftrace - A front end for kernel's ftrace
++	if (pevent_get_field_val(s, event, "ip", record, &function, 1))
++		return trace_seq_putc(s, '!');
 +
-+SYNOPSIS
-+--------
-+[verse]
-+'perf ftrace' {live|record} [<options>] [<command>]
-+'perf ftrace' {show|report} [<options>]
++	func = pevent_find_function(pevent, function);
++	if (func)
++		trace_seq_printf(s, "%s <-- ", func);
++	else
++		trace_seq_printf(s, "0x%llx", function);
 +
-+DESCRIPTION
-+-----------
-+This command reads the ftrace buffer and displays the trace recorded.
++	if (pevent_get_field_val(s, event, "parent_ip", record, &function, 1))
++		return trace_seq_putc(s, '!');
 +
-+There are several variants of perf ftrace:
++	func = pevent_find_function(pevent, function);
++	if (func)
++		trace_seq_printf(s, "%s", func);
++	else
++		trace_seq_printf(s, "0x%llx", function);
 +
-+  'perf ftrace live <command>' to see a live trace of kernel functions
-+  via trace_pipe during executing the <command>.  If <command> is not
-+  specified, one of the target options (-p, -a or -C) should be given.
-+  It just prints out the result to stdout and doesn't save any files.
++	trace_seq_putc(s, '\n');
++	return 0;
++}
 +
-+  'perf ftrace record <command>' to record trace entries of kernel
-+  functions during the execution of the <command>.  Like 'perf ftrace
-+  live', at least one of <command> and/or target options should be
-+  given in order to start recording.  The recorded results are saved
-+  under a directory ('perf.data.dir' by default) and will be used by
-+  other perf-ftrace tools like 'show' and 'report'.
++#define TRACE_GRAPH_INDENT  2
 +
-+  'perf ftrace show' to see the trace of recorded functions.  It shows
-+  functions sorted by time so the end result might be interspersed if
-+  there's a concurrent execution.
++static int
++fgraph_ent_handler(struct trace_seq *s, struct pevent_record *record,
++		   struct event_format *event, void *context __maybe_unused)
++{
++	unsigned long long depth;
++	unsigned long long val;
++	const char *func;
++	int i;
 +
-+  'perf ftrace report' to display the result in an usual perf-report
-+  style - entries are sorted by given sort keys and output is resorted
-+  by its overhead.
++	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
++		return trace_seq_putc(s, '!');
 +
-+OPTIONS
-+-------
-+<command>...::
-+	Any command you can specify in a shell.
++	/* Function */
++	for (i = 0; i < (int)(depth * TRACE_GRAPH_INDENT); i++)
++		trace_seq_putc(s, ' ');
 +
-+-t::
-+--tracer=::
-+        The ftrace tracer to be used (default: function_graph).
-+	Currently only 'function' and 'function_graph' are supported.
-+        Used by 'live' and 'record' subcommands only.
++	if (pevent_get_field_val(s, event, "func", record, &val, 1))
++		return trace_seq_putc(s, '!');
 +
-+-p::
-+--pid=::
-+	Record events on existing process ID (comma separated list).
-+        Used by 'live' and 'record' subcommands only.
++	func = pevent_find_function(event->pevent, val);
 +
-+-a::
-+        Force system-wide collection.  Scripts run without a <command>
-+        normally use -a by default, while scripts run with a <command>
-+        normally don't - this option allows the latter to be run in
-+        system-wide mode.  Used by 'live' and 'record' subcommands only.
++	if (func)
++		trace_seq_printf(s, "%s() {", func);
++	else
++		trace_seq_printf(s, "%llx() {", val);
 +
-+-C::
-+--cpu:: Only process samples for the list of CPUs provided.
-+        Multiple CPUs can be provided as a comma-separated list with
-+        no space: 0,1. Ranges of CPUs are specified with -: 0-2.
-+	Default is to report samples on all online CPUs.
++	trace_seq_putc(s, '\n');
++	return 0;
++}
 +
-+-s::
-+--sort=::
-+	Sort histogram entries by given key(s) - multiple keys can be
-+        specified in CSV format.  Following sort keys are available:
-+	pid, comm, dso, symbol, cpu.
++static int
++fgraph_ret_handler(struct trace_seq *s, struct pevent_record *record,
++		   struct event_format *event, void *context __maybe_unused)
++{
++	unsigned long long depth;
++	int i;
 +
-+	Each key has following meaning:
++	if (pevent_get_field_val(s, event, "depth", record, &depth, 1))
++		return trace_seq_putc(s, '!');
 +
-+	- comm: command (name) of the task
-+	- pid: command and tid of the task
-+	- dso: name of library or module executed at the time of sample
-+	- symbol: name of function executed at the time of sample
-+	- cpu: cpu number the task ran at the time of sample
++	/* Function */
++	for (i = 0; i < (int)(depth * TRACE_GRAPH_INDENT); i++)
++		trace_seq_putc(s, ' ');
 +
-+	By default, comm, dso and symbol keys are used.
-+	(i.e. --sort comm,dso,symbol)
-+	Used by 'report' subcommands only.
++	trace_seq_puts(s, "}\n");
++	return 0;
++}
 +
-+-i::
-+--input=::
-+        Input directory name excluding '.dir' at the end.
-+        (default: perf.data)
++struct perf_ftrace_report {
++	struct perf_ftrace *ftrace;
++	struct perf_tool tool;
++};
 +
-+-o::
-+--output=::
-+        Output directory name excluding '.dir' at the end.
-+	(default: perf.data)
++struct ftrace_report_arg {
++	struct list_head node;
++	struct pevent_record *record;
++	struct kbuffer *kbuf;
++	void *map;
++	int cpu;
++	int fd;
++	off_t offset;
++	off_t size;
++};
 +
-+-v::
-+--verbose::
-+	Be more verbose (show counter open errors, etc).
++static LIST_HEAD(ftrace_cpu_buffers);
 +
-+-D::
-+--dump-raw-trace::
-+        Dump raw trace in ASCII.  Used by 'report' subcommands only.
++static int process_sample_show(struct perf_tool *tool,
++			       union perf_event * event __maybe_unused,
++			       struct perf_sample *sample,
++			       struct perf_evsel *evsel __maybe_unused,
++			       struct machine *machine __maybe_unused)
++{
++	struct perf_ftrace *ftrace;
++	struct perf_ftrace_report *show;
++	struct ftrace_report_arg *fra;
++	struct stat statbuf;
++	enum kbuffer_long_size long_size;
++	enum kbuffer_endian endian;
++	char buf[PATH_MAX];
 +
-+-I::
-+--show-info::
-+	Display extended information about the record.  This adds
-+	information which may be very large and thus may clutter the
-+        display.  It currently includes: cpu and numa topology of the
-+        host system.  It can only be used with the 'report' subcommand.
++	show = container_of(tool, struct perf_ftrace_report, tool);
++	ftrace = show->ftrace;
 +
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-report[1],
-+linkperf:perf-script[1]
++	fra = zalloc(sizeof(*fra));
++	if (fra == NULL)
++		return -1;
++
++	fra->cpu = sample->cpu;
++
++	scnprintf(buf, sizeof(buf), "%s.dir/trace-cpu%d.buf",
++		  ftrace->dirname, fra->cpu);
++
++	fra->fd = open(buf, O_RDONLY);
++	if (fra->fd < 0)
++		goto out;
++
++	if (fstat(fra->fd, &statbuf) < 0)
++		goto out_close;
++
++	fra->size = statbuf.st_size;
++	if (fra->size == 0) {
++		/* skip zero-size buffers */
++		free(fra);
++		return 0;
++	}
++
++	/*
++	 * FIXME: What if pevent->page_size is smaller than current page size?
++	 */
++	fra->map = mmap(NULL, pevent_get_page_size(ftrace->pevent),
++			PROT_READ, MAP_PRIVATE, fra->fd, fra->offset);
++	if (fra->map == MAP_FAILED)
++		goto out_close;
++
++	fra->offset = 0;
++
++	if (pevent_is_file_bigendian(ftrace->pevent))
++		endian = KBUFFER_ENDIAN_BIG;
++	else
++		endian = KBUFFER_ENDIAN_LITTLE;
++
++	if (pevent_get_long_size(ftrace->pevent) == 8)
++		long_size = KBUFFER_LSIZE_8;
++	else
++		long_size = KBUFFER_LSIZE_4;
++
++	fra->kbuf = kbuffer_alloc(long_size, endian);
++	if (fra->kbuf == NULL)
++		goto out_unmap;
++
++	if (ftrace->pevent->old_format)
++		kbuffer_set_old_format(fra->kbuf);
++
++	kbuffer_load_subbuffer(fra->kbuf, fra->map);
++
++	pr_debug2("setup kbuffer for cpu%d\n", fra->cpu);
++	list_add_tail(&fra->node, &ftrace_cpu_buffers);
++	return 0;
++
++out_unmap:
++	munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++out_close:
++	close(fra->fd);
++out:
++	free(fra);
++	return -1;
++}
++
++static struct pevent_record *
++get_next_ftrace_event_record(struct perf_ftrace *ftrace,
++			     struct ftrace_report_arg *fra)
++{
++	struct pevent_record *record;
++	unsigned long long ts;
++	void *data;
++
++retry:
++	data = kbuffer_read_event(fra->kbuf, &ts);
++	if (data) {
++		record = zalloc(sizeof(*record));
++		if (record == NULL) {
++			pr_err("memory allocation failure\n");
++			return NULL;
++		}
++
++		record->ts = ts;
++		record->cpu = fra->cpu;
++		record->data = data;
++		record->size = kbuffer_event_size(fra->kbuf);
++		record->record_size = kbuffer_curr_size(fra->kbuf);
++		record->offset = kbuffer_curr_offset(fra->kbuf);
++		record->missed_events = kbuffer_missed_events(fra->kbuf);
++		record->ref_count = 1;
++
++		kbuffer_next_event(fra->kbuf, NULL);
++		return record;
++	}
++
++	munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++	fra->map = NULL;
++
++	fra->offset += pevent_get_page_size(ftrace->pevent);
++	if (fra->offset >= fra->size) {
++		/* EOF */
++		return NULL;
++	}
++
++	fra->map = mmap(NULL, pevent_get_page_size(ftrace->pevent),
++			PROT_READ, MAP_PRIVATE, fra->fd, fra->offset);
++	if (fra->map == MAP_FAILED) {
++		pr_err("memory mapping failed\n");
++		return NULL;
++	}
++
++	kbuffer_load_subbuffer(fra->kbuf, fra->map);
++
++	goto retry;
++}
++
++static struct pevent_record *
++get_ftrace_event_record(struct perf_ftrace *ftrace,
++			struct ftrace_report_arg *fra)
++{
++	if (fra->record == NULL)
++		fra->record = get_next_ftrace_event_record(ftrace, fra);
++
++	return fra->record;
++}
++
++static struct pevent_record *get_ordered_record(struct perf_ftrace *ftrace)
++{
++	struct ftrace_report_arg *fra = NULL;
++	struct ftrace_report_arg *tmp;
++	struct pevent_record *record;
++	unsigned long long min_ts = LLONG_MAX;
++
++	list_for_each_entry(tmp, &ftrace_cpu_buffers, node) {
++		if (perf_target__has_cpu(&ftrace->target)) {
++			int i;
++			bool found = false;
++
++			for (i = 0; i < cpu_map__nr(ftrace->evlist->cpus); i++) {
++				if (tmp->cpu == ftrace->evlist->cpus->map[i]) {
++					found = true;
++					break;
++				}
++			}
++			if (!found)
++				continue;
++		}
++
++		record = get_ftrace_event_record(ftrace, tmp);
++		if (record && record->ts < min_ts) {
++			min_ts = record->ts;
++			fra = tmp;
++		}
++	}
++
++	if (fra) {
++		record = fra->record;
++		fra->record = NULL;
++		return record;
++	}
++	return NULL;
++}
++
++static void free_ftrace_report_args(struct perf_ftrace *ftrace)
++{
++	struct ftrace_report_arg *fra, *tmp;
++
++	list_for_each_entry_safe(fra, tmp, &ftrace_cpu_buffers, node) {
++		list_del(&fra->node);
++
++		/* don't care about the errors */
++		munmap(fra->map, pevent_get_page_size(ftrace->pevent));
++		kbuffer_free(fra->kbuf);
++		free(fra->record);
++		close(fra->fd);
++		free(fra);
++	}
++}
++
++static int do_ftrace_show(struct perf_ftrace *ftrace)
++{
++	int ret = 0;
++	char buf[PATH_MAX];
++	struct perf_session *session;
++	struct pevent_record *record;
++	struct trace_seq seq;
++	struct perf_ftrace_report show = {
++		.ftrace = ftrace,
++		.tool = {
++			.sample = process_sample_show,
++		},
++	};
++
++	scnprintf(buf, sizeof(buf), "%s.dir/perf.header", ftrace->dirname);
++
++	session = perf_session__new(buf, O_RDONLY, false, false, &show.tool);
++	if (session == NULL) {
++		pr_err("failed to create a session\n");
++		return -1;
++	}
++
++	ftrace->pevent = session->pevent;
++
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "function",
++				      function_handler, NULL);
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "funcgraph_entry",
++				      fgraph_ent_handler, NULL);
++	pevent_register_event_handler(ftrace->pevent, -1,
++				      "ftrace", "funcgraph_exit",
++				      fgraph_ret_handler, NULL);
++
++	if (perf_session__process_events(session, &show.tool) < 0) {
++		pr_err("failed to process events\n");
++		ret = -1;
++		goto out;
++	}
++
++	trace_seq_init(&seq);
++
++	record = get_ordered_record(ftrace);
++	while (record) {
++		int type;
++		struct event_format *event;
++
++		type = pevent_data_type(ftrace->pevent, record);
++		event = pevent_find_event(ftrace->pevent, type);
++		if (!event) {
++			pr_warning("no event found for type %d", type);
++			continue;
++		}
++
++		pevent_print_event(ftrace->pevent, &seq, record);
++		trace_seq_do_printf(&seq);
++
++		trace_seq_reset(&seq);
++
++		free(record);
++		record = get_ordered_record(ftrace);
++	}
++
++	trace_seq_destroy(&seq);
++
++out:
++	free_ftrace_report_args(ftrace);
++	perf_session__delete(session);
++	return ret;
++}
++
++static int
+ __cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+ {
+ 	int ret = -1;
+@@ -916,6 +1285,58 @@ out:
+ 	return ret;
+ }
+ 
++static int
++__cmd_ftrace_show(struct perf_ftrace *ftrace, int argc, const char **argv)
++{
++	int ret = -1;
++	const char * const show_usage[] = {
++		"perf ftrace show [<options>]",
++		NULL
++	};
++	const struct option show_options[] = {
++	OPT_STRING('i', "input", &ftrace->dirname, "dirname",
++		   "input directory name to use (default: perf.data)"),
++	OPT_INCR('v', "verbose", &verbose,
++		 "be more verbose"),
++	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
++		    "list of cpus to monitor"),
++	OPT_END()
++	};
++
++	argc = parse_options(argc, argv, show_options, show_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (argc)
++		usage_with_options(show_usage, show_options);
++
++	ret = perf_target__validate(&ftrace->target);
++	if (ret) {
++		char errbuf[512];
++
++		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
++		pr_err("%s\n", errbuf);
++		return -EINVAL;
++	}
++
++	ftrace->evlist = perf_evlist__new();
++	if (ftrace->evlist == NULL)
++		return -ENOMEM;
++
++	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
++	if (ret < 0)
++		goto out;
++
++	if (ftrace->dirname == NULL)
++		ftrace->dirname = DEFAULT_DIRNAME;
++
++	ret = do_ftrace_show(ftrace);
++
++	perf_evlist__delete_maps(ftrace->evlist);
++out:
++	perf_evlist__delete(ftrace->evlist);
++
++	return ret;
++}
++
+ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int ret;
+@@ -923,8 +1344,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.target = { .uid = UINT_MAX, },
+ 	};
+ 	const char * const ftrace_usage[] = {
+-		"perf ftrace {live|record} [<options>] [<command>]",
+-		"perf ftrace {live|record} [<options>] -- <command> [<options>]",
++		"perf ftrace {live|record|show} [<options>] [<command>]",
++		"perf ftrace {live|record|show} [<options>] -- <command> [<options>]",
+ 		NULL
+ 	};
+ 	const struct option ftrace_options[] = {
+@@ -945,6 +1366,8 @@ int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		ret = __cmd_ftrace_live(&ftrace, argc, argv);
+ 	} else 	if (strncmp(argv[0], "rec", 3) == 0) {
+ 		ret = __cmd_ftrace_record(&ftrace, argc, argv);
++	} else 	if (strcmp(argv[0], "show") == 0) {
++		ret = __cmd_ftrace_show(&ftrace, argc, argv);
+ 	} else {
+ 		usage_with_options(ftrace_usage, ftrace_options);
+ 	}
 -- 
 1.7.11.7
 
