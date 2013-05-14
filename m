@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab3ENSVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:21:38 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:40025 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885Ab3ENSUw (ORCPT
+	id S1758129Ab3ENSVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:21:53 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:57833 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab3ENSUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:20:52 -0400
+	Tue, 14 May 2013 14:20:51 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: bob.liu@oracle.com, dan.magenheimer@oracle.com,
         linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         linux-mm@kvack.org, xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 7/9] xen/tmem: Remove the usage of 'noselfshrink' and use 'tmem.selfshrink' bool instead.
-Date: Tue, 14 May 2013 14:09:24 -0400
-Message-Id: <1368554966-30469-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 6/9] xen/tmem: Remove the boot options and fold them in the tmem.X parameters.
+Date: Tue, 14 May 2013 14:09:23 -0400
+Message-Id: <1368554966-30469-7-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
 References: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
@@ -22,69 +22,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the 'tmem' driver is the one that actually sets whether
-it will use it or not so might as well make tmem responsible
-for this knob.
+If tmem is built-in or a module, the user has the option on
+the command line to influence it by doing: tmem.<some option>
+instead of having a variety of "nocleancache", and
+"nofrontswap". The others: "noselfballooning" and "selfballooning";
+and "noselfshrink" are in a different driver xen-selfballoon.c
+and the patches:
+
+ xen/tmem: Remove the usage of 'noselfshrink' and use 'tmem.selfshrink' bool instead.
+ xen/tmem: Remove the usage of 'noselfballoon','selfballoon' and use 'tmem.selfballon' bool instead.
+
+removes them.
+
+Also add documentation.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/Kconfig           |    2 +-
- drivers/xen/xen-selfballoon.c |   15 ++-------------
- 2 files changed, 3 insertions(+), 14 deletions(-)
+ Documentation/kernel-parameters.txt |   20 ++++++++++++++++++++
+ drivers/xen/tmem.c                  |   28 ++++------------------------
+ 2 files changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index f03bf50..98e9744 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -22,7 +22,7 @@ config XEN_SELFBALLOONING
- 	  ballooning is disabled by default but can be enabled with the
- 	  'selfballooning' kernel boot parameter.  If FRONTSWAP is configured,
- 	  frontswap-selfshrinking is enabled by default but can be disabled
--	  with the 'noselfshrink' kernel boot parameter; and self-ballooning
-+	  with the 'tmem.selfshrink=0' kernel boot parameter; and self-ballooning
- 	  is enabled by default but can be disabled with the 'noselfballooning'
- 	  kernel boot parameter.  Note that systems without a sufficiently
- 	  large swap device should not enable self-ballooning.
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index f2ef569..012f9d9 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -60,8 +60,8 @@
-  * be enabled with the "selfballooning" kernel boot option; similarly
-  * selfballooning is enabled by default if frontswap is configured and
-  * can be disabled with the "noselfballooning" kernel boot option.  Finally,
-- * when frontswap is configured, frontswap-selfshrinking can be disabled
-- * with the "noselfshrink" kernel boot option.
-+ * when frontswap is configured,frontswap-selfshrinking can be disabled
-+ * with the "tmem.selfshrink=0" kernel boot option.
-  *
-  * Selfballooning is disallowed in domain0 and force-disabled.
-  *
-@@ -120,9 +120,6 @@ static DECLARE_DELAYED_WORK(selfballoon_worker, selfballoon_process);
- /* Enable/disable with sysfs. */
- static bool frontswap_selfshrinking __read_mostly;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index c3bfacb..3de01ed 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3005,6 +3005,26 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Force threading of all interrupt handlers except those
+ 			marked explicitly IRQF_NO_THREAD.
  
--/* Enable/disable with kernel boot option. */
--static bool use_frontswap_selfshrink = true;
--
- /*
-  * The default values for the following parameters were deemed reasonable
-  * by experimentation, may be workload-dependent, and can all be
-@@ -176,14 +173,6 @@ static void frontswap_selfshrink(void)
- 	frontswap_shrink(tgt_frontswap_pages);
- }
++	tmem		[KNL,XEN]
++			Enable the Transcendent memory driver if built-in.
++
++	tmem.cleancache=0|1 [KNL, XEN]
++			Default is on (1). Disable the usage of the cleancache
++			API to send anonymous pages to the hypervisor.
++
++	tmem.frontswap=0|1 [KNL, XEN]
++			Default is on (1). Disable the usage of the frontswap
++			API to send swap pages to the hypervisor.
++
++	tmem.selfballooning=0|1 [KNL, XEN]
++			Default is on (1). Disable the driving of swap pages
++			to the hypervisor.
++
++	tmem.selfshrinking=0|1 [KNL, XEN]
++			Default is on (1). Partial swapoff that immediately
++			transfers pages from Xen hypervisor back to the
++			kernel based on different criteria.
++
+ 	topology=	[S390]
+ 			Format: {off | on}
+ 			Specify if the kernel should make use of the cpu
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 411c7e3..c1df0ff 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -33,39 +33,19 @@ __setup("tmem", enable_tmem);
  
--static int __init xen_nofrontswap_selfshrink_setup(char *s)
+ #ifdef CONFIG_CLEANCACHE
+ static bool cleancache __read_mostly = true;
+-static bool selfballooning __read_mostly = true;
+-#ifdef CONFIG_XEN_TMEM_MODULE
+ module_param(cleancache, bool, S_IRUGO);
++static bool selfballooning __read_mostly = true;
+ module_param(selfballooning, bool, S_IRUGO);
+-#else
+-static int __init no_cleancache(char *s)
 -{
--	use_frontswap_selfshrink = false;
+-	cleancache = false;
 -	return 1;
 -}
--
--__setup("noselfshrink", xen_nofrontswap_selfshrink_setup);
--
- /* Disable with kernel boot option. */
- static bool use_selfballooning = true;
+-__setup("nocleancache", no_cleancache);
+-#endif
+ #endif /* CONFIG_CLEANCACHE */
  
+ #ifdef CONFIG_FRONTSWAP
+ static bool frontswap __read_mostly = true;
+-#ifdef CONFIG_XEN_TMEM_MODULE
+ module_param(frontswap, bool, S_IRUGO);
+-#else
+-static int __init no_frontswap(char *s)
+-{
+-	frontswap = false;
+-	return 1;
+-}
+-__setup("nofrontswap", no_frontswap);
+-#endif
+ #endif /* CONFIG_FRONTSWAP */
+ 
+ #ifdef CONFIG_XEN_SELFBALLOONING
+-static bool frontswap_selfshrinking __read_mostly = true;
+-#ifdef CONFIG_XEN_TMEM_MODULE
+-module_param(frontswap_selfshrinking, bool, S_IRUGO);
+-#endif
++static bool selfshrinking __read_mostly = true;
++module_param(selfshrinking, bool, S_IRUGO);
+ #endif /* CONFIG_XEN_SELFBALLOONING */
+ 
+ #define TMEM_CONTROL               0
+@@ -423,7 +403,7 @@ static int xen_tmem_init(void)
+ 	}
+ #endif
+ #ifdef CONFIG_XEN_SELFBALLOONING
+-	xen_selfballoon_init(selfballooning, frontswap_selfshrinking);
++	xen_selfballoon_init(selfballooning, selfshrinking);
+ #endif
+ 	return 0;
+ }
 -- 
 1.7.7.6
 
