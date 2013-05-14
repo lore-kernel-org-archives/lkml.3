@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab3ENJxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:53:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45065 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab3ENJxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:53:50 -0400
-Message-ID: <5192099B.4000203@ti.com>
-Date: Tue, 14 May 2013 12:53:31 +0300
-From: Illia Smyrnov <x0194613@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1756726Ab3ENJyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:54:06 -0400
+Received: from slimlogic.co.uk ([89.16.172.20]:38476 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756288Ab3ENJyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 05:54:04 -0400
+Date: Tue, 14 May 2013 10:54:02 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Mark Brown <broonie@kernel.org>, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, balbi@ti.com, ldewangan@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, ruchika@ti.com,
+        tony@atomide.com, sameo@linux.intel.com
+Subject: Re: [PATCH v4] extcon: Palmas Extcon Driver
+Message-ID: <20130514095402.GA9721@xora-build.xora.org.uk>
+References: <1362662506-14823-4-git-send-email-kishon@ti.com>
+ <1367846225-15685-1-git-send-email-kishon@ti.com>
+ <20130506144010.GF13472@opensource.wolfsonmicro.com>
+ <51888D55.3090907@ti.com>
+ <20130507075824.GM7478@sirena.org.uk>
+ <5188CD9C.6010602@ti.com>
+ <20130507104502.GQ7478@sirena.org.uk>
+ <5192017D.6060108@ti.com>
 MIME-Version: 1.0
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Daniel Mack <zonque@gmail.com>,
-        Enric Balletbo Serra <eballetbo@gmail.com>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-omap@vger.kernel.org>, <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH] spi: spi-omap2-mcspi.c: Add dts for slave device configuration.
-References: <1364252415-3613-1-git-send-email-matthias.bgg@gmail.com> <CAB=otbTtRN9xyO0whNz-UbW+Xo0_X8XWLcWZt=7MfUfrnNqwww@mail.gmail.com>
-In-Reply-To: <CAB=otbTtRN9xyO0whNz-UbW+Xo0_X8XWLcWZt=7MfUfrnNqwww@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.193]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5192017D.6060108@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 14, 2013 at 02:48:53PM +0530, Kishon Vijay Abraham I wrote:
+> On Tuesday 07 May 2013 04:15 PM, Mark Brown wrote:
+> >On Tue, May 07, 2013 at 03:17:08PM +0530, Kishon Vijay Abraham I wrote:
+> >>On Tuesday 07 May 2013 01:28 PM, Mark Brown wrote:
+> >
+> >>>>The platform can provide it's own vbus control in which case this is
+> >>>>not needed.
+> >
+> >>>So why is there no interaction with this external VBUS control and how
+> >>>does the driver distinguish between that and an error getting the
+> >>>regulator?
+> >
+> >>The platform specifies if it provides its own VBUS control by the dt
+> >>property ti,no_control_vbus. So the driver will give an error only
+> >>when *ti,no_control_vbus* is not set. Graeme?
+> >
+> >That doesn't answer the question about why there's no interaction with
+> >the external control...
+> >
+> 
+> Graeme?
+> 
+I already partially answered this, it was written for a SoC where VBUS
+generation was in hardware on the SoC with no information.
 
-> @@ -745,6 +781,11 @@ static int omap2_mcspi_setup_transfer(struct
-> spi_device *spi,
->          mcspi = spi_master_get_devdata(spi->master);
->          spi_cntrl = mcspi->master;
->
-> +       if (!cd && spi->dev.of_node) {
-> +               cd = omap2_mcspi_get_slave_ctrldata(spi);
- > +               spi->controller_data = cd;
+I would say if nvidia/Laxman do not need this remove it, if someone ever
+uses it then they can re-add it easy enough!
 
-Here you call omap2_mcspi_get_slave_ctrldata function that allocate 
-memory for cd structure, but this memory never freed.
-
-Also, why do you read DT data in omap2_mcspi_setup_transfer function?
-Under certain conditions the omap2_mcspi_setup_transfer function may be 
-calling for each transfer and each call it will check (!cd && 
-spi->dev.of_node) condition.
-
-Consider to move DT data read code from omap2_mcspi_setup_transfer to
-omap2_mcspi_setup function and free spi->controller_data pointer in 
-omap2_mcspi_cleanup function.
+Graeme
 
