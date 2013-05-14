@@ -1,208 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab3ENMX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:23:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38969 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab3ENMX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:23:27 -0400
-Date: Tue, 14 May 2013 14:23:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/9] mm: vmscan: Move logic from balance_pgdat() to
- kswapd_shrink_zone()
-Message-ID: <20130514122325.GP5198@dhcp22.suse.cz>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
- <1368432760-21573-10-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368432760-21573-10-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756890Ab3ENMZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:25:18 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:19628 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab3ENMZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 08:25:15 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-3e-51922d2aa300
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Simon Glass'" <sjg@chromium.org>,
+        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+References: <1368039168-24447-1-git-send-email-dianders@chromium.org>
+ <1368123170-22906-1-git-send-email-dianders@chromium.org>
+ <CACRpkdZ3grCyf3x5dEbT6hAVDkpM3mwibVO5kT0Lv=a09-zBPA@mail.gmail.com>
+In-reply-to: <CACRpkdZ3grCyf3x5dEbT6hAVDkpM3mwibVO5kT0Lv=a09-zBPA@mail.gmail.com>
+Subject: RE: [PATCH v3] ARM: exynos: Select PINCTRL_EXYNOS for exynos4/5 at
+ chip level
+Date: Tue, 14 May 2013 21:25:13 +0900
+Message-id: <093701ce509e$15ba0350$412e09f0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac5Qm64EnLZgmOo5STOVi/IgN6B6MwAAlDAQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+Zsa6W7qRAg8svWC0ezNvGZnF22UE2
+	iyl/ljNZbHp8jdXi8q45bBYzzu9jsrh9mdfi1PXPbBbftmxjtDg2YwmjxapdfxgduD1amnvY
+	PGY3XGTx2DnrLrvHnWt72Dw2L6n3uHKiidWjb8sqRo/Pm+QCOKK4bFJSczLLUov07RK4Mm6c
+	P85ScIe9Ys3nsgbGVrYuRk4OCQETie9/JkPZYhIX7q0Hsrk4hASWMUp82TmPCaZoxsrbzBCJ
+	RYwSu060MEI4fxklvrb2sYJUsQloSBx+/4y9i5GDQ0QgUuLWY3aQGmaB70wSdxc8Y4doOMEo
+	8WjDMrB9nALBEvMeNILZwgIREsvfPGcBsVkEVCUuTD8BtppXwFZi5rkd7BC2oMSPyffAapgF
+	tCTW7zzOBGHLS2xe85YZZLGEgLrEo7+6IGERASOJH7duMUOUiEjse/EO7GgJgYUcEg3N/VC7
+	BCS+TT7EAtErK7HpADPEx5ISB1fcYJnAKDELyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpRcZ
+	6xUn5haX5qXrJefnbmKEJID+HYx3D1gfYkwGWj+RWUo0OR+YQPJK4g2NzYwsTE1MjY3MLc1I
+	E1YS51VrsQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwHjsjsx/q+ZJS/UXf25tjL17Nexu
+	w/czM7cqeD44eMvL4W7M6z9reeZMC1xd1HpGWffX+1SfwMQrjpVJR9d9O21UybHj+02Fzxfr
+	H9wUCuLesfi5CnP0lyxV768b96/hZ7aQvhRXfufraz7XBf8LjRKCf5k/+JPLZ3BdjOHNYdnn
+	uUwH/3Q+W8ShxFKckWioxVxUnAgAIwb4shYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jAV0t3UmBBpOdLR7M28ZmcXbZQTaL
+	KX+WM1lsenyN1eLyrjlsFjPO72OyuH2Z1+LU9c9sFt+2bGO0ODZjCaPFql1/GB24PVqae9g8
+	ZjdcZPHYOesuu8eda3vYPDYvqfe4cqKJ1aNvyypGj8+b5AI4ohoYbTJSE1NSixRS85LzUzLz
+	0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA7lRSKEvMKQUKBSQWFyvp22GaEBri
+	pmsB0xih6xsSBNdjZIAGEtYxZtw4f5yl4A57xZrPZQ2MrWxdjJwcEgImEjNW3maGsMUkLtxb
+	DxTn4hASWMQosetECyOE85dR4mtrHytIFZuAhsTh98/Yuxg5OEQEIiVuPWYHqWEW+M4kcXfB
+	M3aIhhOMEo82LANbwSkQLDHvQSOYLSwQIbH8zXMWEJtFQFXiwvQTTCA2r4CtxMxzO9ghbEGJ
+	H5PvgdUwC2hJrN95nAnClpfYvOYtM8hiCQF1iUd/dUHCIgJGEj9u3WKGKBGR2PfiHeMERqFZ
+	SCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRnFyeSe9gXNVgcYhR
+	gINRiYf3xY8JgUKsiWXFlbmHGCU4mJVEeC9zTwoU4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR
+	5Hxg4ssriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsaZ+Xb/
+	794JVu/n/T7bJybaJjFtD3MY+75lDGKK56fN7vM/KOfOXbliH2PuHj7J6ceD5eRF986smF+h
+	sjjswXxvzWTl+D636bf+5L7QDInRyNhc/Of4TzYn+4SenDVffj175nLyafTpHS1lE/g9WTTL
+	q8ouWnxSerzvSOScH2U/rPujznTf2KjEUpyRaKjFXFScCAB/qtFGcgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 13-05-13 09:12:40, Mel Gorman wrote:
-> balance_pgdat() is very long and some of the logic can and should
-> be internal to kswapd_shrink_zone(). Move it so the flow of
-> balance_pgdat() is marginally easier to follow.
+Linus Walleij wrote:
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Looks good
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/vmscan.c | 110 +++++++++++++++++++++++++++++-------------------------------
->  1 file changed, 54 insertions(+), 56 deletions(-)
+> On Thu, May 9, 2013 at 8:12 PM, Doug Anderson <dianders@chromium.org>
+> wrote:
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index e65fe46..0ba9d3a 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2705,18 +2705,53 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->   * This is used to determine if the scanning priority needs to be raised.
->   */
->  static bool kswapd_shrink_zone(struct zone *zone,
-> +			       int classzone_idx,
->  			       struct scan_control *sc,
->  			       unsigned long lru_pages,
->  			       unsigned long *nr_attempted)
->  {
->  	unsigned long nr_slab;
-> +	int testorder = sc->order;
-> +	unsigned long balance_gap;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	struct shrink_control shrink = {
->  		.gfp_mask = sc->gfp_mask,
->  	};
-> +	bool lowmem_pressure;
->  
->  	/* Reclaim above the high watermark. */
->  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
-> +
-> +	/*
-> +	 * Kswapd reclaims only single pages with compaction enabled. Trying
-> +	 * too hard to reclaim until contiguous free pages have become
-> +	 * available can hurt performance by evicting too much useful data
-> +	 * from memory. Do not reclaim more than needed for compaction.
-> +	 */
-> +	if (IS_ENABLED(CONFIG_COMPACTION) && sc->order &&
-> +			compaction_suitable(zone, sc->order) !=
-> +				COMPACT_SKIPPED)
-> +		testorder = 0;
-> +
-> +	/*
-> +	 * We put equal pressure on every zone, unless one zone has way too
-> +	 * many pages free already. The "too many pages" is defined as the
-> +	 * high wmark plus a "gap" where the gap is either the low
-> +	 * watermark or 1% of the zone, whichever is smaller.
-> +	 */
-> +	balance_gap = min(low_wmark_pages(zone),
-> +		(zone->managed_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-> +		KSWAPD_ZONE_BALANCE_GAP_RATIO);
-> +
-> +	/*
-> +	 * If there is no low memory pressure or the zone is balanced then no
-> +	 * reclaim is necessary
-> +	 */
-> +	lowmem_pressure = (buffer_heads_over_limit && is_highmem(zone));
-> +	if (!lowmem_pressure && zone_balanced(zone, testorder,
-> +						balance_gap, classzone_idx))
-> +		return true;
-> +
->  	shrink_zone(zone, sc);
->  
->  	reclaim_state->reclaimed_slab = 0;
-> @@ -2731,6 +2766,18 @@ static bool kswapd_shrink_zone(struct zone *zone,
->  
->  	zone_clear_flag(zone, ZONE_WRITEBACK);
->  
-> +	/*
-> +	 * If a zone reaches its high watermark, consider it to be no longer
-> +	 * congested. It's possible there are dirty pages backed by congested
-> +	 * BDIs but as pressure is relieved, speculatively avoid congestion
-> +	 * waits.
-> +	 */
-> +	if (!zone->all_unreclaimable &&
-> +	    zone_balanced(zone, testorder, 0, classzone_idx)) {
-> +		zone_clear_flag(zone, ZONE_CONGESTED);
-> +		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
-> +	}
-> +
->  	return sc->nr_scanned >= sc->nr_to_reclaim;
->  }
->  
-> @@ -2866,8 +2913,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  		 */
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
-> -			int testorder;
-> -			unsigned long balance_gap;
->  
->  			if (!populated_zone(zone))
->  				continue;
-> @@ -2888,61 +2933,14 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  			sc.nr_reclaimed += nr_soft_reclaimed;
->  
->  			/*
-> -			 * We put equal pressure on every zone, unless
-> -			 * one zone has way too many pages free
-> -			 * already. The "too many pages" is defined
-> -			 * as the high wmark plus a "gap" where the
-> -			 * gap is either the low watermark or 1%
-> -			 * of the zone, whichever is smaller.
-> -			 */
-> -			balance_gap = min(low_wmark_pages(zone),
-> -				(zone->managed_pages +
-> -					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-> -				KSWAPD_ZONE_BALANCE_GAP_RATIO);
-> -			/*
-> -			 * Kswapd reclaims only single pages with compaction
-> -			 * enabled. Trying too hard to reclaim until contiguous
-> -			 * free pages have become available can hurt performance
-> -			 * by evicting too much useful data from memory.
-> -			 * Do not reclaim more than needed for compaction.
-> +			 * There should be no need to raise the scanning
-> +			 * priority if enough pages are already being scanned
-> +			 * that that high watermark would be met at 100%
-> +			 * efficiency.
->  			 */
-> -			testorder = order;
-> -			if (IS_ENABLED(CONFIG_COMPACTION) && order &&
-> -					compaction_suitable(zone, order) !=
-> -						COMPACT_SKIPPED)
-> -				testorder = 0;
-> -
-> -			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
-> -			    !zone_balanced(zone, testorder,
-> -					   balance_gap, end_zone)) {
-> -				/*
-> -				 * There should be no need to raise the
-> -				 * scanning priority if enough pages are
-> -				 * already being scanned that high
-> -				 * watermark would be met at 100% efficiency.
-> -				 */
-> -				if (kswapd_shrink_zone(zone, &sc, lru_pages,
-> -						       &nr_attempted))
-> -					raise_priority = false;
-> -			}
-> -
-> -			if (zone->all_unreclaimable) {
-> -				if (end_zone && end_zone == i)
-> -					end_zone--;
-> -				continue;
-> -			}
-> -
-> -			if (zone_balanced(zone, testorder, 0, end_zone))
-> -				/*
-> -				 * If a zone reaches its high watermark,
-> -				 * consider it to be no longer congested. It's
-> -				 * possible there are dirty pages backed by
-> -				 * congested BDIs but as pressure is relieved,
-> -				 * speculatively avoid congestion waits
-> -				 * or writing pages from kswapd context.
-> -				 */
-> -				zone_clear_flag(zone, ZONE_CONGESTED);
-> -				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
-> +			if (kswapd_shrink_zone(zone, end_zone, &sc,
-> +					lru_pages, &nr_attempted))
-> +				raise_priority = false;
->  		}
->  
->  		/*
-> -- 
-> 1.8.1.4
+> > Previously if you had MACH_EXYNOS5_DT but not MACH_EXYNOS4_DT you'd be
+> > missing the pincontrol definitions.  Move PINCTRL selects to the arch
+> > level since we should be enabling the code for all exynos variants.
+> >
+> > Update the PINCTRL descriptions to indicate that PINCTRL_EXYNOS is not
+> > for exynos5440.  Also add basic dependencies for the PINCTRL_EXYNOS
+> > kernel config.
+> >
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> > ---
+> > Changes in v3:
+> > - Moved to chip level as per Tomasz.
+> > - Update PINCTRL Kconfig for exynos.
+> >
+> > Changes in v2:
+> > - Moved to the arch level as suggested by Olof.
 > 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> for the pinctrl
+> part, I guess this will be merged through the Samsung tree?
+> 
+Linus, thanks for your ack.
 
--- 
-Michal Hocko
-SUSE Labs
+Let me take this into samsung tree.
+
+- Kukjin
+
