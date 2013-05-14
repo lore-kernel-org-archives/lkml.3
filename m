@@ -1,95 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab3ENHYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:24:33 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46433
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753884Ab3ENHYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:24:32 -0400
-Date: Tue, 14 May 2013 09:22:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/9] perf: Adding better precise_ip field handling
-Message-ID: <20130514072239.GC15942@dyad.programming.kicks-ass.net>
-References: <20130510095345.GG3039@dyad.programming.kicks-ass.net>
- <20130510101823.GA18427@gmail.com>
- <20130510102245.GA31235@dyad.programming.kicks-ass.net>
- <20130510103112.GA18755@gmail.com>
- <20130510103436.GC31235@dyad.programming.kicks-ass.net>
- <20130510105536.GA18805@gmail.com>
- <20130510112756.GH31235@dyad.programming.kicks-ass.net>
- <20130511075008.GC24435@gmail.com>
- <20130513093624.GC3708@dyad.programming.kicks-ass.net>
- <20130513194313.GA30998@gmail.com>
+	id S1756341Ab3ENHb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:31:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63415 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756281Ab3ENHb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 03:31:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,667,1363158000"; 
+   d="scan'208";a="336831057"
+Message-ID: <5191E75C.6030903@intel.com>
+Date: Tue, 14 May 2013 15:27:24 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130513194313.GA30998@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com
+Subject: Re: [patch v6 6/8] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
+References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <1368199049-2798-7-git-send-email-alex.shi@intel.com> <20130513140625.GA15136@twins.programming.kicks-ass.net>
+In-Reply-To: <20130513140625.GA15136@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 09:43:13PM +0200, Ingo Molnar wrote:
+On 05/13/2013 10:06 PM, Peter Zijlstra wrote:
+>> >  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+> This just smells like you want a helper function... :-)
 > 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+> Also it doesn't apply anymore due to Paul Gortemaker moving some of this
+> stuff about.
 > 
-> > On Sat, May 11, 2013 at 09:50:08AM +0200, Ingo Molnar wrote:
-> > > That's really a red herring: there's absolutely no reason why the 
-> > > kernel could not pass back the level of precision it provided.
-> > 
-> > All I've been saying is that doing random precision without feedback is 
-> > confusing.
 > 
-> I agree with that.
-> 
-> > We also don't really have a good feedback channel for this kind of 
-> > thing. The best I can come up with is tagging each and every sample with 
-> > the quality it represents. I think we can do with only one extra 
-> > PERF_RECORD_MISC bit, but it looks like we're quickly running out of 
-> > those things.
-> 
-> Hm, how about passing precision back to user-space at creation time, in 
-> the perf_attr data structure? There's no need to pass it back in every 
-> sample, precision will not really change during the life-time of an event.
 
-Ah indeed, we talked about modifying the attr structure before (error details
-or so). Did something like that ever make it in, or would this be the first
-use now?
+patch updated. Any comments are appreciated! :)
+---
+>From fe23d908a7f80dc5cca0abf9cefaf1004a67b331 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Tue, 14 May 2013 10:11:12 +0800
+Subject: [PATCH 6/8] sched: compute runnable load avg in cpu_load and
+ cpu_avg_load_per_task
 
-> > But I think the biggest problem is PEBS's inability do deal with REP 
-> > prefixes; see this email from Stephane: 
-> > https://lkml.org/lkml/2011/2/1/177
-> >
-> > It is really unfortunate for PEBS to have such a side-effect; but it 
-> > makes all memset/memcpy/memmove things appear like they have no cost. 
-> > I'm very sure that will surprise a number of people.
-> 
-> I'd expect PEBS to get gradually better.
-> 
-> Note that at least for user-space, REP MOVS is getting rarer. libc uses 
-> SSE based memcpy/memset variants - which is not miscounted by PEBS. The 
-> kernel still uses REP MOVS - but it's a special case because it cannot 
-> cheaply use vector registers.
+They are the base values in load balance, update them with rq runnable
+load average, then the load balance will consider runnable load avg
+naturally.
 
-What's the rep_good cpu feature flag for? I thought Intel was putting more
-effort into making REP MOVS doing the right thing again. No need to worry your
-pretty head about the best way to move bytes around any longer.
+We also try to include the blocked_load_avg as cpu load in balancing,
+but that cause kbuild performance drop 6% on every Intel machine, and
+aim7/oltp drop on some of 4 CPU sockets machines.
 
-> The vast majority of code gets measured by cycles:pp more accurately than 
-> cycles.
-> 
-> We could try and see how many people complain. It's not like it's hard to 
-> undo such a change of the default event?
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c |  5 +++--
+ kernel/sched/proc.c | 17 +++++++++++++++--
+ 2 files changed, 18 insertions(+), 4 deletions(-)
 
-I suppose so.. Alternatively we can have the PEBS event read a 'real' cycles
-counter and weight the sample based on that. Bit cumbersome, esp if you want to
-implement it kernel side, but it could possibly work around this issue.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a534d1f..d2d3e03 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2960,7 +2960,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ /* Used instead of source_load when we know the type == 0 */
+ static unsigned long weighted_cpuload(const int cpu)
+ {
+-	return cpu_rq(cpu)->load.weight;
++	return cpu_rq(cpu)->cfs.runnable_load_avg;
+ }
+ 
+ /*
+@@ -3005,9 +3005,10 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
++	unsigned long load_avg = rq->cfs.runnable_load_avg;
+ 
+ 	if (nr_running)
+-		return rq->load.weight / nr_running;
++		return load_avg / nr_running;
+ 
+ 	return 0;
+ }
+diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
+index bb3a6a0..ce5cd48 100644
+--- a/kernel/sched/proc.c
++++ b/kernel/sched/proc.c
+@@ -501,6 +501,18 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+ 	sched_avg_update(this_rq);
+ }
+ 
++#ifdef CONFIG_SMP
++unsigned long get_rq_runnable_load(struct rq *rq)
++{
++	return rq->cfs.runnable_load_avg;
++}
++#else
++unsigned long get_rq_runnable_load(struct rq *rq)
++{
++	return rq->load.weight;
++}
++#endif
++
+ #ifdef CONFIG_NO_HZ_COMMON
+ /*
+  * There is no sane way to deal with nohz on smp when using jiffies because the
+@@ -522,7 +534,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+ void update_idle_cpu_load(struct rq *this_rq)
+ {
+ 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+-	unsigned long load = this_rq->load.weight;
++	unsigned long load = get_rq_runnable_load(this_rq);
+ 	unsigned long pending_updates;
+ 
+ 	/*
+@@ -568,11 +580,12 @@ void update_cpu_load_nohz(void)
+  */
+ void update_cpu_load_active(struct rq *this_rq)
+ {
++	unsigned long load = get_rq_runnable_load(this_rq);
+ 	/*
+ 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
+-	__update_cpu_load(this_rq, this_rq->load.weight, 1);
++	__update_cpu_load(this_rq, load, 1);
+ 
+ 	calc_load_account_active(this_rq);
+ }
+-- 
+1.7.12
+
+-- 
+Thanks
+    Alex
