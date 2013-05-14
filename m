@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3ENAk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:40:28 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60687 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab3ENAk1 (ORCPT
+	id S1755541Ab3ENAkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:40:51 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36369 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468Ab3ENAku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:40:27 -0400
-X-AuditID: 9c930197-b7b76ae000003523-6c-519187f9dcd2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
-References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
-	<CAOJsxLGNBJBrB-zL5CJwVStFT=s0L919yjvSFga7j_NakLHLeA@mail.gmail.com>
-Date: Tue, 14 May 2013 09:40:24 +0900
-In-Reply-To: <CAOJsxLGNBJBrB-zL5CJwVStFT=s0L919yjvSFga7j_NakLHLeA@mail.gmail.com>
-	(Pekka Enberg's message of "Mon, 13 May 2013 11:58:22 +0300")
-Message-ID: <87ppwu5r7r.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 13 May 2013 20:40:50 -0400
+Message-ID: <5191880F.3030308@linaro.org>
+Date: Mon, 13 May 2013 17:40:47 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: David Vrabel <david.vrabel@citrix.com>
+CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] timekeeping: sync persistent clock and RTC on system
+ time step changes
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1368467768-2316-3-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
-
-On Mon, 13 May 2013 11:58:22 +0300, Pekka Enberg wrote:
-> On Mon, May 13, 2013 at 11:41 AM, Namhyung Kim <namhyung@kernel.org> wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->>
->> The --percent-limit option is for not showing small overheaded entries
->> in the output.  Maybe we want to set a certain default value like 0.1.
->>
->> Cc: Andi Kleen <andi@firstfloor.org>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+On 05/13/2013 10:56 AM, David Vrabel wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
 >
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+> The persistent clock or the RTC is only synchronized with system time
+> every 11 minutes if NTP is running.  This gives a window where the
+> persistent clock may be incorrect after a step change in the time
+> (such as on first boot).
+>
+> This particularly affects Xen guests as until an update to the control
+> domain's persistent clock, new guests will start with the incorrect
+> system time.
+>
+> When there is a step change in the system time, call
+> update_persistent_clock or rtc_set_ntp_time() to synchronize the
+> persistent clock or RTC to the new system time.
 
-Thanks and sorry for missing you on CC list.
-Namhyung
+I'm sorry, this isn't quite making sense to me. Could you further 
+describe the exact problematic behavior you're seeing here, and why its 
+a problem?
+
+You seem to be saying we should always set the RTC any time settimeofday 
+is called (regardless of the NTP sync state), which doesn't seem right 
+to me. Also I worry that this would cause the RTC to be set when the RTC 
+hctosys() code (or hwclock) sets the time to the RTC clock, which is a 
+bit circular.
+
+I suspect once the problem is better understood, there will be a better 
+solution then trying to always set the RTC on any settimeofday() call.
+
+thanks
+-john
+
+
+
+>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>   kernel/time/timekeeping.c |   46 +++++++++++++++++++++++++++++++++++++++++++-
+>   1 files changed, 44 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 98cd470..56f2349 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -240,12 +240,54 @@ int pvclock_gtod_unregister_notifier(struct notifier_block *nb)
+>   }
+>   EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
+>   
+> +#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
+> +
+> +static void __sync_persistent_clock(struct work_struct *work)
+> +{
+> +	struct timespec now;
+> +	int ret = 0;
+> +
+> +	getnstimeofday(&now);
+> +
+> +#ifdef CONFIG_GENERIC_CMOS_UPDATE
+> +	ret = update_persistent_clock(now);
+> +#endif
+> +#ifdef CONFIG_RTC_SYSTOHC
+> +	if (ret == -ENODEV)
+> +		rtc_set_ntp_time(now);
+> +#endif
+> +}
+> +
+> +static DECLARE_DELAYED_WORK(sync_persistent_clock_work, __sync_persistent_clock);
+> +
+> +static void sync_persistent_clock(struct timekeeper *tk)
+> +{
+> +	u64 nsecs;
+> +	u32 remainder;
+> +
+> +	/* Many RTCs require updates 500 ms before the next second. */
+> +	nsecs = timekeeping_get_ns(tk);
+> +	div_u64_rem(nsecs, NSEC_PER_SEC, &remainder);
+> +	if (remainder > NSEC_PER_SEC / 2)
+> +		nsecs = remainder - NSEC_PER_SEC / 2;
+> +	else
+> +		nsecs = remainder + NSEC_PER_SEC / 2;
+> +
+> +	if (system_wq)
+> +		schedule_delayed_work(&sync_persistent_clock_work, nsecs_to_jiffies(nsecs));
+> +}
+> +
+> +#endif
+> +
+>   /* must hold timekeeper_lock */
+> -static void timekeeping_update(struct timekeeper *tk, bool clearntp, bool mirror)
+> +static void timekeeping_update(struct timekeeper *tk, bool step, bool mirror)
+>   {
+> -	if (clearntp) {
+> +	if (step) {
+>   		tk->ntp_error = 0;
+>   		ntp_clear();
+> +#if defined(CONFIG_GENERIC_CMOS_UPDATE) || defined(CONFIG_RTC_SYSTOHC)
+> +		sync_persistent_clock(tk);
+> +#endif
+>   	}
+>   	update_vsyscall(tk);
+>   	update_pvclock_gtod(tk);
+
