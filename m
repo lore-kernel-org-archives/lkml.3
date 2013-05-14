@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab3ENOhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:37:31 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:39594
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755561Ab3ENOha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:37:30 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1102Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MMSLY8-02-4S0-02
-X-M-MSG: 
-Message-ID: <51924C21.3020906@amd.com>
-Date: Tue, 14 May 2013 09:37:21 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S932108Ab3ENOkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:40:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45703 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872Ab3ENOke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:40:34 -0400
+Date: Tue, 14 May 2013 16:40:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
+ root caches
+Message-ID: <20130514144031.GR5198@dhcp22.suse.cz>
+References: <1368535118-27369-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <steven.kinney@amd.com>, <linux-kernel@vger.kernel.org>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <joro@8bytes.org>
-Subject: Re: [PATCH 1/2] IOMMU/AMD: Adding IOMMU PC resource management
-References: <1368481424-5626-1-git-send-email-steven.kinney@amd.com> <20130514070924.GA15942@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130514070924.GA15942@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368535118-27369-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/14/2013 2:09 AM, Peter Zijlstra wrote:
-> On Mon, May 13, 2013 at 04:43:44PM -0500, steven.kinney@amd.com wrote:
->> +static void init_iommu_perf_ctr(struct amd_iommu *iommu)
->> +{
->> +	u32 val = 0xabcd, val2 = 0;
->> +
->> +	if (!iommu_feature(iommu, FEATURE_PC))
->> +		return;
->> +
->> +	amd_iommu_pc_present = true;
->> +
->> +	/* Check if the performance counters can be written to */
->> +	if ((0 != amd_iommu_pc_get_set_reg_val(0, 0, 0, 0, &val, true)) ||
->> +	    (0 != amd_iommu_pc_get_set_reg_val(0, 0, 0, 0, &val2, false)) ||
->> +	    (val != val2)) {
->> +		pr_err("AMD-Vi: Unable to write to IOMMU perf counter.\n");
-> Would it make sense to clear amd_iommu_pc_present here?
-Yes, I'll take care of this here.
+On Tue 14-05-13 16:38:38, Andrey Vagin wrote:
+> struct memcg_cache_params has a union. Different parts of this union are
+> used for root and non-root caches. A part with destroying work is used only
+> for non-root caches.
 
-Thank you,
+but memcg_update_cache_size is called only for !root caches AFAICS
+(check memcg_update_all_caches)
+> 
+> [  115.096202] BUG: unable to handle kernel paging request at 0000000fffffffe0
+> [  115.096785] IP: [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
+> [  115.097024] PGD 7ace1067 PUD 0
+> [  115.097024] Oops: 0000 [#4] SMP
+> [  115.097024] Modules linked in: netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag ip6table_filter ip6_tables i2c_piix4 virtio_net virtio_balloon microcode i2c_core pcspkr floppy
+> [  115.097024] CPU: 0 PID: 1929 Comm: lt-vzctl Tainted: G      D      3.10.0-rc1+ #2
+> [  115.097024] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  115.097024] task: ffff88007b5aaee0 ti: ffff88007bf0c000 task.ti: ffff88007bf0c000
+> [  115.097024] RIP: 0010<ffffffff8116b641>]  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
+> [  115.097024] RSP: 0018:ffff88007bf0de68  EFLAGS: 00010202
+> [  115.097024] RAX: 0000000fffffffe0 RBX: 00007fff4014f200 RCX: 0000000000000300
+> [  115.097024] RDX: 0000000000000005 RSI: 00000000000000d0 RDI: ffff88007d001300
+> [  115.097024] RBP: ffff88007bf0dea8 R08: 00007f849c3141b7 R09: ffffffff8118e100
+> [  115.097024] R10: 0000000000000001 R11: 0000000000000246 R12: 00000000000000d0
+> [  115.097024] R13: 0000000fffffffe0 R14: ffff88007d001300 R15: 0000000000001000
+> [  115.097024] FS:  00007f849cbb8b40(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+> [  115.097024] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  115.097024] CR2: 0000000fffffffe0 CR3: 000000007bc38000 CR4: 00000000000006f0
+> [  115.097024] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  115.097024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  115.097024] Stack:
+> [  115.097024]  ffffffff8118e100 ffffffff81149ea1 0000000000000008 00007fff4014f200
+> [  115.097024]  00007fff4014f200 0000000000000000 0000000000000000 0000000000001000
+> [  115.097024]  ffff88007bf0dee8 ffffffff8118e100 ffff880037598e00 00007fff4014f200
+> [  115.097024] Call Trace:
+> [  115.097024]  [<ffffffff8118e100>] ? getname_flags.part.34+0x30/0x140
+> [  115.097024]  [<ffffffff81149ea1>] ? vma_rb_erase+0x121/0x210
+> [  115.097024]  [<ffffffff8118e100>] getname_flags.part.34+0x30/0x140
+> [  115.097024]  [<ffffffff8118e248>] getname+0x38/0x60
+> [  115.097024]  [<ffffffff81181d55>] do_sys_open+0xc5/0x1e0
+> [  115.097024]  [<ffffffff81181e92>] SyS_open+0x22/0x30
+> [  115.097024]  [<ffffffff8161cb82>] system_call_fastpath+0x16/0x1b
+> [  115.097024] Code: f4 53 48 83 ec 18 8b 05 8e 53 b7 00 4c 8b 4d 08 21 f0 a8 10 74 0d 4c 89 4d c0 e8 1b 76 4a 00 4c 8b 4d c0 e9 92 00 00 00 4d 89 f5 <4d> 8b 45 00 65 4c 03 04 25 48 cd 00 00 49 8b 50 08 4d 8b 38 49
+> [  115.097024] RIP  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
+> [  115.097024]  RSP <ffff88007bf0de68>
+> [  115.097024] CR2: 0000000fffffffe0
+> [  115.121352] ---[ end trace 16bb8e8408b97d0e ]---
+> 
+> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Glauber Costa <glommer@parallels.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  mm/memcontrol.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index cb1c9de..764b9e4 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3141,8 +3141,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
+>  			return -ENOMEM;
+>  		}
+>  
+> -		INIT_WORK(&s->memcg_params->destroy,
+> -				kmem_cache_destroy_work_func);
+>  		s->memcg_params->is_root_cache = true;
+>  
+>  		/*
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Surave
-
+-- 
+Michal Hocko
+SUSE Labs
