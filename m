@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab3ENPkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:40:24 -0400
-Received: from plane.gmane.org ([80.91.229.3]:59918 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345Ab3ENPkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:40:21 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Dmitry Maluka <D.Maluka@adbglobal.com>
-Subject: Re: Yet another page fault deadlock
-Date: Tue, 14 May 2013 18:38:02 +0300
-Message-ID: <kmtlsf$bjf$1@ger.gmane.org>
-References: <kmrak0$ip1$1@ger.gmane.org> <CACVXFVNQVbe6MjWd9sH4wMK9fRCqxdvX2qSrep9GPfPPWOJ54A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 193.105.30.100
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-In-Reply-To: <CACVXFVNQVbe6MjWd9sH4wMK9fRCqxdvX2qSrep9GPfPPWOJ54A@mail.gmail.com>
-Cc: linux-mm@kvack.org
+	id S932349Ab3ENPlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:41:03 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48531 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758135Ab3ENPj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:39:26 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Christian Daudt <csd@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
+        Tony Prisk <linux@prisktech.co.nz>
+Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH 16/20] ARM: mxs: Remove init_irq declaration in machine description
+Date: Tue, 14 May 2013 17:38:49 +0200
+Message-Id: <1368545933-7430-17-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the remarks.
+Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+specified") removed the need to explictly setup the init_irq field in
+the machine description when using only irqchip_init. Remove that
+declaration for mxs as well.
 
-On 05/14/2013 01:32 PM, Ming Lei wrote:
-> If the user buffer passed to driver A is mapped against file on the block
-> device, single thread 1 may still deadlock on the mutex A.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-mxs/mach-mxs.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Good point, thanks. It is unlikely to ever be a use case for us, but
-still worth considering for the driver robustness.
-
-> It can't be avoided 100% with the memset() workaround since the user
-> buffer might be swapped out.
-
-Yep. We have swap disabled though, so this should be fine as a temporary
-workaround.
-
-> Looks there are some similar examples, one of them is b31ca3f5df( sysfs:
-> fix deadlock).
-> 
-> ...
-> 
-> Maybe it is good to document the lock usage, but the rule isn't much
-> complicated: if one lock may be held under mmap_sem, the lock can't be
-> held before copy_to/from_user(), :-)
-
-Ok. I see it is a known pitfall. Still, it would be nice if people could
-discover it not via a posteriori deadlocks debugging and lurking in list
-archives. :)
+diff --git a/arch/arm/mach-mxs/mach-mxs.c b/arch/arm/mach-mxs/mach-mxs.c
+index 5b62b64..66fe810 100644
+--- a/arch/arm/mach-mxs/mach-mxs.c
++++ b/arch/arm/mach-mxs/mach-mxs.c
+@@ -19,7 +19,6 @@
+ #include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/init.h>
+-#include <linux/irqchip.h>
+ #include <linux/irqchip/mxs.h>
+ #include <linux/micrel_phy.h>
+ #include <linux/of_address.h>
+@@ -435,7 +434,6 @@ static const char *mxs_dt_compat[] __initdata = {
+ 
+ DT_MACHINE_START(MXS, "Freescale MXS (Device Tree)")
+ 	.map_io		= debug_ll_io_init,
+-	.init_irq	= irqchip_init,
+ 	.handle_irq	= icoll_handle_irq,
+ 	.init_time	= mxs_timer_init,
+ 	.init_machine	= mxs_machine_init,
+-- 
+1.8.1.2
 
