@@ -1,130 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab3ENUTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 16:19:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37222 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab3ENUTk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 16:19:40 -0400
+	id S1758276Ab3ENUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 16:25:58 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46855 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756895Ab3ENUZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 16:25:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: REGRESSION: 3.10-rc1: Dell Latitude e6410 hangs within 3 seconds
+Date: Tue, 14 May 2013 22:34:30 +0200
+Message-ID: <1396357.SFbZsj3Bmy@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <5192363E.7040204@broadcom.com>
+References: <5192363E.7040204@broadcom.com>
 MIME-Version: 1.0
-Message-ID: <f0272a06-141a-4d33-9976-ee99467f3aa2@default>
-Date: Tue, 14 May 2013 13:18:48 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: RE: [PATCHv11 3/4] zswap: add to mm/
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default>
- <20130514163541.GC4024@medulla>
-In-Reply-To: <20130514163541.GC4024@medulla>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+On Tuesday, May 14, 2013 03:03:58 PM Arend van Spriel wrote:
+> Laptop hangs pretty soon after booting. Workaround for me was to turn 
+> off ACPI on kernel command line, ie. acpi=off
 > 
-> <snip>
->
-> > > +/* The maximum percentage of memory that the compressed pool can occupy */
-> > > +static unsigned int zswap_max_pool_percent = 20;
-> > > +module_param_named(max_pool_percent,
-> > > +			zswap_max_pool_percent, uint, 0644);
-> 
-> <snip>
->
-> > This limit, along with the code that enforces it (by calling reclaim
-> > when the limit is reached), is IMHO questionable.  Is there any
-> > other kernel memory allocation that is constrained by a percentage
-> > of total memory rather than dynamically according to current
-> > system conditions?  As Mel pointed out (approx.), if this limit
-> > is reached by a zswap-storm and filled with pages of long-running,
-> > rarely-used processes, 20% of RAM (by default here) becomes forever
-> > clogged.
-> 
-> So there are two comments here 1) dynamic pool limit and 2) writeback
-> of pages in zswap that won't be faulted in or forced out by pressure.
-> 
-> Comment 1 feeds from the point of view that compressed pages should just be
-> another type of memory managed by the core MM.  While ideal, very hard to
-> implement in practice.  We are starting to realize that even the policy
-> governing to active vs inactive list is very hard to get right. Then shrinkers
-> add more complexity to the policy problem.  Throwing another type in the mix
-> would just that much more complex and hard to get right (assuming there even
-> _is_ a "right" policy for everyone in such a complex system).
-> 
-> This max_pool_percent policy is simple, works well, and provides a
-> deterministic policy that users can understand. Users can be assured that a
-> dynamic policy heuristic won't go nuts and allow the compressed pool to grow
-> unbounded or be so aggressively reclaimed that it offers no value.
+> Attached is my kernel configuration.
 
-Hi Seth --
+Well, I have no idea what may be the source of this.
 
-Hmmm... I'm not sure how to politely say "bullshit". :-)
+Any chance to bisect?
 
-The default 20% was randomly pulled out of the air long ago for zcache
-experiments.  If you can explain why 20% is better than 19% or 21%, or
-better than 10% or 30% or even 50%, that would be a start.  Then please try
-to explain -- in terms an average sysadmin can understand -- under
-what circumstances this number should be higher or lower, that would
-be even better.  In fact if you can explain it in even very broadbrush
-terms like "higher for embedded" and "lower for server" that would be
-useful.  If the top Linux experts in compression can't answer these
-questions (and the default is a random number, which it is), I don't
-know how we can expect users to be "assured".
+Rafael
 
-What you mean is "works well"... on the two benchmarks you've tried it
-on.  You say it's too hard to do dynamically... even though every other
-significant RAM user in the kernel has to do it dynamically.
-Workloads are dynamic and heavy users of RAM needs to deal with that.
-You don't see a limit on the number of anonymous pages in the MM subsystem,
-and you don't see a limit on the number of inodes in btrfs.  Linus
-would rightfully barf all over those limits and (if he was paying attention
-to this discussion) he would barf on this limit too.
 
-It's unfortunate that my proposed topic for LSFMM was pre-empted
-by the zsmalloc vs zbud discussion and zswap vs zcache, because
-I think the real challenge of zswap (or zcache) and the value to
-distros and end users requires us to get this right BEFORE users
-start filing bugs about performance weirdness.  After which most
-users and distros will simply default to 0% (i.e. turn zswap off)
-because zswap unpredictably sometimes sucks.
-
-<flame off> sorry...
-
-> Comment 2 I agree is an issue. I already have patches for a "periodic
-> writeback" functionality that starts to shrink the zswap pool via
-> writeback if zswap goes idle for a period of time.  This addresses
-> the issue with long-lived, never-accessed pages getting stuck in
-> zswap forever.
-
-Pulling the call out of zswap_frontswap_store() (and ensuring there still
-aren't any new races) would be a good start.  But this is just a mechanism;
-you haven't said anything about the policy or how you intend to
-enforce the policy.  Which just gets us back to Comment 1...
-
-So Comment 1 and Comment 2 are really the same:  How do we appropriately
-manage the number of pages in the system that are used for storing
-compressed pages?
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
