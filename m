@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3ENQZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:25:21 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17312 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3ENQZU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:25:20 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51926396.4040203@linaro.org>
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com> <51918ABB.5030501@linaro.org> <51920A9502000078000D5D84@nat28.tlf.novell.com> <51925F70.5000309@linaro.org> <51927F2002000078000D6224@nat28.tlf.novell.com> <51926396.4040203@linaro.org>
+	id S1755556Ab3ENQ16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:27:58 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:54509 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526Ab3ENQ15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:27:57 -0400
+Date: Tue, 14 May 2013 18:27:49 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 2/5] cris: Wire up asm-generic/xor.h
+Message-ID: <20130514162749.GP8853@axis.com>
+References: <1368516726-8035-1-git-send-email-geert@linux-m68k.org>
+ <1368516726-8035-2-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [Xen-devel] [PATCH 3/3] x86/xen: sync the CMOS RTC as well as the Xen wallclock
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 14 May 2013 12:24:57 -0400
-To: John Stultz <john.stultz@linaro.org>, Jan Beulich <JBeulich@suse.com>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <32efe991-ac51-410b-aead-68a480e628d6@email.android.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368516726-8035-2-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John Stultz <john.stultz@linaro.org> wrote:
+On Tue, May 14, 2013 at 09:32:03AM +0200, Geert Uytterhoeven wrote:
+> crypto/xor.c:25:21: fatal error: asm/xor.h: No such file or directory
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Mikael Starvik <starvik@axis.com>
 
->On 05/14/2013 09:14 AM, Jan Beulich wrote:
->>>>> On 14.05.13 at 17:59, John Stultz <john.stultz@linaro.org> wrote:
->>> On 05/14/2013 12:57 AM, Jan Beulich wrote:
->>>>>>> On 14.05.13 at 02:52, John Stultz <john.stultz@linaro.org>
->wrote:
->>>>> Honestly, it seems a little strange to me. If you're running as
->dom0,
->>>>> why does HYPERVISOR_dom0_op() not cause the hypervisor to set the
->cmos
->>>>> its virtualizing? This seems to mess with the proper
->virtualization
->>>>> layering.
->>>> Thy hypervisor tries to control as little system and peripheral
->devices
->>>> as possible, and the CMOS (including the clock) is among those not
->>>> controlled by it, but by Dom0.
->>> Huh. So what does calling HYPERVISOR_dom0_op do then?
->> Here it merely tells the hypervisor that the wall clock changed (so
->> it can propagate this on to DomU-s).
->
->Ok, I appreciate the explanation. Still waiting for acks on this one.
->
->thanks
->-john
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-Acked-by: Konrad Rzeszutek Wilk
+> Cc: linux-cris-kernel@axis.com
+> ---
+>  arch/cris/include/asm/Kbuild |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/cris/include/asm/Kbuild b/arch/cris/include/asm/Kbuild
+> index 1e7dfad..0dd4b88 100644
+> --- a/arch/cris/include/asm/Kbuild
+> +++ b/arch/cris/include/asm/Kbuild
+> @@ -9,3 +9,4 @@ generic-y += kvm_para.h
+>  generic-y += linkage.h
+>  generic-y += module.h
+>  generic-y += trace_clock.h
+> +generic-y += xor.h
+> -- 
+> 1.7.0.4
 
-Or Reviewed-by. Or John if you would like I can carry this in my branch for Linus.
-
-Thought it might make sense to add the comment from Jan about the CMOS and the follow up explanation.
+/^JN - Jesper Nilsson
 -- 
-Sent from my Android phone. Please excuse my brevity.
+               Jesper Nilsson -- jesper.nilsson@axis.com
