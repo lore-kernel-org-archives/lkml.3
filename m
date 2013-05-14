@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab3ENM47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:56:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38784 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475Ab3ENM45 (ORCPT
+	id S1757515Ab3ENM6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:58:18 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:38415 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756770Ab3ENM6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:56:57 -0400
-Date: Tue, 14 May 2013 13:56:55 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Philipp Reisner'" <philipp.reisner@linbit.com>,
-        "'Lars Ellenberg'" <lars.ellenberg@linbit.com>
-Subject: Re: [PATCH 3.9-stable ]drbd: fix for deadlock when using automatic
- split-brain-recovery
-Message-ID: <20130514125655.GG5196@hercules>
-References: <003801ce4c41$d52a0890$7f7e19b0$%choi@samsung.com>
+	Tue, 14 May 2013 08:58:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <003801ce4c41$d52a0890$7f7e19b0$%choi@samsung.com>
+In-Reply-To: <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
+References: <cover.1368485053.git.luto@amacapital.net>
+	<bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
+Date: Tue, 14 May 2013 08:58:16 -0400
+Message-ID: <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com>
+Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
+ missing ..._del
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-fbdev@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jerome Glisse <j.glisse@gmail.com>, Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 08:14:47AM +0900, Jonghwan Choi wrote:
-> This patch looks like it should be in the 3.9-stable tree, should we apply
-> it?
+On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-This seems to be applicable to older kernels as well (starting with
-3.0 at least).
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-I'm queuing it for 3.5.
-
-Cheers,
---
-Luis
-
-> 
-> ------------------
-> 
-> From: "Philipp Reisner <philipp.reisner@linbit.com>"
-> 
-> commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream
-> 
-> With an automatic after split-brain recovery policy of
-> "after-sb-1pri call-pri-lost-after-sb",
-> when trying to drbd_set_role() to R_SECONDARY,
-> we run into a deadlock.
-> 
-> This was first recognized and supposedly fixed by
-> 2009-06-10 "Fixed a deadlock when using automatic split brain recovery when
-> both nodes are"
-> replacing drbd_set_role() with drbd_change_state() in that code-path,
-> but the first hunk of that patch forgets to remove the drbd_set_role().
-> 
-> We apparently only ever tested the "two primaries" case.
-> 
-> Cc: <stable@vger.kernel.org> # 3.9.x: ef57f9e6: drbd: Fix build error
-> Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> Signed-off-by: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 > ---
->  drivers/block/drbd/drbd_receiver.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/block/drbd/drbd_receiver.c
-> b/drivers/block/drbd/drbd_receiver.c
-> index a9eccfc..5105f43 100644
-> --- a/drivers/block/drbd/drbd_receiver.c
-> +++ b/drivers/block/drbd/drbd_receiver.c
-> @@ -2661,7 +2661,6 @@ static int drbd_asb_recover_1p(struct drbd_conf *mdev)
-> __must_hold(local)
->  		if (hg == -1 && mdev->state.role == R_PRIMARY) {
->  			enum drbd_state_rv rv2;
->  
-> -			drbd_set_role(mdev, R_SECONDARY, 0);
->  			 /* drbd_change_state() does not sleep while in
-> SS_IN_TRANSIENT_STATE,
->  			  * we might be here in C_WF_REPORT_PARAMS which is
-> transient.
->  			  * we do not need to wait for the after state
-> change work either. */
-> -- 
-> 1.7.9.5
-> 
+>  drivers/gpu/drm/radeon/radeon_object.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
+> index d3aface..15cd34b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_object.c
+> +++ b/drivers/gpu/drm/radeon/radeon_object.c
+> @@ -321,8 +321,8 @@ void radeon_bo_force_delete(struct radeon_device *rdev)
+>  int radeon_bo_init(struct radeon_device *rdev)
+>  {
+>         /* Add an MTRR for the VRAM */
+> -       rdev->mc.vram_mtrr = mtrr_add(rdev->mc.aper_base, rdev->mc.aper_size,
+> -                       MTRR_TYPE_WRCOMB, 1);
+> +       rdev->mc.vram_mtrr = arch_phys_wc_add(rdev->mc.aper_base,
+> +                                             rdev->mc.aper_size);
+>         DRM_INFO("Detected VRAM RAM=%lluM, BAR=%lluM\n",
+>                 rdev->mc.mc_vram_size >> 20,
+>                 (unsigned long long)rdev->mc.aper_size >> 20);
+> @@ -334,6 +334,7 @@ int radeon_bo_init(struct radeon_device *rdev)
+>  void radeon_bo_fini(struct radeon_device *rdev)
+>  {
+>         radeon_ttm_fini(rdev);
+> +       arch_phys_wc_del(rdev->mc.vram_mtrr);
+>  }
+>
+>  void radeon_bo_list_add_object(struct radeon_bo_list *lobj,
 > --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1.8.1.4
+>
