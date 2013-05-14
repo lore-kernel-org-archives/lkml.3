@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab3ENScm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:32:42 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43494 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757842Ab3ENSck (ORCPT
+	id S1757928Ab3ENSdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:33:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20831 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab3ENSdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:32:40 -0400
-Date: Tue, 14 May 2013 11:32:39 -0700 (PDT)
-Message-Id: <20130514.113239.791038636818706716.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: geert@linux-m68k.org, heiko.carstens@de.ibm.com,
-        linux-net-drivers@solarflare.com, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCHv2 net 2/2] sfc: Reduce RX scatter buffer size, and
- reduce alignment if appropriate
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1368482482.3305.50.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
-	<1368482482.3305.50.camel@bwh-desktop.uk.solarflarecom.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 14 May 2013 11:32:40 -0700 (PDT)
+	Tue, 14 May 2013 14:33:47 -0400
+Date: Tue, 14 May 2013 21:33:33 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Nathan Zimmer <nzimmer@sgi.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbtree: remove unneeded include
+Message-ID: <20130514183333.GK1360@mwanda>
+References: <1368556069-194880-1-git-send-email-nzimmer@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368556069-194880-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Mon, 13 May 2013 23:01:22 +0100
+These go through Andrew Morton.  He's the only person who reads LKML
+so he might notice this patch, but I have added him to the CC list
+just in case.
 
-> efx_start_datapath() asserts that we can fit 2 RX scatter buffers plus
-> a software structure, each appropriately aligned, into a single page.
-> Where L1_CACHE_BYTES == 256 and PAGE_SIZE == 4096, which is the case
-> on s390, this assertion fails.
-> 
-> The current scatter buffer size is also not a multiple of 64 or 128,
-> which are more common cache line sizes.  If we can make both the start
-> and end of a scatter buffer cache-aligned, this will reduce the need
-> for read-modify-write operations on inter- processor links.
-> 
-> Fix the alignment by reducing EFX_RX_USR_BUF_SIZE to 2048 - 256 ==
-> 1792.  (We could use 2048 - L1_CACHE_BYTES, but EFX_RX_USR_BUF_SIZE
-> also affects user-level networking where a larger amount of
-> housekeeping data may be needed.  Although this version of the driver
-> does not support user-level networking, I prefer to keep scattering
-> behaviour consistent with the out-of-tree version.)
-> 
-> This still doesn't fix the s390 build because like most architectures
-> it has NET_IP_ALIGN == 2.  When NET_IP_ALIGN != 0 we cannot achieve
-> cache line alignment at either the start or end of a scatter buffer,
-> so there is actually no point in padding the buffers to a multiple of
-> the cache line size.  All we need is 4-byte alignment of the network
-> header, so do that.
-> 
-> Adjust the assertions accordingly.
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+regards,
+dan carpenter
 
-Applied.
+On Tue, May 14, 2013 at 01:27:49PM -0500, Nathan Zimmer wrote:
+> Remove an unnecessary include to kernel.h
+> 
+> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+> ---
+>  include/linux/rbtree.h | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+> index 0022c1b..d2fdc6d 100644
+> --- a/include/linux/rbtree.h
+> +++ b/include/linux/rbtree.h
+> @@ -29,7 +29,6 @@
+>  #ifndef	_LINUX_RBTREE_H
+>  #define	_LINUX_RBTREE_H
+>  
+> -#include <linux/kernel.h>
+>  #include <linux/stddef.h>
+>  
+>  struct rb_node {
+> -- 
+> 1.8.2.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
