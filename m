@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab3ENKRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:17:01 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46368 "EHLO
+	id S1756748Ab3ENKOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:14:04 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53910 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab3ENKOF (ORCPT
+	with ESMTP id S1756223Ab3ENKOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:14:05 -0400
-X-AuditID: 9c930197-b7b76ae000003523-37-51920e6a0615
+	Tue, 14 May 2013 06:14:02 -0400
+X-AuditID: 9c930197-b7b76ae000003523-2b-51920e694b36
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/15] perf ftrace: Split "live" sub-command
-Date: Tue, 14 May 2013 19:13:52 +0900
-Message-Id: <1368526439-31966-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 01/15] perf util: Move debugfs/tracing helper functions to util.c
+Date: Tue, 14 May 2013 19:13:45 +0900
+Message-Id: <1368526439-31966-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
 References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
@@ -29,183 +29,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Separate out the default behavior to "live" subcommand.  It's a
-preparation to support more subcommands like "record" and "report".
+Since they're generic helpers move them to util.c so that they can be
+used by others.
 
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-ftrace.c | 109 +++++++++++++++++++++++++++-----------------
- 1 file changed, 68 insertions(+), 41 deletions(-)
+ tools/perf/util/trace-event-info.c | 59 --------------------------------------
+ tools/perf/util/util.c             | 59 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/util.h             |  3 ++
+ 3 files changed, 62 insertions(+), 59 deletions(-)
 
-diff --git a/tools/perf/builtin-ftrace.c b/tools/perf/builtin-ftrace.c
-index efe907e4bd56..4ec96413d3a5 100644
---- a/tools/perf/builtin-ftrace.c
-+++ b/tools/perf/builtin-ftrace.c
-@@ -170,7 +170,7 @@ static int reset_tracing_cpu(void)
- 	return 0;
- }
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index e85cbcf298f3..ab18bf12d54a 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -46,65 +46,6 @@
+ static int output_fd;
  
--static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
-+static int do_ftrace_live(struct perf_ftrace *ftrace)
- {
- 	char *trace_file;
- 	int trace_fd;
-@@ -179,11 +179,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 		.events = POLLIN,
- 	};
  
--	if (geteuid() != 0) {
--		pr_err("ftrace only works for root!\n");
--		return -1;
--	}
+-static const char *find_debugfs(void)
+-{
+-	const char *path = perf_debugfs_mount(NULL);
 -
- 	signal(SIGINT, sig_handler);
- 	signal(SIGUSR1, sig_handler);
- 	signal(SIGCHLD, sig_handler);
-@@ -195,12 +190,6 @@ static int __cmd_ftrace(struct perf_ftrace *ftrace, int argc, const char **argv)
- 	if (write_tracing_file("trace", "0") < 0)
- 		goto out;
- 
--	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
--						  &ftrace->target,
--						  argv, false, true) < 0) {
--		goto out;
--	}
+-	if (!path)
+-		pr_debug("Your kernel does not support the debugfs filesystem");
 -
- 	if (set_tracing_pid(ftrace) < 0) {
- 		pr_err("failed to set ftrace pid\n");
- 		goto out_reset;
-@@ -273,61 +262,99 @@ out:
- 	return done ? 0 : -1;
- }
- 
--int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
-+static int
-+__cmd_ftrace_live(struct perf_ftrace *ftrace, int argc, const char **argv)
+-	return path;
+-}
+-
+-/*
+- * Finds the path to the debugfs/tracing
+- * Allocates the string and stores it.
+- */
+-static const char *find_tracing_dir(void)
+-{
+-	static char *tracing;
+-	static int tracing_found;
+-	const char *debugfs;
+-
+-	if (tracing_found)
+-		return tracing;
+-
+-	debugfs = find_debugfs();
+-	if (!debugfs)
+-		return NULL;
+-
+-	tracing = malloc(strlen(debugfs) + 9);
+-	if (!tracing)
+-		return NULL;
+-
+-	sprintf(tracing, "%s/tracing", debugfs);
+-
+-	tracing_found = 1;
+-	return tracing;
+-}
+-
+-static char *get_tracing_file(const char *name)
+-{
+-	const char *tracing;
+-	char *file;
+-
+-	tracing = find_tracing_dir();
+-	if (!tracing)
+-		return NULL;
+-
+-	file = malloc(strlen(tracing) + strlen(name) + 2);
+-	if (!file)
+-		return NULL;
+-
+-	sprintf(file, "%s/%s", tracing, name);
+-	return file;
+-}
+-
+-static void put_tracing_file(char *file)
+-{
+-	free(file);
+-}
+-
+ int bigendian(void)
  {
--	int ret;
--	struct perf_ftrace ftrace = {
--		.target = { .uid = UINT_MAX, },
--	};
--	const char * const ftrace_usage[] = {
--		"perf ftrace [<options>] [<command>]",
--		"perf ftrace [<options>] -- <command> [<options>]",
-+	int ret = -1;
-+	const char * const live_usage[] = {
-+		"perf ftrace live [<options>] [<command>]",
-+		"perf ftrace live [<options>] -- <command> [<options>]",
- 		NULL
- 	};
--	const struct option ftrace_options[] = {
--	OPT_STRING('t', "tracer", &ftrace.tracer, "tracer",
-+	const struct option live_options[] = {
-+	OPT_STRING('t', "tracer", &ftrace->tracer, "tracer",
- 		   "tracer to use"),
--	OPT_STRING('p', "pid", &ftrace.target.tid, "pid",
-+	OPT_STRING('p', "pid", &ftrace->target.tid, "pid",
- 		   "trace on existing process id"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose"),
--	OPT_BOOLEAN('a', "all-cpus", &ftrace.target.system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &ftrace->target.system_wide,
- 		    "system-wide collection from all CPUs"),
--	OPT_STRING('C', "cpu", &ftrace.target.cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &ftrace->target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
- 	OPT_END()
- 	};
- 
--	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
--			    PARSE_OPT_STOP_AT_NON_OPTION);
--	if (!argc && perf_target__none(&ftrace.target))
--		usage_with_options(ftrace_usage, ftrace_options);
-+	argc = parse_options(argc, argv, live_options, live_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc && perf_target__none(&ftrace->target))
-+		usage_with_options(live_usage, live_options);
- 
--	ret = perf_target__validate(&ftrace.target);
-+	ret = perf_target__validate(&ftrace->target);
- 	if (ret) {
- 		char errbuf[512];
- 
--		perf_target__strerror(&ftrace.target, ret, errbuf, 512);
-+		perf_target__strerror(&ftrace->target, ret, errbuf, 512);
- 		pr_err("%s\n", errbuf);
- 		return -EINVAL;
- 	}
- 
--	ftrace.evlist = perf_evlist__new();
--	if (ftrace.evlist == NULL)
-+	ftrace->evlist = perf_evlist__new();
-+	if (ftrace->evlist == NULL)
- 		return -ENOMEM;
- 
--	ret = perf_evlist__create_maps(ftrace.evlist, &ftrace.target);
-+	ret = perf_evlist__create_maps(ftrace->evlist, &ftrace->target);
- 	if (ret < 0)
--		goto out_delete_evlist;
-+		goto out;
- 
--	if (ftrace.tracer == NULL)
--		ftrace.tracer = DEFAULT_TRACER;
-+	if (ftrace->tracer == NULL)
-+		ftrace->tracer = DEFAULT_TRACER;
- 
--	ret = __cmd_ftrace(&ftrace, argc, argv);
-+	if (argc && perf_evlist__prepare_workload(ftrace->evlist,
-+						  &ftrace->target,
-+						  argv, false, true) < 0)
-+		goto out_maps;
+ 	unsigned char str[] = { 0x1, 0x2, 0x3, 0x4, 0x0, 0x0, 0x0, 0x0};
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 59d868add275..9a0658405760 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -269,3 +269,62 @@ void perf_debugfs_set_path(const char *mntpt)
+ 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
+ 	set_tracing_events_path(mntpt);
+ }
 +
-+	ret = do_ftrace_live(ftrace);
- 
--	perf_evlist__delete_maps(ftrace.evlist);
--out_delete_evlist:
--	perf_evlist__delete(ftrace.evlist);
-+out_maps:
-+	perf_evlist__delete_maps(ftrace->evlist);
-+out:
-+	perf_evlist__delete(ftrace->evlist);
++static const char *find_debugfs(void)
++{
++	const char *path = perf_debugfs_mount(NULL);
 +
-+	return ret;
++	if (!path)
++		fprintf(stderr, "Your kernel does not support the debugfs filesystem");
++
++	return path;
 +}
 +
-+int cmd_ftrace(int argc, const char **argv, const char *prefix __maybe_unused)
++/*
++ * Finds the path to the debugfs/tracing
++ * Allocates the string and stores it.
++ */
++const char *find_tracing_dir(void)
 +{
-+	int ret;
-+	struct perf_ftrace ftrace = {
-+		.target = { .uid = UINT_MAX, },
-+	};
-+	const char * const ftrace_usage[] = {
-+		"perf ftrace {live} [<options>] [<command>]",
-+		"perf ftrace {live} [<options>] -- <command> [<options>]",
-+		NULL
-+	};
-+	const struct option ftrace_options[] = {
-+	OPT_END()
-+	};
++	static char *tracing;
++	static int tracing_found;
++	const char *debugfs;
 +
-+	argc = parse_options(argc, argv, ftrace_options, ftrace_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc)
-+		usage_with_options(ftrace_usage, ftrace_options);
++	if (tracing_found)
++		return tracing;
 +
-+	if (geteuid() != 0) {
-+		pr_err("ftrace only works for root!\n");
-+		return -1;
-+	}
++	debugfs = find_debugfs();
++	if (!debugfs)
++		return NULL;
 +
-+	if (strcmp(argv[0], "live") == 0) {
-+		ret = __cmd_ftrace_live(&ftrace, argc, argv);
-+	} else {
-+		usage_with_options(ftrace_usage, ftrace_options);
-+	}
++	tracing = malloc(strlen(debugfs) + 9);
++	if (!tracing)
++		return NULL;
++
++	sprintf(tracing, "%s/tracing", debugfs);
++
++	tracing_found = 1;
++	return tracing;
++}
++
++char *get_tracing_file(const char *name)
++{
++	const char *tracing;
++	char *file;
++
++	tracing = find_tracing_dir();
++	if (!tracing)
++		return NULL;
++
++	file = malloc(strlen(tracing) + strlen(name) + 2);
++	if (!file)
++		return NULL;
++
++	sprintf(file, "%s/%s", tracing, name);
++	return file;
++}
++
++void put_tracing_file(char *file)
++{
++	free(file);
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 7a484c97e500..8f3e44ca1074 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -79,6 +79,9 @@ extern char buildid_dir[];
+ extern char tracing_events_path[];
+ extern void perf_debugfs_set_path(const char *mountpoint);
+ const char *perf_debugfs_mount(const char *mountpoint);
++const char *find_tracing_dir(void);
++char *get_tracing_file(const char *name);
++void put_tracing_file(char *file);
  
- 	return ret;
- }
+ /* On most systems <limits.h> would have given us this, but
+  * not on some systems (e.g. GNU/Hurd).
 -- 
 1.7.11.7
 
