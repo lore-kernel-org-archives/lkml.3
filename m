@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab3ENR6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 13:58:10 -0400
-Received: from mail-gh0-f170.google.com ([209.85.160.170]:44509 "EHLO
-	mail-gh0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab3ENR6G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 13:58:06 -0400
-Date: Tue, 14 May 2013 10:57:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH V5 5/5] fbcon: queue work on power efficient wq
-Message-ID: <20130514175759.GK6795@mtj.dyndns.org>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
- <89924f001e3ddd66ab41a16500569a976ea846fd.1366803121.git.viresh.kumar@linaro.org>
+	id S1757709Ab3ENSAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:00:34 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:8369 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753517Ab3ENSAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 14:00:33 -0400
+X-IronPort-AV: E=Sophos;i="4.87,671,1363132800"; 
+   d="scan'208";a="23995089"
+Message-ID: <51927BBF.5010404@citrix.com>
+Date: Tue, 14 May 2013 19:00:31 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <89924f001e3ddd66ab41a16500569a976ea846fd.1366803121.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] x86/xen: sync the CMOS RTC as well as the Xen wallclock
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com> <51927339.5070402@linaro.org>
+In-Reply-To: <51927339.5070402@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 24, 2013 at 05:12:57PM +0530, Viresh Kumar wrote:
-> fbcon uses workqueues and it has no real dependency of scheduling these on the
-> cpu which scheduled them.
+On 14/05/13 18:24, John Stultz wrote:
+> On 05/13/2013 10:56 AM, David Vrabel wrote:
+>> From: David Vrabel <david.vrabel@citrix.com>
+>>
+>> If NTP is used in dom0 and it is synchronized to its clock source,
+>> then the kernel will periodically synchronize the Xen wallclock with
+>> the system time.  Updates to the Xen wallclock do not persist across
+>> reboots, so also synchronize the CMOS RTC (as on bare metal).
+>>
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>> ---
+>>   arch/x86/xen/time.c |   11 ++++++++++-
+>>   1 files changed, 10 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+>> index a1947ac..4656165 100644
+>> --- a/arch/x86/xen/time.c
+>> +++ b/arch/x86/xen/time.c
+>> @@ -14,6 +14,7 @@
+>>   #include <linux/kernel_stat.h>
+>>   #include <linux/math64.h>
+>>   #include <linux/gfp.h>
+>> +#include <linux/mc146818rtc.h>
+>>   
+>>   #include <asm/pvclock.h>
+>>   #include <asm/xen/hypervisor.h>
+>> @@ -199,17 +200,25 @@ static void xen_get_wallclock(struct timespec *now)
+>>   static int xen_set_wallclock(const struct timespec *now)
+>>   {
+>>   	struct xen_platform_op op;
+>> +	int ret;
+>>   
+>>   	/* do nothing for domU */
+>>   	if (!xen_initial_domain())
+>>   		return -1;
+>>   
+>> +	/* Set the Xen wallclock. */
+>>   	op.cmd = XENPF_settime;
+>>   	op.u.settime.secs = now->tv_sec;
+>>   	op.u.settime.nsecs = now->tv_nsec;
+>>   	op.u.settime.system_time = xen_clocksource_read();
+>>   
+>> -	return HYPERVISOR_dom0_op(&op);
+>> +	ret = HYPERVISOR_dom0_op(&op);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	/* Set the hardware RTC. */
+>> +	return mach_set_rtc_mmss(now);
 > 
-> On a idle system, it is observed that and idle cpu wakes up many times just to
-> service this work. It would be better if we can schedule it on a cpu which the
-> scheduler believes to be the most appropriate one.
+> Sorry, just noticed one more thing while applying this. Do all Xen 
+> systems run on hardware that has the conventional CMOS clock?
 > 
-> This patch replaces system_wq with system_power_efficient_wq.
-> 
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: linux-fbdev@vger.kernel.org
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> What happens if the bare-metal needs to use efi_set_rtc() or 
+> vrtc_set_mmss() ?
 
-Dave, applied this to wq/for-3.11.  Please holler if you want this to
-be routed differently.
+Ug. I hadn't considered that.  I'll have think some more on this.
 
-Thanks!
-
--- 
-tejun
+David
