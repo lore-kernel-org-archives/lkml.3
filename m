@@ -1,99 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab3ENM3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:29:49 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:61901 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab3ENM3r (ORCPT
+	id S1757074Ab3ENMa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:30:59 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:39029 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab3ENMa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:29:47 -0400
+	Tue, 14 May 2013 08:30:58 -0400
+Message-ID: <51922E83.2060002@atmel.com>
+Date: Tue, 14 May 2013 14:30:59 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130510082521.GA2125@ab42.lan>
-References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
-	<516EEAA0.10906@wwwdotorg.org>
-	<20130418090310.GA17636@ab42.lan>
-	<CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com>
-	<20130429161725.GB30136@ab42.lan>
-	<5182B557.4040804@wwwdotorg.org>
-	<CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
-	<20130508164123.GA10248@ab42.lan>
-	<518AAF31.8080502@wwwdotorg.org>
-	<20130510082521.GA2125@ab42.lan>
-Date: Tue, 14 May 2013 14:29:46 +0200
-Message-ID: <CACRpkdbkqzyr0r0CostUx9RYa=pyPoyVvvW+VxEzyAYSESxp_g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <monstr@monstr.eu>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <michal.simek@xilinx.com>, <s.trumtrar@pengutronix.de>,
+        <hein_tibosch@yahoo.es>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Anirudha Sarangi <anirudh@xilinx.com>
+Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
+ SoC
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <519200DA.8060102@atmel.com> <5192224A.7090303@monstr.eu>
+In-Reply-To: <5192224A.7090303@monstr.eu>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 10:25 AM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
+On 14/05/2013 13:38, Michal Simek :
+> On 05/14/2013 11:16 AM, Nicolas Ferre wrote:
+>> On 13/05/2013 18:05, Jean-Christophe PLAGNIOL-VILLARD :
+>>>
+>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+>>>
+>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+>>>> introduces clear-on-write on ISR register. This behavior is not always
+>>>> implemented when using Cadence MACB/GEM and is breaking other platforms.
+>>>> We are using a new Device Tree compatibility string and a capability
+>>>> property to actually activate this clear-on-write behavior on ISR.
+>>>>
+>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>
+>>> can we detect it via the IP?
+>>
+>> As said by Hein, we cannot use the IP revision number. *But* we may have the opportunity to read this integration configuration in the Design Configuration Register 1 (DCFG1 already used for determining data bus width).
+>>
+>> So, Michal or Steffen, can you please tell me the value of:
+>> -> bit 23 at register address 0x280: mine is "1" which should mean "IRQ read clear", yours should be "0".
+>
+> here is the whole reg map for zynq.
+> Reg 0x280 is undocumented in our TRM.
+> Please decode it not sure if bit 0 is LSB or MSB.
 
->> > What do you think about the following modification to the pinctrl/GPIO
->> > frameworks instead (not yet a formal patch, more a request for comment
->> > to illustrate what I mean. If you agree, I will clean it up and submit a
->> > proper patch after discussion).
->> >
->> > It adds a dt_gpiorange_xlate function to the pinctrl callbacks which
->> > defaults to the conventional behaviour using kernel logical pin numbers.
->> > However, pin controllers which provide more complex mechanisms can
->> > define #gpio-range-cells and provide this callback in order to keep
->> > Linux pin numbering inside the kernel.
-(...)
-> The patch does not change the default behaviour of the kernel: In case
-> no dt_gpiorange_xlate callback is defined for a given driver (e.g. for
-> pre-existing drivers), the default function simply interprets the first
-> argument as Linux pin number and the second as pin count, same as now.
-> New drivers can use the callback to translate device specific pin
-> references to Linux pin numbers (in the idea of of_xlate in the GPIO
-> framework or xlate in the irqchip framework).
+Bit 0 is LSB.
 
-I like the concept.
+Value of DCFG1 is 0x02500111 so I read '0' for this value which should 
+be good.
 
-However I am totally opposed to the idea of making this something
-device tree-exclusive.
+I write a new patch immediately.
 
-Look at for example
-drivers/pinctrl/pinctrl-abx500.c:
 
-static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
-                          unsigned gpio)
-{
-(...)
-        /* on ABx5xx, there is no GPIO0, so adjust the offset */
-        unsigned offset = gpio - 1;
+> U-Boot-PetaLinux> md e000b000
+> e000b000: 0000001c 000e0013 00000006 00000000    ................
+> e000b010: 00180704 00000021 3ffba2e4 3ffbd32c    ....!......?,..?
+> e000b020: 00000003 00000000 00000000 00000000    ................
+> e000b030: 07ffffff 63c66f08 00000000 0000ffff    .....o.c........
+> e000b040: 000003ff 000003ff 00000000 00000000    ................
+> e000b050: 00000000 00000000 00000000 00000000    ................
+> e000b060: 00000000 00000000 00000000 00000000    ................
+> e000b070: 00000000 00000000 00000000 00000000    ................
+> e000b080: 00000000 00000000 00350a00 00001c48    ..........5.H...
+> e000b090: 00000000 00000000 00000000 00000000    ................
+> e000b0a0: 00000000 00000000 00000000 00000000    ................
+> e000b0b0: 00000000 00000000 00000000 00000000    ................
+> e000b0c0: 00000000 00000000 00000000 00000000    ................
+> e000b0d0: 00000000 00000000 00000000 00000000    ................
+> e000b0e0: 00000000 00000000 00000000 00000000    ................
+> e000b0f0: 00000000 00000000 00000000 00020118    ................
+> U-Boot-PetaLinux>
+> e000b100: 00014796 00000000 0000051e 00000001    .G..............
+> e000b110: 00000000 00000000 0000051d 00000001    ................
+> e000b120: 00000000 00000000 00000000 00000000    ................
+> e000b130: 00000000 00000000 00000000 00000000    ................
+> e000b140: 00000000 00000000 00000000 00000000    ................
+> e000b150: 001e58b6 00000000 00000526 00000000    .X......&.......
+> e000b160: 00000004 00000000 00000004 00000001    ................
+> e000b170: 00000000 00000004 00000000 0000051d    ................
+> e000b180: 00000000 00000000 00000000 00000000    ................
+> e000b190: 00000000 00000000 00000000 00000000    ................
+> e000b1a0: 00000038 00000000 00000000 00000000    8...............
+> e000b1b0: 00000000 00000000 00000000 00000000    ................
+> e000b1c0: 00000000 00000000 00000000 00000000    ................
+> e000b1d0: 00000000 00000000 00000000 00000000    ................
+> e000b1e0: 00000000 00000000 00000000 00000000    ................
+> e000b1f0: 00000000 00000000 00000000 00000000    ................
+> U-Boot-PetaLinux>
+> e000b200: 00000000 00000000 00000000 00000000    ................
+> e000b210: 00000000 00000000 00000000 00000000    ................
+> e000b220: 00000000 00000000 00000000 00000000    ................
+> e000b230: 00000000 00000000 00000000 00000000    ................
+> e000b240: 00000000 00000000 00000000 00000000    ................
+> e000b250: 00000000 00000000 00000000 00000000    ................
+> e000b260: 00000000 00000000 00000000 00000000    ................
+> e000b270: 00000000 00000000 00000000 00000000    ................
+> e000b280: 02500111 2ab13fff 00000000 00000000    ..P..?.*........
+> e000b290: 002f2145 00000200 00000000 00000000    E!/.............
+> e000b2a0: 00000000 00000000 00000000 00000000    ................
+> e000b2b0: 00000000 00000000 00000000 00000000    ................
+> e000b2c0: 00000000 00000000 00000000 00000000    ................
+> e000b2d0: 00000000 00000000 00000000 00000000    ................
+> e000b2e0: 00000000 00000000 00000000 00000000    ................
+> e000b2f0: 00000000 00000000 00000000 00000000    ................
+> U-Boot-PetaLinux>
+>
+>
+>
+>>
+>> Hein, in case of use of the MACB, we do not have this register included, so I will avoid to run the test when using MACB (we already have this information).
+>>
+>> If it works, I plan to rewrite the patch but taking this information instead of the device tree compatibility string.
+>
+> yep. Will be good to detect it instead of new compatible string.
+>
+> Also is there an option to remove "CONFIG_ARCH_AT91"?
 
-As you can see, this driver, which does not use device tree,
-is working around the same problem. Here the problem is that
-the pins are numbered starting at 1 instead of 0, a very trivial
-numberspace shuffleing.
+Okay, I have a look at this as-well.
 
-I'd be open to this approach if you:
-
-- Make it generic for all pinctrl drivers, i.e. add the translation
-  to the core so it does not just apply to devices using device tree.
-
-- Augment the pinctrl-abx500.c driver to show how this simplifies
-  that driver. (Does not need to be perfect, I'll help out finalizing it
-  for sure.)
-
-- Then add DT-specific wrapper using this core feature.
-
-This way the problem will be solved for everybody, including
-ACPI when they sooner or later come back with the same issue.
-
-Yours,
-Linus Walleij
+Best regards,
+-- 
+Nicolas Ferre
