@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab3ENKOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 06:14:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56164 "EHLO
+	id S1757249Ab3ENKPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 06:15:09 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43979 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232Ab3ENKOD (ORCPT
+	with ESMTP id S1754184Ab3ENKOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 06:14:03 -0400
-X-AuditID: 9c930197-b7b76ae000003523-2d-51920e69aff3
+	Tue, 14 May 2013 06:14:08 -0400
+X-AuditID: 9c930197-b7b76ae000003523-43-51920e6a01f4
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/15] perf util: Use evsel->name to get tracepoint_paths
-Date: Tue, 14 May 2013 19:13:46 +0900
-Message-Id: <1368526439-31966-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/15] perf tools: Add document for perf-ftrace command
+Date: Tue, 14 May 2013 19:13:58 +0900
+Message-Id: <1368526439-31966-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
 References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
@@ -29,95 +29,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Most tracepoint events already have their system and event name in
-->name field so that searching whole event tracing directory for each
-evsel to match given id is suboptimal.
-
-Factor out this routine into tracepoint_name_to_path().
-
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/parse-events.c     | 23 +++++++++++++++++++++++
- tools/perf/util/parse-events.h     |  1 +
- tools/perf/util/trace-event-info.c | 11 +++++++++++
- 3 files changed, 35 insertions(+)
+ tools/perf/Documentation/perf-ftrace.txt | 114 +++++++++++++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-ftrace.txt
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6c8bb0fb189b..1ae166c9da79 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -217,6 +217,29 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
- 	return NULL;
- }
- 
-+struct tracepoint_path *tracepoint_name_to_path(const char *name)
-+{
-+	struct tracepoint_path *path = zalloc(sizeof(*path));
-+	char *str = strchr(name, ':');
+diff --git a/tools/perf/Documentation/perf-ftrace.txt b/tools/perf/Documentation/perf-ftrace.txt
+new file mode 100644
+index 000000000000..e102ccc6daa7
+--- /dev/null
++++ b/tools/perf/Documentation/perf-ftrace.txt
+@@ -0,0 +1,114 @@
++perf-ftrace(1)
++==============
 +
-+	if (path == NULL || str == NULL) {
-+		free(path);
-+		return NULL;
-+	}
++NAME
++----
++perf-ftrace - A front end for kernel's ftrace
 +
-+	path->system = strndup(name, str - name);
-+	path->name = strdup(str+1);
++SYNOPSIS
++--------
++[verse]
++'perf ftrace' {live|record} [<options>] [<command>]
++'perf ftrace' {show|report} [<options>]
 +
-+	if (path->system == NULL || path->name == NULL) {
-+		free(path->system);
-+		free(path->name);
-+		free(path);
-+		path = NULL;
-+	}
++DESCRIPTION
++-----------
++This command reads the ftrace buffer and displays the trace recorded.
 +
-+	return path;
-+}
++There are several variants of perf ftrace:
 +
- const char *event_type(int type)
- {
- 	switch (type) {
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 8a4859315fd9..080f7cf25d99 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -23,6 +23,7 @@ struct tracepoint_path {
- };
- 
- extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
-+extern struct tracepoint_path *tracepoint_name_to_path(const char *name);
- extern bool have_tracepoints(struct list_head *evlist);
- 
- const char *event_type(int type);
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index ab18bf12d54a..bfcaeac7ef9d 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -414,12 +414,23 @@ get_tracepoints_path(struct list_head *pattrs)
- 		if (pos->attr.type != PERF_TYPE_TRACEPOINT)
- 			continue;
- 		++nr_tracepoints;
++  'perf ftrace live <command>' to see a live trace of kernel functions
++  via trace_pipe during executing the <command>.  If <command> is not
++  specified, one of the target options (-p, -a or -C) should be given.
++  It just prints out the result to stdout and doesn't save any files.
 +
-+		if (pos->name) {
-+			ppath->next = tracepoint_name_to_path(pos->name);
-+			if (!ppath->next)
-+				goto error;
++  'perf ftrace record <command>' to record trace entries of kernel
++  functions during the execution of the <command>.  Like 'perf ftrace
++  live', at least one of <command> and/or target options should be
++  given in order to start recording.  The recorded results are saved
++  under a directory ('perf.data.dir' by default) and will be used by
++  other perf-ftrace tools like 'show' and 'report'.
 +
-+			goto next;
-+		}
++  'perf ftrace show' to see the trace of recorded functions.  It shows
++  functions sorted by time so the end result might be interspersed if
++  there's a concurrent execution.
 +
- 		ppath->next = tracepoint_id_to_path(pos->attr.config);
- 		if (!ppath->next) {
-+error:
- 			pr_debug("No memory to alloc tracepoints list\n");
- 			put_tracepoints_path(&path);
- 			return NULL;
- 		}
-+next:
- 		ppath = ppath->next;
- 	}
- 
++  'perf ftrace report' to display the result in an usual perf-report
++  style - entries are sorted by given sort keys and output is resorted
++  by its overhead.
++
++OPTIONS
++-------
++<command>...::
++	Any command you can specify in a shell.
++
++-t::
++--tracer=::
++        The ftrace tracer to be used (default: function_graph).
++	Currently only 'function' and 'function_graph' are supported.
++        Used by 'live' and 'record' subcommands only.
++
++-p::
++--pid=::
++	Record events on existing process ID (comma separated list).
++        Used by 'live' and 'record' subcommands only.
++
++-a::
++        Force system-wide collection.  Scripts run without a <command>
++        normally use -a by default, while scripts run with a <command>
++        normally don't - this option allows the latter to be run in
++        system-wide mode.  Used by 'live' and 'record' subcommands only.
++
++-C::
++--cpu:: Only process samples for the list of CPUs provided.
++        Multiple CPUs can be provided as a comma-separated list with
++        no space: 0,1. Ranges of CPUs are specified with -: 0-2.
++	Default is to report samples on all online CPUs.
++
++-s::
++--sort=::
++	Sort histogram entries by given key(s) - multiple keys can be
++        specified in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, cpu.
++
++	Each key has following meaning:
++
++	- comm: command (name) of the task
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- cpu: cpu number the task ran at the time of sample
++
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
++	Used by 'report' subcommands only.
++
++-i::
++--input=::
++        Input directory name excluding '.dir' at the end.
++        (default: perf.data)
++
++-o::
++--output=::
++        Output directory name excluding '.dir' at the end.
++	(default: perf.data)
++
++-v::
++--verbose::
++	Be more verbose (show counter open errors, etc).
++
++-D::
++--dump-raw-trace::
++        Dump raw trace in ASCII.  Used by 'report' subcommands only.
++
++-I::
++--show-info::
++	Display extended information about the record.  This adds
++	information which may be very large and thus may clutter the
++        display.  It currently includes: cpu and numa topology of the
++        host system.  It can only be used with the 'report' subcommand.
++
++SEE ALSO
++--------
++linkperf:perf-record[1], linkperf:perf-report[1],
++linkperf:perf-script[1]
 -- 
 1.7.11.7
 
