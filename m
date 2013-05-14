@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3ENBUw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:20:52 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62541 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab3ENBTc (ORCPT
+	id S1756102Ab3ENBUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:20:54 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:35662 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab3ENBT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:32 -0400
+	Mon, 13 May 2013 21:19:27 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
 Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
-        Zach Brown <zab@redhat.com>, Joel Becker <jlbec@evilplan.org>,
-        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 21/21] block: Bio cancellation
-Date: Mon, 13 May 2013 18:18:58 -0700
-Message-Id: <1368494338-7069-22-git-send-email-koverstreet@google.com>
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 17/21] Percpu tag allocator
+Date: Mon, 13 May 2013 18:18:54 -0700
+Message-Id: <1368494338-7069-18-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
@@ -24,145 +24,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a bio is associated with a kiocb, allow it to be cancelled.
-
-This is accomplished by adding a pointer to a kiocb in struct bio, and
-when we go to dequeue a request we check if its bio has been cancelled -
-if so, we end the request with -ECANCELED.
-
-We don't currently try to cancel bios if IO has already been started -
-that'd require a per bio callback function, and a way to find all the
-outstanding bios for a given kiocb. Such a mechanism may or may not be
-added in the future but this patch tries to start simple.
-
-Currently this can only be triggered with aio and io_cancel(), but the
-mechanism can be used for sync io too.
-
-It can also be used for bios created by stacking drivers, and bio clones
-in general - when cloning a bio, if the bi_iocb pointer is copied as
-well the clone will then be cancellable. bio_clone() could be modified
-to do this, but hasn't in this patch because all the bio_clone() users
-would need to be auditied to make sure that it's safe. We can't blindly
-make e.g. raid5 writes cancellable without the knowledge of the md code.
-
-Initial patch by Anatol Pomazau (anatol@google.com).
+Allocates integers out of a predefined range - for use by e.g. a driver
+to allocate tags for communicating with the device.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Cc: Zach Brown <zab@redhat.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 ---
- block/blk-core.c          | 15 +++++++++++++++
- fs/direct-io.c            |  1 +
- include/linux/aio.h       |  6 ++++++
- include/linux/blk_types.h |  1 +
- 4 files changed, 23 insertions(+)
+ include/linux/tags.h |  38 ++++++++++++
+ lib/Kconfig          |   3 +
+ lib/Makefile         |   2 +-
+ lib/tags.c           | 167 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 209 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/tags.h
+ create mode 100644 lib/tags.c
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 94aa4e7..6bb99b6 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -31,6 +31,7 @@
- #include <linux/delay.h>
- #include <linux/ratelimit.h>
- #include <linux/pm_runtime.h>
-+#include <linux/aio.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -1744,6 +1745,11 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
- 
-+	if (bio_cancelled(bio)) {
-+		err = -ECANCELED;
-+		goto end_io;
-+	}
+diff --git a/include/linux/tags.h b/include/linux/tags.h
+new file mode 100644
+index 0000000..1b8cfca
+--- /dev/null
++++ b/include/linux/tags.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright 2012 Google Inc. All Rights Reserved.
++ * Author: koverstreet@google.com (Kent Overstreet)
++ *
++ * Per cpu tag allocator.
++ */
 +
- 	/*
- 	 * Various block parts want %current->io_context and lazy ioc
- 	 * allocation ends up trading a lot of pain for a small amount of
-@@ -2124,6 +2130,12 @@ struct request *blk_peek_request(struct request_queue *q)
- 			trace_block_rq_issue(q, rq);
- 		}
- 
-+		if (rq->bio && !rq->bio->bi_next && bio_cancelled(rq->bio)) {
-+			blk_start_request(rq);
-+			__blk_end_request_all(rq, -ECANCELED);
-+			continue;
-+		}
++#ifndef _LINUX_TAGS_H
++#define _LINUX_TAGS_H
 +
- 		if (!q->boundary_rq || q->boundary_rq == rq) {
- 			q->end_sector = rq_end_sector(rq);
- 			q->boundary_rq = NULL;
-@@ -2308,6 +2320,8 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes,
- 		char *error_type;
++#include <linux/list.h>
++#include <linux/spinlock.h>
++
++struct tag_cpu_freelist;
++
++struct tag_pool {
++	unsigned			watermark;
++	unsigned			nr_tags;
++
++	struct tag_cpu_freelist		*tag_cpu;
++
++	struct {
++		/* Global freelist */
++		unsigned		nr_free;
++		unsigned		*free;
++		spinlock_t		lock;
++		struct list_head	wait;
++	} ____cacheline_aligned;
++};
++
++unsigned tag_alloc(struct tag_pool *pool, bool wait);
++void tag_free(struct tag_pool *pool, unsigned tag);
++
++void tag_pool_free(struct tag_pool *pool);
++int tag_pool_init(struct tag_pool *pool, unsigned long nr_tags);
++
++
++#endif
+diff --git a/lib/Kconfig b/lib/Kconfig
+index fe01d41..fa77e31 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -407,4 +407,7 @@ config OID_REGISTRY
+ config UCS2_STRING
+         tristate
  
- 		switch (error) {
-+		case -ECANCELED:
-+			goto noerr;
- 		case -ENOLINK:
- 			error_type = "recoverable transport";
- 			break;
-@@ -2328,6 +2342,7 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes,
- 				   (unsigned long long)blk_rq_pos(req));
++config PERCPU_TAG
++	bool
++
+ endmenu
+diff --git a/lib/Makefile b/lib/Makefile
+index 25a0ce1..c622107 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -13,7 +13,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+-	 earlycpio.o percpu-refcount.o
++	 earlycpio.o percpu-refcount.o tags.o
  
- 	}
-+noerr:
- 
- 	blk_account_io_completion(req, nr_bytes);
- 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 9ac3011..3ae5121 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -377,6 +377,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
- 	unsigned long flags;
- 
- 	bio->bi_private = dio;
-+	bio->bi_iocb = dio->iocb;
- 
- 	spin_lock_irqsave(&dio->bio_lock, flags);
- 	dio->refcount++;
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 985e664..4893b8b 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -8,6 +8,7 @@
- #include <linux/rcupdate.h>
- #include <linux/atomic.h>
- #include <linux/batch_complete.h>
-+#include <linux/blk_types.h>
- 
- struct kioctx;
- struct kiocb;
-@@ -105,6 +106,11 @@ static inline bool kiocb_cancelled(struct kiocb *kiocb)
- 	return kiocb->ki_cancel == KIOCB_CANCELLED;
- }
- 
-+static inline bool bio_cancelled(struct bio *bio)
+ obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+ lib-$(CONFIG_MMU) += ioremap.o
+diff --git a/lib/tags.c b/lib/tags.c
+new file mode 100644
+index 0000000..5c3de28
+--- /dev/null
++++ b/lib/tags.c
+@@ -0,0 +1,167 @@
++/*
++ * Copyright 2012 Google Inc. All Rights Reserved.
++ * Author: koverstreet@google.com (Kent Overstreet)
++ *
++ * Per cpu tag allocator.
++ */
++
++#include <linux/gfp.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/tags.h>
++
++struct tag_cpu_freelist {
++	unsigned			nr_free;
++	unsigned			free[];
++};
++
++struct tag_waiter {
++	struct list_head		list;
++	struct task_struct		*task;
++};
++
++static inline void move_tags(unsigned *dst, unsigned *dst_nr,
++			     unsigned *src, unsigned *src_nr,
++			     unsigned nr)
 +{
-+	return bio->bi_iocb && kiocb_cancelled(bio->bi_iocb);
++	*src_nr -= nr;
++	memcpy(dst + *dst_nr, src + *src_nr, sizeof(unsigned) * nr);
++	*dst_nr += nr;
 +}
 +
- static inline bool is_sync_kiocb(struct kiocb *kiocb)
- {
- 	return kiocb->ki_ctx == NULL;
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 9d3cafa..7252484 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -43,6 +43,7 @@ struct bio {
- 						 * top bits priority
- 						 */
- 
-+	struct kiocb		*bi_iocb;
- 	short			bi_error;
- 	unsigned short		bi_vcnt;	/* how many bio_vec's */
- 	unsigned short		bi_idx;		/* current index into bvl_vec */
++unsigned tag_alloc(struct tag_pool *pool, bool wait)
++{
++	struct tag_cpu_freelist *tags;
++	unsigned long flags;
++	unsigned ret;
++retry:
++	preempt_disable();
++	local_irq_save(flags);
++	tags = this_cpu_ptr(pool->tag_cpu);
++
++	while (!tags->nr_free) {
++		spin_lock(&pool->lock);
++
++		if (pool->nr_free)
++			move_tags(tags->free, &tags->nr_free,
++				  pool->free, &pool->nr_free,
++				  min(pool->nr_free, pool->watermark));
++		else if (wait) {
++			struct tag_waiter wait = { .task = current };
++
++			__set_current_state(TASK_UNINTERRUPTIBLE);
++			list_add(&wait.list, &pool->wait);
++
++			spin_unlock(&pool->lock);
++			local_irq_restore(flags);
++			preempt_enable();
++
++			schedule();
++			__set_current_state(TASK_RUNNING);
++
++			if (!list_empty_careful(&wait.list)) {
++				spin_lock_irqsave(&pool->lock, flags);
++				list_del_init(&wait.list);
++				spin_unlock_irqrestore(&pool->lock, flags);
++			}
++
++			goto retry;
++		} else
++			goto fail;
++
++		spin_unlock(&pool->lock);
++	}
++
++	ret = tags->free[--tags->nr_free];
++
++	local_irq_restore(flags);
++	preempt_enable();
++
++	return ret;
++fail:
++	local_irq_restore(flags);
++	preempt_enable();
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tag_alloc);
++
++void tag_free(struct tag_pool *pool, unsigned tag)
++{
++	struct tag_cpu_freelist *tags;
++	unsigned long flags;
++
++	preempt_disable();
++	local_irq_save(flags);
++	tags = this_cpu_ptr(pool->tag_cpu);
++
++	tags->free[tags->nr_free++] = tag;
++
++	if (tags->nr_free == pool->watermark * 2) {
++		spin_lock(&pool->lock);
++
++		move_tags(pool->free, &pool->nr_free,
++			  tags->free, &tags->nr_free,
++			  pool->watermark);
++
++		while (!list_empty(&pool->wait)) {
++			struct tag_waiter *wait;
++			wait = list_first_entry(&pool->wait,
++						struct tag_waiter, list);
++			list_del_init(&wait->list);
++			wake_up_process(wait->task);
++		}
++
++		spin_unlock(&pool->lock);
++	}
++
++	local_irq_restore(flags);
++	preempt_enable();
++}
++EXPORT_SYMBOL_GPL(tag_free);
++
++void tag_pool_free(struct tag_pool *pool)
++{
++	free_percpu(pool->tag_cpu);
++
++	free_pages((unsigned long) pool->free,
++		   get_order(pool->nr_tags * sizeof(unsigned)));
++}
++EXPORT_SYMBOL_GPL(tag_pool_free);
++
++int tag_pool_init(struct tag_pool *pool, unsigned long nr_tags)
++{
++	unsigned i, order;
++
++	spin_lock_init(&pool->lock);
++	INIT_LIST_HEAD(&pool->wait);
++	pool->nr_tags = nr_tags;
++
++	/* Guard against overflow */
++	if (nr_tags > UINT_MAX)
++		return -ENOMEM;
++
++	order = get_order(nr_tags * sizeof(unsigned));
++	pool->free = (void *) __get_free_pages(GFP_KERNEL, order);
++	if (!pool->free)
++		return -ENOMEM;
++
++	for (i = 1; i < nr_tags; i++)
++		pool->free[pool->nr_free++] = i;
++
++	/* nr_possible_cpus would be more correct */
++	pool->watermark = nr_tags / (num_possible_cpus() * 4);
++
++	pool->watermark = min(pool->watermark, 128);
++
++	if (pool->watermark > 64)
++		pool->watermark = round_down(pool->watermark, 32);
++
++	pool->tag_cpu = __alloc_percpu(sizeof(struct tag_cpu_freelist) +
++				       pool->watermark * 2 * sizeof(unsigned),
++				       sizeof(unsigned));
++	if (!pool->tag_cpu)
++		return -ENOMEM;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tag_pool_init);
 -- 
 1.8.2.1
 
