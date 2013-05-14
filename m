@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3ENHQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:16:55 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:44761 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab3ENHQx (ORCPT
+	id S1756177Ab3ENHRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:17:22 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48049 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3ENHRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:16:53 -0400
-Message-ID: <5191E4E0.7020505@intel.com>
-Date: Tue, 14 May 2013 08:16:48 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Tue, 14 May 2013 03:17:21 -0400
+X-AuditID: 9c930197-b7b76ae000003523-8b-5191e4ff8414
+Date: Tue, 14 May 2013 16:17:18 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC 3/4] mm: support remove_mapping in irqcontext
+Message-ID: <20130514071718.GC9466@blaptop>
+References: <1368411048-3753-1-git-send-email-minchan@kernel.org>
+ <1368411048-3753-4-git-send-email-minchan@kernel.org>
+ <20130513145857.GD5246@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>
-CC: Lingzhu Xiang <lxiang@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] efivarfs: Never return ENOENT from firmware again
-References: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>  <51913D4B.2000606@intel.com> <1368506197.21417.172.camel@linux-s257.site>
-In-Reply-To: <1368506197.21417.172.camel@linux-s257.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130513145857.GD5246@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 05:36 AM, joeyli wrote:
-> I found the "[PATCH] x86, efi: initial the local variable of DataSize to
-> zero" lost in urgent branch, and it also didn't in Linus's v3.10-rc1.
+Hey Michal,
+
+On Mon, May 13, 2013 at 04:58:57PM +0200, Michal Hocko wrote:
+> On Mon 13-05-13 11:10:47, Minchan Kim wrote:
+> [...]
+> > My rough plan is following as,
+> > 
+> > 1. Make mctz->lock beging aware of irq by changing spin_lock with
+> >    spin_lock_irqsave.
 > 
-> Did this patch move to other branch?
+> I wouldn't be worried about this one as it is on its way out with the
+> soft limit rework (the core uncontroversial part ;))
 
-It appears I dropped this patch when doing the rebase against -rc1. I'm
-really sorry about that. I've applied it again.
+Good to hear!
 
-Thanks for being so diligent.
+> 
+> > 2. Introuduce new argument "locked" in __mem_cgroup_uncharge_common
+> >    so that __mem_cgroup_uncharge_common can avoid lock_page_cgroup in
+> >    irqcontext to avoid deadlock but caller in irqcontext should be held
+> >    it in advance by next patch.
+> > 3. Introduce try_lock_page_cgroup, which will be used __swapcache_free.
+> > 4. __remove_mapping can held a page_cgroup lock in advance before calling
+> >    __swapcache_free
+> > 
+> > I'd like to listen memcg people's opinions before diving into coding.
+> 
+> It should work. It will require some code moving, though.
+
+Yeb. I will give it a shot!
+
+Thanks for the review!
+
+-- 
+Kind regards,
+Minchan Kim
