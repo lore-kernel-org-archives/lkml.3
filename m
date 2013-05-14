@@ -1,133 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab3ENHtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:49:46 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:46313 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab3ENHto (ORCPT
+	id S1756564Ab3ENHt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:49:57 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34700 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab3ENHty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:49:44 -0400
-Message-ID: <5191EC95.2020704@monstr.eu>
-Date: Tue, 14 May 2013 09:49:41 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 14 May 2013 03:49:54 -0400
+Message-ID: <5191EBEF.4060409@linux.vnet.ibm.com>
+Date: Tue, 14 May 2013 13:16:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Hein Tibosch <hein_tibosch@yahoo.es>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <5191E53B.9000106@yahoo.es> <C35C1E42-FCD6-4EE7-902B-FE01F362CD40@jcrosoft.com> <5191E855.5090908@yahoo.es>
-In-Reply-To: <5191E855.5090908@yahoo.es>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2WTVVSNRMSCPPHPFBEQOU"
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [v3.10-rc1] WARNING: at kernel/rcutree.c:502
+References: <87ip2opntp.fsf@nemi.mork.no> <20130512113905.GH3648@linux.vnet.ibm.com>	<87li7kp50r.fsf@nemi.mork.no> <20130512172135.GJ3648@linux.vnet.ibm.com>	<87a9o0ukll.fsf@nemi.mork.no> <87sj1rydol.fsf@nemi.mork.no>	<87wqr3j656.fsf@nemi.mork.no> <519169BF.4080208@linux.vnet.ibm.com> <87ppwuroxb.fsf@nemi.mork.no>
+In-Reply-To: <87ppwuroxb.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051407-8878-0000-0000-00000718F9C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2WTVVSNRMSCPPHPFBEQOU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-On 05/14/2013 09:31 AM, Hein Tibosch wrote:
-> On 5/14/2013 3:22 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On May 14, 2013, at 3:18 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrot=
-e:
+On 05/14/2013 01:08 PM, Bjørn Mork wrote:
+> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> writes:
+>> On 05/13/2013 08:09 PM, Bjørn Mork wrote:
 >>
->>> On 5/14/2013 1:52 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
->>>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.c=
-om> wrote:
->>>>>>
->>>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>>>>> introduces clear-on-write on ISR register. This behavior is not a=
-lways
->>>>>>> implemented when using Cadence MACB/GEM and is breaking other pla=
-tforms.
->>>>>>> We are using a new Device Tree compatibility string and a capabil=
-ity
->>>>>>> property to actually activate this clear-on-write behavior on ISR=
-=2E
->>>>>>>
->>>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>>>> can we detect it via the IP?
->>>>> This was my first proposal, have it based on the value of MACB's
->>>>> register 'MID' (offset 0x00fc, lower 16 bits).
->>>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
->>>>>
->>>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revi=
-sion
->>>>> equals to 0x00000119?
->>>> so no it will not work
->>>>
->>>> as the gem on sama5 is 00020119
->>>>
->>>> so version 0x119 too
->>>>
->>>> nico
->>> All right, that's a pity.
+>>> Hey, hey, hey.  Turns out this wasn't that wrong after all.  That merge
+>>> includes a oneline diff in kernel/cpu/idle.c and it *is* actually this
+>>> diff which trigger the problem for me.  Reverting it, using the attached
+>>> patch, makes the warning go away.  Which means that it had nothing to do
+>>> with your RCU changes.
 >>>
->>> The only issue that remains then is the obligation to use CONFIG_OF,
->>> or:
+>>> But I haven't the faintest idea how this is supposed to work, or even
+>>> how to explain the patch properly, so I think I need some help from
+>>> Thomas here.  Unless this makes you understand the real issue?
 >>>
->>> +#if defined(CONFIG_OF)
->>> +	dev_id =3D of_match_device(macb_dt_ids, &pdev->dev);
->>> +	if (dev_id)
->>> +		bp->caps =3D (u32)dev_id->data;
->>> +
->>> +#endif
+>>> Thomas, why does powertop trigger the
 >>>
->>> ?
->> no need as of_match_device is a inline of !OF
-> Sorry, here's the complete compiler error:
-> drivers/net/ethernet/cadence/macb.c: In function 'macb_probe':
-> drivers/net/ethernet/cadence/macb.c:1601: error: 'macb_dt_ids' undeclar=
-ed (first use in this function)
->=20
-> Earlier, 'macb_dt_ids' is only defined when using OF
+>>>   WARNING: at kernel/rcutree.c:502 rcu_eqs_exit_common.isra.48+0x3d/0x125()
+>>>
+>>> without the attached patch?  And what is the proper resolution?
+>>>
+>>  
+>> The problem appears to be in the cpu idle poll implementation. You can trigger
+>> this problem by passing idle=poll in the kernel cmd-line as well, right?
+> 
+> That sounded so obvious that it made me think "Doh, why didn't I just
+> test that before?"  But unfortunately there must be some other factor
+> involved. No warnings observed during normal use when running with
+> idle=poll:
+> 
 
-The trick is in using of_match_ptr. It means remove that CONFIG_OF around=
- macb_dt_ids too.
+I didn't expect warnings with normal use.
 
-[linux-2.6.x]$ grep -rn "of_match_ptr" include/linux/
-include/linux/of.h:314:#define of_match_ptr(_ptr)	(_ptr)
-include/linux/of.h:508:#define of_match_ptr(_ptr)	NULL
+>  bjorn@nemi:~$ dmesg|grep polling
+>  [    0.000000] process: using polling idle threads
+> 
+> 
+> I expected a flood of warnings here, but there is none until I start
+> powertop (to confirm that the original issue is still there).  So it's
+> more than just entering cpu_idle_poll().
+>
 
-Thanks,
-Michal
+Yeah, of course it is :-) The warning triggers only when you enable the tracepoint
+in the idle code. And in your case, powertop does that. That's why it only
+triggers when you run powertop. Alternatively, if you enable the tracepoint
+yourself manually, I bet you'll see the warnings, even without using powertop.
+ 
+>> I think I understand what is going on here. Can you please try the fix below?
+>> (It is only compile-tested since its very late here and I really need to get
+>> some sleep!).
+> 
+> Works perfect.  Thanks. 
 
+Thanks for your testing!
 
+> I assume this is the correct fix even if the
+> problem isn't completely understood?
+> 
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Hmm? Why do you say the problem isn't completely understood? I thought I
+explained the problem in my changelog. Did I miss something?
 
+Regards,
+Srivatsa S. Bhat
 
-
-------enig2WTVVSNRMSCPPHPFBEQOU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGR7JUACgkQykllyylKDCHnLQCbBzvFzVTpd6noblmVs5eogHar
-EpoAnjDcD2DKIdcQ/z24f9OcocrSBOWt
-=lJNr
------END PGP SIGNATURE-----
-
-------enig2WTVVSNRMSCPPHPFBEQOU--
