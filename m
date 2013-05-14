@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab3ENNsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 09:48:50 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:43019 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab3ENNss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 09:48:48 -0400
-Message-ID: <1368539323.4304.81.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCHv2 net 1/2] sfc: Delete EFX_PAGE_IP_ALIGN, equivalent to
- NET_IP_ALIGN
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: David Miller <davem@davemloft.net>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        <linux-net-drivers@solarflare.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Date: Tue, 14 May 2013 14:48:43 +0100
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7235@saturn3.aculab.com>
-References: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7235@saturn3.aculab.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+	id S1757494Ab3ENNt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 09:49:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:1670 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754069Ab3ENNtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 09:49:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,670,1363132800"; 
+   d="scan'208";a="23922715"
+Date: Tue, 14 May 2013 14:49:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
+ first time
+In-Reply-To: <20130513182055.GC14177@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com>
+References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com> <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com> <20130513140749.GQ6811@phenom.dumpdata.com> <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
+ <20130513161714.GC10401@phenom.dumpdata.com> <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19864.005
-X-TM-AS-Result: No--20.548800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-14 at 09:32 +0100, David Laight wrote:
-> > The two architectures that define CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> > (powerpc and x86) now both define NET_IP_ALIGN as 0, so there is no
-> > need for this optimisation any more.
+On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Mon, May 13, 2013 at 06:24:46PM +0100, Stefano Stabellini wrote:
+> > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini wrote:
+> > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini wrote:
+> > > > > > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+> > > > > > > > When driver load and unload in a loop, pirq will exhaust finally.
+> > > > > > > > Try to use the same pirq which was already mapped and binded at first time
+> > > > > > > 
+> > > > > > > So what happens if I unload and reload two drivers in random order?
+> > > > > > > 
+> > > > > > > > when driver loaded.
+> > > > > > > > 
+> > > > > > > > Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+> > > > > > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+> > > > > > > > when driver unload, it's always true in second load.
+> > > > > > > 
+> > > > > > > If my understanding is right the issue at hand is that the caching
+> > > > > > > information about the pirq disappears once the driver has been
+> > > > > > > unloaded b/c the event's irq-info is removed (as the driver is
+> > > > > > > unloaded and free_irq is called).
+> > > > > > > 
+> > > > > > > Stefano,
+> > > > > > > Is there a specific write to the MSI structure that would cause the
+> > > > > > > hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+> > > > > > > PIRQ in usage?
+> > > > > > 
+> > > > > > We already have a "free PIRQ" hypercall, it's called
+> > > > > > PHYSDEVOP_unmap_pirq and should be called by QEMU.
+> > > > > 
+> > > > > Considering that we call function that allocates (PHYSDEVOP_get_free_pirq)
+> > > > > it in the Linux kernel (and not in QEMU), perhaps that should be done in the
+> > > > > Linux kernel as part of xen_destroy_irq()? Or would that confuse QEMU?
+> > > > 
+> > > > I think it would confuse QEMU. It is probably better to let the unmap
+> > > > being handled by it.
+> > > > 
+> > > > 
+> > > > > It looks like QEMU only does that hypercall (via xc_physdev_unmap_pirq)
+> > > > > unregister_real_device which is only called during pci unplug?
+> > > > 
+> > > > You are right! I would think that this behaviour is erroneous unless it
+> > > > was done on purpose to avoid allocating MSIs twice.
+> > > > If that is the case we would need to do something similar in Linux too.
+> > > > 
+> > > > I think that the issue is the mismatch between QEMU's and Linux's
+> > > > behaviours: either both should be allocating MSIs once, or they should
+> > > > both be allocating and deallocating MSIs every time the driver is loaded
+> > > > and unloaded.
+> > > 
+> > > Right. But we also have the scenario that QEMU and Linux are going to 
+> > > be out of sync. So we need fixes in both places - I think.
+> > 
+> > QEMU is the owner of the pirq, in fact it is the one that creates and
+> > destroys the mapping. I think that the right place to fix this problem
+> > is in QEMU, the ABI would be much cleaner as a result. As a side effect
+> > we don't need to make any changes in Linux.
 > 
-> Hmmm.... even on x86 there will be a measurable cost
-> in misaligned accesses - at least for some workloads.
+> You do. You need to remove the PHYSDEVOP_get_free_pirq call in that case.
+ 
+PHYSDEVOP_get_free_pirq needs to stay, because Linux needs to know the
+pirq that QEMU is going to use.
 
-When they cross cache-line boundaries, yes.
-
-Maybe napi_get_frags() should be adding the 2 byte offset on all
-architectures, as the skbs it allocates are never RX DMA buffers.
-
-> If the DMA is able to write to a mis-aligned buffer and
-> still perform aligned burst transfers mid-frame then
-> 4n+2 aligning the rx buffer should be a win even on x86.
-
-I don't think so.
-
-> Note to hardware engineers: add an option to write two
-> bytes of junk before the rx data :-)
-
-There is some hardware with that option.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+However I would let QEMU handle the mapping (it already does that in
+pt_msi_setup calling xc_physdev_map_pirq_msi) and unmapping (that is
+done by calling xc_domain_unbind_msi_irq from pt_msi_disable).
+I think the problem is that pt_msi_disable is only called on
+unregister_real_device and pt_reset_interrupt_and_io_mapping, not when
+the guest disables MSIs.
