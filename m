@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab3ENXeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 19:34:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34438 "EHLO gate.crashing.org"
+	id S1758724Ab3ENXsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 19:48:08 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:58121 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758637Ab3ENXeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 19:34:07 -0400
-Message-ID: <1368574433.31689.55.camel@pasglop>
-Subject: Re: Kernel 3.10-rc1 build warning on 32-bit ppc associated with
- commit 3925f46
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 15 May 2013 09:33:53 +1000
-In-Reply-To: <5192584C.1060003@lwfinger.net>
-References: <5192584C.1060003@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1758646Ab3ENXsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 19:48:06 -0400
+Message-ID: <5192CD0B.40306@iki.fi>
+Date: Wed, 15 May 2013 02:47:23 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?TWlyb3NsYXYgxaB1c3Rlaw==?= <sustmidown@centrum.cz>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] rtl28xxu: Add USB ID for Leadtek WinFast DTV
+ Dongle mini
+References: <1368574931-12146-1-git-send-email-sustmidown@centrum.cz>
+In-Reply-To: <1368574931-12146-1-git-send-email-sustmidown@centrum.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 82.128.191.26
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-14 at 10:29 -0500, Larry Finger wrote:
-> Hi,
-> 
-> When building 3.10-rc1 on a PowerBook G4, I get the following warning:
+On 05/15/2013 02:42 AM, Miroslav Šustek wrote:
+> USB ID 0413:6a03 is Leadtek WinFast DTV Dongle mini.
+> Decoder Realtek RTL2832U and tuner Infineon TUA9001.
+>
+> Signed-off-by: Miroslav Šustek <sustmidown@centrum.cz>
 
-Thanks. Should be fixed now, let me know if it's not.
+Acked-by: Antti Palosaari <crope@iki.fi>
+Reviewed-by: Antti Palosaari <crope@iki.fi>
 
-Cheers,
-Ben.
-
-> cc1: warnings being treated as errors
-> arch/powerpc/perf/core-book3s.c: In function ‘power_pmu_bhrb_read’:
-> arch/powerpc/perf/core-book3s.c:1479: error: integer constant is too large for 
-> ‘long’ type
-> make[2]: *** [arch/powerpc/perf/core-book3s.o] Error 1
-> make[1]: *** [arch/powerpc/perf] Error 2
-> make[1]: *** Waiting for unfinished jobs....
->    LD      arch/powerpc/platforms/powermac/built-in.o
->    LD      arch/powerpc/platforms/built-in.o
-> make[1]: Leaving directory `/home/finger/wireless-testing'
-> make: *** [debian/stamp/build/kernel] Error 2
-> 
-> The code in question came from commit 3925f46 entitled "powerpc/perf: Enable 
-> branch stack sampling framework". The gcc version is 4.4.5 running with a Mint 9 
-> distribution.
-> 
-> I have disabled the "-Werror" switch so that the build can continue. That 
-> Kconfig question about disabling WERROR is a bit confusing with its double 
-> negative construction.
-> 
-> Thanks,
-> 
-> Larry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ---
+>   drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> index 22015fe..d220ccc 100644
+> --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> @@ -1408,6 +1408,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+>   		&rtl2832u_props, "Compro VideoMate U620F", NULL) },
+>   	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd394,
+>   		&rtl2832u_props, "MaxMedia HU394-T", NULL) },
+> +	{ DVB_USB_DEVICE(USB_VID_LEADTEK, 0x6a03,
+> +		&rtl2832u_props, "WinFast DTV Dongle mini", NULL) },
+>   	{ }
+>   };
+>   MODULE_DEVICE_TABLE(usb, rtl28xxu_id_table);
+>
 
 
+-- 
+http://palosaari.fi/
