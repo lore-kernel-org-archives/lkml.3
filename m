@@ -1,161 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab3ENLuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:50:01 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34095 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3ENLt5 (ORCPT
+	id S1757356Ab3ENLv0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:51:26 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:56599 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab3ENLvZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:49:57 -0400
-Message-ID: <519224DF.3070807@gmail.com>
-Date: Tue, 14 May 2013 19:49:51 +0800
-From: majianpeng <majianpeng@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] mm/kmemleak.c: Merge the consecutive scan-areas.
-Content-Type: multipart/mixed;
- boundary="------------040500070602080603020209"
+	Tue, 14 May 2013 07:51:25 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [RFC PATCHv3 4/6] clocksource: Add TI-Nspire timer drivers
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <CACRpkdZBFbOnQ9rCehO0yKDN7fH9VR3VYCa_NkOGJz7KN+02FQ@mail.gmail.com>
+Date: Tue, 14 May 2013 21:51:10 +1000
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <26FBB324-AAA9-4C10-8978-C2EC1C26672E@gmail.com>
+References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <1368332581-94691-5-git-send-email-dt.tangr@gmail.com> <CACRpkdZBFbOnQ9rCehO0yKDN7fH9VR3VYCa_NkOGJz7KN+02FQ@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040500070602080603020209
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 
-If the scan-areas are adjacent,it can merge in order to reduce memomy.
-And using pr_warn instead of pr_warning.
+On 14/05/2013, at 6:03 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- mm/kmemleak.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+>> +
+>> +       timer->interrupt_regs = of_iomap(node, 1);
+> 
+> Check for errors.
+> 
+>> +       timer->irqnr = irq_of_parse_and_map(node, 0);
+> 
+> Check for errors.
+>> +       if (timer->interrupt_regs && timer->irqnr) {
+>> 
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index f0ece93..9590a57 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -746,24 +746,36 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
-         return;
-     }
- 
--    area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
--    if (!area) {
--        pr_warning("Cannot allocate a scan area\n");
--        goto out;
--    }
--
-     spin_lock_irqsave(&object->lock, flags);
-     if (ptr + size > object->pointer + object->size) {
-         kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
-         dump_object_info(object);
--        kmem_cache_free(scan_area_cache, area);
-         goto out_unlock;
-     }
-+    hlist_for_each_entry(area, &object->area_list, node) {
-+        if (ptr + size == area->start) {
-+            area->start = ptr;
-+            area->size += size;
-+            goto out_unlock;
-+        } else if (ptr == area->start + area->size) {
-+            area->size += size;
-+            goto out_unlock;
-+        }
-+
-+    }
-+    spin_unlock_irqrestore(&object->lock, flags);
-+
-+    area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
-+    if (!area) {
-+        pr_warn("Cannot allocate a scan area\n");
-+        goto out;
-+    }
- 
-     INIT_HLIST_NODE(&area->node);
-     area->start = ptr;
-     area->size = size;
- 
-+    spin_lock_irqsave(&object->lock, flags);
-     hlist_add_head(&area->node, &object->area_list);
- out_unlock:
-     spin_unlock_irqrestore(&object->lock, flags);
--- 
-1.8.3.rc1.44.gb387c77
+The idea with this is to make these properties optional. Each timer has two sub-timers but only one can generate interrupts. One will be added as a clockevent device and the other as a clocksource. If an IRQ number or interrupt acknowledge address is not passed through the DT, then the clockevents device is not added but the clocksource still is.
 
+Should I comment it in the code to make it apparent what's happening or is there a better way to express this?
 
---------------040500070602080603020209
-Content-Type: text/x-patch;
- name="0003-mm-kmemleak.c-Merge-the-consecutive-scan-areas.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0003-mm-kmemleak.c-Merge-the-consecutive-scan-areas.patch"
+> 
+>> +               writel(0x3F, timer->interrupt_regs + IO_INTR_ACK);
+> 
+> Hm magic number, I guess it's clearing all IRQ lines…
 
->From a76e17c129d2f779f1588aa7ae319b76854068eb Mon Sep 17 00:00:00 2001
-From: Jianpeng Ma <majianpeng@gmail.com>
-Date: Tue, 14 May 2013 19:32:06 +0800
-Subject: [PATCH 3/3] mm/kmemleak.c: Merge the consecutive scan-areas.
+It's a bitmask of bits 0-5. 
 
-If the scan-areas are adjacent,it can merge in order to reduce memomy.
-And using pr_warn instead of pr_warning.
+> 
+>> +
+>> +               /* Interrupt to occur when timer value matches 0 */
+>> +               writel(0, timer->base + IO_MATCH1);
+>> +
+>> +               timer->clkevt_irq.name  = timer->clockevent_name;
+>> +               timer->clkevt_irq.handler = nspire_timer_interrupt;
+>> +               timer->clkevt_irq.dev_id = timer;
+>> +               timer->clkevt_irq.flags =
+>> +                       IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL;
+>> +
+>> +               setup_irq(timer->irqnr, &timer->clkevt_irq);
+>> +
+>> +               clockevents_config_and_register(&timer->clkevt,
+>> +                               clk_get_rate(timer->clk), 0x0001, 0xfffe);
+>> +               pr_info("Added %s as clockevent\n", timer->clockevent_name);
+>> +       }
+>> +
+>> +       writel(CNTL_RUN_TIMER | CNTL_FOREVER | CNTL_INC,
+>> +                       timer->timer2 + IO_CONTROL);
+>> +
+>> +       clocksource_mmio_init(timer->timer2 + IO_CURRENT_VAL,
+>> +                       timer->clocksource_name,
+>> +                       clk_get_rate(timer->clk),
+>> +                       200, 16,
+>> +                       clocksource_mmio_readw_up);
+> 
+> If this timer is really just 16 bits, it's a *pretty* good idea to use
+> the prescaler (I guess this is what IO_DIVIDER is) beacuse else you
+> will get short sleep times with CONFIG_NO_HZ_IDLE on this system,
+> and wake up unnecessarily often.
+> 
+> The same goes for the clock event.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- mm/kmemleak.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+The clock frequency is 32768Hz. Should I be scaling it down at that frequency?
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index f0ece93..9590a57 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -746,24 +746,36 @@ static void add_scan_area(unsigned long ptr, size_t size, gfp_t gfp)
- 		return;
- 	}
- 
--	area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
--	if (!area) {
--		pr_warning("Cannot allocate a scan area\n");
--		goto out;
--	}
--
- 	spin_lock_irqsave(&object->lock, flags);
- 	if (ptr + size > object->pointer + object->size) {
- 		kmemleak_warn("Scan area larger than object 0x%08lx\n", ptr);
- 		dump_object_info(object);
--		kmem_cache_free(scan_area_cache, area);
- 		goto out_unlock;
- 	}
-+	hlist_for_each_entry(area, &object->area_list, node) {
-+		if (ptr + size == area->start) {
-+			area->start = ptr;
-+			area->size += size;
-+			goto out_unlock;
-+		} else if (ptr == area->start + area->size) {
-+			area->size += size;
-+			goto out_unlock;
-+		}
-+
-+	}
-+	spin_unlock_irqrestore(&object->lock, flags);
-+
-+	area = kmem_cache_alloc(scan_area_cache, gfp_kmemleak_mask(gfp));
-+	if (!area) {
-+		pr_warn("Cannot allocate a scan area\n");
-+		goto out;
-+	}
- 
- 	INIT_HLIST_NODE(&area->node);
- 	area->start = ptr;
- 	area->size = size;
- 
-+	spin_lock_irqsave(&object->lock, flags);
- 	hlist_add_head(&area->node, &object->area_list);
- out_unlock:
- 	spin_unlock_irqrestore(&object->lock, flags);
--- 
-1.8.3.rc1.44.gb387c77
+> 
+> See how we calculate the prescaler in arch/arm/mach-integrator/integrator_ap.c
+> for example.
+> 
+> Yours,
+> Linus Walleij
 
-
---------------040500070602080603020209--
+Cheers,
+Daniel Tang
