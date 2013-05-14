@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab3ENA4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:56:08 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61561 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657Ab3ENA4G (ORCPT
+	id S1755814Ab3ENA5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:57:32 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:34504 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3ENA53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:56:06 -0400
-X-AuditID: 9c930197-b7b76ae000003523-21-51918ba44a32
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
-References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
-	<20130513141117.GC17814@two.firstfloor.org>
-Date: Tue, 14 May 2013 09:56:04 +0900
-In-Reply-To: <20130513141117.GC17814@two.firstfloor.org> (Andi Kleen's message
-	of "Mon, 13 May 2013 16:11:17 +0200")
-Message-ID: <87hai65qhn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 13 May 2013 20:57:29 -0400
+Message-ID: <51918BF6.3020702@linaro.org>
+Date: Mon, 13 May 2013 17:57:26 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: David Vrabel <david.vrabel@citrix.com>
+CC: xen-devel@lists.xen.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86: increase precision of x86_platform.get/set_wallclock()
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1368467768-2316-2-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
-
-On Mon, 13 May 2013 16:11:17 +0200, Andi Kleen wrote:
-> On Mon, May 13, 2013 at 05:41:42PM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> The --percent-limit option is for not showing small overheaded entries
->> in the output.  Maybe we want to set a certain default value like 0.1.
->> 
->> Cc: Andi Kleen <andi@firstfloor.org>
+On 05/13/2013 10:56 AM, David Vrabel wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
 >
-> I like the option, but 0 is not a good default.
-> Make it 1 or something.
-
-Thanks.  I just wanted to reserve same behavior since I didn't know
-what's the reasonable default value.  We might use a config variable for
-this to customize the default value.
-
+> All the virtualized platforms (KVM, lguest and Xen) have persistent
+> wallclocks that have more than one second of precision.
 >
-> Perhaps a better heuristic would be 
-> percent < threshold || samples < sample-threshold
-> with sample-threshold being several hundred at least.
+> read_persistent_wallclock() and update_persistent_wallclock() allow
+> for nanosecond precision but their implementation on x86 with
+> x86_platform.get/set_wallclock() only allows for one second precision.
+> This means guests may see a wallclock time that is off by up to 1
+> second.
 >
-> A very small number of hits on something is usually quite much useless,
-> unless your original event was extremly rare in the beginning
-> (but then it's unclear if the profile is any useful)
+> Make set_wallclock() and get_wallclock() take a struct timespec
+> parameter (which allows for nanosecond precision) so KVM and Xen
+> guests may start with a more accurate wallclock time and a Xen dom0
+> can maintain a more accurate wallclock for guests.
+>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 
-Looks reasonable, but I know there's also some users who use the perf
-tools lightly.  A several hundreds sample-threshold looks too harsh to
-them IMHO.  In addition, it should handle tracepoints.
+This one looks pretty good.
+Lets circle around on the other two and if after that they still don't 
+make sense, I'll just queue this one.
 
-Thanks,
-Namhyung
+Sorry if I'm being thick headed.
+
+thanks
+-john
+
