@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab3ENPKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:10:37 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:38619 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab3ENPKe (ORCPT
+	id S932218Ab3ENPK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:10:59 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:48432 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752Ab3ENPK5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:10:34 -0400
+	Tue, 14 May 2013 11:10:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <51925136.5050302@gmail.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
-	<1368461313-4371-4-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com>
-	<5191F53E.4000305@cn.fujitsu.com>
-	<51925136.5050302@gmail.com>
-Date: Tue, 14 May 2013 08:10:33 -0700
-X-Google-Sender-Auth: MUp64lamnyqBgZ_G8auqtQhpiK8
-Message-ID: <CAE9FiQWO-jR5y35kKiW0m6gVR54ZyRsBsdhP4BmFLSsDzCS3rA@mail.gmail.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to
- pci_alloc_dev(bus) instead
-From: Yinghai Lu <yinghai@kernel.org>
-To: Liu Jiang <liuj97@gmail.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Airlie <airlied@linux.ie>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
+References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
+Date: Tue, 14 May 2013 17:10:55 +0200
+Message-ID: <CAFLxGvxUFBHV4Y9vEVvhRR73tgLKFiRxHKo2F9p_5ZtYDDC_fw@mail.gmail.com>
+Subject: Re: 2013 Plumber's CFP: Fastboot
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Mehaffey, John" <John_Mehaffey@mentor.com>
+Cc: "tim.bird@am.sony.com" <tim.bird@am.sony.com>, "wd@denx.de" <wd@denx.de>,
+        "mzjro@0pointer.net" <mzjro@0pointer.net>,
+        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
+        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
+        "yoush@cs.msu.su" <yoush@cs.msu.su>,
+        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
+        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
+        "systemd-devel@lists.freedesktop.org" 
+	<systemd-devel@lists.freedesktop.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 7:59 AM, Liu Jiang <liuj97@gmail.com> wrote:
-> On 05/14/2013 04:26 PM, Gu Zheng wrote:
->     I suggest to use pci_release_dev() instead because it also needs to
-> release OF related resources.
-> I will update it in next version.
+On Tue, May 14, 2013 at 1:51 AM, Mehaffey, John
+<John_Mehaffey@mentor.com> wrote:
+> Hello All,
 >
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index bc075a3..2ac6338 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1281,7 +1281,7 @@ static struct pci_dev *pci_scan_device(struct pci_bus
-> *bus
->         pci_set_of_node(dev);
+> I am proposing a microconference on fastboot at the Linux Plumber's conference 2013 in New Orleans. The goal is to get to sub 1S boot times for a large (IVI) system using NAND flash. This pushes the state of the art, and will require innovative solutions in may areas of Linux plumbing, including bootloader, kernel init, UBI, and systemd.
 >
->         if (pci_setup_device(dev)) {
-> -               kfree(dev);
-> +               pci_release_dev(&dev->dev);
->                 return NULL;
+> Note that fastboot improvements will (generally) help all architectures so I am not limiting this to automotive systems.
+>
+> Please visit http://wiki.linuxplumbersconf.org/2013:fastboot for more information or if you want to submit a topic.
+>
+> If you want to reply to this message, please trim the cc list!
 
-no, should move pci_set_of_node calling into pci_setup_device.
+Why trimming the CC? Changing the CC list is a _very_ bad habit.
 
-Yinghai
+Anyway, a few notes on UBI fastmap.
+Before we talk about optimizing it we have to make sure that it is stable.
+Currently it has not much users because embedded folks are a few
+kernel releases behind.
+I expect that we'll face some issues (hey it's software!). Instead of
+making the code more complicated we have to
+make very sure that it works well.
+Fastmap got much more complicated than I thought while developing the
+first proof of concept implementation.
+
+We also have to think more about userland support, e.g. making tools
+like ubinize fastmap aware...
+User want ready to use fastmap UBI images and not images which have to
+be converted by the kernel on the very first boot.
+
+Sharing UBI EBA table between U-Boot and the kernel would be a nice
+feature, but we also have to make sure
+that we can share the EBA table between two kernels (think of kexec).
+So, a more general solution is needed.
+
+--
+Thanks,
+//richard
