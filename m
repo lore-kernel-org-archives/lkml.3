@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab3ENWXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 18:23:37 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:50316 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab3ENWXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 18:23:35 -0400
+	id S1758707Ab3ENW30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 18:29:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15800 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758537Ab3ENW3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 18:29:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,672,1363158000"; 
+   d="scan'208";a="241588324"
+Subject: [PATCH] pci: Avoid reentrant calls to work_on_cpu
+To: bhelgaas@google.com, yinghai@kernel.org
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: guz.fnst@cn.fujitsu.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Tue, 14 May 2013 15:26:53 -0700
+Message-ID: <20130514221748.6180.30597.stgit@ahduyck-cp1.jf.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.03.1305141547180.31158@syhkavp.arg>
-References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
-	<1367602547-19322-2-git-send-email-will.deacon@arm.com>
-	<20130506231554.GB16801@amd.pavel.ucw.cz>
-	<5188B8B2.5030601@arm.com>
-	<alpine.LFD.2.03.1305141547180.31158@syhkavp.arg>
-Date: Tue, 14 May 2013 17:23:35 -0500
-Message-ID: <CAL_Jsq+Q5UMGo3J+vKKCRU+w4Kj0YN0exs7UCWTEOxmFjWfo3g@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] ARM: delay: print dummy values for bogomips
-From: Rob Herring <robherring2@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 2:54 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> [ Yes, I'm late to the party ]
->
-> On Tue, 7 May 2013, Marc Zyngier wrote:
->
->> On 07/05/13 00:16, Pavel Machek wrote:
->>
->> Hi Pawel,
->>
->> >> Now that we support a timer-backed delay loop, I'm quickly getting sick
->> >> and tired of people complaining that their beloved bogomips value has
->> >> decreased. You know who you are!
->> >
->> >> Unfortunately, we can't just remove the entry from /proc/cpuinfo, as it
->> >> will likely break fragile userspace code which is parsing that stuff, so
->> >> instead replace it with a dummy value that can be chosen in the
->> >> Kconfig.
->> >
->> > So, instead of removing it you silently report invalid value? Note
->>
->> Removing it would be an ABI breakage. Unfortunately.
->
-> Did you really write this with a straight face?
->
->> Name one userspace application that extracts meaningful information out
->> of the BogoMIPS field. Just one.
->
-> Waitaminute... Didn't you just claim this would be an ABI break?
->
-> So if no application can be found, where is the ABI breakage?
+This change is meant to fix a deadlock seen when pci_enable_sriov was
+called from within a driver's probe routine.  The issue was that
+work_on_cpu calls flush_work which attempts to flush a work queue for a
+cpu that we are currently working in.  In order to avoid the reentrant
+path we just skip the call to work_on_cpu in the case that the device
+node matches our current node.
 
-lscpu
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+---
 
-But that is already "broken" on ARM because x86 uses "bogomips" and
-ARM uses "BogoMIPS". I agree reporting BogoMIPS is silly, but there
-are more differences between x86 and ARM. Somewhat meaningful fields
-like "cpu MHz" are missing on ARM for example. These are mainly useful
-for h/w inventory use which server folks tend to care about.
+This patch is meant to address the issue pointed out in an earlier patch
+sent by Yinghai Lu titled:
+  [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
 
-> This thread must be a joke.  Please just kill the damn thing out of
-> /proc/cpuinfo and see if any application notices.  And if some do then
-> they are already broken *today* and should be fixed.
+ drivers/pci/pci-driver.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
-And please do so for all arches then.
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 79277fb..caeb1c0 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -277,12 +277,16 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+ 	int error, node;
+ 	struct drv_dev_and_id ddi = { drv, dev, id };
+ 
+-	/* Execute driver initialization on node where the device's
+-	   bus is attached to.  This way the driver likely allocates
+-	   its local memory on the right node without any need to
+-	   change it. */
++	/*
++	 * Execute driver initialization on the node where the device's
++	 * bus is attached.  This way the driver likely allocates
++	 * its local memory on the right node without any need to
++	 * change it.  If the node is the current node just call
++	 * local_pci_probe and avoid the possibility of reentrant
++	 * calls to work_on_cpu.
++	 */
+ 	node = dev_to_node(&dev->dev);
+-	if (node >= 0) {
++	if ((node >= 0) && (node != numa_node_id())) {
+ 		int cpu;
+ 
+ 		get_online_cpus();
 
-Rob
