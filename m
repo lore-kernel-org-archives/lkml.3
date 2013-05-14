@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab3ENVey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 17:34:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61124 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758212Ab3ENVex (ORCPT
+	id S1758587Ab3ENVf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 17:35:29 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57122 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758541Ab3ENVf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 17:34:53 -0400
-Date: Tue, 14 May 2013 22:34:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: majianpeng <majianpeng@gmail.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] module: Add section ".ref.data" into kmemleak-scan-area.
-Message-ID: <20130514213440.GA4963@MacBook-Pro.local>
-References: <518DAA1A.3010407@gmail.com>
- <87bo8f39di.fsf@rustcorp.com.au>
+	Tue, 14 May 2013 17:35:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bo8f39di.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
+References: <cover.1368485053.git.luto@amacapital.net> <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
+ <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com> <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 May 2013 14:35:04 -0700
+Message-ID: <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
+Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
+ missing ..._del
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty,
+On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>>
+>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+>
+> I believe it will break something but we could deal with the fallout
+> once it happens.
 
-On Mon, May 13, 2013 at 03:24:09AM +0100, Rusty Russell wrote:
-> majianpeng <majianpeng@gmail.com> writes:
-> 
-> > In commit 523c81135,it used "__refdata" on event_class_ftrace_##call.
-> > It will cause kmemleak to misjudge because when loading module it did
-> > not add '.ref.data' into kmemleak-scan-area.
-> > 
-> > Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> > ---
-> >  kernel/module.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Catalin?
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+FWIW, I'm running with this code on my machine right now using the
+radeon driver.  Everything seems fine.  If I build without MTRRs and
+without PAT, though, graphics are slow (as expected).  So I think
+everything's okay.
 
-I forgot to ask - are you picking up this patch or would like me to push
-upstream? The patch got some more testing on a separate thread:
-
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-
-Thanks.
-
--- 
-Catalin
+--Andy
