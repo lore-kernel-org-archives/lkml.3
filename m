@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3ENIdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:33:54 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46719
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756592Ab3ENIdt (ORCPT
+	id S1756592Ab3ENIff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:35:35 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:45659 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3ENIfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:33:49 -0400
-Date: Tue, 14 May 2013 10:31:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
-Message-ID: <20130514083148.GD15942@dyad.programming.kicks-ass.net>
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
- <1368199049-2798-9-git-send-email-alex.shi@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368199049-2798-9-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 14 May 2013 04:35:32 -0400
+Subject: Re: [PATCH] efivarfs: Never return ENOENT from firmware again
+From: joeyli <jlee@suse.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Lingzhu Xiang <lxiang@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Boyer <jwboyer@redhat.com>, Andy Whitcroft <apw@canonical.com>
+In-Reply-To: <5191E4E0.7020505@intel.com>
+References: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>
+	 <51913D4B.2000606@intel.com> <1368506197.21417.172.camel@linux-s257.site>
+	 <5191E4E0.7020505@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 May 2013 16:32:26 +0800
+Message-ID: <1368520346.21417.180.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 11:17:29PM +0800, Alex Shi wrote:
-> blocked_load_avg sometime is too heavy and far bigger than runnable load
-> avg. that make balance make wrong decision. So better don't consider it.
-
-Would you happen to have an example around that illustrates this? 
-
-Also, you've just changed the cgroup balancing -- did you run any tests on that?
-
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+於 二，2013-05-14 於 08:16 +0100，Matt Fleming 提到：
+> On 05/14/2013 05:36 AM, joeyli wrote:
+> > I found the "[PATCH] x86, efi: initial the local variable of DataSize to
+> > zero" lost in urgent branch, and it also didn't in Linus's v3.10-rc1.
+> > 
+> > Did this patch move to other branch?
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 91e60ac..75c200c 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1339,7 +1339,7 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->  	struct task_group *tg = cfs_rq->tg;
->  	s64 tg_contrib;
->  
-> -	tg_contrib = cfs_rq->runnable_load_avg + cfs_rq->blocked_load_avg;
-> +	tg_contrib = cfs_rq->runnable_load_avg;
->  	tg_contrib -= cfs_rq->tg_load_contrib;
->  
->  	if (force_update || abs64(tg_contrib) > cfs_rq->tg_load_contrib / 8) {
-> -- 
-> 1.7.5.4
+> It appears I dropped this patch when doing the rebase against -rc1. I'm
+> really sorry about that. I've applied it again.
+
+Thanks for your help!
+
 > 
+> Thanks for being so diligent.
+> --
+
+That because I need apply this patch on v3.9 and v3.10 when debugging
+issue on Acer machine.
+
+
+Thank a lot!
+Joey Lee
+
