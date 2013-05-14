@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab3ENHHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:07:16 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:41589 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3ENHHN (ORCPT
+	id S1751788Ab3ENHJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:09:10 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:60962 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab3ENHJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:07:13 -0400
+	Tue, 14 May 2013 03:09:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com>
-References: <1360771110-9490-1-git-send-email-christian.gmeiner@gmail.com>
- <CAK5ve-K43n=4n1GyRW+2PgMTe2bU6ROHAa-_dK_0LgzM7JCRcw@mail.gmail.com>
- <CAH9NwWc+BP5ZbHwmMZ4AisviDHM-GizTmZO6vwxtd=ntYUAk=A@mail.gmail.com>
- <CAH9NwWceaA0MPGj65fOhmECL8A522qngU3RHGZ++Uz-6mVKKAg@mail.gmail.com>
- <CAK5ve-JmVes+OA3MRyoZEo_Fz8_RHpdqmcTxNwwrUAnADpqvyw@mail.gmail.com>
- <CAH9NwWeMMYzvE0VVMCYmF9oXA-wBiW-BnwoK1q7mjUkE4JF9uw@mail.gmail.com> <CAH9NwWfgMswKtdCNTOa5nbmd9uf6zg_jV7UD_h28bsq+PQcX=g@mail.gmail.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Tue, 14 May 2013 09:06:52 +0200
-Message-ID: <CAH9NwWe6seN+y29wm8KMn-2y+ePUjuzUULFNWpGLJ8Rn2H7P7A@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix misbehavior caused by wrong bit masks
-To: Bryan Wu <cooloney@gmail.com>
-Cc: akpm <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+In-Reply-To: <1368482482.3305.50.camel@bwh-desktop.uk.solarflarecom.com>
+References: <1368482311.3305.48.camel@bwh-desktop.uk.solarflarecom.com>
+	<1368482482.3305.50.camel@bwh-desktop.uk.solarflarecom.com>
+Date: Tue, 14 May 2013 09:09:08 +0200
+X-Google-Sender-Auth: bVvHfvVWZSEXXEtFlJLckdJY8BM
+Message-ID: <CAMuHMdWoSGYZUAHCZ8rjyXcvUoiLx0tv+HuNWXoyZEJHK+ufPw@mail.gmail.com>
+Subject: Re: [PATCHv2 net 2/2] sfc: Reduce RX scatter buffer size, and reduce
+ alignment if appropriate
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: David Miller <davem@davemloft.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-s390@vger.kernel.org, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
-> 2013/3/8 Christian Gmeiner <christian.gmeiner@gmail.com>:
->> 2013/3/5 Bryan Wu <cooloney@gmail.com>:
->>> On Sun, Mar 3, 2013 at 11:40 PM, Christian Gmeiner
->>> <christian.gmeiner@gmail.com> wrote:
->>>> ping
->>>> --
->>>> Christian Gmeiner, MSc
->>>>
->>>>
->>>> 2013/2/23 Christian Gmeiner <christian.gmeiner@gmail.com>:
->>>>> 2013/2/15 Bryan Wu <cooloney@gmail.com>:
->>>>>> On Wed, Feb 13, 2013 at 7:58 AM, Christian Gmeiner
->>>>>> <christian.gmeiner@gmail.com> wrote:
->>>>>>> During the development of this driver an in-house register
->>>>>>> documentation was used. The last weeks some integration tests
->>>>>>> were done and this problem was found. It turned out that
->>>>>>> the released register documentation is wrong.
->>>>>>>
->>>>>>> The fix is very simple: shift all masks by one.
->>>>>>>
->>>>>>> Our customers can control LEDs from userspace via Java,
->>>>>>> C++ or what every. They have running/working applications where
->>>>>>> they want to control led_3 but led_2 get's used.
->>>>>>> I got a bug report in our in-house bug tracker so it would be
->>>>>>> great to fix this upstream.
->>>>>>>
->>>>>>> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
->>>>>>
->>>>>> Thanks, Christian.
->>>>>>
->>>>>> And Andrew, are you going to take care of this patch? Or I will merge this.
->>>>>>
->>>>>
->>>>> Whats the current state of the patch? Hope we can get it into 3.9 :)
->>>>>
->>>
->>> I think this patch is already in linux-next via Andrew's tree (commit
->>> 023206171f235f93f26c314f76f5405a3077aaba). So it will be merged into
->>> 3.10 I guess, but not 3.9.
->>>
->>> Or I can send out this patch to Linus as a fix and ask Andrew to drop
->>> this from his tree.
->>>
->>
->> I am fine with the current situation and 3.10 is fine too.
->>
+On Tue, May 14, 2013 at 12:01 AM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+> efx_start_datapath() asserts that we can fit 2 RX scatter buffers plus
+> a software structure, each appropriately aligned, into a single page.
+> Where L1_CACHE_BYTES == 256 and PAGE_SIZE == 4096, which is the case
+> on s390, this assertion fails.
 >
-> 3.10-rc1 is out but my patch is missing. What happened?
+> The current scatter buffer size is also not a multiple of 64 or 128,
+> which are more common cache line sizes.  If we can make both the start
+> and end of a scatter buffer cache-aligned, this will reduce the need
+> for read-modify-write operations on inter- processor links.
 >
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?id=refs%2Ftags%2Fv3.10-rc1&qt=author&q=gmeiner
+> Fix the alignment by reducing EFX_RX_USR_BUF_SIZE to 2048 - 256 ==
+> 1792.  (We could use 2048 - L1_CACHE_BYTES, but EFX_RX_USR_BUF_SIZE
+> also affects user-level networking where a larger amount of
+> housekeeping data may be needed.  Although this version of the driver
+> does not support user-level networking, I prefer to keep scattering
+> behaviour consistent with the out-of-tree version.)
 >
+> This still doesn't fix the s390 build because like most architectures
+> it has NET_IP_ALIGN == 2.  When NET_IP_ALIGN != 0 we cannot achieve
+> cache line alignment at either the start or end of a scatter buffer,
+> so there is actually no point in padding the buffers to a multiple of
+> the cache line size.  All we need is 4-byte alignment of the network
+> header, so do that.
+>
+> Adjust the assertions accordingly.
+>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 
-ping
+Fixes the s390 build, so
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
 --
-Christian Gmeiner, MSc
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
