@@ -1,58 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab3ENLUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:20:04 -0400
-Received: from void.printf.net ([89.145.121.20]:35981 "EHLO void.printf.net"
+	id S1754398Ab3ENLZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:25:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36797 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab3ENLUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:20:02 -0400
-From: Chris Ball <cjb@laptop.org>
-To: linux-kernel@vger.kernel.org
-Cc: nico@fluxnic.net, Doug Anderson <dianders@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Johan Rudholm <johan.rudholm@stericsson.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Konstantin Dorfman <kdorfman@codeaurora.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: core: Add a capability for disabling mmc cards
-References: <1368517100-22243-1-git-send-email-adam.lee@canonical.com>
-	<20130514075333.GA22435@adam-laptop>
-Date: Tue, 14 May 2013 07:19:48 -0400
-In-Reply-To: <20130514075333.GA22435@adam-laptop> (Adam Lee's message of "Tue,
-	14 May 2013 15:53:33 +0800")
-Message-ID: <874ne5n6zv.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1752085Ab3ENLZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 07:25:17 -0400
+Date: Tue, 14 May 2013 13:25:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/9] mm: vmscan: Have kswapd writeback pages based on
+ dirty pages encountered, not priority
+Message-ID: <20130514112514.GO5198@dhcp22.suse.cz>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+ <1368432760-21573-7-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368432760-21573-7-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon 13-05-13 09:12:37, Mel Gorman wrote:
+> Currently kswapd queues dirty pages for writeback if scanning at an elevated
+> priority but the priority kswapd scans at is not related to the number
+> of unqueued dirty encountered.  Since commit "mm: vmscan: Flatten kswapd
+> priority loop", the priority is related to the size of the LRU and the
+> zone watermark which is no indication as to whether kswapd should write
+> pages or not.
+> 
+> This patch tracks if an excessive number of unqueued dirty pages are being
+> encountered at the end of the LRU.  If so, it indicates that dirty pages
+> are being recycled before flusher threads can clean them and flags the
+> zone so that kswapd will start writing pages until the zone is balanced.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-On Tue, May 14 2013, Adam Lee wrote:
-> On Tue, May 14, 2013 at 03:38:17PM +0800, Adam Lee wrote:
->> On some systems we need a way to disable MMC card support in a MMC/SD
->> card slot due to the legal concern.
->> 
->> Add support in the core SD/MMC code to support this.
->
-> CC more addresses.
->
-> Yes, this capability seems odd, but linux computer vendors need this to
-> avoid legal problems. Please review, thanks.
+I do not see the direct reclaim clearing the flag. Although direct
+reclaim ignores the flag it still sets it without clearing it. This
+means that you rely on parallel kswapd to clear it.
+We do the same thing with ZONE_CONGESTED but I think this should be at
+least documented somewhere.
 
-This has already been NACKed by Nicolas:
+Other than that
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-https://patchwork.kernel.org/patch/1359121/
+> ---
+>  include/linux/mmzone.h |  9 +++++++++
+>  mm/vmscan.c            | 31 +++++++++++++++++++++++++------
+>  2 files changed, 34 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 5c76737..2aaf72f 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -495,6 +495,10 @@ typedef enum {
+>  	ZONE_CONGESTED,			/* zone has many dirty pages backed by
+>  					 * a congested BDI
+>  					 */
+> +	ZONE_TAIL_LRU_DIRTY,		/* reclaim scanning has recently found
+> +					 * many dirty file pages at the tail
+> +					 * of the LRU.
+> +					 */
+>  } zone_flags_t;
+>  
+>  static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+> @@ -517,6 +521,11 @@ static inline int zone_is_reclaim_congested(const struct zone *zone)
+>  	return test_bit(ZONE_CONGESTED, &zone->flags);
+>  }
+>  
+> +static inline int zone_is_reclaim_dirty(const struct zone *zone)
+> +{
+> +	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
+> +}
+> +
+>  static inline int zone_is_reclaim_locked(const struct zone *zone)
+>  {
+>  	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 1505c57..d6c916d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -676,13 +676,14 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  				      struct zone *zone,
+>  				      struct scan_control *sc,
+>  				      enum ttu_flags ttu_flags,
+> -				      unsigned long *ret_nr_dirty,
+> +				      unsigned long *ret_nr_unqueued_dirty,
+>  				      unsigned long *ret_nr_writeback,
+>  				      bool force_reclaim)
+>  {
+>  	LIST_HEAD(ret_pages);
+>  	LIST_HEAD(free_pages);
+>  	int pgactivate = 0;
+> +	unsigned long nr_unqueued_dirty = 0;
+>  	unsigned long nr_dirty = 0;
+>  	unsigned long nr_congested = 0;
+>  	unsigned long nr_reclaimed = 0;
+> @@ -808,14 +809,17 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		if (PageDirty(page)) {
+>  			nr_dirty++;
+>  
+> +			if (!PageWriteback(page))
+> +				nr_unqueued_dirty++;
+> +
+>  			/*
+>  			 * Only kswapd can writeback filesystem pages to
+> -			 * avoid risk of stack overflow but do not writeback
+> -			 * unless under significant pressure.
+> +			 * avoid risk of stack overflow but only writeback
+> +			 * if many dirty pages have been encountered.
+>  			 */
+>  			if (page_is_file_cache(page) &&
+>  					(!current_is_kswapd() ||
+> -					 sc->priority >= DEF_PRIORITY - 2)) {
+> +					 !zone_is_reclaim_dirty(zone))) {
+>  				/*
+>  				 * Immediately reclaim when written back.
+>  				 * Similar in principal to deactivate_page()
+> @@ -960,7 +964,7 @@ keep:
+>  	list_splice(&ret_pages, page_list);
+>  	count_vm_events(PGACTIVATE, pgactivate);
+>  	mem_cgroup_uncharge_end();
+> -	*ret_nr_dirty += nr_dirty;
+> +	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
+>  	*ret_nr_writeback += nr_writeback;
+>  	return nr_reclaimed;
+>  }
+> @@ -1373,6 +1377,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  			(nr_taken >> (DEF_PRIORITY - sc->priority)))
+>  		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+>  
+> +	/*
+> +	 * Similarly, if many dirty pages are encountered that are not
+> +	 * currently being written then flag that kswapd should start
+> +	 * writing back pages.
+> +	 */
+> +	if (global_reclaim(sc) && nr_dirty &&
+> +			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
+> +		zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
+> +
+>  	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+>  		zone_idx(zone),
+>  		nr_scanned, nr_reclaimed,
+> @@ -2769,8 +2782,12 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  				end_zone = i;
+>  				break;
+>  			} else {
+> -				/* If balanced, clear the congested flag */
+> +				/*
+> +				 * If balanced, clear the dirty and congested
+> +				 * flags
+> +				 */
+>  				zone_clear_flag(zone, ZONE_CONGESTED);
+> +				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
+>  			}
+>  		}
+>  
+> @@ -2888,8 +2905,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  				 * possible there are dirty pages backed by
+>  				 * congested BDIs but as pressure is relieved,
+>  				 * speculatively avoid congestion waits
+> +				 * or writing pages from kswapd context.
+>  				 */
+>  				zone_clear_flag(zone, ZONE_CONGESTED);
+> +				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
+>  		}
+>  
+>  		/*
+> -- 
+> 1.8.1.4
+> 
 
-(At least, I think it has -- your forward doesn't include the patch
-itself.)
-
-Thanks,
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Michal Hocko
+SUSE Labs
