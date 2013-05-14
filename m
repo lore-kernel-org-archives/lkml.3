@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126Ab3ENOsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:48:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11465 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab3ENOsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:48:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,671,1363158000"; 
-   d="scan'208";a="313414819"
-From: Imre Deak <imre.deak@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH v2 0/8] add *_to_jiffies_timeout helpers to guarantee a minimum duration
-Date: Tue, 14 May 2013 17:48:30 +0300
-Message-Id: <1368542918-8861-1-git-send-email-imre.deak@intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com>
+	id S932170Ab3ENOsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:48:47 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:37701 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab3ENOso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:48:44 -0400
+Message-ID: <51924EE3.9020708@parallels.com>
+Date: Tue, 14 May 2013 18:49:07 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
+ root caches
+References: <1368535118-27369-1-git-send-email-avagin@openvz.org> <20130514144031.GR5198@dhcp22.suse.cz> <20130514144427.GS5198@dhcp22.suse.cz>
+In-Reply-To: <20130514144427.GS5198@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a motivation of this pachset see the commit log of patch 1/8.
+On 05/14/2013 06:44 PM, Michal Hocko wrote:
+> On Tue 14-05-13 16:40:31, Michal Hocko wrote:
+>> On Tue 14-05-13 16:38:38, Andrey Vagin wrote:
+>>> struct memcg_cache_params has a union. Different parts of this union are
+>>> used for root and non-root caches. A part with destroying work is used only
+>>> for non-root caches.
+>>
+>> but memcg_update_cache_size is called only for !root caches AFAICS
+>> (check memcg_update_all_caches)
+> 
+> Ohh, I am blind. memcg_update_all_caches skips all !root caches.
+> Then the patch looks correct. If Glauber has nothing against then thise
+> should be marked for stable (3.9)
+> 
+This was recently introduced by the commit that moved the initialization
+earlier (15cf17d26e08ee9). It basically moved too much, and I didn't
+catch it. If that patch is in 3.9, then yes, this needs to go to stable.
+Otherwise it is not affected.
 
-v2:
-- s/max_t/min_t/ when clamping to MAX_JIFFY_OFFSET
-- change the _min suffix to _timeout (Daniel Vetter)
-- add kerneldoc (Daniel Vetter)
-- turn the macros into uninlined functions
-- don't convert msecs_to_jiffies() users where the intention of +1 was
-  something else (Jean Delvare, Michal Kubecek)
-
-Imre Deak (8):
-  time: add *_to_jiffies_timeout helpers to guarantee a minimum
-    duration
-  sched: msleep: take msecs_to_jiffies_timeout into use
-  drm/i915: take msecs_to_jiffies_timeout into use
-  media/si4713-i2c: take usecs_to_jiffies_timeout into use
-  usb/isp116x-hcd: take msecs_to_jiffies_timeout into use
-  net/sunrpc: take msecs_to_jiffies_timeout into use
-  net/tipc: take msecs_to_jiffies_timeout into use
-  sound/oxygen_io: take msecs_to_jiffies_timeout into use
-
- drivers/gpu/drm/i915/intel_drv.h |    2 +-
- drivers/gpu/drm/i915/intel_i2c.c |    2 +-
- drivers/media/radio/si4713-i2c.c |    4 ++--
- drivers/usb/host/isp116x-hcd.c   |    2 +-
- include/linux/jiffies.h          |    6 ++++++
- kernel/time.c                    |   27 +++++++++++++++++++++++++++
- kernel/timer.c                   |    4 ++--
- net/sunrpc/xprtrdma/verbs.c      |    4 ++--
- net/tipc/core.h                  |    2 +-
- sound/pci/oxygen/oxygen_io.c     |    2 +-
- 10 files changed, 44 insertions(+), 11 deletions(-)
-
--- 
-1.7.10.4
+However, I do remember Andrey telling me that he hit this bug in both
+3.9 and 3.10-rc1, so yes, stable it is.
 
