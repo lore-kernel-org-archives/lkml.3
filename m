@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3ENC3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 22:29:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19443 "EHLO
+	id S1756218Ab3ENC3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 22:29:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19427 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab3ENC2v (ORCPT
+	with ESMTP id S1755829Ab3ENC2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 22:28:51 -0400
+	Mon, 13 May 2013 22:28:49 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/7] PCI: Detach driver in pci_stop_device
-Date: Mon, 13 May 2013 19:28:22 -0700
-Message-Id: <1368498506-25857-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/7] PCI: move resources and bus_list releasing to pci_release_dev
+Date: Mon, 13 May 2013 19:28:21 -0700
+Message-Id: <1368498506-25857-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
 References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make pci_stop_dev actually detach driver only, and pci_remove_dev
-device will do device_del instead. Then also could make hostbridge
-to use device_unregister to be pair with device_register before.
+We should not release resource in pci_destroy that is too early
+as there could be still other use hold reference.
 
-Add is_removed to record if device_del is called already.
-
-So mutliple calling will not cause false removing,
-only right put_device will get device removed at last.
+release them or remove it from bus devices list at last
+in pci_release_dev instead.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/pci/remove.c |   12 ++++++++----
- include/linux/pci.h  |    3 ++-
- 2 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/pci/probe.c  |   20 ++++++++++++++++++++
+ drivers/pci/remove.c |   19 -------------------
+ 2 files changed, 20 insertions(+), 19 deletions(-)
 
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -1118,6 +1118,20 @@ static void pci_release_capabilities(str
+ 	pci_free_cap_save_buffers(dev);
+ }
+ 
++static void pci_free_resources(struct pci_dev *dev)
++{
++	int i;
++
++	msi_remove_pci_irq_vectors(dev);
++
++	pci_cleanup_rom(dev);
++	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
++		struct resource *res = dev->resource + i;
++		if (res->parent)
++			release_resource(res);
++	}
++}
++
+ /**
+  * pci_release_dev - free a pci device structure when all users of it are finished.
+  * @dev: device that's been disconnected
+@@ -1130,6 +1144,12 @@ static void pci_release_dev(struct devic
+ 	struct pci_dev *pci_dev;
+ 
+ 	pci_dev = to_pci_dev(dev);
++
++	down_write(&pci_bus_sem);
++	list_del(&pci_dev->bus_list);
++	up_write(&pci_bus_sem);
++	pci_free_resources(pci_dev);
++
+ 	pci_release_capabilities(pci_dev);
+ 	pci_release_of_node(pci_dev);
+ 	kfree(pci_dev);
 Index: linux-2.6/drivers/pci/remove.c
 ===================================================================
 --- linux-2.6.orig/drivers/pci/remove.c
 +++ linux-2.6/drivers/pci/remove.c
-@@ -10,7 +10,7 @@ static void pci_stop_dev(struct pci_dev
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
--		device_del(&dev->dev);
-+		device_release_driver(&dev->dev);
- 		dev->is_added = 0;
- 	}
+@@ -3,20 +3,6 @@
+ #include <linux/pci-aspm.h>
+ #include "pci.h"
  
-@@ -20,7 +20,11 @@ static void pci_stop_dev(struct pci_dev
+-static void pci_free_resources(struct pci_dev *dev)
+-{
+-	int i;
+-
+- 	msi_remove_pci_irq_vectors(dev);
+-
+-	pci_cleanup_rom(dev);
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-		struct resource *res = dev->resource + i;
+-		if (res->parent)
+-			release_resource(res);
+-	}
+-}
+-
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
+ 	pci_pme_active(dev, false);
+@@ -34,11 +20,6 @@ static void pci_stop_dev(struct pci_dev
  
  static void pci_destroy_dev(struct pci_dev *dev)
  {
--	put_device(&dev->dev);
-+	if (!dev->is_removed) {
-+		device_del(&dev->dev);
-+		dev->is_removed = 1;
-+		put_device(&dev->dev);
-+	}
+-	down_write(&pci_bus_sem);
+-	list_del(&dev->bus_list);
+-	up_write(&pci_bus_sem);
+-
+-	pci_free_resources(dev);
+ 	put_device(&dev->dev);
  }
  
- void pci_remove_bus(struct pci_bus *bus)
-@@ -107,7 +111,7 @@ void pci_stop_root_bus(struct pci_bus *b
- 		pci_stop_bus_device(child);
- 
- 	/* stop the host bridge */
--	device_del(&host_bridge->dev);
-+	device_release_driver(&host_bridge->dev);
- }
- 
- void pci_remove_root_bus(struct pci_bus *bus)
-@@ -126,5 +130,5 @@ void pci_remove_root_bus(struct pci_bus
- 	host_bridge->bus = NULL;
- 
- 	/* remove the host bridge */
--	put_device(&host_bridge->dev);
-+	device_unregister(&host_bridge->dev);
- }
-Index: linux-2.6/include/linux/pci.h
-===================================================================
---- linux-2.6.orig/include/linux/pci.h
-+++ linux-2.6/include/linux/pci.h
-@@ -307,7 +307,8 @@ struct pci_dev {
- 	unsigned int	transparent:1;	/* Transparent PCI bridge */
- 	unsigned int	multifunction:1;/* Part of multi-function device */
- 	/* keep track of device state */
--	unsigned int	is_added:1;
-+	unsigned int	is_added:1;	/* driver is attached */
-+	unsigned int	is_removed:1;	/* device_del is called */
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
