@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187Ab3ENP6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:58:42 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54619 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758146Ab3ENP6j convert rfc822-to-8bit (ORCPT
+	id S1758125Ab3ENP7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:59:49 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43357 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab3ENP7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:58:39 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 14 May 2013 11:59:47 -0400
+Message-ID: <51925F70.5000309@linaro.org>
+Date: Tue, 14 May 2013 08:59:44 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+To: Jan Beulich <JBeulich@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, xen-devel@lists.xen.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
- <1368019749-19455-4-git-send-email-lee.jones@linaro.org>
-Message-ID: <20130514155835.10068.93655@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 3/9] clk: ux500: Provide device enumeration number suffix for
- SMSC911x
-Date: Tue, 14 May 2013 08:58:35 -0700
+Subject: Re: [Xen-devel] [PATCH 3/3] x86/xen: sync the CMOS RTC as well as
+ the Xen wallclock
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-4-git-send-email-david.vrabel@citrix.com> <51918ABB.5030501@linaro.org> <51920A9502000078000D5D84@nat28.tlf.novell.com>
+In-Reply-To: <51920A9502000078000D5D84@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Lee Jones (2013-05-08 06:29:03)
-> First Ethernet device has a ".0" appended onto the device name. It
-> appears that we need this in order to obtain the correct clock.
-> 
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On 05/14/2013 12:57 AM, Jan Beulich wrote:
+>>>> On 14.05.13 at 02:52, John Stultz <john.stultz@linaro.org> wrote:
+>> Honestly, it seems a little strange to me. If you're running as dom0,
+>> why does HYPERVISOR_dom0_op() not cause the hypervisor to set the cmos
+>> its virtualizing? This seems to mess with the proper virtualization
+>> layering.
+> Thy hypervisor tries to control as little system and peripheral devices
+> as possible, and the CMOS (including the clock) is among those not
+> controlled by it, but by Dom0.
 
-Looks good to me.  Can I take this into clk-next or are you looking for
-an Ack?
+Huh. So what does calling HYPERVISOR_dom0_op do then?
 
-Regards,
-Mike
+Either way, I don't have the context to insightfully review this, so 
+I'll want this to get some Acked-bys from additional Xen folks before I 
+queue it.
 
-> ---
->  drivers/clk/ux500/u8500_clk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
-> index 0b4f35a..80069c3 100644
-> --- a/drivers/clk/ux500/u8500_clk.c
-> +++ b/drivers/clk/ux500/u8500_clk.c
-> @@ -325,7 +325,7 @@ void u8500_clk_init(u32 clkrst1_base, u32 clkrst2_base, u32 clkrst3_base,
->         clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", clkrst3_base,
->                                 BIT(0), 0);
->         clk_register_clkdev(clk, "fsmc", NULL);
-> -       clk_register_clkdev(clk, NULL, "smsc911x");
-> +       clk_register_clkdev(clk, NULL, "smsc911x.0");
->  
->         clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", clkrst3_base,
->                                 BIT(1), 0);
-> -- 
-> 1.7.10.4
+thanks
+-john
+
