@@ -1,55 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3ENSUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 14:20:45 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35557 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab3ENSUo (ORCPT
+	id S1757795Ab3ENSUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 14:20:49 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:44976 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478Ab3ENSUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 14:20:44 -0400
+	Tue, 14 May 2013 14:20:47 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: bob.liu@oracle.com, dan.magenheimer@oracle.com,
         linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         linux-mm@kvack.org, xen-devel@lists.xensource.com
-Subject: [PATCH] Fixes, cleanups, compile warning fixes, and documentation update for Xen tmem driver (v2).
-Date: Tue, 14 May 2013 14:09:17 -0400
-Message-Id: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/9] xen/tmem: Move all of the boot and module parameters to the top of the file.
+Date: Tue, 14 May 2013 14:09:19 -0400
+Message-Id: <1368554966-30469-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
+References: <1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya,
+Just code movement to see the different boot or module parameters.
 
-These nine patches fix the tmem driver to:
- - not emit a compile warning anymore (reported by 0 day test compile tool)
- - remove the various nofrontswap, nocleancache, noselfshrinking, noselfballooning,
-   selfballooning, selfshrinking bootup options.
- - said options are now folded in the tmem driver as module options and are
-   much shorter (and also there are only four of them now).
- - add documentation to explain these parameters in kernel-parameters.txt
- - And lastly add some logic to not enable selfshrinking and selfballooning
-   if frontswap functionality is off.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/tmem.c |   85 +++++++++++++++++++++++++++------------------------
+ 1 files changed, 45 insertions(+), 40 deletions(-)
 
-That is it. Tested and ready to go. If nobody objects will put on my queue
-for Linus on Monday.
-
- Documentation/kernel-parameters.txt |   21 ++++++++
- drivers/xen/Kconfig                 |    7 +--
- drivers/xen/tmem.c                  |   87 ++++++++++++++++-------------------
- drivers/xen/xen-selfballoon.c       |   47 ++----------------
- 4 files changed, 69 insertions(+), 93 deletions(-)
-
-(oh nice, more deletions!)
-
-Konrad Rzeszutek Wilk (9):
-      xen/tmem: Cleanup. Remove the parts that say temporary.
-      xen/tmem: Move all of the boot and module parameters to the top of the file.
-      xen/tmem: Split out the different module/boot options.
-      xen/tmem: Fix compile warning.
-      xen/tmem: s/disable_// and change the logic.
-      xen/tmem: Remove the boot options and fold them in the tmem.X parameters.
-      xen/tmem: Remove the usage of 'noselfshrink' and use 'tmem.selfshrink' bool instead.
-      xen/tmem: Remove the usage of '[no|]selfballoon' and use 'tmem.selfballooning' bool instead.
-      xen/tmem: Don't use self[ballooning|shrinking] if frontswap is off.
+diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+index 5686d6d..edf7e18 100644
+--- a/drivers/xen/tmem.c
++++ b/drivers/xen/tmem.c
+@@ -20,6 +20,51 @@
+ #include <asm/xen/hypervisor.h>
+ #include <xen/tmem.h>
+ 
++#ifndef CONFIG_XEN_TMEM_MODULE
++bool __read_mostly tmem_enabled = false;
++
++static int __init enable_tmem(char *s)
++{
++	tmem_enabled = true;
++	return 1;
++}
++__setup("tmem", enable_tmem);
++#endif
++
++#ifdef CONFIG_CLEANCACHE
++static bool disable_cleancache __read_mostly;
++static bool disable_selfballooning __read_mostly;
++#ifdef CONFIG_XEN_TMEM_MODULE
++module_param(disable_cleancache, bool, S_IRUGO);
++module_param(disable_selfballooning, bool, S_IRUGO);
++#else
++static int __init no_cleancache(char *s)
++{
++	disable_cleancache = true;
++	return 1;
++}
++__setup("nocleancache", no_cleancache);
++#endif
++#endif /* CONFIG_CLEANCACHE */
++
++#ifdef CONFIG_FRONTSWAP
++static bool disable_frontswap __read_mostly;
++static bool disable_frontswap_selfshrinking __read_mostly;
++#ifdef CONFIG_XEN_TMEM_MODULE
++module_param(disable_frontswap, bool, S_IRUGO);
++module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
++#else
++static int __init no_frontswap(char *s)
++{
++	disable_frontswap = true;
++	return 1;
++}
++__setup("nofrontswap", no_frontswap);
++#endif
++#else /* CONFIG_FRONTSWAP */
++#define disable_frontswap_selfshrinking 1
++#endif /* CONFIG_FRONTSWAP */
++
+ #define TMEM_CONTROL               0
+ #define TMEM_NEW_POOL              1
+ #define TMEM_DESTROY_POOL          2
+@@ -125,16 +170,6 @@ static int xen_tmem_flush_object(u32 pool_id, struct tmem_oid oid)
+ 	return xen_tmem_op(TMEM_FLUSH_OBJECT, pool_id, oid, 0, 0, 0, 0, 0);
+ }
+ 
+-#ifndef CONFIG_XEN_TMEM_MODULE
+-bool __read_mostly tmem_enabled = false;
+-
+-static int __init enable_tmem(char *s)
+-{
+-	tmem_enabled = true;
+-	return 1;
+-}
+-__setup("tmem", enable_tmem);
+-#endif
+ 
+ #ifdef CONFIG_CLEANCACHE
+ static int xen_tmem_destroy_pool(u32 pool_id)
+@@ -226,20 +261,6 @@ static int tmem_cleancache_init_shared_fs(char *uuid, size_t pagesize)
+ 	return xen_tmem_new_pool(shared_uuid, TMEM_POOL_SHARED, pagesize);
+ }
+ 
+-static bool disable_cleancache __read_mostly;
+-static bool disable_selfballooning __read_mostly;
+-#ifdef CONFIG_XEN_TMEM_MODULE
+-module_param(disable_cleancache, bool, S_IRUGO);
+-module_param(disable_selfballooning, bool, S_IRUGO);
+-#else
+-static int __init no_cleancache(char *s)
+-{
+-	disable_cleancache = true;
+-	return 1;
+-}
+-__setup("nocleancache", no_cleancache);
+-#endif
+-
+ static struct cleancache_ops tmem_cleancache_ops = {
+ 	.put_page = tmem_cleancache_put_page,
+ 	.get_page = tmem_cleancache_get_page,
+@@ -357,20 +378,6 @@ static void tmem_frontswap_init(unsigned ignored)
+ 		    xen_tmem_new_pool(private, TMEM_POOL_PERSIST, PAGE_SIZE);
+ }
+ 
+-static bool disable_frontswap __read_mostly;
+-static bool disable_frontswap_selfshrinking __read_mostly;
+-#ifdef CONFIG_XEN_TMEM_MODULE
+-module_param(disable_frontswap, bool, S_IRUGO);
+-module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
+-#else
+-static int __init no_frontswap(char *s)
+-{
+-	disable_frontswap = true;
+-	return 1;
+-}
+-__setup("nofrontswap", no_frontswap);
+-#endif
+-
+ static struct frontswap_ops tmem_frontswap_ops = {
+ 	.store = tmem_frontswap_store,
+ 	.load = tmem_frontswap_load,
+@@ -378,8 +385,6 @@ static struct frontswap_ops tmem_frontswap_ops = {
+ 	.invalidate_area = tmem_frontswap_flush_area,
+ 	.init = tmem_frontswap_init
+ };
+-#else	/* CONFIG_FRONTSWAP */
+-#define disable_frontswap_selfshrinking 1
+ #endif
+ 
+ static int xen_tmem_init(void)
+-- 
+1.7.7.6
 
