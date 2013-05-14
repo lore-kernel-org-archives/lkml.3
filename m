@@ -1,276 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3ENI3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:29:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42466 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756577Ab3ENI3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:29:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,669,1363104000"; 
-   d="scan'208,223";a="7264866"
-Message-ID: <5191F53E.4000305@cn.fujitsu.com>
-Date: Tue, 14 May 2013 16:26:38 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Airlie <airlied@linux.ie>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)
- instead
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-4-git-send-email-jiang.liu@huawei.com> <CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com>
-In-Reply-To: <CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 16:27:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 16:27:52,
-	Serialize complete at 2013/05/14 16:27:52
-Content-Type: multipart/mixed;
- boundary="------------070509020701090400080103"
+	id S1756742Ab3ENI3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:29:42 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:56051 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab3ENI3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 04:29:14 -0400
+X-IronPort-AV: E=Sophos;i="4.87,667,1363158000"; 
+   d="scan'208";a="47061792"
+From: Tirupathi Reddy <tirupath@codeaurora.org>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Tirupathi Reddy <tirupath@codeaurora.org>
+Subject: [PATCH] timer: Don't reinitialize the cpu base lock during CPU_UP_PREPARE
+Date: Tue, 14 May 2013 13:59:02 +0530
+Message-Id: <1368520142-4136-1-git-send-email-tirupath@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070509020701090400080103
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+An inactive timer's base can refer to a offline cpu's base.
 
-On 05/14/2013 01:23 AM, Yinghai Lu wrote:
+In the current code, cpu_base's lock is blindly reinitialized
+each time a CPU is brought up. If a CPU is brought online
+during the period that another thread is trying to modify an
+inactive timer on that CPU with holding its timer base lock,
+then the lock will be reinitialized under its feet. This leads
+to following SPIN_BUG().
 
-> On Mon, May 13, 2013 at 9:08 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index 4f0bc0a..bc075a3 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -1131,6 +1131,7 @@ static void pci_release_dev(struct device *dev)
->>         struct pci_dev *pci_dev;
->>
->>         pci_dev = to_pci_dev(dev);
->> +       pci_bus_put(pci_dev->bus);
->>         pci_release_capabilities(pci_dev);
->>         pci_release_of_node(pci_dev);
->>         kfree(pci_dev);
->> @@ -1269,11 +1270,10 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
->>         if (!pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000))
->>                 return NULL;
->>
->> -       dev = alloc_pci_dev();
->> +       dev = pci_alloc_dev(bus);
->>         if (!dev)
->>                 return NULL;
->>
->> -       dev->bus = bus;
->>         dev->devfn = devfn;
->>         dev->vendor = l & 0xffff;
->>         dev->device = (l >> 16) & 0xffff;
-> 
-> in pci_setup_device() fail path, it release the ref to that bus.
+<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
+<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
+<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
+<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
+<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
+<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
+<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
+<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
+<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
+<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
+<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
+<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
+<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
+<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
+<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
 
-Yes, you're right, we need to release the bus' ref if pci_setup_device() failed.
-Thanks for your correction.:)
+As an example, this particular crash occurred when CPU #3 is executing
+mod_timer() on an inactive timer whose base is refered to offlined CPU #2.
+The code locked the timer_base corresponding to CPU #2. Before it could
+proceed, CPU #2 came online and reinitialized the spinlock corresponding
+to its base. Thus now CPU #3 held a lock which was reinitialized. When
+CPU #3 finally ended up unlocking the old cpu_base corresponding to CPU #2,
+we hit the above SPIN_BUG().
 
-Best regards,
-Gu
+CPU #0			CPU #3				       CPU #2
+------			-------				       -------
+.....			 ......				      <Offline>
+			mod_timer()
+			 lock_timer_base
+			   spin_lock_irqsave(&base->lock)
 
-> 
-> Yinghai
-> 
+cpu_up(2)		 .....				        ......
+								init_timers_cpu()
+....			 .....				    	  spin_lock_init(&base->lock)
+.....		 	 spin_unlock_irqrestore(&base->lock)    ......
+			   <spin_bug>
 
+Allocation of per_cpu timer vector bases is done only once under
+"tvec_base_done[]" check. In the current code, spinlock_initialization
+of base->lock isn't under this check. When a CPU is up each time the base
+lock is reinitialized. Move base spinlock initialization under the check.
 
-
---------------070509020701090400080103
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
- name="Convert-alloc_pci_dev-void-to-pci_alloc_dev-v3.patch"
-Content-Disposition: attachment;
- filename*0="Convert-alloc_pci_dev-void-to-pci_alloc_dev-v3.patch"
-
->From 7add6d9e70919b95be2debde2f58fc31d26c75bf Mon Sep 17 00:00:00 2001
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Tue, 14 May 2013 16:11:07 +0800
-Subject: [PATCH v3] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus) instead
-
-v3:
-  Follow Yinghai's correction to release the bus' ref
-  in pci_setup_device() fail path.
-
-v2:
-  Follow Bjorn's correction to move pci_bus_put() to
-  pci_release_dev() instead.
-
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
 ---
- arch/powerpc/kernel/pci_of_scan.c |    3 +--
- arch/sparc/kernel/pci.c           |    3 +--
- drivers/char/agp/alpha-agp.c      |    2 +-
- drivers/char/agp/parisc-agp.c     |    2 +-
- drivers/pci/iov.c                 |    8 +++++---
- drivers/pci/probe.c               |    5 +++--
- drivers/scsi/megaraid.c           |    2 +-
- 7 files changed, 13 insertions(+), 12 deletions(-)
+ kernel/timer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
-index 2a67e9b..24d01c4 100644
---- a/arch/powerpc/kernel/pci_of_scan.c
-+++ b/arch/powerpc/kernel/pci_of_scan.c
-@@ -128,7 +128,7 @@ struct pci_dev *of_create_pci_dev(struct device_node *node,
- 	const char *type;
- 	struct pci_slot *slot;
- 
--	dev = alloc_pci_dev();
-+	dev = pci_alloc_dev(bus);
- 	if (!dev)
- 		return NULL;
- 	type = of_get_property(node, "device_type", NULL);
-@@ -137,7 +137,6 @@ struct pci_dev *of_create_pci_dev(struct device_node *node,
- 
- 	pr_debug("    create device, devfn: %x, type: %s\n", devfn, type);
- 
--	dev->bus = bus;
- 	dev->dev.of_node = of_node_get(node);
- 	dev->dev.parent = bus->bridge;
- 	dev->dev.bus = &pci_bus_type;
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index baf4366..e5871fb 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -254,7 +254,7 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
- 	const char *type;
- 	u32 class;
- 
--	dev = alloc_pci_dev();
-+	dev = pci_alloc_dev(bus);
- 	if (!dev)
- 		return NULL;
- 
-@@ -281,7 +281,6 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
- 		printk("    create device, devfn: %x, type: %s\n",
- 		       devfn, type);
- 
--	dev->bus = bus;
- 	dev->sysdata = node;
- 	dev->dev.parent = bus->bridge;
- 	dev->dev.bus = &pci_bus_type;
-diff --git a/drivers/char/agp/alpha-agp.c b/drivers/char/agp/alpha-agp.c
-index dd84af4..199b8e9 100644
---- a/drivers/char/agp/alpha-agp.c
-+++ b/drivers/char/agp/alpha-agp.c
-@@ -174,7 +174,7 @@ alpha_core_agp_setup(void)
- 	/*
- 	 * Build a fake pci_dev struct
- 	 */
--	pdev = alloc_pci_dev();
-+	pdev = pci_alloc_dev(NULL);
- 	if (!pdev)
- 		return -ENOMEM;
- 	pdev->vendor = 0xffff;
-diff --git a/drivers/char/agp/parisc-agp.c b/drivers/char/agp/parisc-agp.c
-index 94821ab..bf5d247 100644
---- a/drivers/char/agp/parisc-agp.c
-+++ b/drivers/char/agp/parisc-agp.c
-@@ -333,7 +333,7 @@ parisc_agp_setup(void __iomem *ioc_hpa, void __iomem *lba_hpa)
- 	struct agp_bridge_data *bridge;
- 	int error = 0;
- 
--	fake_bridge_dev = alloc_pci_dev();
-+	fake_bridge_dev = pci_alloc_dev(NULL);
- 	if (!fake_bridge_dev) {
- 		error = -ENOMEM;
- 		goto fail;
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index c93071d..2652ca0 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -75,18 +75,20 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	struct pci_dev *virtfn;
- 	struct resource *res;
- 	struct pci_sriov *iov = dev->sriov;
-+	struct pci_bus *bus;
- 
--	virtfn = alloc_pci_dev();
-+	virtfn = pci_alloc_dev(NULL);
- 	if (!virtfn)
- 		return -ENOMEM;
- 
- 	mutex_lock(&iov->dev->sriov->lock);
--	virtfn->bus = virtfn_add_bus(dev->bus, virtfn_bus(dev, id));
--	if (!virtfn->bus) {
-+	bus = virtfn_add_bus(dev->bus, virtfn_bus(dev, id));
-+	if (!bus) {
- 		kfree(virtfn);
- 		mutex_unlock(&iov->dev->sriov->lock);
- 		return -ENOMEM;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index dbf7a78..1b399c8 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1678,12 +1678,12 @@ static int __cpuinit init_timers_cpu(int cpu)
+ 			boot_done = 1;
+ 			base = &boot_tvec_bases;
+ 		}
++		spin_lock_init(&base->lock);
+ 		tvec_base_done[cpu] = 1;
+ 	} else {
+ 		base = per_cpu(tvec_bases, cpu);
  	}
-+	virtfn->bus = pci_bus_get(bus);
- 	virtfn->devfn = virtfn_devfn(dev, id);
- 	virtfn->vendor = dev->vendor;
- 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_DID, &virtfn->device);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 70f10fa..db8dadc 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1130,6 +1130,7 @@ static void pci_release_dev(struct device *dev)
- 	struct pci_dev *pci_dev;
- 
- 	pci_dev = to_pci_dev(dev);
-+	pci_bus_put(pci_dev->bus);
- 	pci_release_capabilities(pci_dev);
- 	pci_release_of_node(pci_dev);
- 	kfree(pci_dev);
-@@ -1263,11 +1264,10 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
- 	if (!pci_bus_read_dev_vendor_id(bus, devfn, &l, 60*1000))
- 		return NULL;
- 
--	dev = alloc_pci_dev();
-+	dev = pci_alloc_dev(bus);
- 	if (!dev)
- 		return NULL;
- 
--	dev->bus = bus;
- 	dev->devfn = devfn;
- 	dev->vendor = l & 0xffff;
- 	dev->device = (l >> 16) & 0xffff;
-@@ -1275,6 +1275,7 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
- 	pci_set_of_node(dev);
- 
- 	if (pci_setup_device(dev)) {
-+		pci_bus_put(bus);
- 		kfree(dev);
- 		return NULL;
- 	}
-diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
-index 846f475f..90c95a3 100644
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -2026,7 +2026,7 @@ megaraid_abort_and_reset(adapter_t *adapter, Scsi_Cmnd *cmd, int aor)
- static inline int
- make_local_pdev(adapter_t *adapter, struct pci_dev **pdev)
- {
--	*pdev = alloc_pci_dev();
-+	*pdev = pci_alloc_dev(NULL);
- 
- 	if( *pdev == NULL ) return -1;
- 
--- 
-1.7.7
 
+-	spin_lock_init(&base->lock);
 
---------------070509020701090400080103--
+ 	for (j = 0; j < TVN_SIZE; j++) {
+ 		INIT_LIST_HEAD(base->tv5.vec + j);
+--
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
