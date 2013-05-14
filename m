@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867Ab3ENQiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:38:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60193 "EHLO mx1.redhat.com"
+	id S932430Ab3ENQij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:38:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757832Ab3ENQiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:38:21 -0400
+	id S1754933Ab3ENQi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:38:28 -0400
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
         hughd@google.com, lczerner@redhat.com
-Subject: [PATCH v4 17/20] ext4: remove unused code from ext4_remove_blocks()
-Date: Tue, 14 May 2013 18:37:31 +0200
-Message-Id: <1368549454-8930-18-git-send-email-lczerner@redhat.com>
+Subject: [PATCH v4 20/20] ext4: Allow punch hole with bigalloc enabled
+Date: Tue, 14 May 2013 18:37:34 +0200
+Message-Id: <1368549454-8930-21-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
 References: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "head removal" branch in the condition is never used in any code
-path in ext4 since the function only caller ext4_ext_rm_leaf() will make
-sure that the extent is properly split before removing blocks. Note that
-there is a bug in this branch anyway.
+In commits 5f95d21fb6f2aaa52830e5b7fb405f6c71d3ab85 and
+30bc2ec9598a1b156ad75217f2e7d4560efdeeab we've reworked punch_hole
+implementation and there is noting holding us back from using punch hole
+on file system with bigalloc feature enabled.
 
-This commit removes the unused code completely and makes use of
-ext4_error() instead of printk if dubious range is provided.
+This has been tested with fsx and xfstests.
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/ext4/extents.c |   21 ++++-----------------
- 1 files changed, 4 insertions(+), 17 deletions(-)
+ fs/ext4/inode.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index bc0f191..18c3f1a 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2432,23 +2432,10 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
- 			*partial_cluster = EXT4_B2C(sbi, pblk);
- 		else
- 			*partial_cluster = 0;
--	} else if (from == le32_to_cpu(ex->ee_block)
--		   && to <= le32_to_cpu(ex->ee_block) + ee_len - 1) {
--		/* head removal */
--		ext4_lblk_t num;
--		ext4_fsblk_t start;
--
--		num = to - from;
--		start = ext4_ext_pblock(ex);
--
--		ext_debug("free first %u blocks starting %llu\n", num, start);
--		ext4_free_blocks(handle, inode, NULL, start, num, flags);
--
--	} else {
--		printk(KERN_INFO "strange request: removal(2) "
--				"%u-%u from %u:%u\n",
--				from, to, le32_to_cpu(ex->ee_block), ee_len);
--	}
-+	} else
-+		ext4_error(sbi->s_sb, "strange request: removal(2) "
-+			   "%u-%u from %u:%u\n",
-+			   from, to, le32_to_cpu(ex->ee_block), ee_len);
- 	return 0;
- }
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index f504efa..daffbb8 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3557,11 +3557,6 @@ int ext4_punch_hole(struct file *file, loff_t offset, loff_t length)
+ 	if (!S_ISREG(inode->i_mode))
+ 		return -EOPNOTSUPP;
  
+-	if (EXT4_SB(sb)->s_cluster_ratio > 1) {
+-		/* TODO: Add support for bigalloc file systems */
+-		return -EOPNOTSUPP;
+-	}
+-
+ 	trace_ext4_punch_hole(inode, offset, length);
+ 
+ 	/*
 -- 
 1.7.7.6
 
