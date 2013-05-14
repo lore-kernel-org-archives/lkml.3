@@ -1,143 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3ENHsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:48:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26716 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab3ENHr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:47:59 -0400
-X-IronPort-AV: E=Sophos;i="4.87,668,1363104000"; 
-   d="scan'208,223";a="7264469"
-Message-ID: <5191EBAE.5080200@cn.fujitsu.com>
-Date: Tue, 14 May 2013 15:45:50 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1756468Ab3ENHtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:49:46 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:46313 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab3ENHto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 03:49:44 -0400
+Message-ID: <5191EC95.2020704@monstr.eu>
+Date: Tue, 14 May 2013 09:49:41 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: JBottomley@parallels.com
-CC: linux-scsi@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] driver/scsi: Use local_time_seconds() to simplify the
- get local timestamp operation
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 15:46:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/14 15:46:53,
-	Serialize complete at 2013/05/14 15:46:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, michal.simek@xilinx.com,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        s.trumtrar@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
+ SoC
+References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <51918C23.7040106@yahoo.es> <20130514055256.GD22508@game.jcrosoft.org> <5191E53B.9000106@yahoo.es> <C35C1E42-FCD6-4EE7-902B-FE01F362CD40@jcrosoft.com> <5191E855.5090908@yahoo.es>
+In-Reply-To: <5191E855.5090908@yahoo.es>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WTVVSNRMSCPPHPFBEQOU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 1abbcf9fa5ce6c9a0b005a445c53b9412b42fa83 Mon Sep 17 00:00:00 2001
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Mon, 13 May 2013 14:58:49 +0900
-Subject: [PATCH 2/2] driver/scsi: Use local_time_seconds() to simplify the get local timestamp operation
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WTVVSNRMSCPPHPFBEQOU
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 05/14/2013 09:31 AM, Hein Tibosch wrote:
+> On 5/14/2013 3:22 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>> On May 14, 2013, at 3:18 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrot=
+e:
+>>
+>>> On 5/14/2013 1:52 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>> On 08:58 Tue 14 May     , Hein Tibosch wrote:
+>>>>> On 5/14/2013 12:05 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+>>>>>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.c=
+om> wrote:
+>>>>>>
+>>>>>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
+>>>>>>> introduces clear-on-write on ISR register. This behavior is not a=
+lways
+>>>>>>> implemented when using Cadence MACB/GEM and is breaking other pla=
+tforms.
+>>>>>>> We are using a new Device Tree compatibility string and a capabil=
+ity
+>>>>>>> property to actually activate this clear-on-write behavior on ISR=
+=2E
+>>>>>>>
+>>>>>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+>>>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>>> can we detect it via the IP?
+>>>>> This was my first proposal, have it based on the value of MACB's
+>>>>> register 'MID' (offset 0x00fc, lower 16 bits).
+>>>>> On avr32 it reads: 0x0000010D, on Zynq it reports 0x00000119
+>>>>>
+>>>>> So for the moment, CAPS_ISR_CLEAR_ON_WRITE could be set if the revi=
+sion
+>>>>> equals to 0x00000119?
+>>>> so no it will not work
+>>>>
+>>>> as the gem on sama5 is 00020119
+>>>>
+>>>> so version 0x119 too
+>>>>
+>>>> nico
+>>> All right, that's a pity.
+>>>
+>>> The only issue that remains then is the obligation to use CONFIG_OF,
+>>> or:
+>>>
+>>> +#if defined(CONFIG_OF)
+>>> +	dev_id =3D of_match_device(macb_dt_ids, &pdev->dev);
+>>> +	if (dev_id)
+>>> +		bp->caps =3D (u32)dev_id->data;
+>>> +
+>>> +#endif
+>>>
+>>> ?
+>> no need as of_match_device is a inline of !OF
+> Sorry, here's the complete compiler error:
+> drivers/net/ethernet/cadence/macb.c: In function 'macb_probe':
+> drivers/net/ethernet/cadence/macb.c:1601: error: 'macb_dt_ids' undeclar=
+ed (first use in this function)
+>=20
+> Earlier, 'macb_dt_ids' is only defined when using OF
+
+The trick is in using of_match_ptr. It means remove that CONFIG_OF around=
+ macb_dt_ids too.
+
+[linux-2.6.x]$ grep -rn "of_match_ptr" include/linux/
+include/linux/of.h:314:#define of_match_ptr(_ptr)	(_ptr)
+include/linux/of.h:508:#define of_match_ptr(_ptr)	NULL
+
+Thanks,
+Michal
 
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- drivers/scsi/3w-9xxx.c |   14 ++------------
- drivers/scsi/3w-sas.c  |   14 ++------------
- 2 files changed, 4 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
-index 5e1e12c..44b3ea8 100644
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -374,8 +374,6 @@ out:
- /* This function will queue an event */
- static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
- {
--	u32 local_time;
--	struct timeval time;
- 	TW_Event *event;
- 	unsigned short aen;
- 	char host[16];
-@@ -398,9 +396,7 @@ static void twa_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
- 	memset(event, 0, sizeof(TW_Event));
- 
- 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
--	do_gettimeofday(&time);
--	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
--	event->time_stamp_sec = local_time;
-+	event->time_stamp_sec = local_time_seconds();
- 	event->aen_code = aen;
- 	event->retrieved = TW_AEN_NOT_RETRIEVED;
- 	event->sequence_id = tw_dev->error_sequence_id;
-@@ -479,11 +475,9 @@ out:
- static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- {
- 	u32 schedulertime;
--	struct timeval utc;
- 	TW_Command_Full *full_command_packet;
- 	TW_Command *command_packet;
- 	TW_Param_Apache *param;
--	u32 local_time;
- 
- 	/* Fill out the command packet */
- 	full_command_packet = tw_dev->command_packet_virt[request_id];
-@@ -503,11 +497,7 @@ static void twa_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
- 	param->parameter_size_bytes = cpu_to_le16(4);
- 
--	/* Convert system time in UTC to local time seconds since last 
--           Sunday 12:00AM */
--	do_gettimeofday(&utc);
--	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
--	schedulertime = local_time - (3 * 86400);
-+	schedulertime = local_time_seconds() - (3 * 86400);
- 	schedulertime = cpu_to_le32(schedulertime % 604800);
- 
- 	memcpy(param->data, &schedulertime, sizeof(u32));
-diff --git a/drivers/scsi/3w-sas.c b/drivers/scsi/3w-sas.c
-index c845bdb..69f1d8a 100644
---- a/drivers/scsi/3w-sas.c
-+++ b/drivers/scsi/3w-sas.c
-@@ -236,8 +236,6 @@ out:
- /* This function will queue an event */
- static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_Header *header)
- {
--	u32 local_time;
--	struct timeval time;
- 	TW_Event *event;
- 	unsigned short aen;
- 	char host[16];
-@@ -256,9 +254,7 @@ static void twl_aen_queue_event(TW_Device_Extension *tw_dev, TW_Command_Apache_H
- 	memset(event, 0, sizeof(TW_Event));
- 
- 	event->severity = TW_SEV_OUT(header->status_block.severity__reserved);
--	do_gettimeofday(&time);
--	local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
--	event->time_stamp_sec = local_time;
-+	event->time_stamp_sec = local_time_seconds();
- 	event->aen_code = aen;
- 	event->retrieved = TW_AEN_NOT_RETRIEVED;
- 	event->sequence_id = tw_dev->error_sequence_id;
-@@ -444,11 +440,9 @@ out:
- static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- {
- 	u32 schedulertime;
--	struct timeval utc;
- 	TW_Command_Full *full_command_packet;
- 	TW_Command *command_packet;
- 	TW_Param_Apache *param;
--	u32 local_time;
- 
- 	/* Fill out the command packet */
- 	full_command_packet = tw_dev->command_packet_virt[request_id];
-@@ -468,11 +462,7 @@ static void twl_aen_sync_time(TW_Device_Extension *tw_dev, int request_id)
- 	param->parameter_id = cpu_to_le16(0x3); /* SchedulerTime */
- 	param->parameter_size_bytes = cpu_to_le16(4);
- 
--	/* Convert system time in UTC to local time seconds since last 
--           Sunday 12:00AM */
--	do_gettimeofday(&utc);
--	local_time = (u32)(utc.tv_sec - (sys_tz.tz_minuteswest * 60));
--	schedulertime = local_time - (3 * 86400);
-+	schedulertime = local_time_seconds() - (3 * 86400);
- 	schedulertime = cpu_to_le32(schedulertime % 604800);
- 
- 	memcpy(param->data, &schedulertime, sizeof(u32));
--- 
-1.7.1
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
+
+
+------enig2WTVVSNRMSCPPHPFBEQOU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGR7JUACgkQykllyylKDCHnLQCbBzvFzVTpd6noblmVs5eogHar
+EpoAnjDcD2DKIdcQ/z24f9OcocrSBOWt
+=lJNr
+-----END PGP SIGNATURE-----
+
+------enig2WTVVSNRMSCPPHPFBEQOU--
