@@ -1,136 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab3ENMa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:30:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:39029 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab3ENMa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:30:58 -0400
-Message-ID: <51922E83.2060002@atmel.com>
-Date: Tue, 14 May 2013 14:30:59 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1757198Ab3ENMeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:34:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57972 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085Ab3ENMeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 08:34:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,670,1363158000"; 
+   d="scan'208";a="302232541"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de,
+        festevam@gmail.com, Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/13] pwm: pwm-mxs: Let device core handle pinctrl
+In-Reply-To: <20130508135317.GB26072@S2101-09.ap.freescale.net>
+References: <1367863561-11534-1-git-send-email-fabio.estevam@freescale.com> <1367863561-11534-6-git-send-email-fabio.estevam@freescale.com> <87d2t1n0ze.fsf@ashishki-desk.ger.corp.intel.com> <20130508135317.GB26072@S2101-09.ap.freescale.net>
+User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 14 May 2013 15:33:59 +0300
+Message-ID: <87txm5lozs.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: <monstr@monstr.eu>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <michal.simek@xilinx.com>, <s.trumtrar@pengutronix.de>,
-        <hein_tibosch@yahoo.es>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Anirudha Sarangi <anirudh@xilinx.com>
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <519200DA.8060102@atmel.com> <5192224A.7090303@monstr.eu>
-In-Reply-To: <5192224A.7090303@monstr.eu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/2013 13:38, Michal Simek :
-> On 05/14/2013 11:16 AM, Nicolas Ferre wrote:
->> On 13/05/2013 18:05, Jean-Christophe PLAGNIOL-VILLARD :
->>>
->>> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
->>>
->>>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>>> introduces clear-on-write on ISR register. This behavior is not always
->>>> implemented when using Cadence MACB/GEM and is breaking other platforms.
->>>> We are using a new Device Tree compatibility string and a capability
->>>> property to actually activate this clear-on-write behavior on ISR.
->>>>
->>>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>
->>> can we detect it via the IP?
->>
->> As said by Hein, we cannot use the IP revision number. *But* we may have the opportunity to read this integration configuration in the Design Configuration Register 1 (DCFG1 already used for determining data bus width).
->>
->> So, Michal or Steffen, can you please tell me the value of:
->> -> bit 23 at register address 0x280: mine is "1" which should mean "IRQ read clear", yours should be "0".
+Shawn Guo <shawn.guo@linaro.org> writes:
+
+> On Wed, May 08, 2013 at 02:51:33PM +0300, Alexander Shishkin wrote:
+>> Fabio Estevam <fabio.estevam@freescale.com> writes:
+>> 
+>> > Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+>> > we can rely on device core for handling pinctrl.
+>> >
+>> > So remove devm_pinctrl_get_select_default() from the driver. 
+>> >
+>> > Cc: Thierry Reding <thierry.reding@avionic-design.de>
+>> > Cc: <linux-kernel@vger.kernel.org>
+>> > Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>> > ---
+>> >  drivers/pwm/pwm-mxs.c |    6 ------
+>> >  1 file changed, 6 deletions(-)
+>> 
+>> Looks good, can we have some tested-by from imx guys?
 >
-> here is the whole reg map for zynq.
-> Reg 0x280 is undocumented in our TRM.
-> Please decode it not sure if bit 0 is LSB or MSB.
+> I'm not sure why you're interested in this patch instead of
+> "[PATCH 01/13] usb: chipidea: ci13xxx_imx: Let device core handle
+> pinctrl".  I tested both patches, so
 
-Bit 0 is LSB.
+I don't seem to have this one in either of my mailboxes.
 
-Value of DCFG1 is 0x02500111 so I read '0' for this value which should 
-be good.
+> Tested-by: Shawn Guo <shawn.guo@linaro.org>
 
-I write a new patch immediately.
-
-
-> U-Boot-PetaLinux> md e000b000
-> e000b000: 0000001c 000e0013 00000006 00000000    ................
-> e000b010: 00180704 00000021 3ffba2e4 3ffbd32c    ....!......?,..?
-> e000b020: 00000003 00000000 00000000 00000000    ................
-> e000b030: 07ffffff 63c66f08 00000000 0000ffff    .....o.c........
-> e000b040: 000003ff 000003ff 00000000 00000000    ................
-> e000b050: 00000000 00000000 00000000 00000000    ................
-> e000b060: 00000000 00000000 00000000 00000000    ................
-> e000b070: 00000000 00000000 00000000 00000000    ................
-> e000b080: 00000000 00000000 00350a00 00001c48    ..........5.H...
-> e000b090: 00000000 00000000 00000000 00000000    ................
-> e000b0a0: 00000000 00000000 00000000 00000000    ................
-> e000b0b0: 00000000 00000000 00000000 00000000    ................
-> e000b0c0: 00000000 00000000 00000000 00000000    ................
-> e000b0d0: 00000000 00000000 00000000 00000000    ................
-> e000b0e0: 00000000 00000000 00000000 00000000    ................
-> e000b0f0: 00000000 00000000 00000000 00020118    ................
-> U-Boot-PetaLinux>
-> e000b100: 00014796 00000000 0000051e 00000001    .G..............
-> e000b110: 00000000 00000000 0000051d 00000001    ................
-> e000b120: 00000000 00000000 00000000 00000000    ................
-> e000b130: 00000000 00000000 00000000 00000000    ................
-> e000b140: 00000000 00000000 00000000 00000000    ................
-> e000b150: 001e58b6 00000000 00000526 00000000    .X......&.......
-> e000b160: 00000004 00000000 00000004 00000001    ................
-> e000b170: 00000000 00000004 00000000 0000051d    ................
-> e000b180: 00000000 00000000 00000000 00000000    ................
-> e000b190: 00000000 00000000 00000000 00000000    ................
-> e000b1a0: 00000038 00000000 00000000 00000000    8...............
-> e000b1b0: 00000000 00000000 00000000 00000000    ................
-> e000b1c0: 00000000 00000000 00000000 00000000    ................
-> e000b1d0: 00000000 00000000 00000000 00000000    ................
-> e000b1e0: 00000000 00000000 00000000 00000000    ................
-> e000b1f0: 00000000 00000000 00000000 00000000    ................
-> U-Boot-PetaLinux>
-> e000b200: 00000000 00000000 00000000 00000000    ................
-> e000b210: 00000000 00000000 00000000 00000000    ................
-> e000b220: 00000000 00000000 00000000 00000000    ................
-> e000b230: 00000000 00000000 00000000 00000000    ................
-> e000b240: 00000000 00000000 00000000 00000000    ................
-> e000b250: 00000000 00000000 00000000 00000000    ................
-> e000b260: 00000000 00000000 00000000 00000000    ................
-> e000b270: 00000000 00000000 00000000 00000000    ................
-> e000b280: 02500111 2ab13fff 00000000 00000000    ..P..?.*........
-> e000b290: 002f2145 00000200 00000000 00000000    E!/.............
-> e000b2a0: 00000000 00000000 00000000 00000000    ................
-> e000b2b0: 00000000 00000000 00000000 00000000    ................
-> e000b2c0: 00000000 00000000 00000000 00000000    ................
-> e000b2d0: 00000000 00000000 00000000 00000000    ................
-> e000b2e0: 00000000 00000000 00000000 00000000    ................
-> e000b2f0: 00000000 00000000 00000000 00000000    ................
-> U-Boot-PetaLinux>
->
->
->
->>
->> Hein, in case of use of the MACB, we do not have this register included, so I will avoid to run the test when using MACB (we already have this information).
->>
->> If it works, I plan to rewrite the patch but taking this information instead of the device tree compatibility string.
->
-> yep. Will be good to detect it instead of new compatible string.
->
-> Also is there an option to remove "CONFIG_ARCH_AT91"?
-
-Okay, I have a look at this as-well.
-
-Best regards,
--- 
-Nicolas Ferre
+Thank you.
