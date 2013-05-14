@@ -1,286 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab3ENQjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 12:39:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757787Ab3ENQiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 12:38:19 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
-        hughd@google.com, lczerner@redhat.com
-Subject: [PATCH v4 16/20] ext4: remove unused discard_partial_page_buffers
-Date: Tue, 14 May 2013 18:37:30 +0200
-Message-Id: <1368549454-8930-17-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
-References: <1368549454-8930-1-git-send-email-lczerner@redhat.com>
+	id S1757951Ab3ENQk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 12:40:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26708 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757500Ab3ENQkZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 12:40:25 -0400
+MIME-Version: 1.0
+Message-ID: <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
+Date: Tue, 14 May 2013 09:37:08 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: RE: [PATCHv11 3/4] zswap: add to mm/
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51920197.9070105@oracle.com> <20130514160040.GB4024@medulla>
+In-Reply-To: <20130514160040.GB4024@medulla>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The discard_partial_page_buffers is no longer used anywhere so we can
-simply remove it including the *_no_lock variant and
-EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED define.
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+> 
+> On Tue, May 14, 2013 at 05:19:19PM +0800, Bob Liu wrote:
+> > Hi Seth,
+> 
+> Hi Bob, thanks for the review!
+> 
+> >
+> > > +	/* reclaim space if needed */
+> > > +	if (zswap_is_full()) {
+> > > +		zswap_pool_limit_hit++;
+> > > +		if (zbud_reclaim_page(tree->pool, 8)) {
+> >
+> > My idea is to wake up a kernel thread here to do the reclaim.
+> > Once zswap is full(20% percent of total mem currently), the kernel
+> > thread should reclaim pages from it. Not only reclaim one page, it
+> > should depend on the current memory pressure.
+> > And then the API in zbud may like this:
+> > zbud_reclaim_page(pool, nr_pages_to_reclaim, nr_retry);
+> 
+> So kswapd for zswap.  I'm not opposed to the idea if a case can be
+> made for the complexity.  I must say, I don't see that case though.
+> 
+> The policy can evolve as deficiencies are demonstrated and solutions are
+> found.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/ext4/ext4.h  |    8 --
- fs/ext4/inode.c |  206 -------------------------------------------------------
- 2 files changed, 0 insertions(+), 214 deletions(-)
+Hmmm... it is fairly easy to demonstrate the deficiency if
+one tries.  I actually first saw it occur on a real (though
+early) EL6 system which started some graphics-related service
+that caused a very brief swapstorm that was invisible during
+normal boot but clogged up RAM with compressed pages which
+later caused reduced weird benchmarking performance.
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 2d4b0aa..019db3c 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -581,11 +581,6 @@ enum {
- #define EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER	0x0020
- 
- /*
-- * Flags used by ext4_discard_partial_page_buffers
-- */
--#define EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED	0x0001
--
--/*
-  * ioctl commands
-  */
- #define	EXT4_IOC_GETFLAGS		FS_IOC_GETFLAGS
-@@ -2102,9 +2097,6 @@ extern int ext4_block_zero_page_range(handle_t *handle,
- 		struct address_space *mapping, loff_t from, loff_t length);
- extern int ext4_zero_partial_blocks(handle_t *handle, struct inode *inode,
- 			     loff_t lstart, loff_t lend);
--extern int ext4_discard_partial_page_buffers(handle_t *handle,
--		struct address_space *mapping, loff_t from,
--		loff_t length, int flags);
- extern int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf);
- extern qsize_t *ext4_get_reserved_space(struct inode *inode);
- extern void ext4_da_update_reserve_space(struct inode *inode,
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 44333a5..f504efa 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -135,9 +135,6 @@ static void ext4_invalidatepage(struct page *page, unsigned int offset,
- 				unsigned int length);
- static int __ext4_journalled_writepage(struct page *page, unsigned int len);
- static int ext4_bh_delay_or_unwritten(handle_t *handle, struct buffer_head *bh);
--static int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
--		struct inode *inode, struct page *page, loff_t from,
--		loff_t length, int flags);
- 
- /*
-  * Test whether an inode is a fast symlink.
-@@ -3366,209 +3363,6 @@ void ext4_set_aops(struct inode *inode)
- 		inode->i_mapping->a_ops = &ext4_aops;
- }
- 
--
--/*
-- * ext4_discard_partial_page_buffers()
-- * Wrapper function for ext4_discard_partial_page_buffers_no_lock.
-- * This function finds and locks the page containing the offset
-- * "from" and passes it to ext4_discard_partial_page_buffers_no_lock.
-- * Calling functions that already have the page locked should call
-- * ext4_discard_partial_page_buffers_no_lock directly.
-- */
--int ext4_discard_partial_page_buffers(handle_t *handle,
--		struct address_space *mapping, loff_t from,
--		loff_t length, int flags)
--{
--	struct inode *inode = mapping->host;
--	struct page *page;
--	int err = 0;
--
--	page = find_or_create_page(mapping, from >> PAGE_CACHE_SHIFT,
--				   mapping_gfp_mask(mapping) & ~__GFP_FS);
--	if (!page)
--		return -ENOMEM;
--
--	err = ext4_discard_partial_page_buffers_no_lock(handle, inode, page,
--		from, length, flags);
--
--	unlock_page(page);
--	page_cache_release(page);
--	return err;
--}
--
--/*
-- * ext4_discard_partial_page_buffers_no_lock()
-- * Zeros a page range of length 'length' starting from offset 'from'.
-- * Buffer heads that correspond to the block aligned regions of the
-- * zeroed range will be unmapped.  Unblock aligned regions
-- * will have the corresponding buffer head mapped if needed so that
-- * that region of the page can be updated with the partial zero out.
-- *
-- * This function assumes that the page has already been  locked.  The
-- * The range to be discarded must be contained with in the given page.
-- * If the specified range exceeds the end of the page it will be shortened
-- * to the end of the page that corresponds to 'from'.  This function is
-- * appropriate for updating a page and it buffer heads to be unmapped and
-- * zeroed for blocks that have been either released, or are going to be
-- * released.
-- *
-- * handle: The journal handle
-- * inode:  The files inode
-- * page:   A locked page that contains the offset "from"
-- * from:   The starting byte offset (from the beginning of the file)
-- *         to begin discarding
-- * len:    The length of bytes to discard
-- * flags:  Optional flags that may be used:
-- *
-- *         EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED
-- *         Only zero the regions of the page whose buffer heads
-- *         have already been unmapped.  This flag is appropriate
-- *         for updating the contents of a page whose blocks may
-- *         have already been released, and we only want to zero
-- *         out the regions that correspond to those released blocks.
-- *
-- * Returns zero on success or negative on failure.
-- */
--static int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
--		struct inode *inode, struct page *page, loff_t from,
--		loff_t length, int flags)
--{
--	ext4_fsblk_t index = from >> PAGE_CACHE_SHIFT;
--	unsigned int offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned int blocksize, max, pos;
--	ext4_lblk_t iblock;
--	struct buffer_head *bh;
--	int err = 0;
--
--	blocksize = inode->i_sb->s_blocksize;
--	max = PAGE_CACHE_SIZE - offset;
--
--	if (index != page->index)
--		return -EINVAL;
--
--	/*
--	 * correct length if it does not fall between
--	 * 'from' and the end of the page
--	 */
--	if (length > max || length < 0)
--		length = max;
--
--	iblock = index << (PAGE_CACHE_SHIFT - inode->i_sb->s_blocksize_bits);
--
--	if (!page_has_buffers(page))
--		create_empty_buffers(page, blocksize, 0);
--
--	/* Find the buffer that contains "offset" */
--	bh = page_buffers(page);
--	pos = blocksize;
--	while (offset >= pos) {
--		bh = bh->b_this_page;
--		iblock++;
--		pos += blocksize;
--	}
--
--	pos = offset;
--	while (pos < offset + length) {
--		unsigned int end_of_block, range_to_discard;
--
--		err = 0;
--
--		/* The length of space left to zero and unmap */
--		range_to_discard = offset + length - pos;
--
--		/* The length of space until the end of the block */
--		end_of_block = blocksize - (pos & (blocksize-1));
--
--		/*
--		 * Do not unmap or zero past end of block
--		 * for this buffer head
--		 */
--		if (range_to_discard > end_of_block)
--			range_to_discard = end_of_block;
--
--
--		/*
--		 * Skip this buffer head if we are only zeroing unampped
--		 * regions of the page
--		 */
--		if (flags & EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED &&
--			buffer_mapped(bh))
--				goto next;
--
--		/* If the range is block aligned, unmap */
--		if (range_to_discard == blocksize) {
--			clear_buffer_dirty(bh);
--			bh->b_bdev = NULL;
--			clear_buffer_mapped(bh);
--			clear_buffer_req(bh);
--			clear_buffer_new(bh);
--			clear_buffer_delay(bh);
--			clear_buffer_unwritten(bh);
--			clear_buffer_uptodate(bh);
--			zero_user(page, pos, range_to_discard);
--			BUFFER_TRACE(bh, "Buffer discarded");
--			goto next;
--		}
--
--		/*
--		 * If this block is not completely contained in the range
--		 * to be discarded, then it is not going to be released. Because
--		 * we need to keep this block, we need to make sure this part
--		 * of the page is uptodate before we modify it by writeing
--		 * partial zeros on it.
--		 */
--		if (!buffer_mapped(bh)) {
--			/*
--			 * Buffer head must be mapped before we can read
--			 * from the block
--			 */
--			BUFFER_TRACE(bh, "unmapped");
--			ext4_get_block(inode, iblock, bh, 0);
--			/* unmapped? It's a hole - nothing to do */
--			if (!buffer_mapped(bh)) {
--				BUFFER_TRACE(bh, "still unmapped");
--				goto next;
--			}
--		}
--
--		/* Ok, it's mapped. Make sure it's up-to-date */
--		if (PageUptodate(page))
--			set_buffer_uptodate(bh);
--
--		if (!buffer_uptodate(bh)) {
--			err = -EIO;
--			ll_rw_block(READ, 1, &bh);
--			wait_on_buffer(bh);
--			/* Uhhuh. Read error. Complain and punt.*/
--			if (!buffer_uptodate(bh))
--				goto next;
--		}
--
--		if (ext4_should_journal_data(inode)) {
--			BUFFER_TRACE(bh, "get write access");
--			err = ext4_journal_get_write_access(handle, bh);
--			if (err)
--				goto next;
--		}
--
--		zero_user(page, pos, range_to_discard);
--
--		err = 0;
--		if (ext4_should_journal_data(inode)) {
--			err = ext4_handle_dirty_metadata(handle, inode, bh);
--		} else
--			mark_buffer_dirty(bh);
--
--		BUFFER_TRACE(bh, "Partial buffer zeroed");
--next:
--		bh = bh->b_this_page;
--		iblock++;
--		pos += range_to_discard;
--	}
--
--	return err;
--}
--
- /*
-  * ext4_block_truncate_page() zeroes out a mapping from file offset `from'
-  * up to the end of the block which corresponds to `from'.
--- 
-1.7.7.6
+I think Mel's unpredictability concern applies equally here...
+this may be a "long-term source of bugs and strange memory
+management behavior."
 
+> Can I get your ack on this pending the other changes?
+
+I'd like to hear Mel's feedback about this, but perhaps
+a compromise to allow for zswap merging would be to add
+something like the following to zswap's Kconfig comment:
+
+"Zswap reclaim policy is still primitive.  Until it improves,
+zswap should be considered experimental and is not recommended
+for production use."
+
+If Mel agrees with the unpredictability and also agrees
+with the Kconfig compromise, I am willing to ack.
