@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3ENIff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:35:35 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:45659 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab3ENIfc (ORCPT
+	id S1756843Ab3ENIfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:35:48 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:51021 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756309Ab3ENIfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:35:32 -0400
-Subject: Re: [PATCH] efivarfs: Never return ENOENT from firmware again
-From: joeyli <jlee@suse.com>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: Lingzhu Xiang <lxiang@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, Andy Whitcroft <apw@canonical.com>
-In-Reply-To: <5191E4E0.7020505@intel.com>
-References: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>
-	 <51913D4B.2000606@intel.com> <1368506197.21417.172.camel@linux-s257.site>
-	 <5191E4E0.7020505@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 May 2013 16:32:26 +0800
-Message-ID: <1368520346.21417.180.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 14 May 2013 04:35:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368019749-19455-8-git-send-email-lee.jones@linaro.org>
+References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
+	<1368019749-19455-8-git-send-email-lee.jones@linaro.org>
+Date: Tue, 14 May 2013 10:35:45 +0200
+Message-ID: <CACRpkdYTBdtRkY1e-Qnzdk27wpKFkNKTtmXazjTDxTh1hmXmgw@mail.gmail.com>
+Subject: Re: [PATCH 7/9] pinctrl: abx500: Specify failed sub-driver by ID
+ instead of driver_data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2013-05-14 於 08:16 +0100，Matt Fleming 提到：
-> On 05/14/2013 05:36 AM, joeyli wrote:
-> > I found the "[PATCH] x86, efi: initial the local variable of DataSize to
-> > zero" lost in urgent branch, and it also didn't in Linus's v3.10-rc1.
-> > 
-> > Did this patch move to other branch?
-> 
-> It appears I dropped this patch when doing the rebase against -rc1. I'm
-> really sorry about that. I've applied it again.
+On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Thanks for your help!
+> If a sub-driver has not been specified correctly, there is a good chance
+> that plat_id is NULL, hence using an attribute of plat_id in the error
+> message is likely to not only fail the driver but Oops the kernel. Use
+> the failed ID instead.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> 
-> Thanks for being so diligent.
-> --
+Good patch! Applied to the pinctrl fixes.
 
-That because I need apply this patch on v3.9 and v3.10 when debugging
-issue on Acer machine.
-
-
-Thank a lot!
-Joey Lee
-
+Yours,
+Linus Walleij
