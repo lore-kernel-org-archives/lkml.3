@@ -1,211 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab3ENFsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 01:48:46 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:52044 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3ENFso (ORCPT
+	id S1755969Ab3ENFvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 01:51:21 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:56409 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3ENFvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 01:48:44 -0400
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, ivtv-devel@ivtvdriver.org
-Cc: linux-kernel@vger.kernel.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Scott Jiang <scott.jiang.linux@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>, Andy Walls <awalls@md.metrocast.net>,
-        Mike Isely <isely@pobox.com>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Antti Palosaari <crope@iki.fi>,
-        =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexey Klimov <klimov.linux@gmail.com>,
-        Martin Bugge <marbugge@cisco.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
-        Janne Grunau <j@jannau.net>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 4/4] media: pci: remove duplicate checks for EPERM
-Date: Tue, 14 May 2013 11:15:17 +0530
-Message-Id: <1368510317-4356-5-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1368510317-4356-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368510317-4356-1-git-send-email-prabhakar.csengg@gmail.com>
+	Tue, 14 May 2013 01:51:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <5190DEA1.7030901@gmail.com>
+References: <5190DEA1.7030901@gmail.com>
+Date: Mon, 13 May 2013 22:51:19 -0700
+X-Google-Sender-Auth: G9xHgdlsd3EfmyB0w_T-_4J1t6I
+Message-ID: <CAE9FiQUAdTLjvvJRJsergZfpORyuVqneWt7NH_wUGCaS6buK3w@mail.gmail.com>
+Subject: Re: [PATCH] x86, 64bit: Fix a possible bug in switchover in head_64.S
+From: Yinghai Lu <yinghai@kernel.org>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: multipart/mixed; boundary=089e0111d424ed1e4f04dca73864
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+--089e0111d424ed1e4f04dca73864
+Content-Type: text/plain; charset=ISO-8859-1
 
-This patch removes check for EPERM in dbg_g/s_register and
-vidioc_g/s_register as this check is already performed by core.
+On Mon, May 13, 2013 at 5:37 AM, Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/pci/bt8xx/bttv-driver.c       |    6 ------
- drivers/media/pci/cx18/cx18-av-core.c       |    4 ----
- drivers/media/pci/cx23885/cx23885-ioctl.c   |    6 ------
- drivers/media/pci/cx23885/cx23888-ir.c      |    4 ----
- drivers/media/pci/ivtv/ivtv-ioctl.c         |    2 --
- drivers/media/pci/saa7146/mxb.c             |    4 ----
- drivers/media/pci/saa7164/saa7164-encoder.c |    6 ------
- 7 files changed, 0 insertions(+), 32 deletions(-)
+> It seems line 119 has a potential bug there. For example,
+> the kernel is loaded at physical address 511G+1008M, that is
+>     000000000 111111111 111111000 000000000000000000000
+> and the kernel _end is 512G+2M, that is
+>     000000001 000000000 000000001 000000000000000000000
+> So in this example, when using the 2nd page to setup PUD (line 114~119),
+> rax is 511.
+> In line 118, we put rdx which is the address of the PMD page (the 3rd page)
+> into entry 511 of the PUD table. But in line 119, the entry we calculate from
+> (4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
+> 119 should be wraparound into entry 0 of the PUD table.
+>
+> Sorry for not having a machine with memory exceeding 512GB, so I cannot
+> test to see if my guess is right or not. Please correct me if I am wrong.
+>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  arch/x86/kernel/head_64.S |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> index 08f7e80..2395d8f 100644
+> --- a/arch/x86/kernel/head_64.S
+> +++ b/arch/x86/kernel/head_64.S
+> @@ -116,8 +116,13 @@ startup_64:
+>         shrq    $PUD_SHIFT, %rax
+>         andl    $(PTRS_PER_PUD-1), %eax
+>         movq    %rdx, (4096+0)(%rbx,%rax,8)
+> +       cmp     $511, %rax
+> +       je      1f
+>         movq    %rdx, (4096+8)(%rbx,%rax,8)
+> -
+> +       jmp     2f
+> +1:
+> +       movq    %rdx, (4096)(%rbx)
+> +2:
+>         addq    $8192, %rbx
+>         movq    %rdi, %rax
+>         shrq    $PMD_SHIFT, %rdi
 
-diff --git a/drivers/media/pci/bt8xx/bttv-driver.c b/drivers/media/pci/bt8xx/bttv-driver.c
-index e7d0884..a334c94 100644
---- a/drivers/media/pci/bt8xx/bttv-driver.c
-+++ b/drivers/media/pci/bt8xx/bttv-driver.c
-@@ -1936,9 +1936,6 @@ static int bttv_g_register(struct file *file, void *f,
- 	struct bttv_fh *fh = f;
- 	struct bttv *btv = fh->btv;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	if (!v4l2_chip_match_host(&reg->match)) {
- 		/* TODO: subdev errors should not be ignored, this should become a
- 		   subdev helper function. */
-@@ -1960,9 +1957,6 @@ static int bttv_s_register(struct file *file, void *f,
- 	struct bttv_fh *fh = f;
- 	struct bttv *btv = fh->btv;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	if (!v4l2_chip_match_host(&reg->match)) {
- 		/* TODO: subdev errors should not be ignored, this should become a
- 		   subdev helper function. */
-diff --git a/drivers/media/pci/cx18/cx18-av-core.c b/drivers/media/pci/cx18/cx18-av-core.c
-index 38b1d64..ba8caf0 100644
---- a/drivers/media/pci/cx18/cx18-av-core.c
-+++ b/drivers/media/pci/cx18/cx18-av-core.c
-@@ -1258,8 +1258,6 @@ static int cx18_av_g_register(struct v4l2_subdev *sd,
- 		return -EINVAL;
- 	if ((reg->reg & 0x3) != 0)
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	reg->size = 4;
- 	reg->val = cx18_av_read4(cx, reg->reg & 0x00000ffc);
- 	return 0;
-@@ -1274,8 +1272,6 @@ static int cx18_av_s_register(struct v4l2_subdev *sd,
- 		return -EINVAL;
- 	if ((reg->reg & 0x3) != 0)
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	cx18_av_write4(cx, reg->reg & 0x00000ffc, reg->val);
- 	return 0;
- }
-diff --git a/drivers/media/pci/cx23885/cx23885-ioctl.c b/drivers/media/pci/cx23885/cx23885-ioctl.c
-index acdb6d5..00f5125 100644
---- a/drivers/media/pci/cx23885/cx23885-ioctl.c
-+++ b/drivers/media/pci/cx23885/cx23885-ioctl.c
-@@ -138,9 +138,6 @@ int cx23885_g_register(struct file *file, void *fh,
- {
- 	struct cx23885_dev *dev = ((struct cx23885_fh *)fh)->dev;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	if (reg->match.type == V4L2_CHIP_MATCH_HOST) {
- 		switch (reg->match.addr) {
- 		case 0:
-@@ -186,9 +183,6 @@ int cx23885_s_register(struct file *file, void *fh,
- {
- 	struct cx23885_dev *dev = ((struct cx23885_fh *)fh)->dev;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	if (reg->match.type == V4L2_CHIP_MATCH_HOST) {
- 		switch (reg->match.addr) {
- 		case 0:
-diff --git a/drivers/media/pci/cx23885/cx23888-ir.c b/drivers/media/pci/cx23885/cx23888-ir.c
-index fa672fe..cd98651 100644
---- a/drivers/media/pci/cx23885/cx23888-ir.c
-+++ b/drivers/media/pci/cx23885/cx23888-ir.c
-@@ -1116,8 +1116,6 @@ static int cx23888_ir_g_register(struct v4l2_subdev *sd,
- 		return -EINVAL;
- 	if (addr < CX23888_IR_CNTRL_REG || addr > CX23888_IR_LEARN_REG)
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	reg->size = 4;
- 	reg->val = cx23888_ir_read4(state->dev, addr);
- 	return 0;
-@@ -1135,8 +1133,6 @@ static int cx23888_ir_s_register(struct v4l2_subdev *sd,
- 		return -EINVAL;
- 	if (addr < CX23888_IR_CNTRL_REG || addr > CX23888_IR_LEARN_REG)
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	cx23888_ir_write4(state->dev, addr, reg->val);
- 	return 0;
- }
-diff --git a/drivers/media/pci/ivtv/ivtv-ioctl.c b/drivers/media/pci/ivtv/ivtv-ioctl.c
-index 9cbbce0..3e281ec 100644
---- a/drivers/media/pci/ivtv/ivtv-ioctl.c
-+++ b/drivers/media/pci/ivtv/ivtv-ioctl.c
-@@ -715,8 +715,6 @@ static int ivtv_itvc(struct ivtv *itv, bool get, u64 reg, u64 *val)
- {
- 	volatile u8 __iomem *reg_start;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	if (reg >= IVTV_REG_OFFSET && reg < IVTV_REG_OFFSET + IVTV_REG_SIZE)
- 		reg_start = itv->reg_mem - IVTV_REG_OFFSET;
- 	else if (itv->has_cx23415 && reg >= IVTV_DECODER_OFFSET &&
-diff --git a/drivers/media/pci/saa7146/mxb.c b/drivers/media/pci/saa7146/mxb.c
-index 71e8bea..52cbe7a0 100644
---- a/drivers/media/pci/saa7146/mxb.c
-+++ b/drivers/media/pci/saa7146/mxb.c
-@@ -669,8 +669,6 @@ static int vidioc_g_register(struct file *file, void *fh, struct v4l2_dbg_regist
- {
- 	struct saa7146_dev *dev = ((struct saa7146_fh *)fh)->dev;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	if (v4l2_chip_match_host(&reg->match)) {
- 		reg->val = saa7146_read(dev, reg->reg);
- 		reg->size = 4;
-@@ -684,8 +682,6 @@ static int vidioc_s_register(struct file *file, void *fh, const struct v4l2_dbg_
- {
- 	struct saa7146_dev *dev = ((struct saa7146_fh *)fh)->dev;
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	if (v4l2_chip_match_host(&reg->match)) {
- 		saa7146_write(dev, reg->reg, reg->val);
- 		return 0;
-diff --git a/drivers/media/pci/saa7164/saa7164-encoder.c b/drivers/media/pci/saa7164/saa7164-encoder.c
-index 0b74fb2..63a72fb 100644
---- a/drivers/media/pci/saa7164/saa7164-encoder.c
-+++ b/drivers/media/pci/saa7164/saa7164-encoder.c
-@@ -1306,9 +1306,6 @@ static int saa7164_g_register(struct file *file, void *fh,
- 	struct saa7164_dev *dev = port->dev;
- 	dprintk(DBGLVL_ENC, "%s()\n", __func__);
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	return 0;
- }
- 
-@@ -1319,9 +1316,6 @@ static int saa7164_s_register(struct file *file, void *fh,
- 	struct saa7164_dev *dev = port->dev;
- 	dprintk(DBGLVL_ENC, "%s()\n", __func__);
- 
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
--
- 	return 0;
- }
- #endif
--- 
-1.7.4.1
+yes, that is problem.
 
+I did test the code cross before for cross 1T and 2T.
+maybe we do not access the code during switch...
+
+change could be more simple and avoid jmps.
+
+please check attached, and it does not use jmp
+
+index 08f7e80..321d65e 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -115,8 +115,10 @@ startup_64:
+  movq %rdi, %rax
+  shrq $PUD_SHIFT, %rax
+  andl $(PTRS_PER_PUD-1), %eax
+- movq %rdx, (4096+0)(%rbx,%rax,8)
+- movq %rdx, (4096+8)(%rbx,%rax,8)
++ movq %rdx, 4096(%rbx,%rax,8)
++ incl %eax
++ andl $(PTRS_PER_PUD-1), %eax
++ movq %rdx, 4096(%rbx,%rax,8)
+
+  addq $8192, %rbx
+  movq %rdi, %rax
+
+And we need cc to stable.
+
+Yinghai
+
+--089e0111d424ed1e4f04dca73864
+Content-Type: application/octet-stream; name="fix_wrap.patch"
+Content-Disposition: attachment; filename="fix_wrap.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hgontpye0
+
+ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5lbC9oZWFkXzY0LlMgYi9hcmNoL3g4Ni9rZXJuZWwv
+aGVhZF82NC5TCmluZGV4IDA4ZjdlODAuLjMyMWQ2NWUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tl
+cm5lbC9oZWFkXzY0LlMKKysrIGIvYXJjaC94ODYva2VybmVsL2hlYWRfNjQuUwpAQCAtMTE1LDgg
+KzExNSwxMCBAQCBzdGFydHVwXzY0OgogCW1vdnEJJXJkaSwgJXJheAogCXNocnEJJFBVRF9TSElG
+VCwgJXJheAogCWFuZGwJJChQVFJTX1BFUl9QVUQtMSksICVlYXgKLQltb3ZxCSVyZHgsICg0MDk2
+KzApKCVyYngsJXJheCw4KQotCW1vdnEJJXJkeCwgKDQwOTYrOCkoJXJieCwlcmF4LDgpCisJbW92
+cQklcmR4LCA0MDk2KCVyYngsJXJheCw4KQorCWluY2wJJWVheAorCWFuZGwJJChQVFJTX1BFUl9Q
+VUQtMSksICVlYXgKKwltb3ZxCSVyZHgsIDQwOTYoJXJieCwlcmF4LDgpCiAKIAlhZGRxCSQ4MTky
+LCAlcmJ4CiAJbW92cQklcmRpLCAlcmF4Cg==
+--089e0111d424ed1e4f04dca73864--
