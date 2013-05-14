@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab3ENOx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:53:28 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48475
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755664Ab3ENOx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 10:53:27 -0400
-Date: Tue, 14 May 2013 16:51:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130514145119.GC19669@dyad.programming.kicks-ass.net>
-References: <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
+	id S932152Ab3ENOyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:54:03 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4712 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757707Ab3ENOyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 10:54:01 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51924FE4.5000803@broadcom.com>
+Date: Tue, 14 May 2013 07:53:24 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130404
+ Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514141245.GA4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: "Paul Bolle" <pebolle@tiscali.nl>
+cc: "Russell King" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mach-bcm: drop "select GPIO_BCM"
+References: <1368524085.1350.102.camel@x61.thuisdomein>
+In-Reply-To: <1368524085.1350.102.camel@x61.thuisdomein>
+X-WSS-ID: 7D8C918B2L815272092-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In theory, yes.  In practice, this requires lots of lock acquisitions
-> and releases on large systems, including some global locks.  The weight
-> could be reduced, but...
-> 
-> What I would like to do instead would be to specify expedited grace
-> periods during boot.
+On 13-05-14 02:34 AM, Paul Bolle wrote:
+> A select statement for the Kconfig symbol GPIO_BCM was added in v3.8.
+> But there's no symbol with that name. It's a nop so we can drop it.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Untested.
+>
+> 1) Patch assumes that https://lkml.org/lkml/2013/3/6/182 ("ARM:
+> mach-bcm: drop "select GENERIC_TIME""), which got a Reviewed-by tag from
+> Christian, was applied first.
+>
+>   arch/arm/mach-bcm/Kconfig | 1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> index 764273e..322620d 100644
+> --- a/arch/arm/mach-bcm/Kconfig
+> +++ b/arch/arm/mach-bcm/Kconfig
+> @@ -8,7 +8,6 @@ config ARCH_BCM
+>   	select CPU_V7
+>   	select CLKSRC_OF
+>   	select GENERIC_CLOCKEVENTS
+> -	select GPIO_BCM
+>   	select SPARSE_IRQ
+>   	select TICK_ONESHOT
+>   	help
+Hi Paul,
+  We are planning on submitting the driver for this option for review 
+over the next couple of weeks, to get it in the 3.11 cycle. So this 
+patch won't be necessary.
 
-But why, surely going idle without any RCU callbacks isn't completely unheard
-of, even outside of the boot process?
+  Thanks,
+    csd
 
-Being able to quickly drop out of the RCU state machinery would be a good thing IMO.
 
->  The challenge here appears to be somehow telling
-> RCU when boot is done.  The APIs are there from an RCU viewpoint:  boot
-> with rcupdate.rcu_expedited=1, then, once boot is complete (whatever
-> that means on your platform) "echo 0 > /sys/kernel/rcu_expedited".
-
-Ha, and here you assume userspace is sane and co-operative. Fail in my book ;-)
