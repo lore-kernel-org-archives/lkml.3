@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3ENCQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 22:16:58 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57865 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755708Ab3ENCQ5 (ORCPT
+	id S1756134Ab3ENC2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 22:28:50 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19421 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab3ENC2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 22:16:57 -0400
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, paulmck@linux.vnet.ibm.com,
-        fweisbec@gmail.com, benh@kernel.crashing.org, paulus@samba.org,
-        michael@ellerman.id.au, Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: [RFC PATCH v4 0/5] powerpc: Support context tracking for Power pSeries
-Date: Tue, 14 May 2013 10:16:39 +0800
-Message-Id: <1368497804-21706-1-git-send-email-zhong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051402-3864-0000-0000-0000082181D5
+	Mon, 13 May 2013 22:28:48 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 1/7] PCI: move back pci_proc_attach_devices calling
+Date: Mon, 13 May 2013 19:28:20 -0700
+Message-Id: <1368498506-25857-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches try to support context tracking for Power arch, beginning with
-64-bit pSeries. The codes are ported from that of the x86_64, and in each
-patch, I listed the corresponding patch for x86.
+We stop detach proc when pci_stop_device.
+So should attach that during pci_bus_add_device.
 
-v4:
-fixed some cosmetic issues suggested by Ben.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Li Zhong (5):
-  powerpc: Syscall hooks for context tracking subsystem
-  powerpc: Exception hooks for context tracking subsystem
-  powerpc: Exit user context on notify resume
-  powerpc: Use the new schedule_user API on userspace preemption
-  powerpc: select HAVE_CONTEXT_TRACKING for pSeries
+---
+ drivers/pci/bus.c   |    1 +
+ drivers/pci/probe.c |    2 --
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
- arch/powerpc/include/asm/context_tracking.h |   10 ++++
- arch/powerpc/include/asm/thread_info.h      |    7 ++-
- arch/powerpc/kernel/entry_64.S              |    3 +-
- arch/powerpc/kernel/ptrace.c                |    5 ++
- arch/powerpc/kernel/signal.c                |    5 ++
- arch/powerpc/kernel/traps.c                 |   80 +++++++++++++++++++--------
- arch/powerpc/mm/fault.c                     |   41 +++++++++-----
- arch/powerpc/mm/hash_utils_64.c             |   36 +++++++++---
- arch/powerpc/platforms/pseries/Kconfig      |    1 +
- 9 files changed, 140 insertions(+), 48 deletions(-)
- create mode 100644 arch/powerpc/include/asm/context_tracking.h
-
--- 
-1.7.9.5
-
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -1348,8 +1348,6 @@ void pci_device_add(struct pci_dev *dev,
+ 	dev->match_driver = false;
+ 	ret = device_add(&dev->dev);
+ 	WARN_ON(ret < 0);
+-
+-	pci_proc_attach_device(dev);
+ }
+ 
+ struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
+Index: linux-2.6/drivers/pci/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/bus.c
++++ linux-2.6/drivers/pci/bus.c
+@@ -175,6 +175,7 @@ int pci_bus_add_device(struct pci_dev *d
+ 	 * are not assigned yet for some devices.
+ 	 */
+ 	pci_fixup_device(pci_fixup_final, dev);
++	pci_proc_attach_device(dev);
+ 	pci_create_sysfs_dev_files(dev);
+ 
+ 	dev->match_driver = true;
