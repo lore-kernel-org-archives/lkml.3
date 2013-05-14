@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab3ENPUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:20:52 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:46079 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab3ENPUv (ORCPT
+	id S1757974Ab3ENPWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:22:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25840 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab3ENPWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:20:51 -0400
-Date: Tue, 14 May 2013 08:20:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/workqueue.c: kfree issue, need check flag
- 'WQ_UNBOUND' when processing failure.
-Message-ID: <20130514152046.GC6795@mtj.dyndns.org>
-References: <519236E0.4020301@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519236E0.4020301@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 May 2013 11:22:16 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=1zgKQ3iLjIaWeQfJZPkA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1368544933.6828.41.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.6.11.3-rt35
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Tue, 14 May 2013 11:22:13 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 09:06:40PM +0800, Chen Gang wrote:
->  err_destroy:
->  	destroy_workqueue(wq);
-> +	if (flags & WQ_UNBOUND) {
-> +err_free_wq:
-> +		free_workqueue_attrs(wq->unbound_attrs);
-> +		kfree(wq);
-> +	}
 
-Doesn't the above make the code free wq twice on after err_destroy?
+Dear RT Folks,
 
--- 
-tejun
+I'm pleased to announce the 3.6.11.3-rt35 stable release.
+
+
+This release is just an update to the new stable 3.6.11.3 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.6-rt
+  Head SHA1: aa40d8a6b739c1356e2f1643dc01b9fad7d2def5
+
+
+Or to build 3.6.11.3-rt35 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.6.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.6.11.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/stable/patch-3.6.11.3.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11.3-rt35.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
