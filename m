@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab3ENBT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 21:19:28 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:54695 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab3ENBTU (ORCPT
+	id S1755902Ab3ENBTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 21:19:21 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52888 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab3ENBTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 21:19:20 -0400
+	Mon, 13 May 2013 21:19:15 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org
-Cc: akpm@linux-foundation.org, Octavian Purdila <octavian.purdila@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Kent Overstreet <koverstreet@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Zach Brown <zab@redhat.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [PATCH 12/21] aio: convert the ioctx list to radix tree
-Date: Mon, 13 May 2013 18:18:49 -0700
-Message-Id: <1368494338-7069-13-git-send-email-koverstreet@google.com>
+Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 08/21] aio: Kill aio_rw_vect_retry()
+Date: Mon, 13 May 2013 18:18:45 -0700
+Message-Id: <1368494338-7069-9-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368494338-7069-1-git-send-email-koverstreet@google.com>
 References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
@@ -27,260 +29,354 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Octavian Purdila <octavian.purdila@intel.com>
+This code doesn't serve any purpose anymore, since the aio retry
+infrastructure has been removed.
 
-When using a large number of threads performing AIO operations the IOCTX
-list may get a significant number of entries which will cause significant
-overhead.  For example, when running this fio script:
+This change should be safe because aio_read/write are also used for
+synchronous IO, and called from do_sync_read()/do_sync_write() - and
+there's no looping done in the sync case (the read and write syscalls).
 
-rw=randrw; size=256k ;directory=/mnt/fio; ioengine=libaio; iodepth=1
-blocksize=1024; numjobs=512; thread; loops=100
-
-on an EXT2 filesystem mounted on top of a ramdisk we can observe up to
-30% CPU time spent by lookup_ioctx:
-
- 32.51%  [guest.kernel]  [g] lookup_ioctx
-  9.19%  [guest.kernel]  [g] __lock_acquire.isra.28
-  4.40%  [guest.kernel]  [g] lock_release
-  4.19%  [guest.kernel]  [g] sched_clock_local
-  3.86%  [guest.kernel]  [g] local_clock
-  3.68%  [guest.kernel]  [g] native_sched_clock
-  3.08%  [guest.kernel]  [g] sched_clock_cpu
-  2.64%  [guest.kernel]  [g] lock_release_holdtime.part.11
-  2.60%  [guest.kernel]  [g] memcpy
-  2.33%  [guest.kernel]  [g] lock_acquired
-  2.25%  [guest.kernel]  [g] lock_acquire
-  1.84%  [guest.kernel]  [g] do_io_submit
-
-This patch converts the ioctx list to a radix tree.  For a performance
-comparison the above FIO script was run on a 2 sockets 8 core machine.
-This are the results (average and %rsd of 10 runs) for the original list
-based implementation and for the radix tree based implementation:
-
-cores         1         2         4         8         16        32
-list       109376 ms  69119 ms  35682 ms  22671 ms  19724 ms  16408 ms
-%rsd         0.69%      1.15%     1.17%     1.21%     1.71%     1.43%
-radix       73651 ms  41748 ms  23028 ms  16766 ms  15232 ms   13787 ms
-%rsd         1.19%      0.98%     0.69%     1.13%    0.72%      0.75%
-% of radix
-relative    66.12%     65.59%    66.63%    72.31%   77.26%     83.66%
-to list
-
-To consider the impact of the patch on the typical case of having only one
-ctx per process the following FIO script was run:
-
-rw=randrw; size=100m ;directory=/mnt/fio; ioengine=libaio; iodepth=1
-blocksize=1024; numjobs=1; thread; loops=100
-
-on the same system and the results are the following:
-
-list        58892 ms
-%rsd         0.91%
-radix       59404 ms
-%rsd         0.81%
-% of radix
-relative    100.87%
-to list
-
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Kent Overstreet <koverstreet@google.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Zach Brown <zab@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Selvan Mani <smani@micron.com>
+Cc: Sam Bradshaw <sbradshaw@micron.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
 ---
- arch/s390/mm/pgtable.c   |  4 +--
- fs/aio.c                 | 76 ++++++++++++++++++++++++++++++------------------
- include/linux/mm_types.h |  3 +-
- kernel/fork.c            |  2 +-
- 4 files changed, 52 insertions(+), 33 deletions(-)
+ drivers/staging/android/logger.c |  2 +-
+ drivers/usb/gadget/inode.c       |  6 +--
+ fs/aio.c                         | 91 ++++++++--------------------------------
+ fs/block_dev.c                   |  2 +-
+ fs/nfs/direct.c                  |  1 -
+ fs/ocfs2/file.c                  |  6 +--
+ fs/read_write.c                  |  3 --
+ fs/udf/file.c                    |  2 +-
+ include/linux/aio.h              |  2 -
+ mm/page_io.c                     |  1 -
+ net/socket.c                     |  2 +-
+ 11 files changed, 28 insertions(+), 90 deletions(-)
 
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 7805ddc..500426d 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -1029,7 +1029,7 @@ int s390_enable_sie(void)
- 	task_lock(tsk);
- 	if (!tsk->mm || atomic_read(&tsk->mm->mm_users) > 1 ||
- #ifdef CONFIG_AIO
--	    !hlist_empty(&tsk->mm->ioctx_list) ||
-+	    tsk->mm->ioctx_rtree.rnode ||
- #endif
- 	    tsk->mm != tsk->active_mm) {
- 		task_unlock(tsk);
-@@ -1056,7 +1056,7 @@ int s390_enable_sie(void)
- 	task_lock(tsk);
- 	if (!tsk->mm || atomic_read(&tsk->mm->mm_users) > 1 ||
- #ifdef CONFIG_AIO
--	    !hlist_empty(&tsk->mm->ioctx_list) ||
-+	    tsk->mm->ioctx_rtree.rnode ||
- #endif
- 	    tsk->mm != tsk->active_mm) {
- 		mmput(mm);
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index b040200..f9dbebe 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -481,7 +481,7 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	header.sec = now.tv_sec;
+ 	header.nsec = now.tv_nsec;
+ 	header.euid = current_euid();
+-	header.len = min_t(size_t, iocb->ki_left, LOGGER_ENTRY_MAX_PAYLOAD);
++	header.len = min_t(size_t, iocb->ki_nbytes, LOGGER_ENTRY_MAX_PAYLOAD);
+ 	header.hdr_size = sizeof(struct logger_entry);
+ 
+ 	/* null writes succeed, return zero */
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index e02c1e0..f255ad7 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -708,11 +708,11 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	if (unlikely(usb_endpoint_dir_in(&epdata->desc)))
+ 		return -EINVAL;
+ 
+-	buf = kmalloc(iocb->ki_left, GFP_KERNEL);
++	buf = kmalloc(iocb->ki_nbytes, GFP_KERNEL);
+ 	if (unlikely(!buf))
+ 		return -ENOMEM;
+ 
+-	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
++	return ep_aio_rwtail(iocb, buf, iocb->ki_nbytes, epdata, iov, nr_segs);
+ }
+ 
+ static ssize_t
+@@ -727,7 +727,7 @@ ep_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (unlikely(!usb_endpoint_dir_in(&epdata->desc)))
+ 		return -EINVAL;
+ 
+-	buf = kmalloc(iocb->ki_left, GFP_KERNEL);
++	buf = kmalloc(iocb->ki_nbytes, GFP_KERNEL);
+ 	if (unlikely(!buf))
+ 		return -ENOMEM;
+ 
 diff --git a/fs/aio.c b/fs/aio.c
-index 7ce3cd8..a127e5a 100644
+index 2c9a5ac..73ec062 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -37,6 +37,7 @@
- #include <linux/blkdev.h>
- #include <linux/compat.h>
- #include <linux/percpu-refcount.h>
-+#include <linux/radix-tree.h>
+@@ -621,7 +621,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
+ 	if (unlikely(!req))
+ 		goto out_put;
  
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
-@@ -68,9 +69,7 @@ struct kioctx_cpu {
- struct kioctx {
- 	struct percpu_ref	users;
- 
--	/* This needs improving */
- 	unsigned long		user_id;
--	struct hlist_node	list;
- 
- 	struct __percpu kioctx_cpu *cpu;
- 
-@@ -437,10 +436,18 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	aio_nr += ctx->max_reqs;
- 	spin_unlock(&aio_nr_lock);
- 
--	/* now link into global list. */
-+	/* now insert into the radix tree */
-+	err = radix_tree_preload(GFP_KERNEL);
-+	if (err)
-+		goto out_cleanup;
- 	spin_lock(&mm->ioctx_lock);
--	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
-+	err = radix_tree_insert(&mm->ioctx_rtree, ctx->user_id, ctx);
- 	spin_unlock(&mm->ioctx_lock);
-+	radix_tree_preload_end();
-+	if (err) {
-+		WARN_ONCE(1, "aio: insert into ioctx tree failed: %d", err);
-+		goto out_cleanup;
-+	}
- 
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
-@@ -483,8 +490,8 @@ static void kill_ioctx_rcu(struct rcu_head *head)
- static void kill_ioctx(struct kioctx *ctx)
- {
- 	if (percpu_ref_kill(&ctx->users)) {
--		hlist_del_rcu(&ctx->list);
--		/* Between hlist_del_rcu() and dropping the initial ref */
-+		radix_tree_delete(&current->mm->ioctx_rtree, ctx->user_id);
-+		/* Between radix_tree_delete() and dropping the initial ref */
- 		synchronize_rcu();
- 
- 		/*
-@@ -524,25 +531,38 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
-  */
- void exit_aio(struct mm_struct *mm)
- {
--	struct kioctx *ctx;
--	struct hlist_node *n;
--
--	hlist_for_each_entry_safe(ctx, n, &mm->ioctx_list, list) {
--		/*
--		 * We don't need to bother with munmap() here -
--		 * exit_mmap(mm) is coming and it'll unmap everything.
--		 * Since aio_free_ring() uses non-zero ->mmap_size
--		 * as indicator that it needs to unmap the area,
--		 * just set it to 0; aio_free_ring() is the only
--		 * place that uses ->mmap_size, so it's safe.
--		 */
--		ctx->mmap_size = 0;
-+	struct kioctx *ctx[16];
-+	unsigned long idx = 0;
-+	int count;
- 
--		if (percpu_ref_kill(&ctx->users)) {
--			hlist_del_rcu(&ctx->list);
--			call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
-+	do {
-+		int i;
-+
-+		count = radix_tree_gang_lookup(&mm->ioctx_rtree, (void **)ctx,
-+					       idx, sizeof(ctx)/sizeof(void *));
-+		for (i = 0; i < count; i++) {
-+			void *ret;
-+
-+			BUG_ON(ctx[i]->user_id < idx);
-+			idx = ctx[i]->user_id;
-+
-+			/*
-+			 * We don't need to bother with munmap() here -
-+			 * exit_mmap(mm) is coming and it'll unmap everything.
-+			 * Since aio_free_ring() uses non-zero ->mmap_size
-+			 * as indicator that it needs to unmap the area,
-+			 * just set it to 0; aio_free_ring() is the only
-+			 * place that uses ->mmap_size, so it's safe.
-+			 */
-+			ctx[i]->mmap_size = 0;
-+
-+			if (percpu_ref_kill(&ctx[i]->users)) {
-+				ret = radix_tree_delete(&mm->ioctx_rtree, idx);
-+				BUG_ON(!ret || ret != ctx[i]);
-+				call_rcu(&ctx[i]->rcu_head, kill_ioctx_rcu);
-+			}
- 		}
--	}
-+	} while (count);
+-	atomic_set(&req->ki_users, 2);
++	atomic_set(&req->ki_users, 1);
+ 	req->ki_ctx = ctx;
+ 	return req;
+ out_put:
+@@ -965,75 +965,9 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
+ 	return -EINVAL;
  }
  
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
-@@ -629,12 +649,10 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
- 
- 	rcu_read_lock();
- 
--	hlist_for_each_entry_rcu(ctx, &mm->ioctx_list, list) {
--		if (ctx->user_id == ctx_id) {
--			percpu_ref_get(&ctx->users);
--			ret = ctx;
--			break;
+-static void aio_advance_iovec(struct kiocb *iocb, ssize_t ret)
+-{
+-	struct iovec *iov = &iocb->ki_iovec[iocb->ki_cur_seg];
+-
+-	BUG_ON(ret <= 0);
+-
+-	while (iocb->ki_cur_seg < iocb->ki_nr_segs && ret > 0) {
+-		ssize_t this = min((ssize_t)iov->iov_len, ret);
+-		iov->iov_base += this;
+-		iov->iov_len -= this;
+-		iocb->ki_left -= this;
+-		ret -= this;
+-		if (iov->iov_len == 0) {
+-			iocb->ki_cur_seg++;
+-			iov++;
 -		}
-+	ctx = radix_tree_lookup(&mm->ioctx_rtree, ctx_id);
-+	if (ctx) {
-+		percpu_ref_get(&ctx->users);
-+		ret = ctx;
+-	}
+-
+-	/* the caller should not have done more io than what fit in
+-	 * the remaining iovecs */
+-	BUG_ON(ret > 0 && iocb->ki_left == 0);
+-}
+-
+ typedef ssize_t (aio_rw_op)(struct kiocb *, const struct iovec *,
+ 			    unsigned long, loff_t);
+ 
+-static ssize_t aio_rw_vect_retry(struct kiocb *iocb, int rw, aio_rw_op *rw_op)
+-{
+-	struct file *file = iocb->ki_filp;
+-	struct address_space *mapping = file->f_mapping;
+-	struct inode *inode = mapping->host;
+-	ssize_t ret = 0;
+-
+-	/* This matches the pread()/pwrite() logic */
+-	if (iocb->ki_pos < 0)
+-		return -EINVAL;
+-
+-	if (rw == WRITE)
+-		file_start_write(file);
+-	do {
+-		ret = rw_op(iocb, &iocb->ki_iovec[iocb->ki_cur_seg],
+-			    iocb->ki_nr_segs - iocb->ki_cur_seg,
+-			    iocb->ki_pos);
+-		if (ret > 0)
+-			aio_advance_iovec(iocb, ret);
+-
+-	/* retry all partial writes.  retry partial reads as long as its a
+-	 * regular file. */
+-	} while (ret > 0 && iocb->ki_left > 0 &&
+-		 (rw == WRITE ||
+-		  (!S_ISFIFO(inode->i_mode) && !S_ISSOCK(inode->i_mode))));
+-	if (rw == WRITE)
+-		file_end_write(file);
+-
+-	/* This means we must have transferred all that we could */
+-	/* No need to retry anymore */
+-	if ((ret == 0) || (iocb->ki_left == 0))
+-		ret = iocb->ki_nbytes - iocb->ki_left;
+-
+-	/* If we managed to write some out we return that, rather than
+-	 * the eventual error. */
+-	if (rw == WRITE
+-	    && ret < 0 && ret != -EIOCBQUEUED
+-	    && iocb->ki_nbytes - iocb->ki_left)
+-		ret = iocb->ki_nbytes - iocb->ki_left;
+-
+-	return ret;
+-}
+-
+ static ssize_t aio_setup_vectored_rw(int rw, struct kiocb *kiocb, bool compat)
+ {
+ 	ssize_t ret;
+@@ -1118,9 +1052,22 @@ rw_common:
+ 			return ret;
+ 
+ 		req->ki_nbytes = ret;
+-		req->ki_left = ret;
+ 
+-		ret = aio_rw_vect_retry(req, rw, rw_op);
++		/* XXX: move/kill - rw_verify_area()? */
++		/* This matches the pread()/pwrite() logic */
++		if (req->ki_pos < 0) {
++			ret = -EINVAL;
++			break;
++		}
++
++		if (rw == WRITE)
++			file_start_write(file);
++
++		ret = rw_op(req, req->ki_iovec,
++			    req->ki_nr_segs, req->ki_pos);
++
++		if (rw == WRITE)
++			file_end_write(file);
+ 		break;
+ 
+ 	case IOCB_CMD_FDSYNC:
+@@ -1215,19 +1162,17 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_pos = iocb->aio_offset;
+ 
+ 	req->ki_buf = (char __user *)(unsigned long)iocb->aio_buf;
+-	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
++	req->ki_nbytes = iocb->aio_nbytes;
+ 	req->ki_opcode = iocb->aio_lio_opcode;
+ 
+ 	ret = aio_run_iocb(req, compat);
+ 	if (ret)
+ 		goto out_put_req;
+ 
+-	aio_put_req(req);	/* drop extra ref to req */
+ 	return 0;
+ out_put_req:
+ 	put_reqs_available(ctx, 1);
+-	aio_put_req(req);	/* drop extra ref to req */
+-	aio_put_req(req);	/* drop i/o ref to req */
++	aio_put_req(req);
+ 	return ret;
+ }
+ 
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 2091db8..2964b15 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1556,7 +1556,7 @@ static ssize_t blkdev_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		return 0;
+ 
+ 	size -= pos;
+-	if (size < iocb->ki_left)
++	if (size < iocb->ki_nbytes)
+ 		nr_segs = iov_shorten((struct iovec *)iov, nr_segs, size);
+ 	return generic_file_aio_read(iocb, iov, nr_segs, pos);
+ }
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 0bd7a55..91ff089 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -130,7 +130,6 @@ ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov, loff_
+ 
+ 	return -EINVAL;
+ #else
+-	VM_BUG_ON(iocb->ki_left != PAGE_SIZE);
+ 	VM_BUG_ON(iocb->ki_nbytes != PAGE_SIZE);
+ 
+ 	if (rw == READ || rw == KERNEL_READ)
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 8a7509f..c85ad15 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2245,7 +2245,7 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 		file->f_path.dentry->d_name.name,
+ 		(unsigned int)nr_segs);
+ 
+-	if (iocb->ki_left == 0)
++	if (iocb->ki_nbytes == 0)
+ 		return 0;
+ 
+ 	appending = file->f_flags & O_APPEND ? 1 : 0;
+@@ -2296,7 +2296,7 @@ relock:
+ 
+ 	can_do_direct = direct_io;
+ 	ret = ocfs2_prepare_inode_for_write(file, ppos,
+-					    iocb->ki_left, appending,
++					    iocb->ki_nbytes, appending,
+ 					    &can_do_direct, &has_refcount);
+ 	if (ret < 0) {
+ 		mlog_errno(ret);
+@@ -2304,7 +2304,7 @@ relock:
  	}
  
- 	rcu_read_unlock();
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index ace9a5f..758ad98 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -5,6 +5,7 @@
- #include <linux/types.h>
- #include <linux/threads.h>
- #include <linux/list.h>
-+#include <linux/radix-tree.h>
- #include <linux/spinlock.h>
- #include <linux/rbtree.h>
- #include <linux/rwsem.h>
-@@ -386,7 +387,7 @@ struct mm_struct {
- 	struct core_state *core_state; /* coredumping support */
- #ifdef CONFIG_AIO
- 	spinlock_t		ioctx_lock;
--	struct hlist_head	ioctx_list;
-+	struct radix_tree_root	ioctx_rtree;
- #endif
- #ifdef CONFIG_MM_OWNER
+ 	if (direct_io && !is_sync_kiocb(iocb))
+-		unaligned_dio = ocfs2_is_io_unaligned(inode, iocb->ki_left,
++		unaligned_dio = ocfs2_is_io_unaligned(inode, iocb->ki_nbytes,
+ 						      *ppos);
+ 
  	/*
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 987b28a..05d232f 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -524,7 +524,7 @@ static void mm_init_aio(struct mm_struct *mm)
- {
- #ifdef CONFIG_AIO
- 	spin_lock_init(&mm->ioctx_lock);
--	INIT_HLIST_HEAD(&mm->ioctx_list);
-+	INIT_RADIX_TREE(&mm->ioctx_rtree, GFP_KERNEL);
- #endif
- }
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 0343000..421cee4 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -338,7 +338,6 @@ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *pp
+ 
+ 	init_sync_kiocb(&kiocb, filp);
+ 	kiocb.ki_pos = *ppos;
+-	kiocb.ki_left = len;
+ 	kiocb.ki_nbytes = len;
+ 
+ 	ret = filp->f_op->aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
+@@ -388,7 +387,6 @@ ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, lof
+ 
+ 	init_sync_kiocb(&kiocb, filp);
+ 	kiocb.ki_pos = *ppos;
+-	kiocb.ki_left = len;
+ 	kiocb.ki_nbytes = len;
+ 
+ 	ret = filp->f_op->aio_write(&kiocb, &iov, 1, kiocb.ki_pos);
+@@ -568,7 +566,6 @@ static ssize_t do_sync_readv_writev(struct file *filp, const struct iovec *iov,
+ 
+ 	init_sync_kiocb(&kiocb, filp);
+ 	kiocb.ki_pos = *ppos;
+-	kiocb.ki_left = len;
+ 	kiocb.ki_nbytes = len;
+ 
+ 	ret = fn(&kiocb, iov, nr_segs, kiocb.ki_pos);
+diff --git a/fs/udf/file.c b/fs/udf/file.c
+index 29569dd..c02a27a 100644
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -141,7 +141,7 @@ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file_inode(file);
+ 	int err, pos;
+-	size_t count = iocb->ki_left;
++	size_t count = iocb->ki_nbytes;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
+ 
+ 	down_write(&iinfo->i_data_sem);
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 8c8dd1d..7bb766e 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -50,11 +50,9 @@ struct kiocb {
+ 	unsigned short		ki_opcode;
+ 	size_t			ki_nbytes; 	/* copy of iocb->aio_nbytes */
+ 	char 			__user *ki_buf;	/* remaining iocb->aio_buf */
+-	size_t			ki_left; 	/* remaining bytes */
+ 	struct iovec		ki_inline_vec;	/* inline vector */
+  	struct iovec		*ki_iovec;
+  	unsigned long		ki_nr_segs;
+- 	unsigned long		ki_cur_seg;
+ 
+ 	struct list_head	ki_list;	/* the aio core uses this
+ 						 * for cancellation */
+diff --git a/mm/page_io.c b/mm/page_io.c
+index a8a3ef4..3db0f5f 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -220,7 +220,6 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
+ 
+ 		init_sync_kiocb(&kiocb, swap_file);
+ 		kiocb.ki_pos = page_file_offset(page);
+-		kiocb.ki_left = PAGE_SIZE;
+ 		kiocb.ki_nbytes = PAGE_SIZE;
+ 
+ 		set_page_writeback(page);
+diff --git a/net/socket.c b/net/socket.c
+index 6b94633..bfe9fab 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -925,7 +925,7 @@ static ssize_t sock_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	if (pos != 0)
+ 		return -ESPIPE;
+ 
+-	if (iocb->ki_left == 0)	/* Match SYS5 behaviour */
++	if (iocb->ki_nbytes == 0)	/* Match SYS5 behaviour */
+ 		return 0;
+ 
  
 -- 
 1.8.2.1
