@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab3ENCgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 22:36:07 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:52625 "EHLO
+	id S1756508Ab3ENCge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 22:36:34 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:43971 "EHLO
 	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756112Ab3ENCgD (ORCPT
+	with ESMTP id S1756492Ab3ENCgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 22:36:03 -0400
-Date: Tue, 14 May 2013 10:35:57 +0800
+	Mon, 13 May 2013 22:36:31 -0400
+Date: Tue, 14 May 2013 10:36:28 +0800
 From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Laurent Navet <laurent.navet@gmail.com>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: crypto: use devm_ioremap_resource()
-Message-ID: <20130514023557.GC19306@gondor.apana.org.au>
-References: <1367496038-4038-1-git-send-email-laurent.navet@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Matt Mackall'" <mpm@selenic.com>
+Subject: Re: [PATCH 1/4] hwrng: atmel - remove unnecessary
+ platform_set_drvdata()
+Message-ID: <20130514023627.GE19306@gondor.apana.org.au>
+References: <004601ce4a13$60fa6620$22ef3260$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1367496038-4038-1-git-send-email-laurent.navet@gmail.com>
+In-Reply-To: <004601ce4a13$60fa6620$22ef3260$@samsung.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 02, 2013 at 02:00:38PM +0200, Laurent Navet wrote:
-> Replace calls to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+On Mon, May 06, 2013 at 01:37:13PM +0900, Jingoo Han wrote:
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure, since commit 0998d0631001288a5974afc0b2a5f568bcdecb4d
+> (device-core: Ensure drvdata = NULL when no driver is bound).
+> Thus, it is not needed to manually clear the device driver data to NULL.
 > 
-> Found with coccicheck and this semantic patch:
->  scripts/coccinelle/api/devm_request_and_ioremap.cocci.
-> 
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 
-Patch applied.
+All applied.  Thanks!
 -- 
 Email: Herbert Xu <herbert@gondor.apana.org.au>
 Home Page: http://gondor.apana.org.au/~herbert/
