@@ -1,164 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab3ENLiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 07:38:55 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:38226 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab3ENLix (ORCPT
+	id S1756666Ab3ENLlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 07:41:20 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36441 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab3ENLlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 07:38:53 -0400
-Message-ID: <5192224A.7090303@monstr.eu>
-Date: Tue, 14 May 2013 13:38:50 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 14 May 2013 07:41:19 -0400
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        michal.simek@xilinx.com, s.trumtrar@pengutronix.de,
-        hein_tibosch@yahoo.es, Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Anirudha Sarangi <anirudh@xilinx.com>
-Subject: Re: [PATCH] net/macb: fix ISR clear-on-write behavior only for some
- SoC
-References: <1368461105-23128-1-git-send-email-nicolas.ferre@atmel.com> <FE065E51-1EAA-47ED-8C7B-0F2E6418F349@jcrosoft.com> <519200DA.8060102@atmel.com>
-In-Reply-To: <519200DA.8060102@atmel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2MIGIIOGVJAXBORKCEXSI"
+In-Reply-To: <1366723718-5369-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1366723718-5369-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Date: Tue, 14 May 2013 13:41:19 +0200
+Message-ID: <CACRpkdZi2j-q7gtqCUj+XfH_MmrE-qqzrSUVr8h5qBHV_+_Q9w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: generic: Fix typos and clarify comments
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2MIGIIOGVJAXBORKCEXSI
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 23, 2013 at 3:28 PM, Laurent Pinchart
+<laurent.pinchart+renesas@ideasonboard.com> wrote:
 
-On 05/14/2013 11:16 AM, Nicolas Ferre wrote:
-> On 13/05/2013 18:05, Jean-Christophe PLAGNIOL-VILLARD :
->>
->> On May 14, 2013, at 12:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> =
-wrote:
->>
->>> Commit 749a2b6 (net/macb: clear tx/rx completion flags in ISR)
->>> introduces clear-on-write on ISR register. This behavior is not alway=
-s
->>> implemented when using Cadence MACB/GEM and is breaking other platfor=
-ms.
->>> We are using a new Device Tree compatibility string and a capability
->>> property to actually activate this clear-on-write behavior on ISR.
->>>
->>> Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>
->> can we detect it via the IP?
->=20
-> As said by Hein, we cannot use the IP revision number. *But* we may hav=
-e the opportunity to read this integration configuration in the Design Co=
-nfiguration Register 1 (DCFG1 already used for determining data bus width=
-).
->=20
-> So, Michal or Steffen, can you please tell me the value of:
-> -> bit 23 at register address 0x280: mine is "1" which should mean "IRQ=
- read clear", yours should be "0".
+> Drive strength controls both sink and source currents, clarify the
+> description accordingly.
+>
+> Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-here is the whole reg map for zynq.
-Reg 0x280 is undocumented in our TRM.
-Please decode it not sure if bit 0 is LSB or MSB.
+All makes perfect sense.
 
-U-Boot-PetaLinux> md e000b000
-e000b000: 0000001c 000e0013 00000006 00000000    ................
-e000b010: 00180704 00000021 3ffba2e4 3ffbd32c    ....!......?,..?
-e000b020: 00000003 00000000 00000000 00000000    ................
-e000b030: 07ffffff 63c66f08 00000000 0000ffff    .....o.c........
-e000b040: 000003ff 000003ff 00000000 00000000    ................
-e000b050: 00000000 00000000 00000000 00000000    ................
-e000b060: 00000000 00000000 00000000 00000000    ................
-e000b070: 00000000 00000000 00000000 00000000    ................
-e000b080: 00000000 00000000 00350a00 00001c48    ..........5.H...
-e000b090: 00000000 00000000 00000000 00000000    ................
-e000b0a0: 00000000 00000000 00000000 00000000    ................
-e000b0b0: 00000000 00000000 00000000 00000000    ................
-e000b0c0: 00000000 00000000 00000000 00000000    ................
-e000b0d0: 00000000 00000000 00000000 00000000    ................
-e000b0e0: 00000000 00000000 00000000 00000000    ................
-e000b0f0: 00000000 00000000 00000000 00020118    ................
-U-Boot-PetaLinux>
-e000b100: 00014796 00000000 0000051e 00000001    .G..............
-e000b110: 00000000 00000000 0000051d 00000001    ................
-e000b120: 00000000 00000000 00000000 00000000    ................
-e000b130: 00000000 00000000 00000000 00000000    ................
-e000b140: 00000000 00000000 00000000 00000000    ................
-e000b150: 001e58b6 00000000 00000526 00000000    .X......&.......
-e000b160: 00000004 00000000 00000004 00000001    ................
-e000b170: 00000000 00000004 00000000 0000051d    ................
-e000b180: 00000000 00000000 00000000 00000000    ................
-e000b190: 00000000 00000000 00000000 00000000    ................
-e000b1a0: 00000038 00000000 00000000 00000000    8...............
-e000b1b0: 00000000 00000000 00000000 00000000    ................
-e000b1c0: 00000000 00000000 00000000 00000000    ................
-e000b1d0: 00000000 00000000 00000000 00000000    ................
-e000b1e0: 00000000 00000000 00000000 00000000    ................
-e000b1f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux>
-e000b200: 00000000 00000000 00000000 00000000    ................
-e000b210: 00000000 00000000 00000000 00000000    ................
-e000b220: 00000000 00000000 00000000 00000000    ................
-e000b230: 00000000 00000000 00000000 00000000    ................
-e000b240: 00000000 00000000 00000000 00000000    ................
-e000b250: 00000000 00000000 00000000 00000000    ................
-e000b260: 00000000 00000000 00000000 00000000    ................
-e000b270: 00000000 00000000 00000000 00000000    ................
-e000b280: 02500111 2ab13fff 00000000 00000000    ..P..?.*........
-e000b290: 002f2145 00000200 00000000 00000000    E!/.............
-e000b2a0: 00000000 00000000 00000000 00000000    ................
-e000b2b0: 00000000 00000000 00000000 00000000    ................
-e000b2c0: 00000000 00000000 00000000 00000000    ................
-e000b2d0: 00000000 00000000 00000000 00000000    ................
-e000b2e0: 00000000 00000000 00000000 00000000    ................
-e000b2f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux>
+Patch applied!
 
-
-
->=20
-> Hein, in case of use of the MACB, we do not have this register included=
-, so I will avoid to run the test when using MACB (we already have this i=
-nformation).
->=20
-> If it works, I plan to rewrite the patch but taking this information in=
-stead of the device tree compatibility string.
-
-yep. Will be good to detect it instead of new compatible string.
-
-Also is there an option to remove "CONFIG_ARCH_AT91"?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2MIGIIOGVJAXBORKCEXSI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGSIkoACgkQykllyylKDCGh7wCeNRz2DGcbbNbJg7BcDr+4dxuj
-jVMAnijx2zlPoT0k9xvNrbsfs5hpYnoS
-=rLv6
------END PGP SIGNATURE-----
-
-------enig2MIGIIOGVJAXBORKCEXSI--
+Yours,
+Linus Walleij
