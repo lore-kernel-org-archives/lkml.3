@@ -1,141 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab3ENPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:36:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757295Ab3ENPgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:36:25 -0400
-Date: Tue, 14 May 2013 11:35:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH v5 5/8] vmcore: allocate ELF note segment in the 2nd
- kernel vmalloc memory
-Message-ID: <20130514153552.GG13674@redhat.com>
-References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
- <20130514015734.18697.32447.stgit@localhost6.localdomain6>
+	id S1758031Ab3ENPiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:38:17 -0400
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:50264 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756781Ab3ENPiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:38:16 -0400
+Date: Tue, 14 May 2013 08:38:10 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LSM <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Ivan Bulatovic <combuster@archlinux.us>
+Subject: Re: [PATCH] cgroup: initialize xattr before calling d_instantiate()
+Message-ID: <20130514153810.GD6795@mtj.dyndns.org>
+References: <51922394.2020002@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130514015734.18697.32447.stgit@localhost6.localdomain6>
+In-Reply-To: <51922394.2020002@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 10:57:35AM +0900, HATAYAMA Daisuke wrote:
-> The reasons why we don't allocate ELF note segment in the 1st kernel
-> (old memory) on page boundary is to keep backward compatibility for
-> old kernels, and that if doing so, we waste not a little memory due to
-> round-up operation to fit the memory to page boundary since most of
-> the buffers are in per-cpu area.
+On Tue, May 14, 2013 at 07:44:20PM +0800, Li Zefan wrote:
+> cgroup_create_file() calls d_instantiate(), which may decide to look
+> at the xattrs on the file. Smack always does this and SELinux can be
+> configured to do so.
 > 
-> ELF notes are per-cpu, so total size of ELF note segments depends on
-> number of CPUs. The current maximum number of CPUs on x86_64 is 5192,
-> and there's already system with 4192 CPUs in SGI, where total size
-> amounts to 1MB. This can be larger in the near future or possibly even
-> now on another architecture that has larger size of note per a single
-> cpu. Thus, to avoid the case where memory allocation for large block
-> fails, we allocate vmcore objects on vmalloc memory.
+> But cgroup_add_file() didn't initialize xattrs before calling
+> cgroup_create_file(), which finally leads to dereferencing NULL
+> dentry->d_fsdata.
 > 
-> This patch adds elfnotesegbuf and elfnotesegbuf_sz variables to keep
-> pointer to the ELF note segment buffer and its size. There's no longer
-> the vmcore object that corresponds to the ELF note segment in
-> vmcore_list. Accordingly, read_vmcore() has new case for ELF note
-> segment and set_vmcore_list_offsets_elf{64,32}() and other helper
-> functions starts calculating offset from sum of size of ELF headers
-> and size of ELF note segment.
+> This bug has been there since cgroup xattr was introduced.
 > 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> ---
-> 
->  fs/proc/vmcore.c |  225 ++++++++++++++++++++++++++++++++++++++++--------------
->  1 files changed, 165 insertions(+), 60 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 48886e6..795efd2 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -34,6 +34,9 @@ static char *elfcorebuf;
->  static size_t elfcorebuf_sz;
->  static size_t elfcorebuf_sz_orig;
->  
-> +static char *elfnotesegbuf;
-> +static size_t elfnotesegbuf_sz;
+> Cc: <stable@vger.kernel.org> # 3.8.x
+> Reported-by: Ivan Bulatovic <combuster@archlinux.us>
+> Reported-by: Casey Schaufler <casey@schaufler-ca.com>
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-How about calling these just elfnotes_buf and elfnotes_sz.
+Applied to cgroup/for-3.10-fixes.
 
-[..]
-> +/* Merges all the PT_NOTE headers into one. */
-> +static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
-> +					   char **notesegptr, size_t *notesegsz,
-> +					   struct list_head *vc_list)
-> +{
-> +	int i, nr_ptnote=0, rc=0;
-> +	char *tmp;
-> +	Elf64_Ehdr *ehdr_ptr;
-> +	Elf64_Phdr phdr;
-> +	u64 phdr_sz = 0, note_off;
-> +	struct vm_struct *vm;
-> +
-> +	ehdr_ptr = (Elf64_Ehdr *)elfptr;
-> +
-> +	/* The first path calculates the number of PT_NOTE entries and
-> +	 * total size of ELF note segment. */
-> +	rc = process_note_headers_elf64(ehdr_ptr, &nr_ptnote, &phdr_sz, NULL);
-> +	if (rc < 0)
-> +		return rc;
-> +
-> +	*notesegsz = roundup(phdr_sz, PAGE_SIZE);
-> +	*notesegptr = vzalloc(*notesegsz);
-> +	if (!*notesegptr)
-> +		return -ENOMEM;
-> +
-> +	vm = find_vm_area(*notesegptr);
-> +	BUG_ON(!vm);
-> +	vm->flags |= VM_USERMAP;
-> +
-> +	/* The second path copies the ELF note segment in the ELF note
-> +	 * segment buffer. */
-> +	rc = process_note_headers_elf64(ehdr_ptr, NULL, NULL, *notesegptr);
+Thanks.
 
-So same function process_note_headers_elf64() is doing two different
-things based on parameters passed. Please create two new functions
-to do two different things and name these appropriately.
-
-Say
-
-get_elf_note_number_and_size()
-copy_elf_notes()
-
-
-> +	if (rc < 0)
-> +		return rc;
-> +
->  	/* Prepare merged PT_NOTE program header. */
->  	phdr.p_type    = PT_NOTE;
->  	phdr.p_flags   = 0;
-> @@ -304,23 +364,18 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->  	return 0;
->  }
->  
-> -/* Merges all the PT_NOTE headers into one. */
-> -static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
-> -						struct list_head *vc_list)
-> +static int __init process_note_headers_elf32(const Elf32_Ehdr *ehdr_ptr,
-> +					     int *nr_ptnotep, u64 *phdr_szp,
-> +					     char *notesegp)
-
-Can you please describe function parameters at the beginning of function
-in a comment. Things are gettting little confusing now.
-
-What does notesegp signify? phdr_szp could be simply *phdr_sz,
-nr_ptnotesp could be *nr_notes. Please simplify the naming a bit.
-Seems too twisted to me.
-
-Thanks
-Vivek
+-- 
+tejun
