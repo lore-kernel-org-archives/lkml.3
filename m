@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab3ENP3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 11:29:21 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:38042 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab3ENP3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 11:29:18 -0400
-Message-ID: <5192584C.1060003@lwfinger.net>
-Date: Tue, 14 May 2013 10:29:16 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1758016Ab3ENPcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 11:32:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab3ENPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 11:32:50 -0400
+Date: Tue, 14 May 2013 17:28:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 04/21] Generic percpu refcounting
+Message-ID: <20130514152836.GA21972@redhat.com>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com> <1368494338-7069-5-git-send-email-koverstreet@google.com> <20130514145932.GA6607@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Kernel 3.10-rc1 build warning on 32-bit ppc associated with commit
- 3925f46
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514145932.GA6607@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/14, Tejun Heo wrote:
+>
+> > +int percpu_ref_tryget(struct percpu_ref *ref)
+> > +{
+> > +	int ret = 1;
+> > +
+> > +	preempt_disable();
+> > +
+> > +	if (!percpu_ref_dead(ref))
+> > +		percpu_ref_get(ref);
+> > +	else
+> > +		ret = 0;
+> > +
+> > +	preempt_enable();
+> > +
+> > +	return ret;
+> > +}
+...
+> BTW, why is this
+> function necessary?  What's the use case?
 
-When building 3.10-rc1 on a PowerBook G4, I get the following warning:
+Yes, I was wondering too.
 
-cc1: warnings being treated as errors
-arch/powerpc/perf/core-book3s.c: In function ‘power_pmu_bhrb_read’:
-arch/powerpc/perf/core-book3s.c:1479: error: integer constant is too large for 
-‘long’ type
-make[2]: *** [arch/powerpc/perf/core-book3s.o] Error 1
-make[1]: *** [arch/powerpc/perf] Error 2
-make[1]: *** Waiting for unfinished jobs....
-   LD      arch/powerpc/platforms/powermac/built-in.o
-   LD      arch/powerpc/platforms/built-in.o
-make[1]: Leaving directory `/home/finger/wireless-testing'
-make: *** [debian/stamp/build/kernel] Error 2
+And please note that this code _looks_ wrong, percpu_ref_get() still
+can increment ref->count.
 
-The code in question came from commit 3925f46 entitled "powerpc/perf: Enable 
-branch stack sampling framework". The gcc version is 4.4.5 running with a Mint 9 
-distribution.
+Hmm. Just noticed this comment above percpu_ref_kill()
 
-I have disabled the "-Werror" switch so that the build can continue. That 
-Kconfig question about disabling WERROR is a bit confusing with its double 
-negative construction.
+	* The caller must issue a synchronize_rcu()/call_rcu() before calling
+	* percpu_ref_put() to drop the initial ref.
 
-Thanks,
+Really?
 
-Larry
+Oleg.
+
