@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758546Ab3ENVMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 17:12:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14256 "EHLO mx1.redhat.com"
+	id S1758530Ab3ENVP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 17:15:57 -0400
+Received: from mout.gmx.net ([212.227.15.19]:51582 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758419Ab3ENVMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 17:12:49 -0400
-Message-ID: <5192A8CE.30809@redhat.com>
-Date: Tue, 14 May 2013 16:12:46 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: v3.10: unmount won't work
-References: <51928CB5.2050406@gmx.de>
-In-Reply-To: <51928CB5.2050406@gmx.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1758395Ab3ENVP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 17:15:56 -0400
+X-Authenticated: #20192376
+X-Provags-ID: V01U2FsdGVkX18X3ct5JhsXUTojQbdJXs4gtWi3XG09qZ5o2tYMi8
+	JGPYDzcnST6p9z
+From: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+Subject: [RESEND][PATCH 1/1] genirq: outline lazy disable in kerneldoc of irq_disable function.
+Date: Tue, 14 May 2013 23:15:44 +0200
+Message-Id: <1368566144-13548-1-git-send-email-andreas.fenkart@streamunlimited.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/14/13 2:12 PM, Toralf Förster wrote:
-> At a stable 32 bit stable Gentoo with kernel v3.10-rc1-113-ga2c7a54 I cannot umount an (EXT4) fs
-> which was created in a file located in a tmpfs partition and loop mounted  :
-> 
-> That file system was used to hold victims files shared via NFSv4 to an user mode linux 
-> on which trinity was used to fuzz testing a patched UML guest kernel.
-> 
-> n22 ~ # mount
-> ...
-> nfsd on /proc/fs/nfsd type nfsd (rw,nodev,noexec,nosuid)
-> /mnt/ramdisk/disk0 on /mnt/trinity type ext4 (rw)
+comment taken from changelog of d209a699a0b975ad
 
-Is your "mount" looking at /etc/mtab ot at /proc/mounts?
+Signed-off-by: Andreas Fenkart <andreas.fenkart@streamunlimited.com>
+---
+ kernel/irq/chip.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-What does /proc/mounts say, does it contain this device or mountpoint?
-
-> n22 ~ # umount /mnt/trinity
-> umount: /mnt/trinity: not mounted
-
--Eric
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index cbd97ce..ba1f076 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -213,6 +213,16 @@ void irq_enable(struct irq_desc *desc)
+ 	irq_state_clr_masked(desc);
+ }
+ 
++/**
++ *	irq_disable - disable interrupt generation
++ *	@desc:	irq descriptor which should be disabled
++ *
++ *	If the chip does not implement the irq_disable callback, we
++ *	use a lazy disable approach. That means we mark the interrupt
++ *	disabled, but leave the hardware unmasked. If an interrupt
++ *	happens, then the interrupt flow handler masks the line at the
++ *	hardware level and marks it pending.
++ */
+ void irq_disable(struct irq_desc *desc)
+ {
+ 	irq_state_set_disabled(desc);
+-- 
+1.7.10.4
 
