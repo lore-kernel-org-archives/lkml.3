@@ -1,183 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab3ENO7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 10:59:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757831Ab3ENO7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757887Ab3ENO7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 10:59:44 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:48139 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab3ENO7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 May 2013 10:59:40 -0400
-Date: Tue, 14 May 2013 10:59:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
-        Rik Van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v5 4/8] vmalloc: introduce remap_vmalloc_range_partial
-Message-ID: <20130514145906.GD16772@redhat.com>
-References: <20130514015622.18697.77191.stgit@localhost6.localdomain6>
- <20130514015729.18697.88256.stgit@localhost6.localdomain6>
+Date: Tue, 14 May 2013 07:59:32 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, akpm@linux-foundation.org,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 04/21] Generic percpu refcounting
+Message-ID: <20130514145932.GA6607@mtj.dyndns.org>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
+ <1368494338-7069-5-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130514015729.18697.88256.stgit@localhost6.localdomain6>
+In-Reply-To: <1368494338-7069-5-git-send-email-koverstreet@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 10:57:29AM +0900, HATAYAMA Daisuke wrote:
-> We want to allocate ELF note segment buffer on the 2nd kernel in
-> vmalloc space and remap it to user-space in order to reduce the risk
-> that memory allocation fails on system with huge number of CPUs and so
-> with huge ELF note segment that exceeds 11-order block size.
-> 
-> Although there's already remap_vmalloc_range for the purpose of
-> remapping vmalloc memory to user-space, we need to specify user-space
-> range via vma. Mmap on /proc/vmcore needs to remap range across
-> multiple objects, so the interface that requires vma to cover full
-> range is problematic.
-> 
-> This patch introduces remap_vmalloc_range_partial that receives
-> user-space range as a pair of base address and size and can be used
-> for mmap on /proc/vmcore case.
-> 
-> remap_vmalloc_range is rewritten using remap_vmalloc_range_partial.
-> 
-> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Hello,
 
-This also needs ACK of VM folks. CCing some of them.
+On Mon, May 13, 2013 at 06:18:41PM -0700, Kent Overstreet wrote:
+> +/**
+> + * percpu_ref_dead - check if a dynamic percpu refcount is shutting down
+> + *
+> + * Returns true if percpu_ref_kill() has been called on @ref, false otherwise.
 
-Thanks
-Vivek
+Explanation on synchronization and use cases would be nice.  People
+tend to develop massive mis-uses for interfaces like this.
 
-> ---
-> 
->  include/linux/vmalloc.h |    4 +++
->  mm/vmalloc.c            |   63 +++++++++++++++++++++++++++++++++--------------
->  2 files changed, 48 insertions(+), 19 deletions(-)
-> 
-> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-> index 7d5773a..dd0a2c8 100644
-> --- a/include/linux/vmalloc.h
-> +++ b/include/linux/vmalloc.h
-> @@ -82,6 +82,10 @@ extern void *vmap(struct page **pages, unsigned int count,
->  			unsigned long flags, pgprot_t prot);
->  extern void vunmap(const void *addr);
->  
-> +extern int remap_vmalloc_range_partial(struct vm_area_struct *vma,
-> +				       unsigned long uaddr, void *kaddr,
-> +				       unsigned long size);
+> + */
+> +static inline int percpu_ref_dead(struct percpu_ref *ref)
+> +{
+> +	return ref->pcpu_count == NULL;
+> +}
+...
+> +/*
+> + * The trick to implementing percpu refcounts is shutdown. We can't detect the
+> + * ref hitting 0 on every put - this would require global synchronization and
+> + * defeat the whole purpose of using percpu refs.
+> + *
+> + * What we do is require the user to keep track of the initial refcount; we know
+> + * the ref can't hit 0 before the user drops the initial ref, so as long as we
+> + * convert to non percpu mode before the initial ref is dropped everything
+> + * works.
+
+Can you please also explain why per-cpu wrapping is safe somewhere?
+
+> + * Converting to non percpu mode is done with some RCUish stuff in
+> + * percpu_ref_kill. Additionally, we need a bias value so that the atomic_t
+> + * can't hit 0 before we've added up all the percpu refs.
+> + */
 > +
+> +#define PCPU_COUNT_BIAS		(1ULL << 31)
 
->  extern int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
->  							unsigned long pgoff);
->  void vmalloc_sync_all(void);
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 3875fa2..d9a9f4f6 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -2148,42 +2148,44 @@ finished:
->  }
->  
->  /**
-> - *	remap_vmalloc_range  -  map vmalloc pages to userspace
-> - *	@vma:		vma to cover (map full range of vma)
-> - *	@addr:		vmalloc memory
-> - *	@pgoff:		number of pages into addr before first page to map
-> + *	remap_vmalloc_range_partial  -  map vmalloc pages to userspace
-> + *	@vma:		vma to cover
-> + *	@uaddr:		target user address to start at
-> + *	@kaddr:		virtual address of vmalloc kernel memory
-> + *	@size:		size of map area
->   *
->   *	Returns:	0 for success, -Exxx on failure
->   *
-> - *	This function checks that addr is a valid vmalloc'ed area, and
-> - *	that it is big enough to cover the vma. Will return failure if
-> - *	that criteria isn't met.
-> + *	This function checks that @kaddr is a valid vmalloc'ed area,
-> + *	and that it is big enough to cover the range starting at
-> + *	@uaddr in @vma. Will return failure if that criteria isn't
-> + *	met.
->   *
->   *	Similar to remap_pfn_range() (see mm/memory.c)
->   */
-> -int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
-> -						unsigned long pgoff)
-> +int remap_vmalloc_range_partial(struct vm_area_struct *vma, unsigned long uaddr,
-> +				void *kaddr, unsigned long size)
->  {
->  	struct vm_struct *area;
-> -	unsigned long uaddr = vma->vm_start;
-> -	unsigned long usize = vma->vm_end - vma->vm_start;
->  
-> -	if ((PAGE_SIZE-1) & (unsigned long)addr)
-> +	size = PAGE_ALIGN(size);
+Are we sure this is enough?  1<<31 is a fairly large number but it's
+just easy enough to breach from time to time and it's gonna be hellish
+to reproduce / debug when it actually overflows.  Maybe we want
+atomic64_t w/ 1LLU << 63 bias?  Or is there something else which
+guarantees that the bias can't over/underflow?
+
+> +int percpu_ref_tryget(struct percpu_ref *ref)
+> +{
+> +	int ret = 1;
 > +
-> +	if (((PAGE_SIZE-1) & (unsigned long)uaddr) ||
-> +	    ((PAGE_SIZE-1) & (unsigned long)kaddr))
->  		return -EINVAL;
->  
-> -	area = find_vm_area(addr);
-> +	area = find_vm_area(kaddr);
->  	if (!area)
->  		return -EINVAL;
->  
->  	if (!(area->flags & VM_USERMAP))
->  		return -EINVAL;
->  
-> -	if (usize + (pgoff << PAGE_SHIFT) > area->size - PAGE_SIZE)
-> +	if (kaddr + size > area->addr + area->size)
->  		return -EINVAL;
->  
-> -	addr += pgoff << PAGE_SHIFT;
->  	do {
-> -		struct page *page = vmalloc_to_page(addr);
-> +		struct page *page = vmalloc_to_page(kaddr);
->  		int ret;
->  
->  		ret = vm_insert_page(vma, uaddr, page);
-> @@ -2191,14 +2193,37 @@ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
->  			return ret;
->  
->  		uaddr += PAGE_SIZE;
-> -		addr += PAGE_SIZE;
-> -		usize -= PAGE_SIZE;
-> -	} while (usize > 0);
-> +		kaddr += PAGE_SIZE;
-> +		size -= PAGE_SIZE;
-> +	} while (size > 0);
->  
->  	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
->  
->  	return 0;
->  }
-> +EXPORT_SYMBOL(remap_vmalloc_range_partial);
+> +	preempt_disable();
+> +
+> +	if (!percpu_ref_dead(ref))
+> +		percpu_ref_get(ref);
+> +	else
+> +		ret = 0;
+> +
+> +	preempt_enable();
+> +
+> +	return ret;
+> +}
+
+Why isn't the above one inline?
+
+Why no /** comment on public functions?  It'd be great if you can
+explicitly warn about the racy nature of the function - especially,
+the function may return overflowed or zero refcnt.  BTW, why is this
+function necessary?  What's the use case?
+
+> +unsigned percpu_ref_count(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +	unsigned count = 0;
+> +	int cpu;
+> +
+> +	preempt_disable();
+> +
+> +	count = atomic_read(&ref->count);
+> +
+> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> +
+> +	if (pcpu_count)
+> +		for_each_possible_cpu(cpu)
+> +			count += *per_cpu_ptr(pcpu_count, cpu);
+> +
+> +	preempt_enable();
+> +
+> +	return count;
+> +}
+...
+> +/**
+> + * percpu_ref_kill - prepare a dynamic percpu refcount for teardown
+> + *
+> + * Must be called before dropping the initial ref, so that percpu_ref_put()
+> + * knows to check for the refcount hitting 0. If the refcount was in percpu
+> + * mode, converts it back to single atomic counter mode.
+> + *
+> + * The caller must issue a synchronize_rcu()/call_rcu() before calling
+> + * percpu_ref_put() to drop the initial ref.
+> + *
+> + * Returns true the first time called on @ref and false if @ref is already
+> + * shutting down, so it may be used by the caller for synchronizing other parts
+> + * of a two stage shutdown.
+> + */
+
+I'm not sure I like this interface.  Why does it allow being called
+multiple times?  Why is that necessary?  Wouldn't just making it
+return void and trigger WARN_ON() if it detects that it's being called
+multiple times better?  Also, why not bool if the return value is
+true/false?
+
+> +int percpu_ref_kill(struct percpu_ref *ref)
+> +{
+> +	unsigned __percpu *pcpu_count;
+> +	unsigned __percpu *old;
+> +	unsigned count = 0;
+> +	int cpu;
+> +
+> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> +
+> +	do {
+> +		if (!pcpu_count)
+> +			return 0;
+> +
+> +		old = pcpu_count;
+> +		pcpu_count = cmpxchg(&ref->pcpu_count, old, NULL);
+> +	} while (pcpu_count != old);
+> +
+> +	synchronize_sched();
+
+And this makes the whole function blocking.  Why not use call_rcu() so
+that the ref can be called w/o sleepable context too?
+
+> +
+> +	for_each_possible_cpu(cpu)
+> +		count += *per_cpu_ptr(pcpu_count, cpu);
+> +
+> +	free_percpu(pcpu_count);
+> +
+> +	pr_debug("global %lli pcpu %i",
+> +		 (int64_t) atomic_read(&ref->count), (int) count);
+> +
+> +	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
+> +
+> +	return 1;
+> +}
 > +
 > +/**
-> + *	remap_vmalloc_range  -  map vmalloc pages to userspace
-> + *	@vma:		vma to cover (map full range of vma)
-> + *	@addr:		vmalloc memory
-> + *	@pgoff:		number of pages into addr before first page to map
+> + * percpu_ref_put_initial_ref - safely drop the initial ref
 > + *
-> + *	Returns:	0 for success, -Exxx on failure
+> + * A percpu refcount needs a shutdown sequence before dropping the initial ref,
+> + * to put it back into single atomic_t mode with the appropriate barriers so
+> + * that percpu_ref_put() can safely check for it hitting 0 - this does so.
 > + *
-> + *	This function checks that addr is a valid vmalloc'ed area, and
-> + *	that it is big enough to cover the vma. Will return failure if
-> + *	that criteria isn't met.
-> + *
-> + *	Similar to remap_pfn_range() (see mm/memory.c)
+> + * Returns true if @ref hit 0.
 > + */
-> +int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
-> +						unsigned long pgoff)
+> +int percpu_ref_put_initial_ref(struct percpu_ref *ref)
 > +{
-> +	return remap_vmalloc_range_partial(vma, vma->vm_start,
-> +					   addr + (pgoff << PAGE_SHIFT),
-> +					   vma->vm_end - vma->vm_start);
+> +	if (percpu_ref_kill(ref)) {
+> +		return percpu_ref_put(ref);
+> +	} else {
+> +		WARN_ON(1);
+> +		return 0;
+> +	}
 > +}
->  EXPORT_SYMBOL(remap_vmalloc_range);
->  
->  /*
+
+Can we just roll the above into percpu_ref_kill()?  It's much harder
+to misuse if kill puts the base ref.
+
+Thanks.
+
+-- 
+tejun
