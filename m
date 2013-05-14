@@ -1,117 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab3ENJoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 05:44:34 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38510 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756579Ab3ENJoc (ORCPT
+	id S1756958Ab3ENJqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 05:46:35 -0400
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:6262 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756579Ab3ENJqd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 05:44:32 -0400
-Message-ID: <1368524655.2618.100.camel@ThinkPad-T5421>
-Subject: Re: [PATCH 1/3] x86/sched/context_tracking: Call new
- schedule_preempt_user() from entry_64.S
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 14 May 2013 17:44:15 +0800
-In-Reply-To: <1368457419.6828.31.camel@gandalf.local.home>
-References: <20130510211225.594959788@goodmis.org>
-	 <20130510211825.341015861@goodmis.org>
-	 <1368438990.2618.55.camel@ThinkPad-T5421>
-	 <1368457419.6828.31.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051409-7014-0000-0000-000003048A84
+	Tue, 14 May 2013 05:46:33 -0400
+From: "Perla, Sathya" <Sathya.Perla@Emulex.Com>
+To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+CC: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+Thread-Topic: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+Thread-Index: AQHOUEr2vDuskkxHmkmS4wYNntVV2ZkEas6w
+Date: Tue, 14 May 2013 09:46:32 +0000
+Message-ID: <CF9D1877D81D214CB0CA0669EFAE020C25AB3277@CMEXMB1.ad.emulex.com>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+ <1368498506-25857-7-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1368498506-25857-7-git-send-email-yinghai@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.140.72]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-13 at 11:03 -0400, Steven Rostedt wrote:
-> On Mon, 2013-05-13 at 17:56 +0800, Li Zhong wrote:
-> 
-> > > All this before schedule_user() was able to call user_exit() and take us
-> > > out of dynamic tick user context.
-> > 
-> > Maybe we could just disable function trace for schedule_user()? 
-> > 
-> > It seems that function trace might use RCU, at least in __schedule()
-> > when calling preempt_enable(), and if preemption is really enabled. 
-> 
-> There is a small use of rcu scheduling (preempt disable/enable) in
-> function tracing. One is for perf and dynamic call traces and some hash
-> code (multiple users of the function tracer). But those are the unique
-> cases, and I really do not want to remove this function just for the non
-> common case. Function tracing has proven extremely useful in debugging
-> RCU and context tracking. By adding notrace, it's a lost cause.
 
-OK, so it seems a bad idea to disable trace here. 
-
-However, as schedule is traced, so we might get something like 
-.schedule <-.schedule_user to know that schedule_user is called?
-
+> -----Original Message-----
+> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
+> owner@vger.kernel.org] On Behalf Of Yinghai Lu
 > 
-> Not to mention, adding trace_printk() there will break it too, and that
-> does not use any RCU but still disables preemption because the writing
-> to the ring buffer requires staying on the same CPU.
+> Found kernel try to load mlx4 drivers for VFs before PF's is really loaded
+> when the drivers are built-in, and kernel command line include
+> probe_vfs=63, num_vfs=63.
 > 
-I guess you mean the preemption enable after buffer written might cause
-a task migration, and break the pair of user_enter/user_exit?
-
-Then how about adding trace_printk() after user_exit() there?
-
-> > 
-> > user_exit() is used to allow RCU usage after that (with rcu_user_exit).
-> > RCU usage is not allowed before that because cpu is in user eqs. And if
-> > function trace needs use RCU, then it seems user_exit() itself or its
-> > callers couldn't be function traced.
+> It turns that it also happen for hotadd path even drivers are compiled as
+> modules and if they loaded. Esp some VF share the same driver with PF.
 > 
-> And it can't be debugged either.
+> calling path:
+> 	device driver probe
+> 		==> pci_enable_sriov
+> 			==> virtfn_add
+> 				==> pci_dev_add
+> 				==> pci_bus_device_add
+> when pci_bus_device_add is called, the VF's driver will be attached.
+> and at that time PF's driver does not finish yet.
 > 
-> I can probably black list those functions manually, such that only the
-> main function tracer can trace it, all others will not. In otherwords, I
-> can have it such that function tracer will not trace those functions for
-> perf, dynamic function tracers, or anything that requires changing the
-> function list.
-
-I'm totally lost. Need some more time to read the trace code (please
-forgive me for the silly questions in this mail...)
-
-By "main function tracer", do you mean the function_trace_call()? And I
-don't understand how to black list some functions manually?
-
-If function_trace_call() is the main function tracer you mentioned,
-there is preemption disable/enable in it. schedule might happen where
-preemption is enabled. Or maybe you mean we should make all those
-functions called with preemption disabled(or irqs disabled)?  
-
-Then syscall_trace_enter(), syscall_trace_leave(), do_notify_resume(),
-need be converted the similar way as schedule_preempt_user() did? 
-
-Thanks, Zhong
-
-> I could probably also add a heavier weight synchronize_sched() that even
-> synchronizes cpus in userspace.
-> 
-> > 
-> > If __schedule() in preempt_enable() is the only place function trace
-> > uses RCU, then after converting to schedule_preempt_user(), it is safe
-> > as irqs are disabled for __schedule() to happen. But user_exit() itself
-> > and some other callers might still need function trace be disabled.
-> 
-> The above makes no sense to me. function tracing didn't break, but the
-> user_exit() did because of a preemption in the wrong place, as there was
-> no protection there to prevent an unnecessary preemption.
-> 
-> 
-> -- Steve
-> 
+> Need to move out pci_bus_device_add from virtfn_add and call it later. Fix
+> the problem for two path, 1. hotadd path: use device_schedule_callback.
+> 2. for booting path, use initcall to call that for all VF's.
 > 
 
+...
+> 
+> Index: linux-2.6/drivers/net/ethernet/emulex/benet/be_main.c
+> ==========================================================
+> =========
+> --- linux-2.6.orig/drivers/net/ethernet/emulex/benet/be_main.c
+> +++ linux-2.6/drivers/net/ethernet/emulex/benet/be_main.c
+> @@ -4119,6 +4119,7 @@ static int lancer_recover_func(struct be
+>  	if (status)
+>  		goto err;
+> 
+> +	pci_bus_add_device_vfs(adapter->pdev);
+>  	if (netif_running(adapter->netdev)) {
+>  		status = be_open(adapter->netdev);
+>  		if (status)
+> @@ -4335,6 +4336,8 @@ static int be_probe(struct pci_dev *pdev
+>  	dev_info(&pdev->dev, "%s: %s %s port %c\n", nic_name(pdev),
+>  		 func_name(adapter), mc_name(adapter), port_name);
+> 
+> +	pci_bus_add_device_vfs(pdev);
+> +
+>  	return 0;
+> 
+>  unsetup:
+> @@ -4406,6 +4409,7 @@ static int be_resume(struct pci_dev *pde
+>  		rtnl_unlock();
+>  	}
+> 
+> +	pci_bus_add_device_vfs(adapter->pdev);
+>  	schedule_delayed_work(&adapter->func_recovery_work,
+>  			      msecs_to_jiffies(1000));
+>  	netif_device_attach(netdev);
 
+I fixed this issue in be2net with the following patch (commit b4c1df93)
+http://marc.info/?l=linux-netdev&m=136801459808765&w=2
+
+-Sathya
