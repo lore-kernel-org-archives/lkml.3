@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3ENGsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 02:48:46 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:62625 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067Ab3ENGsn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 02:48:43 -0400
-Date: Tue, 14 May 2013 15:06:28 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>, Jan Kara <jack@suse.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spruce-project@linuxtesting.org
-Subject: Re: [PATCH 0/2] ext4: deadlocks after allocation failure in
- ext4_init_io_end()
-Message-ID: <20130514070627.GA3025@gmail.com>
-Mail-Followup-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-	Jan Kara <jack@suse.cz>, Theodore Ts'o <tytso@mit.edu>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	spruce-project@linuxtesting.org
-References: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
+	id S1755773Ab3ENGvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 02:51:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38811 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752291Ab3ENGvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 02:51:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,668,1363104000"; 
+   d="scan'208";a="7263828"
+Message-ID: <5191DE5A.3020302@cn.fujitsu.com>
+Date: Tue, 14 May 2013 14:48:58 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368472093-16997-1-git-send-email-khoroshilov@ispras.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v2] x86, 64bit: Fix a possible wraparound bug in switchover
+ in head_64.S
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/14 14:50:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/14 14:50:09,
+	Serialize complete at 2013/05/14 14:50:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 11:08:11PM +0400, Alexey Khoroshilov wrote:
-> Hi, Ted!
-> 
-> Our tests for ext4 with targeted fault injection were stalled in Uninterruptible Sleep State 
-> when they simulate a memory allocation failure in ext4_init_io_end() while it is called from 
-> mpage_da_submit_io() or ext4_writepage().
-> 
-> It looks like the problems are that pages left locked after failure handling.
-> 
-> I am not completely sure that my patches take into account all required aspects, 
-> but the tests are passed if the patches are applied.
-> 
-> Please find below syslog excerpt for the first issue.
-> 
-> Found by Linux File System Verification project (linuxtesting.org/spruce). 
+In head_64.S, a switchover has been used to handle kernel crossing
+1G, 512G boundaries.
 
-Hi Alexey,
+And commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
+    x86, 64bit: Use a #PF handler to materialize early mappings on demand
+said:
+    During the switchover in head_64.S, before #PF handler is available,
+    we use three pages to handle kernel crossing 1G, 512G boundaries with
+    sharing page by playing games with page aliasing: the same page is
+    mapped twice in the higher-level tables with appropriate wraparound.
 
-Thanks for fixing this.  The patch series looks good to me.  But the
-commit (ext4: use io_end for multiple bios) has been reverted in dev
-branch of ext4 tree.  I forward the mail to Jan to let him know your
-fixes.
+But from the switchover code, when we set up the PUD table:
+114         addq    $4096, %rdx
+115         movq    %rdi, %rax
+116         shrq    $PUD_SHIFT, %rax
+117         andl    $(PTRS_PER_PUD-1), %eax
+118         movq    %rdx, (4096+0)(%rbx,%rax,8)
+119         movq    %rdx, (4096+8)(%rbx,%rax,8)
 
-Regards,
-                                                - Zheng
+It seems line 119 has a potential bug there. For example,
+if the kernel is loaded at physical address 511G+1008M, that is
+    000000000 111111111 111111000 000000000000000000000
+and the kernel _end is 512G+2M, that is
+    000000001 000000000 000000001 000000000000000000000
+So in this example, when using the 2nd page to setup PUD (line 114~119),
+rax is 511.
+In line 118, we put rdx which is the address of the PMD page (the 3rd page)
+into entry 511 of the PUD table. But in line 119, the entry we calculate from
+(4096+8)(%rbx,%rax,8) has exceeded the PUD page. IMO, the entry in line
+119 should be wraparound into entry 0 of the PUD table.
+
+The patch fixes the bug.
+
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@vger.kernel.org
+---
+-v2: make the change simpler and avoid using jmp
+---
+ arch/x86/kernel/head_64.S |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 08f7e80..321d65e 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -115,8 +115,10 @@ startup_64:
+ 	movq	%rdi, %rax
+ 	shrq	$PUD_SHIFT, %rax
+ 	andl	$(PTRS_PER_PUD-1), %eax
+-	movq	%rdx, (4096+0)(%rbx,%rax,8)
+-	movq	%rdx, (4096+8)(%rbx,%rax,8)
++	movq	%rdx, 4096(%rbx,%rax,8)
++	incl	%eax
++	andl	$(PTRS_PER_PUD-1), %eax
++	movq	%rdx, 4096(%rbx,%rax,8)
+ 
+ 	addq	$8192, %rbx
+ 	movq	%rdi, %rax
+-- 
+1.7.1
