@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3ENAln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 May 2013 20:41:43 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:49676 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab3ENAlm (ORCPT
+	id S1755564Ab3ENAny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 May 2013 20:43:54 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63746 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab3ENAnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 May 2013 20:41:42 -0400
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: apw@canonical.com, joe@perches.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: add check for wrong "if (IS_ERR_OR_NULL(<foo>)) return PTR_ERR(<foo>)" uses
-Date: Tue, 14 May 2013 03:41:37 +0300
-Message-Id: <1368492098-3140-1-git-send-email-ruslan.bilovol@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 13 May 2013 20:43:53 -0400
+X-AuditID: 9c930179-b7b92ae0000035f7-e5-519188c63782
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/2] perf report: Add --percent-limit option
+References: <1368434503-29373-1-git-send-email-namhyung@kernel.org>
+	<20130513132028.GA1032@krava.brq.redhat.com>
+Date: Tue, 14 May 2013 09:43:50 +0900
+In-Reply-To: <20130513132028.GA1032@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Mon, 13 May 2013 15:20:29 +0200")
+Message-ID: <87li7i5r21.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was many times discussed by Russell King
-and I also was about wrong usage of IS_ERR_OR_NULL()
-in my patch. So I added this check and other people will
-be at least warned about potentially wrong usage
-of mentioned macro.
+Hi Jiri,
 
-Quoting Russell:
-| Well, the whole reasoning here is that IS_ERR_OR_NULL() is far too easy
-| to get wrong - there are too many of this kind of crap in the kernel:
-|
-| 	foo = some_func();
-| 	if (IS_ERR_OR_NULL(foo))
-| 		return PTR_ERR(foo);
-|
-| which is wrong, because if foo _is_ NULL, the function doesn't return an
-| error, it returns success instead.  Of course, if some_func() never ever
-| returns NULL in the first place, that can't happen, but then the additional
-| test there for a NULL pointer is, to put it bluntly, total bollocks.
+On Mon, 13 May 2013 15:20:29 +0200, Jiri Olsa wrote:
+> On Mon, May 13, 2013 at 05:41:42PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> The --percent-limit option is for not showing small overheaded entries
+>> in the output.  Maybe we want to set a certain default value like 0.1.
+>
+> hi,
+> can't apply this on acme's perf/core nor latest tip
+> What is this based on? Maybe you could push the branch out? ;-)
 
-The full discussion may be found here:
-http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874
+Oops, I wanted to make it independent to other patches, but it seemed I
+failed. :)
 
-Tested on:
-+	if (IS_ERR_OR_NULL(soc_dev))
-+		return PTR_ERR(soc_dev);
-+
-+	if (IS_ERR_OR_NULL(soc_dev))
-+		return soc_dev ? PTR_ERR(soc_dev) : -ENODEV;
+It's on top on acme/perf/core but also depends on my other works.  I'll
+resend the patches in a set and push the branch soon.
 
-The result is:
-
-WARNING: Use of IS_ERR_OR_NULL is usually wrong: see http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874
-+	if (IS_ERR_OR_NULL(soc_dev))
-+		return PTR_ERR(soc_dev);
-
-Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
----
-
-I'm not very experienced in the perl, so feel free to
-comment this patch or fix it :)
-
- scripts/checkpatch.pl |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index b954de5..6ec71bd 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3262,6 +3262,15 @@ sub process {
- 			}
- 		}
- 
-+# check for wrong "if (IS_ERR_OR_NULL(<foo>)) return PTR_ERR(<foo>)" uses
-+		if ($prevline =~ /\bif\s*\(\s*IS_ERR_OR_NULL\s*\(\s*($Lval)\s*\)\s*\)/) {
-+			my $expr = '\s*\(\s*' . quotemeta($1) . '\s*\)\s*;';
-+			if ($line =~ /\b(\s*PTR_ERR)$expr/) {
-+				WARN('IS_ERR_OR_NULL',
-+				     "Use of IS_ERR_OR_NULL is usually wrong: see http://permalink.gmane.org/gmane.linux.ports.arm.omap/97874\n" . $hereprev);
-+			}
-+		}
-+
- # prefer usleep_range over udelay
- 		if ($line =~ /\budelay\s*\(\s*(\d+)\s*\)/) {
- 			# ignore udelay's < 10, however
--- 
-1.7.9.5
-
+Thanks,
+Namhyung
