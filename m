@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3ENNrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 09:47:10 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63714 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab3ENNrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 09:47:08 -0400
-Message-ID: <51924058.4050500@windriver.com>
-Date: Tue, 14 May 2013 09:47:04 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1756946Ab3ENNsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 09:48:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab3ENNsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 09:48:30 -0400
+Message-ID: <5192409C.8040100@redhat.com>
+Date: Tue, 14 May 2013 09:48:12 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] block: remove refs to XD disks from documentation
-References: <1368372222-17569-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1368372222-17569-1-git-send-email-linus.walleij@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        bitbucket@online.de, tip-bot for Thomas Gleixner <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/urgent] tick: Cleanup NOHZ per cpu data on cpu down
+References: <alpine.LFD.2.02.1305031451561.2886@ionos> <tip-4b0c0f294f60abcdd20994a8341a95c8ac5eeb96@git.kernel.org> <5190FE00.6010508@redhat.com> <alpine.LFD.2.02.1305132035360.2863@ionos>
+In-Reply-To: <alpine.LFD.2.02.1305132035360.2863@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-05-12 11:23 AM, Linus Walleij wrote:
-> Commit d1a6f4f19728d6e90480e53601a90fc9f6a348ad
-> "block: delete super ancient PC-XT driver for 1980's hardware"
-> deleted the XD disk driver, but there are still a few
-> references to it in the documentation directory. Delete
-> the remnants and thus also free up the major block device
-> 13 for reuse.
-> 
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  Documentation/devices.txt             | 7 +------
->  Documentation/kernel-parameters.txt   | 3 ---
->  Documentation/m68k/kernel-options.txt | 2 --
->  3 files changed, 1 insertion(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/devices.txt b/Documentation/devices.txt
-> index 08f01e7..0683e83 100644
-> --- a/Documentation/devices.txt
-> +++ b/Documentation/devices.txt
-> @@ -498,12 +498,7 @@ Your cooperation is appreciated.
->  
->  		Each device type has 5 bits (32 minors).
->  
-> - 13 block	8-bit MFM/RLL/IDE controller
-> -		  0 = /dev/xda		First XT disk whole disk
-> -		 64 = /dev/xdb		Second XT disk whole disk
-> -
-> -		Partitions are handled in the same way as IDE disks
-> -		(see major number 3).
-> + 13 block
 
-Maybe rather than just blanking out the entry, you could instead
-leave a short note saying that it was previously used for the
-obsolete XT disk and removed in kernel version 3.9
 
-Thanks,
-Paul.
---
-
->  
->   14 char	Open Sound System (OSS)
->  		  0 = /dev/mixer	Mixer control
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index c3bfacb..5469dbf 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -3330,9 +3330,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			plus one apbt timer for broadcast timer.
->  			x86_mrst_timer=apbt_only | lapic_and_apbt
->  
-> -	xd=		[HW,XT] Original XT pre-IDE (RLL encoded) disks.
-> -	xd_geo=		See header of drivers/block/xd.c.
-> -
->  	xen_emul_unplug=		[HW,X86,XEN]
->  			Unplug Xen emulated devices
->  			Format: [unplug0,][unplug1]
-> diff --git a/Documentation/m68k/kernel-options.txt b/Documentation/m68k/kernel-options.txt
-> index 97d45f2..eaf32a1 100644
-> --- a/Documentation/m68k/kernel-options.txt
-> +++ b/Documentation/m68k/kernel-options.txt
-> @@ -80,8 +80,6 @@ Valid names are:
->    /dev/sdd: -> 0x0830 (forth SCSI disk)
->    /dev/sde: -> 0x0840 (fifth SCSI disk)
->    /dev/fd : -> 0x0200 (floppy disk)
-> -  /dev/xda: -> 0x0c00 (first XT disk, unused in Linux/m68k)
-> -  /dev/xdb: -> 0x0c40 (second XT disk, unused in Linux/m68k)
->  
->    The name must be followed by a decimal number, that stands for the
->  partition number. Internally, the value of the number is just
+On 05/13/2013 03:10 PM, Thomas Gleixner wrote:
+> On Mon, 13 May 2013, Prarit Bhargava wrote:
+>> Thomas, while this does fix up the NULL pointer issue, I think you've introduced
+>> a new bug in the schedule timer code.
 > 
+> I don't think that I introduced a new bug. I'm quite sure that change
+> unearthed another issue which was papered over by the stale data.
+> 
+> That memset is putting the data structure into the same state as we
+> have on boot. From tick-sched perspective cpu onlining is not
+> different between boot and an offline/online cycle
+> 
+>> While doing up and downs on the same CPU, I now occasionally see long delays in
+>> the up and down...
+> 
+>> [   81.744565] smpboot: Booting Node 1 Processor 19 APIC 0x28
+>> [   82.848591] smpboot: CPU 19 is now offline
+>>
+>> Long delay in bringing CPU "up"
+>>
+>> [   89.826533] smpboot: Booting Node 1 Processor 19 APIC 0x28
+>> [   84.905358] smpboot: CPU 19 is now offline
+>> [   87.565274] smpboot: Booting Node 1 Processor 19 APIC 0x28
+> 
+> Errm, the timestamps are random. -ENOTUSEFUL
+>  
+
+I'm always saying my computer is full of lies ;)
+
+Here's the bottom line.  The patch included in this thread plus the patch you
+pointed me to here
+
+http://marc.info/?l=linux-kernel&m=136847403809031&w=2
+
+seem to resolve the cpu up/down + thermal interrupt issues that I've been seeing.
+
+So thank you :)
+
+Tested-by: Prarit Bhargava <prarit@redhat.com>
+
+P.
