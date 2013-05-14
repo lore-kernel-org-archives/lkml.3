@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138Ab3ENItB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 04:49:01 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:34290 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117Ab3ENIs6 (ORCPT
+	id S1757169Ab3ENItS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 04:49:18 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:50731 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756595Ab3ENItP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 04:48:58 -0400
-Date: Tue, 14 May 2013 09:48:54 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
+	Tue, 14 May 2013 04:49:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368097688-17858-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1368097688-17858-1-git-send-email-fabio.baltieri@linaro.org>
+Date: Tue, 14 May 2013 10:49:14 +0200
+Message-ID: <CACRpkdYXAB03=bqAQ8OZ8wZ7Q9j+LwH-Uwtijw49OjXt70yiXQ@mail.gmail.com>
+Subject: Re: [PATCH] mfd: ab8500-sysctrl: Always enable pm_power_off handler
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH 6/9] ARM: ux500: Provide device enumeration number suffix
- for SMSC911x
-Message-ID: <20130514084854.GF3297@gmail.com>
-References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
- <1368019749-19455-7-git-send-email-lee.jones@linaro.org>
- <CACRpkdYz0HcdBovoJu6O-4QyRbXz93MaeWwAwCohbE8rv=8O7Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYz0HcdBovoJu6O-4QyRbXz93MaeWwAwCohbE8rv=8O7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 May 2013, Linus Walleij wrote:
+On Thu, May 9, 2013 at 1:08 PM, Fabio Baltieri
+<fabio.baltieri@linaro.org> wrote:
 
-> On Wed, May 8, 2013 at 3:29 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > First Ethernet device has a ".0" appended onto the device name. It
-> > appears that we need this in order to obtain the correct clock.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> (...)
-> > -       OF_DEV_AUXDATA("smsc,lan9115", 0x50000000, "smsc911x", NULL),
-> > +       OF_DEV_AUXDATA("smsc,lan9115", 0x50000000, "smsc911x.0", NULL),
-> 
-> I guess what you want to say in the commit message is that
-> on a non-DT boot the ethernet will be named "smsc911x.0"
-> and since the clocks are not converted to device tree these
-> names need to be matched when providing the name from
-> auxdata.
-> 
-> Edited the commit message and applied!
+> AB8500 sysctrl driver implements a pm_power_off handler, but that is
+> currently not registered until a specific platform data field is
+> enabled.
+>
+> This patch drops the platform data field and always registers
+> ab8500_power_off if no other pm_power_off handler was defined before,
+> and also introduces the necessary cleanup code in the driver's remove
+> function.
+>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-Thanks for the effort. :)
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
