@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab3ENMxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 08:53:08 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45854 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757003Ab3ENMxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 08:53:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Liu Jiang <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2, part 1 5/9] ACPI, PCI: remove unused global list acpi_pci_roots in pci_root.c
-Date: Tue, 14 May 2013 15:01:38 +0200
-Message-ID: <6812228.aa0vVeiYvi@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51923114.2070701@gmail.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1598495.v92I2Ljz9W@vostro.rjw.lan> <51923114.2070701@gmail.com>
+	id S1757439Ab3ENMx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 08:53:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38288 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701Ab3ENMx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 08:53:56 -0400
+Date: Tue, 14 May 2013 16:53:51 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <20130514125351.GC20930@sirena.org.uk>
+References: <1368514463-4035-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XMCwj5IQnwKtuyBG"
+Content-Disposition: inline
+In-Reply-To: <1368514463-4035-1-git-send-email-srinivas.kandagatla@st.com>
+X-Cookie: You are as I am with You.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v1] regmap: debugfs: Fix return from
+ regmap_debugfs_get_dump_start
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 14, 2013 08:41:56 PM Liu Jiang wrote:
-> On Tue 14 May 2013 07:28:45 AM CST, Rafael J. Wysocki wrote:
-> > On Tuesday, May 14, 2013 12:08:29 AM Jiang Liu wrote:
-> >> Now the global list acpi_pci_roots pci_root.c is useless, remove it.
-> >
-> > Well, are patches [1-4/9] needed for that or does it apply without them?
-> Hi Rafael,
->        This two patches have no dependency on others.
 
-Can you please submit them separately, then?
+--XMCwj5IQnwKtuyBG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Rafael
+On Tue, May 14, 2013 at 07:54:23AM +0100, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>=20
+> regmap_debugfs_get_dump_start should return the offset of the register
+> it should start reading from, However in the current code at one point
+> the code does not return correct register offset.
 
+Applied, thanks.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--XMCwj5IQnwKtuyBG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRkjPcAAoJELSic+t+oim9peEP/A5FnGQIykHJvzfq4hFyfnta
+uoBHjSQ6xAvmAt17LbRTY9so+Nq+3ZDyiSBoBmvT8AUY4BX7rrql9kQIs2Oc3JCW
+/2fWdJX1oZtYRnmfwk9q/KgIE1HJjuOiX3X466h+daKt/XM2RfbXzaxdGFwZ8tEw
+fsuTqe0WGq9z2NEpdBb/secrPedpeaoYX8BuzW7u/8ZKSwPtmCHDRNnOY2O4ZOgI
+DsABowqSr8p5cGoIhlVHg2GdoJvdR6QX20k281gyoEwYlPT8gOgTBEfyDOJ1xAu9
+SVak0USFXuPsId7Rle8ovKZjD6+/kVOMhmse2bh7b4GJUlHuqlID6kp8AcnL8PWI
+MomIKy3yAc8h2/kgSgtwu73HojdCDDk7cY8bkO5OnLrMff6W1Rxff99JYdA24vH/
+o5DV7Lf4At1zG3eX9A1IdPROSrJl3puqzj9fTkF6mvwICVpemUJLQ1ojW7WMNhJi
+URkvtvNQ2fIsOhL1nps0uGL4QTgZ4nrW/BwLbk13tmo6ijfXDoUe2mXePriGYu12
+ewekf8d8nwK0Ot+3p8YiHPR3FU791x6yyDUDSwPODSakT77BrIzMzid85X3xnQth
+omrgzmimPBXCG4k6DSTDq4pkJwOK0/fnThCqihZTVZwmUg2B/GvZHYLLf9kchbIp
+qkiNVDSHxbNlMug0YEPw
+=yPgM
+-----END PGP SIGNATURE-----
+
+--XMCwj5IQnwKtuyBG--
