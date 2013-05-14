@@ -1,142 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab3ENU5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 16:57:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26297 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758466Ab3ENU5U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 16:57:20 -0400
+	id S1758496Ab3ENVB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 17:01:29 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:44359 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757791Ab3ENVB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 17:01:28 -0400
+Message-ID: <5192A61E.5020605@imgtec.com>
+Date: Tue, 14 May 2013 22:01:18 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Message-ID: <370eb593-1a2f-41a6-8b16-163f54634f19@default>
-Date: Tue, 14 May 2013 13:54:41 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: RE: [PATCHv11 3/4] zswap: add to mm/
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <51920197.9070105@oracle.com> <20130514160040.GB4024@medulla>
- <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
- <20130514172827.GE4024@medulla>
-In-Reply-To: <20130514172827.GE4024@medulla>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <20130513195746.10068.92303@quantum> <CAAG0J991BCziPFddzBrx9vcwRxyRgcCd38A01uKXTDDK9xTnbQ@mail.gmail.com> <20130514165937.10068.18501@quantum>
+In-Reply-To: <20130514165937.10068.18501@quantum>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_14_22_01_26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+Hi Mike,
+
+On 14/05/13 17:59, Mike Turquette wrote:
+> Quoting James Hogan (2013-05-13 14:30:46)
+>> On 13 May 2013 20:57, Mike Turquette <mturquette@linaro.org> wrote:
+>>> One reason for this is the difficulty some have had with setting flags
+>>> from DT bindings.
+>>
+>> Could you elaborate on this? I've been adding flags to DT bindings for
+>> this sort of thing, but it feels a bit like it's in that grey area of
+>> not really describing the hardware itself. This information needs to
+>> be specified somehow though.
+>>
 > 
-> On Tue, May 14, 2013 at 09:37:08AM -0700, Dan Magenheimer wrote:
-> > > From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> > > Subject: Re: [PATCHv11 3/4] zswap: add to mm/
-> > >
-> > > On Tue, May 14, 2013 at 05:19:19PM +0800, Bob Liu wrote:
-> > > > Hi Seth,
-> > >
-> > > Hi Bob, thanks for the review!
-> > >
-> > > >
-> > > > > +	/* reclaim space if needed */
-> > > > > +	if (zswap_is_full()) {
-> > > > > +		zswap_pool_limit_hit++;
-> > > > > +		if (zbud_reclaim_page(tree->pool, 8)) {
-> > > >
-> > > > My idea is to wake up a kernel thread here to do the reclaim.
-> > > > Once zswap is full(20% percent of total mem currently), the kernel
-> > > > thread should reclaim pages from it. Not only reclaim one page, it
-> > > > should depend on the current memory pressure.
-> > > > And then the API in zbud may like this:
-> > > > zbud_reclaim_page(pool, nr_pages_to_reclaim, nr_retry);
-> > >
-> > > So kswapd for zswap.  I'm not opposed to the idea if a case can be
-> > > made for the complexity.  I must say, I don't see that case though.
-> > >
-> > > The policy can evolve as deficiencies are demonstrated and solutions are
-> > > found.
-> >
-> > Hmmm... it is fairly easy to demonstrate the deficiency if
-> > one tries.  I actually first saw it occur on a real (though
-> > early) EL6 system which started some graphics-related service
-> > that caused a very brief swapstorm that was invisible during
-> > normal boot but clogged up RAM with compressed pages which
-> > later caused reduced weird benchmarking performance.
+> It depends on the flag.  A good example is the CLK_DIVIDER_ONE_BASED
+> flag which does describe the hardware.  It informs the binding that
+> indexing starts at 1, not 0, which is a valid part of the hardware
+> description.
 > 
-> Without any specifics, I'm not sure what I can do with this.
+> However flags that deal with software policy do not belong on DT.
+> CLK_SET_RATE_PARENT certainly does not belong in the DT binding since
+> this is a pure Linux-ism.  Every binding just needs to be reviewed on a
+> case-by-case basis to make sure the flags are related only to the
+> hardware.
 
-Well, I think its customary for the author of a patch to know
-the limitations of the patch.  I suggest you synthesize a
-workload that attempts to measure worst case.  That's exactly
-what I did a year ago that led me to the realization that
-zcache needed to solve some issues before it was ready to
-promote out of staging.
- 
-> I'm hearing you say that the source of the benchmark degradation
-> are the idle pages in zswap.  In that case, the periodic writeback
-> patches I have in the wings should address this.
-> 
-> I think we are on the same page without realizing it.  Right now
-> zswap supports a kind of "direct reclaim" model at allocation time.
-> The periodic writeback patches will handle the proactive writeback
-> part to free up the zswap pool when it has idle pages in it.
+So given the desire to eliminate platform code, is there a particular
+way that these other flags can be specified instead of DT bindings?
 
-I don't think we are on the same page though maybe you are heading
-in the same direction now. I won't repeat the comments from the
-previous email.
+Cheers
+James
 
-> > I think Mel's unpredictability concern applies equally here...
-> > this may be a "long-term source of bugs and strange memory
-> > management behavior."
-> >
-> > > Can I get your ack on this pending the other changes?
-> >
-> > I'd like to hear Mel's feedback about this, but perhaps
-> > a compromise to allow for zswap merging would be to add
-> > something like the following to zswap's Kconfig comment:
-> >
-> > "Zswap reclaim policy is still primitive.  Until it improves,
-> > zswap should be considered experimental and is not recommended
-> > for production use."
-> 
-> Just for the record, an "experimental" tag in the Kconfig won't
-> work for me.
->
-> The reclaim policy for zswap is not primitive, it's simple.  There
-> is a difference.  Plus zswap is already runtime disabled by default.
-> If distros/customers enabled it, it is because they purposely
-> enabled it.
-
-Hmmm... I think you are proposing to users/distros the following
-use model:  "If zswap works for you, turn it on.  If it sucks,
-turn it off.  I can't tell you in advance whether it will work
-or suck for your distro/workload, but it will probably work so
-please try it."
-
-That sounds awfully experimental to me.
-
-The problem is not simple.  Your solution is simple because
-you are simply pretending that the harder parts of the problem
-don't exist.
-
-Dan
