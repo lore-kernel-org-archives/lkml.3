@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab3ENFrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 01:47:05 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:62880 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3ENFrD (ORCPT
+	id S1755783Ab3ENFsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 01:48:02 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57329 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab3ENFsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 01:47:03 -0400
+	Tue, 14 May 2013 01:48:00 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>,
         uclinux-dist-devel@blackfin.uclinux.org, ivtv-devel@ivtvdriver.org
@@ -29,9 +29,9 @@ Cc: linux-kernel@vger.kernel.org,
         =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
         Janne Grunau <j@jannau.net>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 2/4] media: dvb-frontends: remove duplicate checks for EPERM in dbg_g/s_register
-Date: Tue, 14 May 2013 11:15:15 +0530
-Message-Id: <1368510317-4356-3-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 3/4] media: usb: remove duplicate checks for EPERM in vidioc_g/s_register
+Date: Tue, 14 May 2013 11:15:16 +0530
+Message-Id: <1368510317-4356-4-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368510317-4356-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368510317-4356-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -41,36 +41,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-This patch removes check for EPERM in dbg_g/s_register
+This patch removes check for EPERM in vidioc_g/s_register
 as this check is already performed by core.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/dvb-frontends/au8522_decoder.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/media/usb/pvrusb2/pvrusb2-hdw.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/dvb-frontends/au8522_decoder.c b/drivers/media/dvb-frontends/au8522_decoder.c
-index 2099f21..9d159b4 100644
---- a/drivers/media/dvb-frontends/au8522_decoder.c
-+++ b/drivers/media/dvb-frontends/au8522_decoder.c
-@@ -529,8 +529,6 @@ static int au8522_g_register(struct v4l2_subdev *sd,
+diff --git a/drivers/media/usb/pvrusb2/pvrusb2-hdw.c b/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
+index e11267f..01d1c2d 100644
+--- a/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
++++ b/drivers/media/usb/pvrusb2/pvrusb2-hdw.c
+@@ -5173,8 +5173,6 @@ int pvr2_hdw_register_access(struct pvr2_hdw *hdw,
+ 	int stat = 0;
+ 	int okFl = 0;
  
- 	if (!v4l2_chip_match_i2c_client(client, &reg->match))
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	reg->val = au8522_readreg(state, reg->reg & 0xffff);
- 	return 0;
- }
-@@ -543,8 +541,6 @@ static int au8522_s_register(struct v4l2_subdev *sd,
- 
- 	if (!v4l2_chip_match_i2c_client(client, &reg->match))
- 		return -EINVAL;
--	if (!capable(CAP_SYS_ADMIN))
--		return -EPERM;
- 	au8522_writereg(state, reg->reg, reg->val & 0xff);
- 	return 0;
- }
+-	if (!capable(CAP_SYS_ADMIN)) return -EPERM;
+-
+ 	req.match = *match;
+ 	req.reg = reg_id;
+ 	if (setFl) req.val = *val_ptr;
 -- 
 1.7.4.1
 
