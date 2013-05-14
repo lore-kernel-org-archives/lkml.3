@@ -1,102 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab3ENHQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 03:16:05 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46402
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751177Ab3ENHQD (ORCPT
+	id S1756128Ab3ENHQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 03:16:55 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:44761 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab3ENHQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 03:16:03 -0400
-Date: Tue, 14 May 2013 09:14:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: steven.kinney@amd.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        iommu@lists.linux-foundation.org, joro@8bytes.org,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH 2/2] IOMMU/AMD: IOMMU PC PERF uncore PMU implementation
-Message-ID: <20130514071424.GB15942@dyad.programming.kicks-ass.net>
-References: <1368481453-5657-1-git-send-email-steven.kinney@amd.com>
+	Tue, 14 May 2013 03:16:53 -0400
+Message-ID: <5191E4E0.7020505@intel.com>
+Date: Tue, 14 May 2013 08:16:48 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368481453-5657-1-git-send-email-steven.kinney@amd.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: joeyli <jlee@suse.com>
+CC: Lingzhu Xiang <lxiang@redhat.com>, Jeremy Kerr <jk@ozlabs.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Josh Boyer <jwboyer@redhat.com>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH] efivarfs: Never return ENOENT from firmware again
+References: <5b6476bf31dc699a0e6f3983e78447eeac34d831.1368180585.git.lxiang@redhat.com>  <51913D4B.2000606@intel.com> <1368506197.21417.172.camel@linux-s257.site>
+In-Reply-To: <1368506197.21417.172.camel@linux-s257.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 04:44:13PM -0500, steven.kinney@amd.com wrote:
-> From: Steven L Kinney <Steven.Kinney@amd.com>
+On 05/14/2013 05:36 AM, joeyli wrote:
+> I found the "[PATCH] x86, efi: initial the local variable of DataSize to
+> zero" lost in urgent branch, and it also didn't in Linus's v3.10-rc1.
 > 
-> Implement a perf PMU to handle IOMMU PC perf events.  This PMU will handle
-> static counter perf events relative to the AMD IOMMU Performance Counters.
-> 
-> To invoke the AMD IOMMU PMU issue a perf tool command such as:
-> 
-> ./perf stat -e amd_iommu/config=<config-data>,config1=<config1-data>/u <command>
-> 
-> For example:
-> 
-> ./perf stat -e amd_iommu/config=0x8000000000000005,config1=0/u <command>
-> 
-> The resulting count will be how many IOMMU total peripheral memory
-> operations were performed during the command execution window.
-> 
-> Signed-off-by: Steven Kinney <steven.kinney@amd.com>
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> ---
+> Did this patch move to other branch?
 
-> +PMU_FORMAT_ATTR(iommu_raw, "config:63");
+It appears I dropped this patch when doing the rebase against -rc1. I'm
+really sorry about that. I've applied it again.
 
-> +static int perf_iommu_init(struct perf_event *event)
-> +{
-> +	struct hw_perf_event *hwc = &event->hw;
-> +	struct perf_iommu *perf_iommu;
-> +	u64 config, config1;
-> +
-> +	/* initialize the cntr_assign_mask */
-> +	cntr_assign_mask = 0;
-> +
-> +	/* test the event attr type check for PMU enumeration */
-> +	if (event->attr.type != event->pmu->type)
-> +		return -ENOENT;
-> +
-> +	perf_iommu = &perf_iommu_fetch;
-> +
-> +	if (perf_iommu) {
-> +		config = event->attr.config;
-> +		config1 = event->attr.config1;
-> +	} else
-> +		return -EINVAL;
-> +
-> +	if (event->pmu != &perf_iommu->pmu)
-> +		return -ENOENT;
-> +
-> +	/* make sure the event->attr.config is raw (vendor specific) */
-> +	if (!(config & IOMMU_PC_RAW_CONFIG_MASK))
-> +		return -EINVAL;
-
-Is this really needed? Non of the uncore PMU drivers have a magic config bit
-either. Seems weird to me.
-
-> +	/* integrate with iommu base devid (0000), assume one iommu */
-> +	perf_iommu->max_banks =
-> +		amd_iommu_pc_get_max_banks(IOMMU_BASE_DEVID);
-> +	perf_iommu->max_counters =
-> +		amd_iommu_pc_get_max_counters(IOMMU_BASE_DEVID);
-> +
-> +	/* update the hw_perf_event struct with the iommu config data */
-> +	hwc->config = config;
-> +	hwc->extra_reg.config = config1;
-> +
-> +	return 0;
-> +}
-
-Also it might make sense to add a few event aliases to both this IOMMU and the
-AMD uncore driver.
-
-Search for uncore_.*_events in arch/x86/kernel/cpu/perf_event_intel_uncore.c
-for examples.
-
-This way you can also make the IOMMU a tad more useful by providing some events
-you think are the most useful for people interested in this thing.
+Thanks for being so diligent.
