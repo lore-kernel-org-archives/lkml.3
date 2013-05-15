@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab3EOJBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:01:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55937 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab3EOJA6 (ORCPT
+	id S1758610Ab3EOJBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:01:32 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:64824 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758551Ab3EOJBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:00:58 -0400
-Date: Wed, 15 May 2013 10:56:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130515085639.GD10510@laptop.programming.kicks-ass.net>
-References: <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130514145119.GC19669@dyad.programming.kicks-ass.net>
- <20130514154728.GC4442@linux.vnet.ibm.com>
+	Wed, 15 May 2013 05:01:30 -0400
+Date: Wed, 15 May 2013 02:00:53 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 04/21] Generic percpu refcounting
+Message-ID: <20130515090053.GC16164@moria.home.lan>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
+ <1368494338-7069-5-git-send-email-koverstreet@google.com>
+ <20130514145932.GA6607@mtj.dyndns.org>
+ <20130514152836.GA21972@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130514154728.GC4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130514152836.GA21972@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 08:47:28AM -0700, Paul E. McKenney wrote:
-> On Tue, May 14, 2013 at 04:51:20PM +0200, Peter Zijlstra wrote:
-> > > In theory, yes.  In practice, this requires lots of lock acquisitions
-> > > and releases on large systems, including some global locks.  The weight
-> > > could be reduced, but...
-> > > 
-> > > What I would like to do instead would be to specify expedited grace
-> > > periods during boot.
-> > 
-> > But why, surely going idle without any RCU callbacks isn't completely unheard
-> > of, even outside of the boot process?
+On Tue, May 14, 2013 at 05:28:36PM +0200, Oleg Nesterov wrote:
+> On 05/14, Tejun Heo wrote:
+> >
+> > > +int percpu_ref_tryget(struct percpu_ref *ref)
+> > > +{
+> > > +	int ret = 1;
+> > > +
+> > > +	preempt_disable();
+> > > +
+> > > +	if (!percpu_ref_dead(ref))
+> > > +		percpu_ref_get(ref);
+> > > +	else
+> > > +		ret = 0;
+> > > +
+> > > +	preempt_enable();
+> > > +
+> > > +	return ret;
+> > > +}
+> ...
+> > BTW, why is this
+> > function necessary?  What's the use case?
 > 
-> Yep, and RCU has special-cased that for quite some time.
+> Yes, I was wondering too.
 > 
-> > Being able to quickly drop out of the RCU state machinery would be a good thing IMO.
+> And please note that this code _looks_ wrong, percpu_ref_get() still
+> can increment ref->count.
+
+Yeah I see what you mean, I changed how ret is set.
+
+But also splitting tryget() and count() out into another patch to go
+with the module conversion.
+
+> Hmm. Just noticed this comment above percpu_ref_kill()
 > 
-> And this is currently possible -- this is the job of rcu_idle_enter()
-> and friends.  And it works well, at least when I get my "if" statements
-> set up correctly (hence the earlier patch).
+> 	* The caller must issue a synchronize_rcu()/call_rcu() before calling
+> 	* percpu_ref_put() to drop the initial ref.
 > 
-> Or are you seeing a slowdown even with that earlier patch applied?  If so,
-> please let me know what you are seeing.
+> Really?
 
-I'm not running anything in particular, except maybe a broken mental
-model of RCU ;-)
-
-So what I'm talking about is the !rcu_cpu_has_callbacks() case, where
-there's absolutely nothing for RCU to do except tell the state machine
-its no longer participating.
-
-Your patch to rcu_needs_cpu() frobbing the lazy condition is after that
-and thus irrelevant for this AFAICT.
-
-Now as far as I can see, rcu_needs_cpu() will return false in this case;
-allowing the cpu to enter NO_HZ state. We then call rcu_idle_enter()
-which would call rcu_eqs_enter(). Which should put the CPU in extended
-quiescent state.
-
-However, you're still running into these FQSs delaying boot. Why is
-that? Is that because rcu_eqs_enter() doesn't really do enough?
-
-The thing is, if all other CPUs are idle, detecting the end of a grace
-period should be rather trivial and not involve FQSs and thus be tons
-faster.
-
-Clearly I'm missing something obvious and not communicating right or so.
-
-
+That's also left over from the dynamic version, whoops.
