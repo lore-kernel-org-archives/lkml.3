@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3EOGOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 02:14:09 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60958 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab3EOGOH (ORCPT
+	id S932158Ab3EOGON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 02:14:13 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:28167 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab3EOGOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 02:14:07 -0400
-Date: Wed, 15 May 2013 08:14:01 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Cc: Holger Hoffstaette <holger.hoffstaette@googlemail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: r8169 on 3.8.13, 3.9.2, 3.10-rc1, was Re: [ 00/73] 3.8.13-stable
- review
-Message-ID: <20130515061401.GA4382@electric-eye.fr.zoreil.com>
-References: <20130509222757.917088509@linuxfoundation.org>
- <pan.2013.05.10.10.54.26.943195@googlemail.com>
- <20130515000715.GA20099@milliways>
+	Wed, 15 May 2013 02:14:09 -0400
+X-Spam-Score: -100.8
+Message-ID: <5193277A.3040506@asianux.com>
+Date: Wed, 15 May 2013 14:13:14 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515000715.GA20099@milliways>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/workqueue.c: need call device_remove_file() when failure
+ occurs after called device_create_file()
+References: <51922D30.8000809@asianux.com> <20130514151752.GB6795@mtj.dyndns.org> <5192EFE0.4040903@asianux.com>
+In-Reply-To: <5192EFE0.4040903@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ken Moffat <zarniwhoop@ntlworld.com> :
-[...]
->  Cc'ing to netdev because I don't think this has had a response, and
 
-A patch has been sent to netdev a few hours ago. It needs more work,
-especially testing (hint, hint) as I don't have a proven test case yet.
+In workqueue_sysfs_register(), when failure occurs after called
+device_create_file(), need call device_remove_file() to release the
+related resources, then call device_unregister().
 
-Please note:
-- if you don't use a 8168evl (check your dmesg for the XID line emitted
-  by the r8169 driver), you are not the experiencing the same bug.
-- if you don't enable Tx checksum offload (distro/vendor dependent though
-  disabled by default in the vanilla driver, see ethtool -k eth0,
-  ethtool -K eth0 tx on sg on)), you are not the experiencing the same
-  bug.
-- if you are experiencing the same bug, 3.10-rc1 should work again
-  after reverting e5195c1f31f399289347e043d6abf3ffa80f0005
+Or it will cause issue.
 
-If someone comes with a failing network capture and a working one, it will
-save time. A 64 bytes (max) packet is not correctly transmitted.
+For individual 'device_attributs' (just like our case), need call
+device_remove_file() explictly and then call device_unregister(),
+please reference drivers/base/*.c (e.g node.c or cpu.c).
 
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/workqueue.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 1ae6028..de11dae 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3323,6 +3323,8 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
+ 		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
+ 			ret = device_create_file(&wq_dev->dev, attr);
+ 			if (ret) {
++				while (--attr >= wq_sysfs_unbound_attrs)
++					device_remove_file(&wq_dev->dev, attr);
+ 				device_unregister(&wq_dev->dev);
+ 				wq->wq_dev = NULL;
+ 				return ret;
 -- 
-Ueimor
+1.7.7.6
