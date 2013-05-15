@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab3EOPoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:44:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57747 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758967Ab3EOPoJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:44:09 -0400
+	id S1759202Ab3EOPor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758912Ab3EOPoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:44:46 -0400
+Date: Wed, 15 May 2013 17:41:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, akpm@linux-foundation.org,
+        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 17/21] Percpu tag allocator
+Message-ID: <20130515154121.GA21932@redhat.com>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com> <1368494338-7069-18-git-send-email-koverstreet@google.com> <20130514134859.GA17587@redhat.com> <20130515092543.GE16164@moria.home.lan>
 MIME-Version: 1.0
-In-Reply-To: <20130515150450.GB2194@krava.brq.redhat.com>
-References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
-	<20130507122948.GD1076@krava.brq.redhat.com>
-	<20130515150450.GB2194@krava.brq.redhat.com>
-Date: Wed, 15 May 2013 17:44:07 +0200
-Message-ID: <CAFTL4hzFJ1cOvo0p_r0S+TC4cBJqurtfjkg7fYv-Gtrh2wTLkg@mail.gmail.com>
-Subject: Re: [PATCHv3 0/4] perf, signal x86: Fix breakpoint events overflow handling
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515092543.GE16164@moria.home.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/15 Jiri Olsa <jolsa@redhat.com>:
-> On Tue, May 07, 2013 at 02:29:48PM +0200, Jiri Olsa wrote:
->> On Wed, May 01, 2013 at 05:25:40PM +0200, Jiri Olsa wrote:
->> > hi,
->> > sending v3 for initial patchset:
->> > https://lkml.org/lkml/2013/3/1/324
->> >
->> > basically just sending remaining (not pulled) patches,
->> > with '*-by: *' tags updated.
->> >
->> > v3 changes:
->> >   - perf test patches already pulled in
->> >   - added Oleg's Tested-by for signal related patches
->> >   - added Frederic's Reviewed-by for signal related patches
->> >   - added Peter's Reviewed-by for perf patch.
->>
->> hi,
->>
->> Thomas, Peter,
->> any chance you could pull this in?
->>
->> Ingo,
->> could you please take the perf change (4/4)?
->> it's reviewed by PeterZ
+On 05/15, Kent Overstreet wrote:
 >
-> ping
+> On Tue, May 14, 2013 at 03:48:59PM +0200, Oleg Nesterov wrote:
+> > tag_free() does
+> >
+> > 	list_del_init(wait->list);
+> > 	/* WINDOW */
+> > 	wake_up_process(wait->task);
+> > 	
+> > in theory the caller of tag_alloc() can notice list_empty_careful(),
+> > return without taking pool->lock, exit, and free this task_struct.
+> >
+> > But the main problem is that it is not clear why this code reimplements
+> > add_wait_queue/wake_up_all, for what?
+>
+> To save on locking... there's really no point in another lock for the
+> wait queue. Could just use the wait queue lock instead I suppose, like
+> wait_event_interruptible_locked()
 
-May be you can set up a branch based on v3.10-rc1 with these patches
-applied on top and send it as a pull request to Ingo (and LKML + other
-people Cc'ed). Your branch is not pullable as is because it seems to
-be based on tip:master (it's not targeted for mainline, just there for
-testing) and moreover an old enough version of it.
+Yes. Or perhaps you can reuse wait_queue_head_t->lock for move_tags().
 
-Just suggesting that because clean pull requests based on sane
-starting points usually get better and faster attention than
-standalone patches because it's less maintainance noise. Also you have
-all the necessary acks so it's all good.
+And,
 
-Thanks!
+> (the extra spin_lock()/unlock() might not really cost anything but
+> nested irqsave()/restore() is ridiculously expensive, IME).
+
+But this is the slow path anyway. Even if you do not use _locked, how
+much this extra locking (save/restore) can make the things worse?
+
+In any case, I believe it would be much better to reuse the code we
+already have, to avoid the races and make the code more understandable.
+And to not bloat the code.
+
+Do you really think that, say,
+
+	unsigned tag_alloc(struct tag_pool *pool, bool wait)
+	{
+		struct tag_cpu_freelist *tags;
+		unsigned ret = 0;
+	retry:
+		tags = get_cpu_ptr(pool->tag_cpu);
+		local_irq_disable();
+		if (!tags->nr_free && pool->nr_free) {
+			spin_lock(&pool->wq.lock);
+			if (pool->nr_free)
+				move_tags(...);
+			spin_unlock(&pool->wq.lock);
+		}
+
+		if (tags->nr_free)
+			ret = tags->free[--tags->nr_free];
+		local_irq_enable();
+		put_cpu_var(pool->tag_cpu);
+
+		if (ret || !wait)
+			return ret;
+
+		__wait_event(&pool->wq, pool->nr_free);
+		goto retry;
+	}
+
+will be much slower?
+
+> > I must admit, I do not understand what this code actually does ;)
+> > I didn't try to read it carefully though, but perhaps at least the
+> > changelog could explain more?
+>
+> The changelog is admittedly terse, but that's basically all there is to
+> it -
+> [...snip...]
+
+Yes, thanks for your explanation, I already realized what it does...
+
+Question. tag_free() does move_tags+wakeup if nr_free = pool->watermark * 2.
+Perhaps it should should also take waitqueue_active() into account ?
+tag_alloc() can sleep more than necessary, it seems.
+
+Oleg.
+
