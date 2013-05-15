@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932958Ab3EOQxc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:53:32 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:58423 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932902Ab3EOQx2 (ORCPT
+	id S1759654Ab3EOQyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:54:14 -0400
+Received: from sentry-two.sandia.gov ([132.175.109.14]:48534 "EHLO
+	sentry-two.sandia.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758319Ab3EOQyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:53:28 -0400
-Message-ID: <5193BD85.8030803@linaro.org>
-Date: Wed, 15 May 2013 09:53:25 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Wed, 15 May 2013 12:54:12 -0400
+X-WSS-ID: 0MMUMY9-0B-0OO-02
+X-M-MSG: 
+X-Server-Uuid: AF72F651-81B1-4134-BA8C-A8E1A4E620FF
+Message-ID: <5193BD96.1000005@sandia.gov>
+Date: Wed, 15 May 2013 10:53:42 -0600
+From: "Jim Schutt" <jaschut@sandia.gov>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402
+ Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 07/15] clocksource: Provide unbind interface in sysfs
-References: <20130425142452.908423538@linutronix.de> <20130425143435.964218245@linutronix.de> <517F1A27.3030206@linaro.org> <alpine.LFD.2.02.1305151144550.1388@ionos>
-In-Reply-To: <alpine.LFD.2.02.1305151144550.1388@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Alex Elder" <elder@inktank.com>
+cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] ceph: ceph_pagelist_append might sleep while
+ atomic
+References: <1368635894-114707-1-git-send-email-jaschut@sandia.gov>
+ <1368635894-114707-4-git-send-email-jaschut@sandia.gov>
+ <5193BC89.6030807@inktank.com>
+In-Reply-To: <5193BC89.6030807@inktank.com>
+X-TMWD-Spam-Summary: TS=20130515165346; ID=1; SEV=2.3.1;
+ DFV=B2013022509; IFV=NA; AIF=B2013022509; RPD=5.03.0010; ENG=NA;
+ RPDID=7374723D303030312E30413031303230332E35313933424439412E303036463A534346535441543838363133332C73733D312C6667733D30;
+ CAT=NONE; CON=NONE; SIG=AAABAJsKIgAAAAAAAAAAAAAAAAAAAH0=
+X-MMS-Spam-Filter-ID: B2013022509_5.03.0010
+X-WSS-ID: 7D8D621D2IW2831081-01-01
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-RSA-Inspected: yes
+X-RSA-Classifications: public
+X-RSA-Action: allow
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 02:47 AM, Thomas Gleixner wrote:
-> On Mon, 29 Apr 2013, John Stultz wrote:
->> On 04/25/2013 01:31 PM, Thomas Gleixner wrote:
->>> With the module refcount held for the current clocksource there is no
->>> way to unload the module.
->>>
->>> Provide a sysfs interface which allows to unbind the clocksource. One
->>> could argue that the clocksource override could be (ab)used to do so,
->>> but the clocksource override cannot be used from the kernel itself,
->>> while an unbind function can be used to programmatically check whether
->>> a clocksource can be shutdown or not.
->>>
->>> The unbind functionality uses the new skip current feature of
->>> clocksource_select and verifies that a fallback clocksource has been
->>> installed. If the clocksource which should be unbound is the current
->>> clocksource and no fallback can be found, unbind returns -EBUSY.
->>>
->>> This does not support the unbinding of a clocksource which is used as
->>> the watchdog clocksource. No point in fostering crappy hardware.
->> So.. if the clocksource you want to unbind is the highest rated continuous
->> clocksource that doesn't need a watchdog (basically what's likely to be in-use
->> and required to be unbinded), its likely to be selected as the watchdog
->> already.
->>
->> ie: on a system that has only HPET/ACPI_PM, you can't unbind HPET, since its a
->> watchdog.
-> No. The thing is that I only prevent unbinding if it is used as the
-> watchdog. In the above HPET/PM scenario both are potential watchdogs,
-> but w/o a user it's valid to unbind one of them.
->
-> What I need to prevent is:
->
-> TSC is current clocksource and we only have ACPI_PM as watchdog and
-> its used. So now you try to unbind ACPI_PM then the TSC would be left
-> w/o a watchdog instance. That's what I'm preventing. Will reword the
-> changelog accordingly.
+On 05/15/2013 10:49 AM, Alex Elder wrote:
+> On 05/15/2013 11:38 AM, Jim Schutt wrote:
+>> > Ceph's encode_caps_cb() worked hard to not call __page_cache_alloc() while
+>> > holding a lock, but it's spoiled because ceph_pagelist_addpage() always
+>> > calls kmap(), which might sleep.  Here's the result:
+> This looks good to me, but I admit I didn't take as close
+> a look at it this time.
+> 
+> I appreciate your updating the series to include the things
+> I mentioned.
+> 
+> I'll commit these for you, and I'll get confirmation on the
+> byte order thing as well.
 
-You might double check the logic, because I feel like I actually hit 
-this issue where on my vm machine w/ only hpet/acpi_pm I couldn't unbind 
-the hpet.
+Cool.  Thanks, Alex.
 
-Though its been a few weeks, so maybe I'm confusing things?
-Let me know if you want me to try to reproduce it.
+-- Jim
 
-thanks
--john
+> 
+> Reviewed-by: Alex Elder <elder@inktank.com>
+> 
+> 
+
 
