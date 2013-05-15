@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab3EOL6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 07:58:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34891 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699Ab3EOL63 (ORCPT
+	id S1758821Ab3EOMAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:00:41 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:40663 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab3EOMAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 07:58:29 -0400
+	Wed, 15 May 2013 08:00:39 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sekhar Nori <nsekhar@ti.com>, Hans Verkuil <hans.verkuil@cisco.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH 1/6] media: i2c: ths7303: remove init_enable option from pdata
-Date: Wed, 15 May 2013 17:27:17 +0530
-Message-Id: <1368619042-28252-2-git-send-email-prabhakar.csengg@gmail.com>
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/6] ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
+Date: Wed, 15 May 2013 17:27:18 +0530
+Message-Id: <1368619042-28252-3-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,12 +31,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-This patch removes init_enable option from pdata, the init_enable
-was intended that the device should start streaming video immediately
-but ideally the bridge drivers should call s_stream explicitly for such
-devices to start video.
+remove init_enable from ths7303 pdata as it is no longer exists.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
 Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
@@ -44,44 +43,23 @@ Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Sakari Ailus <sakari.ailus@iki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- drivers/media/i2c/ths7303.c |    4 +---
- include/media/ths7303.h     |    2 --
- 2 files changed, 1 insertions(+), 5 deletions(-)
+ arch/arm/mach-davinci/board-dm365-evm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
-index 65853ee..8cddcd0 100644
---- a/drivers/media/i2c/ths7303.c
-+++ b/drivers/media/i2c/ths7303.c
-@@ -356,9 +356,7 @@ static int ths7303_setup(struct v4l2_subdev *sd)
- 	int ret;
- 	u8 mask;
- 
--	state->stream_on = pdata->init_enable;
--
--	mask = state->stream_on ? 0xff : 0xf8;
-+	mask = 0xf8;
- 
- 	ret = ths7303_write(sd, THS7303_CHANNEL_1, pdata->ch_1 & mask);
- 	if (ret)
-diff --git a/include/media/ths7303.h b/include/media/ths7303.h
-index 980ec51..a7b4929 100644
---- a/include/media/ths7303.h
-+++ b/include/media/ths7303.h
-@@ -30,13 +30,11 @@
-  * @ch_1: Bias value for channel one.
-  * @ch_2: Bias value for channel two.
-  * @ch_3: Bias value for channel three.
-- * @init_enable: initalize on init.
-  */
- struct ths7303_platform_data {
- 	u8 ch_1;
- 	u8 ch_2;
- 	u8 ch_3;
--	u8 init_enable;
+diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
+index 2a66743..4e02ae7 100644
+--- a/arch/arm/mach-davinci/board-dm365-evm.c
++++ b/arch/arm/mach-davinci/board-dm365-evm.c
+@@ -510,7 +510,6 @@ struct ths7303_platform_data ths7303_pdata = {
+ 	.ch_1 = 3,
+ 	.ch_2 = 3,
+ 	.ch_3 = 3,
+-	.init_enable = 1,
  };
  
- #endif
+ static struct amp_config_info vpbe_amp = {
 -- 
 1.7.4.1
 
