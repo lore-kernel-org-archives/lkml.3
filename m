@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab3EOIxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:53:31 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52280 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756980Ab3EOIx2 (ORCPT
+	id S1757722Ab3EOIyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:54:12 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:46484 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602Ab3EOIyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:53:28 -0400
-Message-ID: <51934D03.1090400@free-electrons.com>
-Date: Wed, 15 May 2013 10:53:23 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Wed, 15 May 2013 04:54:09 -0400
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: sun5i: Update the clock compatible strings
-References: <1367315783-21345-1-git-send-email-maxime.ripard@free-electrons.com> <1367315783-21345-3-git-send-email-maxime.ripard@free-electrons.com> <517FABBA.5060902@elopez.com.ar>
-In-Reply-To: <517FABBA.5060902@elopez.com.ar>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130514155835.10068.93655@quantum>
+References: <1368019749-19455-1-git-send-email-lee.jones@linaro.org>
+	<1368019749-19455-4-git-send-email-lee.jones@linaro.org>
+	<20130514155835.10068.93655@quantum>
+Date: Wed, 15 May 2013 10:54:09 +0200
+Message-ID: <CACRpkdZjvQF9e_isiuUgmcH0RgoGGF=dmg_E7oQjs4oY9f+dFQ@mail.gmail.com>
+Subject: Re: [PATCH 3/9] clk: ux500: Provide device enumeration number suffix
+ for SMSC911x
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 30/04/2013 13:32, Emilio López a écrit :
-> Hi Maxime,
-> 
-> El 30/04/13 06:56, Maxime Ripard escribió:
->> The Allwinner A13 has a smaller clock set than the one found in the A10.
->> Fix the A13 device tree and documentation to reflect this.
+On Tue, May 14, 2013 at 5:58 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Lee Jones (2013-05-08 06:29:03)
+>> First Ethernet device has a ".0" appended onto the device name. It
+>> appears that we need this in order to obtain the correct clock.
 >>
->> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
-> The patch looks fine to me.
-> 
-> Acked-by: Emilio López <emilio@elopez.com.ar>
+>> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+>> Cc: Mike Turquette <mturquette@linaro.org>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>
+> Looks good to me.  Can I take this into clk-next or are you looking for
+> an Ack?
 
-Ok, I just applied it to sunxi/dt-for-3.11
+You can probably take it through the clk tree, but this series
+deals with regression fixes so it should go into the -rc series
+I think.
 
-Maxime
-
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Yours,
+Linus Walleij
