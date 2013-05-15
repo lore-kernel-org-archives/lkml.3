@@ -1,242 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620Ab3EOUcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:32:07 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:41609 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709Ab3EOUcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:32:05 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
-Date: Wed, 15 May 2013 22:31:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc" <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <201305111330.05046.heiko@sntech.de> <201305111331.25405.heiko@sntech.de> <CACRpkdaT195McX9NeccJYpmWbuYK-AZUTHr9AXKHnJdkf+Qzuw@mail.gmail.com>
-In-Reply-To: <CACRpkdaT195McX9NeccJYpmWbuYK-AZUTHr9AXKHnJdkf+Qzuw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201305152231.52423.heiko@sntech.de>
+	id S932742Ab3EOUhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:37:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33479 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757018Ab3EOUhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 16:37:50 -0400
+Date: Wed, 15 May 2013 13:37:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Reduce system disruption due to kswapd V4
+Message-Id: <20130515133748.5db2c6fb61c72ec61381d941@linux-foundation.org>
+In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 15. Mai 2013, 20:53:32 schrieb Linus Walleij:
-> On Sat, May 11, 2013 at 1:31 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> > This adds a new driver to support the s3c24xx dma using the dmaengine
-> > and make the old one in mach-s3c24xx obsolete in the long run.
-> > 
-> > Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
-> > with numerous virtual channels being mapped to a lot less physical ones.
-> > The driver therefore borrows a lot from the amba-pl08x driver in this
-> > regard. Functionality-wise the driver gains a memcpy ability in addition
-> > to the slave_sg one.
-> > 
-> > The driver currently only supports the "newer" SoCs which can use any
-> > physical channel for any dma slave. Support for the older SoCs where
-> > each channel only supports a subset of possible dma slaves will have to
-> > be added later.
-> > 
-> > Tested on a s3c2416-based board, memcpy using the dmatest module and
-> > slave_sg partially using the spi-s3c64xx driver.
-> > 
-> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+On Mon, 13 May 2013 09:12:31 +0100 Mel Gorman <mgorman@suse.de> wrote:
+
+> This series does not fix all the current known problems with reclaim but
+> it addresses one important swapping bug when there is background IO.
 > 
-> (...)
+> ...
+>
+> This was tested using memcached+memcachetest while some background IO
+> was in progress as implemented by the parallel IO tests implement in MM
+> Tests. memcachetest benchmarks how many operations/second memcached can
+> service and it is run multiple times. It starts with no background IO and
+> then re-runs the test with larger amounts of IO in the background to roughly
+> simulate a large copy in progress.  The expectation is that the IO should
+> have little or no impact on memcachetest which is running entirely in memory.
 > 
-> > +static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan *s3cchan)
-> > +{
-> > +       struct s3c24xx_dma_phy *phy = s3cchan->phy;
-> > +       struct s3c24xx_txd *txd = s3cchan->at;
-> > +       u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
-> > +
-> > +       switch (txd->dcon & DCON_DSZ_MASK) {
-> > +       case DCON_DSZ_BYTE:
-> > +               return tc;
-> > +       case DCON_DSZ_HALFWORD:
-> > +               return tc * 2;
-> > +       case DCON_DSZ_WORD:
-> > +               return tc * 4;
-> > +       default:
-> > +               break;
-> > +       }
-> > +
-> > +       BUG();
+>                                         3.10.0-rc1                  3.10.0-rc1
+>                                            vanilla            lessdisrupt-v4
+> Ops memcachetest-0M             22155.00 (  0.00%)          22180.00 (  0.11%)
+> Ops memcachetest-715M           22720.00 (  0.00%)          22355.00 ( -1.61%)
+> Ops memcachetest-2385M           3939.00 (  0.00%)          23450.00 (495.33%)
+> Ops memcachetest-4055M           3628.00 (  0.00%)          24341.00 (570.92%)
+> Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
+> Ops io-duration-715M               12.00 (  0.00%)              7.00 ( 41.67%)
+> Ops io-duration-2385M             118.00 (  0.00%)             21.00 ( 82.20%)
+> Ops io-duration-4055M             162.00 (  0.00%)             36.00 ( 77.78%)
+> Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
+> Ops swaptotal-715M             140134.00 (  0.00%)             18.00 ( 99.99%)
+> Ops swaptotal-2385M            392438.00 (  0.00%)              0.00 (  0.00%)
+> Ops swaptotal-4055M            449037.00 (  0.00%)          27864.00 ( 93.79%)
+> Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
+> Ops swapin-715M                     0.00 (  0.00%)              0.00 (  0.00%)
+> Ops swapin-2385M               148031.00 (  0.00%)              0.00 (  0.00%)
+> Ops swapin-4055M               135109.00 (  0.00%)              0.00 (  0.00%)
+> Ops minorfaults-0M            1529984.00 (  0.00%)        1530235.00 ( -0.02%)
+> Ops minorfaults-715M          1794168.00 (  0.00%)        1613750.00 ( 10.06%)
+> Ops minorfaults-2385M         1739813.00 (  0.00%)        1609396.00 (  7.50%)
+> Ops minorfaults-4055M         1754460.00 (  0.00%)        1614810.00 (  7.96%)
+> Ops majorfaults-0M                  0.00 (  0.00%)              0.00 (  0.00%)
+> Ops majorfaults-715M              185.00 (  0.00%)            180.00 (  2.70%)
+> Ops majorfaults-2385M           24472.00 (  0.00%)            101.00 ( 99.59%)
+> Ops majorfaults-4055M           22302.00 (  0.00%)            229.00 ( 98.97%)
+
+I doubt if many people have the context to understand what these
+numbers really mean.  I don't.
+
+> Note how the vanilla kernels performance collapses when there is enough
+> IO taking place in the background. This drop in performance is part of
+> what users complain of when they start backups. Note how the swapin and
+> major fault figures indicate that processes were being pushed to swap
+> prematurely. With the series applied, there is no noticable performance
+> drop and while there is still some swap activity, it's tiny.
 > 
-> Isn't that a bit nasty. This macro should be used with care and we
-> should recover if possible. dev_err()?
+>                             3.10.0-rc1  3.10.0-rc1
+>                                vanilla lessdisrupt-v4
+> Page Ins                       1234608      101892
+> Page Outs                     12446272    11810468
+> Swap Ins                        283406           0
+> Swap Outs                       698469       27882
+> Direct pages scanned                 0      136480
+> Kswapd pages scanned           6266537     5369364
+> Kswapd pages reclaimed         1088989      930832
+> Direct pages reclaimed               0      120901
+> Kswapd efficiency                  17%         17%
+> Kswapd velocity               5398.371    4635.115
+> Direct efficiency                 100%         88%
+> Direct velocity                  0.000     117.817
+> Percentage direct scans             0%          2%
+> Page writes by reclaim         1655843     4009929
+> Page writes file                957374     3982047
+> Page writes anon                698469       27882
+> Page reclaim immediate            5245        1745
+> Page rescued immediate               0           0
+> Slabs scanned                    33664       25216
+> Direct inode steals                  0           0
+> Kswapd inode steals              19409         778
 
-runtime_config already denies any settings not in the 1,2 or 4bytes range - 
-the default-part should therefore never be reached. So if any other value 
-magically appears in the register and triggers the default-part, something is 
-seriously wrong. So my guess is, the BUG might be appropriate.
+The reduction in inode steals might be a significant thing? 
+prune_icache_sb() does invalidate_mapping_pages() and can have the bad
+habit of shooting down a vast number of pagecache pages (for a large
+file) in a single hit.  Did this workload use large (and clean) files? 
+Did you run any test which would expose this effect?
 
-On the other hand the whole default+BUG part could also simply go away, for 
-the same reasons.
-
-
-> > +/*
-> > + * Set the initial DMA register values.
-> > + * Put them into the hardware and start the transfer.
-> > + */
-> > +static void s3c24xx_dma_start_next_txd(struct s3c24xx_dma_chan *s3cchan)
-> > +{
-> > +       struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-> > +       struct s3c24xx_dma_phy *phy = s3cchan->phy;
-> > +       struct virt_dma_desc *vd = vchan_next_desc(&s3cchan->vc);
-> > +       struct s3c24xx_txd *txd = to_s3c24xx_txd(&vd->tx);
-> > +       u32 dcon = txd->dcon;
-> > +       u32 val;
-> > +
-> > +       list_del(&txd->vd.node);
-> > +
-> > +       s3cchan->at = txd;
-> > +
-> > +       /* Wait for channel inactive */
-> > +       while (s3c24xx_dma_phy_busy(phy))
-> > +               cpu_relax();
-> > +
-> > +       /* transfer-size and -count from len and width */
-> > +       switch (txd->width) {
-> > +       case 1:
-> > +               dcon |= DCON_DSZ_BYTE | txd->len;
-> > +               break;
-> > +       case 2:
-> > +               dcon |= DCON_DSZ_HALFWORD | (txd->len / 2);
-> > +               break;
-> > +       case 4:
-> > +               dcon |= DCON_DSZ_WORD | (txd->len / 4);
-> > +               break;
-> > +       }
-> > +
-> > +       if (s3cchan->slave) {
-> > +               if (s3cdma->sdata->has_reqsel) {
-> > +                       int reqsel =
-> > s3cdma->pdata->reqsel_map[s3cchan->id]; +                      
-> > writel((reqsel << 1) | DMAREQSEL_HW,
-> > +                              phy->base + DMAREQSEL);
-> > +               } else {
-> > +                       dev_err(&s3cdma->pdev->dev, "non-reqsel
-> > unsupported\n"); +                       return;
-> > +                       dcon |= DCON_HWTRIG;
-> > +               }
-> > +       } else {
-> > +               if (s3cdma->sdata->has_reqsel) {
-> > +                       writel(0, phy->base + DMAREQSEL);
-> > +               } else {
-> > +                       dev_err(&s3cdma->pdev->dev, "non-reqsel
-> > unsupported\n"); +                       return;
-> > +               }
-> > +       }
-> > +
-> > +       writel(txd->src_addr, phy->base + DISRC);
-> > +       writel(txd->disrcc, phy->base + DISRCC);
-> > +       writel(txd->dst_addr, phy->base + DIDST);
-> > +       writel(txd->didstc, phy->base + DIDSTC);
-> > +
-> > +       writel(dcon, phy->base + DCON);
-> > +
-> > +       val = readl(phy->base + DMASKTRIG);
-> > +       val &= ~DMASKTRIG_STOP;
-> > +       val |= DMASKTRIG_ON;
-> > +       writel(val, phy->base + DMASKTRIG);
-> > +
-> > +       /* trigger the dma operation for memcpy transfers */
-> > +       if (!s3cchan->slave) {
-> > +               val = readl(phy->base + DMASKTRIG);
-> > +               val |= DMASKTRIG_SWTRIG;
-> > +               writel(val, phy->base + DMASKTRIG);
-> > +       }
-> > +}
-> 
-> Since you have a few readl() and writel() in potentially
-> time-critical code, consider using readl_relaxed() and
-> writel_relaxed().
-
-You're right of course.
-
-If I understand the writel semantics and the thread from you from 2011 [0] 
-correctly, only the writel to DMASKTRIG mustn't be relaxed to make sure the 
-settings registers are written to before, so like:
-
-       writel_relaxed(txd->src_addr, phy->base + DISRC);
-       writel_relaxed(txd->disrcc, phy->base + DISRCC);
-       writel_relaxed(txd->dst_addr, phy->base + DIDST);
-       writel_relaxed(txd->didstc, phy->base + DIDSTC);
-       writel_relaxed(dcon, phy->base + DCON);
-
-       val = readl_relaxed(phy->base + DMASKTRIG);
-       val &= ~DMASKTRIG_STOP;
-       val |= DMASKTRIG_ON;
-       writel(val, phy->base + DMASKTRIG);
-
-
-And note to self: check if the memcpy-speciality can move into the first 
-DMASKTRIG write.
-
-> > +static irqreturn_t s3c24xx_dma_irq(int irq, void *data)
-> > +{
-> > +       struct s3c24xx_dma_phy *phy = data;
-> > +       struct s3c24xx_dma_chan *s3cchan = phy->serving;
-> > +       struct s3c24xx_txd *txd;
-> > +
-> > +       dev_dbg(&phy->host->pdev->dev, "interrupt on channel %d\n",
-> > phy->id); +
-> > +       if (!s3cchan) {
-> > +               dev_err(&phy->host->pdev->dev, "interrupt on unused
-> > channel %d\n", +                       phy->id);
-> > +               return IRQ_NONE;
-> > +       }
-> > +
-> > +       spin_lock(&s3cchan->vc.lock);
-> > +       txd = s3cchan->at;
-> > +       if (txd) {
-> > +               s3cchan->at = NULL;
-> > +               vchan_cookie_complete(&txd->vd);
-> > +
-> > +               /*
-> > +                * And start the next descriptor (if any),
-> > +                * otherwise free this channel.
-> > +                */
-> > +               if (vchan_next_desc(&s3cchan->vc))
-> > +                       s3c24xx_dma_start_next_txd(s3cchan);
-> > +               else
-> > +                       s3c24xx_dma_phy_free(s3cchan);
-> > +       }
-> > +       spin_unlock(&s3cchan->vc.lock);
-> > +
-> > +       return IRQ_HANDLED;
-> > +}
-> 
-> OK so one IRQ per channel. Is there really no status
-> register to check or flag to clear on these IRQs?
-
-Nope there are none. The only status you get from the controller is busy/non-
-busy and remaining transfers for the transaction - the DSTAT register in the 
-code. And not listed in the code the current memory addresses (source and 
-destination) in use. There are no other registers at all.
-
-And the irq itself only triggers when all transfers of the transaction are 
-done (transfer_count is 0).
-
-
-> Apart from these smallish things it looks good to me:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-really? Cool.
-Part of me was expecting tomatoes or other vegetables to be thrown ;-) .
-
-
-Thanks for looking thru the driver.
-Heiko
-
-
-[0] http://comments.gmane.org/gmane.linux.ports.arm.kernel/117626
+> ...
