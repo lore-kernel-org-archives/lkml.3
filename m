@@ -1,96 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab3EOB6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 21:58:08 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:42545 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3EOB6G (ORCPT
+	id S1756500Ab3EOB6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 21:58:33 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:60708 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab3EOB6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 21:58:06 -0400
-Message-ID: <5192EBAB.7030203@gmail.com>
-Date: Tue, 14 May 2013 18:58:03 -0700
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Tue, 14 May 2013 21:58:31 -0400
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Alexander Duyck <alexander.h.duyck@intel.com>, bhelgaas@google.com,
-        yinghai@kernel.org, guz.fnst@cn.fujitsu.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH] pci: Avoid reentrant calls to work_on_cpu
-References: <20130514221748.6180.30597.stgit@ahduyck-cp1.jf.intel.com> <CAJZOPZL06sG__MdTzp6FF6BuB+Tv+CC_US35eHY0EDP6vQVzMw@mail.gmail.com>
-In-Reply-To: <CAJZOPZL06sG__MdTzp6FF6BuB+Tv+CC_US35eHY0EDP6vQVzMw@mail.gmail.com>
+In-Reply-To: <1368544041.1350.111.camel@x61.thuisdomein>
+References: <1368544041.1350.111.camel@x61.thuisdomein>
+Date: Wed, 15 May 2013 09:58:30 +0800
+Message-ID: <CAN1soZyUQRvDWcmefS3SnN=92rOp1LVknHFKzwqO6q88__ULMw@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: remove saarb and tavorevb3 machine drivers
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 05:32 PM, Or Gerlitz wrote:
-> On Tue, May 14, 2013 at 6:26 PM, Alexander Duyck
-> <alexander.h.duyck@intel.com> wrote:
->>
->> This change is meant to fix a deadlock seen when pci_enable_sriov was
->> called from within a driver's probe routine.  The issue was that
->> work_on_cpu calls flush_work which attempts to flush a work queue for a
->> cpu that we are currently working in.  In order to avoid the reentrant
->> path we just skip the call to work_on_cpu in the case that the device
->> node matches our current node.
->>
->> Reported-by: Yinghai Lu <yinghai@kernel.org>
->> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
->> ---
->>
->> This patch is meant to address the issue pointed out in an earlier patch
->> sent by Yinghai Lu titled:
->>   [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
->>
->>  drivers/pci/pci-driver.c |   14 +++++++++-----
->>  1 files changed, 9 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
->> index 79277fb..caeb1c0 100644
->> --- a/drivers/pci/pci-driver.c
->> +++ b/drivers/pci/pci-driver.c
->> @@ -277,12 +277,16 @@ static int pci_call_probe(struct pci_driver *drv,
->> struct pci_dev *dev,
->>         int error, node;
->>         struct drv_dev_and_id ddi = { drv, dev, id };
->>
->> -       /* Execute driver initialization on node where the device's
->> -          bus is attached to.  This way the driver likely allocates
->> -          its local memory on the right node without any need to
->> -          change it. */
->> +       /*
->> +        * Execute driver initialization on the node where the device's
->> +        * bus is attached.  This way the driver likely allocates
->> +        * its local memory on the right node without any need to
->> +        * change it.  If the node is the current node just call
->> +        * local_pci_probe and avoid the possibility of reentrant
->> +        * calls to work_on_cpu.
->> +        */
->>         node = dev_to_node(&dev->dev);
->> -       if (node >= 0) {
->> +       if ((node >= 0) && (node != numa_node_id())) {
->>                 int cpu;
->>
->>                 get_online_cpus();
-> 
-> 
-> Alex, FWIW a similar patch was posted by Michael during the last rc
-> cycles of 3.9 see
-> http://marc.info/?l=linux-netdev&m=136569426119644&w=2
+On Tue, May 14, 2013 at 11:07 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Support for PXA95x was removed in v3.8. This means that the Kconfig
+> symbols MACH_SAARB and MACH_TAVOREVB3 are no longer available. This
+> leaves the SoC Audio support for Marvell Saarb and Marvell Tavor EVB3
+> unbuildable. Remove these drivers too.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Did his patch ever get applied anywhere?  I don't see it in any of the
-trees.
-
-The advantage this approach has over the one in the similar patch is
-that this covers a broader set of CPUs since anything on the same node
-is local versus just the first CPU in a given NUMA node.
-
-Thanks,
-
-Alex
-
-
-
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
