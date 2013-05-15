@@ -1,165 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab3EONjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 09:39:33 -0400
-Received: from smtp-out-063.synserver.de ([212.40.185.63]:1060 "EHLO
-	smtp-out-063.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3EONjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 09:39:32 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 27597
-Message-ID: <51938FFD.2020300@metafoo.de>
-Date: Wed, 15 May 2013 15:39:09 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: [RFC/PATCH] dma: of: Make of_dma_simple_xlate match on DMA device
- and channel ID
-References: <1368624449-29003-1-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1368624449-29003-1-git-send-email-laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758975Ab3EONnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:43:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757296Ab3EONnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 09:43:32 -0400
+Date: Wed, 15 May 2013 09:42:40 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
+        aarcange@redhat.com, dave.hansen@intel.com, dsterba@suse.cz,
+        hannes@cmpxchg.org, kosaki.motohiro@gmail.com,
+        kirill.shutemov@linux.intel.com, mpm@selenic.com,
+        rdunlap@infradead.org
+Message-ID: <1368625360-cebir27q-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+References: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+Subject: Re: [PATCH v3] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP
+ areas
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 03:27 PM, Laurent Pinchart wrote:
-> When translating a DT DMA channel specifier, the most common use case is
-> to match the DMA channel based on the channel DMA engine and channel ID.
-> Modify the of_dma_simple_xlate() function to do so, simplifying the API
-> for DMA engine drivers.
+On Wed, May 15, 2013 at 07:46:36AM -0500, Cliff Wickman wrote:
 > 
-> There is no need to check the DMA cells count in the filter function as
-> the check is already performed by the caller in of_dma_get_controller().
+> /proc/<pid>/smaps and similar walks through a user page table should not
+> be looking at VM_PFNMAP areas.
 > 
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-Hi,
-
-I've submitted a very similar patch some time ago, see
-https://lkml.org/lkml/2013/3/25/250
-
-- Lars
-
-> ---
->  drivers/dma/of-dma.c   | 39 +++++++++++++++++++++++++++++++--------
->  drivers/dma/omap-dma.c |  8 +-------
->  include/linux/of_dma.h |  5 -----
->  3 files changed, 32 insertions(+), 20 deletions(-)
+> v2: 
+> - moves the VM_BUG_ON out of the loop
+> - adds the needed test for  vma->vm_start <= addr
 > 
-> I've implemented this function while working on a DMA engine driver, and
-> realized that it wasn't specific to my driver at all. As I'm new to the DMA
-> engine API, I'd appreciate feedback on whether this change makes sense, or if
-> I should instead keep the existing of_dma_simple_xlate() function and create a
-> separate simple xlate helper.
+> v3 adds comments to make this clearer, as N. Horiguchi recommends:
+>   > I recommend that you check VM_PFNMAP in the possible callers' side.
+>   > But this patch seems to solve your problem, so with properly commenting
+>   > this somewhere, I do not oppose it.
 > 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 7aa0864..702a45d 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -202,6 +202,27 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->  	return NULL;
->  }
->  
-> +struct of_dma_filter_args {
-> +	struct dma_device *device;
-> +	unsigned int chan_id;
-> +};
-> +
-> +/**
-> + * of_dma_simple_xlate_filter - Channel filter function for of_dma_simple_xlate
-> + * @dma_chan:	pointer to candidate DMA channel
-> + * @param:	pointer to filter parameter
-> + *
-> + * Filter out candidate DMA channels that don't match the channel ID or DMA
-> + * engine device passed as arguments.
-> + */
-> +static bool of_dma_simple_xlate_filter(struct dma_chan *chan, void *param)
-> +{
-> +	struct of_dma_filter_args *fargs = param;
-> +
-> +	return (chan->device == fargs->device) &&
-> +	       (chan->chan_id == fargs->chan_id);
-> +}
-> +
->  /**
->   * of_dma_simple_xlate - Simple DMA engine translation function
->   * @dma_spec:	pointer to DMA specifier as found in the device tree
-> @@ -216,16 +237,18 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->  struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->  						struct of_dma *ofdma)
->  {
-> -	int count = dma_spec->args_count;
-> -	struct of_dma_filter_info *info = ofdma->of_dma_data;
-> +	struct dma_device *dev = ofdma->of_dma_data;
-> +	struct of_dma_filter_args fargs;
-> +	dma_cap_mask_t cap;
->  
-> -	if (!info || !info->filter_fn)
-> -		return NULL;
-> +	/* There's no need to specify matching caps as we're going to match a
-> +	 * specific DMA channel anyway.
-> +	 */
-> +	dma_cap_zero(cap);
->  
-> -	if (count != 1)
-> -		return NULL;
-> +	fargs.device = dev;
-> +	fargs.chan_id = dma_spec->args[0];
->  
-> -	return dma_request_channel(info->dma_cap, info->filter_fn,
-> -			&dma_spec->args[0]);
-> +	return dma_request_channel(cap, of_dma_simple_xlate_filter, &fargs);
->  }
->  EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index ec3fc4f..7e7ff06 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -69,10 +69,6 @@ static const unsigned es_bytes[] = {
->  	[OMAP_DMA_DATA_TYPE_S32] = 4,
->  };
->  
-> -static struct of_dma_filter_info omap_dma_info = {
-> -	.filter_fn = omap_dma_filter_fn,
-> -};
-> -
->  static inline struct omap_dmadev *to_omap_dma_dev(struct dma_device *d)
->  {
->  	return container_of(d, struct omap_dmadev, ddev);
-> @@ -641,11 +637,9 @@ static int omap_dma_probe(struct platform_device *pdev)
->  	platform_set_drvdata(pdev, od);
->  
->  	if (pdev->dev.of_node) {
-> -		omap_dma_info.dma_cap = od->ddev.cap_mask;
-> -
->  		/* Device-tree DMA controller registration */
->  		rc = of_dma_controller_register(pdev->dev.of_node,
-> -				of_dma_simple_xlate, &omap_dma_info);
-> +				of_dma_simple_xlate, &od->ddev);
->  		if (rc) {
->  			pr_warn("OMAP-DMA: failed to register DMA controller\n");
->  			dma_async_device_unregister(&od->ddev);
-> diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-> index 364dda7..3c0d9ac 100644
-> --- a/include/linux/of_dma.h
-> +++ b/include/linux/of_dma.h
-> @@ -27,11 +27,6 @@ struct of_dma {
->  	void			*of_dma_data;
->  };
->  
-> -struct of_dma_filter_info {
-> -	dma_cap_mask_t	dma_cap;
-> -	dma_filter_fn	filter_fn;
-> -};
-> -
->  #ifdef CONFIG_OF
->  extern int of_dma_controller_register(struct device_node *np,
->  		struct dma_chan *(*of_dma_xlate)
+> Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+> assume that all the mapped PFN's are backed with page structures. And this is
+> not usually true for VM_PFNMAP areas. This can result in panics on kernel
+> page faults when attempting to address those page structures.
+> 
+> There are a half dozen callers of walk_page_range() that walk through
+> a task's entire page table (as N. Horiguchi pointed out). So rather than
+> change all of them, this patch changes just walk_page_range() to ignore 
+> VM_PFNMAP areas.
+> 
+> The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+> want to test any vma in the range.
+> 
+> VM_PFNMAP areas are used by:
+> - graphics memory manager   gpu/drm/drm_gem.c
+> - global reference unit     sgi-gru/grufile.c
+> - sgi special memory        char/mspec.c
+> - and probably several out-of-tree modules
+> 
+> I'm copying everyone who has changed this file recently, in case
+> there is some reason that I am not aware of to provide
+> /proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
+> 
+> Signed-off-by: Cliff Wickman <cpw@sgi.com>
 
+Thank you.
+
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
