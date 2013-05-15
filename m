@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab3EOWCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 18:02:46 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:56764 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3EOWCo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 18:02:44 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
-Date: Thu, 16 May 2013 00:02:40 +0200
-Message-ID: <45625193.0y3McEvmiD@flatron>
-User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <201305152348.32171.heiko@sntech.de>
-References: <201305111330.05046.heiko@sntech.de> <5193FC08.5040002@gmail.com> <201305152348.32171.heiko@sntech.de>
+	id S1753415Ab3EOWDd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 18:03:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab3EOWDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 18:03:32 -0400
+Message-ID: <519405D2.3020203@redhat.com>
+Date: Wed, 15 May 2013 18:01:54 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com> <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com> <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default> <20130514163541.GC4024@medulla> <f0272a06-141a-4d33-9976-ee99467f3aa2@default> <20130514225501.GA11956@cerebellum> <4d74f5db-11c1-4f58-97f4-8d96bbe601ac@default> <20130515185506.GA23342@phenom.dumpdata.com> <57917f43-ab37-4e82-b659-522e427fda7f@default> <5193F3CC.8020205@redhat.com> <9a2b2fe9-4694-4cee-9131-a159b58e8bf5@default>
+In-Reply-To: <9a2b2fe9-4694-4cee-9131-a159b58e8bf5@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 of May 2013 23:48:31 Heiko Stübner wrote:
-> Am Mittwoch, 15. Mai 2013, 23:20:08 schrieb Sylwester Nawrocki:
-> > On 05/15/2013 10:31 PM, Heiko Stübner wrote:
-> > >>> +       BUG();
-> > >>> 
-> > >> >  Isn't that a bit nasty. This macro should be used with care and
-> > >> >  we
-> > >> >  should recover if possible. dev_err()?
-> > > 
-> > > runtime_config already denies any settings not in the 1,2 or 4bytes
-> > > range - the default-part should therefore never be reached. So if
-> > > any other value magically appears in the register and triggers the
-> > > default-part, something is seriously wrong. So my guess is, the BUG
-> > > might be appropriate.
-> > > 
-> > > On the other hand the whole default+BUG part could also simply go
-> > > away,
-> > > for the same reasons.
-> > 
-> > IMHO BUG() is not needed at all. As Linus suggested dev_err() is such
-> > case or WARN_ON() would be more appropriate. This has been discussed
-> > in the past extensively, not sure if you are aware of the other
-> > Linus' opinion on BUG()/BUG_ON() proliferation:
-> > https://lkml.org/lkml/2012/9/27/461
-> Very interesting read and I'll keep this in mind in the future. What
-> about the other option ... i.e. simply getting rid of the whole "error
-> handling", as the other code paths should already make sure that only
-> valid values get written into the register.
-> 
-> Can the value change in the register somehow on its own without kernel
-> intervention, or does this not happen?
+On 05/15/2013 05:36 PM, Dan Magenheimer wrote:
 
-Hmm, it depends on hardware, I guess. Not sure how it works on this 
-particular IP.
+> If you disagree with any of my arguments earlier in this thread,
+> please say so.  Else, please reinforce that the MM subsystem
+> needs to dynamically adapt to a broad range of workloads,
+> which zswap does not (yet) do.  Zswap is not simple, it is
+> simplistic*.
+>
+> IMHO, it may be OK for a driver to be ham-handed in its memory
+> use, but that's not OK for something in mm/.
 
-Still, the mentioned BUG() was about a value in a driver-filled struct, 
-wasn't it?
+It is functionality that a lot of people want.
 
-/* Quoting the the code for reference */
+IMHO it should be where it has most eyes on it, so its
+deficiencies can be fixed. At this point all we know is
+that zswap is somewhat simplistic, but we have no idea
+yet what its failures modes are in practice.
 
-> +static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan *s3cchan)
-> +{
-> +       struct s3c24xx_dma_phy *phy = s3cchan->phy;
-> +       struct s3c24xx_txd *txd = s3cchan->at;
-> +       u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
-> +
-> +       switch (txd->dcon & DCON_DSZ_MASK) {
-> +       case DCON_DSZ_BYTE:
-> +               return tc;
-> +       case DCON_DSZ_HALFWORD:
-> +               return tc * 2;
-> +       case DCON_DSZ_WORD:
-> +               return tc * 4;
-> +       default:
-> +               break;
-> +       }
-> +
-> +       BUG();
+The only way to find out, is to start using it.
 
-(Btw. I don't see anything setting the DCON_DSZ bits in this field. Am I 
-missing something?)
-
-Best regards,
-Tomasz
-
+-- 
+All rights reversed
