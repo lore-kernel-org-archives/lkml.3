@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3EOF1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 01:27:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51991 "EHLO mx1.redhat.com"
+	id S1753549Ab3EOF3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 01:29:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42403 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186Ab3EOF1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 01:27:47 -0400
-Message-ID: <51930FCD.3090001@redhat.com>
-Date: Wed, 15 May 2013 12:32:13 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1751186Ab3EOF3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 01:29:52 -0400
+Date: Wed, 15 May 2013 00:29:16 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Dan Murphy <dmurphy@ti.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM:dts:omap4-panda:Update the LED support for the
+ panda DTS
+Message-ID: <20130515052916.GA15607@kahuna>
+References: <1368541076-6854-1-git-send-email-dmurphy@ti.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: CAI Qian <caiqian@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.9.0: panic during boot - kernel BUG at include/linux/gfp.h:323!
-References: <22600323.7586117.1367826906910.JavaMail.root@redhat.com> <5191B101.1070000@redhat.com> <20130514183500.GN6795@mtj.dyndns.org>
-In-Reply-To: <20130514183500.GN6795@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1368541076-6854-1-git-send-email-dmurphy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 02:35 AM, Tejun Heo wrote:
-> Hello,
->
-> On Tue, May 14, 2013 at 11:35:29AM +0800, Lingzhu Xiang wrote:
->> On 05/06/2013 03:55 PM, CAI Qian wrote:
->>> [    0.928031] ------------[ cut here ]------------
->>> [    0.934231] kernel BUG at include/linux/gfp.h:323!
-> ...
->>> [    1.662913]  [<ffffffff812e3aa8>] alloc_cpumask_var_node+0x28/0x90
->>> [    1.671224]  [<ffffffff81a0bdb3>] wq_numa_init+0x10d/0x1be
->>> [    1.686085]  [<ffffffff81a0bec8>] init_workqueues+0x64/0x341
->
-> Does the following patch make the problem go away?  The dynamic paths
-> should be safe as they are synchronized against CPU hot plug paths and
-> don't allocate anything on nodes w/o any CPUs.
+$subject - add a space?
+s/ARM:dts:omap4-panda:Update/ARM: dts: omap4-panda: Update/ ?
 
-Yes, no more panics.
-
-
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 4aa9f5b..232c1bb 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4895,7 +4895,8 @@ static void __init wq_numa_init(void)
->   	BUG_ON(!tbl);
->
->   	for_each_node(node)
-> -		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL, node));
-> +		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-> +				node_online(node) ? node : NUMA_NO_NODE));
->
->   	for_each_possible_cpu(cpu) {
->   		node = cpu_to_node(cpu);
->
-
+On 09:17-20130514, Dan Murphy wrote:
+> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+> are different.
+> 
+> A1-A3 = gpio_wk7
+Thanks for fixing this - this is a key fix else, GPIO_7 which controls
+VSEL for VDD_MPU on PandaBoard-ES will create all kind of ruckus (change
+voltage on heartbeat)!
+> ES = gpio_110
+> 
+> There is no change to LED D2
+> 
+> Abstract away the pinmux and the LED definitions for the two boards into
+> the respective DTS files.
+> 
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> ---
+[...]
+> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+> index f1d8c21..8d1ba03 100644
+> --- a/arch/arm/boot/dts/omap4-panda-es.dts
+> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
+> @@ -34,3 +34,43 @@
+>  		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
+>  		>;
+>  };
+> +
+> +&leds {
+> +	compatible = "gpio-leds";
+> +	heartbeat {
+> +		label = "pandaboard::status1";
+> +		gpios = <&gpio4 14 0>;
+> +		linux,default-trigger = "heartbeat";
+> +	};
+> +	mmc {
+> +		label = "pandaboard::status2";
+> +		gpios = <&gpio1 8 0>;
+> +		linux,default-trigger = "gpio";
+mmc0?
+> +	};
+> +};
+> +
+Other that that,
+Tested-by: Nishanth Menon <nm@ti.com>
+-- 
+Regards,
+Nishanth Menon
