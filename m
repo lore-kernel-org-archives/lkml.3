@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759379Ab3EOOtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:49:41 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:63965 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759189Ab3EOOtk (ORCPT
+	id S1759410Ab3EOOvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:51:20 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52934 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758866Ab3EOOvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:49:40 -0400
+	Wed, 15 May 2013 10:51:19 -0400
+Message-ID: <5193A0E1.4000307@gmail.com>
+Date: Wed, 15 May 2013 22:51:13 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
-References: <cover.1368485053.git.luto@amacapital.net>
-	<bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
-	<CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com>
-	<CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
-	<CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
-Date: Wed, 15 May 2013 10:49:39 -0400
-Message-ID: <CAH3drwb743_q5ZrNDNsnOUUNVDMcefaq9NH3+t863OGc98-D-Q@mail.gmail.com>
-Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
- missing ..._del
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2, part 2 01/18] PCI: introduce hotplug-safe PCI
+ bus iterators
+References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com> <20130514170528.GA4030@kroah.com>
+In-Reply-To: <20130514170528.GA4030@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 5:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
->> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>>
->>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
->>
->> I believe it will break something but we could deal with the fallout
->> once it happens.
+On 05/15/2013 01:05 AM, Greg Kroah-Hartman wrote:
+> On Wed, May 15, 2013 at 12:51:45AM +0800, Jiang Liu wrote:
+>> +EXPORT_SYMBOL(pci_bus_exists);
+> EXPORT_SYMBOL_GPL()?  Same for the other new exports?
 >
-> FWIW, I'm running with this code on my machine right now using the
-> radeon driver.  Everything seems fine.  If I build without MTRRs and
-> without PAT, though, graphics are slow (as expected).  So I think
-> everything's okay.
+> thanks,
 >
-> --Andy
-
-I am worried on p4 where i last see issue with that notably with agp.
-
-Cheers,
-Jerome
+> greg k-h
+Hi Greg,
+     Only pci_root_buses from drivers/pci/search.c is exported as GPL,
+all other functions from that file are exported as EXPORT_SYMBOL().
+So should we keep those new interfaces as EXPORT_SYMBOL() too?
+Thanks,
+Gerry
