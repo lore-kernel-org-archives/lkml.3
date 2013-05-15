@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab3EOUrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:47:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46253 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab3EOUrJ convert rfc822-to-8bit (ORCPT
+	id S933104Ab3EOUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:48:57 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:42083 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698Ab3EOUs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:47:09 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130515200942.GA17724@cerebellum>
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com> <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com> <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default> <20130514163541.GC4024@medulla> <f0272a06-141a-4d33-9976-ee99467f3aa2@default> <20130514225501.GA11956@cerebellum> <4d74f5db-11c1-4f58-97f4-8d96bbe601ac@default> <20130515185506.GA23342@phenom.dumpdata.com> <20130515200942.GA17724@cerebellum>
+	Wed, 15 May 2013 16:48:56 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkIDAPPzk1FtTvCU/2dsb2JhbAANNBqDPkSCeL0ZAwGBE4MTAQEBAwEjDwE/BxALDQEKAgIFIQICDwJGBgEMAQcBAYgCDQUzqhBykVKBJo0ZXweCQoETA5hchReFXogx
+Message-ID: <5193F4B5.500@draigBrady.com>
+Date: Wed, 15 May 2013 21:48:53 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCHv11 3/4] zswap: add to mm/
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 15 May 2013 16:45:36 -0400
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Message-ID: <d1bf29e8-ffba-454c-95cd-bdef572f7c62@email.android.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Eric Blake <eblake@redhat.com>, linux-api@vger.kernel.org,
+        Alexander Viro <aviro@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: RFC: allow empty symlink targets
+References: <1358427833-3847-1-git-send-email-P@draigBrady.com> <50F8252C.2060404@draigBrady.com> <519381D8.5080206@draigBrady.com> <51939E49.1040209@redhat.com>
+In-Reply-To: <51939E49.1040209@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+On 05/15/2013 03:40 PM, Eric Blake wrote:
+> On 05/15/2013 06:38 AM, Pádraig Brady wrote:
+>> On 01/17/2013 04:22 PM, Pádraig Brady wrote:
+>>> On 01/17/2013 01:03 PM, Pádraig Brady wrote:
+>>>> The discussion leading to this is at http://bugs.gnu.org/13447
+>>>> In summary other systems allow an empty target for a symlink,
+>>>> and POSIX specifies that it should be allowed?
+>>>
+>>> In relation to this, Eric Blake said:
+>>>
+>>>> In today's Austin Group meeting, I was tasked to open a new bug that
+>>>> would state specifically how the empty symlink is resolved; the intent
+>>>> is to allow both Solaris behavior (current directory) and BSD behavior
+>>>> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel
+>>>> has a bug for rejecting the creation of an empty symlink, but once that
+>>>> bug is fixed, then Linux can choose either Solaris or BSD behavior for
+>>>> how to resolve such a symlink.
+>>>>
+>>>> It will probably be a bug report similar to this one, which regarded how
+>>>> to handle a symlink containing just slashes:
+>>>> http://austingroupbugs.net/view.php?id=541
+>>
+>> Following up from http://austingroupbugs.net/view.php?id=649
+>> It seems POSIX will now allow the current Linux behavior of returning ENOENT,
+> 
+> Huh?  Linux currently doesn't allow the creation of an empty symlink.
+> That link mentions the current BSD behavior of returning ENOENT when
+> resolving such a symlink (that is, what stat() does when chasing through
+> an empty symlink, provided such a symlink is first created).
 
->On Wed, May 15, 2013 at 02:55:06PM -0400, Konrad Rzeszutek Wilk wrote:
->> > Sorry, but I don't think that's appropriate for a patch in the MM
->subsystem.
->> 
->> I am heading to the airport shortly so this email is a bit hastily
->typed.
->> 
->> Perhaps a compromise can be reached where this code is merged as a
->driver
->> not a core mm component. There is a high bar to be in the MM - it has
->to
->> work with many many different configurations. 
->> 
->> And drivers don't have such a high bar. They just need to work on a
->specific
->> issue and that is it. If zswap ended up in say, drivers/mm that would
->make
->> it more palpable I think.
->> 
->> Thoughts?
->
->zswap, the writeback code particularly, depends on a number of
->non-exported
->kernel symbols, namely:
->
->swapcache_free
->__swap_writepage
->__add_to_swap_cache
->swapcache_prepare
->swapper_spaces
->
->So it can't currently be built as a module and I'm not sure what the MM
->folks would think about exporting them and making them part of the
->KABI.
->
->Seth
+Ah OK. The standards are hard enough to interpret,
+never mind the comments discussing the standards :)
+Not helping was that symlink() returns ENOENT in this case too.
 
-Could those calls go through front swap? Meaning put the code that uses these calls in there?
--- 
-Sent from my Android phone. Please excuse my brevity.
+>> or the Solaris behavior of allowing empty symlink targets.
+> 
+> The point made in that bug report is that Linux is buggy for not
+> allowing symlink() to create an empty symlink in the first place; once
+> you allow the creation of an empty symlink, then how to handle such a
+> symlink in stat() is up to you whether to copy Solaris' or BSD's example.
+
+OK cool, that make more sense to me.
+
+Adding in a couple more recipients to garner interest...
+
+thanks,
+Pádraig.
