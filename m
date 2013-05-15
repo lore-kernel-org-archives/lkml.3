@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759441Ab3EOPf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:35:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52065 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758844Ab3EOPf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:35:56 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [Resned/PATCHv5 0/2] Serial fixes
-Date: Wed, 15 May 2013 21:05:36 +0530
-Message-ID: <1368632138-31695-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1759491Ab3EOPgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:36:53 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:44829 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759111Ab3EOPgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:36:51 -0400
+Message-ID: <5193AB8C.80300@gmail.com>
+Date: Wed, 15 May 2013 23:36:44 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Ingo Molnar <mingo@kernel.org>, Hannes Reinecke <hare@suse.de>,
+        "Li, Zhen-Hua" <zhen-hual@hp.com>, iommu@lists.linux-foundation.org
+Subject: Re: [RFC PATCH v2, part 2 16/18] PCI, iommu: use hotplug-safe iterators
+ to walk PCI buses
+References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com> <1368550322-1045-16-git-send-email-jiang.liu@huawei.com> <5192B6F7.8090508@redhat.com>
+In-Reply-To: <5192B6F7.8090508@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 05/15/2013 06:13 AM, Don Dutile wrote:
+> On 05/14/2013 12:52 PM, Jiang Liu wrote:
+>> Enhance iommu drviers to use hotplug-safe iterators to walk
+>> PCI buses.
+>>
+>> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+>> Cc: Joerg Roedel<joro@8bytes.org>
+>> Cc: Ingo Molnar<mingo@kernel.org>
+>> Cc: Donald Dutile<ddutile@redhat.com>
+>> Cc: Hannes Reinecke<hare@suse.de>
+>> Cc: "Li, Zhen-Hua"<zhen-hual@hp.com>
+>> Cc: iommu@lists.linux-foundation.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/iommu/amd_iommu.c | 4 +++-
+>>   drivers/iommu/dmar.c      | 6 ++++--
+>>   2 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+>> index e046d7a..d6fdf94 100644
+>> --- a/drivers/iommu/amd_iommu.c
+>> +++ b/drivers/iommu/amd_iommu.c
+>> @@ -357,6 +357,7 @@ static int init_iommu_group(struct device *dev)
+>>       struct iommu_dev_data *dev_data;
+>>       struct iommu_group *group;
+>>       struct pci_dev *dma_pdev;
+>> +    struct pci_bus *b = NULL;
+>>       int ret;
+>>
+>>       group = iommu_group_get(dev);
+>> @@ -393,7 +394,7 @@ static int init_iommu_group(struct device *dev)
+>>            * the alias.  Be careful to also test the parent device if
+>>            * we think the alias is the root of the group.
+>>            */
+>> -        bus = pci_find_bus(0, alias>>  8);
+>> +        b = bus = pci_find_bus(0, alias>>  8);
+>>           if (!bus)
+>>               goto use_group;
+>>
+>> @@ -413,6 +414,7 @@ static int init_iommu_group(struct device *dev)
+>>       dma_pdev = get_isolation_root(pci_dev_get(to_pci_dev(dev)));
+>>   use_pdev:
+>>       ret = use_pdev_iommu_group(dma_pdev, dev);
+>> +    pci_bus_put(b);
+> pci_find_bus() does a pci_bus_put() after the pci_get_bus();
+> is this needed, or did you mean to make the above patch pci_get_bus() ?
+Hi Don,
+     Thanks for review!
+     My fault, I should use pci_get_bus() instead, will fix it in next 
+version.
+Regards!
+Gerry
 
-I have rebased this patch series on top of 3.10-rc1.
 
-This patch series contains fixes around the issue that
-the console UART should not idled on suspend while using 
-"no_console_suspend" in bootargs.
-
-The approach thought of is to modify the serial core/serial driver to bypass
-runtime PM if the UART in contention is a console and we are using "no_console_suspend"
-in our bootargs.
-
-There were discussions about how to handle "no_idle_on_suspend" issue and all the
-discussions are as follows:
-https://lkml.org/lkml/2013/4/5/239
-https://lkml.org/lkml/2013/4/2/350
-https://lkml.org/lkml/2013/3/18/199
-https://lkml.org/lkml/2013/3/18/295
-Due to the amount of change in approach, I am posting
-this as a new series.
-
-v4->v5
-1. Add comments
-2. Formatting.
-
-v3->v4
-1. check for console in runtime api.
-
-v2->v3
-1. Use "-EBUSY" for no_console_suspend case
-2. Bypass runtime PM only during suspend
-3. Improve the commit log based on community suggestion.
-
-v1->v2
-1. Remove the prepare/complete callback.
-2. Adapt runtime PM callback to deal with the issue.
-3. Fold patch(1,2) of previous series into 1.
-4. Reordered the patch.
-5. Change $subject and chage log for few patches.
-
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-
-Test info
-Omap4430sdp:
-- Tested wakeup from UART after suspend for dt and non dt case.
-Omap5430evm:
-- Tested wakeup from UART after suspend for dt case.
-
-These patches were the part of the bigger series[1]. Breaking them into
-two relevant series as they go through the different tree.
-
-[1]: http://lkml.org/lkml/2013/4/26/274
----------------------------------------------
-
-The following changes since commit b973425cbb51e08301b34fecdfd476a44507d8cf:
-
-  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
-
-are available in the git repository at:
-
-  git://gitorious.org/linux-connectivity/linux-connectivity.git serial_fix_resend
-
-Sourav Poddar (2):
-      driver: tty: serial: Move "uart_console" def to core header file.
-      driver: serial: omap: prevent runtime PM for "no_console_suspend"
-
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/omap-serial.c  |   34 +++++++++++++++++++++++++++++++++-
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    7 +++++++
- 4 files changed, 40 insertions(+), 17 deletions(-)
+>
+>>       pci_dev_put(dma_pdev);
+>>       return ret;
+>>   use_group:
+>> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+>> index e5cdaf8..5bb3cdc 100644
+>> --- a/drivers/iommu/dmar.c
+>> +++ b/drivers/iommu/dmar.c
+>> @@ -67,12 +67,12 @@ static void __init dmar_register_drhd_unit(struct 
+>> dmar_drhd_unit *drhd)
+>>   static int __init dmar_parse_one_dev_scope(struct 
+>> acpi_dmar_device_scope *scope,
+>>                          struct pci_dev **dev, u16 segment)
+>>   {
+>> -    struct pci_bus *bus;
+>> +    struct pci_bus *b, *bus;
+>>       struct pci_dev *pdev = NULL;
+>>       struct acpi_dmar_pci_path *path;
+>>       int count;
+>>
+>> -    bus = pci_find_bus(segment, scope->bus);
+>> +    b = bus = pci_find_bus(segment, scope->bus);
+>>       path = (struct acpi_dmar_pci_path *)(scope + 1);
+>>       count = (scope->length - sizeof(struct acpi_dmar_device_scope))
+>>           / sizeof(struct acpi_dmar_pci_path);
+>> @@ -97,6 +97,8 @@ static int __init dmar_parse_one_dev_scope(struct 
+>> acpi_dmar_device_scope *scope,
+>>           count --;
+>>           bus = pdev->subordinate;
+>>       }
+>> +    pci_bus_put(b);
+> ditto.
+>
+>> +
+>>       if (!pdev) {
+>>           pr_warn("Device scope device [%04x:%02x:%02x.%02x] not 
+>> found\n",
+>>               segment, scope->bus, path->dev, path->fn);
+>
 
