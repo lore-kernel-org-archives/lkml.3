@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3EOKku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 06:40:50 -0400
-Received: from nbd.name ([46.4.11.11]:51228 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab3EOKkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 06:40:49 -0400
-Message-ID: <51936516.1080305@openwrt.org>
-Date: Wed, 15 May 2013 12:36:06 +0200
-From: John Crispin <blogic@openwrt.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1756981Ab3EOKpv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 06:45:51 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:20782 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab3EOKpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 06:45:50 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.10 #1
+Date: Wed, 15 May 2013 12:45:47 +0200
+Message-ID: <1368614747-1737-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+Organization: atmel
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl/lantiq: Free mapping configs for both pin and
- groups
-References: <1368543638-3299-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-In-Reply-To: <1368543638-3299-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/13 17:00, Laurent Pinchart wrote:
-> When creating mappings from DT both pin config and group config mappings
-> are allocated. Free them both when destroying the mappings.
->
-> Signed-off-by: Laurent Pinchart<laurent.pinchart+renesas@ideasonboard.com>
-Acked-by: John Crispin <blogic@openwrt.org>
+Arnd, Olof,
 
+This is the first AT91 fixes pull-request for 3.10-rc.
 
-> ---
->   drivers/pinctrl/pinctrl-lantiq.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-lantiq.c b/drivers/pinctrl/pinctrl-lantiq.c
-> index 615c500..d22ca25 100644
-> --- a/drivers/pinctrl/pinctrl-lantiq.c
-> +++ b/drivers/pinctrl/pinctrl-lantiq.c
-> @@ -52,7 +52,8 @@ static void ltq_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
->   	int i;
->
->   	for (i = 0; i<  num_maps; i++)
-> -		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN)
-> +		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN ||
-> +		    map[i].type == PIN_MAP_TYPE_CONFIGS_GROUP)
->   			kfree(map[i].data.configs.configs);
->   	kfree(map);
->   }
+Thanks, best regards,
 
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to b7a8ca5173ef9aa55fa039d7c216426ff0b25a12:
+
+  ARM: at91: rm9200 fix time support (2013-05-15 12:37:45 +0200)
+
+----------------------------------------------------------------
+An important revert on at91rm9200 platform related
+to timers that prevented the platform to boot properly.
+Then one pinctrl adjustments for SPI CS and a couple of
+trivial typos.
+
+----------------------------------------------------------------
+Jean-Christophe PLAGNIOL-VILLARD (2):
+      ARM: at91/trivial: fix model name for SAM9X25-EK
+      ARM: at91: rm9200 fix time support
+
+Ludovic Desroches (1):
+      ARM: at91: dts: request only spi cs-gpios used on sama5d3x cpu module
+
+Nicolas Ferre (1):
+      ARM: at91/trivial: typo in GEM compatible string
+
+ Documentation/devicetree/bindings/net/macb.txt |  2 +-
+ arch/arm/boot/dts/at91sam9x25ek.dts            |  2 +-
+ arch/arm/boot/dts/sama5d3.dtsi                 | 12 +-----------
+ arch/arm/boot/dts/sama5d3xcm.dtsi              |  4 ++++
+ arch/arm/mach-at91/at91rm9200_time.c           |  7 +++++--
+ 5 files changed, 12 insertions(+), 15 deletions(-)
+
+-- 
+Nicolas Ferre
