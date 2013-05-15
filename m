@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab3EOLQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 07:16:25 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:41989 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab3EOLQY (ORCPT
+	id S1757978Ab3EOLSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 07:18:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40633 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755975Ab3EOLSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 07:16:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <51935A67.6000804@solcon.nl>
-References: <51935A67.6000804@solcon.nl>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Wed, 15 May 2013 21:16:02 +1000
-Message-ID: <CAGRGNgUAkUB_FimqmUg4hyNpkVYKW-1vs2J=Tsr2juiineusrw@mail.gmail.com>
-Subject: Re: [PATCH] rtlwifi: rtl8192cu: Add new USB ID
-To: Albert Pool <albertpool@solcon.nl>
-Cc: Larry Finger <larry.finger@lwfinger.net>, chaoming_li@realsil.com.cn,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 15 May 2013 07:18:04 -0400
+Message-ID: <1368616680.19370.4.camel@dabdike>
+Subject: Re: [PATCH 1/2] Kernel/time: Introduce a new timestamp function
+ local_time_seconds()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Date: Wed, 15 May 2013 07:18:00 -0400
+In-Reply-To: <519301D8.2030502@cn.fujitsu.com>
+References: <5191EBA7.9010303@cn.fujitsu.com> <51925EDC.2080307@linaro.org>
+	 <519301D8.2030502@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Albert,
+On Wed, 2013-05-15 at 11:32 +0800, Gu Zheng wrote:
+> On 05/14/2013 11:57 PM, John Stultz wrote:
+> 
+> > On 05/14/2013 12:45 AM, Gu Zheng wrote:
+> >>  From 18072c1c3506a7e37ee485307a2c343efe5af4d0 Mon Sep 17 00:00:00 2001
+> >> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> >> Date: Mon, 13 May 2013 15:45:24 +0900
+> >> Subject: [PATCH 1/2] Kernel/time: Introduce a new timestamp function local_time_seconds()
+> >>
+> >> Introduce a new timestamp function local_time_seconds() to hide the conversion of system time in UTC to local time seconds.
+> > 
+> > So, why is this useful/needed?
+> 
+> Hi John,
+>    There are some subsystems use local time seconds as a timestamp,
+> such as scsi(refer
+> to:http://www.spinics.net/lists/linux-scsi/msg66089.html),
+> and so do many out-of-kernel-tree code I think.
 
-Your patch appears to have been mangled, please check your email
-client's settings, or send using git-send-email
+I don't think the 3ware drivers, which are the only ones that do this
+actually care.  I think jiffies to seconds would suit the event
+timestamps equally well, so I don't really see a need to make this a
+formal kernel export given that it's only a single driver family in the
+entirety of the kernel.
 
-There's instructions for most email clients in the Documentation
-directory of the kernel source tree.
-
-On Wed, May 15, 2013 at 7:50 PM, Albert Pool <albertpool@solcon.nl> wrote:
-> This adds the USB ID of the On Networks N300MA, clone of Netgear WNA3100M.
->
-> Signed-off-by: Albert Pool <albertpool@solcon.nl>
->
-> Reported-by: Ana Rey <Anazul77@hotmail.com>
->
-> ---
->
->  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
->
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-> b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
->
-> index 23d640a..0b593de 100644
->
-> --- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
->
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
->
-> @@ -349,6 +349,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
->
->      {RTL_USB_DEVICE(0x07aa, 0x0056, rtl92cu_hal_cfg)}, /*ATKK-Gemtek*/
->
->      {RTL_USB_DEVICE(0x07b8, 0x8178, rtl92cu_hal_cfg)}, /*Funai -Abocom*/
->
->      {RTL_USB_DEVICE(0x0846, 0x9021, rtl92cu_hal_cfg)}, /*Netgear-Sercomm*/
->
-> +    {RTL_USB_DEVICE(0x0846, 0xf001, rtl92cu_hal_cfg)}, /*Netgear-On
-> Networks*/
->
->      {RTL_USB_DEVICE(0x0b05, 0x17ab, rtl92cu_hal_cfg)}, /*ASUS-Edimax*/
->
->      {RTL_USB_DEVICE(0x0bda, 0x8186, rtl92cu_hal_cfg)}, /*Realtek 92CE-VAU*/
->
->      {RTL_USB_DEVICE(0x0df6, 0x0061, rtl92cu_hal_cfg)}, /*Sitecom-Edimax*/
->
-> --
->
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+James
 
 
-
---
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
