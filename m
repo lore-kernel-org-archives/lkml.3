@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3EORLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 13:11:49 -0400
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:58364 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945Ab3EORLq (ORCPT
+	id S933033Ab3EORME (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 13:12:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38104 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932942Ab3EORMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 13:11:46 -0400
+	Wed, 15 May 2013 13:12:02 -0400
+Date: Wed, 15 May 2013 19:11:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Don Zickus <dzickus@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
+ enabled
+Message-ID: <20130515171153.GF13916@laptop.home>
+References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
+ <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
+ <20130515083729.GC10510@laptop.programming.kicks-ass.net>
+ <20130515150652.GP23604@redhat.com>
+ <1368631622.6828.69.camel@gandalf.local.home>
+ <20130515165915.GE13916@laptop.home>
 MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-16-git-send-email-lee.jones@linaro.org>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-16-git-send-email-lee.jones@linaro.org>
-Date: Wed, 15 May 2013 19:11:46 +0200
-Message-ID: <CACRpkdY_9=OO_E9pFLuihVmE4YvLmydk_b+jsGr_R0sELt0UvA@mail.gmail.com>
-Subject: Re: [PATCH 15/39] crypto: ux500/cryp - Prepare clock before enabling it
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Andreas Westin <andreas.westin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515165915.GE13916@laptop.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Wed, May 15, 2013 at 06:59:15PM +0200, Peter Zijlstra wrote:
+> On Wed, May 15, 2013 at 11:27:02AM -0400, Steven Rostedt wrote:
+> > Right now perf requires a tick, not sure exactly why, but you can look
+> > at the code in perf_event_task_tick(). Thus if NO_HZ_FULL sees that a
+> > perf tick is pending, it won't disable ticks. Unfortunately, the
+> > watchdogs, both NMI and soft lockup, use the perf infrastructure to
+> > trigger NMIs or interrupts. This adds a perf element on the rotate list
+> > and keeps NO_HZ_FULL from *ever* activating.
+> > 
+> 
+> Hmm.. Stephane had a bunch of patches converting the rotation thing to
+> an hrtimer. I seem to have forgotten what happened to them but I can't
+> seem to find them merged.
+> 
+> I'll go look.
+> 
+> That leaves the frequency stuff, but the watchdog doesn't use that.
+> 
+> At which point we could run the watchdog without perf_event_task_tick().
 
-> If we fail to prepare the ux500-cryp clock before enabling it the
-> platform will fail to boot. Here we insure this happens.
->
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Andreas Westin <andreas.westin@stericsson.com>
-> Cc: linux-crypto@vger.kernel.org
-> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Found them:
 
-This patch also looks like -rc series stuff for the crypto tree.
+1364991694-5876-1-git-send-email-eranian@google.com
 
-BTW: these two clk_prepare_enable() patches are
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+Looks like they were stuck in my inbox and never applied, so I just did.
+They should appear in tip soonish.
