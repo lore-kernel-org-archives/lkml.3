@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab3EOHw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 03:52:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62086 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756917Ab3EOHw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 03:52:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,675,1363158000"; 
-   d="scan'208";a="334297167"
-Message-ID: <1368604536.13665.25.camel@sauron.fi.intel.com>
-Subject: Re: MTD : cannot reserve enough PEBs for bad PEB handling
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Mark Jackson <mpfj-list@newflow.co.uk>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Wed, 15 May 2013 10:55:36 +0300
-In-Reply-To: <51750526.70508@newflow.co.uk>
-References: <51750526.70508@newflow.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1757492Ab3EOH5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 03:57:05 -0400
+Received: from exprod5og118.obsmtp.com ([64.18.0.160]:46193 "EHLO
+	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757111Ab3EOH5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 03:57:02 -0400
+Message-ID: <51933FB2.6040208@ge.com>
+Date: Wed, 15 May 2013 08:56:34 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, gmate.amit@gmail.com,
+        devel@driverdev.osuosl.org, manohar.vanga@gmail.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        yamanetoshi@gmail.com, yongjun_wei@trendmicro.com.cn, joe@perches.com
+Subject: Re: [PATCH] staging: vme: fix error return code in vme_user_probe()
+References: <CAPgLHd9MXzrkvKBtJYG6GZ2Xn9fBi6TO7NzJQDLgw2jCGqDupQ@mail.gmail.com> <5190A140.3020306@ge.com> <20130513085132.GI1360@mwanda> <51924281.2060509@ge.com> <20130514141906.GS30128@mwanda>
+In-Reply-To: <20130514141906.GS30128@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-22 at 10:38 +0100, Mark Jackson wrote:
-> I'm trying to work out how to generate a "valid" UBI image, but I keep
-> getting a "cannot get enough PEBs" warning.
+On 14/05/13 15:19, Dan Carpenter wrote:
+> On Tue, May 14, 2013 at 02:56:17PM +0100, Martyn Welch wrote:
+>> On 13/05/13 09:51, Dan Carpenter wrote:
+>>> On Mon, May 13, 2013 at 09:16:00AM +0100, Martyn Welch wrote:
+>>>> On 13/05/13 07:05, Wei Yongjun wrote:
+>>>>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>>>>>
+>>>>> Fix to return -ENOMEM in the resource alloc error handling
+>>>>> case instead of 0, as done elsewhere in this function.
+>>>>>
+>>>>
+>>>> Hi Wei,
+>>>>
+>>>> Thanks for your patch. As this is resource allocation rather than memory
+>>>> allocation that is failing, would -EAGAIN not make more sense than -ENOMEM?
+>>>>
+>>>
+>>> ENOMEM is better.  EAGAIN is for when trylock() fails etc.  In other
+>>> words we are not allowed to block and someone is using the lock we
+>>> need.
+>>>
+>>
+>> ENOMEM just doesn't seem to describe the error very well. This error will be
+>> triggered if no free VME windows are available for the driver to use - there
+>> are typically 8 master and 8 slave windows provided in hardware.
+>>
+>> How about EBUSY (Device or resource busy)?
 > 
-> I generate my image (destined for a 64MB NAND partition) using:-
+> EBUSY would work.
 > 
-> $ mkfs.ubifs -d output/target -e 0x1f000 -c 483 -m 0x800 -x none -F -o
-> output/images/rootfs.ubifs
-> $ ubinize -o output/images/rootfs.ubi -m 0x800 -p 0x20000 -s 512 -O 2048
-> ubinize.cfg
-> 
-> My .cfg file is:-
-> 
-> [ubifs]
-> mode=ubi
-> vol_id=0
-> vol_type=dynamic
-> vol_name=rootfs
-> vol_alignment=1
-> vol_flags=autoresize
-> vol_size=61MiB
-> image=output/images/rootfs.ubifs
-> 
-> And the resulting image is:-
-> 
-> -rw-rw-r-- 1 mpfj mpfj 9437184 Apr 16 10:19 rootfs.ubi
-> 
-> This is then written to a freshly erased 64MB NAND partition, and
-> appears to mount correctly, apart from the warning about not enough
-> reserved PEBs, as follows:-
-> 
-> ...
-> [    0.792456] UBI: attaching mtd7 to ubi0
-> [    1.540858] UBI: scanning is finished
-> [    1.557578] UBI warning: print_rsvd_warning: cannot reserve enough
-> PEBs for bad PEB handling, reserved 4, need 40
-> [    1.561346] UBI: attached mtd7 (name "rootfs", size 64 MiB) to ubi0
-> [    1.561404] UBI: PEB size: 131072 bytes (128 KiB), LEB size: 126976 bytes
-> [    1.561434] UBI: min./max. I/O unit sizes: 2048/2048, sub-page size 512
-> [    1.561464] UBI: VID header offset: 2048 (aligned 2048), data offset:
-> 4096
-> [    1.561493] UBI: good PEBs: 512, bad PEBs: 0, corrupted PEBs: 0
-> [    1.561520] UBI: user volume: 1, internal volumes: 1, max. volumes
-> count: 128
-> [    1.561554] UBI: max/mean erase counter: 2/1, WL threshold: 4096,
-> image sequence number: 1434266085
-> [    1.561591] UBI: available PEBs: 0, total reserved PEBs: 512, PEBs
-> reserved for bad PEB handling: 4
-> [    1.562374] UBI: background thread "ubi_bgt0d" started, PID 598
-> ...
-> 
-> I think I've calculated the various option values correctly for
-> mkfs.ubifs and ubinize.
-> 
-> But since I'm getting the warning, can anyone explain where I've gone
-> wrong ?
 
-This is because UBI is trying to reserve 40 PEBs for bad block handling.
-Why so much? See the explanations here:
+Hi Wei,
 
-http://www.linux-mtd.infradead.org/doc/ubi.html#L_max_beb
+Would you mind resubmitting your patch returning the error code EBUSY rather
+than ENOMEM?
 
-You may adjust this value, but the default for UBI is the most
-pessimistic scenario.
+Martyn
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
