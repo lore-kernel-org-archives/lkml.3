@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab3EOEEK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 00:04:10 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:34906 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab3EOEEI (ORCPT
+	id S1751927Ab3EOEJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 00:09:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53131 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3EOEJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 00:04:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368575992-7142-2-git-send-email-jaegeuk.kim@samsung.com>
-References: <1368575992-7142-1-git-send-email-jaegeuk.kim@samsung.com>
-	<1368575992-7142-2-git-send-email-jaegeuk.kim@samsung.com>
-Date: Wed, 15 May 2013 13:04:08 +0900
-Message-ID: <CAKYAXd__Vy0g-w1wu9csq4P_NEcDDL7+A56K=ZtYtv0oKs9_qw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] f2fs: fix the inconsistent state of data pages
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	Wed, 15 May 2013 00:09:19 -0400
+Message-ID: <1368590955.5957.7.camel@marge.simpson.net>
+Subject: Re: dynticks: CONFIG_VIRT_CPU_ACCOUNTING +  CONFIG_CONTEXT_TRACKING
+ breaks accounting on core2 CPUs only
+From: Mike Galbraith <bitbucket@online.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Wed, 15 May 2013 06:09:15 +0200
+In-Reply-To: <20130515002646.GA24004@somewhere>
+References: <1368346669.5998.13.camel@marge.simpson.net>
+	 <20130514005744.GA12749@somewhere>
+	 <1368540440.6275.32.camel@marge.simpson.net>
+	 <20130515002646.GA24004@somewhere>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:Kp2KchMI2ZqdQXRQVcSF05fRlOGKKso5bS1at6RX3Yo
+ 0BUNVgZnUUQt1o9K6nauyaw4uMVFZW81A4DcUTbIxDefsyH308
+ ozcjHeNx+T8q5IVrTQ1Ts3cVUloED7X/G7SX/mF+qqXuLhl9v4
+ UGy4CHjo88CSHIrX4rmKrxkcal+vIM4SFGI06gd8+oWESVjNZI
+ Fd3yWgaCaIgNYhFG5kvyNQkIJHrc+9ato/QJSH60u5Dvl52CWU
+ kHnDZVpmZViab3jo0N4BO3nrlCHUuiWO6f2uCjbgnypiwJyikw
+ Bhd9LaTVFFBs/uq5xNMNwCZzNBs65FsVMuBIztCOZyFW9YdlGh
+ aPf8KbpNBTvZTz9KBixdvwRLOg8ulH9we8ZW3iw9s4YA9ikRu5
+ vVU301rBzCQfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/15, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> In get_lock_data_page, if there is a data race between get_dnode_of_data
-> for
-> node and grab_cache_page for data, f2fs is able to face with the following
-> BUG_ON(dn.data_blkaddr == NEW_ADDR).
->
-> kernel BUG at /home/zeus/f2fs_test/src/fs/f2fs/data.c:251!
->  [<ffffffffa044966c>] get_lock_data_page+0x1ec/0x210 [f2fs]
-> Call Trace:
->  [<ffffffffa043b089>] f2fs_readdir+0x89/0x210 [f2fs]
->  [<ffffffff811a0920>] ? fillonedir+0x100/0x100
->  [<ffffffff811a0920>] ? fillonedir+0x100/0x100
->  [<ffffffff811a07f8>] vfs_readdir+0xb8/0xe0
->  [<ffffffff811a0b4f>] sys_getdents+0x8f/0x110
->  [<ffffffff816d7999>] system_call_fastpath+0x16/0x1b
->
-> This bug is able to be occurred when the block address of the data block is
-> changed after f2fs_put_dnode().
-> In order to avoid that, this patch fixes the lock order of node and data
-> blocks in which the node block lock is covered by the data block lock.
->
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/data.c | 17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
->
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index 91ff93b..05fb5c6 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -233,18 +233,23 @@ struct page *get_lock_data_page(struct inode *inode,
-> pgoff_t index)
->  	struct page *page;
->  	int err;
->
-> +repeat:
-> +	page = grab_cache_page(mapping, index);
-> +	if (!page)
-> +		return ERR_PTR(-ENOMEM);
-> +
->  	set_new_dnode(&dn, inode, NULL, NULL, 0);
->  	err = get_dnode_of_data(&dn, index, LOOKUP_NODE);
-> -	if (err)
-> +	if (err) {
-> +		f2fs_put_page(page, 1);
->  		return ERR_PTR(err);
-> +	}
->  	f2fs_put_dnode(&dn);
->
-> -	if (dn.data_blkaddr == NULL_ADDR)
-> +	if (dn.data_blkaddr == NULL_ADDR) {
-> +		f2fs_put_page(page, 1);
->  		return ERR_PTR(-ENOENT);
-> -repeat:
-> -	page = grab_cache_page(mapping, index);
-> -	if (!page)
-> -		return ERR_PTR(-ENOMEM);
-> +	}
->
->  	if (PageUptodate(page))
->  		return page;
-Is there no need to move PageUptodate condition checking to
-grab_cache_page next ?
+On Wed, 2013-05-15 at 02:26 +0200, Frederic Weisbecker wrote: 
+> On Tue, May 14, 2013 at 04:07:20PM +0200, Mike Galbraith wrote:
+> > On Tue, 2013-05-14 at 02:57 +0200, Frederic Weisbecker wrote: 
+> > > On Sun, May 12, 2013 at 10:17:49AM +0200, Mike Galbraith wrote:
+> > > > Greetings,
+> > > > 
+> > > > Turning on new NO_HZ feature on my Q6600 box in master, I see that tasks
+> > > > accrue zero utime/stime.  However, the same exact kernel on E5620 box
+> > > > works fine, so it would appear there's a CPU dependency somewhere.
+> > > 
+> > > Ah indeed, I just managed to reproduce the same issue.
+> > > 
+> > > > 
+> > > > Is core2 expected to go dysfunctional with context tracking enabled?
+> > > > CONFIG_VIRT_CPU_ACCOUNTING alone works fine in 3.9-stable, turn on
+> > > > CONFIG_CONTEXT_TRACKING_FORCE, and CPU accounting stops working on core2
+> > > > boxen only, same exact kernel continues to work just fine on E5620
+> > > > (Westmere) box.
+> > > 
+> > > There was no known issue with core2. The box where I'm seeing the it
+> > > is a Phenom quad core that had NR_CPUS=2. May be the issue is more
+> > > likely to happen with this low number. I don't know.
+> > > 
+> > > I'm investigating further.
+> > 
+> > So with CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, you can't mix sched_clock()
+> > (pure tsc) with local_clock()/sched_clock_cpu(cpu).  The former is
+> > always quite a bit ahead of the later, so mixing clocks is a nogo on
+> > crusty old (but beloved) core2 box.
+> 
+> Right I have the same issue. So let's use local_clock() everywhere here,
+> it takes care of unstable tsc.
+> 
+> Does the following fix the issue for you?
 
-Thanks.
-> --
-> 1.8.1.3.566.gaa39828
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Yeah, both can use sched_clock_cpu() instead though.
+
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index cc2dc3e..1ce322f 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -747,7 +748,7 @@ void arch_vtime_task_switch(struct task_struct *prev)
+>  
+>  	write_seqlock(&current->vtime_seqlock);
+>  	current->vtime_snap_whence = VTIME_SYS;
+> -	current->vtime_snap = sched_clock();
+> +	current->vtime_snap = local_clock();
+>  	write_sequnlock(&current->vtime_seqlock);
+>  }
+>  
+> @@ -757,7 +758,7 @@ void vtime_init_idle(struct task_struct *t)
+>  
+>  	write_seqlock_irqsave(&t->vtime_seqlock, flags);
+>  	t->vtime_snap_whence = VTIME_SYS;
+> -	t->vtime_snap = sched_clock();
+> +	t->vtime_snap = local_clock();
+>  	write_sequnlock_irqrestore(&t->vtime_seqlock, flags);
+>  }
+>  
+
+
