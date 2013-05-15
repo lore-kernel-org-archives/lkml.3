@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab3EOPgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:36:53 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44829 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759111Ab3EOPgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:36:51 -0400
-Message-ID: <5193AB8C.80300@gmail.com>
-Date: Wed, 15 May 2013 23:36:44 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1759066Ab3EOPnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:43:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46127 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757009Ab3EOPnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:43:35 -0400
+Message-ID: <5193AD1A.9080100@ti.com>
+Date: Wed, 15 May 2013 21:13:22 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Don Dutile <ddutile@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Ingo Molnar <mingo@kernel.org>, Hannes Reinecke <hare@suse.de>,
-        "Li, Zhen-Hua" <zhen-hual@hp.com>, iommu@lists.linux-foundation.org
-Subject: Re: [RFC PATCH v2, part 2 16/18] PCI, iommu: use hotplug-safe iterators
- to walk PCI buses
-References: <1368550322-1045-1-git-send-email-jiang.liu@huawei.com> <1368550322-1045-16-git-send-email-jiang.liu@huawei.com> <5192B6F7.8090508@redhat.com>
-In-Reply-To: <5192B6F7.8090508@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>, Kevin Hilman <khilman@linaro.org>
+CC: <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv5 1/2] driver: tty: serial: Move "uart_console" def to
+ core header file.
+References: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com> <1367006686-3720-2-git-send-email-sourav.poddar@ti.com> <87vc79uezo.fsf@linaro.org> <20130426221817.GA28377@kroah.com> <51939EFD.60900@ti.com> <20130515145711.GA1796@kroah.com> <5193A276.9030308@ti.com>
+In-Reply-To: <5193A276.9030308@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 06:13 AM, Don Dutile wrote:
-> On 05/14/2013 12:52 PM, Jiang Liu wrote:
->> Enhance iommu drviers to use hotplug-safe iterators to walk
->> PCI buses.
+Hi,
+On Wednesday 15 May 2013 08:27 PM, Sourav Poddar wrote:
+> On Wednesday 15 May 2013 08:27 PM, Greg KH wrote:
+>> On Wed, May 15, 2013 at 08:13:09PM +0530, Sourav Poddar wrote:
+>>> Hi Greg,
+>>> On Saturday 27 April 2013 03:48 AM, Greg KH wrote:
+>>>> On Fri, Apr 26, 2013 at 03:03:07PM -0700, Kevin Hilman wrote:
+>>>>> Hi Greg,
+>>>>>
+>>>>> Sourav Poddar<sourav.poddar@ti.com>   writes:
+>>>>>
+>>>>>> Move "uart_console" definition to serial core header file, so 
+>>>>>> that it can be
+>>>>>> used by serial drivers.
+>>>>>> Get rid of the uart_console defintion from mpc52xx_uart driver.
+>>>>>>
+>>>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>>>> Cc: Felipe Balbi<balbi@ti.com>
+>>>>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>>>>>> Reviewed-by: Felipe Balbi<balbi@ti.com>
+>>>>> Can you queue up this patch (and 2/2)?  Once these are in, I will 
+>>>>> queue
+>>>>> up the corresponding arch/arm changes which can go independently.
+>>>>>
+>>>>> And feel free to add
+>>>>>
+>>>>> Reviewed-by: Kevin Hilman<khilman@linaro.org>
+>>>>> Tested-by: Kevin Hilman<khilman@linaro.org>
+>>>> I will do so after 3.10-rc1 is out, it is _way_ too late in the
+>>>> development cycle for me to add these to my trees right now, 
+>>>> considering
+>>>> they are pretty much closed at the moment.
+>>>>
+>>> Do you want me to rebase this patches on top of 3.10-rc1?
+>> That would be great to have, thanks.
 >>
->> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
->> Cc: Joerg Roedel<joro@8bytes.org>
->> Cc: Ingo Molnar<mingo@kernel.org>
->> Cc: Donald Dutile<ddutile@redhat.com>
->> Cc: Hannes Reinecke<hare@suse.de>
->> Cc: "Li, Zhen-Hua"<zhen-hual@hp.com>
->> Cc: iommu@lists.linux-foundation.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/iommu/amd_iommu.c | 4 +++-
->>   drivers/iommu/dmar.c      | 6 ++++--
->>   2 files changed, 7 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
->> index e046d7a..d6fdf94 100644
->> --- a/drivers/iommu/amd_iommu.c
->> +++ b/drivers/iommu/amd_iommu.c
->> @@ -357,6 +357,7 @@ static int init_iommu_group(struct device *dev)
->>       struct iommu_dev_data *dev_data;
->>       struct iommu_group *group;
->>       struct pci_dev *dma_pdev;
->> +    struct pci_bus *b = NULL;
->>       int ret;
->>
->>       group = iommu_group_get(dev);
->> @@ -393,7 +394,7 @@ static int init_iommu_group(struct device *dev)
->>            * the alias.  Be careful to also test the parent device if
->>            * we think the alias is the root of the group.
->>            */
->> -        bus = pci_find_bus(0, alias>>  8);
->> +        b = bus = pci_find_bus(0, alias>>  8);
->>           if (!bus)
->>               goto use_group;
->>
->> @@ -413,6 +414,7 @@ static int init_iommu_group(struct device *dev)
->>       dma_pdev = get_isolation_root(pci_dev_get(to_pci_dev(dev)));
->>   use_pdev:
->>       ret = use_pdev_iommu_group(dma_pdev, dev);
->> +    pci_bus_put(b);
-> pci_find_bus() does a pci_bus_put() after the pci_get_bus();
-> is this needed, or did you mean to make the above patch pci_get_bus() ?
-Hi Don,
-     Thanks for review!
-     My fault, I should use pci_get_bus() instead, will fix it in next 
-version.
-Regards!
-Gerry
+[Greg]:
+            Have resend the patch series based on 3.10-rc1.
 
-
->
->>       pci_dev_put(dma_pdev);
->>       return ret;
->>   use_group:
->> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
->> index e5cdaf8..5bb3cdc 100644
->> --- a/drivers/iommu/dmar.c
->> +++ b/drivers/iommu/dmar.c
->> @@ -67,12 +67,12 @@ static void __init dmar_register_drhd_unit(struct 
->> dmar_drhd_unit *drhd)
->>   static int __init dmar_parse_one_dev_scope(struct 
->> acpi_dmar_device_scope *scope,
->>                          struct pci_dev **dev, u16 segment)
->>   {
->> -    struct pci_bus *bus;
->> +    struct pci_bus *b, *bus;
->>       struct pci_dev *pdev = NULL;
->>       struct acpi_dmar_pci_path *path;
->>       int count;
->>
->> -    bus = pci_find_bus(segment, scope->bus);
->> +    b = bus = pci_find_bus(segment, scope->bus);
->>       path = (struct acpi_dmar_pci_path *)(scope + 1);
->>       count = (scope->length - sizeof(struct acpi_dmar_device_scope))
->>           / sizeof(struct acpi_dmar_pci_path);
->> @@ -97,6 +97,8 @@ static int __init dmar_parse_one_dev_scope(struct 
->> acpi_dmar_device_scope *scope,
->>           count --;
->>           bus = pdev->subordinate;
->>       }
->> +    pci_bus_put(b);
-> ditto.
->
->> +
->>       if (!pdev) {
->>           pr_warn("Device scope device [%04x:%02x:%02x.%02x] not 
->> found\n",
->>               segment, scope->bus, path->dev, path->fn);
->
+[Kevin]: Should I resend the omap specific changes also after rebasing it on
+              3.10-rc1, once greg pull in the serial part. ?
+>> greg k-h
+> Ok. Will do that and resend.
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-serial" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
