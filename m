@@ -1,156 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab3EOMqk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:46:40 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:59003 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932416Ab3EOMqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:46:38 -0400
+	id S932236Ab3EOMsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:48:53 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:62929 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab3EOMsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 08:48:40 -0400
+X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 08:48:40 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjkDAKCAk1FtTvCU/2dsb2JhbAANNBqDPkSCeL0SAwGBD4MTAQEBBCMPAT8HEAsNCwICBRYLAgIJAwIBAgFFEwEHAQGIDwUzqhNykUSBJo0ZXwcWgiyBEwOYXIUXhV6IMA
+Message-ID: <519381D8.5080206@draigBrady.com>
+Date: Wed, 15 May 2013 13:38:48 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH v3] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
-Cc: akpm@linux-foundation.org, mgorman@suse.de, aarcange@redhat.com,
-        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
-        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
-        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
-Message-Id: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Wed, 15 May 2013 07:46:36 -0500
+CC: Eric Blake <eblake@redhat.com>
+Subject: Re: RFC: allow empty symlink targets
+References: <1358427833-3847-1-git-send-email-P@draigBrady.com> <50F8252C.2060404@draigBrady.com>
+In-Reply-To: <50F8252C.2060404@draigBrady.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/17/2013 04:22 PM, Pádraig Brady wrote:
+> On 01/17/2013 01:03 PM, Pádraig Brady wrote:
+>> The discussion leading to this is at http://bugs.gnu.org/13447
+>> In summary other systems allow an empty target for a symlink,
+>> and POSIX specifies that it should be allowed?
+> 
+> In relation to this, Eric Blake said:
+> 
+>> In today's Austin Group meeting, I was tasked to open a new bug that
+>> would state specifically how the empty symlink is resolved; the intent
+>> is to allow both Solaris behavior (current directory) and BSD behavior
+>> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel
+>> has a bug for rejecting the creation of an empty symlink, but once that
+>> bug is fixed, then Linux can choose either Solaris or BSD behavior for
+>> how to resolve such a symlink.
+>>
+>> It will probably be a bug report similar to this one, which regarded how
+>> to handle a symlink containing just slashes:
+>> http://austingroupbugs.net/view.php?id=541
 
-/proc/<pid>/smaps and similar walks through a user page table should not
-be looking at VM_PFNMAP areas.
+Following up from http://austingroupbugs.net/view.php?id=649
+It seems POSIX will now allow the current Linux behavior of returning ENOENT,
+or the Solaris behavior of allowing empty symlink targets.
 
-v2: 
-- moves the VM_BUG_ON out of the loop
-- adds the needed test for  vma->vm_start <= addr
+cheers,
+Pádraig.
 
-v3 adds comments to make this clearer, as N. Horiguchi recommends:
-  > I recommend that you check VM_PFNMAP in the possible callers' side.
-  > But this patch seems to solve your problem, so with properly commenting
-  > this somewhere, I do not oppose it.
-
-Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-assume that all the mapped PFN's are backed with page structures. And this is
-not usually true for VM_PFNMAP areas. This can result in panics on kernel
-page faults when attempting to address those page structures.
-
-There are a half dozen callers of walk_page_range() that walk through
-a task's entire page table (as N. Horiguchi pointed out). So rather than
-change all of them, this patch changes just walk_page_range() to ignore 
-VM_PFNMAP areas.
-
-The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-want to test any vma in the range.
-
-VM_PFNMAP areas are used by:
-- graphics memory manager   gpu/drm/drm_gem.c
-- global reference unit     sgi-gru/grufile.c
-- sgi special memory        char/mspec.c
-- and probably several out-of-tree modules
-
-I'm copying everyone who has changed this file recently, in case
-there is some reason that I am not aware of to provide
-/proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- mm/pagewalk.c |   65 ++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 36 insertions(+), 29 deletions(-)
-
-Index: linux/mm/pagewalk.c
-===================================================================
---- linux.orig/mm/pagewalk.c
-+++ linux/mm/pagewalk.c
-@@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
- 	return 0;
- }
- 
--static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
--{
--	struct vm_area_struct *vma;
--
--	/* We don't need vma lookup at all. */
--	if (!walk->hugetlb_entry)
--		return NULL;
--
--	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
--	vma = find_vma(walk->mm, addr);
--	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
--		return vma;
--
--	return NULL;
--}
--
- #else /* CONFIG_HUGETLB_PAGE */
- static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
- {
-@@ -198,30 +182,53 @@ int walk_page_range(unsigned long addr,
- 	if (!walk->mm)
- 		return -EINVAL;
- 
-+	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
-+
- 	pgd = pgd_offset(walk->mm, addr);
- 	do {
--		struct vm_area_struct *vma;
-+		struct vm_area_struct *vma = NULL;
- 
- 		next = pgd_addr_end(addr, end);
- 
- 		/*
--		 * handle hugetlb vma individually because pagetable walk for
--		 * the hugetlb page is dependent on the architecture and
--		 * we can't handled it in the same manner as non-huge pages.
-+		 * This function was not intended to be vma based.
-+		 * But there are vma special cases to be handled:
-+		 * - hugetlb vma's
-+		 * - VM_PFNMAP vma's
- 		 */
--		vma = hugetlb_vma(addr, walk);
-+		vma = find_vma(walk->mm, addr);
- 		if (vma) {
--			if (vma->vm_end < next)
-+			/*
-+			 * There are no page structures backing a VM_PFNMAP
-+			 * range, so do not allow split_huge_page_pmd().
-+			 */
-+			if ((vma->vm_start <= addr) &&
-+			    (vma->vm_flags & VM_PFNMAP)) {
- 				next = vma->vm_end;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 			/*
--			 * Hugepage is very tightly coupled with vma, so
--			 * walk through hugetlb entries within a given vma.
-+			 * Handle hugetlb vma individually because pagetable
-+			 * walk for the hugetlb page is dependent on the
-+			 * architecture and we can't handled it in the same
-+			 * manner as non-huge pages.
- 			 */
--			err = walk_hugetlb_range(vma, addr, next, walk);
--			if (err)
--				break;
--			pgd = pgd_offset(walk->mm, next);
--			continue;
-+			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
-+			    is_vm_hugetlb_page(vma)) {
-+				if (vma->vm_end < next)
-+					next = vma->vm_end;
-+				/*
-+				 * Hugepage is very tightly coupled with vma,
-+				 * so walk through hugetlb entries within a
-+				 * given vma.
-+				 */
-+				err = walk_hugetlb_range(vma, addr, next, walk);
-+				if (err)
-+					break;
-+				pgd = pgd_offset(walk->mm, next);
-+				continue;
-+			}
- 		}
- 
- 		if (pgd_none_or_clear_bad(pgd)) {
