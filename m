@@ -1,136 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3EOX0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 19:26:14 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:47376 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3EOX0N convert rfc822-to-8bit (ORCPT
+	id S1753669Ab3EOXrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 19:47:12 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:59037 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3EOXrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 19:26:13 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
-Date: Thu, 16 May 2013 01:26:08 +0200
-Message-ID: <2010181.yFyln8lrI2@flatron>
-User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <201305160045.03934.heiko@sntech.de>
-References: <201305111330.05046.heiko@sntech.de> <45625193.0y3McEvmiD@flatron> <201305160045.03934.heiko@sntech.de>
+	Wed, 15 May 2013 19:47:08 -0400
+Message-ID: <51941E71.8010309@gmail.com>
+Date: Thu, 16 May 2013 07:46:57 +0800
+From: Liu Jiang <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Airlie <airlied@linux.ie>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <jbottomley@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Linux-Scsi <linux-scsi@vger.kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)
+ instead
+References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-4-git-send-email-jiang.liu@huawei.com> <CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com> <5191F53E.4000305@cn.fujitsu.com> <51925136.5050302@gmail.com> <CAE9FiQWO-jR5y35kKiW0m6gVR54ZyRsBsdhP4BmFLSsDzCS3rA@mail.gmail.com> <51926CF6.1050706@gmail.com> <CAE9FiQWXN_ETRFPb5oFx-6LXyuHviX3h3NXCQKjcxtv2Uma-JA@mail.gmail.com> <51939E16.9090105@gmail.com> <CAE9FiQUXrOmN0rkvOwE1G_acEGY3-gouzaXjBMT7EE6uAqvuZA@mail.gmail.com> <51939FB1.20203@gmail.com> <1368653371.9603.18.camel@pasglop>
+In-Reply-To: <1368653371.9603.18.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 of May 2013 00:45:03 Heiko Stübner wrote:
-> Am Donnerstag, 16. Mai 2013, 00:02:40 schrieb Tomasz Figa:
-> > On Wednesday 15 of May 2013 23:48:31 Heiko Stübner wrote:
-> > > Am Mittwoch, 15. Mai 2013, 23:20:08 schrieb Sylwester Nawrocki:
-> > > > On 05/15/2013 10:31 PM, Heiko Stübner wrote:
-> > > > >>> +       BUG();
-> > > > >>> 
-> > > > >> >  Isn't that a bit nasty. This macro should be used with care
-> > > > >> >  and
-> > > > >> >  we
-> > > > >> >  should recover if possible. dev_err()?
-> > > > > 
-> > > > > runtime_config already denies any settings not in the 1,2 or
-> > > > > 4bytes
-> > > > > range - the default-part should therefore never be reached. So
-> > > > > if
-> > > > > any other value magically appears in the register and triggers
-> > > > > the
-> > > > > default-part, something is seriously wrong. So my guess is, the
-> > > > > BUG
-> > > > > might be appropriate.
-> > > > > 
-> > > > > On the other hand the whole default+BUG part could also simply
-> > > > > go
-> > > > > away,
-> > > > > for the same reasons.
-> > > > 
-> > > > IMHO BUG() is not needed at all. As Linus suggested dev_err() is
-> > > > such
-> > > > case or WARN_ON() would be more appropriate. This has been
-> > > > discussed
-> > > > in the past extensively, not sure if you are aware of the other
-> > > > Linus' opinion on BUG()/BUG_ON() proliferation:
-> > > > https://lkml.org/lkml/2012/9/27/461
-> > > 
-> > > Very interesting read and I'll keep this in mind in the future. What
-> > > about the other option ... i.e. simply getting rid of the whole
-> > > "error
-> > > handling", as the other code paths should already make sure that
-> > > only
-> > > valid values get written into the register.
-> > > 
-> > > Can the value change in the register somehow on its own without
-> > > kernel
-> > > intervention, or does this not happen?
-> > 
-> > Hmm, it depends on hardware, I guess. Not sure how it works on this
-> > particular IP.
-> > 
-> > Still, the mentioned BUG() was about a value in a driver-filled
-> > struct,
-> > wasn't it?
-> > 
-> > /* Quoting the the code for reference */
-> > 
-> > > +static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan
-> > > *s3cchan)
-> > > +{
-> > > +       struct s3c24xx_dma_phy *phy = s3cchan->phy;
-> > > +       struct s3c24xx_txd *txd = s3cchan->at;
-> > > +       u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
-> > > +
-> > > +       switch (txd->dcon & DCON_DSZ_MASK) {
-> > > +       case DCON_DSZ_BYTE:
-> > > +               return tc;
-> > > +       case DCON_DSZ_HALFWORD:
-> > > +               return tc * 2;
-> > > +       case DCON_DSZ_WORD:
-> > > +               return tc * 4;
-> > > +       default:
-> > > +               break;
-> > > +       }
-> > > +
-> > > +       BUG();
-> > 
-> > (Btw. I don't see anything setting the DCON_DSZ bits in this field. Am
-> > I missing something?)
-> 
-> this is for calculating the remaining bytes of the transaction. which is
-> used in s3c24xx_dma_tx_status.
-> 
-> And when looking at it again, I can't really fathom why I did it this
-> way with decoding the DSZ from the dcon value of the s3c24xx_txd again
-> instead of simply using the width value of the same struct ....
-> 
-> So it can be much simpler as
-> 	(...)
->      u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
-> 	return tc * txd->width;
-> 
-> getting rid of this stuff alltogether
-> 
-> 
-> still puzzled how I came up with this strangeness in the first place
+On Thu 16 May 2013 05:29:31 AM CST, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-05-15 at 22:46 +0800, Liu Jiang wrote:
+>>         I don't know any OF exports, could you please help to CC
+>> some OF experts?
+>
+> I wrote that code I think. Sorry, I've missed the beginning of the
+> thread, what is the problem ?
+>
+> Cheers,
+> Ben.
+>
+>
+Hi,
+     Just found a little memory leak issue that we should call 
+pci_release_of_node()
+on error recovery path in function pci_scan_device().
+        pci_set_of_node(dev);
 
-Hehe, happens.
+        if (pci_setup_device(dev)) {
+                kfree(dev);
+                return NULL;
+        }
 
-I'm still yet to review the whole series, but I'm failing to find enough 
-time. Hopefully will get to do it soon.
-
-Best regards,
-Tomasz
+Regards!
+Gerry
 
