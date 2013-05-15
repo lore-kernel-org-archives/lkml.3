@@ -1,147 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab3EOE44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 00:56:56 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:64424 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3EOE4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 00:56:54 -0400
+	id S1753499Ab3EOE7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 00:59:44 -0400
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:56069 "HELO
+	stec-inc.com.stec-inc.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1751092Ab3EOE7n convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 00:59:43 -0400
+X-Greylist: delayed 938 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 00:59:32 EDT
+X-ASG-Debug-ID: 1368593031-053ea947e83b0c0001-xx1T2L
+X-Barracuda-Envelope-From: akale@stec-inc.com
+From: Amit Kale <akale@stec-inc.com>
+To: Jens Axboe <axboe@kernel.dk>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>,
+        Carlos Alonso <calonso@stec-inc.com>,
+        "Amit Phansalkar" <aphansalkar@stec-inc.com>
+Subject: RE: EnhanceIO kernel driver
+Thread-Topic: EnhanceIO kernel driver
+X-ASG-Orig-Subj: RE: EnhanceIO kernel driver
+Thread-Index: Ac5QjOc//DjoiA1QQBSpCsjFIBhTSQADoxaAABIIVIA=
+Date: Wed, 15 May 2013 04:42:36 +0000
+Message-ID: <A44CB407BBB85C498149811C52498A45076B8B@MYMBX3.stec-inc.ad>
+References: <A44CB407BBB85C498149811C52498A45075275@MYMBX3.stec-inc.ad>
+ <20130514200623.GK587@kernel.dk>
+In-Reply-To: <20130514200623.GK587@kernel.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [14.140.125.250]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAPz6YkVkB5JepBoL25DqZ8JHC6rgvQcLzs4wsN+a7Vb1NFmNkw@mail.gmail.com>
-References: <CAPz6YkWr_D504UdeqXB0FXxgqOt3GYnF09ctoMaZ8P-znbVMGQ@mail.gmail.com>
- <1368591999.5890.9.camel@rzhang1-mobl4> <1368592193.5890.10.camel@rzhang1-mobl4>
- <CAPz6YkVkB5JepBoL25DqZ8JHC6rgvQcLzs4wsN+a7Vb1NFmNkw@mail.gmail.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Tue, 14 May 2013 21:56:33 -0700
-X-Google-Sender-Auth: oNF58Zx0hyPPUMGEZYI_paO42js
-Message-ID: <CAPz6YkVswDhXo2z+JMrnbqg54=aEN5xr=i06BuK9aMw0j_rkGg@mail.gmail.com>
-Subject: Re: Fans at full speed after resume
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org, Sameer Nanda <snanda@chromium.org>,
-        "Triplett, Josh" <josh.triplett@intel.com>, Olof <olofj@chromium.org>,
-        len.brown@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Barracuda-Connect: mycas03.stec-inc.ad[172.30.8.21]
+X-Barracuda-Start-Time: 1368593031
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.130995
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 9:34 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> On Tue, May 14, 2013 at 9:29 PM, Zhang Rui <rui.zhang@intel.com> wrote:
->> On Wed, 2013-05-15 at 12:26 +0800, Zhang Rui wrote:
->>> please
->>>
->>> On Tue, 2013-05-14 at 21:18 -0700, Sonny Rao wrote:
->>> > Hi, I've seen a regression in kernels since 3.7 on x86 devices where
->>> > the kernel turns the system fans on to max speed after resuming from
->>> > ram.  Other people have noticed it as well, for example see
->>> > https://bugzilla.redhat.com/show_bug.cgi?id=895276
->>> >
->>> please check if this is a duplicate of bug
->>> https://bugzilla.kernel.org/show_bug.cgi?id=56591
->> or you can try 3.10-rc1 to see if the problem still exists or not.
->
-> Ok, I patched in the fix from that bugzilla --
-> 928c5edbe6f7cb0d1c71bc2353d091bc5b114fe3
-> but I'm still seeing the issue, I'll try 3.10-rc1 next
->
+Hi Jens,
 
-3.10-rc1 seems good
-3.9.2 is okay, though fans do seem to be on more for a while after
-resume, it eventually turns off
-3.8.13 seems to still be broken, with fans at maximum
+That's fair. We do have a strong belief in the value of EnhanceIO driver. We'll send more information soon.
 
->>
->> thanks,
->> rui
->>> > For example on the Samsung 550 Chromebook, we have one thermal zone
->>> > and have 5 cooling_devices, 0-4, which correspond to 5 possible fan
->>> > speeds.  Under typical idle, only cooling_device4 and maybe
->>> > cooling_device3 are active, depending on temperature:
->>> >
->>> > cat /sys/class/thermal/cooling_device[01234]/cur_state
->>> > /sys/class/thermal/thermal_zone0/temp
->>> > 0
->>> > 0
->>> > 0
->>> > 0
->>> > 1
->>> > 57000
->>> >
->>> > however after a suspend/resume, we see that cooling_devices 0 and 1
->>> > become active:
->>> > cat /sys/class/thermal/cooling_device[01234]/cur_state
->>> > /sys/class/thermal/thermal_zone0/temp
->>> > 1
->>> > 1
->>> > 0
->>> > 0
->>> > 1
->>> > 54000
->>> >
->>> > and it seems to stay that way, even though the temperature is low
->>> > enough that the fan shouldn't be running at that speed.  If I manually
->>> > disable cooling_devices 0 and 1 then fan control works normally again.
->>> >
->>> > I started bisecting it and was able to do so up until this commit:
->>> > commit 29b19e250434c6193c8b8e4c34c9c6284dd4f101
->>> > Merge: 125c4c7 c072fed
->>> > Author:     Len Brown <len.brown@intel.com>
->>> > AuthorDate: Tue Oct 9 01:35:52 2012 -0400
->>> > Commit:     Len Brown <len.brown@intel.com>
->>> > CommitDate: Tue Oct 9 01:35:52 2012 -0400
->>> >
->>> >     Merge branch 'release' of
->>> > git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux into
->>> > thermal
->>> >
->>> > unfortunately, I'm not able to successfully do a suspend/resume on the
->>> > commits in that merge, so I wasn't able to bisect down to the exact
->>> > commit.
->>> >
->>> > I did confirm that one parent of the merge is okay: commit
->>> > 125c4c706b680c7831f0966ff873c1ad0354ec25 idr: rename MAX_LEVEL to
->>> > MAX_IDR_LEVEL
->>> >
->>> > so I think it falls somewhere in this list of commits:
->>> > c072fed95c9855a920c114d7fa3351f0f54ea06e...e3f25e6e5836c4790fbe395ff42e241f372d859d
->>> >
->>> > c072fed9 thermal: Exynos: Fix NULL pointer dereference in
->>> > exynos_unregister_thermal()
->>> > a4b6fec9 Thermal: Fix bug on cpu_cooling, cooling device's id conflict problem.
->>> > 79e093c3 thermal: exynos: Use devm_* functions
->>> > 17be868e ARM: exynos: add thermal sensor driver platform data support
->>> > 7e0b55e6 thermal: exynos: register the tmu sensor with the kernel thermal layer
->>> > f22d9c03c thermal: exynos5: add exynos5250 thermal sensor driver support
->>> > c48cbba6 hwmon: exynos4: move thermal sensor driver to driver/thermal directory
->>> > 02361418 thermal: add generic cpufreq cooling implementation
->>> > a7a3b8c8 Fix a build error.
->>> > 204dd1d3 thermal: Fix potential NULL pointer accesses
->>> > 1e426ffdd thermal: add Renesas R-Car thermal sensor support
->>> > 79a49168 thermal: fix potential out-of-bounds memory access
->>> > f4a821ce6 Thermal: Introduce locking for cdev.thermal_instances list.
->>> > 908b9fb79 Thermal: Unify the code for both active and passive cooling
->>> > ce119f832 Thermal: Introduce simple arbitrator for setting device cooling state
->>> > b5e4ae62 Thermal: List thermal_instance in thermal_cooling_device.
->>> > cddf31b3b Thermal: Rename thermal_instance.node to thermal_instance.tz_node.
->>> > 2d374139 Thermal: Rename thermal_zone_device.cooling_devices
->>> > b81b6ba3 Thermal: rename structure thermal_cooling_device_instance to
->>> > thermal_instance
->>> > 4ae46befb Thermal: Introduce thermal_zone_trip_update()
->>> > 1b7ddb84 Thermal: Remove tc1/tc2 in generic thermal layer.
->>> > 601f3d424 Thermal: Introduce .get_trend() callback.
->>> > 9d99842f9 Thermal: set upper and lower limits
->>> > 74051ba5 Thermal: Introduce cooling states range support
->>> >
->>> > When I get time, I'll try to rebase those commits onto the IDR commit
->>> > and see if I can get a better bisect.  Any insights into the problem
->>> > would be appreciated, thanks.
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
+Thanks.
+-Amit
+
+> -----Original Message-----
+> From: Jens Axboe [mailto:axboe@kernel.dk]
+> Sent: Wednesday, May 15, 2013 1:36 AM
+> To: OS Engineering
+> Cc: LKML; Sanoj Unnikrishnan; Carlos Alonso; Amit Phansalkar
+> Subject: Re: EnhanceIO kernel driver
+> 
+> On Tue, May 14 2013, OS Engineering wrote:
+> > Hi Jens,
+> >
+> > Kindly find an updated EnhanceIO(TM) software kernel driver attached
+> > herewith. Continuing with our previous communication: we request you
+> > to include it in Linux kernel.
+> 
+> The situation has changed a bit since last. We know have both dm-cache
+> and bcache in the kernel. What does this solution bring to the table,
+> that those two do not already cover?
+> 
+> IOW, we need a bit of a better sales pitch than "here it is".
+> 
+> --
+> Jens Axboe
+
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
