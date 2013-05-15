@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab3EOVV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 17:21:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698Ab3EOVV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 17:21:56 -0400
-Date: Wed, 15 May 2013 23:21:39 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/15] perf ftrace: Add 'record' sub-command
-Message-ID: <20130515212139.GD5814@krava.redhat.com>
-References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
- <1368526439-31966-10-git-send-email-namhyung@kernel.org>
+	id S933133Ab3EOVWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 17:22:33 -0400
+Received: from mail-da0-f45.google.com ([209.85.210.45]:54487 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698Ab3EOVWc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 17:22:32 -0400
+Date: Wed, 15 May 2013 14:22:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/workqueue.c: need call device_remove_file() when
+ failure occurs after called device_create_file()
+Message-ID: <20130515212228.GE26222@htj.dyndns.org>
+References: <51922D30.8000809@asianux.com>
+ <20130514151752.GB6795@mtj.dyndns.org>
+ <5192EFE0.4040903@asianux.com>
+ <5193277A.3040506@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368526439-31966-10-git-send-email-namhyung@kernel.org>
+In-Reply-To: <5193277A.3040506@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 07:13:53PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, May 15, 2013 at 02:13:14PM +0800, Chen Gang wrote:
 > 
-> The ftrace record command is for saving raw ftrace buffer contents
-> which can be get from per_cpu/cpuX/trace_pipe_raw.
+> In workqueue_sysfs_register(), when failure occurs after called
+> device_create_file(), need call device_remove_file() to release the
+> related resources, then call device_unregister().
 > 
-> Since ftrace events are generated very frequently so single thread for
-> recording mostly resulted in buffer overruns.  Thus it uses per-cpu
-> recorder thread to prevent such cases and they save the contents to
-> their own files.
+> Or it will cause issue.
 > 
-> These per-cpu data files are saved in a directory so that they can be
-> easily found when needed.  I chose the default directory name as
-> "perf.data.dir" and the first two (i.e. "perf.data") can be changed
-> with -o option.  The structure of the directory looks like:
-> 
->   $ tree perf.data.dir
->   perf.data.dir/
->   |-- perf.header
->   |-- trace-cpu0.buf
->   |-- trace-cpu1.buf
->   |-- trace-cpu2.buf
->   `-- trace-cpu3.buf
-> 
-> In addition to trace-cpuX.buf files, it has perf.header file also.
-> The perf.header file is compatible with existing perf.data format and
-> contains usual event information, feature mask and sample data.  The
-> sample data is synthesized to indicate given cpu has a record file.
+> For individual 'device_attributs' (just like our case), need call
+> device_remove_file() explictly and then call device_unregister(),
+> please reference drivers/base/*.c (e.g node.c or cpu.c).
 
-so AFAICS we store sample event for each cpu we recorded (in record
-command) and by processing those samples (show/report) we get data
-files names for each cpu
+Hmm... isn't this already taken care of by __sysfs_remove_dir() which
+device_unregister() calls?  That function removes all non-directory
+files under the directory being removed.
 
-hum, I might have missed some discussion about this, but seems
-like header feature fits better for this, as long as we store
-only cpus.. FTRACE_CPUS or something like thius with simple array
+Thanks.
 
-or if we are going to use event, maybe user event via
-enum perf_user_event_type fits better
-
-jirka
+-- 
+tejun
