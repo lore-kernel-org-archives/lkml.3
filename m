@@ -1,29 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3EOVpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 17:45:35 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:57924 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3EOVpe (ORCPT
+	id S1753196Ab3EOVrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 17:47:18 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55808 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab3EOVrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 17:45:34 -0400
-From: Todd Poynor <toddpoynor@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Todd Poynor <toddpoynor@google.com>
-Subject: [PATCH 0/2] timerfd support for wakeup alarm timers
-Date: Wed, 15 May 2013 14:38:10 -0700
-Message-Id: <1368653892-18939-1-git-send-email-toddpoynor@google.com>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 15 May 2013 17:47:16 -0400
+Message-ID: <1368654607.6899.16.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target fixes for v3.10-rc2
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Shlomo Pongratz <shlomop@mellanox.com>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Chris Boot <bootc@bootc.net>
+Date: Wed, 15 May 2013 14:50:07 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable wakeup alarm timers via file descriptors.  Hook up alarmtimer
-to timerfd via clocks CLOCK_REALTIME_ALARM and CLOCK_BOOTTIME_ALARM,
-and add needed functions to alarmtimer.
+Hi Linus,
 
- fs/timerfd.c               |  131 +++++++++++++++++++++++++++++++++++++--------
- include/linux/alarmtimer.h |    4 +
- kernel/time/alarmtimer.c   |   39 +++++++++++++
- 3 files changed, 150 insertions(+), 24 deletions(-)
+The following are target fixes currently in the queue for v3.10-rc2.  
+
+Please go ahead and pull from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git queue
+
+A handful of fixes + minor changes this time around, along with one
+important >= v3.9 regression fix for IBLOCK backends.  The highlights
+include:
+
+ - Use FD_MAX_SECTORS in FILEIO for block_device as well as files (agrover)
+ - Fix processing of out-of-order CmdSNs with iSBD driver (shlomo)
+ - Close long-standing target_put_sess_cmd() vs. core_tmr_abort_task() race
+   with the addition of kref_put_spinlock_irqsave() (joern + greg-kh)
+ - Fix IBLOCK WCE=1 + DPOFUA=1 backend WRITE regression in >= v3.9 (nab + bootc)
+
+Note these four patches are CC'ed to stable.
+
+Also, there is still some work left to be done on the active I/O
+shutdown path in target_wait_for_sess_cmds() used by tcm_qla2xxx +
+ib_isert fabrics that is still being discussed on the list, and will
+hopefully be resolved soon.
+
+Thank you,
+
+--nab
+
+Andy Grover (3):
+  target: Remove unused struct members in se_dev_entry
+  target: Use FD_MAX_SECTORS/FD_BLOCKSIZE for blockdevs using fileio
+  target: Have dev/enable show if TCM device is configured
+
+Geert Uytterhoeven (1):
+  iscsi-target: Make buf param of iscsit_do_crypto_hash_buf() const
+    void *
+
+Joern Engel (2):
+  target: removed unused transport_state flag
+  target: close target_put_sess_cmd() vs. core_tmr_abort_task() race
+
+Nicholas Bellinger (5):
+  iscsi-target: Fix NULL pointer dereference in iscsit_send_reject
+  target/rd: Add ramdisk bit for NULLIO operation
+  iscsi-target: Fix typos in RDMAEXTENSIONS macro usage
+  MAINTAINERS: Update target git tree URL
+  target/iblock: Fix WCE=1 + DPOFUA=1 backend WRITE regression
+
+Shlomo Pongratz (1):
+  iscsi-target: Fix processing of OOO commands
+
+ MAINTAINERS                                    |    2 +-
+ drivers/target/iscsi/iscsi_target.c            |   63 ++++++++++--------------
+ drivers/target/iscsi/iscsi_target_erl1.c       |    7 ++-
+ drivers/target/iscsi/iscsi_target_parameters.c |    8 ++--
+ drivers/target/iscsi/iscsi_target_parameters.h |    4 +-
+ drivers/target/target_core_configfs.c          |   11 +++-
+ drivers/target/target_core_device.c            |   14 -----
+ drivers/target/target_core_file.c              |    9 +---
+ drivers/target/target_core_iblock.c            |    2 +
+ drivers/target/target_core_internal.h          |    1 -
+ drivers/target/target_core_rd.c                |   21 +++++++-
+ drivers/target/target_core_rd.h                |    1 +
+ drivers/target/target_core_transport.c         |   13 ++---
+ include/linux/kref.h                           |   33 ++++++++++++
+ include/target/target_core_base.h              |    5 --
+ 15 files changed, 107 insertions(+), 87 deletions(-)
+
+-- 
+1.7.2.5
+
