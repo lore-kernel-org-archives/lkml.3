@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab3EOQZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:25:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60570 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758243Ab3EOQZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:25:46 -0400
-Message-ID: <5193B6CB.5080301@zytor.com>
-Date: Wed, 15 May 2013 09:24:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1759565Ab3EOQ3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:29:53 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:40430 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759029Ab3EOQ3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 12:29:51 -0400
 MIME-Version: 1.0
-To: "Wei, Gang" <gang.wei@intel.com>
-CC: "Ren, Qiaowei" <qiaowei.ren@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
+In-Reply-To: <1368611522-9984-2-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-2-git-send-email-lee.jones@linaro.org>
+Date: Wed, 15 May 2013 18:29:51 +0200
+Message-ID: <CACRpkdZJp-WRGNgzwqERVBtb_WxQGybmMjnnLTAoX66qECNh7g@mail.gmail.com>
+Subject: Re: [PATCH 01/39] dmaengine: ste_dma40: Separate Logical Global
+ Interrupt Mask (GIM) unmasking
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tboot-devel@lists.sourceforge.net" 
-	<tboot-devel@lists.sourceforge.net>
-Subject: Re: [PATCH] x86: add a new SMP bring up way for tboot case
-References: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com> <519257FC.8070708@zytor.com> <9E0BE1322F2F2246BD820DA9FC397ADE9B851C@SHSMSX102.ccr.corp.intel.com> <7877c9de-aa56-4f66-9e51-97987e34cc39@email.android.com> <D0B11485C64D4B47B66902F8A4E901BEAD5592@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <D0B11485C64D4B47B66902F8A4E901BEAD5592@SHSMSX101.ccr.corp.intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Rabin Vincent <rabin@rab.in>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Per Forlin <per.forlin@stericsson.com>, Dan Williams <djbw@fb.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 09:10 AM, Wei, Gang wrote:
-> Oh, the question should be in what states all the AP CPU registers are. Do you 
-> think we need to define the case like what Intel SDM defined for 
-> getsec[SENTER]?
-> 
-> Jimmy
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-I'll take a look later today.
+> During the initial setup of a logical channel, it is necessary to unmask
+> the GIM in order to receive generated terminal count and error interrupts.
+> We're separating out this required code so it will be possible to move
+> the remaining code in d40_phy_cfg(), which is mostly runtime configuration
+> into the runtime_config() routine.
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-	-hpa
+Tentatively applied to my ux500-dma40 branch.
 
+This lacks an ACK from Vinod...
 
+I cannot get any of this stack of patches up to ARM SoC
+before I have Vinod's ACK on all hitting drivers/dma/*
+
+Yours,
+Linus Walleij
