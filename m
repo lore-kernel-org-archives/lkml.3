@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab3EOJBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:01:32 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:64824 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551Ab3EOJBa (ORCPT
+	id S1758645Ab3EOJBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:01:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39972 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751788Ab3EOJBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:01:30 -0400
-Date: Wed, 15 May 2013 02:00:53 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 04/21] Generic percpu refcounting
-Message-ID: <20130515090053.GC16164@moria.home.lan>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
- <1368494338-7069-5-git-send-email-koverstreet@google.com>
- <20130514145932.GA6607@mtj.dyndns.org>
- <20130514152836.GA21972@redhat.com>
+	Wed, 15 May 2013 05:01:41 -0400
+Date: Wed, 15 May 2013 10:01:03 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Rob Herring <robherring2@gmail.com>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] ARM: delay: print dummy values for bogomips
+Message-ID: <20130515090103.GA12907@mudshark.cambridge.arm.com>
+References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
+ <1367602547-19322-2-git-send-email-will.deacon@arm.com>
+ <20130506231554.GB16801@amd.pavel.ucw.cz>
+ <5188B8B2.5030601@arm.com>
+ <alpine.LFD.2.03.1305141547180.31158@syhkavp.arg>
+ <CAL_Jsq+Q5UMGo3J+vKKCRU+w4Kj0YN0exs7UCWTEOxmFjWfo3g@mail.gmail.com>
+ <alpine.LFD.2.03.1305141945160.31158@syhkavp.arg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130514152836.GA21972@redhat.com>
+In-Reply-To: <alpine.LFD.2.03.1305141945160.31158@syhkavp.arg>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 05:28:36PM +0200, Oleg Nesterov wrote:
-> On 05/14, Tejun Heo wrote:
-> >
-> > > +int percpu_ref_tryget(struct percpu_ref *ref)
-> > > +{
-> > > +	int ret = 1;
-> > > +
-> > > +	preempt_disable();
-> > > +
-> > > +	if (!percpu_ref_dead(ref))
-> > > +		percpu_ref_get(ref);
-> > > +	else
-> > > +		ret = 0;
-> > > +
-> > > +	preempt_enable();
-> > > +
-> > > +	return ret;
-> > > +}
-> ...
-> > BTW, why is this
-> > function necessary?  What's the use case?
-> 
-> Yes, I was wondering too.
-> 
-> And please note that this code _looks_ wrong, percpu_ref_get() still
-> can increment ref->count.
+Hi Nico,
 
-Yeah I see what you mean, I changed how ret is set.
-
-But also splitting tryget() and count() out into another patch to go
-with the module conversion.
-
-> Hmm. Just noticed this comment above percpu_ref_kill()
+On Wed, May 15, 2013 at 12:56:51AM +0100, Nicolas Pitre wrote:
+> On Tue, 14 May 2013, Rob Herring wrote:
+> > On Tue, May 14, 2013 at 2:54 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > > Waitaminute... Didn't you just claim this would be an ABI break?
+> > >
+> > > So if no application can be found, where is the ABI breakage?
+> > 
+> > lscpu
+> > 
+> > But that is already "broken" on ARM because x86 uses "bogomips" and
+> > ARM uses "BogoMIPS". 
 > 
-> 	* The caller must issue a synchronize_rcu()/call_rcu() before calling
-> 	* percpu_ref_put() to drop the initial ref.
-> 
-> Really?
+> So basically it won't be any more broken if the field disappears 
+> entirely, right?
 
-That's also left over from the dynamic version, whoops.
+It's not these sort of tools I was worried about. I was thinking about the
+possibility of badly written parsers which want some other field from
+cpuinfo, but use the bogomips line for context. Do these applications exist?
+No idea.
+
+My second (less stupid) version of the patch prints "not reported". I'd be
+happy to remove the line altogether if people get behind the decision though.
+In fact, I just tried it and at least my linaro filesystem seems happy
+enough.
+
+Will
