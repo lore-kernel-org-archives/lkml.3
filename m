@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab3EOKBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 06:01:05 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64936 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab3EOJwl (ORCPT
+	id S932562Ab3EOJwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:52:36 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:36064 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932502Ab3EOJw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:52:41 -0400
+	Wed, 15 May 2013 05:52:29 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
         davem@davemloft.net, herbert@gondor.hengli.com.au,
         vinod.koul@intel.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
-        Andreas Westin <andreas.westin@stericsson.com>
-Subject: [PATCH 16/39] crypto: ux500/cryp - Set DMA configuration though dma_slave_config()
-Date: Wed, 15 May 2013 10:51:39 +0100
-Message-Id: <1368611522-9984-17-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 09/39] ARM: ux500: Remove DMA address look-up table
+Date: Wed, 15 May 2013 10:51:32 +0100
+Message-Id: <1368611522-9984-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
@@ -25,97 +24,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA controller currently takes configuration information from
-information passed though dma_channel_request(), but it shouldn't.
-Using the API, the DMA channel should only be configured during
-a dma_slave_config() call.
+DMA addresses are now passed as part of the dmaengine API by invoking
+dmaengine_slave_config(). So there's no requirement for the DMA40
+driver to look them up in a table provided by platform data. This
+method does not fit in well using Device Tree either.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andreas Westin <andreas.westin@stericsson.com>
-Cc: linux-crypto@vger.kernel.org
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/crypto/ux500/cryp/cryp.h      |    7 ++++++-
- drivers/crypto/ux500/cryp/cryp_core.c |   17 +++++++++++++++++
- 2 files changed, 23 insertions(+), 1 deletion(-)
+ arch/arm/mach-ux500/devices-db8500.c        |   80 ---------------------------
+ include/linux/platform_data/dma-ste-dma40.h |    2 -
+ 2 files changed, 82 deletions(-)
 
-diff --git a/drivers/crypto/ux500/cryp/cryp.h b/drivers/crypto/ux500/cryp/cryp.h
-index 14cfd05..d1d6606 100644
---- a/drivers/crypto/ux500/cryp/cryp.h
-+++ b/drivers/crypto/ux500/cryp/cryp.h
-@@ -114,6 +114,9 @@ enum cryp_status_id {
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index bed25a3..e21ffd8 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -42,87 +42,7 @@ static struct resource dma40_resources[] = {
+ 	}
  };
  
- /* Cryp DMA interface */
-+#define CRYP_DMA_TX_FIFO	0x08
-+#define CRYP_DMA_RX_FIFO	0x10
-+
- enum cryp_dma_req_type {
- 	CRYP_DMA_DISABLE_BOTH,
- 	CRYP_DMA_ENABLE_IN_DATA,
-@@ -217,7 +220,8 @@ struct cryp_dma {
+-/*
+- * Mapping between destination event lines and physical device address.
+- * The event line is tied to a device and therefore the address is constant.
+- * When the address comes from a primecell it will be configured in runtime
+- * and we set the address to -1 as a placeholder.
+- */
+-static const dma_addr_t dma40_tx_map[DB8500_DMA_NR_DEV] = {
+-	/* MUSB - these will be runtime-reconfigured */
+-	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
+-	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
+-	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
+-	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
+-	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
+-	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
+-	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
+-	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
+-	/* PrimeCells - run-time configured */
+-	[DB8500_DMA_DEV0_SPI0] = -1,
+-	[DB8500_DMA_DEV1_SD_MMC0] = -1,
+-	[DB8500_DMA_DEV2_SD_MMC1] = -1,
+-	[DB8500_DMA_DEV3_SD_MMC2] = -1,
+-	[DB8500_DMA_DEV8_SSP0] = -1,
+-	[DB8500_DMA_DEV9_SSP1] = -1,
+-	[DB8500_DMA_DEV11_UART2] = -1,
+-	[DB8500_DMA_DEV12_UART1] = -1,
+-	[DB8500_DMA_DEV13_UART0] = -1,
+-	[DB8500_DMA_DEV28_SD_MM2] = -1,
+-	[DB8500_DMA_DEV29_SD_MM0] = -1,
+-	[DB8500_DMA_DEV32_SD_MM1] = -1,
+-	[DB8500_DMA_DEV33_SPI2] = -1,
+-	[DB8500_DMA_DEV35_SPI1] = -1,
+-	[DB8500_DMA_DEV40_SPI3] = -1,
+-	[DB8500_DMA_DEV41_SD_MM3] = -1,
+-	[DB8500_DMA_DEV42_SD_MM4] = -1,
+-	[DB8500_DMA_DEV43_SD_MM5] = -1,
+-	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV30_MSP1] = U8500_MSP1_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_TX_REG_OFFSET,
+-	[DB8500_DMA_DEV50_HAC1_TX] = U8500_HASH1_BASE + HASH1_TX_REG_OFFSET,
+-};
+-
+-/* Mapping between source event lines and physical device address */
+-static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
+-	/* MUSB - these will be runtime-reconfigured */
+-	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
+-	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
+-	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
+-	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
+-	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
+-	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
+-	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
+-	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
+-	/* PrimeCells */
+-	[DB8500_DMA_DEV0_SPI0] = -1,
+-	[DB8500_DMA_DEV1_SD_MMC0] = -1,
+-	[DB8500_DMA_DEV2_SD_MMC1] = -1,
+-	[DB8500_DMA_DEV3_SD_MMC2] = -1,
+-	[DB8500_DMA_DEV8_SSP0] = -1,
+-	[DB8500_DMA_DEV9_SSP1] = -1,
+-	[DB8500_DMA_DEV11_UART2] = -1,
+-	[DB8500_DMA_DEV12_UART1] = -1,
+-	[DB8500_DMA_DEV13_UART0] = -1,
+-	[DB8500_DMA_DEV28_SD_MM2] = -1,
+-	[DB8500_DMA_DEV29_SD_MM0] = -1,
+-	[DB8500_DMA_DEV32_SD_MM1] = -1,
+-	[DB8500_DMA_DEV33_SPI2] = -1,
+-	[DB8500_DMA_DEV35_SPI1] = -1,
+-	[DB8500_DMA_DEV40_SPI3] = -1,
+-	[DB8500_DMA_DEV41_SD_MM3] = -1,
+-	[DB8500_DMA_DEV42_SD_MM4] = -1,
+-	[DB8500_DMA_DEV43_SD_MM5] = -1,
+-	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV30_MSP3] = U8500_MSP3_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
+-	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
+-};
+-
+ struct stedma40_platform_data dma40_plat_data = {
+-	.dev_rx = dma40_rx_map,
+-	.dev_tx = dma40_tx_map,
+ 	.disabled_channels = {-1},
+ };
  
- /**
-  * struct cryp_device_data - structure for a cryp device.
-- * @base: Pointer to the hardware base address.
-+ * @base: Pointer to virtual base address of the cryp device.
-+ * @phybase: Pointer to physical memory location of the cryp device.
-  * @dev: Pointer to the devices dev structure.
-  * @clk: Pointer to the device's clock control.
-  * @pwr_regulator: Pointer to the device's power control.
-@@ -232,6 +236,7 @@ struct cryp_dma {
+diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
+index c54af61..af0064e 100644
+--- a/include/linux/platform_data/dma-ste-dma40.h
++++ b/include/linux/platform_data/dma-ste-dma40.h
+@@ -152,8 +152,6 @@ struct stedma40_chan_cfg {
+  * for 'multiple of 4' channels, like 8.
   */
- struct cryp_device_data {
- 	struct cryp_register __iomem *base;
-+	phys_addr_t phybase;
- 	struct device *dev;
- 	struct clk *clk;
- 	struct regulator *pwr_regulator;
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index ccdf173..d9c863d 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -475,6 +475,19 @@ static int cryp_get_device_data(struct cryp_ctx *ctx,
- static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				   struct device *dev)
- {
-+	struct dma_slave_config mem2cryp = {
-+		.direction = DMA_MEM_TO_DEV,
-+		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
-+		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.dst_maxburst = 4,
-+        };
-+	struct dma_slave_config cryp2mem = {
-+		.direction = DMA_DEV_TO_MEM,
-+		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
-+		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
-+		.src_maxburst = 4,
-+        };
-+
- 	dma_cap_zero(device_data->dma.mask);
- 	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
- 
-@@ -490,6 +503,9 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 				    stedma40_filter,
- 				    device_data->dma.cfg_cryp2mem);
- 
-+	dmaengine_slave_config(device_data->dma.chan_mem2cryp, &mem2cryp);
-+	dmaengine_slave_config(device_data->dma.chan_cryp2mem, &cryp2mem);
-+
- 	init_completion(&device_data->dma.cryp_dma_complete);
- }
- 
-@@ -1431,6 +1447,7 @@ static int ux500_cryp_probe(struct platform_device *pdev)
- 		goto out_kfree;
- 	}
- 
-+	device_data->phybase = res->start;
- 	device_data->base = ioremap(res->start, resource_size(res));
- 	if (!device_data->base) {
- 		dev_err(dev, "[%s]: ioremap failed!", __func__);
+ struct stedma40_platform_data {
+-	const dma_addr_t		*dev_tx;
+-	const dma_addr_t		*dev_rx;
+ 	int				 disabled_channels[STEDMA40_MAX_PHYS];
+ 	int				*soft_lli_chans;
+ 	int				 num_of_soft_lli_chans;
 -- 
 1.7.10.4
 
