@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab3EOIlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:41:25 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:38105 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab3EOIlX (ORCPT
+	id S932288Ab3EOIp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:45:58 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:51708 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab3EOIpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:41:23 -0400
-Message-ID: <51934A62.2030606@parallels.com>
-Date: Wed, 15 May 2013 12:42:10 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Wed, 15 May 2013 04:45:55 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch v3 -mm 3/3] vmscan, memcg: Do softlimit reclaim also for
- targeted reclaim
-References: <1368431172-6844-1-git-send-email-mhocko@suse.cz> <1368431172-6844-4-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1368431172-6844-4-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1368370791-32630-1-git-send-email-laurent.navet@gmail.com>
+References: <1368370791-32630-1-git-send-email-laurent.navet@gmail.com>
+Date: Wed, 15 May 2013 10:45:55 +0200
+Message-ID: <CACRpkdYiTtKYE900YYQDPer5GZacYunC9OkAiff4vSM67m73aw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: pinctrl: vt8500: use devm_ioremap_resource()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laurent Navet <laurent.navet@gmail.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>, Stephen Warren <swarren@nvidia.com>,
+        Olof Johansson <olof@lixom.net>, Axel Lin <axel.lin@ingics.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 11:46 AM, Michal Hocko wrote:
-> Soft reclaim has been done only for the global reclaim (both background
-> and direct). Since "memcg: integrate soft reclaim tighter with zone
-> shrinking code" there is no reason for this limitation anymore as the
-> soft limit reclaim doesn't use any special code paths and it is a
-> part of the zone shrinking code which is used by both global and
-> targeted reclaims.
-> 
-> From semantic point of view it is even natural to consider soft limit
-> before touching all groups in the hierarchy tree which is touching the
-> hard limit because soft limit tells us where to push back when there is
-> a  memory pressure. It is not important whether the pressure comes from
-> the limit or imbalanced zones.
-> 
-> This patch simply enables soft reclaim unconditionally in
-> mem_cgroup_should_soft_reclaim so it is enabled for both global and
-> targeted reclaim paths. mem_cgroup_soft_reclaim_eligible needs to learn
-> about the root of the reclaim to know where to stop checking soft limit
-> state of parents up the hierarchy.
-> Say we have
-> A (over soft limit)
->  \
->   B (below s.l., hit the hard limit)
->  / \
-> C   D (below s.l.)
-> 
-> B is the source of the outside memory pressure now for D but we
-> shouldn't soft reclaim it because it is behaving well under B subtree
-> and we can still reclaim from C (pressumably it is over the limit).
-> mem_cgroup_soft_reclaim_eligible should therefore stop climbing up the
-> hierarchy at B (root of the memory pressure).
-> 
-> Changes since v1
-> - add sc->target_mem_cgroup handling into mem_cgroup_soft_reclaim_eligible
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
+On Sun, May 12, 2013 at 4:59 PM, Laurent Navet <laurent.navet@gmail.com> wrote:
 
-Reviewed-by: Glauber Costa <glommer@openvz.org>
+> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+>
+> Found with coccicheck and this semantic patch:
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci
+>
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
 
+Patch applied with Tony's ACK.
+
+Thanks!
+Linus Walleij
