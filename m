@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759487Ab3EOPr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:47:57 -0400
-Received: from 8bytes.org ([85.214.48.195]:53120 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758111Ab3EOPr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:47:56 -0400
-Date: Wed, 15 May 2013 17:47:53 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
-Message-ID: <20130515154753.GJ24440@8bytes.org>
-References: <20130515105656.GI24440@8bytes.org>
- <5193A3B5.7010400@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5193A3B5.7010400@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed May 15 17:47:54 2013
-X-DSPAM-Confidence: 0.9984
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5193ae2a23671844720689
+	id S1759119Ab3EOPt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:49:57 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:34906 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758111Ab3EOPty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:49:54 -0400
+Message-ID: <1368632990.5673.33.camel@misato.fc.hp.com>
+Subject: Re: V3.10-rc1 memory leak
+From: Toshi Kani <toshi.kani@hp.com>
+To: Catalin Marinas <catalin.marinas@arm.com>, rjw@sisk.pl
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-acpi@vger.kernel.org
+Date: Wed, 15 May 2013 09:49:50 -0600
+In-Reply-To: <20130515150228.GC1096@darko.cambridge.arm.com>
+References: <51912567.6090507@lwfinger.net>
+	 <1368558586.6828.53.camel@gandalf.local.home>
+	 <20130514203028.GA2997@MacBook-Pro.local> <5192A847.1000100@lwfinger.net>
+	 <1368566427.6828.58.camel@gandalf.local.home>
+	 <1368579423.6828.63.camel@gandalf.local.home>
+	 <5192FDE2.1020305@lwfinger.net>
+	 <20130515150228.GC1096@darko.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 05:03:17PM +0200, Jiri Slaby wrote:
-> On 05/15/2013 12:56 PM, Joerg Roedel wrote:
+On Wed, 2013-05-15 at 16:02 +0100, Catalin Marinas wrote:
+> On Wed, May 15, 2013 at 04:15:46AM +0100, Larry Finger wrote:
+> > I do not see that particular one; however, I see 4 instances of
+> > 
+> > unreferenced object 0xffff8800b7979750 (size 8):
+> >    comm "swapper/0", pid 1, jiffies 4294892402 (age 21888.316s)
+> >    hex dump (first 8 bytes):
+> >      31 38 00 b7 00 88 ff ff                          18......
+> >    backtrace:
+> >      [<ffffffff81432ea1>] kmemleak_alloc+0x21/0x50
+> >      [<ffffffff81145d50>] __kmalloc_track_caller+0x140/0x2b0
+> >      [<ffffffff81119fb5>] kstrdup+0x35/0x70
+> >      [<ffffffff8125febc>] acpi_set_pnp_ids+0xd0/0x304
+> >      [<ffffffff81260c47>] acpi_scan_init_hotplug+0x47/0xa1
+> >      [<ffffffff81261223>] acpi_bus_check_add+0x66/0xd7
+> >      [<ffffffff8127877a>] acpi_ns_walk_namespace+0xb9/0x173
+> >      [<ffffffff81278bf3>] acpi_walk_namespace+0x93/0xc6
+> >      [<ffffffff812612dc>] acpi_bus_scan+0x48/0x9a
+> >      [<ffffffff818c983d>] acpi_scan_init+0x57/0x14b
+> >      [<ffffffff818c966a>] acpi_init+0x244/0x286
+> >      [<ffffffff810002fa>] do_one_initcall+0x10a/0x160
+> >      [<ffffffff8189cef0>] kernel_init_freeable+0x103/0x192
+> >      [<ffffffff814313a9>] kernel_init+0x9/0xf0
+> >      [<ffffffff8144992c>] ret_from_fork+0x7c/0xb0
+> >      [<ffffffffffffffff>] 0xffffffffffffffff
+> > 
+> > All four were allocated early in the bootup, and are the only leaks reported in 
+> > my system. I have not yet tested to see if they are false.
+> 
+> This looks to me like a real leak, possibly introduced by commit
+> 6b772e8f9 (ACPI: Update PNPID match handling for notify). The
+> acpi_scan_init_hotplug() function calls acpi_set_pnp_ids() which
+> allocates pnp.unique_id (kstrdup()) but for some reason it fails and
+> does not set pnp.type.hardware_id. The return does not call
+> acpi_free_pnp_ids() which would be responsible for such freeing.
 
-> Are you fixing any bug here? output_lock does not protect
-> tty->ops->write on the other places, not tty->ops->write.
+I agree with your analysis.  It appears that this ACPI device object has
+_UID but not _HID.  ACPI spec defines that _UID is a unique ID among a
+same _HID.  So, it is odd to have _UID without _HID.  But, nonetheless,
+this case needs to be handled as such systems exist.
 
-Yes, I am trying to fix a BUG_ON that triggered in
-drivers/tty/hvc/hvc_xen.c in function __write_console().  This function
-was called from the place I am patching in this fix. My current
-explanation for that BUG_ON is a race condition that comes
-from concurrent calls to that function.
+> Something like below, but not tested and may fail some NULL pointer
+> checks:
 
-That is also the only explanation that makes sense because the
-__write_console() function itself makes sure that the condition can not
-hit.
+The change looks good.  acpi_free_pnp_ids() handles this empty list
+pnp->ids properly.  Are you going to submit this patch with your
+signed-off?
 
-In the comment for the n_tty_write function there is this remark:
+Thanks!
+-Toshi
 
- *      Locking: output_lock to protect column state and space left
- *               (note that the process_output*() functions take this
- *                lock themselves)
-
-So the space left is managed in the ->write callback and needs
-protection.
-
-The process_output*() functions all (unless I am missing something)
-take the output_lock before calling the tty->ops->write (directly or
-indirectly).
-
-The place I patched here is the only place in n_tty_write where the
-->write call-back is invoked directly, and it happens without taking the
-lock. I think this is a problem.
-
-
-	Joerg
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index fe158fd..c1bc608 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -1785,7 +1785,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
+>  	acpi_set_pnp_ids(handle, &pnp, type);
+>  
+>  	if (!pnp.type.hardware_id)
+> -		return;
+> +		goto out;
+>  
+>  	/*
+>  	 * This relies on the fact that acpi_install_notify_handler() will not
+> @@ -1800,6 +1800,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
+>  		}
+>  	}
+>  
+> +out:
+>  	acpi_free_pnp_ids(&pnp);
+>  }
+>  
 
 
