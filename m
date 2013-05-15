@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab3EOMED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:04:03 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:58042 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833Ab3EOMEB (ORCPT
+	id S1758940Ab3EOMEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:04:14 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:35106 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926Ab3EOMEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:04:01 -0400
+	Wed, 15 May 2013 08:04:11 -0400
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
         Praveena Nadahally <praveen.nadahally@stericsson.com>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 01/10] usb: musb: enable ux500 host side dma support
-Date: Wed, 15 May 2013 14:03:24 +0200
-Message-Id: <1368619413-24647-2-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 02/10] usb: musb: various cosmetic fixes on ux500 files
+Date: Wed, 15 May 2013 14:03:25 +0200
+Message-Id: <1368619413-24647-3-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1368619413-24647-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1368619413-24647-1-git-send-email-fabio.baltieri@linaro.org>
@@ -24,58 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-
-Host side dma support for ux500 is enabled by piggybacking on Inventra
-dma support.
+Various non functional coding style fixes on ux500_dma.c and
+phy-ab8500-usb.c drivers.
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/usb/musb/musb_host.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/musb/ux500_dma.c     | 6 +++---
+ drivers/usb/phy/phy-ab8500-usb.c | 9 +++++----
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
-index 8914dec..1a6b5a9 100644
---- a/drivers/usb/musb/musb_host.c
-+++ b/drivers/usb/musb/musb_host.c
-@@ -625,7 +625,7 @@ static bool musb_tx_dma_program(struct dma_controller *dma,
- 	u16			csr;
- 	u8			mode;
+diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+index 3381206..63e7c8a 100644
+--- a/drivers/usb/musb/ux500_dma.c
++++ b/drivers/usb/musb/ux500_dma.c
+@@ -71,8 +71,7 @@ static void ux500_dma_callback(void *private_data)
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
+ 	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
+-	musb_dma_completion(musb, hw_ep->epnum,
+-		ux500_channel->is_tx);
++	musb_dma_completion(musb, hw_ep->epnum, ux500_channel->is_tx);
+ 	spin_unlock_irqrestore(&musb->lock, flags);
  
--#ifdef	CONFIG_USB_INVENTRA_DMA
-+#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
- 	if (length > channel->max_len)
- 		length = channel->max_len;
+ }
+@@ -366,7 +365,8 @@ void dma_controller_destroy(struct dma_controller *c)
+ 	kfree(controller);
+ }
  
-@@ -1659,7 +1659,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+-struct dma_controller *dma_controller_create(struct musb *musb, void __iomem *base)
++struct dma_controller *dma_controller_create(struct musb *musb,
++					void __iomem *base)
+ {
+ 	struct ux500_dma_controller *controller;
+ 	struct platform_device *pdev = to_platform_device(musb->controller);
+diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+index 4acef26..b043faa 100644
+--- a/drivers/usb/phy/phy-ab8500-usb.c
++++ b/drivers/usb/phy/phy-ab8500-usb.c
+@@ -286,7 +286,8 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
+ 		else if (pinctrl_select_state(ab->pinctrl, ab->pins_sleep))
+ 			dev_err(ab->dev, "could not set pins to sleep state\n");
  
- 	/* FIXME this is _way_ too much in-line logic for Mentor DMA */
+-		/* as USB pins are shared with idddet, release them to allow
++		/*
++		 * as USB pins are shared with iddet, release them to allow
+ 		 * iddet to request them
+ 		 */
+ 		pinctrl_put(ab->pinctrl);
+@@ -553,7 +554,7 @@ static irqreturn_t ab8500_usb_disconnect_irq(int irq, void *data)
  
--#ifndef CONFIG_USB_INVENTRA_DMA
-+#if !defined(CONFIG_USB_INVENTRA_DMA) && !defined(CONFIG_USB_UX500_DMA)
- 	if (rx_csr & MUSB_RXCSR_H_REQPKT)  {
- 		/* REVISIT this happened for a while on some short reads...
- 		 * the cleanup still needs investigation... looks bad...
-@@ -1691,7 +1691,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 			| MUSB_RXCSR_RXPKTRDY);
- 		musb_writew(hw_ep->regs, MUSB_RXCSR, val);
+ static irqreturn_t ab8500_usb_link_status_irq(int irq, void *data)
+ {
+-	struct ab8500_usb *ab = (struct ab8500_usb *) data;
++	struct ab8500_usb *ab = (struct ab8500_usb *)data;
  
--#ifdef CONFIG_USB_INVENTRA_DMA
-+#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
- 		if (usb_pipeisoc(pipe)) {
- 			struct usb_iso_packet_descriptor *d;
+ 	abx500_usb_link_status_update(ab);
  
-@@ -1747,7 +1747,7 @@ void musb_host_rx(struct musb *musb, u8 epnum)
- 		}
+@@ -627,7 +628,7 @@ static int ab8500_usb_set_peripheral(struct usb_otg *otg,
+ 	 * is fixed.
+ 	 */
  
- 		/* we are expecting IN packets */
--#ifdef CONFIG_USB_INVENTRA_DMA
-+#if defined(CONFIG_USB_INVENTRA_DMA) || defined(CONFIG_USB_UX500_DMA)
- 		if (dma) {
- 			struct dma_controller	*c;
- 			u16			rx_count;
+-	if ((ab->mode != USB_IDLE) && (!gadget)) {
++	if ((ab->mode != USB_IDLE) && !gadget) {
+ 		ab->mode = USB_IDLE;
+ 		schedule_work(&ab->phy_dis_work);
+ 	}
+@@ -651,7 +652,7 @@ static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	 * is fixed.
+ 	 */
+ 
+-	if ((ab->mode != USB_IDLE) && (!host)) {
++	if ((ab->mode != USB_IDLE) && !host) {
+ 		ab->mode = USB_IDLE;
+ 		schedule_work(&ab->phy_dis_work);
+ 	}
 -- 
 1.8.2
 
