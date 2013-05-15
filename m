@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab3EOPAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:00:01 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49470 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab3EOO76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:59:58 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2 3/3] arm: dts: add bandgap entry for OMAP4460 devices
-Date: Wed, 15 May 2013 10:58:48 -0400
-Message-ID: <1368629928-6723-4-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
-In-Reply-To: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com>
-References: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S932843Ab3EOPBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:01:01 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:35847 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3EOPBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:01:00 -0400
+From: Leon Romanovsky <leon@leon.nu>
+To: sbkim73@samsung.com, sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Leon Romanovsky <leon@leon.nu>
+Subject: [PATCH] drivers: mfd: sec-core: Remove explicit call to mfd_remove_devices
+Date: Wed, 15 May 2013 18:00:48 +0300
+Message-Id: <1368630048-27007-1-git-send-email-leon@leon.nu>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include bandgap devices for OMAP4460 devices.
+In case mfd_add_devices will fail, it will call to mfd_remove_devices
+by itself and return non-zero value.
 
-Cc: "Benoît Cousson" <b-cousson@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Leon Romanovsky <leon@leon.nu>
 ---
- arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/mfd/sec-core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
-index 2cf227c..e5bfbfe 100644
---- a/arch/arm/boot/dts/omap4460.dtsi
-+++ b/arch/arm/boot/dts/omap4460.dtsi
-@@ -29,4 +29,13 @@
- 			     <0 55 0x4>;
- 		ti,hwmods = "debugss";
- 	};
-+
-+	bandgap {
-+		reg = <0x4a002260 0x4
-+			0x4a00232C 0x4
-+			0x4a002378 0x18>;
-+		compatible = "ti,omap4460-bandgap";
-+		interrupts = <0 126 4>; /* talert */
-+		ti,tshut-gpio = <86>;
-+	};
- };
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 5b740a3..c93ed3d 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -230,13 +230,12 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 		BUG();
+ 	}
+ 
+-	if (ret < 0)
++	if (ret)
+ 		goto err;
+ 
+ 	return ret;
+ 
+ err:
+-	mfd_remove_devices(sec_pmic->dev);
+ 	sec_irq_exit(sec_pmic);
+ 	i2c_unregister_device(sec_pmic->rtc);
+ 	return ret;
 -- 
-1.8.2.1.342.gfa7285d
+1.8.1.5
 
