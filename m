@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3EORKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 13:10:03 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:56097 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932987Ab3EORJ6 (ORCPT
+	id S932997Ab3EORKz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 13:10:55 -0400
+Received: from mail-da0-f45.google.com ([209.85.210.45]:57232 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932925Ab3EORKy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 13:09:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-14-git-send-email-lee.jones@linaro.org>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-14-git-send-email-lee.jones@linaro.org>
-Date: Wed, 15 May 2013 19:09:57 +0200
-Message-ID: <CACRpkdZ+XExToF8DaC+iiMrpf-s01Hc6W5q40n=WnfJ4qtKStw@mail.gmail.com>
-Subject: Re: [PATCH 13/39] crypto: ux500/hash - Set DMA configuration though dma_slave_config()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 15 May 2013 13:10:54 -0400
+References: <CAEsagEhu3pND5j410mQM=AMEQZ-1WOG0qdKys0pfFv0-jkLs8g@mail.gmail.com> <20130510045049.GU24635@dastard> <CAEsagEism-SQB9LRC+EuPLoBiFOEHc0peLjh3cDxwrNe3Jz=2w@mail.gmail.com> <20130511212608.GA26298@thunk.org> <CAEsagEiFWxnLXWu7dH7jfH7xd4cRVaUdJr4zB+Rkk7V1kEemmA@mail.gmail.com> <35557711-A88D-4226-B3C6-3787573F5403@dilger.ca> <CAEsagEhwKDNiENPVa4C+LvXOViMrkVz_prsDyUn8_J=VuToqMA@mail.gmail.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <CAEsagEhwKDNiENPVa4C+LvXOViMrkVz_prsDyUn8_J=VuToqMA@mail.gmail.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <97A34425-E663-4322-BEFF-6426C54572F9@dilger.ca>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Andreas Westin <andreas.westin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "tux3@tux3.org" <tux3@tux3.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+X-Mailer: iPhone Mail (10B146)
+From: Andreas Dilger <adilger@dilger.ca>
+Subject: Re: Tux3 Report: Faster than tmpfs, what?
+Date: Wed, 15 May 2013 11:10:52 -0600
+To: Daniel Phillips <daniel.raymond.phillips@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On 2013-05-14, at 0:25, Daniel Phillips <daniel.raymond.phillips@gmail.com> wrote:
+> Interesting, Andreas. We don't do anything as heavyweight as
+> allocating an inode in this path, just mark the inode dirty (which
+> puts it on a list) and set a bit in the inode flags.
 
-> The DMA controller currently takes configuration information from
-> information passed though dma_channel_request(), but it shouldn't.
-> Using the API, the DMA channel should only be configured during
-> a dma_slave_config() call.
->
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Andreas Westin <andreas.westin@stericsson.com>
-> Cc: linux-crypto@vger.kernel.org
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+The new inode allocation is only needed for the truncate-to-zero case. If the inode is being deleted it is used directly. 
 
-I think I need to stop applying here and wait for an ACK from
-Herbert on everything hitting drivers/crypto.
+Sorry for confusion, it has been a long time since I looked at that code. 
 
-If I get Vinod's ACK for the previous patches I can send an
-initial pull request on that and then follow up with the rest.
-
-Yours,
-Linus Walleij
+Cheers, Andreas
