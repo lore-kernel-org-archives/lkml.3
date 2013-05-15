@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab3EOSHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 14:07:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759672Ab3EOSHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 14:07:36 -0400
-Date: Wed, 15 May 2013 13:50:17 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
- enabled
-Message-ID: <20130515175017.GS23604@redhat.com>
-References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
- <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
- <20130515083729.GC10510@laptop.programming.kicks-ass.net>
- <20130515150652.GP23604@redhat.com>
- <1368631622.6828.69.camel@gandalf.local.home>
- <20130515165915.GE13916@laptop.home>
- <20130515171153.GF13916@laptop.home>
+	id S933027Ab3EOSKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 14:10:46 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63627 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932566Ab3EOSKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 14:10:45 -0400
+Message-ID: <5193CFA2.8010008@linaro.org>
+Date: Wed, 15 May 2013 11:10:42 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515171153.GF13916@laptop.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Beulich <JBeulich@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/3] timekeeping: sync persistent clock and
+ RTC on system time step changes
+References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com> <1368467768-2316-3-git-send-email-david.vrabel@citrix.com> <5191880F.3030308@linaro.org> <5192082D.4020400@citrix.com> <5192711B.1070607@linaro.org> <5193606502000078000D64E2@nat28.tlf.novell.com>
+In-Reply-To: <5193606502000078000D64E2@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 07:11:53PM +0200, Peter Zijlstra wrote:
-> On Wed, May 15, 2013 at 06:59:15PM +0200, Peter Zijlstra wrote:
-> > On Wed, May 15, 2013 at 11:27:02AM -0400, Steven Rostedt wrote:
-> > > Right now perf requires a tick, not sure exactly why, but you can look
-> > > at the code in perf_event_task_tick(). Thus if NO_HZ_FULL sees that a
-> > > perf tick is pending, it won't disable ticks. Unfortunately, the
-> > > watchdogs, both NMI and soft lockup, use the perf infrastructure to
-> > > trigger NMIs or interrupts. This adds a perf element on the rotate list
-> > > and keeps NO_HZ_FULL from *ever* activating.
-> > > 
-> > 
-> > Hmm.. Stephane had a bunch of patches converting the rotation thing to
-> > an hrtimer. I seem to have forgotten what happened to them but I can't
-> > seem to find them merged.
-> > 
-> > I'll go look.
-> > 
-> > That leaves the frequency stuff, but the watchdog doesn't use that.
-> > 
-> > At which point we could run the watchdog without perf_event_task_tick().
-> 
-> Found them:
-> 
-> 1364991694-5876-1-git-send-email-eranian@google.com
-> 
-> Looks like they were stuck in my inbox and never applied, so I just did.
-> They should appear in tip soonish.
+On 05/15/2013 01:16 AM, Jan Beulich wrote:
+>>>> On 14.05.13 at 19:15, John Stultz <john.stultz@linaro.org> wrote:
+>> On 05/14/2013 02:47 AM, David Vrabel wrote:
+>>> On 14/05/13 01:40, John Stultz wrote:
+>>>> I'm sorry, this isn't quite making sense to me. Could you further
+>>>> describe the exact problematic behavior you're seeing here, and why its
+>>>> a problem?
+>>> The Xen wallclock is used as the persistent clock for Xen guests.  This
+>>> is initialized (by Xen) with the CMOS RTC at the start of day.
+>> Start of the day? I assume you mean on dom0 bootup? Or is it done
+>> pre-dom0 bootup by Xen itself?
+> It is, indeed - Xen reads the CMOS clock (or consults EFI) once
+> when it starts up, but leaves those alone as soon as it launched
+> Dom0.
+>
+>>>     If the
+>>> RTC is incorrect then guests will see an incorrect wallclock time until
+>>> dom0 has corrected it.
+>>
+>> Sorry, just a bit more clarifying context here: So there is a 1:1
+>> relationship between xen_wall_clock and the RTC for all domN guests? And
+>> even if dom0 has set its system time properly, domN guests will
+>> initialize (in effect) from the hardware RTC and not from dom0's system
+>> time?
+> No, (PV) DomU-s will get their time from the software clock that
+> Xen maintains, which Dom0 is helping keep in good shape when
+> NTP-synced.
 
-That was easy.  Next problem! :-p
+Ok, so really, as soon as the Dom0 time is set by NTP, all guests will 
+see the right time? That makes more sense, and means the window for 
+these sorts of issues is reasonably quite small.
 
-Thanks Peter!
+David: So I'm less inclined to merge this individual change, but if you 
+still feel strongly about it, let me know and we can circle around on it 
+after you've addressed the specific issues I pointed out earlier.
 
-Cheers,
-Don
+thanks
+-john
+
 
