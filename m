@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab3EOJxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:53:01 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:50180 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932666Ab3EOJwz (ORCPT
+	id S932730Ab3EOJxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:53:10 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:48317 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932703Ab3EOJxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:52:55 -0400
+	Wed, 15 May 2013 05:53:05 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
@@ -14,9 +14,9 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         vinod.koul@intel.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 24/39] usb: musb: ux500: attempt to find channels by name before using pdata
-Date: Wed, 15 May 2013 10:51:47 +0100
-Message-Id: <1368611522-9984-25-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 29/39] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
+Date: Wed, 15 May 2013 10:51:52 +0100
+Message-Id: <1368611522-9984-30-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
@@ -24,79 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we can ever get to a state where we can solely search for DMA channels
-by name, this will almost completely alleviate the requirement to pass
-copious amounts of information though platform data. Here we take the
-first step towards this. The next step will be to enable Device Tree
-complete with name<->event_line mapping.
+The aim is to make the code that little more readable.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Acked-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+Acked-by: Vinod Koul <vnod.koul@intel.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/usb/musb/ux500_dma.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/dma/ste_dma40.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 4bd5400..7d80699 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -34,6 +34,11 @@
- #include <linux/platform_data/usb-musb-ux500.h>
- #include "musb_core.h"
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 6ed7757..08bc58a 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -54,8 +54,8 @@
+ #define MAX_LCLA_ALLOC_ATTEMPTS 256
  
-+static const char *iep_chan_names[] = { "iep_1_9", "iep_2_10", "iep_3_11", "iep_4_12",
-+					"iep_5_13", "iep_6_14", "iep_7_15", "iep_8" };
-+static const char *oep_chan_names[] = { "oep_1_9", "oep_2_10", "oep_3_11", "oep_4_12",
-+					"oep_5_13", "oep_6_14", "oep_7_15", "oep_8" };
-+
- struct ux500_dma_channel {
- 	struct dma_channel channel;
- 	struct ux500_dma_controller *controller;
-@@ -291,6 +296,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	struct musb_hdrc_platform_data *plat = dev->platform_data;
- 	struct ux500_musb_board_data *data;
- 	struct dma_channel *dma_channel = NULL;
-+	char **chan_names;
- 	u32 ch_num;
- 	u8 dir;
- 	u8 is_tx = 0;
-@@ -312,6 +318,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	/* Prepare the loop for RX channels */
- 	channel_array = controller->rx_channel;
- 	param_array = data ? data->dma_rx_param_array : NULL;
-+	chan_names = (char **)iep_chan_names;
+ /* Bit markings for allocation map */
+-#define D40_ALLOC_FREE		(1 << 31)
+-#define D40_ALLOC_PHY		(1 << 30)
++#define D40_ALLOC_FREE		BIT(31)
++#define D40_ALLOC_PHY		BIT(30)
+ #define D40_ALLOC_LOG_FREE	0
  
- 	for (dir = 0; dir < 2; dir++) {
- 		for (ch_num = 0;
-@@ -327,9 +334,15 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 			dma_channel->status = MUSB_DMA_STATUS_FREE;
- 			dma_channel->max_len = SZ_16M;
+ /* Reserved event lines for memcpy only. */
+@@ -1738,7 +1738,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
+ 		}
  
--			ux500_channel->dma_chan = dma_request_channel(mask,
--							data->dma_filter,
--							param_array[ch_num]);
-+			ux500_channel->dma_chan =
-+				dma_request_slave_channel(dev, chan_names[ch_num]);
-+
-+			if (!ux500_channel->dma_chan)
-+				ux500_channel->dma_chan =
-+					dma_request_channel(mask,
-+							    data->dma_filter,
-+							    param_array[ch_num]);
-+
- 			if (!ux500_channel->dma_chan) {
- 				ERR("Dma pipe allocation error dir=%d ch=%d\n",
- 					dir, ch_num);
-@@ -345,6 +358,7 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 		/* Prepare the loop for TX channels */
- 		channel_array = controller->tx_channel;
- 		param_array = data ? data->dma_tx_param_array : NULL;
-+		chan_names = (char **)oep_chan_names;
- 		is_tx = 1;
+ 		/* ACK interrupt */
+-		writel(1 << idx, base->virtbase + il[row].clr);
++		writel(BIT(idx), base->virtbase + il[row].clr);
+ 
+ 		spin_lock(&d40c->lock);
+ 
+@@ -1828,8 +1828,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_src == D40_ALLOC_FREE)
+ 			phy->allocated_src = D40_ALLOC_LOG_FREE;
+ 
+-		if (!(phy->allocated_src & (1 << log_event_line))) {
+-			phy->allocated_src |= 1 << log_event_line;
++		if (!(phy->allocated_src & BIT(log_event_line))) {
++			phy->allocated_src |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1840,8 +1840,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_dst == D40_ALLOC_FREE)
+ 			phy->allocated_dst = D40_ALLOC_LOG_FREE;
+ 
+-		if (!(phy->allocated_dst & (1 << log_event_line))) {
+-			phy->allocated_dst |= 1 << log_event_line;
++		if (!(phy->allocated_dst & BIT(log_event_line))) {
++			phy->allocated_dst |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1871,11 +1871,11 @@ static bool d40_alloc_mask_free(struct d40_phy_res *phy, bool is_src,
+ 
+ 	/* Logical channel */
+ 	if (is_src) {
+-		phy->allocated_src &= ~(1 << log_event_line);
++		phy->allocated_src &= ~BIT(log_event_line);
+ 		if (phy->allocated_src == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_src = D40_ALLOC_FREE;
+ 	} else {
+-		phy->allocated_dst &= ~(1 << log_event_line);
++		phy->allocated_dst &= ~BIT(log_event_line);
+ 		if (phy->allocated_dst == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_dst = D40_ALLOC_FREE;
  	}
+@@ -2356,7 +2356,7 @@ static void __d40_set_prio_rt(struct d40_chan *d40c, int dev_type, bool src)
+ 	u32 rtreg;
+ 	u32 event = D40_TYPE_TO_EVENT(dev_type);
+ 	u32 group = D40_TYPE_TO_GROUP(dev_type);
+-	u32 bit = 1 << event;
++	u32 bit = BIT(event);
+ 	u32 prioreg;
+ 	struct d40_gen_dmac *dmac = &d40c->base->gen_dmac;
  
 -- 
 1.7.10.4
