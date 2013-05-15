@@ -1,69 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab3EOHgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 03:36:22 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:8775 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752704Ab3EOHgV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 03:36:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIc89bh936eI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <51933B79.5000608@freescale.com>
-Date: Wed, 15 May 2013 15:38:33 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1756695Ab3EOHiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 03:38:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46977 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab3EOHiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 03:38:10 -0400
+Date: Wed, 15 May 2013 09:37:52 +0200
+From: Libor Pechacek <lpechacek@suse.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jkosina@suse.cz, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        Petr Ostadal <postadal@suse.cz>, Oliver Neukum <oliver@neukum.org>,
+        Vojtech Pavlik <vojtech@suse.cz>, Egbert Eich <eich@suse.com>
+Subject: Re: [PATCH 2/2] HID: elo-hid, add quirks for broken firmware
+Message-ID: <20130515073752.GD11916@fmn.suse.cz>
+References: <1367919659-1548-1-git-send-email-jslaby@suse.cz> <1367919659-1548-2-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V4 1/9] mtd: add more comment for ecc_strength/ecc_size
-References: <1366967337-5534-1-git-send-email-b32955@freescale.com>	 <1366967337-5534-2-git-send-email-b32955@freescale.com> <1368602870.13665.7.camel@sauron.fi.intel.com>
-In-Reply-To: <1368602870.13665.7.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367919659-1548-2-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月15日 15:27, Artem Bityutskiy 写道:
-> On Fri, 2013-04-26 at 17:08 +0800, Huang Shijie wrote:
->> Add more commit for ecc_strength and ecc_size fields.
->> We can treat the comment as the initial semantics for the two fields.
->>
->> Signed-off-by: Huang Shijie<b32955@freescale.com>
-> Huang, let me drop the 3 patches I already merged. Please, re-send them
-> in v5. I think this is better because I see you start applying patches
-> on top of them, which is a bit confusing.
->
-Ok, Please drop the 3 patches.
+On Tue 07-05-13 11:40:59, Jiri Slaby wrote:
+> One firmare version in the devices the driver takes care of is
+> completely broken and needs periodic pokes from our side. We
+> implemented this as a periodic delayed queue. The idea of the pokes
+> was taken from the suse enterprise kernel, in particular from Libor's
+> "Elo touchscreen firmware M workaround".
+> 
+> I am quoting him here:
+>   This patch adds periodic polling of the Elo USB touchscreens. Needed
+>   as a workaround for devices with M-level firmware, otherwise these
+>   devices are known to misbehave (as reported by Elo developers).
+> 
+> [v2]
+> - allocate the buffer only once (per Oliver)
+> - add use_fw_quirk module parameter (per Libor)
 
->>    * @cellinfo:		[INTERN] MLC/multichip data from chip ident
->>    * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
->> + *			The minimum number of bits correctability, if known;
->> + *			if unknown, set to 0.
-> I find this confusing still. How about this comment.
->
-> ECC correctability from the datasheet. Minumum amount of bit errors per
-> @ecc_size guaranteed to be correctable). If unknown, set to zero.
->
->
-it's okay to me.
->>    * @ecc_size:		[INTERN] ECC size required by the @ecc_strength,
->> - *                      also from the datasheet.
->> + *                      also from the datasheet. It is the recommended ECC step
->> + *			size, if known; if unknown, set to 0.
-> Silly question, why you call this one "ecc_size", and not "ecc_step"?
->
-In nand_ecc_ctrl{}, the ecc step is named to @size.
+Thanks, looks OK to me.
 
-Personally, i perfer to ecc_step.
+Libor
 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Petr Ostadal <postadal@suse.cz>
+> Cc: Oliver Neukum <oliver@neukum.org>
+> Cc: Vojtech Pavlik <vojtech@suse.cz>
+> Cc: Egbert Eich <eich@suse.com>
+> Cc: Libor Pechacek <lpechacek@suse.cz>
+> ---
+>  drivers/hid/hid-elo.c | 144 +++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 143 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/hid/hid-elo.c b/drivers/hid/hid-elo.c
+> index 56143e0..f042a6c 100644
+> --- a/drivers/hid/hid-elo.c
+> +++ b/drivers/hid/hid-elo.c
+> @@ -11,9 +11,32 @@
+>  #include <linux/hid.h>
+>  #include <linux/input.h>
+>  #include <linux/module.h>
+> +#include <linux/usb.h>
+> +#include <linux/workqueue.h>
+>  
+>  #include "hid-ids.h"
+>  
+> +#define ELO_PERIODIC_READ_INTERVAL	HZ
+> +#define ELO_SMARTSET_CMD_TIMEOUT	2000 /* msec */
+> +
+> +/* Elo SmartSet commands */
+> +#define ELO_FLUSH_SMARTSET_RESPONSES	0x02 /* Flush all pending smartset responses */
+> +#define ELO_SEND_SMARTSET_COMMAND	0x05 /* Send a smartset command */
+> +#define ELO_GET_SMARTSET_RESPONSE	0x06 /* Get a smartset response */
+> +#define ELO_DIAG			0x64 /* Diagnostics command */
+> +#define ELO_SMARTSET_PACKET_SIZE	8
+> +
+> +struct elo_priv {
+> +	struct usb_device *usbdev;
+> +	struct delayed_work work;
+> +	unsigned char buffer[ELO_SMARTSET_PACKET_SIZE];
+> +};
+> +
+> +static struct workqueue_struct *wq;
+> +static bool use_fw_quirk = true;
+> +module_param(use_fw_quirk, bool, S_IRUGO);
+> +MODULE_PARM_DESC(use_fw_quirk, "Do periodic pokes for broken M firmwares (default = true)");
+> +
+>  static void elo_input_configured(struct hid_device *hdev,
+>  		struct hid_input *hidinput)
+>  {
+> @@ -73,10 +96,108 @@ static int elo_raw_event(struct hid_device *hdev, struct hid_report *report,
+>  	return 0;
+>  }
+>  
+> +static int elo_smartset_send_get(struct usb_device *dev, u8 command,
+> +		void *data)
+> +{
+> +	unsigned int pipe;
+> +	u8 dir;
+> +
+> +	if (command == ELO_SEND_SMARTSET_COMMAND) {
+> +		pipe = usb_sndctrlpipe(dev, 0);
+> +		dir = USB_DIR_OUT;
+> +	} else if (command == ELO_GET_SMARTSET_RESPONSE) {
+> +		pipe = usb_rcvctrlpipe(dev, 0);
+> +		dir = USB_DIR_IN;
+> +	} else
+> +		return -EINVAL;
+> +
+> +	return usb_control_msg(dev, pipe, command,
+> +			dir | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0, 0, data, ELO_SMARTSET_PACKET_SIZE,
+> +			ELO_SMARTSET_CMD_TIMEOUT);
+> +}
+> +
+> +static int elo_flush_smartset_responses(struct usb_device *dev)
+> +{
+> +	return usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+> +			ELO_FLUSH_SMARTSET_RESPONSES,
+> +			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+> +			0, 0, NULL, 0, USB_CTRL_SET_TIMEOUT);
+> +}
+> +
+> +static void elo_work(struct work_struct *work)
+> +{
+> +	struct elo_priv *priv = container_of(work, struct elo_priv, work.work);
+> +	struct usb_device *dev = priv->usbdev;
+> +	unsigned char *buffer = priv->buffer;
+> +	int ret;
+> +
+> +	ret = elo_flush_smartset_responses(dev);
+> +	if (ret < 0) {
+> +		dev_err(&dev->dev, "initial FLUSH_SMARTSET_RESPONSES failed, error %d\n",
+> +				ret);
+> +		goto fail;
+> +	}
+> +
+> +	/* send Diagnostics command */
+> +	*buffer = ELO_DIAG;
+> +	ret = elo_smartset_send_get(dev, ELO_SEND_SMARTSET_COMMAND, buffer);
+> +	if (ret < 0) {
+> +		dev_err(&dev->dev, "send Diagnostics Command failed, error %d\n",
+> +				ret);
+> +		goto fail;
+> +	}
+> +
+> +	/* get the result */
+> +	ret = elo_smartset_send_get(dev, ELO_GET_SMARTSET_RESPONSE, buffer);
+> +	if (ret < 0) {
+> +		dev_err(&dev->dev, "get Diagnostics Command response failed, error %d\n",
+> +				ret);
+> +		goto fail;
+> +	}
+> +
+> +	/* read the ack */
+> +	if (*buffer != 'A') {
+> +		ret = elo_smartset_send_get(dev, ELO_GET_SMARTSET_RESPONSE,
+> +				buffer);
+> +		if (ret < 0) {
+> +			dev_err(&dev->dev, "get acknowledge response failed, error %d\n",
+> +					ret);
+> +			goto fail;
+> +		}
+> +	}
+> +
+> +fail:
+> +	ret = elo_flush_smartset_responses(dev);
+> +	if (ret < 0)
+> +		dev_err(&dev->dev, "final FLUSH_SMARTSET_RESPONSES failed, error %d\n",
+> +				ret);
+> +	queue_delayed_work(wq, &priv->work, ELO_PERIODIC_READ_INTERVAL);
+> +}
+> +
+> +/*
+> + * Not all Elo devices need the periodic HID descriptor reads.
+> + * Only firmware version M needs this.
+> + */
+> +static bool elo_broken_firmware(struct usb_device *dev)
+> +{
+> +	return use_fw_quirk && le16_to_cpu(dev->descriptor.bcdDevice) == 0x10d;
+> +}
+> +
+>  static int elo_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  {
+> +	struct elo_priv *priv;
+>  	int ret;
+>  
+> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	INIT_DELAYED_WORK(&priv->work, elo_work);
+> +	priv->usbdev = interface_to_usbdev(to_usb_interface(hdev->dev.parent));
+> +
+> +	hid_set_drvdata(hdev, priv);
+> +
+>  	ret = hid_parse(hdev);
+>  	if (ret) {
+>  		hid_err(hdev, "parse failed\n");
+> @@ -89,14 +210,24 @@ static int elo_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  		goto err_free;
+>  	}
+>  
+> +	if (elo_broken_firmware(priv->usbdev)) {
+> +		hid_info(hdev, "broken firmware found, installing workaround\n");
+> +		queue_delayed_work(wq, &priv->work, ELO_PERIODIC_READ_INTERVAL);
+> +	}
+> +
+>  	return 0;
+>  err_free:
+> +	kfree(priv);
+>  	return ret;
+>  }
+>  
+>  static void elo_remove(struct hid_device *hdev)
+>  {
+> +	struct elo_priv *priv = hid_get_drvdata(hdev);
+> +
+>  	hid_hw_stop(hdev);
+> +	flush_workqueue(wq);
+> +	kfree(priv);
+>  }
+>  
+>  static const struct hid_device_id elo_devices[] = {
+> @@ -117,13 +248,24 @@ static struct hid_driver elo_driver = {
+>  
+>  static int __init elo_driver_init(void)
+>  {
+> -	return hid_register_driver(&elo_driver);
+> +	int ret;
+> +
+> +	wq = create_singlethread_workqueue("elousb");
+> +	if (!wq)
+> +		return -ENOMEM;
+> +
+> +	ret = hid_register_driver(&elo_driver);
+> +	if (ret)
+> +		destroy_workqueue(wq);
+> +
+> +	return ret;
+>  }
+>  module_init(elo_driver_init);
+>  
+>  static void __exit elo_driver_exit(void)
+>  {
+>  	hid_unregister_driver(&elo_driver);
+> +	destroy_workqueue(wq);
+>  }
+>  module_exit(elo_driver_exit);
+>  
+> -- 
+> 1.8.2.1
+> 
 
-thanks
-Huang Shijie
-
-
-
+-- 
+Libor Pechacek
+Project Manager SUSE Labs, Prague
