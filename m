@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3EOKyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 06:54:05 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:62152 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab3EOKyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 06:54:04 -0400
-Message-ID: <51936946.3030507@iki.fi>
-Date: Wed, 15 May 2013 13:53:58 +0300
-From: Tomi Valkeinen <tomi.valkeinen@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1757714Ab3EOK5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 06:57:00 -0400
+Received: from 8bytes.org ([85.214.48.195]:52840 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752746Ab3EOK47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 06:56:59 -0400
+Date: Wed, 15 May 2013 12:56:56 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] tty: Add missing lock in n_tty_write()
+Message-ID: <20130515105656.GI24440@8bytes.org>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com
-Subject: Re: [PATCH] ARM: OMAP4: change the device names in usb_bind_phy
-References: <1366697656-14315-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1366697656-14315-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed May 15 12:56:57 2013
+X-DSPAM-Confidence: 0.9989
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 519369f923674373111016
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/04/13 09:14, Kishon Vijay Abraham I wrote:
-> After the device names are created using PLATFORM_DEVID_AUTO, the old
-> device names given in usb_bind_phy are no longer valid causing the musb
-> controller not to get the phy reference. Updated the usb_bind_phy with
-> the new device names to get MUSB functional in omap4 panda.
-> 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
-> Tested in OMAP4 PANDA.
->  arch/arm/mach-omap2/board-4430sdp.c    |    2 +-
->  arch/arm/mach-omap2/board-omap4panda.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-> index 00d7290..56a9a4f 100644
-> --- a/arch/arm/mach-omap2/board-4430sdp.c
-> +++ b/arch/arm/mach-omap2/board-4430sdp.c
-> @@ -730,7 +730,7 @@ static void __init omap_4430sdp_init(void)
->  	omap4_sdp4430_wifi_init();
->  	omap4_twl6030_hsmmc_init(mmc);
->  
-> -	usb_bind_phy("musb-hdrc.0.auto", 0, "omap-usb2.1.auto");
-> +	usb_bind_phy("musb-hdrc.2.auto", 0, "omap-usb2.3.auto");
->  	usb_musb_init(&musb_board_data);
->  
->  	status = omap_ethernet_init();
+The call of the tty->ops->write callback is protected by
+output_lock in all other places I looked at. So it seems the
+lock in this code-branch is missing, so take the output_lock
+there too.
 
-I'm seeing
+Cc: stable@vger.kernel.org
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+---
+ drivers/tty/n_tty.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-[    2.190155] unable to find transceiver
-[    2.190155] HS USB OTG: no transceiver configured
-[    2.190155] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
-with status -517
-[    2.207458] platform musb-hdrc.0.auto: Driver musb-hdrc requests
-probe deferral
-
-on 4430sdp with v3.10-rc1. Does that mean that the musb-hdrc.0.auto was
-indeed correct, and the new value of musb-hdrc.2.auto is not?
-
-The musb-hdrc id is wrong on overo also.
-
- Tomi
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index d655416..ffb94a4 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2058,10 +2058,14 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 			if (tty->ops->flush_chars)
+ 				tty->ops->flush_chars(tty);
+ 		} else {
++			struct n_tty_data *l = tty->disc_data;
++
++			mutex_lock(&l->output_lock);
+ 			while (nr > 0) {
+ 				c = tty->ops->write(tty, b, nr);
+ 				if (c < 0) {
+ 					retval = c;
++					mutex_unlock(&l->output_lock);
+ 					goto break_out;
+ 				}
+ 				if (!c)
+@@ -2069,6 +2073,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 				b += c;
+ 				nr -= c;
+ 			}
++			mutex_unlock(&l->output_lock);
+ 		}
+ 		if (!nr)
+ 			break;
+-- 
+1.7.9.5
 
