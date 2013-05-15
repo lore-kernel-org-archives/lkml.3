@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3EOKpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 06:45:51 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20782 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab3EOKpu (ORCPT
+	id S932150Ab3EOKyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 06:54:06 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63614 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab3EOKyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 06:45:50 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.10 #1
-Date: Wed, 15 May 2013 12:45:47 +0200
-Message-ID: <1368614747-1737-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-Organization: atmel
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 15 May 2013 06:54:04 -0400
+From: Leon Romanovsky <leon@leon.nu>
+To: sbkim73@samsung.com, sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Leon Romanovsky <leon@leon.nu>
+Subject: [PATCH] drivers: mfd: sec-code: Fix sizeof argument
+Date: Wed, 15 May 2013 13:53:56 +0300
+Message-Id: <1368615236-21345-1-git-send-email-leon@leon.nu>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Signed-off-by: Leon Romanovsky <leon@leon.nu>
+---
+ drivers/mfd/sec-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is the first AT91 fixes pull-request for 3.10-rc.
-
-Thanks, best regards,
-
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
-
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to b7a8ca5173ef9aa55fa039d7c216426ff0b25a12:
-
-  ARM: at91: rm9200 fix time support (2013-05-15 12:37:45 +0200)
-
-----------------------------------------------------------------
-An important revert on at91rm9200 platform related
-to timers that prevented the platform to boot properly.
-Then one pinctrl adjustments for SPI CS and a couple of
-trivial typos.
-
-----------------------------------------------------------------
-Jean-Christophe PLAGNIOL-VILLARD (2):
-      ARM: at91/trivial: fix model name for SAM9X25-EK
-      ARM: at91: rm9200 fix time support
-
-Ludovic Desroches (1):
-      ARM: at91: dts: request only spi cs-gpios used on sama5d3x cpu module
-
-Nicolas Ferre (1):
-      ARM: at91/trivial: typo in GEM compatible string
-
- Documentation/devicetree/bindings/net/macb.txt |  2 +-
- arch/arm/boot/dts/at91sam9x25ek.dts            |  2 +-
- arch/arm/boot/dts/sama5d3.dtsi                 | 12 +-----------
- arch/arm/boot/dts/sama5d3xcm.dtsi              |  4 ++++
- arch/arm/mach-at91/at91rm9200_time.c           |  7 +++++--
- 5 files changed, 12 insertions(+), 15 deletions(-)
-
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 77ee26ef..5b740a3 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -121,7 +121,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
+ {
+ 	struct sec_platform_data *pd;
+ 
+-	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	pd = devm_kzalloc(dev, sizeof(struct sec_platform_data), GFP_KERNEL);
+ 	if (!pd) {
+ 		dev_err(dev, "could not allocate memory for pdata\n");
+ 		return ERR_PTR(-ENOMEM);
 -- 
-Nicolas Ferre
+1.8.1.5
+
