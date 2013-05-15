@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759515Ab3EOP6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:58:41 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:54555 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759030Ab3EOP6j (ORCPT
+	id S932855Ab3EOP7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:59:21 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56487 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759030Ab3EOP7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:58:39 -0400
-Message-ID: <5193B0CB.9080608@suse.cz>
-Date: Wed, 15 May 2013 17:59:07 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Wed, 15 May 2013 11:59:20 -0400
+Date: Wed, 15 May 2013 17:59:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        dzickus@redhat.com
+Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
+ enabled
+Message-ID: <20130515155914.GC24004@somewhere>
+References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
+ <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
+ <20130515083729.GC10510@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        jirislaby@gmail.com
-CC: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 13/15] chipidea: Allow user to select PCI/IMX options
-References: <1367936303-13386-1-git-send-email-jslaby@suse.cz> <1367936303-13386-13-git-send-email-jslaby@suse.cz> <87k3n9n8ln.fsf@ashishki-desk.ger.corp.intel.com>
-In-Reply-To: <87k3n9n8ln.fsf@ashishki-desk.ger.corp.intel.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515083729.GC10510@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/2013 11:07 AM, Alexander Shishkin wrote:
-> Jiri Slaby <jslaby@suse.cz> writes:
+On Wed, May 15, 2013 at 10:37:29AM +0200, Peter Zijlstra wrote:
+> On Tue, May 14, 2013 at 06:02:51PM +0200, Frederic Weisbecker wrote:
+> > From: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> > Trying to test the nohz_full code, I was not able to get it to work.
+> > Finally I enabled the tick_stop tracepoint and it showed:
+> > 
+> >  tick_stop:            success=no msg=perf events running
+> > 
+> > I talked to Frederic Weisbecker about this and he informed me that
+> > perf is used by the lockup detector. I checked the code, and sure
+> > enough it is.
+> > 
+> > As perf is always running when LOCKUP_DETECTOR is enabled, which
+> > will always disable nohz_full from working, instead of confusing
+> > users, disable LOCKUP_DETECTOR when NO_HZ_FULL is enabled.
+> > 
+> > When perf is changed such that it does not prevent nohz_full from
+> > working, then we can and should remove this constraint.
 > 
->> From: Jeff Mahoney <jeffm@suse.com>
->>
->> The chipidea driver currently has needless ifneq rules in the makefile
->> for things that should be config options.
+> That's a bit contradictory in function, you want the NMI watchdog to
+> cover all code, so disabling whilst entering NO_HZ state is going to
+> make it not cover some code - *fail*.
 > 
-> Please elaborate on the "should be" part.
+> Rather I would suggest disabling the NMI watchdog's runtime default; so
+> you can still enable it with something like: 
 > 
->> This can be problematic,
->> especially in the IMX case, since the OF_DEVICE dependency will be met
->> on powerpc systems - which don't actually support the hardware via that
->> method.
+>   echo 1 > /proc/sys/kernel/nmi_watchdog
 > 
-> That's all right, but these things should still compile on powerpc and
-> get more compilation testing like that. On the other hand, if the
-> compilation does break, we're probably looking at a bug in ci13xxx_imx,
-> which needs fixing.
-> 
->> This patch adds _PCI and _IMX config options to allow the user to
->> select whether to build the modules.
-> 
-> I would really like to avoid unnecessary config options in the chipidea
-> driver, so my question is: is there a real bug or compilation breakage
-> that is triggered in the current state of things?
-> 
->> +config USB_CHIPIDEA_PCI
->> +	bool "ChipIdea PCI support"
->> +	depends on PCI
->> +	help
->> +	  This option enables ChipIdea support on PCI.
-> 
-> I totally don't understand this: we have CONFIG_USB_CHIPIDEA and
-> CONFIG_PCI, which already enable chipidea support on PCI. This helps in
-> the case when you have both options enabled, but still don't want the
-> ci13xxx_pci module to be built, but it doesn't justify an extra option.
 
-Hi, the whole point of the patch is that there is no reason in building
-the imx part of the driver on powerpc, because ppc will never provide
-that of_device. So we are adding that option and disable that in suse
-completely by this patch plus a config option.
-
-The PCI case is not necessarily needed, but follows the IMX case.
-
-thanks,
--- 
-js
-suse labs
+Sounds good, and we then warn the user about that.
