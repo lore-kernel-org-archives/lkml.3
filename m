@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab3EORJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 13:09:54 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:47178 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759551Ab3EORJw (ORCPT
+	id S933002Ab3EORKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 13:10:03 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:56097 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab3EORJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 13:09:52 -0400
-Date: Wed, 15 May 2013 18:09:47 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Holger Hoffstaette <holger.hoffstaette@googlemail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: r8169 on 3.8.13, 3.9.2, 3.10-rc1, was Re: [ 00/73] 3.8.13-stable
- review
-Message-ID: <20130515170947.GA10174@milliways>
-References: <20130509222757.917088509@linuxfoundation.org>
- <pan.2013.05.10.10.54.26.943195@googlemail.com>
- <20130515000715.GA20099@milliways>
- <20130515061401.GA4382@electric-eye.fr.zoreil.com>
+	Wed, 15 May 2013 13:09:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130515061401.GA4382@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=wom5GMh1gUkA:10 a=GZrByrPwTHwA:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=NLZqzBF-AAAA:8 a=lOyOCk0l6PpxnmqrSJQA:9 a=wPNLvfGTeEIA:10 a=_dQi-Dcv4p4A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+In-Reply-To: <1368611522-9984-14-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-14-git-send-email-lee.jones@linaro.org>
+Date: Wed, 15 May 2013 19:09:57 +0200
+Message-ID: <CACRpkdZ+XExToF8DaC+iiMrpf-s01Hc6W5q40n=WnfJ4qtKStw@mail.gmail.com>
+Subject: Re: [PATCH 13/39] crypto: ux500/hash - Set DMA configuration though dma_slave_config()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Andreas Westin <andreas.westin@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 08:14:01AM +0200, Francois Romieu wrote:
-> Ken Moffat <zarniwhoop@ntlworld.com> :
-> [...]
-> >  Cc'ing to netdev because I don't think this has had a response, and
-> 
-> A patch has been sent to netdev a few hours ago. It needs more work,
-> especially testing (hint, hint) as I don't have a proven test case yet.
-> 
-> Please note:
-> - if you don't use a 8168evl (check your dmesg for the XID line emitted
->   by the r8169 driver), you are not the experiencing the same bug.
-[    3.174180] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at
-0xffffc90000008000, c8:60:00:97:07:35, XID 0c900800 IRQ 41
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> - if you don't enable Tx checksum offload (distro/vendor dependent though
->   disabled by default in the vanilla driver, see ethtool -k eth0,
->   ethtool -K eth0 tx on sg on)), you are not the experiencing the same
->   bug.
+> The DMA controller currently takes configuration information from
+> information passed though dma_channel_request(), but it shouldn't.
+> Using the API, the DMA channel should only be configured during
+> a dma_slave_config() call.
+>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andreas Westin <andreas.westin@stericsson.com>
+> Cc: linux-crypto@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
- If it is disabled by default then my problem is different (I don't
-have an ethtool program)
+I think I need to stop applying here and wait for an ACK from
+Herbert on everything hitting drivers/crypto.
 
-> - if you are experiencing the same bug, 3.10-rc1 should work again
->   after reverting e5195c1f31f399289347e043d6abf3ffa80f0005
-> 
-> If someone comes with a failing network capture and a working one, it will
-> save time. A 64 bytes (max) packet is not correctly transmitted.
-> 
-> -- 
-> Ueimor
+If I get Vinod's ACK for the previous patches I can send an
+initial pull request on that and then follow up with the rest.
 
- Thanks for the detailed comments, looks as if my intermittent
-problem is something else.
-
-ken
--- 
-das eine Mal als Tragödie, das andere Mal als Farce
+Yours,
+Linus Walleij
