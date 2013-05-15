@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab3EOI4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:56:39 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:22066
+	id S1757951Ab3EOI4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:56:38 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:14651
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757876Ab3EOI4e (ORCPT
+	by vger.kernel.org with ESMTP id S1757887Ab3EOI4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 May 2013 04:56:34 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
@@ -15,9 +15,9 @@ To: <dwmw2@infradead.org>
 CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
         <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v5 02/11] mtd: increase max OOB size to 744
-Date: Wed, 15 May 2013 16:40:25 +0800
-Message-ID: <1368607232-2210-3-git-send-email-b32955@freescale.com>
+Subject: [PATCH v5 04/11] mtd: add data structures for Extended Parameter Page
+Date: Wed, 15 May 2013 16:40:27 +0800
+Message-ID: <1368607232-2210-5-git-send-email-b32955@freescale.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1368607232-2210-1-git-send-email-b32955@freescale.com>
 References: <1368607232-2210-1-git-send-email-b32955@freescale.com>
@@ -28,27 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The oob size of Micron's MT29F64G08CBABAWP is 744 bytes.
-So increase the NAND_MAX_OOBSIZE to 744.
+Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
+to store the ECC info.
 
+The onfi spec tells us that if the nand chip's recommended ECC codeword
+size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
+read the Extended ECC information that is part of the extended parameter
+page to retrieve the ECC requirements for this device.
+
+This patch adds
+    [1] the neccessary fields for nand_onfi_params{},
+    [2] and adds the onfi_ext_ecc_info{} for Extended ECC information,
+    [3] adds onfi_ext_section{} for extended sections,
+    [4] and adds onfi_ext_param_page{} for the Extended Parameter Page.
+
+Acked-by: Pekon Gupta <pekon@ti.com>
 Signed-off-by: Huang Shijie <b32955@freescale.com>
 ---
- include/linux/mtd/nand.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/mtd/nand.h |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 38 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 134d470..6f7788a 100644
+index 6f7788a..8b8fd93 100644
 --- a/include/linux/mtd/nand.h
 +++ b/include/linux/mtd/nand.h
-@@ -56,7 +56,7 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
-  * is supported now. If you add a chip with bigger oobsize/page
-  * adjust this accordingly.
-  */
--#define NAND_MAX_OOBSIZE	640
-+#define NAND_MAX_OOBSIZE	744
- #define NAND_MAX_PAGESIZE	8192
+@@ -224,7 +224,10 @@ struct nand_onfi_params {
+ 	__le16 revision;
+ 	__le16 features;
+ 	__le16 opt_cmd;
+-	u8 reserved[22];
++	u8 reserved0[2];
++	__le16 ext_param_page_length; /* since ONFI 2.1 */
++	u8 num_of_param_pages;        /* since ONFI 2.1 */
++	u8 reserved1[17];
  
- /*
+ 	/* manufacturer information block */
+ 	char manufacturer[12];
+@@ -281,6 +284,40 @@ struct nand_onfi_params {
+ 
+ #define ONFI_CRC_BASE	0x4F4E
+ 
++/* Extended ECC information Block Definition (since ONFI 2.1) */
++struct onfi_ext_ecc_info {
++	u8 ecc_bits;
++	u8 codeword_size;
++	__le16 bb_per_lun;
++	__le16 block_endurance;
++	u8 reserved[2];
++} __attribute__((packed));
++
++#define ONFI_SECTION_TYPE_0	0	/* Unused section. */
++#define ONFI_SECTION_TYPE_1	1	/* for additional sections. */
++#define ONFI_SECTION_TYPE_2	2	/* for ECC information. */
++struct onfi_ext_section {
++	u8 type;
++	u8 length;
++} __attribute__((packed));
++
++#define ONFI_EXT_SECTION_MAX 8
++
++/* Extended Parameter Page Definition (since ONFI 2.1) */
++struct onfi_ext_param_page {
++	__le16 crc;
++	u8 sig[4];             /* 'E' 'P' 'P' 'S' */
++	u8 reserved0[10];
++	struct onfi_ext_section sections[ONFI_EXT_SECTION_MAX];
++
++	/*
++	 * The actual size of the Extended Parameter Page is in
++	 * @ext_param_page_length of nand_onfi_params{}.
++	 * The following are the variable length sections.
++	 * So we do not add any fields below. Please see the ONFI spec.
++	 */
++} __attribute__((packed));
++
+ /**
+  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
+  * @lock:               protection lock
 -- 
 1.7.1
 
