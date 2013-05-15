@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932607Ab3EOOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:39:28 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:37635 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab3EOOj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:39:26 -0400
-Message-ID: <51939E16.9090105@gmail.com>
-Date: Wed, 15 May 2013 22:39:18 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1759256Ab3EOOkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:40:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759181Ab3EOOkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:40:17 -0400
+Message-ID: <51939E49.1040209@redhat.com>
+Date: Wed, 15 May 2013 08:40:09 -0600
+From: Eric Blake <eblake@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Gu Zheng <guz.fnst@cn.fujitsu.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        David Airlie <airlied@linux.ie>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Linux-Scsi <linux-scsi@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)
- instead
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com> <1368461313-4371-4-git-send-email-jiang.liu@huawei.com> <CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com> <5191F53E.4000305@cn.fujitsu.com> <51925136.5050302@gmail.com> <CAE9FiQWO-jR5y35kKiW0m6gVR54ZyRsBsdhP4BmFLSsDzCS3rA@mail.gmail.com> <51926CF6.1050706@gmail.com> <CAE9FiQWXN_ETRFPb5oFx-6LXyuHviX3h3NXCQKjcxtv2Uma-JA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWXN_ETRFPb5oFx-6LXyuHviX3h3NXCQKjcxtv2Uma-JA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: RFC: allow empty symlink targets
+References: <1358427833-3847-1-git-send-email-P@draigBrady.com> <50F8252C.2060404@draigBrady.com> <519381D8.5080206@draigBrady.com>
+In-Reply-To: <519381D8.5080206@draigBrady.com>
+X-Enigmail-Version: 1.5.1
+OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="----enig2HLSRUJGSTCNUVHKFFPES"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15 May 2013 02:52:51 AM CST, Yinghai Lu wrote:
-> On Tue, May 14, 2013 at 9:57 AM, Liu Jiang <liuj97@gmail.com> wrote:
->> On Tue 14 May 2013 11:10:33 PM CST, Yinghai Lu wrote:
->>>
->>> On Tue, May 14, 2013 at 7:59 AM, Liu Jiang <liuj97@gmail.com> wrote:
->>>>
->>>> On 05/14/2013 04:26 PM, Gu Zheng wrote:
->>>>       I suggest to use pci_release_dev() instead because it also needs to
->>>> release OF related resources.
->>>> I will update it in next version.
->>>>
->>>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>>> index bc075a3..2ac6338 100644
->>>> --- a/drivers/pci/probe.c
->>>> +++ b/drivers/pci/probe.c
->>>> @@ -1281,7 +1281,7 @@ static struct pci_dev *pci_scan_device(struct
->>>> pci_bus
->>>> *bus
->>>>           pci_set_of_node(dev);
->>>>
->>>>           if (pci_setup_device(dev)) {
->>>> -               kfree(dev);
->>>> +               pci_release_dev(&dev->dev);
->>>>                   return NULL;
->>>
->>>
->>> no, should move pci_set_of_node calling into pci_setup_device.
->>>
->>> Yinghai
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2HLSRUJGSTCNUVHKFFPES
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 05/15/2013 06:38 AM, P=C3=A1draig Brady wrote:
+> On 01/17/2013 04:22 PM, P=C3=A1draig Brady wrote:
+>> On 01/17/2013 01:03 PM, P=C3=A1draig Brady wrote:
+>>> The discussion leading to this is at http://bugs.gnu.org/13447
+>>> In summary other systems allow an empty target for a symlink,
+>>> and POSIX specifies that it should be allowed?
 >>
+>> In relation to this, Eric Blake said:
 >>
->> I'm not sure whether we should call pci_set_of_node() for SR-IOV devices
->> too,
->> any suggestions here?
->
-> or just move down pci_set_of_node after pci_setup_device?
->
-> anyway that is another bug.
->
-> Yinghai
-I'm not familiar with the OF logic and can't make sure whether 
-pci_setup_device()
-has dependency on dev->of_node. Feel it's more safe to call 
-pci_release_of_node()
-on failing path instead of tuning call-site of pci_set_of_node().
+>>> In today's Austin Group meeting, I was tasked to open a new bug that
+>>> would state specifically how the empty symlink is resolved; the inten=
+t
+>>> is to allow both Solaris behavior (current directory) and BSD behavio=
+r
+>>> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel=
+
+>>> has a bug for rejecting the creation of an empty symlink, but once th=
+at
+>>> bug is fixed, then Linux can choose either Solaris or BSD behavior fo=
+r
+>>> how to resolve such a symlink.
+>>>
+>>> It will probably be a bug report similar to this one, which regarded =
+how
+>>> to handle a symlink containing just slashes:
+>>> http://austingroupbugs.net/view.php?id=3D541
+>=20
+> Following up from http://austingroupbugs.net/view.php?id=3D649
+> It seems POSIX will now allow the current Linux behavior of returning E=
+NOENT,
+
+Huh?  Linux currently doesn't allow the creation of an empty symlink.
+That link mentions the current BSD behavior of returning ENOENT when
+resolving such a symlink (that is, what stat() does when chasing through
+an empty symlink, provided such a symlink is first created).
+
+> or the Solaris behavior of allowing empty symlink targets.
+
+The point made in that bug report is that Linux is buggy for not
+allowing symlink() to create an empty symlink in the first place; once
+you allow the creation of an empty symlink, then how to handle such a
+symlink in stat() is up to you whether to copy Solaris' or BSD's example.=
+
+
+--=20
+Eric Blake   eblake redhat com    +1-919-301-3266
+Libvirt virtualization library http://libvirt.org
+
+
+------enig2HLSRUJGSTCNUVHKFFPES
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBCAAGBQJRk55JAAoJEKeha0olJ0Nqo94IAJKlIEOlSKoxzPNU1WEJVGl1
+OXoYtzRK3q3pBK9oygDaRJiedntF8TP+3fKYcMujlR6zeu+Y2AqR1muNkpUO4677
+aWVd3RuWqduq0b6WG6rme5QQAL/x2A6XQss0GAFr9lIjG0s3OOt9iGPbMGkpG4+0
+CiiDOBwtFWx38gq4D6jNJ0AolQYSUkV3ronnuVjqEqeTX1ScB6711bpJRUQROhq2
+nPgSxVpuhgwxx8A/oZ2ZOFL1CTSSbtWokKUmoQF17ZIAYo2tAroiNysgDFvS9TPF
+eXpblJXcEvNGtKHqKwRJguXFWgCv1crkpjogSEo2JEf4BhwLsVUr3FXlQtHSVdU=
+=JKix
+-----END PGP SIGNATURE-----
+
+------enig2HLSRUJGSTCNUVHKFFPES--
