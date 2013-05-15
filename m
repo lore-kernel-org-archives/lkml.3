@@ -1,102 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab3EOOkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:40:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759181Ab3EOOkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:40:17 -0400
-Message-ID: <51939E49.1040209@redhat.com>
-Date: Wed, 15 May 2013 08:40:09 -0600
-From: Eric Blake <eblake@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1759284Ab3EOOm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:42:29 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46924 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759180Ab3EOOm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:42:28 -0400
+Date: Wed, 15 May 2013 15:37:19 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: V3.10-rc1 memory leak
+Message-ID: <20130515143719.GB1096@darko.cambridge.arm.com>
+References: <51912567.6090507@lwfinger.net>
+ <1368558586.6828.53.camel@gandalf.local.home>
+ <20130514203028.GA2997@MacBook-Pro.local>
+ <5192A847.1000100@lwfinger.net>
+ <1368566427.6828.58.camel@gandalf.local.home>
+ <1368579423.6828.63.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: RFC: allow empty symlink targets
-References: <1358427833-3847-1-git-send-email-P@draigBrady.com> <50F8252C.2060404@draigBrady.com> <519381D8.5080206@draigBrady.com>
-In-Reply-To: <519381D8.5080206@draigBrady.com>
-X-Enigmail-Version: 1.5.1
-OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="----enig2HLSRUJGSTCNUVHKFFPES"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368579423.6828.63.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2HLSRUJGSTCNUVHKFFPES
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 15, 2013 at 01:57:03AM +0100, Steven Rostedt wrote:
+> On Tue, 2013-05-14 at 17:20 -0400, Steven Rostedt wrote:
+> > On Tue, 2013-05-14 at 16:10 -0500, Larry Finger wrote:
+> > > On 05/14/2013 03:30 PM, Catalin Marinas wrote:
+> > > >
+> > > > I just got a patch today:
+> > > >
+> > > > https://lkml.org/lkml/2013/5/10/607
+> > > >
+> > > > which could be related. If Rusty doesn't push it I'll do. But please let
+> > > > me know if it does not solve the problem.
+> > > 
+> > > This patch fixes my problem. Now I can see the next new problem reported by 
+> > > kmemleak. :)
+> > > 
+> > > Thanks to you and Jianpeng Ma,
+> > > 
+> > > Larry
+> > > 
+> > 
+> > It goes away on my testing too. So you can add:
+> > 
+> > Tested-by: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> 
+> But we are not out of the woods yet. I'm also getting these:
+> 
+> unreferenced object 0xffff88007800efc0 (size 32):
+>   comm "modprobe", pid 1309, jiffies 4294697214 (age 188.356s)
+>   hex dump (first 32 bytes):
+>     00 00 00 00 00 00 00 00 a8 d0 3e a0 ff ff ff ff  ..........>.....
+>     30 d1 3e a0 ff ff ff ff 00 00 00 00 00 00 00 00  0.>.............
+>   backtrace:
+>     [<ffffffff814b535f>] kmemleak_alloc+0x73/0x98
+>     [<ffffffff8112003c>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+>     [<ffffffff81120dfe>] kmem_cache_alloc_trace+0xc0/0x10b
+>     [<ffffffff810e5478>] jump_label_module_notify+0xce/0x1d5
+>     [<ffffffff814d221d>] notifier_call_chain+0x37/0x63
+>     [<ffffffff8105c29c>] __blocking_notifier_call_chain+0x4b/0x60
+>     [<ffffffff8105c2c5>] blocking_notifier_call_chain+0x14/0x16
+>     [<ffffffff8108fe83>] load_module+0x1d7f/0x20d3
+>     [<ffffffff810902b0>] SyS_init_module+0xd9/0xdb
+>     [<ffffffff814d5754>] tracesys+0xdd/0xe2
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Where it points to the allocation in jump_label_add_module() where it
+> allocates the jlm. And this does get freed in jump_label_del_module().
 
-On 05/15/2013 06:38 AM, P=C3=A1draig Brady wrote:
-> On 01/17/2013 04:22 PM, P=C3=A1draig Brady wrote:
->> On 01/17/2013 01:03 PM, P=C3=A1draig Brady wrote:
->>> The discussion leading to this is at http://bugs.gnu.org/13447
->>> In summary other systems allow an empty target for a symlink,
->>> and POSIX specifies that it should be allowed?
->>
->> In relation to this, Eric Blake said:
->>
->>> In today's Austin Group meeting, I was tasked to open a new bug that
->>> would state specifically how the empty symlink is resolved; the inten=
-t
->>> is to allow both Solaris behavior (current directory) and BSD behavio=
-r
->>> (ENOENT).  Meanwhile, everyone was in agreement that the Linux kernel=
+Indeed, another false positive (I should use modules more often ;).
+Here's a patch:
 
->>> has a bug for rejecting the creation of an empty symlink, but once th=
-at
->>> bug is fixed, then Linux can choose either Solaris or BSD behavior fo=
-r
->>> how to resolve such a symlink.
->>>
->>> It will probably be a bug report similar to this one, which regarded =
-how
->>> to handle a symlink containing just slashes:
->>> http://austingroupbugs.net/view.php?id=3D541
->=20
-> Following up from http://austingroupbugs.net/view.php?id=3D649
-> It seems POSIX will now allow the current Linux behavior of returning E=
-NOENT,
+---------------------8<----------------------------------
 
-Huh?  Linux currently doesn't allow the creation of an empty symlink.
-That link mentions the current BSD behavior of returning ENOENT when
-resolving such a symlink (that is, what stat() does when chasing through
-an empty symlink, provided such a symlink is first created).
+>From 0621c7e1909ea86bf8499a0ffe5ea59d1007ee8c Mon Sep 17 00:00:00 2001
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 15 May 2013 15:30:46 +0100
+Subject: [PATCH] kmemleak: Scan the jump label module section
 
-> or the Solaris behavior of allowing empty symlink targets.
+Objects allocated in jump_label_add_module() are currently reported as
+leaks, though the pointers are stored in the module jump label section.
+This patch informs kmemleak that this section needs to be scanned.
 
-The point made in that bug report is that Linux is buggy for not
-allowing symlink() to create an empty symlink in the first place; once
-you allow the creation of an empty symlink, then how to handle such a
-symlink in stat() is up to you whether to copy Solaris' or BSD's example.=
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/module.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-
---=20
-Eric Blake   eblake redhat com    +1-919-301-3266
-Libvirt virtualization library http://libvirt.org
-
-
-------enig2HLSRUJGSTCNUVHKFFPES
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBCAAGBQJRk55JAAoJEKeha0olJ0Nqo94IAJKlIEOlSKoxzPNU1WEJVGl1
-OXoYtzRK3q3pBK9oygDaRJiedntF8TP+3fKYcMujlR6zeu+Y2AqR1muNkpUO4677
-aWVd3RuWqduq0b6WG6rme5QQAL/x2A6XQss0GAFr9lIjG0s3OOt9iGPbMGkpG4+0
-CiiDOBwtFWx38gq4D6jNJ0AolQYSUkV3ronnuVjqEqeTX1ScB6711bpJRUQROhq2
-nPgSxVpuhgwxx8A/oZ2ZOFL1CTSSbtWokKUmoQF17ZIAYo2tAroiNysgDFvS9TPF
-eXpblJXcEvNGtKHqKwRJguXFWgCv1crkpjogSEo2JEf4BhwLsVUr3FXlQtHSVdU=
-=JKix
------END PGP SIGNATURE-----
-
-------enig2HLSRUJGSTCNUVHKFFPES--
+diff --git a/kernel/module.c b/kernel/module.c
+index b049939..ff83711 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2764,6 +2764,13 @@ static void find_module_sections(struct module *mod, struct load_info *info)
+ 	mod->jump_entries = section_objs(info, "__jump_table",
+ 					sizeof(*mod->jump_entries),
+ 					&mod->num_jump_entries);
++	/*
++	 * This section contains pointers to objects allocated in
++	 * jump_label_add_module() and not scanning it leads to false
++	 * positives.
++	 */
++	kmemleak_scan_area(mod->jump_entries, sizeof(*mod->jump_entries) *
++			   mod->num_jump_entries, GFP_KERNEL);
+ #endif
+ #ifdef CONFIG_EVENT_TRACING
+ 	mod->trace_events = section_objs(info, "_ftrace_events",
