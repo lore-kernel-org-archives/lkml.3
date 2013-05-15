@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab3EORW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 13:22:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39224 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759753Ab3EORW1 convert rfc822-to-8bit (ORCPT
+	id S932989Ab3EOR2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 13:28:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6982 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756698Ab3EOR2w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 13:22:27 -0400
+	Wed, 15 May 2013 13:28:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 15 May 2013 10:24:44 -0700
+From: Jay Agarwal <jagarwal@nvidia.com>
+To: "'Stephen Warren'" <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Date: Wed, 15 May 2013 22:58:22 +0530
+Subject: RE: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
+Thread-Topic: [PATCH 4/4] ARM: tegra: pcie: Enable PCIe controller on Cardhu
+Thread-Index: Ac5MDiVYvwys7HTSTmeNS4cCuSA+NgFgtlKg
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B4886B5D@BGMAIL01.nvidia.com>
+References: <1368010660-31465-1-git-send-email-jagarwal@nvidia.com>
+ <1368010660-31465-4-git-send-email-jagarwal@nvidia.com>
+ <518A8596.7070702@wwwdotorg.org>
+In-Reply-To: <518A8596.7070702@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Message-ID: <76ac8597-9be3-44fd-a3d5-39c6130a171a@default>
-Date: Wed, 15 May 2013 10:22:11 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>, bob.liu@oracle.com,
-        dan.magenheimer@oracle.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        xen-devel@lists.xensource.com
-Subject: RE: [PATCH] Fixes, cleanups, compile warning fixes, and documentation
- update for Xen tmem driver (v2).
-References: <<1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>>
-In-Reply-To: <<1368554966-30469-1-git-send-email-konrad.wilk@oracle.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek [mailto:ketuzsezr@gmail.com] On Behalf Of Konrad Rzeszutek Wilk
-> Sent: Tuesday, May 14, 2013 12:09 PM
-> To: bob.liu@oracle.com; dan.magenheimer@oracle.com; linux-kernel@vger.kernel.org; akpm@linux-
-> foundation.org; linux-mm@kvack.org; xen-devel@lists.xensource.com
-> Subject: [PATCH] Fixes, cleanups, compile warning fixes, and documentation update for Xen tmem driver
-> (v2).
-> 
-> Heya,
-> 
-> These nine patches fix the tmem driver to:
->  - not emit a compile warning anymore (reported by 0 day test compile tool)
->  - remove the various nofrontswap, nocleancache, noselfshrinking, noselfballooning,
->    selfballooning, selfshrinking bootup options.
->  - said options are now folded in the tmem driver as module options and are
->    much shorter (and also there are only four of them now).
->  - add documentation to explain these parameters in kernel-parameters.txt
->  - And lastly add some logic to not enable selfshrinking and selfballooning
->    if frontswap functionality is off.
-> 
-> That is it. Tested and ready to go. If nobody objects will put on my queue
-> for Linus on Monday.
 
-FWIW, I've scanned all of these and they look sane and good.  So consider all:
-
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
- 
->  Documentation/kernel-parameters.txt |   21 ++++++++
->  drivers/xen/Kconfig                 |    7 +--
->  drivers/xen/tmem.c                  |   87 ++++++++++++++++-------------------
->  drivers/xen/xen-selfballoon.c       |   47 ++----------------
->  4 files changed, 69 insertions(+), 93 deletions(-)
+> On 05/08/2013 04:57 AM, Jay Agarwal wrote:
+> > - Enable PCIe controller on Cardhu
+> > - Only port 2 is connected on this board
+> > - Add regulators required for Tegra30
+> > - Patch is based on remotes/gitorious_thierryreding_linux/tegra/next
+> > - and should be applied on top of this.
 > 
-> (oh nice, more deletions!)
+> > diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi
+> > b/arch/arm/boot/dts/tegra30-cardhu.dtsi
 > 
-> Konrad Rzeszutek Wilk (9):
->       xen/tmem: Cleanup. Remove the parts that say temporary.
->       xen/tmem: Move all of the boot and module parameters to the top of the file.
->       xen/tmem: Split out the different module/boot options.
->       xen/tmem: Fix compile warning.
->       xen/tmem: s/disable_// and change the logic.
->       xen/tmem: Remove the boot options and fold them in the tmem.X parameters.
->       xen/tmem: Remove the usage of 'noselfshrink' and use 'tmem.selfshrink' bool instead.
->       xen/tmem: Remove the usage of '[no|]selfballoon' and use 'tmem.selfballooning' bool instead.
->       xen/tmem: Don't use self[ballooning|shrinking] if frontswap is off.
+> > +	pcie-controller {
+> > +		status = "okay";
+> > +		pex-clk-supply = <&pex_hvdd_3v3_reg>;
+> > +		vdd-supply = <&ldo1_reg>;
+> > +		avdd-supply = <&ldo2_reg>;
+> > +
+> > +		pci@3,0 {
+> > +			status = "okay";
+> > +		};
+> > +	};
+> 
+> So, if I apply this series, I do see the PCIe bridge and Ethernet device get
+> enumerated, but I don't see the USB3 controller get enumerated. I believe
+> that is a PCIe device behind the same bridge on the same Tegra PCIe port.
+> Shouldn't this device show up?
+[>]  I have also reproduced this problem. I see somehow no non-prefetchable memory is assigned to any of pcie devices.
+Probably that is the reason for USB3 (pci 0000:04:00.0) not getting enumerated since it uses only non-prefetchable memory.
