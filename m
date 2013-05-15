@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab3EOGmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 02:42:53 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63004 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3EOGmv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 02:42:51 -0400
-Date: Tue, 14 May 2013 23:42:48 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lk <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] input: cros_ec_keyb_clear_keyboard() depends on
- CONFIG_PM_SLEEP
-Message-ID: <20130515064248.GB24297@core.coreip.homeip.net>
-References: <1368049529-8168-1-git-send-email-geert@linux-m68k.org>
- <CAPnjgZ3Akf0+LKBt4c5HQX5c8PhL+zuvvHWrDpVj0W++GiOanA@mail.gmail.com>
+	id S1756506Ab3EOGne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 02:43:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49541 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab3EOGnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 02:43:32 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <b-cousson@ti.com>, <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <linux@arm.linux.org.uk>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH] ARM: dts: omap3 beagle: Add usb otg hs dt data
+Date: Wed, 15 May 2013 12:12:41 +0530
+Message-ID: <1368600161-10351-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPnjgZ3Akf0+LKBt4c5HQX5c8PhL+zuvvHWrDpVj0W++GiOanA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 09:25:56PM -0600, Simon Glass wrote:
-> On Wed, May 8, 2013 at 3:45 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > If CONFIG_PM_SLEEP is not set:
-> >
-> > drivers/input/keyboard/cros_ec_keyb.c:211: warning: ‘cros_ec_keyb_clear_keyboard’ defined but not used
-> >
-> > Move the definition of cros_ec_keyb_clear_keyboard() inside the section
-> > protected by #ifdef CONFIG_PM_SLEEP to fix this.
-> >
-> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> 
-> Acked-by: Simon Glass <sjg@chromium.org>
+Added board specific dt data for omap3 beagle in omap3-beagle.dts
+file.
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/boot/dts/omap3-beagle.dts |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Could you please forward this to Linus as I do not have this driver in
-my branch yet.
-
-Thanks.
-
+diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+index 6eec699..02bf5d0 100644
+--- a/arch/arm/boot/dts/omap3-beagle.dts
++++ b/arch/arm/boot/dts/omap3-beagle.dts
+@@ -142,3 +142,10 @@
+ 	 */
+ 	ti,pulldowns = <0x03a1c4>;
+ };
++
++&usb_otg_hs {
++        interface-type = <0>;
++        usb-phy = <&usb2_phy>;
++        mode = <3>;
++        power = <50>;
++};
 -- 
-Dmitry
+1.7.10.4
+
