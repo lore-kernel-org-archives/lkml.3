@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab3EOLrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 07:47:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37778 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3EOLrj (ORCPT
+	id S1758366Ab3EOLvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 07:51:22 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:45944 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3EOLvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 07:47:39 -0400
-Date: Wed, 15 May 2013 13:47:37 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Rob Herring <robherring2@gmail.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/2] ARM: delay: print dummy values for bogomips
-Message-ID: <20130515114737.GA7900@amd.pavel.ucw.cz>
-References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
- <1367602547-19322-2-git-send-email-will.deacon@arm.com>
- <20130506231554.GB16801@amd.pavel.ucw.cz>
- <5188B8B2.5030601@arm.com>
- <alpine.LFD.2.03.1305141547180.31158@syhkavp.arg>
- <CAL_Jsq+Q5UMGo3J+vKKCRU+w4Kj0YN0exs7UCWTEOxmFjWfo3g@mail.gmail.com>
- <alpine.LFD.2.03.1305141945160.31158@syhkavp.arg>
- <20130515090103.GA12907@mudshark.cambridge.arm.com>
+	Wed, 15 May 2013 07:51:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515090103.GA12907@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1368609839-19899-2-git-send-email-namhyung@kernel.org>
+References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
+	<1368609839-19899-2-git-send-email-namhyung@kernel.org>
+Date: Wed, 15 May 2013 13:51:20 +0200
+Message-ID: <CABPqkBSEGpa3wyxdfsBRey=4J_yQXP7QG_=+1rLy0vhD03vp4A@mail.gmail.com>
+Subject: Re: [RFC/PATCH 2/2] perf report: Add --time-filter option
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-05-15 10:01:03, Will Deacon wrote:
-> Hi Nico,
-> 
-> On Wed, May 15, 2013 at 12:56:51AM +0100, Nicolas Pitre wrote:
-> > On Tue, 14 May 2013, Rob Herring wrote:
-> > > On Tue, May 14, 2013 at 2:54 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> > > > Waitaminute... Didn't you just claim this would be an ABI break?
-> > > >
-> > > > So if no application can be found, where is the ABI breakage?
-> > > 
-> > > lscpu
-> > > 
-> > > But that is already "broken" on ARM because x86 uses "bogomips" and
-> > > ARM uses "BogoMIPS". 
-> > 
-> > So basically it won't be any more broken if the field disappears 
-> > entirely, right?
-> 
-> It's not these sort of tools I was worried about. I was thinking about the
-> possibility of badly written parsers which want some other field from
-> cpuinfo, but use the bogomips line for context. Do these applications exist?
-> No idea.
+Hi,
 
-Yes, they do. bogomips is not nearly as bogus as you imply.
+I think what could also be useful would be an option to consider only
+the samples when the rate as reported by the timestamp exceed a
+user provided rate per sec. That would eliminate samples which are
+coming from low activity periods.
 
-See
 
-http://www.clifton.nl/index.html?bogomips.html
-
-https://play.google.com/store/apps/details?id=com.securiteinfo.android.bogomips&hl=en
-
-> My second (less stupid) version of the patch prints "not reported". I'd be
-> happy to remove the line altogether if people get behind the decision though.
-> In fact, I just tried it and at least my linaro filesystem seems happy
-> enough.
-
-Would it be too much work to simply put the field back with the right
-value? We don't have to get it as precise as we used to, that should
-make slowdown minimum.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On Wed, May 15, 2013 at 11:23 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+>
+> The --time-filter option is for limiting samples within a range of
+> time.  A time range looks like <time1>-<time2> and at most one of them
+> can be omitted.  This can be useful when analyzing a part of a huge
+> data only.
+>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Documentation/perf-report.txt |  6 ++++++
+>  tools/perf/builtin-report.c              | 33 ++++++++++++++++++++++++++++++++
+>  2 files changed, 39 insertions(+)
+>
+> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+> index 7d5f4f38aa52..67544c2d8e69 100644
+> --- a/tools/perf/Documentation/perf-report.txt
+> +++ b/tools/perf/Documentation/perf-report.txt
+> @@ -210,6 +210,12 @@ OPTIONS
+>         Demangle symbol names to human readable form. It's enabled by default,
+>         disable with --no-demangle.
+>
+> +--time-filter::
+> +       Report samples within a range of time only. A time range can be given
+> +       like 'time1-time2' and treated as a start time and end time
+> +       respectively. The time format is like "<sec>.<usec>". Either of time1
+> +       or time2 can be omitted.
+> +
+>  SEE ALSO
+>  --------
+>  linkperf:perf-stat[1], linkperf:perf-annotate[1]
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index d45bf9b0361d..2cd3f640cc4a 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -52,6 +52,7 @@ struct perf_report {
+>         symbol_filter_t         annotate_init;
+>         const char              *cpu_list;
+>         const char              *symbol_filter_str;
+> +       u64                     time_start, time_end;
+>         DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+>  };
+>
+> @@ -311,6 +312,12 @@ static int process_sample_event(struct perf_tool *tool,
+>         if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+>                 return 0;
+>
+> +       if (rep->time_start && rep->time_start > sample->time)
+> +               return 0;
+> +
+> +       if (rep->time_end && rep->time_end < sample->time)
+> +               return 0;
+> +
+>         if (sort__mode == SORT_MODE__BRANCH) {
+>                 if (perf_report__add_branch_hist_entry(tool, &al, sample,
+>                                                        evsel, machine)) {
+> @@ -700,6 +707,30 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+>         return 0;
+>  }
+>
+> +static int
+> +parse_time_filter(const struct option *opt, const char *str,
+> +                 int unset __maybe_unused)
+> +{
+> +       struct perf_report *rep = opt->value;
+> +       char *sep;
+> +
+> +       sep = strchr(str, '-');
+> +       if (sep == NULL || sep[1] == '\0') {
+> +               rep->time_start = parse_nsec_time(str);
+> +               return 0;
+> +       } else if (sep == str) {
+> +               rep->time_end = parse_nsec_time(++str);
+> +               return 0;
+> +       }
+> +
+> +       *sep++ = '\0';
+> +
+> +       rep->time_start = parse_nsec_time(str);
+> +       rep->time_end = parse_nsec_time(sep);
+> +
+> +       return 0;
+> +}
+> +
+>  int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>  {
+>         struct perf_session *session;
+> @@ -809,6 +840,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+>         OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+>                     "Disable symbol demangling"),
+>         OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+> +       OPT_CALLBACK(0, "time-filter", &report, "time[-time]",
+> +                   "Only display entries in the time range", parse_time_filter),
+>         OPT_END()
+>         };
+>
+> --
+> 1.7.11.7
+>
