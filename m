@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759061Ab3EOOEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:04:40 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:64973 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab3EOOEj (ORCPT
+	id S1759009Ab3EOOFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:05:48 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40754 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264Ab3EOOFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:04:39 -0400
+	Wed, 15 May 2013 10:05:46 -0400
+Message-ID: <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Borislav Petkov" <bp@alien8.de>, <linux-pm@vger.kernel.org>,
+        "Len Brown" <len.brown@intel.com>, "Pavel Machek" <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "LKML" <linux-kernel@vger.kernel.org>, "X86 ML" <x86@kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        <devel@linuxdriverproject.org>, <olaf@aepfle.de>,
+        "\"Andy Whitcroft\"" <apw@canonical.com>, <jasowang@redhat.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <JBeulich@suse.com>
+Cc: "Michal Hocko" <mhocko@suse.cz>
+References: <20130514160108.GA5055@dhcp22.suse.cz> <925E2E537ECB4D0C8EA18467A4D20174@local.st.by> <20130515133405.GC5455@dhcp22.suse.cz> <293D65E8F6CE48768FF47E438C57ECD2@local.st.by> <20130515134656.GF5455@dhcp22.suse.cz>
+Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace -- CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re: 3.10-rc1 Fw: [PATCH 2/2] x86: Make Linux guest support optional
+Date: Wed, 15 May 2013 17:05:42 +0300
 MIME-Version: 1.0
-In-Reply-To: <20130515125048.GC2206@tango.0pointer.de>
-References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
- <CADVDRBjOX2Jy5t36jwZt9i9OGt3Ca_rBx_FbptYJ34CK2EP+AA@mail.gmail.com> <20130515125048.GC2206@tango.0pointer.de>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Wed, 15 May 2013 11:04:16 -0300
-Message-ID: <CAKi4VA+ru8_h=NW_X49GNL06XinsboM_ZicD8Js73Mw7x-xphA@mail.gmail.com>
-Subject: Re: [systemd-devel] 2013 Plumber's CFP: Fastboot
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Jeremiah Foster <jeremiah.foster@pelagicore.com>,
-        "Mehaffey, John" <John_Mehaffey@mentor.com>,
-        "systemd-devel@lists.freedesktop.org" 
-	<systemd-devel@lists.freedesktop.org>,
-        "wd@denx.de" <wd@denx.de>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
-        "tim.bird@am.sony.com" <tim.bird@am.sony.com>,
-        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>,
-        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
-        "yoush@cs.msu.su" <yoush@cs.msu.su>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	format=flowed;
+	charset="ISO-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 9:50 AM, Lennart Poettering
-<mzxreary@0pointer.de> wrote:
-> On Wed, 15.05.13 11:43, Jeremiah Foster (jeremiah.foster@pelagicore.com) wrote:
->
->> On Tue, May 14, 2013 at 1:51 AM, Mehaffey, John <John_Mehaffey@mentor.com>wrote:
->>
->> > Hello All,
->> >
->>
->> Hey John!
->>
->>
->> > I am proposing a microconference on fastboot at the Linux Plumber's
->> > conference 2013 in New Orleans. The goal is to get to sub 1S boot times for
->> > a large (IVI) system using NAND flash. This pushes the state of the art,
->> > and will require innovative solutions in may areas of Linux plumbing,
->> > including bootloader, kernel init, UBI, and systemd.
->> >
->> > Note that fastboot improvements will (generally) help all architectures so
->> > I am not limiting this to automotive systems.
->> >
->> > Please visit http://wiki.linuxplumbersconf.org/2013:fastboot for more
->> > information or if you want to submit a topic.
->> >
->>
->> I've linked to your micrconference from the automotive microconference:
->> http://wiki.linuxplumbersconf.org/2013:automotive
->>
->> I'm a bit confused about the LPC format though. John, is it planned to have
->> the non-Android fastboot discussion as part of the automotive
->> microconference or is this separate (despite its automotive relevance.) I
->> ask because it might be nice to have the participants in both
->> microconferences and it would be a shame to lose attendees to one or the
->> other if they're competing tracks.
->>
->> Can someone clue me in to the microconference format as regards LPC?
->
->
-> BTW, there's also this MC we proposed:
->
-> http://wiki.linuxplumbersconf.org/2013:boot_and_core_os
->
-> which sounds pretty close to fastboot?
->
+Hi!
 
-What if we merge the proposals?
+>> >>>- select PARAVIRT_GUEST
+>> >>>+ select HYPERVISOR_GUEST
+>> >
+>> >I might have missed the previous discussion but how does this relate to
+>> >the original problem reported to this (https://lkml.org/lkml/2013/5/14/398)
+>> >thread?
+>> 
+>> As example:
+>> 
+>> https://lkml.org/lkml/2013/5/14/398
+>> ==
+>> . . .
+>> # CONFIG_HYPERVISOR_GUEST is not set
+>> . . .
+>> ==
+>> 
+>> >For record:
+>> >$grep HYPERVISOR_GUEST .config
+>> ># CONFIG_HYPERVISOR_GUEST is not set
+>> 
+>> 
+>> Why not
+>> CONFIG_HYPERVISOR_GUEST=y
+> 
+> This is unrelated to the issue discussed in this thread.
 
-John, are you ok with proposing (some of) these topics in the "Boot
-and Core OS" track? I could help with the module-related part, too.
+ Yes: Is another 1-2 problem[s], but is problem[s]:
 
 
-Lucas De Marchi
+==
+TO All:
+
+ Please, replace
+CONFIG_PARAVIRT_GUEST=y
+ with
+CONFIG_HYPERVISOR_GUEST=y
+==
+
+==
+Is good?
+
+CONFIG_PARAVIRT_GUEST in arch/ia64 :
+
+./linux-3.10-rc1/arch/ia64/include/asm/native/
+inst.h
+./linux-3.10-rc1/arch/ia64/configs/
+xen_domu_defconfig
+./linux-3.10-rc1/arch/ia64/include/asm/
+hw_irq.h
+iosapic.h
+paravirt.h
+
+==
+ . . .
+#ifdef CONFIG_PARAVIRT_GUEST
+
+#define PARAVIRT_HYPERVISOR_TYPE_DEFAULT 0
+#define PARAVIRT_HYPERVISOR_TYPE_XEN  1
+ . . .
+==
+
+==
+
+ Comments ?
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
