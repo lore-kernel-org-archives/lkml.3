@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3EOVic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 17:38:32 -0400
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:35077 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3EOVia (ORCPT
+	id S1753995Ab3EOVig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 17:38:36 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:41116 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab3EOVid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 17:38:30 -0400
+	Wed, 15 May 2013 17:38:33 -0400
 From: Todd Poynor <toddpoynor@google.com>
 To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Todd Poynor <toddpoynor@google.com>
-Subject: [PATCH 1/2] alarmtimer: add functions for timerfd support
-Date: Wed, 15 May 2013 14:38:11 -0700
-Message-Id: <1368653892-18939-2-git-send-email-toddpoynor@google.com>
+Subject: [PATCH 2/2] timerfd: add alarm timers
+Date: Wed, 15 May 2013 14:38:12 -0700
+Message-Id: <1368653892-18939-3-git-send-email-toddpoynor@google.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368653892-18939-1-git-send-email-toddpoynor@google.com>
 References: <1368653892-18939-1-git-send-email-toddpoynor@google.com>
@@ -21,116 +21,258 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions needed for hooking up alarmtimer to timerfd:
-
-* alarm_restart: Similar to hrtimer_restart, restart an alarmtimer after
-  the expires time has already been updated (as with alarm_forward).
-
-* alarm_forward_now: Similar to hrtimer_forward_now, move the expires
-  time forward to an interval from the current time of the associated clock.
-
-* alarm_start_relative: Start an alarmtimer with an expires time relative to
-  the current time of the associated clock.
-
-* alarm_expires_remaining: Similar to hrtimer_expires_remaining, return the
-  amount of time remaining until alarm expiry.
+Add support for clocks CLOCK_REALTIME_ALARM and CLOCK_BOOTTIME_ALARM,
+thereby enabling wakeup alarm timers via file descriptors.
 
 Signed-off-by: Todd Poynor <toddpoynor@google.com>
 ---
- include/linux/alarmtimer.h |  4 ++++
- kernel/time/alarmtimer.c   | 39 ++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 42 insertions(+), 1 deletion(-)
+ fs/timerfd.c | 131 ++++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 108 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/alarmtimer.h b/include/linux/alarmtimer.h
-index 9069694..a899402 100644
---- a/include/linux/alarmtimer.h
-+++ b/include/linux/alarmtimer.h
-@@ -44,10 +44,14 @@ struct alarm {
- void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
- 		enum alarmtimer_restart (*function)(struct alarm *, ktime_t));
- int alarm_start(struct alarm *alarm, ktime_t start);
-+int alarm_start_relative(struct alarm *alarm, ktime_t start);
-+void alarm_restart(struct alarm *alarm);
- int alarm_try_to_cancel(struct alarm *alarm);
- int alarm_cancel(struct alarm *alarm);
- 
- u64 alarm_forward(struct alarm *alarm, ktime_t now, ktime_t interval);
-+u64 alarm_forward_now(struct alarm *alarm, ktime_t interval);
-+ktime_t alarm_expires_remaining(const struct alarm *alarm);
- 
- /* Provide way to access the rtc device being used by alarmtimers */
- struct rtc_device *alarmtimer_get_rtcdev(void);
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index f11d83b..3e5cba2 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -199,6 +199,12 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
- 
- }
- 
-+ktime_t alarm_expires_remaining(const struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	return ktime_sub(alarm->node.expires, base->gettime());
-+}
-+
- #ifdef CONFIG_RTC_CLASS
- /**
-  * alarmtimer_suspend - Suspend time callback
-@@ -305,7 +311,7 @@ void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
- }
- 
- /**
-- * alarm_start - Sets an alarm to fire
-+ * alarm_start - Sets an absolute alarm to fire
-  * @alarm: ptr to alarm to set
-  * @start: time to run the alarm
-  */
-@@ -325,6 +331,31 @@ int alarm_start(struct alarm *alarm, ktime_t start)
- }
- 
- /**
-+ * alarm_start_relative - Sets a relative alarm to fire
-+ * @alarm: ptr to alarm to set
-+ * @start: time relative to now to run the alarm
-+ */
-+int alarm_start_relative(struct alarm *alarm, ktime_t start)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+
-+	start = ktime_add(start, base->gettime());
-+	return alarm_start(alarm, start);
-+}
-+
-+void alarm_restart(struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&base->lock, flags);
-+	hrtimer_set_expires(&alarm->timer, alarm->node.expires);
-+	hrtimer_restart(&alarm->timer);
-+	alarmtimer_enqueue(base, alarm);
-+	spin_unlock_irqrestore(&base->lock, flags);
-+}
-+
-+/**
-  * alarm_try_to_cancel - Tries to cancel an alarm timer
-  * @alarm: ptr to alarm to be canceled
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 32b644f..9293121 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -8,6 +8,7 @@
   *
-@@ -394,6 +425,12 @@ u64 alarm_forward(struct alarm *alarm, ktime_t now, ktime_t interval)
- 	return overrun;
- }
+  */
  
-+u64 alarm_forward_now(struct alarm *alarm, ktime_t interval)
++#include <linux/alarmtimer.h>
+ #include <linux/file.h>
+ #include <linux/poll.h>
+ #include <linux/init.h>
+@@ -26,7 +27,10 @@
+ #include <linux/rcupdate.h>
+ 
+ struct timerfd_ctx {
+-	struct hrtimer tmr;
++	union {
++		struct hrtimer tmr;
++		struct alarm alarm;
++	} t;
+ 	ktime_t tintv;
+ 	ktime_t moffs;
+ 	wait_queue_head_t wqh;
+@@ -41,14 +45,19 @@ struct timerfd_ctx {
+ static LIST_HEAD(cancel_list);
+ static DEFINE_SPINLOCK(cancel_lock);
+ 
++static inline bool isalarm(struct timerfd_ctx *ctx)
 +{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
++	return ctx->clockid == CLOCK_REALTIME_ALARM ||
++		ctx->clockid == CLOCK_BOOTTIME_ALARM;
++}
 +
-+	return alarm_forward(alarm, base->gettime(), interval);
+ /*
+  * This gets called when the timer event triggers. We set the "expired"
+  * flag, but we do not re-arm the timer (in case it's necessary,
+  * tintv.tv64 != 0) until the timer is accessed.
+  */
+-static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
++static void timerfd_triggered(struct timerfd_ctx *ctx)
+ {
+-	struct timerfd_ctx *ctx = container_of(htmr, struct timerfd_ctx, tmr);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&ctx->wqh.lock, flags);
+@@ -56,10 +65,25 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
+ 	ctx->ticks++;
+ 	wake_up_locked(&ctx->wqh);
+ 	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
 +}
  
++static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
++{
++	struct timerfd_ctx *ctx = container_of(htmr, struct timerfd_ctx,
++					       t.tmr);
++	timerfd_triggered(ctx);
+ 	return HRTIMER_NORESTART;
+ }
  
++static enum alarmtimer_restart timerfd_alarmproc(struct alarm *alarm,
++	ktime_t now)
++{
++	struct timerfd_ctx *ctx = container_of(alarm, struct timerfd_ctx,
++					       t.alarm);
++	timerfd_triggered(ctx);
++	return ALARMTIMER_NORESTART;
++}
++
+ /*
+  * Called when the clock was set to cancel the timers in the cancel
+  * list. This will wake up processes waiting on these timers. The
+@@ -107,8 +131,9 @@ static bool timerfd_canceled(struct timerfd_ctx *ctx)
  
+ static void timerfd_setup_cancel(struct timerfd_ctx *ctx, int flags)
+ {
+-	if (ctx->clockid == CLOCK_REALTIME && (flags & TFD_TIMER_ABSTIME) &&
+-	    (flags & TFD_TIMER_CANCEL_ON_SET)) {
++	if ((ctx->clockid == CLOCK_REALTIME ||
++	     ctx->clockid == CLOCK_REALTIME_ALARM) &&
++	    (flags & TFD_TIMER_ABSTIME) && (flags & TFD_TIMER_CANCEL_ON_SET)) {
+ 		if (!ctx->might_cancel) {
+ 			ctx->might_cancel = true;
+ 			spin_lock(&cancel_lock);
+@@ -124,7 +149,11 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
+ {
+ 	ktime_t remaining;
+ 
+-	remaining = hrtimer_expires_remaining(&ctx->tmr);
++	if (isalarm(ctx))
++		remaining = alarm_expires_remaining(&ctx->t.alarm);
++	else
++		remaining = hrtimer_expires_remaining(&ctx->t.tmr);
++
+ 	return remaining.tv64 < 0 ? ktime_set(0, 0): remaining;
+ }
+ 
+@@ -142,11 +171,28 @@ static int timerfd_setup(struct timerfd_ctx *ctx, int flags,
+ 	ctx->expired = 0;
+ 	ctx->ticks = 0;
+ 	ctx->tintv = timespec_to_ktime(ktmr->it_interval);
+-	hrtimer_init(&ctx->tmr, clockid, htmode);
+-	hrtimer_set_expires(&ctx->tmr, texp);
+-	ctx->tmr.function = timerfd_tmrproc;
++
++	if (isalarm(ctx)) {
++		alarm_init(&ctx->t.alarm,
++			   ctx->clockid == CLOCK_REALTIME_ALARM ?
++			   ALARM_REALTIME : ALARM_BOOTTIME,
++			   timerfd_alarmproc);
++	} else {
++		hrtimer_init(&ctx->t.tmr, clockid, htmode);
++		hrtimer_set_expires(&ctx->t.tmr, texp);
++		ctx->t.tmr.function = timerfd_tmrproc;
++	}
++
+ 	if (texp.tv64 != 0) {
+-		hrtimer_start(&ctx->tmr, texp, htmode);
++		if (isalarm(ctx)) {
++			if (flags & TFD_TIMER_ABSTIME)
++				alarm_start(&ctx->t.alarm, texp);
++			else
++				alarm_start_relative(&ctx->t.alarm, texp);
++		} else {
++			hrtimer_start(&ctx->t.tmr, texp, htmode);
++		}
++
+ 		if (timerfd_canceled(ctx))
+ 			return -ECANCELED;
+ 	}
+@@ -158,7 +204,11 @@ static int timerfd_release(struct inode *inode, struct file *file)
+ 	struct timerfd_ctx *ctx = file->private_data;
+ 
+ 	timerfd_remove_cancel(ctx);
+-	hrtimer_cancel(&ctx->tmr);
++
++	if (isalarm(ctx))
++		alarm_cancel(&ctx->t.alarm);
++	else
++		hrtimer_cancel(&ctx->t.tmr);
+ 	kfree_rcu(ctx, rcu);
+ 	return 0;
+ }
+@@ -215,9 +265,15 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 			 * callback to avoid DoS attacks specifying a very
+ 			 * short timer period.
+ 			 */
+-			ticks += hrtimer_forward_now(&ctx->tmr,
+-						     ctx->tintv) - 1;
+-			hrtimer_restart(&ctx->tmr);
++			if (isalarm(ctx)) {
++				ticks += alarm_forward_now(
++					&ctx->t.alarm, ctx->tintv) - 1;
++				alarm_restart(&ctx->t.alarm);
++			} else {
++				ticks += hrtimer_forward_now(&ctx->t.tmr,
++							     ctx->tintv) - 1;
++				hrtimer_restart(&ctx->t.tmr);
++			}
+ 		}
+ 		ctx->expired = 0;
+ 		ctx->ticks = 0;
+@@ -259,7 +315,9 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 
+ 	if ((flags & ~TFD_CREATE_FLAGS) ||
+ 	    (clockid != CLOCK_MONOTONIC &&
+-	     clockid != CLOCK_REALTIME))
++	     clockid != CLOCK_REALTIME &&
++	     clockid != CLOCK_REALTIME_ALARM &&
++	     clockid != CLOCK_BOOTTIME_ALARM))
+ 		return -EINVAL;
+ 
+ 	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
+@@ -268,7 +326,15 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 
+ 	init_waitqueue_head(&ctx->wqh);
+ 	ctx->clockid = clockid;
+-	hrtimer_init(&ctx->tmr, clockid, HRTIMER_MODE_ABS);
++
++	if (isalarm(ctx))
++		alarm_init(&ctx->t.alarm,
++			   ctx->clockid == CLOCK_REALTIME_ALARM ?
++			   ALARM_REALTIME : ALARM_BOOTTIME,
++			   timerfd_alarmproc);
++	else
++		hrtimer_init(&ctx->t.tmr, clockid, HRTIMER_MODE_ABS);
++
+ 	ctx->moffs = ktime_get_monotonic_offset();
+ 
+ 	ufd = anon_inode_getfd("[timerfd]", &timerfd_fops, ctx,
+@@ -305,8 +371,14 @@ static int do_timerfd_settime(int ufd, int flags,
+ 	 */
+ 	for (;;) {
+ 		spin_lock_irq(&ctx->wqh.lock);
+-		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+-			break;
++
++		if (isalarm(ctx)) {
++			if (alarm_try_to_cancel(&ctx->t.alarm) >= 0)
++				break;
++		} else {
++			if (hrtimer_try_to_cancel(&ctx->t.tmr) >= 0)
++				break;
++		}
+ 		spin_unlock_irq(&ctx->wqh.lock);
+ 		cpu_relax();
+ 	}
+@@ -317,8 +389,12 @@ static int do_timerfd_settime(int ufd, int flags,
+ 	 * We do not update "ticks" and "expired" since the timer will be
+ 	 * re-programmed again in the following timerfd_setup() call.
+ 	 */
+-	if (ctx->expired && ctx->tintv.tv64)
+-		hrtimer_forward_now(&ctx->tmr, ctx->tintv);
++	if (ctx->expired && ctx->tintv.tv64) {
++		if (isalarm(ctx))
++			alarm_forward_now(&ctx->t.alarm, ctx->tintv);
++		else
++			hrtimer_forward_now(&ctx->t.tmr, ctx->tintv);
++	}
+ 
+ 	old->it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
+ 	old->it_interval = ktime_to_timespec(ctx->tintv);
+@@ -345,9 +421,18 @@ static int do_timerfd_gettime(int ufd, struct itimerspec *t)
+ 	spin_lock_irq(&ctx->wqh.lock);
+ 	if (ctx->expired && ctx->tintv.tv64) {
+ 		ctx->expired = 0;
+-		ctx->ticks +=
+-			hrtimer_forward_now(&ctx->tmr, ctx->tintv) - 1;
+-		hrtimer_restart(&ctx->tmr);
++
++		if (isalarm(ctx)) {
++			ctx->ticks +=
++				alarm_forward_now(
++					&ctx->t.alarm, ctx->tintv) - 1;
++			alarm_restart(&ctx->t.alarm);
++		} else {
++			ctx->ticks +=
++				hrtimer_forward_now(&ctx->t.tmr, ctx->tintv)
++				- 1;
++			hrtimer_restart(&ctx->t.tmr);
++		}
+ 	}
+ 	t->it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
+ 	t->it_interval = ktime_to_timespec(ctx->tintv);
 -- 
 1.8.2.1
 
