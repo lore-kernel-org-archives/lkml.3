@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab3EOJYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:24:08 -0400
+	id S1758319Ab3EOJYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:24:17 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43119 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3EOJYF (ORCPT
+	with ESMTP id S1752051Ab3EOJYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:24:05 -0400
-X-AuditID: 9c930197-b7b76ae000003523-30-51935432609e
+	Wed, 15 May 2013 05:24:07 -0400
+X-AuditID: 9c930197-b7b76ae000003523-33-519354322ffb
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,10 +16,12 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [RFC/PATCH 1/2] perf script: Add --time-filter option
-Date: Wed, 15 May 2013 18:23:58 +0900
-Message-Id: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
+Subject: [RFC/PATCH 2/2] perf report: Add --time-filter option
+Date: Wed, 15 May 2013 18:23:59 +0900
+Message-Id: <1368609839-19899-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
+References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,88 +31,59 @@ From: Namhyung Kim <namhyung.kim@lge.com>
 
 The --time-filter option is for limiting samples within a range of
 time.  A time range looks like <time1>-<time2> and at most one of them
-can be omitted.  For instance:
-
-  $ perf script --time-filter -2178446.12
-  ...
-         xchat  1772 [002] 2178446.070330: sched:sched_switch: prev_comm=xchat prev_pid=177
-       swapper     0 [002] 2178446.070338: power:cpu_idle: state=4 cpu_id=2
-       swapper     0 [001] 2178446.091952: sched:sched_wakeup: comm=synergys pid=1488 prio=
-       swapper     0 [001] 2178446.091958: power:cpu_idle: state=4294967295 cpu_id=1
-       swapper     0 [001] 2178446.091970: sched:sched_switch: prev_comm=swapper/1 prev_pid
-      synergys  1488 [001] 2178446.091995: sched:sched_switch: prev_comm=synergys prev_pid=
-       swapper     0 [001] 2178446.092003: power:cpu_idle: state=4 cpu_id=1
-       swapper     0 [001] 2178446.116997: sched:sched_wakeup: comm=synergys pid=1488 prio=
-       swapper     0 [001] 2178446.117004: power:cpu_idle: state=4294967295 cpu_id=1
-       swapper     0 [001] 2178446.117016: sched:sched_switch: prev_comm=swapper/1 prev_pid
-      synergys  1488 [001] 2178446.117040: sched:sched_switch: prev_comm=synergys prev_pid=
-       swapper     0 [001] 2178446.117048: power:cpu_idle: state=4 cpu_id=1
-
-Above example only displays samples which have a timestamp before
-2178446.120000.
+can be omitted.  This can be useful when analyzing a part of a huge
+data only.
 
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-script.txt |  6 +++++
- tools/perf/builtin-script.c              | 46 ++++++++++++++++++++++++++++++++
- tools/perf/util/util.c                   | 25 +++++++++++++++++
- tools/perf/util/util.h                   |  2 ++
- 4 files changed, 79 insertions(+)
+ tools/perf/Documentation/perf-report.txt |  6 ++++++
+ tools/perf/builtin-report.c              | 33 ++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index e9cbfcddfa3f..e6d591c5c60c 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -203,6 +203,12 @@ OPTIONS
- --show-kernel-path::
- 	Try to resolve the path of [kernel.kallsyms]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 7d5f4f38aa52..67544c2d8e69 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -210,6 +210,12 @@ OPTIONS
+ 	Demangle symbol names to human readable form. It's enabled by default,
+ 	disable with --no-demangle.
  
 +--time-filter::
-+	Display samples within a range of time only. A time range can be given
++	Report samples within a range of time only. A time range can be given
 +	like 'time1-time2' and treated as a start time and end time
-+        respectively. The time format is like "<sec>.<usec>". Either of time1
++	respectively. The time format is like "<sec>.<usec>". Either of time1
 +	or time2 can be omitted.
 +
  SEE ALSO
  --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 92d4658f56fb..fec624b9f8e3 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -28,6 +28,17 @@ static bool			system_wide;
- static const char		*cpu_list;
- static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ linkperf:perf-stat[1], linkperf:perf-annotate[1]
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d45bf9b0361d..2cd3f640cc4a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -52,6 +52,7 @@ struct perf_report {
+ 	symbol_filter_t		annotate_init;
+ 	const char		*cpu_list;
+ 	const char		*symbol_filter_str;
++	u64			time_start, time_end;
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
  
-+#define TIME_FILTER_START 1
-+#define TIME_FILTER_END   2
-+
-+struct time_range {
-+	int filter;
-+	u64 start;
-+	u64 end;
-+};
-+
-+static struct time_range trange;
-+
- enum perf_output_field {
- 	PERF_OUTPUT_COMM            = 1U << 0,
- 	PERF_OUTPUT_TID             = 1U << 1,
-@@ -510,6 +521,12 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
- 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+@@ -311,6 +312,12 @@ static int process_sample_event(struct perf_tool *tool,
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
  		return 0;
  
-+	if ((trange.filter & TIME_FILTER_START) && trange.start > sample->time)
++	if (rep->time_start && rep->time_start > sample->time)
 +		return 0;
 +
-+	if ((trange.filter & TIME_FILTER_END) && trange.end < sample->time)
++	if (rep->time_end && rep->time_end < sample->time)
 +		return 0;
 +
- 	scripting_ops->process_event(event, sample, evsel, machine, &al);
- 
- 	evsel->hists.stats.total_period += sample->period;
-@@ -1236,6 +1253,33 @@ static int have_cmd(int argc, const char **argv)
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (perf_report__add_branch_hist_entry(tool, &al, sample,
+ 						       evsel, machine)) {
+@@ -700,6 +707,30 @@ parse_branch_mode(const struct option *opt __maybe_unused,
  	return 0;
  }
  
@@ -118,87 +91,38 @@ index 92d4658f56fb..fec624b9f8e3 100644
 +parse_time_filter(const struct option *opt, const char *str,
 +		  int unset __maybe_unused)
 +{
-+	struct time_range *time_range = opt->value;
++	struct perf_report *rep = opt->value;
 +	char *sep;
 +
 +	sep = strchr(str, '-');
 +	if (sep == NULL || sep[1] == '\0') {
-+		time_range->filter = TIME_FILTER_START;
-+		time_range->start = parse_nsec_time(str);
++		rep->time_start = parse_nsec_time(str);
 +		return 0;
 +	} else if (sep == str) {
-+		time_range->filter = TIME_FILTER_END;
-+		time_range->end = parse_nsec_time(++str);
++		rep->time_end = parse_nsec_time(++str);
 +		return 0;
 +	}
 +
 +	*sep++ = '\0';
 +
-+	time_range->filter = TIME_FILTER_START | TIME_FILTER_END;
-+	time_range->start = parse_nsec_time(str);
-+	time_range->end = parse_nsec_time(sep);
++	rep->time_start = parse_nsec_time(str);
++	rep->time_end = parse_nsec_time(sep);
 +
 +	return 0;
 +}
 +
- int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
+ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
  {
- 	bool show_full_info = false;
-@@ -1286,6 +1330,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "display extended information from perf.data file"),
- 	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
- 		    "Show the path of [kernel.kallsyms]"),
-+	OPT_CALLBACK(0, "time-filter", &trange, "time[-time]",
+ 	struct perf_session *session;
+@@ -809,6 +840,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
+ 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
++	OPT_CALLBACK(0, "time-filter", &report, "time[-time]",
 +		    "Only display entries in the time range", parse_time_filter),
  	OPT_END()
  	};
- 	const char * const script_usage[] = {
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 59d868add275..4f68bae5f8b1 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -269,3 +269,28 @@ void perf_debugfs_set_path(const char *mntpt)
- 	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
- 	set_tracing_events_path(mntpt);
- }
-+
-+/* XXX.YYYYYY -> nsec */
-+u64 parse_nsec_time(const char *str)
-+{
-+	u64 time_sec, time_nsec;
-+	char *end;
-+
-+	time_sec = strtol(str, &end, 10);
-+	if (end && *end == '.') {
-+		int i;
-+		char nsec_buf[10];
-+
-+		strncpy(nsec_buf, end+1, 9);
-+
-+		/* make it nsec precision */
-+		for (i = strlen(nsec_buf); i < 9; i++)
-+			nsec_buf[i] = '0';
-+		nsec_buf[9] = '\0';
-+
-+		time_nsec = strtol(nsec_buf, &end, 10);
-+	} else
-+		time_nsec = 0;
-+
-+	return time_sec * NSEC_PER_SEC + time_nsec;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7a484c97e500..85b24cef96d4 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -204,6 +204,8 @@ static inline int has_extension(const char *filename, const char *ext)
- #define NSEC_PER_MSEC	1000000L
- #endif
  
-+u64 parse_nsec_time(const char *str);
-+
- extern unsigned char sane_ctype[256];
- #define GIT_SPACE		0x01
- #define GIT_DIGIT		0x02
 -- 
 1.7.11.7
 
