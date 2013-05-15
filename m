@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab3EOTsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 15:48:40 -0400
-Received: from 8bytes.org ([85.214.48.195]:53372 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab3EOTsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 15:48:38 -0400
-Date: Wed, 15 May 2013 21:48:35 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
-Message-ID: <20130515194835.GK24440@8bytes.org>
-References: <20130515105656.GI24440@8bytes.org>
- <5193A3B5.7010400@suse.cz>
- <20130515154753.GJ24440@8bytes.org>
- <5193D7E0.5010803@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5193D7E0.5010803@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed May 15 21:48:36 2013
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5193e69423671695166302
+	id S1757524Ab3EOTtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 15:49:35 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4869 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3EOTte (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 15:49:34 -0400
+Date: Wed, 15 May 2013 21:49:23 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Robert Norris <robn@opera.com>
+Cc: linux-kernel@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
+Message-ID: <20130515214923.036dabdb@endymion.delvare>
+In-Reply-To: <20130515112741.GA23766@pyro.melbourne.osa>
+References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
+	<20130514231626.GA12961@pyro.melbourne.osa>
+	<20130515112044.753bb7bb@endymion.delvare>
+	<20130515112741.GA23766@pyro.melbourne.osa>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(also adding Konrad)
+Robert,
 
-On Wed, May 15, 2013 at 02:45:52PM -0400, Peter Hurley wrote:
-> "space left" is not honored when OPOST is clear, so it is not protected
-> in this case. IOW, tty->ops->write_room() is not called, so by-definition
-> there is "space left".
-
-Okay, so "space left" has to do with something tty-layer internal and
-does not mean potential output-buffers handled by the console-drivers.
-
-> Are you certain your stack trace takes you through this particular
-> invocation of tty->ops->write()?  Could it be that the compiler has
-> inlined process_output_block() into n_tty_write() and that's what your
-> seeing?
-
-I am sure that the backtrace pointed to that invocation. I looked up the
-return-address from the stack-trace in the objdump and it pointed to
-that line after that invocation.
-
-> Can you attach the BUG report?
-> Are you certain OPOST is cleared? (output of stty -a -F </dev/xxxx>)
-
-Havn't checked OPOST. It is also hard to do because all I have is the
-BUG and the kernel binary. I have no direct access to the machine.
-
-> Is CONFIG_CONSOLE_POLL=y?
-
-Will check.
-
-> Is this happening during boot or much later?
-
-Much later. It actually happened on a 3.2 kernel on a machine that ran
-for several 100 days already. After that happened the box just rebooted
-into a new kernel. I also checked the git-log from 3.2 to now and didn't
-found a fix, also the code looks pretty similar so I guess the bug is
-still there.
-
-> But not the only path to __write_console().
+On Wed, 15 May 2013 21:27:41 +1000, Robert Norris wrote:
+> On Wed, May 15, 2013 at 11:20:44AM +0200, Jean Delvare wrote:
+> > Can you share the full output of lspci -s 00:1f.3 -vv?
 > 
-> For example, what serializes hvc_console_print() with hvc_write()
-> for the same console index?
+> 00:1f.3 SMBus: Intel Corporation 631xESB/632xESB/3100 Chipset SMBus Controller (rev 09)
+>     Subsystem: IBM Device 02dd
+>     Control: I/O+ Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
+>     Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>     Interrupt: pin B routed to IRQ 0
 
-You are right, that does not look to be protected from each other. The
-hvc_write() function has a spin_lock. But that does not prevent
-hvc_console_print() from calling the put_chars function too.
+Hmm, this "IRQ 0" is quite odd. I'm wondering if this could be the
+reason for this hang. Was it with the i2c-i801 driver loaded, or
+blacklisted? Please check if it makes a difference.
 
-I'll look something more into that. There is definitly a problem when
-__write_console is called concurrently. I have one question about the
-tty-layer: Do the console drivers have to expect parallel calls to
-ops->write()?
+Do you see the same (and more generally, this issue) on one, some or
+all of your x3550 servers?
+
+Are you using IPMI on these machines?
+
+>     Region 4: I/O ports at 0440 [size=32]
+> 
+> > I'm also curious if the SMBus controller shares its interrupt line
+> > with another chip. /proc/interrupts should tell but you'll have to
+> > make one of your systems hang again.
+> 
+> I'm not sure how to read it, so here it is (3.9.2, immediately after
+> boot, no options to i2c_i801):
+> 
+>            CPU0       CPU1       CPU2       CPU3       
+> (...)
+>  20:          0          0          0          0   IO-APIC-fasteoi   i801_smbus
+
+Here the IRQ looks correct, and it isn't shared. But I am surprised
+that the counters are all 0. If an SMBus transaction had been
+attempted, there should be a 1 somewhere, even if the transaction
+ultimately failed.
+
+> (...)
+> I went with blacklisting for now because this driver doesn't appear to
+> be doing anything useful for us (sensors etc are working without it).
+> I'll confess to not really knowing much about its purpose though.
+
+It all depends on what I2C/SMBus slaves are connected to the SMBus.
+Often there are the SPD EEPROMs from your memory modules, sometimes
+with integrated thermal sensors (on DDR3 only - driver is jc42.) And in
+your case a clock chip as well, for which IBM contributed a driver.
+
+> > (...)
+> > As far as debugging goes, please tell me if you have any I2C/SMBus
+> > slave device driver loaded (check in /sys/bus/i2c/drivers.) Loading the
+> > i2c-i801 driver doesn't do much on its own if there are no slave device
+> > drivers using it.
+> 
+> $ modprobe i2c-i801 disable_features=0x10
+> $ dmesg | tail
+> ...
+> [28876.193408] i801_smbus 0000:00:1f.3: Interrupt disabled by user
+> [28876.201168] ics932s401 4-0069: ics932s401 chip found
+> $ ls /sys/bus/i2c/drivers
+> dummy  ics932s401
+
+The dummy driver is a helper stub for i2c-core, it doesn't actually
+access the SMBus. ics932s401 is for the clock chip, and I know clock
+chips can be tricky and error prone. OTOH I can only guess that IBM had
+a good reason to contribute the driver and make it auto-load on the
+x3550.
+
+I would appreciate if you could test the following:
+* Blacklist i2c-i801 and ics932s401 so that none of them get
+  auto-loaded.
+* Manually load i2c-i801 with interrupts enabled, and see what happens.
+* If no hang happens, load i2c-dev, find the i801 bus number with
+  i2cdetect -l (from the i2c-tools package - it should be 4 according
+  to what you reported so far but there is no guarantee that it won't
+  change across reboots.) Then do a simple read from a random address
+  with:
+  # i2cget 4 0x50 0x00
+  (Adjust the bus number as needed.)
+  I am curious if this will hang as well or only when accessing the
+  clock chip at address 0x69.
 
 Thanks,
-
-	Joerg
-
-
+-- 
+Jean Delvare
