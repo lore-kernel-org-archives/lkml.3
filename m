@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3EOFVC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 01:21:02 -0400
-Received: from ozlabs.org ([203.10.76.45]:48496 "EHLO ozlabs.org"
+	id S1752978Ab3EOF1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 01:27:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab3EOFU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 01:20:59 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: majianpeng <majianpeng@gmail.com>,
-        "lizefan\@huawei.com" <lizefan@huawei.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] module: Add section ".ref.data" into kmemleak-scan-area.
-In-Reply-To: <20130513164223.GF18828@arm.com>
-References: <518DAA1A.3010407@gmail.com> <87bo8f39di.fsf@rustcorp.com.au> <20130513164223.GF18828@arm.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 15 May 2013 14:25:34 +0930
-Message-ID: <878v3g2661.fsf@rustcorp.com.au>
+	id S1751186Ab3EOF1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 01:27:47 -0400
+Message-ID: <51930FCD.3090001@redhat.com>
+Date: Wed, 15 May 2013 12:32:13 +0800
+From: Lingzhu Xiang <lxiang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tejun Heo <tj@kernel.org>
+CC: CAI Qian <caiqian@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.9.0: panic during boot - kernel BUG at include/linux/gfp.h:323!
+References: <22600323.7586117.1367826906910.JavaMail.root@redhat.com> <5191B101.1070000@redhat.com> <20130514183500.GN6795@mtj.dyndns.org>
+In-Reply-To: <20130514183500.GN6795@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Catalin Marinas <catalin.marinas@arm.com> writes:
-> On Mon, May 13, 2013 at 03:24:09AM +0100, Rusty Russell wrote:
->> majianpeng <majianpeng@gmail.com> writes:
->> 
->> > In commit 523c81135,it used "__refdata" on event_class_ftrace_##call.
->> > It will cause kmemleak to misjudge because when loading module it did
->> > not add '.ref.data' into kmemleak-scan-area.
->> > 
->> > Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->> > ---
->> >  kernel/module.c |    3 ++-
->> >  1 file changed, 2 insertions(+), 1 deletion(-)
->> 
->> Catalin?
->> 
->> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+On 05/15/2013 02:35 AM, Tejun Heo wrote:
+> Hello,
 >
-> Looks good, thanks for cc'ing me.
+> On Tue, May 14, 2013 at 11:35:29AM +0800, Lingzhu Xiang wrote:
+>> On 05/06/2013 03:55 PM, CAI Qian wrote:
+>>> [    0.928031] ------------[ cut here ]------------
+>>> [    0.934231] kernel BUG at include/linux/gfp.h:323!
+> ...
+>>> [    1.662913]  [<ffffffff812e3aa8>] alloc_cpumask_var_node+0x28/0x90
+>>> [    1.671224]  [<ffffffff81a0bdb3>] wq_numa_init+0x10d/0x1be
+>>> [    1.686085]  [<ffffffff81a0bec8>] init_workqueues+0x64/0x341
 >
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Does the following patch make the problem go away?  The dynamic paths
+> should be safe as they are synchronized against CPU hot plug paths and
+> don't allocate anything on nodes w/o any CPUs.
 
-I use "Acked-by" to mean "it touches my code so normally it'd go in my
-tree, but it's not".
+Yes, no more panics.
 
-Since you replied the same, I defer to your wishes and put it in my
-fixes branch (or Linus will grab it now).  I also removed the extra
-trailing space ('git am' complained).
 
-Thanks,
-Rusty.
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 4aa9f5b..232c1bb 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4895,7 +4895,8 @@ static void __init wq_numa_init(void)
+>   	BUG_ON(!tbl);
+>
+>   	for_each_node(node)
+> -		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL, node));
+> +		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+> +				node_online(node) ? node : NUMA_NO_NODE));
+>
+>   	for_each_possible_cpu(cpu) {
+>   		node = cpu_to_node(cpu);
+>
 
-From: Jianpeng Ma <majianpeng@gmail.com>
-Date: Sat, 11 May 2013 10:04:14 +0800
-Subject: [PATCH] module: Add section ".ref.data" into kmemleak-scan-area.
-
-In commit 523c81135,it used "__refdata" on event_class_ftrace_##call.
-It will cause kmemleak to misjudge because when loading module it did
-not add '.ref.data' into kmemleak-scan-area.
-
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-diff --git a/kernel/module.c b/kernel/module.c
-index b049939..e4ee1bf 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2434,7 +2434,8 @@ static void kmemleak_load_module(const struct module *mod,
- 		const char *name = info->secstrings + info->sechdrs[i].sh_name;
- 		if (!(info->sechdrs[i].sh_flags & SHF_ALLOC))
- 			continue;
--		if (!strstarts(name, ".data") && !strstarts(name, ".bss"))
-+		if (!strstarts(name, ".data") && !strstarts(name, ".bss") &&
-+			!strstarts(name, ".ref.data"))
- 			continue;
- 
- 		kmemleak_scan_area((void *)info->sechdrs[i].sh_addr,
