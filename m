@@ -1,114 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab3EOVjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 17:39:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33883 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab3EOVjF (ORCPT
+	id S1752645Ab3EOVpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 17:45:35 -0400
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:57924 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab3EOVpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 17:39:05 -0400
-Date: Wed, 15 May 2013 14:39:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/9] mm: vmscan: Block kswapd if it is encountering
- pages under writeback
-Message-Id: <20130515143902.2a381d9a5e11298bf58771d8@linux-foundation.org>
-In-Reply-To: <1368432760-21573-8-git-send-email-mgorman@suse.de>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
-	<1368432760-21573-8-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 May 2013 17:45:34 -0400
+From: Todd Poynor <toddpoynor@google.com>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Todd Poynor <toddpoynor@google.com>
+Subject: [PATCH 0/2] timerfd support for wakeup alarm timers
+Date: Wed, 15 May 2013 14:38:10 -0700
+Message-Id: <1368653892-18939-1-git-send-email-toddpoynor@google.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013 09:12:38 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Enable wakeup alarm timers via file descriptors.  Hook up alarmtimer
+to timerfd via clocks CLOCK_REALTIME_ALARM and CLOCK_BOOTTIME_ALARM,
+and add needed functions to alarmtimer.
 
-> Historically, kswapd used to congestion_wait() at higher priorities if it
-> was not making forward progress. This made no sense as the failure to make
-> progress could be completely independent of IO. It was later replaced by
-> wait_iff_congested() and removed entirely by commit 258401a6 (mm: don't
-> wait on congested zones in balance_pgdat()) as it was duplicating logic
-> in shrink_inactive_list().
-> 
-> This is problematic. If kswapd encounters many pages under writeback and
-> it continues to scan until it reaches the high watermark then it will
-> quickly skip over the pages under writeback and reclaim clean young
-> pages or push applications out to swap.
-> 
-> The use of wait_iff_congested() is not suited to kswapd as it will only
-> stall if the underlying BDI is really congested or a direct reclaimer was
-> unable to write to the underlying BDI. kswapd bypasses the BDI congestion
-> as it sets PF_SWAPWRITE but even if this was taken into account then it
-> would cause direct reclaimers to stall on writeback which is not desirable.
-> 
-> This patch sets a ZONE_WRITEBACK flag if direct reclaim or kswapd is
-> encountering too many pages under writeback. If this flag is set and
-> kswapd encounters a PageReclaim page under writeback then it'll assume
-> that the LRU lists are being recycled too quickly before IO can complete
-> and block waiting for some IO to complete.
-> 
->
-> ...
->
->  		if (PageWriteback(page)) {
-> -			/*
-> -			 * memcg doesn't have any dirty pages throttling so we
-> -			 * could easily OOM just because too many pages are in
-> -			 * writeback and there is nothing else to reclaim.
-> -			 *
-> -			 * Check __GFP_IO, certainly because a loop driver
-> -			 * thread might enter reclaim, and deadlock if it waits
-> -			 * on a page for which it is needed to do the write
-> -			 * (loop masks off __GFP_IO|__GFP_FS for this reason);
-> -			 * but more thought would probably show more reasons.
-> -			 *
-> -			 * Don't require __GFP_FS, since we're not going into
-> -			 * the FS, just waiting on its writeback completion.
-> -			 * Worryingly, ext4 gfs2 and xfs allocate pages with
-> -			 * grab_cache_page_write_begin(,,AOP_FLAG_NOFS), so
-> -			 * testing may_enter_fs here is liable to OOM on them.
-> -			 */
-> -			if (global_reclaim(sc) ||
-> +			/* Case 1 above */
-> +			if (current_is_kswapd() &&
-> +			    PageReclaim(page) &&
-> +			    zone_is_reclaim_writeback(zone)) {
-> +				wait_on_page_writeback(page);
-
-wait_on_page_writeback() is problematic.
-
-- The page could be against data which is at the remote end of the
-  disk and the wait takes far too long.
-
-- The page could be against a really slow device, perhaps one which
-  has a (relatively!) large amount of dirty data pending.
-
-- (What happens if the wait is against a page which is backed by a
-  device which is failing or was unplugged or is taking 60 seconds per
-  -EIO or whatever?)
-
-- (Can the wait be against an NFS/NBD/whatever page whose ethernet
-  cable got unplugged?)
-
-- The termination of wait_on_page_writeback() simply doesn't tell us
-  what we want to know here: that there has been a useful amount of
-  writeback completion against the pages on the tail of this LRU.
-
-  We really don't care when *this* page's write completes.  What we
-  want to know is whether reclaim can usefully restart polling the LRU.
-  These are different things, and can sometimes be very different.
-
-These problems were observed in testing and this is why the scanner's
-wait_on_page() (and, iirc, wait_on_buffer()) calls were replaced with
-congestion_wait() sometime back in the 17th century.
-
-
+ fs/timerfd.c               |  131 +++++++++++++++++++++++++++++++++++++--------
+ include/linux/alarmtimer.h |    4 +
+ kernel/time/alarmtimer.c   |   39 +++++++++++++
+ 3 files changed, 150 insertions(+), 24 deletions(-)
