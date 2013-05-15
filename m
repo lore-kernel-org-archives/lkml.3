@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab3EOJep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:34:45 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54276 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3EOJen (ORCPT
+	id S1758505Ab3EOJfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:35:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56762 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754985Ab3EOJfd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:34:43 -0400
-Date: Wed, 15 May 2013 02:34:07 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 17/21] Percpu tag allocator
-Message-ID: <20130515093407.GF16164@moria.home.lan>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
- <1368494338-7069-18-git-send-email-koverstreet@google.com>
- <20130514134859.GA17587@redhat.com>
- <20130514142442.GA19392@redhat.com>
+	Wed, 15 May 2013 05:35:33 -0400
+X-IronPort-AV: E=Sophos;i="4.87,677,1363104000"; 
+   d="scan'208";a="7275575"
+Message-ID: <5193564F.9090408@cn.fujitsu.com>
+Date: Wed, 15 May 2013 17:33:03 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514142442.GA19392@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
+        cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jingbai.ma@hp.com, linux-mm@kvack.org, riel@redhat.com,
+        walken@google.com, hughd@google.com, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH v6 1/8] vmcore: clean up read_vmcore()
+References: <20130515090507.28109.28956.stgit@localhost6.localdomain6> <20130515090545.28109.86085.stgit@localhost6.localdomain6>
+In-Reply-To: <20130515090545.28109.86085.stgit@localhost6.localdomain6>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/15 17:34:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/15 17:34:16
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 04:24:42PM +0200, Oleg Nesterov wrote:
-> On 05/14, Oleg Nesterov wrote:
-> >
-> > I must admit, I do not understand what this code actually does ;)
-> > I didn't try to read it carefully though, but perhaps at least the
-> > changelog could explain more?
+于 2013年05月15日 17:05, HATAYAMA Daisuke 写道:
+> Rewrite part of read_vmcore() that reads objects in vmcore_list in the
+> same way as part reading ELF headers, by which some duplicated and
+> redundant codes are removed.
 > 
-> OK, this is clear...
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+This cleanup really makes the code more clear.
+
+Just one minor nitpick below.
+
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+> ---
 > 
-> But perhaps the changelog could explain who needs the "fast" version
-> of, say, find_next_zero_bit + test_and_set_bit ;) Just curious.
+>  fs/proc/vmcore.c |   68 ++++++++++++++++--------------------------------------
+>  1 files changed, 20 insertions(+), 48 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 17f7e08..ab0c92e 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -118,27 +118,6 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
+>  	return read;
+>  }
+>  
+> -/* Maps vmcore file offset to respective physical address in memroy. */
+> -static u64 map_offset_to_paddr(loff_t offset, struct list_head *vc_list,
+> -					struct vmcore **m_ptr)
+> -{
+> -	struct vmcore *m;
+> -	u64 paddr;
+> -
+> -	list_for_each_entry(m, vc_list, list) {
+> -		u64 start, end;
+> -		start = m->offset;
+> -		end = m->offset + m->size - 1;
+> -		if (offset >= start && offset <= end) {
+> -			paddr = m->paddr + offset - start;
+> -			*m_ptr = m;
+> -			return paddr;
+> -		}
+> -	}
+> -	*m_ptr = NULL;
+> -	return 0;
+> -}
+> -
+>  /* Read from the ELF header and then the crash dump. On error, negative value is
+>   * returned otherwise number of bytes read are returned.
+>   */
+> @@ -147,8 +126,8 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  {
+>  	ssize_t acc = 0, tmp;
+>  	size_t tsz;
+> -	u64 start, nr_bytes;
+> -	struct vmcore *curr_m = NULL;
+> +	u64 start;
+> +	struct vmcore *m = NULL;
+>  
+>  	if (buflen == 0 || *fpos >= vmcore_size)
+>  		return 0;
+> @@ -174,33 +153,26 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>  			return acc;
+>  	}
+>  
+> -	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
+> -	if (!curr_m)
+> -        	return -EINVAL;
+> -
+> -	while (buflen) {
+> -		tsz = min_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
+> -
+> -		/* Calculate left bytes in current memory segment. */
+> -		nr_bytes = (curr_m->size - (start - curr_m->paddr));
+> -		if (tsz > nr_bytes)
+> -			tsz = nr_bytes;
+> -
+> -		tmp = read_from_oldmem(buffer, tsz, &start, 1);
+> -		if (tmp < 0)
+> -			return tmp;
+> -		buflen -= tsz;
+> -		*fpos += tsz;
+> -		buffer += tsz;
+> -		acc += tsz;
+> -		if (start >= (curr_m->paddr + curr_m->size)) {
+> -			if (curr_m->list.next == &vmcore_list)
+> -				return acc;	/*EOF*/
+> -			curr_m = list_entry(curr_m->list.next,
+> -						struct vmcore, list);
+> -			start = curr_m->paddr;
+> +	list_for_each_entry(m, &vmcore_list, list) {
+> +		if (*fpos < m->offset + m->size) {
+> +			tsz = m->offset + m->size - *fpos;
+> +			if (buflen < tsz)
+> +				tsz = buflen;
 
-Originally I wrote it for a driver (which still isn't open source) - but
-find_next_zero_bit()/test_and_set_bit() is exactly what it was using
-before and the performance gain was significant :)
+if (tsz > buflen)
+        tsz = buflen;
 
-The reason I'm posting it now is because AIO currently uses a linked
-list for tracking outstanding kiocbs - for cancellation - and that
-linked list needs to be replaced; I'm implementing cancellation for
-regular direct IO and the linked list is a performance issue.
+seems better.
 
-All we need for cancellation is a way to iterate over all the
-(potentially) allocated kiocbs - it's really exactly the same problem as
-managing tags in the drivers I was working on before (they also need to
-be able to time out tags which is exactly the same as AIO cancellation).
+Or you can use a min_t here:
 
-What I found really annoying about the problem is that the existing slab
-allocator tracks exactly what we need... but it's not exposed (and
-honestly probably shouldn't be).
+tsz = min_t(size_t, m->offset + m->size - *fpos, buflen);
 
-So, there were two choices:
- * hack up slab/slob/slub - fuck no
- * reuse my tag allocator, allocate kiocbs out of an array of pages.
-   Also allocate the pages lazily so we don't regress on memory
-   overhead.
 
-So, that's what I did.
+> +			start = m->paddr + *fpos - m->offset;
+> +			tmp = read_from_oldmem(buffer, tsz, &start, 1);
+> +			if (tmp < 0)
+> +				return tmp;
+> +			buflen -= tsz;
+> +			*fpos += tsz;
+> +			buffer += tsz;
+> +			acc += tsz;
+> +
+> +			/* leave now if filled buffer already */
+> +			if (buflen == 0)
+> +				return acc;
+>  		}
+>  	}
+> +
+>  	return acc;
+>  }
+>  
+> 
+> 
+
