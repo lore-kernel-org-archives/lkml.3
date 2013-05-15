@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3EOWwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 18:52:10 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:64574 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3EOWwI (ORCPT
+	id S1753537Ab3EOWxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 18:53:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34378 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab3EOWxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 18:52:08 -0400
-Date: Thu, 16 May 2013 00:52:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Gleb Natapov <gleb@redhat.com>, Scott Wood <scottwood@freescale.com>,
-        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: allow host header to be included even for
- !CONFIG_KVM
-Message-ID: <20130515225201.GA2341@somewhere>
-References: <1363823921.25034.35@snotra>
- <20130321072955.GO3889@redhat.com>
- <87ppyshlq5.fsf@linaro.org>
- <1363891354.31522.17@snotra>
- <20130321191600.GG9382@redhat.com>
- <1363894393.31522.20@snotra>
- <20130321211736.GI9382@redhat.com>
- <CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
- <20130324140114.GV3889@redhat.com>
- <87txnz9o7n.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txnz9o7n.fsf@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 May 2013 18:53:32 -0400
+Date: Wed, 15 May 2013 15:53:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/4] mm: pagevec: Defer deciding what LRU to add a page
+ to until pagevec drain time
+Message-Id: <20130515155330.35036978515a6d8e0fe98feb@linux-foundation.org>
+In-Reply-To: <1368440482-27909-3-git-send-email-mgorman@suse.de>
+References: <1368440482-27909-1-git-send-email-mgorman@suse.de>
+	<1368440482-27909-3-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
-> Gleb Natapov <gleb@redhat.com> writes:
+On Mon, 13 May 2013 11:21:20 +0100 Mel Gorman <mgorman@suse.de> wrote:
+
+> mark_page_accessed cannot activate an inactive page that is located on
+> an inactive LRU pagevec. Hints from filesystems may be ignored as a
+> result. In preparation for fixing that problem, this patch removes the
+> per-LRU pagevecs and leaves just one pagevec. The final LRU the page is
+> added to is deferred until the pagevec is drained.
 > 
-> > On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
-> >> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
-> >> > Isn't is simpler for kernel/context_tracking.c to define empty
-> >> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
-> >> 
-> >> That doesn't look right. Off-cases are usually handled from the
-> >> headers, right? So that we avoid iffdeffery ugliness in core code.
-> > Lets put it in linux/context_tracking.h header then.
+> This means that fewer pagevecs are available and potentially there is
+> greater contention on the LRU lock. However, this only applies in the case
+> where there is an almost perfect mix of file, anon, active and inactive
+> pages being added to the LRU. In practice I expect that we are adding
+> stream of pages of a particular time and that the changes in contention
+> will barely be measurable.
 > 
-> Here's a version to do that.
-> 
-> Kevin
-> 
-> From d9d909394479dd7ff90b7bddb95a564945406719 Mon Sep 17 00:00:00 2001
-> From: Kevin Hilman <khilman@linaro.org>
-> Date: Mon, 25 Mar 2013 14:12:41 -0700
-> Subject: [PATCH v2] ontext_tracking: fix !CONFIG_KVM compile: add stub guest
->  enter/exit
+> ...
+>
+> index c612a6a..0911579 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -39,7 +39,7 @@
+>  /* How many pages do we try to swap or page in/out together? */
+>  int page_cluster;
+>  
+> -static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+> +static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
+>  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+>  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+>  
+> @@ -460,13 +460,18 @@ EXPORT_SYMBOL(mark_page_accessed);
+>   */
 
-Sorry for my very delayed response...
+The comment preceding __lru_cache_add() needs an update.
 
-> 
-> When KVM is not enabled, or not available on a platform, the KVM
-> headers should not be included.  Instead, just define stub
-> __guest_[enter|exit] functions.
+>  void __lru_cache_add(struct page *page, enum lru_list lru)
+>  {
+> -	struct pagevec *pvec = &get_cpu_var(lru_add_pvecs)[lru];
+> +	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
+> +
+> +	if (is_active_lru(lru))
+> +		SetPageActive(page);
+> +	else
+> +		ClearPageActive(page);
 
-May be it would be cleaner to move guest_enter/exit definitions altogether
-in linux/context_tracking.h
+The whole use of `enum lru_list' here has always made my cry, but I'll weep
+about that in [4/4].
 
-After all that's where the implementation mostly belong to.
-
-Let me see if I can get that in shape.
-
-Thanks.
+>  	page_cache_get(page);
+>  	if (!pagevec_space(pvec))
+>  		__pagevec_lru_add(pvec, lru);
+>  	pagevec_add(pvec, page);
+> -	put_cpu_var(lru_add_pvecs);
+> +	put_cpu_var(lru_add_pvec);
+>  }
+>
+> ...
+>
