@@ -1,152 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab3EON1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 09:27:42 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41011 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758567Ab3EON1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 09:27:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: [RFC/PATCH] dma: of: Make of_dma_simple_xlate match on DMA device and channel ID
-Date: Wed, 15 May 2013 15:27:29 +0200
-Message-Id: <1368624449-29003-1-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1759021Ab3EONct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759002Ab3EONcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 09:32:47 -0400
+Message-ID: <1368624762.27262.1.camel@localhost>
+Subject: Re: linux-next: build warning after merge of the final tree (in
+ Linus' tree)
+From: Eric Paris <eparis@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Date: Wed, 15 May 2013 09:32:42 -0400
+In-Reply-To: <20130515132001.6cc824ba42106db973f90991@canb.auug.org.au>
+References: <20130515132001.6cc824ba42106db973f90991@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When translating a DT DMA channel specifier, the most common use case is
-to match the DMA channel based on the channel DMA engine and channel ID.
-Modify the of_dma_simple_xlate() function to do so, simplifying the API
-for DMA engine drivers.
+On Wed, 2013-05-15 at 13:20 +1000, Stephen Rothwell wrote:
+> Hi ,
+> 
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> produced this warning:
+> 
+> kernel/auditfilter.c: In function 'audit_data_to_entry':
+> kernel/auditfilter.c:426:3: warning: this decimal constant is unsigned only in ISO C90 [enabled by default]
+> 
+> Introduced by commit 780a7654cee8 ("audit: Make testing for a valid
+> loginuid explicit") from Linus' tree.
 
-There is no need to check the DMA cells count in the filter function as
-the check is already performed by the caller in of_dma_get_controller().
-
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/dma/of-dma.c   | 39 +++++++++++++++++++++++++++++++--------
- drivers/dma/omap-dma.c |  8 +-------
- include/linux/of_dma.h |  5 -----
- 3 files changed, 32 insertions(+), 20 deletions(-)
-
-I've implemented this function while working on a DMA engine driver, and
-realized that it wasn't specific to my driver at all. As I'm new to the DMA
-engine API, I'd appreciate feedback on whether this change makes sense, or if
-I should instead keep the existing of_dma_simple_xlate() function and create a
-separate simple xlate helper.
-
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index 7aa0864..702a45d 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -202,6 +202,27 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- 	return NULL;
- }
- 
-+struct of_dma_filter_args {
-+	struct dma_device *device;
-+	unsigned int chan_id;
-+};
-+
-+/**
-+ * of_dma_simple_xlate_filter - Channel filter function for of_dma_simple_xlate
-+ * @dma_chan:	pointer to candidate DMA channel
-+ * @param:	pointer to filter parameter
-+ *
-+ * Filter out candidate DMA channels that don't match the channel ID or DMA
-+ * engine device passed as arguments.
-+ */
-+static bool of_dma_simple_xlate_filter(struct dma_chan *chan, void *param)
-+{
-+	struct of_dma_filter_args *fargs = param;
-+
-+	return (chan->device == fargs->device) &&
-+	       (chan->chan_id == fargs->chan_id);
-+}
-+
- /**
-  * of_dma_simple_xlate - Simple DMA engine translation function
-  * @dma_spec:	pointer to DMA specifier as found in the device tree
-@@ -216,16 +237,18 @@ struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
- struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 						struct of_dma *ofdma)
- {
--	int count = dma_spec->args_count;
--	struct of_dma_filter_info *info = ofdma->of_dma_data;
-+	struct dma_device *dev = ofdma->of_dma_data;
-+	struct of_dma_filter_args fargs;
-+	dma_cap_mask_t cap;
- 
--	if (!info || !info->filter_fn)
--		return NULL;
-+	/* There's no need to specify matching caps as we're going to match a
-+	 * specific DMA channel anyway.
-+	 */
-+	dma_cap_zero(cap);
- 
--	if (count != 1)
--		return NULL;
-+	fargs.device = dev;
-+	fargs.chan_id = dma_spec->args[0];
- 
--	return dma_request_channel(info->dma_cap, info->filter_fn,
--			&dma_spec->args[0]);
-+	return dma_request_channel(cap, of_dma_simple_xlate_filter, &fargs);
- }
- EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
-diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-index ec3fc4f..7e7ff06 100644
---- a/drivers/dma/omap-dma.c
-+++ b/drivers/dma/omap-dma.c
-@@ -69,10 +69,6 @@ static const unsigned es_bytes[] = {
- 	[OMAP_DMA_DATA_TYPE_S32] = 4,
- };
- 
--static struct of_dma_filter_info omap_dma_info = {
--	.filter_fn = omap_dma_filter_fn,
--};
--
- static inline struct omap_dmadev *to_omap_dma_dev(struct dma_device *d)
- {
- 	return container_of(d, struct omap_dmadev, ddev);
-@@ -641,11 +637,9 @@ static int omap_dma_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, od);
- 
- 	if (pdev->dev.of_node) {
--		omap_dma_info.dma_cap = od->ddev.cap_mask;
--
- 		/* Device-tree DMA controller registration */
- 		rc = of_dma_controller_register(pdev->dev.of_node,
--				of_dma_simple_xlate, &omap_dma_info);
-+				of_dma_simple_xlate, &od->ddev);
- 		if (rc) {
- 			pr_warn("OMAP-DMA: failed to register DMA controller\n");
- 			dma_async_device_unregister(&od->ddev);
-diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-index 364dda7..3c0d9ac 100644
---- a/include/linux/of_dma.h
-+++ b/include/linux/of_dma.h
-@@ -27,11 +27,6 @@ struct of_dma {
- 	void			*of_dma_data;
- };
- 
--struct of_dma_filter_info {
--	dma_cap_mask_t	dma_cap;
--	dma_filter_fn	filter_fn;
--};
--
- #ifdef CONFIG_OF
- extern int of_dma_controller_register(struct device_node *np,
- 		struct dma_chan *(*of_dma_xlate)
--- 
-Regards,
-
-Laurent Pinchart
+Thank you, I'll fix it up.  What am I likely missing that I don't see it
+on my builds?  I'm using gcc 4.8.  Is there a config option that enables
+additional warnings?
 
