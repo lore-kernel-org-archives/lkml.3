@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab3EOP7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:59:21 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56487 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759030Ab3EOP7U (ORCPT
+	id S1759528Ab3EOQBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:01:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35276 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759114Ab3EOQBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:59:20 -0400
-Date: Wed, 15 May 2013 17:59:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        dzickus@redhat.com
-Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
- enabled
-Message-ID: <20130515155914.GC24004@somewhere>
-References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
- <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
- <20130515083729.GC10510@laptop.programming.kicks-ass.net>
+	Wed, 15 May 2013 12:01:36 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
+CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [Resend/PATCHv5 0/3] Omap serial cleanup
+Date: Wed, 15 May 2013 21:31:10 +0530
+Message-ID: <1368633673-32308-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515083729.GC10510@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 10:37:29AM +0200, Peter Zijlstra wrote:
-> On Tue, May 14, 2013 at 06:02:51PM +0200, Frederic Weisbecker wrote:
-> > From: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > Trying to test the nohz_full code, I was not able to get it to work.
-> > Finally I enabled the tick_stop tracepoint and it showed:
-> > 
-> >  tick_stop:            success=no msg=perf events running
-> > 
-> > I talked to Frederic Weisbecker about this and he informed me that
-> > perf is used by the lockup detector. I checked the code, and sure
-> > enough it is.
-> > 
-> > As perf is always running when LOCKUP_DETECTOR is enabled, which
-> > will always disable nohz_full from working, instead of confusing
-> > users, disable LOCKUP_DETECTOR when NO_HZ_FULL is enabled.
-> > 
-> > When perf is changed such that it does not prevent nohz_full from
-> > working, then we can and should remove this constraint.
-> 
-> That's a bit contradictory in function, you want the NMI watchdog to
-> cover all code, so disabling whilst entering NO_HZ state is going to
-> make it not cover some code - *fail*.
-> 
-> Rather I would suggest disabling the NMI watchdog's runtime default; so
-> you can still enable it with something like: 
-> 
->   echo 1 > /proc/sys/kernel/nmi_watchdog
-> 
+Hi Kevin,
 
-Sounds good, and we then warn the user about that.
+Resending this patch series again on top of 3.10-rc1.
+
+This is a cleanup series done in response to the
+serial driver fixes done for "no_console_suspend" case.
+
+This cleanups mainly include getting
+rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case
+as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
+Serial was the only one making use of "omap_device_disable_idle_on_suspend"
+
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Rajendra nayak <rnayak@ti.com>
+
+Test info
+Omap4430sdp:
+- Tested wakeup from UART after suspend for dt and non dt case.
+Omap5430evm:
+- Tested wakeup from UART after suspend for dt case.
+
+These patches were the part of the bigger series[2]. Breaking them into
+two relevant series as they go through the different tree.
+
+[2]: http://lkml.org/lkml/2013/4/26/274
+
+The following changes since commit b973425cbb51e08301b34fecdfd476a44507d8cf:
+
+  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
+
+are available in the git repository at:
+
+  git://gitorious.org/linux-connectivity/linux-connectivity.git omap_fix_resend
+
+Sourav Poddar (3):
+      arm: omap2+: serial: remove no_console_suspend support
+      arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+      arm: omap2+: omap_device: remove no_idle_on_suspend
+
+ arch/arm/boot/dts/am33xx.dtsi     |    1 -
+ arch/arm/mach-omap2/omap_device.c |    9 ++-------
+ arch/arm/mach-omap2/omap_device.h |   10 ----------
+ arch/arm/mach-omap2/serial.c      |    7 -------
+ 4 files changed, 2 insertions(+), 25 deletions(-)
