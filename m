@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab3EOUjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:39:54 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49572 "EHLO hydra.sisk.pl"
+	id S932941Ab3EOUoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:44:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58326 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932623Ab3EOUjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:39:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] acpi: Fix memory leak on acpi_scan_init_hotplug() error path
-Date: Wed, 15 May 2013 22:48:27 +0200
-Message-ID: <1462642.q2i8uhJOgR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1368642071.5673.37.camel@misato.fc.hp.com>
-References: <1368636575-5480-1-git-send-email-catalin.marinas@arm.com> <1368642071.5673.37.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932193Ab3EOUoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 16:44:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,679,1363158000"; 
+   d="scan'208";a="334656704"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Rafael Wysocki" <rafal.j.wysocki@intel.com>,
+        "Len Brown" <len.brown@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH 0/2]  Quiet power limit notification
+Date: Wed, 15 May 2013 06:36:55 -0700
+Message-Id: <1368625017-6835-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 15, 2013 12:21:11 PM Toshi Kani wrote:
-> On Wed, 2013-05-15 at 17:49 +0100, Catalin Marinas wrote:
-> > Following commit 6b772e8f9 (ACPI: Update PNPID match handling for
-> > notify), the acpi_scan_init_hotplug() calls acpi_set_pnp_ids() which
-> > allocates acpi_hardware_id and copies a few strings (kstrdup). If the
-> > devices does not have hardware_id set, the function exits without
-> > freeing the previously allocated ids (and kmemleak complains). This
-> > patch calls simply changes 'return' on error to a 'goto out' which calls
-> > acpi_free_pnp_ids().
-> > 
-> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-> > Cc: Toshi Kani <toshi.kani@hp.com>
-> 
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Tested-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Testing was performed by adding a fake ACPI object with _UID only.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Applied to linux-pm.git/linux-next as v3.10-rc2 material.
+Power Limit Notification (X86_FEATURE_PLN) was added in Sandy Bridge
+to give the OS the option of knowing when the package has reached
+a configured power threshold.
 
-Thanks,
-Rafael
+Linux-2.6.36 enabled this feature:
+0199114c31798af5b83841b21759b64171060d9b
+(x86, hwmon: Package Level Thermal/Power: power limit)
 
+It enabld the interrupt, and the interrupt hander
+added to the MCE log and printed to the console:
 
-> > ---
-> >  drivers/acpi/scan.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index fe158fd..c1bc608 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -1785,7 +1785,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
-> >  	acpi_set_pnp_ids(handle, &pnp, type);
-> >  
-> >  	if (!pnp.type.hardware_id)
-> > -		return;
-> > +		goto out;
-> >  
-> >  	/*
-> >  	 * This relies on the fact that acpi_install_notify_handler() will not
-> > @@ -1800,6 +1800,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
-> >  		}
-> >  	}
-> >  
-> > +out:
-> >  	acpi_free_pnp_ids(&pnp);
-> >  }
-> >  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+printk(KERN_CRIT "CPU%d: %s power limit notification (total events = %lu)
+printk(KERN_INFO "CPU%d: %s power limit normal\n"
+
+However, these events are quite routine on some systems under some conditions,
+alarming customers and provoking un-necessary customer support calls.
+
+So the MCE log entry was deleted in Linux-3.3:
+
+29e9bf1841e4f9df13b4992a716fece7087dd237
+(x86, mce, therm_throt: Don't report power limit and package level thermal throttle events in mcelog)
+
+Here we delete the corresponding kernel console messages,
+and then we disable the interrupt by default -- allowing it
+to be enabled by cmdline for diagnosis purposes.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=36182
+
+This pair of patches applies cleanly back to Linux-3.3.
+
