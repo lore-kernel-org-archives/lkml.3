@@ -1,144 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab3EOS22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 14:28:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44378 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab3EOS20 convert rfc822-to-8bit (ORCPT
+	id S1759842Ab3EOSiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 14:38:09 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46247 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759767Ab3EOSiH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 14:28:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,678,1363158000"; 
-   d="scan'208";a="242050733"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "bp@alien8.de" <bp@alien8.de>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: RE: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
-Thread-Topic: [PATCH] x86, microcode: Add local mutex to not hit a deadlock.
-Thread-Index: AQHOTAb/iY09weC2rUipSYx45j/IQJkGmklA
-Date: Wed, 15 May 2013 18:25:38 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220563322FE@ORSMSX106.amr.corp.intel.com>
-References: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1368029583-23337-1-git-send-email-konrad.wilk@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 15 May 2013 14:38:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <201305141551.24375.heiko@sntech.de>
+References: <201305111330.05046.heiko@sntech.de>
+	<201305111331.25405.heiko@sntech.de>
+	<CACRpkda-wQyo8aYxbW9RJNcR3Kwe2w5AhaAuUHfaxBksa_Pm2A@mail.gmail.com>
+	<201305141551.24375.heiko@sntech.de>
+Date: Wed, 15 May 2013 20:38:05 +0200
+Message-ID: <CACRpkdY1s7u9Xjzkb+AdFY1xEO1PQOp1ZFPf4r5qPL-=WPkvNQ@mail.gmail.com>
+Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
-> 
-> This can easily be triggered if a new CPU is added (via
-> ACPI hotplug mechanism) and from user-space do:
-> 
-> echo 1 > /sys/devices/system/cpu/cpu3/online
-> 
-> (or wait for UDEV to do it) on a newly appeared CPU.
-> 
-> The deadlock is that the "store_online" in drivers/base/cpu.c
-> takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
-> "cpu_up" eventually ends up calling "save_mc_for_early"
-> which also takes the cpu_hotplug_driver_lock() lock.
-> 
-> And here is that kernel thinks of it:
-> 
-> smpboot: Stack at about ffff880075c39f44
-> smpboot: CPU3: has booted.
-> microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
-> 
-> =============================================
-> [ INFO: possible recursive locking detected ]
-> 3.9.0upstream-10129-g167af0e #1 Not tainted
-> ---------------------------------------------
-> sh/2487 is trying to acquire lock:
->  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>]
-> cpu_hotplug_driver_lock+0x12/0x20
-> 
-> but task is already holding lock:
->  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>]
-> cpu_hotplug_driver_lock+0x12/0x20
-> 
-> other info that might help us debug this:
->  Possible unsafe locking scenario:
-> 
->        CPU0
->        ----
->   lock(x86_cpu_hotplug_driver_mutex);
->   lock(x86_cpu_hotplug_driver_mutex);
-> 
->  *** DEADLOCK ***
-> 
->  May be due to missing lock nesting notation
-> 
-> 6 locks held by sh/2487:
->  #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff811ca48d>]
-> vfs_write+0x17d/0x190
->  #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff812464ef>]
-> sysfs_write_file+0x3f/0x160
->  #2:  (s_active#20){.+.+.+}, at: [<ffffffff81246578>]
-> sysfs_write_file+0xc8/0x160
->  #3:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>]
-> cpu_hotplug_driver_lock+0x12/0x20
->  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810961c2>]
-> cpu_maps_update_begin+0x12/0x20
->  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810962a7>]
-> cpu_hotplug_begin+0x27/0x60
-> 
-> Suggested-by: Borislav Petkov <bp@alien8.de>
-> CC: stable@vger.kernel.org # for v3.9
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/kernel/microcode_intel_early.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/microcode_intel_early.c
-> b/arch/x86/kernel/microcode_intel_early.c
-> index d893e8e..2e9e128 100644
-> --- a/arch/x86/kernel/microcode_intel_early.c
-> +++ b/arch/x86/kernel/microcode_intel_early.c
-> @@ -487,6 +487,7 @@ static inline void show_saved_mc(void)
->  #endif
-> 
->  #if defined(CONFIG_MICROCODE_INTEL_EARLY) &&
-> defined(CONFIG_HOTPLUG_CPU)
-> +static DEFINE_MUTEX(x86_cpu_microcode_mutex);
->  /*
->   * Save this mc into mc_saved_data. So it will be loaded early when a
-> CPU is
->   * hot added or resumes.
-> @@ -507,7 +508,7 @@ int save_mc_for_early(u8 *mc)
->  	 * Hold hotplug lock so mc_saved_data is not accessed by a CPU in
->  	 * hotplug.
->  	 */
+On Tue, May 14, 2013 at 3:51 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Dienstag, 14. Mai 2013, 14:47:19 schrieb Linus Walleij:
+>> On Sat, May 11, 2013 at 1:31 PM, Heiko Stübner <heiko@sntech.de> wrote:
+>> > Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
+>> > with numerous virtual channels being mapped to a lot less physical ones.
+>> > The driver therefore borrows a lot from the amba-pl08x driver in this
+>> > regard. Functionality-wise the driver gains a memcpy ability in addition
+>> > to the slave_sg one.
+>> >
+>> > The driver currently only supports the "newer" SoCs which can use any
+>> > physical channel for any dma slave. Support for the older SoCs where
+>> > each channel only supports a subset of possible dma slaves will have to
+>> > be added later.
+>> >
+>> > Tested on a s3c2416-based board, memcpy using the dmatest module and
+>> > slave_sg partially using the spi-s3c64xx driver.
+>> >
+>> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+>>
+>> So have I understood correctly if I assume that *some* S3C
+>> variants, i.e. this: arch/arm/mach-s3c64xx/dma.c
+>> have a vanilla, unmodified, or just slightly modified
+>> PL08x block, while this DMAC is something probably based on
+>> the PL08x where some ASIC engineer has had a good time hacking
+>> around in the VHDL code to meet some feature requirements.
+>> Correct? Or plausible guess?
+>
+> You're guess is at good as mine :-) . The public s3c64xx (ARM11 based)
+> documentation says that it is using s PL080 as dma controller while the
+> s3c24xx (ARM9 based) SoCs have this one, which doesn't come with any label in
+> the manuals.
+> Similar to the s3c64xx using a vic, while the s3c24xx uses something
+> homegrown.
+>
+> The relationship description was more based on the concepts used, i.e. the
+> virtual channel concept and general handling of dma transfers feel somehow
+> similar - as I said these are my first steps into this, so I still need to
+> understand a lot.
 
-Could you please change the comment to use mutex instead? I think the mutex
-is good way to handle race here.
+OK then, a separate driver seems required, will look a bit closer at
+the patch as such.
 
-> -	cpu_hotplug_driver_lock();
-> +	mutex_lock(&x86_cpu_microcode_mutex);
-> 
->  	mc_saved_count_init = mc_saved_data.mc_saved_count;
->  	mc_saved_count = mc_saved_data.mc_saved_count;
-> @@ -544,7 +545,7 @@ int save_mc_for_early(u8 *mc)
->  	}
-> 
->  out:
-> -	cpu_hotplug_driver_unlock();
-> +	mutex_unlock(&x86_cpu_microcode_mutex);
-> 
->  	return ret;
->  }
-> --
-> 1.7.7.6
-
+Yours,
+Linus Walleij
