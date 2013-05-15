@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab3EONoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 09:44:12 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:49958 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759013Ab3EONoK (ORCPT
+	id S1759157Ab3EONov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:44:51 -0400
+Received: from smtp4.gemalto.com ([193.56.114.199]:1598 "EHLO
+	smtp4.gemalto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759062Ab3EONot convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 09:44:10 -0400
-Message-ID: <293D65E8F6CE48768FF47E438C57ECD2@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: "Michal Hocko" <mhocko@suse.cz>
-Cc: "Borislav Petkov" <bp@alien8.de>, <linux-pm@vger.kernel.org>,
-        "Len Brown" <len.brown@intel.com>, "Pavel Machek" <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "LKML" <linux-kernel@vger.kernel.org>, "X86 ML" <x86@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        <devel@linuxdriverproject.org>, <olaf@aepfle.de>,
-        "\"Andy Whitcroft\"" <apw@canonical.com>, <jasowang@redhat.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <JBeulich@suse.com>
-References: <20130514160108.GA5055@dhcp22.suse.cz> <925E2E537ECB4D0C8EA18467A4D20174@local.st.by> <20130515133405.GC5455@dhcp22.suse.cz>
-Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace -- CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re: 3.10-rc1 system starts regular boot when waking from s2ram Fw: [PATCH 2/2] x86: Make Linux guest support optional
-Date: Wed, 15 May 2013 16:44:05 +0300
+	Wed, 15 May 2013 09:44:49 -0400
+From: Schmiedl Christian <Christian.Schmiedl@gemalto.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
+Date: Wed, 15 May 2013 15:44:46 +0200
+Subject: [PATCH] qmi_wwan: Added support for Cinterion's PLxx WWAN Interface
+Thread-Topic: [PATCH] qmi_wwan: Added support for Cinterion's PLxx WWAN
+ Interface
+Thread-Index: Ac5RZ6xAZh/F2lNeR0iyQk7jWAHSJQACfbaA
+Message-ID: <376FB829F3ECB542B825EAF4D8CA8A97012A579993A9@CROEXCFWP03.gemalto.com>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="ISO-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+/drivers/net/usb/qmi_wwan.c: Added support for Cinterion's PLxx WWAN Interface
+by adding QMI_FIXED_INTF with Cinterion's Vendor ID as well as Product ID and
+WWAN Interface Number.
 
-Hi!
+Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Signed-off-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
+---
+patch is against linux-3.9
+--- linux-3.9/drivers/net/usb/qmi_wwan.c.orig	2013-05-06 08:10:11.170034451 +0200
++++ linux-3.9/drivers/net/usb/qmi_wwan.c	2013-05-06 08:58:00.800264179 +0200
+@@ -569,6 +569,7 @@ static const struct usb_device_id produc
+ 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+ 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
++	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
 
->> >- select PARAVIRT_GUEST
->> >+ select HYPERVISOR_GUEST
-> 
-> I might have missed the previous discussion but how does this relate to
-> the original problem reported to this (https://lkml.org/lkml/2013/5/14/398)
-> thread?
-
- As example:
-
-https://lkml.org/lkml/2013/5/14/398
-==
- . . .
-# CONFIG_HYPERVISOR_GUEST is not set
- . . .
-==
-
-> For record:
-> $grep HYPERVISOR_GUEST .config
-> # CONFIG_HYPERVISOR_GUEST is not set
-
-
-Why not
-CONFIG_HYPERVISOR_GUEST=y
-
- ?
-
-> $grep PARAVIRT_GUEST .config
-> $
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
