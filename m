@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759913Ab3EOSvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 14:51:40 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45008 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753212Ab3EOSvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 14:51:39 -0400
-Date: Wed, 15 May 2013 11:45:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130515184528.GO4442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130509125040.GF27333@pd.tnic>
- <20130509125859.GG27333@pd.tnic>
+	id S933074Ab3EOSv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 14:51:56 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:49795 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759763Ab3EOSvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 14:51:54 -0400
+Message-ID: <5193D953.5040202@prisktech.co.nz>
+Date: Thu, 16 May 2013 06:52:03 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130509125859.GG27333@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051518-5806-0000-0000-0000212BD94A
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Christian Daudt <csd@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        David Brown <davidb@codeaurora.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 20/20] ARM: vt8500: Remove init_irq declaration in machine
+ description
+References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com> <1368545933-7430-21-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1368545933-7430-21-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 02:58:59PM +0200, Borislav Petkov wrote:
-> On Thu, May 09, 2013 at 02:50:40PM +0200, Borislav Petkov wrote:
-> > Looks like we're sending a resched IPI to a cpu which is not online
-> > yet in order to start the MCE polling timer. So the rcu* options are
-> > kinda unlikely to be related, AFAICT.
-> 
-> On a second thought, they must be somehow indirectly related because I
-> had "rcu_nocbs=4-7" on the command line and have the warning on the same
-> CPUs: 4 - 7.
-> 
-> Actually, NO_HZ_FULL_ALL makes all CPUs full dynticks so I'd guess the
-> RCU callback offloading happens on all of them, thus the warning can
-> happen on every CPU which is in full dynticks mode but not online yet.
+On 15/05/13 03:38, Maxime Ripard wrote:
+> Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
+> specified") removed the need to explictly setup the init_irq field in
+> the machine description when using only irqchip_init. Remove that
+> declaration for vt8500 as well.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>   arch/arm/mach-vt8500/vt8500.c | 2 --
+>   1 file changed, 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+> index 1dd281e..70a5ac9 100644
+> --- a/arch/arm/mach-vt8500/vt8500.c
+> +++ b/arch/arm/mach-vt8500/vt8500.c
+> @@ -20,7 +20,6 @@
+>   
+>   #include <linux/clocksource.h>
+>   #include <linux/io.h>
+> -#include <linux/irqchip.h>
+>   #include <linux/pm.h>
+>   
+>   #include <asm/mach-types.h>
+> @@ -178,7 +177,6 @@ static const char * const vt8500_dt_compat[] = {
+>   DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
+>   	.dt_compat	= vt8500_dt_compat,
+>   	.map_io		= vt8500_map_io,
+> -	.init_irq	= irqchip_init,
+>   	.init_machine	= vt8500_init,
+>   	.init_time	= clocksource_of_init,
+>   	.restart	= vt8500_restart,
+I don't have any plans to touch this driver, so please send direct to 
+arm-soc as Arnd
+requested.
 
-Does the following patch help?
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 63098a5..68b1f26 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2371,7 +2371,7 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
- static void rcu_kick_nohz_cpu(int cpu)
- {
- #ifdef CONFIG_NO_HZ_FULL
--	if (tick_nohz_full_cpu(cpu))
-+	if (tick_nohz_full_cpu(cpu) && cpu_online(cpu))
- 		smp_send_reschedule(cpu);
- #endif /* #ifdef CONFIG_NO_HZ_FULL */
- }
-
+Regards
+Tony Prisk
