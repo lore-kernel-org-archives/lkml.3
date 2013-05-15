@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab3EOIFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:05:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54996 "EHLO
+	id S1757573Ab3EOIGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:06:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55031 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab3EOIFh (ORCPT
+	with ESMTP id S1757219Ab3EOIG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:05:37 -0400
-Date: Wed, 15 May 2013 10:04:51 +0200
+	Wed, 15 May 2013 04:06:26 -0400
+Date: Wed, 15 May 2013 10:05:35 +0200
 From: Jens Axboe <axboe@kernel.dk>
-To: Sam Bradshaw <sbradshaw@micron.com>
-Cc: linux-kernel@vger.kernel.org, asamymuthupa@micron.com
-Subject: Re: [PATCH][TRIVIAL] mtip32xx: Fix NULL pointer dereference during
- module unload
-Message-ID: <20130515080451.GA3276@kernel.dk>
-References: <5192B209.1010301@micron.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [GIT PULL] blk-throttle: implement proper hierarchy support
+Message-ID: <20130515080535.GB3276@kernel.dk>
+References: <20130514210933.GW6795@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5192B209.1010301@micron.com>
+In-Reply-To: <20130514210933.GW6795@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14 2013, Sam Bradshaw wrote:
-> An open file-handle to one or more of the driver exported debugfs
-> nodes causes raciness in recursive removal during module unload;
-> sometimes a stale parent dentry is dereferenced when more than 1
-> pci device is present.
+On Tue, May 14 2013, Tejun Heo wrote:
+> Hello, Jens.
+> 
+> This is the pull request for patches which implement proper hierarchy
+> support in blk-throttle and remove .broken_hierarchy tagging from
+> blkcg.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.cgroups/7119
+> 
+> The implementation is fairly straight-forward in that it just repeats
+> the same scheduling at each layer until it reaches the top and thus
+> isn't very scalable.  It also still has an issue where a nested cgroup
+> could get lower than configured limits as it travels towards root but
+> the severity is at an acceptable level after Vivke's start time
+> adjustment patch.  The issue ultimately is a problem in the scheduling
+> algorithm itself and can also show up in flat hierarchy given the
+> right (well, wrong) IO pattern.  If it still is an actual problem,
+> which I don't think is, we should be able to work on it later on in
+> fairly isolated manner.
+> 
+> While the implementation isn't perfect, it should be good enough in
+> most cases with a few levels of nesting and this allows the rest of
+> cgroup to proceed towards unified hierarchy handling.
+> 
+> The series is based on top of v3.10-rc1 and available in the following
+> git branch
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blk-throttle-hierarchy
+> 
+> for you to fetch changes up to 9138125beabbb76b4a373d4a619870f6f5d86fc5:
+> 
+>   blk-throttle: implement proper hierarchy support (2013-05-14 13:52:38 -0700)
 
-Thanks applied, I hit this one too recently.
+Thanks Tejun, I'll pull this in for 3.11.
 
 -- 
 Jens Axboe
