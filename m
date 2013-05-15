@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827Ab3EOBAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 21:00:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50571 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab3EOBAM (ORCPT
+	id S1758834Ab3EOBBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 21:01:19 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:61736 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758286Ab3EOBBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 21:00:12 -0400
-X-AuditID: 9c930179-b7b92ae0000035f7-e9-5192de191652
-From: "Jongsung Kim" <neidhard.kim@lge.com>
-To: "'Stephen Warren'" <swarren@wwwdotorg.org>
-Cc: "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-rpi-kernel@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <007301ce375e$bcf6d6b0$36e48410$@lge.com> <5191D200.3040604@wwwdotorg.org> <01fd01ce5072$d6b9fcd0$842df670$@lge.com> <5192A692.4010700@wwwdotorg.org>
-In-Reply-To: <5192A692.4010700@wwwdotorg.org>
-Subject: RE: [PATCH] ARM: PL011: add support for extended FIFO-size of PL011-r1p5
-Date: Wed, 15 May 2013 10:00:07 +0900
-Organization: LG Electronics
-Message-ID: <022d01ce5107$8bc668e0$a3533aa0$@lge.com>
+	Tue, 14 May 2013 21:01:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEYAAvdklF5LKxY/2dsb2JhbABagweDCrg+hRwEAYEBF3QEghsBAQQBJxMcIwULCAMOCgklDwUlAyETHodoBb1BFo1rgR0Hg1UDlzOKGYclgyEq
+Date: Wed, 15 May 2013 11:01:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zach Brown <zab@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [RFC v0 0/4] sys_copy_range() rough draft
+Message-ID: <20130515010113.GN29466@dastard>
+References: <1368566126-17610-1-git-send-email-zab@redhat.com>
+ <20130514214251.GK29466@dastard>
+ <20130514220440.GN16385@lenny.home.zabbo.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHInDuhqkp37yHuVjCbmrHEKQdwAwJ2699/Ap2LRfIByYWvJZjZ3ksw
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130514220440.GN16385@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> :
-> Looking at BCM2835-ARM-Peripherals.pdf (i.e. the public documentation for
-> the BCM2835 chip), I see:
->
-> =====
-> The UART provides:
-> * Separate 16x8 transmit and 16x12 receive FIFO memory.
-> ...
-> For the in-depth UART overview, please, refer to the ARM PrimeCell UART
-> (PL011) Revision: r1p5 Technical Reference Manual.
-> =====
->
-> That seems to imply that not all r1p5 PL011s actually have a depth-32
-FIFO.
-> Perhaps this is a configurable property of the IP block, not something
-that
-> all r1p5 have?
+On Tue, May 14, 2013 at 03:04:40PM -0700, Zach Brown wrote:
+> On Wed, May 15, 2013 at 07:42:51AM +1000, Dave Chinner wrote:
+> > On Tue, May 14, 2013 at 02:15:22PM -0700, Zach Brown wrote:
+> > > I'm going to keep hacking away at this.  My next step is to get ext4
+> > > supporting .copy_range, probably with a quick hack to copy the
+> > > contents of bios.  Hopefully that'll give enough time to also integrate
+> > > review feedback.
+> > 
+> > Wouldn't the easiest "support all filesystems" hack just be to add
+> > a destination offset parameter to do_splice_direct() and call that
+> > when the filesystem doesn't supply a ->copy_range method? i.e. use
+> > the mechanisms we already have for copying from one file to another
+> > via the page cache as efficiently as possible?
+> 
+> Probably; and this in-kernel buffered fallback is particularly desirable
+> for nfsd when the exported fs doesn't provide .copy_range.  Having nfsd
+> service the COPY op is still a significant win over having the client
+> move the data backand forth over the wire.
 
-All r1p5 have 32-byte FIFO depth and it's not configurable. From the PL011
-TRM:
+Sure. That's kind of what I was thinking to make it easy to test and
+have widespread support up front.
 
-r1p4-r1p5	Contains the following differences in functionality:
-		* The receive and transmit FIFOs are increased to a depth of
-32.
-		* The Revision field in the UARTPeriphID2 Register on page
-3-24
-		  bits [7:4] now reads back as 0x3.
+> But in that quote above I was talking about implementing .copy_range in
+> ext4 as though it could use XCOPY today.  I'd like to get a feel for how
+> bad it's going to be to juggle the bio XCOPY IO with unwritten extent
+> conversion, RMW with overlapping existing blocks, i_size advancing, etc.
+> (It's so much like O_DIRECT that I'm already crying a little.)
 
+Toss anything that is hard back to the page cache path. Overlapping
+blocks, partial blocks and so can be handled by the slow path
+without making the offload path complex.
+
+Make the offload do the simple stuff fast - the mapping and
+completion callbacks should be no different to the direct IO bits we
+have now, and if you only handle filesystem block aligned ranges in
+the offload (rather than sector alignment) most of the grot that DIO
+code has to handle goes away....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
