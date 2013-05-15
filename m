@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758687Ab3EOMZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:25:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56378 "EHLO mx2.suse.de"
+	id S1758871Ab3EOMeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:34:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39493 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab3EOMZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:25:43 -0400
-Message-ID: <51937EC2.6050604@suse.cz>
-Date: Wed, 15 May 2013 14:25:38 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758567Ab3EOMeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 08:34:20 -0400
+Message-ID: <51938169.4060109@ti.com>
+Date: Wed, 15 May 2013 18:06:57 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: comment on the kbuild tree
-References: <20130515092505.294f3a8865c77e8420d27491@canb.auug.org.au>
-In-Reply-To: <20130515092505.294f3a8865c77e8420d27491@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@laposte.net>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <v-stehle@ti.com>
+Subject: Re: [PATCH] ARM: OMAP5: select SCU
+References: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net>
+In-Reply-To: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.5.2013 01:25, Stephen Rothwell wrote:
-> Hi Michal,
+On Tuesday 14 May 2013 10:27 PM, Vincent Stehlé wrote:
+> From: Vincent Stehlé <v-stehle@ti.com>
 > 
-> Since the kbuild tree now consists only of merge commits (relative to
-> v3.10-rc1), you might as well just reset it to v3.10-rc1 and have a nice
-> clean tree to start from.
+> OMAP5 needs SCU in SMP.
+> 
+> This fixes the following link errors:
+> 
+>   arch/arm/mach-omap2/built-in.o: In function `scu_gp_set':
+>   arch/arm/mach-omap2/sleep44xx.S:132: undefined reference to `scu_power_mode'
+>   arch/arm/mach-omap2/built-in.o: In function `scu_gp_clear':
+>   arch/arm/mach-omap2/sleep44xx.S:229: undefined reference to `scu_power_mode'
+>   arch/arm/mach-omap2/built-in.o: In function `omap4_smp_prepare_cpus':
+>   arch/arm/mach-omap2/omap-smp.c:211: undefined reference to `scu_enable'
+>   arch/arm/mach-omap2/built-in.o: In function `omap4_smp_init_cpus':
+>   arch/arm/mach-omap2/omap-smp.c:185: undefined reference to `scu_get_core_count'
+> 
+> Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
+> ---
+OMAP5 doesn't need the SCU. So Nak for the patch. I haven't noticed
+this earlier. Do you know which commit broke this ?
 
-I thought I would newer rebase the for-next branch to allow people to
-pull from it. But I can see that it looks much cleaner in the linux-next
-tree if you can do a git log stable..master and see what is really in
-linux-next. So I reset it to v3.10-rc1 now.
+Regards,
+Santosh
 
-Michal
