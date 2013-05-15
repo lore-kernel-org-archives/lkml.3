@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742Ab3EOUhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:37:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33479 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757018Ab3EOUhu (ORCPT
+	id S932889Ab3EOUjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:39:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51251 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756613Ab3EOUjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:37:50 -0400
-Date: Wed, 15 May 2013 13:37:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] Reduce system disruption due to kswapd V4
-Message-Id: <20130515133748.5db2c6fb61c72ec61381d941@linux-foundation.org>
-In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 May 2013 16:39:02 -0400
+From: joseph.salisbury@canonical.com
+To: linux-kernel@vger.kernel.org
+Cc: laurent.pinchart@ideasonboard.com, mchehab@redhat.com,
+        linux-media@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Alienware X51 OmniVision webcam
+Date: Wed, 15 May 2013 16:38:48 -0400
+Message-Id: <1368650328-21128-1-git-send-email-joseph.salisbury@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 May 2013 09:12:31 +0100 Mel Gorman <mgorman@suse.de> wrote:
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-> This series does not fix all the current known problems with reclaim but
-> it addresses one important swapping bug when there is background IO.
-> 
-> ...
->
-> This was tested using memcached+memcachetest while some background IO
-> was in progress as implemented by the parallel IO tests implement in MM
-> Tests. memcachetest benchmarks how many operations/second memcached can
-> service and it is run multiple times. It starts with no background IO and
-> then re-runs the test with larger amounts of IO in the background to roughly
-> simulate a large copy in progress.  The expectation is that the IO should
-> have little or no impact on memcachetest which is running entirely in memory.
-> 
->                                         3.10.0-rc1                  3.10.0-rc1
->                                            vanilla            lessdisrupt-v4
-> Ops memcachetest-0M             22155.00 (  0.00%)          22180.00 (  0.11%)
-> Ops memcachetest-715M           22720.00 (  0.00%)          22355.00 ( -1.61%)
-> Ops memcachetest-2385M           3939.00 (  0.00%)          23450.00 (495.33%)
-> Ops memcachetest-4055M           3628.00 (  0.00%)          24341.00 (570.92%)
-> Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-> Ops io-duration-715M               12.00 (  0.00%)              7.00 ( 41.67%)
-> Ops io-duration-2385M             118.00 (  0.00%)             21.00 ( 82.20%)
-> Ops io-duration-4055M             162.00 (  0.00%)             36.00 ( 77.78%)
-> Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
-> Ops swaptotal-715M             140134.00 (  0.00%)             18.00 ( 99.99%)
-> Ops swaptotal-2385M            392438.00 (  0.00%)              0.00 (  0.00%)
-> Ops swaptotal-4055M            449037.00 (  0.00%)          27864.00 ( 93.79%)
-> Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
-> Ops swapin-715M                     0.00 (  0.00%)              0.00 (  0.00%)
-> Ops swapin-2385M               148031.00 (  0.00%)              0.00 (  0.00%)
-> Ops swapin-4055M               135109.00 (  0.00%)              0.00 (  0.00%)
-> Ops minorfaults-0M            1529984.00 (  0.00%)        1530235.00 ( -0.02%)
-> Ops minorfaults-715M          1794168.00 (  0.00%)        1613750.00 ( 10.06%)
-> Ops minorfaults-2385M         1739813.00 (  0.00%)        1609396.00 (  7.50%)
-> Ops minorfaults-4055M         1754460.00 (  0.00%)        1614810.00 (  7.96%)
-> Ops majorfaults-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-> Ops majorfaults-715M              185.00 (  0.00%)            180.00 (  2.70%)
-> Ops majorfaults-2385M           24472.00 (  0.00%)            101.00 ( 99.59%)
-> Ops majorfaults-4055M           22302.00 (  0.00%)            229.00 ( 98.97%)
+BugLink: http://bugs.launchpad.net/bugs/1180409
 
-I doubt if many people have the context to understand what these
-numbers really mean.  I don't.
+OminiVision webcam 0x05a9:0x2643 needs the same UVC_QUIRK_PROBE_DEF as other OmniVision models to work properly.
 
-> Note how the vanilla kernels performance collapses when there is enough
-> IO taking place in the background. This drop in performance is part of
-> what users complain of when they start backups. Note how the swapin and
-> major fault figures indicate that processes were being pushed to swap
-> prematurely. With the series applied, there is no noticable performance
-> drop and while there is still some swap activity, it's tiny.
-> 
->                             3.10.0-rc1  3.10.0-rc1
->                                vanilla lessdisrupt-v4
-> Page Ins                       1234608      101892
-> Page Outs                     12446272    11810468
-> Swap Ins                        283406           0
-> Swap Outs                       698469       27882
-> Direct pages scanned                 0      136480
-> Kswapd pages scanned           6266537     5369364
-> Kswapd pages reclaimed         1088989      930832
-> Direct pages reclaimed               0      120901
-> Kswapd efficiency                  17%         17%
-> Kswapd velocity               5398.371    4635.115
-> Direct efficiency                 100%         88%
-> Direct velocity                  0.000     117.817
-> Percentage direct scans             0%          2%
-> Page writes by reclaim         1655843     4009929
-> Page writes file                957374     3982047
-> Page writes anon                698469       27882
-> Page reclaim immediate            5245        1745
-> Page rescued immediate               0           0
-> Slabs scanned                    33664       25216
-> Direct inode steals                  0           0
-> Kswapd inode steals              19409         778
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-media@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+---
+ drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-The reduction in inode steals might be a significant thing? 
-prune_icache_sb() does invalidate_mapping_pages() and can have the bad
-habit of shooting down a vast number of pagecache pages (for a large
-file) in a single hit.  Did this workload use large (and clean) files? 
-Did you run any test which would expose this effect?
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 5dbefa6..411682c 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -2163,6 +2163,15 @@ static struct usb_device_id uvc_ids[] = {
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
++ 	/* Alienware X51*/
++        { .match_flags          = USB_DEVICE_ID_MATCH_DEVICE
++                                | USB_DEVICE_ID_MATCH_INT_INFO,
++          .idVendor             = 0x05a9,
++          .idProduct            = 0x2643,
++          .bInterfaceClass      = USB_CLASS_VIDEO,
++          .bInterfaceSubClass   = 1,
++          .bInterfaceProtocol   = 0,
++          .driver_info          = UVC_QUIRK_PROBE_DEF },
+ 	/* Apple Built-In iSight */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
+-- 
+1.7.9.5
 
-> ...
