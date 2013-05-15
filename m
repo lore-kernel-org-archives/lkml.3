@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758Ab3EOMJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:09:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45719 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab3EOMJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:09:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,677,1363158000"; 
-   d="scan'208";a="334397367"
-Message-ID: <1368619956.15764.100.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v5 02/11] mtd: increase max OOB size to 744
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 15 May 2013 15:12:36 +0300
-In-Reply-To: <1368607232-2210-3-git-send-email-b32955@freescale.com>
-References: <1368607232-2210-1-git-send-email-b32955@freescale.com>
-	 <1368607232-2210-3-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758779Ab3EOMMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:12:14 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:59659 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab3EOMMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 08:12:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1928313.pnnBGKgv0p@avalon>
+References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1368619042-28252-3-git-send-email-prabhakar.csengg@gmail.com> <1928313.pnnBGKgv0p@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Wed, 15 May 2013 17:41:51 +0530
+Message-ID: <CA+V-a8uU6QkYcMg1b5BPHbA0gUGypZeXZNScE-WLa-GqK4_fQA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] ARM: davinci: dm365 evm: remove init_enable from
+ ths7303 pdata
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Sekhar Nori <nsekhar@ti.com>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-15 at 16:40 +0800, Huang Shijie wrote:
-> The oob size of Micron's MT29F64G08CBABAWP is 744 bytes.
-> So increase the NAND_MAX_OOBSIZE to 744.
-> 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
+Hi Laurent,
 
-OK, this patch is really independent. I do not know why you put it to
-this series. Let me apply it separately.
+Thanks for the review.
 
--- 
-Best Regards,
-Artem Bityutskiy
+On Wed, May 15, 2013 at 5:35 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> Thank you for the patch.
+>
+> On Wednesday 15 May 2013 17:27:18 Lad Prabhakar wrote:
+>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>
+>> remove init_enable from ths7303 pdata as it is no longer exists.
+>
+> You should move this before 1/6, otherwise you will break bisection.
+>
+OK I'll fix it in next version.
 
+Regards,
+--Prabhakar Lad
