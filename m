@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab3EOTma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 15:42:30 -0400
+	id S932584Ab3EOTm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 15:42:28 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23213 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab3EOTm0 (ORCPT
+	with ESMTP id S932451Ab3EOTmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 15:42:26 -0400
-X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Gj-vt-Affh0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HYRmSkBpoVkA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=pGLkceISAAAA:8 a=ViCslrFICJ3MyFOPiZYA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rTPQq76IRA2uKfz74NcA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Wed, 15 May 2013 15:42:25 -0400
+X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=FdA93o-vacgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=RPXN6yAvhE4A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=iaOBL08tWKJV51MUiDIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=pjO6vkfj0npZV7_Pc40A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130515194224.572820464@goodmis.org>
+Message-Id: <20130515194223.998976932@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 15 May 2013 15:39:26 -0400
+Date: Wed, 15 May 2013 15:39:23 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -21,12 +21,10 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 4/4] tracing/kprobes: Make print_*probe_event static
+        Tom Zanussi <tzanussi@gmail.com>, <stable@vger.kernel.org>
+Subject: [PATCH 1/4] tracing: Fix leaks of filter preds
 References: <20130515193922.094868872@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-kprobes-Make-print_-probe_event-static.patch
+Content-Disposition: inline; filename=0001-tracing-Fix-leaks-of-filter-preds.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,48 +34,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-According to sparse warning, print_*probe_event static because
-those functions are not directly called from outside.
+Special preds are created when folding a series of preds that
+can be done in serial. These are allocated in an ops field of
+the pred structure. But they were never freed, causing memory
+leaks.
 
-Link: http://lkml.kernel.org/r/20130513115839.6545.83067.stgit@mhiramat-M0-=
-7522
+This was discovered using the kmemleak checker:
 
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Tom Zanussi <tom.zanussi@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+unreferenced object 0xffff8800797fd5e0 (size 32):
+  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
+  hex dump (first 32 bytes):
+    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
+    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
+    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
+    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
+    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
+    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
+    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
+    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
+    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
+    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
+    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
+    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
+    [<ffffffffffffffff>] 0xffffffffffffffff
+
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: stable@vger.kernel.org # 2.6.39+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_kprobe.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace_events_filter.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 81c5109..9f46e98 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -962,7 +962,7 @@ kretprobe_trace_func(struct trace_probe *tp, struct kre=
-tprobe_instance *ri,
- }
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
+_filter.c
+index a636117..e1b653f 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -750,7 +750,11 @@ static int filter_set_pred(struct event_filter *filter,
 =20
- /* Event entry printers */
--enum print_line_t
-+static enum print_line_t
- print_kprobe_event(struct trace_iterator *iter, int flags,
- 		   struct trace_event *event)
+ static void __free_preds(struct event_filter *filter)
  {
-@@ -998,7 +998,7 @@ partial:
- 	return TRACE_TYPE_PARTIAL_LINE;
- }
-=20
--enum print_line_t
-+static enum print_line_t
- print_kretprobe_event(struct trace_iterator *iter, int flags,
- 		      struct trace_event *event)
- {
++	int i;
++
+ 	if (filter->preds) {
++		for (i =3D 0; i < filter->n_preds; i++)
++			kfree(filter->preds[i].ops);
+ 		kfree(filter->preds);
+ 		filter->preds =3D NULL;
+ 	}
 --=20
 1.7.10.4
 
@@ -90,13 +100,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJRk+UgAAoJEOdOSU1xswtM8hIH/iCvX6oZF7rC3RuGeVJGa4JT
-MG2Yg27TM8EefuaOWNN8DkQw9ANsu4NsuxEC4WBvCUe2expnDnziWmxbf17vMizA
-vra5HIR9HgU7qW4/HfTnZWCiUnVKfUFC+BxHIqBEH9wXTzXWhC+NfV6Z3Iwqfd8t
-obFR0lt09Jnd6Y4l9Pcq8E8gqnBEc+2o3yXrO4yK4UMePg+ZnMdno+okuOlIwmqC
-B05gGBb+g0sIvvFSis1JcMpIu3X8c1xa2NO3zzbK8d1S8lGOtp/qDnr21ZOvzCnv
-6OoOFcxep4YWF9IneytyHHslj0ytY11saJ2Y7ngQnd5JI9M7zchW9PCMJmkFhUI=
-=LVgd
+iQEcBAABAgAGBQJRk+UgAAoJEOdOSU1xswtMDFwIAJkJpnuzYEvlbWAIoynQ3DAR
+/j8TeuBI3bmMfBGmjGyMhYIwvfJs/fFUUhdq+IWepnT7kK635lKBNatutxXnyecI
+2OoKZSMYHN97f7KbHhSBfztSo+rb8pkKB/8xEovNUVT2I6s78q4t54F+LcRgUkTE
+hhXZgbymkEjRb7CWkBULDZVyW5xYS69faLNXJwrUEF1iB9kbeHTwB0KIsoSL45Pk
+go1Cc8iPJNsTjT5NnHK7KHqN7LkJ76i50U+ReljA9ddu+ma/FVNGpWgsfyb15g2F
+BgtyZS5W+OCV0FjegFBKOJfaVTulEHfWOW2DDZ0GLqxp9pdOe25zS5TRjcsmkFo=
+=Z8tW
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
