@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab3EOOUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:20:50 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:49261 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700Ab3EOOUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:20:47 -0400
+	id S932718Ab3EOOVd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:21:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34684 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757852Ab3EOOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:21:31 -0400
+Date: Wed, 15 May 2013 16:21:26 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Victor Miasnikov <vvm@tut.by>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@linuxdriverproject.org, olaf@aepfle.de,
+        "\"Andy Whitcroft\"" <apw@canonical.com>, jasowang@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace --
+ CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re:
+ 3.10-rc1 Fw: [PATCH 2/2] x86: Make Linux guest support optional
+Message-ID: <20130515142126.GA11783@pd.tnic>
+References: <20130514160108.GA5055@dhcp22.suse.cz>
+ <925E2E537ECB4D0C8EA18467A4D20174@local.st.by>
+ <20130515133405.GC5455@dhcp22.suse.cz>
+ <293D65E8F6CE48768FF47E438C57ECD2@local.st.by>
+ <20130515134656.GF5455@dhcp22.suse.cz>
+ <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
 MIME-Version: 1.0
-In-Reply-To: <20130503170007.GA30733@dyad.programming.kicks-ass.net>
-References: <20130503121122.931661809@chello.nl>
-	<20130503121256.083340271@chello.nl>
-	<20130503143507.GP19487@tassilo.jf.intel.com>
-	<20130503170007.GA30733@dyad.programming.kicks-ass.net>
-Date: Wed, 15 May 2013 16:20:46 +0200
-Message-ID: <CABPqkBSTMJebZLjvLhdQ1hiemoqvO2t=vi+CG=yLjkFabOr8XQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf, x86: Blacklist all MEM_*_RETIRED events for IVB
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 15, 2013 at 05:05:42PM +0300, Victor Miasnikov wrote:
+> CONFIG_PARAVIRT_GUEST in arch/ia64 :
+> 
+> ./linux-3.10-rc1/arch/ia64/include/asm/native/
+> inst.h
+> ./linux-3.10-rc1/arch/ia64/configs/
+> xen_domu_defconfig
+> ./linux-3.10-rc1/arch/ia64/include/asm/
+> hw_irq.h
+> iosapic.h
+> paravirt.h
 
-Based on our testing, it appears the corruption occurs only
-when the MEM_* events are used and only on the sibling
-counter. In other words, if HT0 has MEM_* in cntr0, then
-HT1 cntr0 cannot be used, otherwise whatever is there may
-get corrupted. So I think we could enhance Andi's initial patch
-to handle this case instead of blacklist those events. They are
-very important events.
+This is only an issue if hyperv or vmware balloon is designed to work on
+ia64.
 
+However, both hyperv and vmware balloon depend on X86 so they are never
+enabled on ia64.
 
-On Fri, May 3, 2013 at 7:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, May 03, 2013 at 07:35:07AM -0700, Andi Kleen wrote:
->> On Fri, May 03, 2013 at 02:11:23PM +0200, Peter Zijlstra wrote:
->> > Errata BV98 states that all MEM_*_RETIRED events corrupt the counter
->> > value of the SMT sibling's counters. Blacklist these events
->>
->> I disagree with this patch. This is just overkill and not needed
->> at all.
->
-> Then give me a patch that both completely describes the problem and ensures
-> isolation so that no counters get corrupted (and isn't too invasive).
->
-> So far you've failed on both counts.
->
->
+So the way I see it, it doesn't matter.
+
+Tony, what's your take on this - CONFIG_PARAVIRT_GUEST is
+present in ia64 and I recently changed the Kconfig symbol to
+CONFIG_HYPERVISOR_GUEST on x86. I can fix it for correctness but is
+hyperv and vmware balloon even attempted on ia64?
+
+Btw, it depends on BROKEN on ia64 so I'm already sceptical.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
