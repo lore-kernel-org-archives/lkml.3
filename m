@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab3EOM4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:56:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54574 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab3EOM4S (ORCPT
+	id S1758909Ab3EONIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:08:22 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64830 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004Ab3EONIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:56:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCHv2 00/20] Cleanup irqchip_init calls
-Date: Wed, 15 May 2013 14:55:12 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Christian Daudt <csd@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        David Brown <davidb@codeaurora.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Barry Song <baohua.song@csr.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 15 May 2013 09:08:21 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305151455.12603.arnd@arndb.de>
-X-Provags-ID: V02:K0:1M8pVtCyS1Ttsim3v2yApgqauRFiFMPGn6QpZbXEeLk
- xt61n4EKRSdRbGaRrbQfjUuJWOG1MwmBYv/g+p2Lw9uy7ZqWkp
- LIIT+fCCz+ZkYI2dmjsAid573wq6mtEKO1o+Ez4emcWnGxY1rC
- /VcHMKpnr2mRvMidcud5kH3PwzBSleTJMd8ZYevIjCRx36cXdF
- znMGKAYO9b5+86IDPTcuQoqONQpik+16Bn6f2NpMJte1U2kFbh
- 2iAgSm06ID9qIfrdHa4wFKsCqY/Zrh+J2a9Kz7W8jY8LrDq/rV
- zXpyoB6S7/GEvCpErx2vasaXEBkGGSW5LJfzwKPoRl0Y0c8uTg
- KweJ9rDrPacpJFPZae+g=
+Date: Wed, 15 May 2013 16:08:20 +0300
+Message-ID: <CAKt3ReLZqGS3DiG_+T+N0YDzte9pLpP8kVVoX_98vTU9tPV3pQ@mail.gmail.com>
+Subject: Function call interrupts (CAL) high values in 3.9.2 kernel
+From: "Darius D." <darius.ski@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 May 2013, Maxime Ripard wrote:
-> This is a splitted up version of the patch I previously sent to
-> remove the explicit declaration of irqchip_init as the init_irq callback in
-> the machine descriptions.
-> 
-> Since it was a pretty tricky patch to merge, since it was touching a lot of
-> different platforms, I splitted it for each platforms, and rebased it on top
-> of 3.10-rc1.
-> 
-> The best way to merge it is probably that each one of us take into their tree
-> the patches that are relevant for our architecture and send them to arm-soc
-> later on.
+Hi,
 
-Sounds good to me. I'm sure that some platform maintainers will fail to
-apply this though. Could you send whatever remains as a separate branch
-in a couple of weeks so we can directly apply it to next/cleanup?
+after upgrading to 3.9.2 (from 3.2.1) we have noticed million sized
+spikes in Function call interrupts (CAL) graphics in Munin monitoring.
 
-	Arnd
+After some investigation we have found that it is caused by completely
+borked numbers in /proc/interrupts
+
+for example current output is:
+CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6
+      CPU7       CPU8       CPU9       CPU10      CPU11      CPU12
+ CPU13      CPU14      CPU15      C6      CPU17      CPU18      CPU19
+    CPU20      CPU21      CPU22      CPU23
+CAL: 4294967272    5513065         56    5567608         21    5513363
+        50    5583946         42    5431365         32    5681459
+  100    2613904         95    2494755         95    2554234
+122    2434635         74    2472960         63    2504140   Function
+call interrupts
+
+As you can see CPU1 output has really crazy value (FFFFFFE8), but we
+have seen some other values on other cpus as well. It changes suddenly
+from valid values, to nearly FFFFFFFF and then might return back after
+some time.
+There are no spikes in cpu usage, no interrupts, context switches,
+just /proc/interrupts is wrong. it went stright from ~50 to FFFFFFE8
+in one step.
+
+System is dual Xeon X5650 NUMA box. ( kinda only interesting options
+are THP with defrag off and that new Numa memory placement aware
+scheduler is off ).
+
+Anyone got any clue why it is happening?
+
+Best regards,
+
+Darius.
