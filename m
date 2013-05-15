@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab3EOJwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:52:36 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:36064 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab3EOJw3 (ORCPT
+	id S932882Ab3EOKBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 06:01:37 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:44779 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab3EOJwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:52:29 -0400
+	Wed, 15 May 2013 05:52:35 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
         davem@davemloft.net, herbert@gondor.hengli.com.au,
         vinod.koul@intel.com
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 09/39] ARM: ux500: Remove DMA address look-up table
-Date: Wed, 15 May 2013 10:51:32 +0100
-Message-Id: <1368611522-9984-10-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Andreas Westin <andreas.westin@stericsson.com>
+Subject: [PATCH 12/39] crypto: ux500/hash - Prepare clock before enabling it
+Date: Wed, 15 May 2013 10:51:35 +0100
+Message-Id: <1368611522-9984-13-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
@@ -24,122 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA addresses are now passed as part of the dmaengine API by invoking
-dmaengine_slave_config(). So there's no requirement for the DMA40
-driver to look them up in a table provided by platform data. This
-method does not fit in well using Device Tree either.
+If we fail to prepare the ux500-hash clock before enabling it the
+platform will fail to boot. Here we insure this happens.
 
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Andreas Westin <andreas.westin@stericsson.com>
+Cc: linux-crypto@vger.kernel.org
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/devices-db8500.c        |   80 ---------------------------
- include/linux/platform_data/dma-ste-dma40.h |    2 -
- 2 files changed, 82 deletions(-)
+ drivers/crypto/ux500/hash/hash_core.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index bed25a3..e21ffd8 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -42,87 +42,7 @@ static struct resource dma40_resources[] = {
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index cf55089..4b02428 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -1726,11 +1726,17 @@ static int ux500_hash_probe(struct platform_device *pdev)
+ 		goto out_regulator;
  	}
- };
  
--/*
-- * Mapping between destination event lines and physical device address.
-- * The event line is tied to a device and therefore the address is constant.
-- * When the address comes from a primecell it will be configured in runtime
-- * and we set the address to -1 as a placeholder.
-- */
--static const dma_addr_t dma40_tx_map[DB8500_DMA_NR_DEV] = {
--	/* MUSB - these will be runtime-reconfigured */
--	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
--	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
--	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
--	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
--	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
--	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
--	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
--	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
--	/* PrimeCells - run-time configured */
--	[DB8500_DMA_DEV0_SPI0] = -1,
--	[DB8500_DMA_DEV1_SD_MMC0] = -1,
--	[DB8500_DMA_DEV2_SD_MMC1] = -1,
--	[DB8500_DMA_DEV3_SD_MMC2] = -1,
--	[DB8500_DMA_DEV8_SSP0] = -1,
--	[DB8500_DMA_DEV9_SSP1] = -1,
--	[DB8500_DMA_DEV11_UART2] = -1,
--	[DB8500_DMA_DEV12_UART1] = -1,
--	[DB8500_DMA_DEV13_UART0] = -1,
--	[DB8500_DMA_DEV28_SD_MM2] = -1,
--	[DB8500_DMA_DEV29_SD_MM0] = -1,
--	[DB8500_DMA_DEV32_SD_MM1] = -1,
--	[DB8500_DMA_DEV33_SPI2] = -1,
--	[DB8500_DMA_DEV35_SPI1] = -1,
--	[DB8500_DMA_DEV40_SPI3] = -1,
--	[DB8500_DMA_DEV41_SD_MM3] = -1,
--	[DB8500_DMA_DEV42_SD_MM4] = -1,
--	[DB8500_DMA_DEV43_SD_MM5] = -1,
--	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV30_MSP1] = U8500_MSP1_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_TX_REG_OFFSET,
--	[DB8500_DMA_DEV50_HAC1_TX] = U8500_HASH1_BASE + HASH1_TX_REG_OFFSET,
--};
--
--/* Mapping between source event lines and physical device address */
--static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
--	/* MUSB - these will be runtime-reconfigured */
--	[DB8500_DMA_DEV39_USB_OTG_IEP_AND_OEP_8] = -1,
--	[DB8500_DMA_DEV16_USB_OTG_IEP_AND_OEP_7_15] = -1,
--	[DB8500_DMA_DEV17_USB_OTG_IEP_AND_OEP_6_14] = -1,
--	[DB8500_DMA_DEV18_USB_OTG_IEP_AND_OEP_5_13] = -1,
--	[DB8500_DMA_DEV19_USB_OTG_IEP_AND_OEP_4_12] = -1,
--	[DB8500_DMA_DEV36_USB_OTG_IEP_AND_OEP_3_11] = -1,
--	[DB8500_DMA_DEV37_USB_OTG_IEP_AND_OEP_2_10] = -1,
--	[DB8500_DMA_DEV38_USB_OTG_IEP_AND_OEP_1_9] = -1,
--	/* PrimeCells */
--	[DB8500_DMA_DEV0_SPI0] = -1,
--	[DB8500_DMA_DEV1_SD_MMC0] = -1,
--	[DB8500_DMA_DEV2_SD_MMC1] = -1,
--	[DB8500_DMA_DEV3_SD_MMC2] = -1,
--	[DB8500_DMA_DEV8_SSP0] = -1,
--	[DB8500_DMA_DEV9_SSP1] = -1,
--	[DB8500_DMA_DEV11_UART2] = -1,
--	[DB8500_DMA_DEV12_UART1] = -1,
--	[DB8500_DMA_DEV13_UART0] = -1,
--	[DB8500_DMA_DEV28_SD_MM2] = -1,
--	[DB8500_DMA_DEV29_SD_MM0] = -1,
--	[DB8500_DMA_DEV32_SD_MM1] = -1,
--	[DB8500_DMA_DEV33_SPI2] = -1,
--	[DB8500_DMA_DEV35_SPI1] = -1,
--	[DB8500_DMA_DEV40_SPI3] = -1,
--	[DB8500_DMA_DEV41_SD_MM3] = -1,
--	[DB8500_DMA_DEV42_SD_MM4] = -1,
--	[DB8500_DMA_DEV43_SD_MM5] = -1,
--	[DB8500_DMA_DEV14_MSP2] = U8500_MSP2_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV30_MSP3] = U8500_MSP3_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV31_MSP0_SLIM0_CH0] = U8500_MSP0_BASE + MSP_TX_RX_REG_OFFSET,
--	[DB8500_DMA_DEV48_CAC1] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
--};
--
- struct stedma40_platform_data dma40_plat_data = {
--	.dev_rx = dma40_rx_map,
--	.dev_tx = dma40_tx_map,
- 	.disabled_channels = {-1},
- };
++	ret = clk_prepare(device_data->clk);
++	if (ret) {
++		dev_err(dev, "[%s] clk_prepare() failed!", __func__);
++		goto out_clk;
++	}
++
+ 	/* Enable device power (and clock) */
+ 	ret = hash_enable_power(device_data, false);
+ 	if (ret) {
+ 		dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
+-		goto out_clk;
++		goto out_clk_unprepare;
+ 	}
  
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index c54af61..af0064e 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -152,8 +152,6 @@ struct stedma40_chan_cfg {
-  * for 'multiple of 4' channels, like 8.
-  */
- struct stedma40_platform_data {
--	const dma_addr_t		*dev_tx;
--	const dma_addr_t		*dev_rx;
- 	int				 disabled_channels[STEDMA40_MAX_PHYS];
- 	int				*soft_lli_chans;
- 	int				 num_of_soft_lli_chans;
+ 	ret = hash_check_hw(device_data);
+@@ -1762,6 +1768,9 @@ static int ux500_hash_probe(struct platform_device *pdev)
+ out_power:
+ 	hash_disable_power(device_data, false);
+ 
++out_clk_unprepare:
++	clk_unprepare(device_data->clk);
++
+ out_clk:
+ 	clk_put(device_data->clk);
+ 
+@@ -1826,6 +1835,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
+ 		dev_err(dev, "[%s]: hash_disable_power() failed",
+ 			__func__);
+ 
++	clk_unprepare(device_data->clk);
+ 	clk_put(device_data->clk);
+ 	regulator_put(device_data->regulator);
+ 
 -- 
 1.7.10.4
 
