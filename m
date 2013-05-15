@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab3EONeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 09:34:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59207 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758945Ab3EONeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 09:34:07 -0400
-Date: Wed, 15 May 2013 15:34:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Victor Miasnikov <vvm@tut.by>
-Cc: Borislav Petkov <bp@alien8.de>, linux-pm@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@linuxdriverproject.org, olaf@aepfle.de,
-        "\"Andy Whitcroft\"" <apw@canonical.com>, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com
-Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace --
- CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re:
- 3.10-rc1 system starts regular boot when waking from s2ram Fw: [PATCH 2/2]
- x86: Make Linux guest support optional
-Message-ID: <20130515133405.GC5455@dhcp22.suse.cz>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
- <925E2E537ECB4D0C8EA18467A4D20174@local.st.by>
+	id S1759076Ab3EONfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:35:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50874 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759003Ab3EONfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 09:35:20 -0400
+Date: Wed, 15 May 2013 14:32:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonas Jensen <jonas.jensen@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
+Message-ID: <20130515133237.GK18614@n2100.arm.linux.org.uk>
+References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com> <201303181503.49491.arnd@arndb.de> <CACmBeS1empYyoaKidgTrYwUFCw447OKndxZjT98TvYfKVWB00A@mail.gmail.com> <201305151516.52389.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <925E2E537ECB4D0C8EA18467A4D20174@local.st.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201305151516.52389.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-05-13 16:17:09, Victor Miasnikov wrote:
-> Hi!
+On Wed, May 15, 2013 at 03:16:52PM +0200, Arnd Bergmann wrote:
+> > +static void moxart_idle(void)
+> > +{
+> > +	/*
+> > +	 * Because of broken hardware we have to enable interrupts or the CPU
+> > +	 * will never wakeup... Acctualy it is not very good to enable
+> > +	 * interrupts first since scheduler can miss a tick, but there is
+> > +	 * no other way around this. Platforms that needs it for power saving
+> > +	 * should call enable_hlt() in init code, since by default it is
+> > +	 * disabled.
+> > +	 */
+> > +/*	local_irq_enable();
+> > +	cpu_do_idle();*/
+> > +}
+> > +
+> > +static int __init moxart_idle_init(void)
+> > +{
+> > +	arm_pm_idle = moxart_idle;
+> > +	return 0;
+> > +}
+> > +
+> > +arch_initcall(moxart_idle_init);
 > 
-> b)
-> 
-> See in P.S.
-> CONFIG_PARAVIRT_GUEST in arch/ia64
-> 
-> a)
-> config-3.10.0-rc1-fullnohzdisabled
-> ==
-> # CONFIG_HYPERVISOR_GUEST is not set
-> ==
-> 
-> >- select PARAVIRT_GUEST
-> >+ select HYPERVISOR_GUEST
+> This does not seem to do anything at this point. Does the comment still
+> apply?
 
-I might have missed the previous discussion but how does this relate to
-the original problem reported to this (https://lkml.org/lkml/2013/5/14/398)
-thread?
+Actually, that's probably the whole point of this - to do nothing.
+This changes the behaviour of the idle loop from using the WFI to
+just spinning instead with no wait-for-interrupt or anything else.
+We just keep reading the need_resched flag.
 
-I have bisected to the faulty patch and reverting it proved to help
-(https://lkml.org/lkml/2013/5/15/160)
+That's much better than the commented out code which opens a mighty
+big race condition which will then give bad scheduling behaviour,
+allowing the idle task to sleep in WFI until the next interrupt while
+the need_resched flag may be set.
 
-For record:
-$grep HYPERVISOR_GUEST .config
-# CONFIG_HYPERVISOR_GUEST is not set
-$grep PARAVIRT_GUEST .config
-$
-
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Sure, there's better ways to do this, via the disable_hlt() stuff,
+and whatever its replacement implementation is now called.  But
+ultimately this workaround really is about "doing nothing" when
+idle!
