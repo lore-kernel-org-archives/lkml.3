@@ -1,128 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab3EOOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:47:09 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7700 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932331Ab3EOOrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:47:07 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-Date: Wed, 15 May 2013 16:47:04 +0200
-To: Glauber Costa <glommer@parallels.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC PATCH 0/2] return value from shrinkers
-Message-ID: <20130515144704.GC24072@caracas.corpusers.net>
-References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
- <5192523B.7030805@parallels.com>
- <20130515141057.GA24072@caracas.corpusers.net>
- <51939948.3040307@parallels.com>
+	id S932788Ab3EOOrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:47:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932331Ab3EOOrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:47:40 -0400
+Date: Wed, 15 May 2013 11:06:53 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
+ enabled
+Message-ID: <20130515150652.GP23604@redhat.com>
+References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
+ <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
+ <20130515083729.GC10510@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51939948.3040307@parallels.com>
+In-Reply-To: <20130515083729.GC10510@laptop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:18 Wed 15 May     , Glauber Costa wrote:
-> On 05/15/2013 06:10 PM, Oskar Andero wrote:
-> > On 17:03 Tue 14 May     , Glauber Costa wrote:
-> >> On 05/13/2013 06:16 PM, Oskar Andero wrote:
-> >>> Hi,
-> >>>
-> >>> In a previous discussion on lkml it was noted that the shrinkers use the
-> >>> magic value "-1" to signal that something went wrong.
-> >>>
-> >>> This patch-set implements the suggestion of instead using errno.h values
-> >>> to return something more meaningful.
-> >>>
-> >>> The first patch simply changes the check from -1 to any negative value and
-> >>> updates the comment accordingly.
-> >>>
-> >>> The second patch updates the shrinkers to return an errno.h value instead
-> >>> of -1. Since this one spans over many different areas I need input on what is
-> >>> a meaningful return value. Right now I used -EBUSY on everything for consitency.
-> >>>
-> >>> What do you say? Is this a good idea or does it make no sense at all?
-> >>>
-> >>> Thanks!
-> >>>
-> >>
-> >> Right now me and Dave are completely reworking the way shrinkers
-> >> operate. I suggest, first of all, that you take a look at that cautiously.
+On Wed, May 15, 2013 at 10:37:29AM +0200, Peter Zijlstra wrote:
+> On Tue, May 14, 2013 at 06:02:51PM +0200, Frederic Weisbecker wrote:
+> > From: Steven Rostedt <rostedt@goodmis.org>
 > > 
-> > Sounds good. Where can one find the code for that?
+> > Trying to test the nohz_full code, I was not able to get it to work.
+> > Finally I enabled the tick_stop tracepoint and it showed:
 > > 
-> linux-mm, linux-fsdevel
+> >  tick_stop:            success=no msg=perf events running
+> > 
+> > I talked to Frederic Weisbecker about this and he informed me that
+> > perf is used by the lockup detector. I checked the code, and sure
+> > enough it is.
+> > 
+> > As perf is always running when LOCKUP_DETECTOR is enabled, which
+> > will always disable nohz_full from working, instead of confusing
+> > users, disable LOCKUP_DETECTOR when NO_HZ_FULL is enabled.
+> > 
+> > When perf is changed such that it does not prevent nohz_full from
+> > working, then we can and should remove this constraint.
 > 
-> Subject is "kmemcg shrinkers", but only the second part is memcg related.
+> That's a bit contradictory in function, you want the NMI watchdog to
+> cover all code, so disabling whilst entering NO_HZ state is going to
+> make it not cover some code - *fail*.
 > 
-> >> On the specifics of what you are doing here, what would be the benefit
-> >> of returning something other than -1 ? Is there anything we would do
-> >> differently for a return value lesser than 1?
-> > 
-> > Firstly, what bugs me is the magic and unintuitiveness of using -1 rather than a
-> > more descriptive error code. IMO, even a #define SHRINK_ERROR -1 in some header
-> > file would be better.
-> > 
-> > Expanding the test to <0 will open up for more granular error checks,
-> > like -EAGAIN, -EBUSY and so on. Currently, they would all be treated the same,
-> > but maybe in the future we would like to handle them differently?
-> > 
+> Rather I would suggest disabling the NMI watchdog's runtime default; so
+> you can still enable it with something like: 
 > 
-> Then in the future we change it.
-> This is not a user visible API, we are free to change it at any time,
-> under any conditions. There is only value in supporting different error
-> codes if we intend to do something different about it. Otherwise, it is
-> just churn.
-> 
-> Moreover, -1 does not necessarily mean error. It means "stop shrinking".
-> There are many non-error conditions in which it could happen.
-> 
+>   echo 1 > /proc/sys/kernel/nmi_watchdog
 
-Sure, maybe errno.h is not the right way to go. So, why not add the #define
-instead? E.g. STOP_SHRINKING or something better than -1.
+Coming into the middle of the thread is always hard, but why/how does perf
+disable nohz_full?  I didn't think the hardware events of perf would cause
+problems as they are no different than an irq.  Curious.
 
-> > Finally, looking at the code:
-> >                         if (shrink_ret == -1)
-> >                                 break;
-> >                         if (shrink_ret < nr_before)
-> >                                 ret += nr_before - shrink_ret;
-> > 
-> > This piece of code will only function if shrink_ret is either greater than zero
-> > or -1. If shrink_ret is -2 this will lead to undefined behaviour.
-> > 
-> Except it never is. But since we are touching this code anyway, I see no
-> problems in expanding the test. What I don't see the point for, is the
-> other patch in your series in which you return error codes.
-> 
-> >> So far, shrink_slab behaves the same, you are just expanding the test.
-> >> If you really want to push this through, I would suggest coming up with
-> >> a more concrete reason for why this is wanted.
-> > 
-> > I don't know how well this patch is aligned with your current rework, but
-> > based on my comments above, I don't see a reason for not taking it.
-> > 
-> I see no objections for PATCH #1 that expands the check, as a cautionary
-> measure. But I will oppose returning error codes from shrinkers without
-> a solid reason for doing so (meaning a use case in which we really
-> threat one of the errors differently)
-
-Sorry for being over-zealous about the return codes and I understand
-that it is really a minor thing and possibly also a philosophical
-question. My only "solid" reasons are unintuiveness and readability.
-That is how I came across it in the first place.
-
-If no-one backs me up on this I will drop the second patch and resend
-the first patch without RFC prefix.
-
--Oskar
-
+Cheers,
+Don
