@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab3EOLpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 07:45:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39475 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3EOLpS (ORCPT
+	id S1758435Ab3EOLrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 07:47:40 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37778 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab3EOLrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 07:45:18 -0400
-Message-ID: <51937543.1050209@pengutronix.de>
-Date: Wed, 15 May 2013 13:45:07 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 15 May 2013 07:47:39 -0400
+Date: Wed, 15 May 2013 13:47:37 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Rob Herring <robherring2@gmail.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] ARM: delay: print dummy values for bogomips
+Message-ID: <20130515114737.GA7900@amd.pavel.ucw.cz>
+References: <1367602547-19322-1-git-send-email-will.deacon@arm.com>
+ <1367602547-19322-2-git-send-email-will.deacon@arm.com>
+ <20130506231554.GB16801@amd.pavel.ucw.cz>
+ <5188B8B2.5030601@arm.com>
+ <alpine.LFD.2.03.1305141547180.31158@syhkavp.arg>
+ <CAL_Jsq+Q5UMGo3J+vKKCRU+w4Kj0YN0exs7UCWTEOxmFjWfo3g@mail.gmail.com>
+ <alpine.LFD.2.03.1305141945160.31158@syhkavp.arg>
+ <20130515090103.GA12907@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Imre Deak <imre.deak@intel.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 07/11] net/peak_pcmcia: take msecs_to_jiffies_min into
- use
-References: <1368188011-23661-1-git-send-email-imre.deak@intel.com> <1368188011-23661-7-git-send-email-imre.deak@intel.com> <5193518C.3040706@pengutronix.de>
-In-Reply-To: <5193518C.3040706@pengutronix.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2TJUVTAIVCKXTNJFHUUVE"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515090103.GA12907@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2TJUVTAIVCKXTNJFHUUVE
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Wed 2013-05-15 10:01:03, Will Deacon wrote:
+> Hi Nico,
+> 
+> On Wed, May 15, 2013 at 12:56:51AM +0100, Nicolas Pitre wrote:
+> > On Tue, 14 May 2013, Rob Herring wrote:
+> > > On Tue, May 14, 2013 at 2:54 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > > > Waitaminute... Didn't you just claim this would be an ABI break?
+> > > >
+> > > > So if no application can be found, where is the ABI breakage?
+> > > 
+> > > lscpu
+> > > 
+> > > But that is already "broken" on ARM because x86 uses "bogomips" and
+> > > ARM uses "BogoMIPS". 
+> > 
+> > So basically it won't be any more broken if the field disappears 
+> > entirely, right?
+> 
+> It's not these sort of tools I was worried about. I was thinking about the
+> possibility of badly written parsers which want some other field from
+> cpuinfo, but use the bogomips line for context. Do these applications exist?
+> No idea.
 
-On 05/15/2013 11:12 AM, Marc Kleine-Budde wrote:
-> On 05/10/2013 02:13 PM, Imre Deak wrote:
->> Use msecs_to_jiffies_min instead of open-coding the same.
->>
->> Signed-off-by: Imre Deak <imre.deak@intel.com>
->=20
-> Tnx, applied to linux-can-next/master.
+Yes, they do. bogomips is not nearly as bogus as you imply.
 
-Removed, as requested by Imre:
+See
 
-> The reason is that in that driver I wasn't sure about why +1 was
-> added, since the time_after() check already guarantees a minimum wait
-> time.
+http://www.clifton.nl/index.html?bogomips.html
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+https://play.google.com/store/apps/details?id=com.securiteinfo.android.bogomips&hl=en
 
+> My second (less stupid) version of the patch prints "not reported". I'd be
+> happy to remove the line altogether if people get behind the decision though.
+> In fact, I just tried it and at least my linaro filesystem seems happy
+> enough.
 
-------enig2TJUVTAIVCKXTNJFHUUVE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGTdUMACgkQjTAFq1RaXHM0ugCgkMVdlkc9AKNezqn1e9MjO3Jw
-K7oAoIpohcwjvXgdLjcD27uMzoXkKk5D
-=3cb3
------END PGP SIGNATURE-----
-
-------enig2TJUVTAIVCKXTNJFHUUVE--
+Would it be too much work to simply put the field back with the right
+value? We don't have to get it as precise as we used to, that should
+make slowdown minimum.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
