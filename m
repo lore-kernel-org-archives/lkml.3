@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759009Ab3EOOFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:05:48 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:40754 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264Ab3EOOFq (ORCPT
+	id S1759096Ab3EOOI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:08:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51046 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab3EOOI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:05:46 -0400
-Message-ID: <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: "Borislav Petkov" <bp@alien8.de>, <linux-pm@vger.kernel.org>,
-        "Len Brown" <len.brown@intel.com>, "Pavel Machek" <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "LKML" <linux-kernel@vger.kernel.org>, "X86 ML" <x86@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        <devel@linuxdriverproject.org>, <olaf@aepfle.de>,
-        "\"Andy Whitcroft\"" <apw@canonical.com>, <jasowang@redhat.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <JBeulich@suse.com>
-Cc: "Michal Hocko" <mhocko@suse.cz>
-References: <20130514160108.GA5055@dhcp22.suse.cz> <925E2E537ECB4D0C8EA18467A4D20174@local.st.by> <20130515133405.GC5455@dhcp22.suse.cz> <293D65E8F6CE48768FF47E438C57ECD2@local.st.by> <20130515134656.GF5455@dhcp22.suse.cz>
-Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace -- CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re: 3.10-rc1 Fw: [PATCH 2/2] x86: Make Linux guest support optional
-Date: Wed, 15 May 2013 17:05:42 +0300
+	Wed, 15 May 2013 10:08:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [RFC PATCHv3 3/6] clk: Add TI-Nspire clock drivers
+Date: Wed, 15 May 2013 16:07:54 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org
+References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <1368332581-94691-4-git-send-email-dt.tangr@gmail.com>
+In-Reply-To: <1368332581-94691-4-git-send-email-dt.tangr@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="ISO-8859-1";
-	reply-type=original
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+Message-Id: <201305151607.54442.arnd@arndb.de>
+X-Provags-ID: V02:K0:ihrtt+uKg4QcP63y0xoBJSlysWVSrjOkn2oYTflx7OD
+ R7sK1tAytewQNPAA20l6S6B3ZTRk/4dgG0CE5/ZUlmJF9pkfAj
+ Z0oTJipJDAm/iID5NRULGNeJ7Nc7KXwOLTdXJD6IKJs6z9BXO0
+ VBmm3ThrPmnl6nS6fv8zKsTLOiaBqIFfwnQEnWaZwV7v1sf7VO
+ N85DaKUmH43MQgmWtYrOXHXEhBaQURAavsyp2HF5mEOwY7a2hV
+ el7hx1UwkeO5EPhwg6DNSeePShhjwmJ1/n+h6sqS5HobML1+LA
+ NrQFptbQRCr4FwtoH1tv/g/xib38GLSGrENfWqEOZN47mbIeDI
+ wJrxct/Gs/OFo3NX7oJc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
->> >>>- select PARAVIRT_GUEST
->> >>>+ select HYPERVISOR_GUEST
->> >
->> >I might have missed the previous discussion but how does this relate to
->> >the original problem reported to this (https://lkml.org/lkml/2013/5/14/398)
->> >thread?
->> 
->> As example:
->> 
->> https://lkml.org/lkml/2013/5/14/398
->> ==
->> . . .
->> # CONFIG_HYPERVISOR_GUEST is not set
->> . . .
->> ==
->> 
->> >For record:
->> >$grep HYPERVISOR_GUEST .config
->> ># CONFIG_HYPERVISOR_GUEST is not set
->> 
->> 
->> Why not
->> CONFIG_HYPERVISOR_GUEST=y
+On Sunday 12 May 2013, Daniel Tang wrote:
 > 
-> This is unrelated to the issue discussed in this thread.
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+> ---
+>  drivers/clk/Makefile     |   1 +
+>  drivers/clk/clk-nspire.c | 141 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 142 insertions(+)
+>  create mode 100644 drivers/clk/clk-nspire.c
 
- Yes: Is another 1-2 problem[s], but is problem[s]:
+You are missing a binding in Documentation/devicetree, same as for some of
+the other drivers in this series.
 
+> +static int nspire_clk_read(struct device_node *node,
+> +		struct nspire_clk_info *clk)
+> +{
+> +	u32 val;
+> +	int ret;
+> +	void __iomem *io;
+> +	const char *type = NULL;
+> +
+> +	ret = of_property_read_string(node, "io-type", &type);
+> +	if (ret)
+> +		return ret;
 
-==
-TO All:
+Using a string here feels clumsy. Why not use the "compatible" property
+to distinguish the different models?
 
- Please, replace
-CONFIG_PARAVIRT_GUEST=y
- with
-CONFIG_HYPERVISOR_GUEST=y
-==
+> +static void __init nspire_ahbdiv_setup(struct device_node *node)
+> +{
+> +	int ret;
+> +	struct clk *clk;
+> +	const char *clk_name = node->name;
+> +	const char *parent_name;
+> +	struct nspire_clk_info info;
+> +
+> +	ret = nspire_clk_read(node, &info);
+> +	if (WARN_ON(ret))
+> +		return;
+> +
+> +	of_property_read_string(node, "clock-output-names", &clk_name);
 
-==
-Is good?
+It seems strange to assign the clk_name variable to node->name
+first and then overriding it with the clock-output-names property.
+Is that intentional? If so, please explain it in a comment.
 
-CONFIG_PARAVIRT_GUEST in arch/ia64 :
+> +
+> +	pr_info("TI-NSPIRE Base: %uMHz CPU: %uMHz AHB: %uMHz\n",
+> +		info.base_clock / MHZ,
+> +		info.base_clock / info.base_cpu_ratio / MHZ,
+> +		info.base_clock / info.base_ahb_ratio / MHZ);
+> +}
+> +
+> +CLK_OF_DECLARE(nspire_clk, "nspire-clock", nspire_clk_setup);
+> +CLK_OF_DECLARE(nspire_ahbdiv, "nspire-ahb-divider", nspire_ahbdiv_setup);
 
-./linux-3.10-rc1/arch/ia64/include/asm/native/
-inst.h
-./linux-3.10-rc1/arch/ia64/configs/
-xen_domu_defconfig
-./linux-3.10-rc1/arch/ia64/include/asm/
-hw_irq.h
-iosapic.h
-paravirt.h
+I would put each of these lines directly under the function it references.
 
-==
- . . .
-#ifdef CONFIG_PARAVIRT_GUEST
-
-#define PARAVIRT_HYPERVISOR_TYPE_DEFAULT 0
-#define PARAVIRT_HYPERVISOR_TYPE_XEN  1
- . . .
-==
-
-==
-
- Comments ?
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
+	Arnd
