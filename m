@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab3EOUQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:16:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61604 "EHLO mx1.redhat.com"
+	id S932908Ab3EOUQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:16:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3327 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab3EOUQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:16:03 -0400
-Date: Wed, 15 May 2013 22:12:19 +0200
+	id S932699Ab3EOUQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 16:16:08 -0400
+Date: Wed, 15 May 2013 22:12:35 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
@@ -14,8 +14,9 @@ Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
         Lennart Poettering <mzxreary@0pointer.de>,
         Lucas De Marchi <lucas.de.marchi@gmail.com>,
         Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] coredump: format_corename() can leak cn->corename
-Message-ID: <20130515201219.GA14624@redhat.com>
+Subject: [PATCH 6/6] coredump: '% at the end' shouldn't bypass
+	core_uses_pid logic
+Message-ID: <20130515201235.GA14651@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,75 +26,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_coredump() assumes that format_corename() can only fail if
-expand_corename() fails and frees cn->corename. This is not true,
-for example cn_print_exe_file() can fail and in this case nobody
-frees cn->corename.
+"goto end" should not bypass the "Backward compatibility with
+core_uses_pid" code, move this label up.
 
-Change do_coredump() to always do kfree(cn->corename) after it
-calls format_corename() (NULL is fine), change expand_corename()
-to do nothing if kmalloc() fails.
+While at it,
+
+	- It is ugly to copy '|' into cn->corename and then inc
+	  the pointer for argv_split().
+
+	  Change format_corename() to increment pat_ptr instead.
+
+	- Remove the dead "if (*pat_ptr == 0)" in format_corename(),
+	  we already checked it is not zero.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- fs/coredump.c |   18 +++++++-----------
- 1 files changed, 7 insertions(+), 11 deletions(-)
+ fs/coredump.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/fs/coredump.c b/fs/coredump.c
-index dafafba..11bc368 100644
+index 10ba96a..a2ace9f 100644
 --- a/fs/coredump.c
 +++ b/fs/coredump.c
-@@ -58,16 +58,14 @@ static atomic_t call_count = ATOMIC_INIT(1);
- 
- static int expand_corename(struct core_name *cn)
- {
--	char *old_corename = cn->corename;
-+	int size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
-+	char *corename = krealloc(cn->corename, size, GFP_KERNEL);
- 
--	cn->size = CORENAME_MAX_SIZE * atomic_inc_return(&call_count);
--	cn->corename = krealloc(old_corename, cn->size, GFP_KERNEL);
--
--	if (!cn->corename) {
--		kfree(old_corename);
-+	if (!corename)
+@@ -166,12 +166,13 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+ 	if (expand_corename(cn, core_name_size))
  		return -ENOMEM;
--	}
  
-+	cn->size = size;
-+	cn->corename = corename;
- 	return 0;
++	if (ispipe)
++		++pat_ptr;
++
+ 	/* Repeat as long as we have more pattern to process and more output
+ 	   space */
+ 	while (*pat_ptr) {
+ 		if (*pat_ptr != '%') {
+-			if (*pat_ptr == 0)
+-				goto out;
+ 			err = cn_printf(cn, "%c", *pat_ptr++);
+ 		} else {
+ 			switch (*++pat_ptr) {
+@@ -240,6 +241,7 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+ 			return err;
+ 	}
+ 
++out:
+ 	/* Backward compatibility with core_uses_pid:
+ 	 *
+ 	 * If core_pattern does not include a %p (as is the default)
+@@ -250,7 +252,6 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+ 		if (err)
+ 			return err;
+ 	}
+-out:
+ 	return ispipe;
  }
  
-@@ -157,10 +155,9 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
- 	int pid_in_pattern = 0;
- 	int err = 0;
- 
-+	cn->used = 0;
- 	cn->size = CORENAME_MAX_SIZE * atomic_read(&call_count);
- 	cn->corename = kmalloc(cn->size, GFP_KERNEL);
--	cn->used = 0;
--
- 	if (!cn->corename)
- 		return -ENOMEM;
- 
-@@ -549,7 +546,7 @@ void do_coredump(siginfo_t *siginfo)
- 		if (ispipe < 0) {
- 			printk(KERN_WARNING "format_corename failed\n");
- 			printk(KERN_WARNING "Aborting core\n");
--			goto fail_corename;
-+			goto fail_unlock;
+@@ -580,7 +581,7 @@ void do_coredump(siginfo_t *siginfo)
+ 			goto fail_dropcount;
  		}
  
- 		if (cprm.limit == 1) {
-@@ -669,7 +666,6 @@ fail_dropcount:
- 		atomic_dec(&core_dump_count);
- fail_unlock:
- 	kfree(cn.corename);
--fail_corename:
- 	coredump_finish(mm, core_dumped);
- 	revert_creds(old_cred);
- fail_creds:
+-		helper_argv = argv_split(GFP_KERNEL, cn.corename+1, NULL);
++		helper_argv = argv_split(GFP_KERNEL, cn.corename, NULL);
+ 		if (!helper_argv) {
+ 			printk(KERN_WARNING "%s failed to allocate memory\n",
+ 			       __func__);
+@@ -597,7 +598,7 @@ void do_coredump(siginfo_t *siginfo)
+ 
+ 		argv_free(helper_argv);
+ 		if (retval) {
+-			printk(KERN_INFO "Core dump to %s pipe failed\n",
++			printk(KERN_INFO "Core dump to |%s pipe failed\n",
+ 			       cn.corename);
+ 			goto close_fail;
+ 		}
 -- 
 1.5.5.1
 
