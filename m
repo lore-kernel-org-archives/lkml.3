@@ -1,170 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3EOPuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:50:05 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:50451 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759469Ab3EOPt7 (ORCPT
+	id S1759476Ab3EOPz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:55:29 -0400
+Received: from gw1.nexyzbb.ne.jp ([61.195.191.143]:34434 "EHLO
+	mx12.nexyzbb.ne.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758905Ab3EOPz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:49:59 -0400
-Message-ID: <5193AE96.1030401@gmail.com>
-Date: Wed, 15 May 2013 23:49:42 +0800
-From: Liu Jiang <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	Wed, 15 May 2013 11:55:28 -0400
+X-Greylist: delayed 2225 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 11:55:28 EDT
+Message-ID: <51733.223.188.25.72.1368631099.risu@wmail.nexyzbb.ne.jp>
+Date: Thu, 16 May 2013 00:18:19 +0900 (JST)
+Subject: 
+From: "Liliane Bettencourt" <aoisora19608@nexyzbb.ne.jp>
+Reply-To: mme.lilianebettencourtt@postribe.com
+User-Agent: RisuMail 3.0nb
+X-Mailer: RisuMail 3.0nb
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5, part4 31/41] mm/ppc: prepare for removing num_physpages
- and simplify mem_init()
-References: <1368028298-7401-1-git-send-email-jiang.liu@huawei.com> <1368028298-7401-32-git-send-email-jiang.liu@huawei.com> <1368577954.31689.63.camel@pasglop>
-In-Reply-To: <1368577954.31689.63.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=us-ascii
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15 May 2013 08:32:34 AM CST, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-05-08 at 23:51 +0800, Jiang Liu wrote:
->> Prepare for removing num_physpages and simplify mem_init().
->
-> No objection, I haven't had a chance to actually build/boot test though.
->
-> BTW. A recommended way of doing so which is pretty easy even if you
-> don't have access to powerpc hardware nowadays is to use
-> qemu-system-ppc64 with -M pseries.
->
-> You can find cross compilers for the kernel on kernel.org and you can
-> feed qemu with some distro installer ISO.
-Hi Benjamin,'
-      Thanks for review! As could I assume an "Acked-by"?
-      I have installed all cross-compiler from ftp.kernel.org and done 
-basic
-building tests for these patches. But I haven't run new kernel with qemu
-yet, that's a really good suggestion, will try it next time.
-Regards!
-Gerry
 
 
->
-> Cheers,
-> Ben.
->
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   arch/powerpc/mm/mem.c |   56 +++++++++++--------------------------------------
->>   1 file changed, 12 insertions(+), 44 deletions(-)
->>
->> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
->> index b890245..4e24f1c 100644
->> --- a/arch/powerpc/mm/mem.c
->> +++ b/arch/powerpc/mm/mem.c
->> @@ -299,46 +299,27 @@ void __init paging_init(void)
->>
->>   void __init mem_init(void)
->>   {
->> -#ifdef CONFIG_NEED_MULTIPLE_NODES
->> -	int nid;
->> -#endif
->> -	pg_data_t *pgdat;
->> -	unsigned long i;
->> -	struct page *page;
->> -	unsigned long reservedpages = 0, codesize, initsize, datasize, bsssize;
->> -
->>   #ifdef CONFIG_SWIOTLB
->>   	swiotlb_init(0);
->>   #endif
->>
->> -	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
->>   	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
->>
->>   #ifdef CONFIG_NEED_MULTIPLE_NODES
->> -        for_each_online_node(nid) {
->> -		if (NODE_DATA(nid)->node_spanned_pages != 0) {
->> -			printk("freeing bootmem node %d\n", nid);
->> -			free_all_bootmem_node(NODE_DATA(nid));
->> -		}
->> +	{
->> +		pg_data_t *pgdat;
->> +
->> +		for_each_online_pgdat(pgdat)
->> +			if (pgdat->node_spanned_pages != 0) {
->> +				printk("freeing bootmem node %d\n",
->> +					pgdat->node_id);
->> +				free_all_bootmem_node(pgdat);
->> +			}
->>   	}
->>   #else
->>   	max_mapnr = max_pfn;
->>   	free_all_bootmem();
->>   #endif
->> -	for_each_online_pgdat(pgdat) {
->> -		for (i = 0; i < pgdat->node_spanned_pages; i++) {
->> -			if (!pfn_valid(pgdat->node_start_pfn + i))
->> -				continue;
->> -			page = pgdat_page_nr(pgdat, i);
->> -			if (PageReserved(page))
->> -				reservedpages++;
->> -		}
->> -	}
->> -
->> -	codesize = (unsigned long)&_sdata - (unsigned long)&_stext;
->> -	datasize = (unsigned long)&_edata - (unsigned long)&_sdata;
->> -	initsize = (unsigned long)&__init_end - (unsigned long)&__init_begin;
->> -	bsssize = (unsigned long)&__bss_stop - (unsigned long)&__bss_start;
->>
->>   #ifdef CONFIG_HIGHMEM
->>   	{
->> @@ -348,13 +329,9 @@ void __init mem_init(void)
->>   		for (pfn = highmem_mapnr; pfn < max_mapnr; ++pfn) {
->>   			phys_addr_t paddr = (phys_addr_t)pfn << PAGE_SHIFT;
->>   			struct page *page = pfn_to_page(pfn);
->> -			if (memblock_is_reserved(paddr))
->> -				continue;
->> -			free_highmem_page(page);
->> -			reservedpages--;
->> +			if (!memblock_is_reserved(paddr))
->> +				free_highmem_page(page);
->>   		}
->> -		printk(KERN_DEBUG "High memory: %luk\n",
->> -		       totalhigh_pages << (PAGE_SHIFT-10));
->>   	}
->>   #endif /* CONFIG_HIGHMEM */
->>
->> @@ -367,16 +344,7 @@ void __init mem_init(void)
->>   		(mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY) - 1;
->>   #endif
->>
->> -	printk(KERN_INFO "Memory: %luk/%luk available (%luk kernel code, "
->> -	       "%luk reserved, %luk data, %luk bss, %luk init)\n",
->> -		nr_free_pages() << (PAGE_SHIFT-10),
->> -		num_physpages << (PAGE_SHIFT-10),
->> -		codesize >> 10,
->> -		reservedpages << (PAGE_SHIFT-10),
->> -		datasize >> 10,
->> -		bsssize >> 10,
->> -		initsize >> 10);
->> -
->> +	mem_init_print_info(NULL);
->>   #ifdef CONFIG_PPC32
->>   	pr_info("Kernel virtual memory layout:\n");
->>   	pr_info("  * 0x%08lx..0x%08lx  : fixmap\n", FIXADDR_START, FIXADDR_TOP);
->
->
 
+Hello Dear,
+
+I am Liliane Bettencourt, Principal Shareholder Loreal Paris.
+I need your assistance/partnership.
+
+Please contact for more details.
+
+Liliane Bettencourt.
+(Loreal Paris & Aoisora 19608).
+www.lilianefonds.org
+==================================
 
