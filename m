@@ -1,50 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab3EOMkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:40:05 -0400
-Received: from smtp4.gemalto.com ([193.56.114.199]:61970 "EHLO
-	smtp4.gemalto.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758932Ab3EOMkD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:40:03 -0400
-X-Greylist: delayed 705 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 08:40:03 EDT
-From: Schmiedl Christian <Christian.Schmiedl@gemalto.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
-Date: Wed, 15 May 2013 14:28:15 +0200
-Subject: [PATCH] qmi_wwan: Added support for Cinterion's PLxx WWAN Interface
-Thread-Topic: [PATCH] qmi_wwan: Added support for Cinterion's PLxx WWAN
- Interface
-Thread-Index: Ac5RZ6xAZh/F2lNeR0iyQk7jWAHSJQ==
-Message-ID: <376FB829F3ECB542B825EAF4D8CA8A97012A57999273@CROEXCFWP03.gemalto.com>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932518Ab3EOMqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:46:40 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:59003 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932416Ab3EOMqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 08:46:38 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v3] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
+Cc: akpm@linux-foundation.org, mgorman@suse.de, aarcange@redhat.com,
+        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
+        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
+        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
+Message-Id: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Wed, 15 May 2013 07:46:36 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/drivers/net/usb/qmi_wwan.c: Added support for Cinterion's PLxx WWAN Interface
-by adding QMI_FIXED_INTF with Cinterion's Vendor ID as well as Product ID and
-WWAN Interface Number.
 
-Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel <at> gemalto.com>
-Signed-off-by: Christian Schmiedl <christian.schmiedl <at> gemalto.com>
+/proc/<pid>/smaps and similar walks through a user page table should not
+be looking at VM_PFNMAP areas.
+
+v2: 
+- moves the VM_BUG_ON out of the loop
+- adds the needed test for  vma->vm_start <= addr
+
+v3 adds comments to make this clearer, as N. Horiguchi recommends:
+  > I recommend that you check VM_PFNMAP in the possible callers' side.
+  > But this patch seems to solve your problem, so with properly commenting
+  > this somewhere, I do not oppose it.
+
+Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+assume that all the mapped PFN's are backed with page structures. And this is
+not usually true for VM_PFNMAP areas. This can result in panics on kernel
+page faults when attempting to address those page structures.
+
+There are a half dozen callers of walk_page_range() that walk through
+a task's entire page table (as N. Horiguchi pointed out). So rather than
+change all of them, this patch changes just walk_page_range() to ignore 
+VM_PFNMAP areas.
+
+The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+want to test any vma in the range.
+
+VM_PFNMAP areas are used by:
+- graphics memory manager   gpu/drm/drm_gem.c
+- global reference unit     sgi-gru/grufile.c
+- sgi special memory        char/mspec.c
+- and probably several out-of-tree modules
+
+I'm copying everyone who has changed this file recently, in case
+there is some reason that I am not aware of to provide
+/proc/<pid>/smaps|clear_refs|maps|numa_maps for these VM_PFNMAP areas.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 ---
-patch is against linux-3.9
---- linux-3.9/drivers/net/usb/qmi_wwan.c.orig	2013-05-06 08:10:11.170034451 +0200
-+++ linux-3.9/drivers/net/usb/qmi_wwan.c	2013-05-06 08:58:00.800264179 +0200
- <at>  <at>  -569,6 +569,7  <at>  <at>  static const struct usb_device_id produc
- 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
- 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
- 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
-+	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
+ mm/pagewalk.c |   65 ++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 36 insertions(+), 29 deletions(-)
 
- 	/* 4. Gobi 1000 devices */
- 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+Index: linux/mm/pagewalk.c
+===================================================================
+--- linux.orig/mm/pagewalk.c
++++ linux/mm/pagewalk.c
+@@ -127,22 +127,6 @@ static int walk_hugetlb_range(struct vm_
+ 	return 0;
+ }
+ 
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	struct vm_area_struct *vma;
+-
+-	/* We don't need vma lookup at all. */
+-	if (!walk->hugetlb_entry)
+-		return NULL;
+-
+-	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+-		return vma;
+-
+-	return NULL;
+-}
+-
+ #else /* CONFIG_HUGETLB_PAGE */
+ static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+ {
+@@ -198,30 +182,53 @@ int walk_page_range(unsigned long addr,
+ 	if (!walk->mm)
+ 		return -EINVAL;
+ 
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++
+ 	pgd = pgd_offset(walk->mm, addr);
+ 	do {
+-		struct vm_area_struct *vma;
++		struct vm_area_struct *vma = NULL;
+ 
+ 		next = pgd_addr_end(addr, end);
+ 
+ 		/*
+-		 * handle hugetlb vma individually because pagetable walk for
+-		 * the hugetlb page is dependent on the architecture and
+-		 * we can't handled it in the same manner as non-huge pages.
++		 * This function was not intended to be vma based.
++		 * But there are vma special cases to be handled:
++		 * - hugetlb vma's
++		 * - VM_PFNMAP vma's
+ 		 */
+-		vma = hugetlb_vma(addr, walk);
++		vma = find_vma(walk->mm, addr);
+ 		if (vma) {
+-			if (vma->vm_end < next)
++			/*
++			 * There are no page structures backing a VM_PFNMAP
++			 * range, so do not allow split_huge_page_pmd().
++			 */
++			if ((vma->vm_start <= addr) &&
++			    (vma->vm_flags & VM_PFNMAP)) {
+ 				next = vma->vm_end;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 			/*
+-			 * Hugepage is very tightly coupled with vma, so
+-			 * walk through hugetlb entries within a given vma.
++			 * Handle hugetlb vma individually because pagetable
++			 * walk for the hugetlb page is dependent on the
++			 * architecture and we can't handled it in the same
++			 * manner as non-huge pages.
+ 			 */
+-			err = walk_hugetlb_range(vma, addr, next, walk);
+-			if (err)
+-				break;
+-			pgd = pgd_offset(walk->mm, next);
+-			continue;
++			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
++			    is_vm_hugetlb_page(vma)) {
++				if (vma->vm_end < next)
++					next = vma->vm_end;
++				/*
++				 * Hugepage is very tightly coupled with vma,
++				 * so walk through hugetlb entries within a
++				 * given vma.
++				 */
++				err = walk_hugetlb_range(vma, addr, next, walk);
++				if (err)
++					break;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 		}
+ 
+ 		if (pgd_none_or_clear_bad(pgd)) {
