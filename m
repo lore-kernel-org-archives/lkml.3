@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab3EOJUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:20:11 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2159 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3EOJUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757289Ab3EOJUH (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 15 May 2013 05:20:07 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <hein_tibosch@yahoo.es>, <s.trumtrar@pengutronix.de>,
-        <michal.simek@xilinx.com>, <monstr@monstr.eu>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3/3 v3] net/macb: Try to optimize struct macb layout
-Date: Wed, 15 May 2013 11:18:48 +0200
-Message-ID: <d0bc206ace3baaf681e111ba07c4d0b576839bb4.1368608928.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1368608928.git.nicolas.ferre@atmel.com>
-References: <cover.1368608928.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:52373 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab3EOJUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 05:20:05 -0400
+From: Leon Romanovsky <leon@leon.nu>
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Leon Romanovsky <leon@leon.nu>
+Subject: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
+Date: Wed, 15 May 2013 12:19:46 +0300
+Message-Id: <1368609586-20905-1-git-send-email-leon@leon.nu>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Havard Skinnemoen <havard@skinnemoen.net>
+There is no need to call kfree while using devm_kzalloc,
+remove it from *_device_init function.
 
-Move TX-related fields to the top of the struct so that they end up on
-the same cache line. Move the NAPI struct below that since it is used
-from the interrupt handler. This field is also marked as
-___cacheline_aligned_in_smp.
-RX-related fields go below those.
-Function pointers and capability mask are immediately after that as
-they are also used in the hot path.
-
-Move the spinlock before regs since they are usually used together.
-
-Signed-off-by: Havard Skinnemoen <havard@skinnemoen.net>
-[nicolas.ferre@atmel.com: adapt to newer kernel]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Leon Romanovsky <leon@leon.nu>
 ---
- drivers/net/ethernet/cadence/macb.h | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ drivers/mfd/tps65912-core.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index f407615..6c8e38a2 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -555,46 +555,47 @@ struct macb_or_gem_ops {
- };
+diff --git a/drivers/mfd/tps65912-core.c b/drivers/mfd/tps65912-core.c
+index aeb8e40..f25e552 100644
+--- a/drivers/mfd/tps65912-core.c
++++ b/drivers/mfd/tps65912-core.c
+@@ -127,7 +127,8 @@ int tps65912_device_init(struct tps65912 *tps65912)
+ 	struct tps65912_platform_data *init_data;
+ 	int ret, dcdc_avs, value;
  
- struct macb {
-+	spinlock_t		lock;
- 	void __iomem		*regs;
+-	init_data = kzalloc(sizeof(struct tps65912_platform_data), GFP_KERNEL);
++	init_data = devm_kzalloc(&tps65912->dev,
++			sizeof(struct tps65912_platform_data), GFP_KERNEL);
+ 	if (init_data == NULL)
+ 		return -ENOMEM;
  
-+	unsigned int		tx_head;
-+	unsigned int		tx_tail;
-+	struct macb_dma_desc	*tx_ring;
-+	struct macb_tx_skb	*tx_skb;
-+	dma_addr_t		tx_ring_dma;
-+	struct work_struct	tx_error_task;
-+
-+	struct napi_struct	napi ____cacheline_aligned_in_smp;
-+
- 	unsigned int		rx_tail;
- 	unsigned int		rx_prepared_head;
- 	struct macb_dma_desc	*rx_ring;
- 	struct sk_buff		**rx_skbuff;
- 	void			*rx_buffers;
- 	size_t			rx_buffer_size;
-+	dma_addr_t		rx_ring_dma;
-+	dma_addr_t		rx_buffers_dma;
+@@ -156,11 +157,9 @@ int tps65912_device_init(struct tps65912 *tps65912)
+ 	if (ret < 0)
+ 		goto err;
  
--	unsigned int		tx_head, tx_tail;
--	struct macb_dma_desc	*tx_ring;
--	struct macb_tx_skb	*tx_skb;
-+	struct macb_or_gem_ops	macbgem_ops;
-+
-+	u32			caps;
+-	kfree(init_data);
+ 	return ret;
  
--	spinlock_t		lock;
- 	struct platform_device	*pdev;
- 	struct clk		*pclk;
- 	struct clk		*hclk;
- 	struct net_device	*dev;
--	struct napi_struct	napi;
--	struct work_struct	tx_error_task;
- 	struct net_device_stats	stats;
- 	union {
- 		struct macb_stats	macb;
- 		struct gem_stats	gem;
- 	}			hw_stats;
- 
--	dma_addr_t		rx_ring_dma;
--	dma_addr_t		tx_ring_dma;
--	dma_addr_t		rx_buffers_dma;
--
--	struct macb_or_gem_ops	macbgem_ops;
--
- 	struct mii_bus		*mii_bus;
- 	struct phy_device	*phy_dev;
- 	unsigned int 		link;
- 	unsigned int 		speed;
- 	unsigned int 		duplex;
- 
--	u32			caps;
--
- 	phy_interface_t		phy_interface;
- 
- 	/* AT91RM9200 transmit */
+ err:
+-	kfree(init_data);
+ 	mfd_remove_devices(tps65912->dev);
+ 	kfree(tps65912);
+ 	return ret;
 -- 
-1.8.0
+1.8.1.5
 
