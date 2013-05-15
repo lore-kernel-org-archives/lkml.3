@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab3EOO7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:59:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55861 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758979Ab3EOO7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:59:31 -0400
-Date: Wed, 15 May 2013 16:59:10 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/15] perf util: Use evsel->name to get tracepoint_paths
-Message-ID: <20130515145910.GA2194@krava.brq.redhat.com>
-References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
- <1368526439-31966-3-git-send-email-namhyung@kernel.org>
+	id S1759360Ab3EOO7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:59:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59003 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab3EOO7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:59:46 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <tony@atomide.com>
+CC: <linux-omap@vger.kernel.org>, Eduardo Valentin <eduardo.valentin@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 1/3] arm: introduce config HAS_BANDGAP
+Date: Wed, 15 May 2013 10:58:46 -0400
+Message-ID: <1368629928-6723-2-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com>
+References: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368526439-31966-3-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 07:13:46PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+Introduce HAS_BANDGAP config entry. This config is a
+boolean value so that arch code can flag is they
+feature a bandgap device.
 
-SNIP
+This config entry follows the same idea behind
+ARCH_HAS_CPUFREQ.
 
->  };
->  
->  extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
-> +extern struct tracepoint_path *tracepoint_name_to_path(const char *name);
->  extern bool have_tracepoints(struct list_head *evlist);
->  
->  const char *event_type(int type);
-> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-> index ab18bf12d54a..bfcaeac7ef9d 100644
-> --- a/tools/perf/util/trace-event-info.c
-> +++ b/tools/perf/util/trace-event-info.c
-> @@ -414,12 +414,23 @@ get_tracepoints_path(struct list_head *pattrs)
->  		if (pos->attr.type != PERF_TYPE_TRACEPOINT)
->  			continue;
->  		++nr_tracepoints;
-> +
-> +		if (pos->name) {
-> +			ppath->next = tracepoint_name_to_path(pos->name);
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ arch/arm/Kconfig            | 3 +++
+ arch/arm/mach-omap2/Kconfig | 1 +
+ 2 files changed, 4 insertions(+)
 
-yep, looks like big time saver ;)
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index d423d58..bcbdec9 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -174,6 +174,9 @@ config ARCH_HAS_CPUFREQ
+ 	  and that the relevant menu configurations are displayed for
+ 	  it.
+ 
++config ARCH_HAS_BANDGAP
++	bool
++
+ config GENERIC_HWEIGHT
+ 	bool
+ 	default y
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index f49cd51..8620ab5 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -4,6 +4,7 @@ config ARCH_OMAP
+ config ARCH_OMAP2PLUS
+ 	bool "TI OMAP2/3/4/5 SoCs with device tree support" if (ARCH_MULTI_V6 || ARCH_MULTI_V7)
+ 	select ARCH_HAS_CPUFREQ
++	select ARCH_HAS_BANDGAP
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_OMAP
+ 	select ARCH_REQUIRE_GPIOLIB
+-- 
+1.8.2.1.342.gfa7285d
 
-> +			if (!ppath->next)
-> +				goto error;
-
-hum, the tracepoint_name_to_path fails also because of the
-malformed tracepoint name.. then the error message is
-misleading.. but not quite sure this could happen
-
-jirka
-
-> +
-> +			goto next;
-> +		}
-> +
->  		ppath->next = tracepoint_id_to_path(pos->attr.config);
->  		if (!ppath->next) {
-> +error:
->  			pr_debug("No memory to alloc tracepoints list\n");
->  			put_tracepoints_path(&path);
->  			return NULL;
->  		}
-> +next:
->  		ppath = ppath->next;
->  	}
->  
-> -- 
-> 1.7.11.7
-> 
