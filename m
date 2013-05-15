@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab3EOI0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:26:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55800 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757175Ab3EOI0E (ORCPT
+	id S932182Ab3EOI0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:26:25 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:49118 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757727Ab3EOI0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:26:04 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <51934685.9080909@jp.fujitsu.com>
-Date: Wed, 15 May 2013 17:25:41 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 15 May 2013 04:26:21 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH v5 7/8] vmcore: calculate vmcore file size from buffer
- size and total size of vmcore objects
-References: <20130514015622.18697.77191.stgit@localhost6.localdomain6> <20130514015746.18697.1089.stgit@localhost6.localdomain6> <20130514164739.GJ13674@redhat.com>
-In-Reply-To: <20130514164739.GJ13674@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130515102409.5218231c@vostro>
+References: <20130515102409.5218231c@vostro>
+Date: Wed, 15 May 2013 10:26:20 +0200
+Message-ID: <CAFLxGvwzgMQmjXRX4tqK3j9cUVnzOSOuErhY9ygX4=s0H2-PPA@mail.gmail.com>
+Subject: Re: [Regression] Boot failure on ALIX during LED probe
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Timo Teras <timo.teras@iki.fi>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-leds@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/05/15 1:47), Vivek Goyal wrote:
-> On Tue, May 14, 2013 at 10:57:46AM +0900, HATAYAMA Daisuke wrote:
->> The previous patches newly added holes before each chunk of memory and
->> the holes need to be count in vmcore file size. There are two ways to
->> count file size in such a way:
->>
->> 1) supporse p as a poitner to the last program header entry with
->> PT_LOAD type, then roundup(p->p_offset + p->p_memsz, PAGE_SIZE), or
+On Wed, May 15, 2013 at 9:24 AM, Timo Teras <timo.teras@iki.fi> wrote:
+> I got the below with Linux 3.8.7-grsec and 3.9.2-grsec. Where as
+> 3.6.11-grsec is a known good. I believe the same would happen on on
+> vanilla kernels too.
 
-This part was wrong. This should have been:
+If you post to linux-kernel@vger, please make sure that you're using a
+vanilla kernel.
 
-1) support m as a pointer to the last vmcore object in vmcore_list, then 
-file size is (m->offset + m->size), or
-
-I'll correct this way in next patch.
-
-Note that no functional change, only description is wrong here.
-
--- 
-Thanks.
-HATAYAMA, Daisuke
-
+--
+Thanks,
+//richard
