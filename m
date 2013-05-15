@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab3EOITt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:19:49 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41889 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab3EOITr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Wed, 15 May 2013 04:19:47 -0400
-Message-Id: <5193613E02000078000D64E9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 15 May 2013 09:19:42 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "David Vrabel" <david.vrabel@citrix.com>,
-        "John Stultz" <john.stultz@linaro.org>
-Cc: "Thomas Gleixner" <tglx@linutronix.de>, <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/3] x86/xen: sync the CMOS RTC as well
- as the Xen wallclock
-References: <1368467768-2316-1-git-send-email-david.vrabel@citrix.com>
- <1368467768-2316-4-git-send-email-david.vrabel@citrix.com>
- <51927339.5070402@linaro.org>
-In-Reply-To: <51927339.5070402@linaro.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1757517Ab3EOIVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:21:49 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43398 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3EOIVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 04:21:46 -0400
+Date: Wed, 15 May 2013 01:21:09 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, akpm@linux-foundation.org,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 04/21] Generic percpu refcounting
+Message-ID: <20130515082109.GA16164@moria.home.lan>
+References: <1368494338-7069-1-git-send-email-koverstreet@google.com>
+ <1368494338-7069-5-git-send-email-koverstreet@google.com>
+ <20130514135101.GB17587@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130514135101.GB17587@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.05.13 at 19:24, John Stultz <john.stultz@linaro.org> wrote:
-> On 05/13/2013 10:56 AM, David Vrabel wrote:
->> From: David Vrabel <david.vrabel@citrix.com>
->>
->> If NTP is used in dom0 and it is synchronized to its clock source,
->> then the kernel will periodically synchronize the Xen wallclock with
->> the system time.  Updates to the Xen wallclock do not persist across
->> reboots, so also synchronize the CMOS RTC (as on bare metal).
->>
->> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->> ---
->>   arch/x86/xen/time.c |   11 ++++++++++-
->>   1 files changed, 10 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
->> index a1947ac..4656165 100644
->> --- a/arch/x86/xen/time.c
->> +++ b/arch/x86/xen/time.c
->> @@ -14,6 +14,7 @@
->>   #include <linux/kernel_stat.h>
->>   #include <linux/math64.h>
->>   #include <linux/gfp.h>
->> +#include <linux/mc146818rtc.h>
->>   
->>   #include <asm/pvclock.h>
->>   #include <asm/xen/hypervisor.h>
->> @@ -199,17 +200,25 @@ static void xen_get_wallclock(struct timespec *now)
->>   static int xen_set_wallclock(const struct timespec *now)
->>   {
->>   	struct xen_platform_op op;
->> +	int ret;
->>   
->>   	/* do nothing for domU */
->>   	if (!xen_initial_domain())
->>   		return -1;
->>   
->> +	/* Set the Xen wallclock. */
->>   	op.cmd = XENPF_settime;
->>   	op.u.settime.secs = now->tv_sec;
->>   	op.u.settime.nsecs = now->tv_nsec;
->>   	op.u.settime.system_time = xen_clocksource_read();
->>   
->> -	return HYPERVISOR_dom0_op(&op);
->> +	ret = HYPERVISOR_dom0_op(&op);
->> +	if (ret)
->> +		return ret;
->> +
->> +	/* Set the hardware RTC. */
->> +	return mach_set_rtc_mmss(now);
+On Tue, May 14, 2013 at 03:51:01PM +0200, Oleg Nesterov wrote:
+> On 05/13, Kent Overstreet wrote:
+> >
+> > +int percpu_ref_kill(struct percpu_ref *ref)
+> > +{
+> > +	unsigned __percpu *pcpu_count;
+> > +	unsigned __percpu *old;
+> > +	unsigned count = 0;
+> > +	int cpu;
+> > +
+> > +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> > +
+> > +	do {
+> > +		if (!pcpu_count)
+> > +			return 0;
+> > +
+> > +		old = pcpu_count;
+> > +		pcpu_count = cmpxchg(&ref->pcpu_count, old, NULL);
+> > +	} while (pcpu_count != old);
 > 
-> Sorry, just noticed one more thing while applying this. Do all Xen 
-> systems run on hardware that has the conventional CMOS clock?
+> This is purely cosmetic, feel free to ignore. But afaics all we
+> need is
 > 
-> What happens if the bare-metal needs to use efi_set_rtc() or 
-> vrtc_set_mmss() ?
+> 	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
+> 	if (!cmpxchg(&ref->pcpu_count, pcpu_count, NULL))
+> 		return 0;
 
-There's no EFI support in the upstream kernel yet when running
-on Xen (the code that's in the kernel can't be used, as Dom0
-can't directly invoke EFI runtime service functions).
-
-And I don't think Xen is in any way prepared to run on
-Moorestown, which afaict is where vrtc_set_mmss() comes into
-the picture.
-
-Jan
-
+Whoops, yep. I was ripping out the dynamic stuff from my dynamic percpu
+refcount code and missed that bit.
