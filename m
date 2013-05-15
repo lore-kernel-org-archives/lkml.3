@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab3EOFtC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 01:49:02 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:34527 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3EOFtA (ORCPT
+	id S1754092Ab3EOF5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 01:57:22 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34952 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab3EOF5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 01:49:00 -0400
+	Wed, 15 May 2013 01:57:21 -0400
+Date: Tue, 14 May 2013 22:56:51 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        DavidAGilbert@uk.ibm.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Add --objdump option to perf top
+Message-ID: <20130515055651.GA9985@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130514175440.GG6795@mtj.dyndns.org>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<20130514175440.GG6795@mtj.dyndns.org>
-Date: Wed, 15 May 2013 11:18:59 +0530
-Message-ID: <CAKohpo=oHXbHTWdj+J9OeV9ZHU3ii9u5UNcsrwOrJwkXbz_xkg@mail.gmail.com>
-Subject: Re: [PATCH V5 0/5] Queue work on power efficient wq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051505-7408-0000-0000-0000103140E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2013 23:24, Tejun Heo <tj@kernel.org> wrote:
-> On Wed, Apr 24, 2013 at 05:12:52PM +0530, Viresh Kumar wrote:
->> This patchset was called: "Create sched_select_cpu() and use it for workqueues"
->> for the first three versions.
->
-> Applied to wq/for-3.11 with some updates to comments and
-> documentation.  Will post the applied versions.  If something is awry,
-> please let me know.
+perf: Add objdump option to 'perf top'
 
-Thanks. All looks good.
+Like with 'perf annotate' add the --objdump option to perf top so users
+can specify an alternate path to the /usr/bin/objdump binary.
+
+Reported-by: David A. Gilbert <DavidAGilbert@uk.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ tools/perf/builtin-top.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 67bdb9f..820caeb 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -40,6 +40,7 @@
+ #include "util/xyarray.h"
+ #include "util/sort.h"
+ #include "util/intlist.h"
++#include "arch/common.h"
+ 
+ #include "util/debug.h"
+ 
+@@ -942,6 +943,12 @@ static int __cmd_top(struct perf_top *top)
+ 	if (top->session == NULL)
+ 		return -ENOMEM;
+ 
++	if (!objdump_path) {
++		ret = perf_session_env__lookup_objdump(&top->session->header.env);
++		if (ret)
++			goto out_delete;
++	}
++
+ 	ret = perf_top__setup_sample_type(top);
+ 	if (ret)
+ 		goto out_delete;
+@@ -1107,6 +1114,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN(0, "asm-raw", &symbol_conf.annotate_asm_raw,
+ 		    "Display raw encoding of assembly instructions (default)"),
++	OPT_STRING(0, "objdump", &objdump_path, "path",
++		    "objdump binary to use for disassembly and annotations"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
+-- 
+1.7.1
+
