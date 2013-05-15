@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab3EOBBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 21:01:19 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:61736 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758286Ab3EOBBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 21:01:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgEYAAvdklF5LKxY/2dsb2JhbABagweDCrg+hRwEAYEBF3QEghsBAQQBJxMcIwULCAMOCgklDwUlAyETHodoBb1BFo1rgR0Hg1UDlzOKGYclgyEq
-Date: Wed, 15 May 2013 11:01:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Zach Brown <zab@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [RFC v0 0/4] sys_copy_range() rough draft
-Message-ID: <20130515010113.GN29466@dastard>
-References: <1368566126-17610-1-git-send-email-zab@redhat.com>
- <20130514214251.GK29466@dastard>
- <20130514220440.GN16385@lenny.home.zabbo.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514220440.GN16385@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932158Ab3EOBBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 21:01:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758653Ab3EOBBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 21:01:51 -0400
+From: Asias He <asias@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, Asias He <asias@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+Date: Wed, 15 May 2013 08:59:43 +0800
+Message-Id: <1368579583-13097-1-git-send-email-asias@redhat.com>
+In-Reply-To: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 03:04:40PM -0700, Zach Brown wrote:
-> On Wed, May 15, 2013 at 07:42:51AM +1000, Dave Chinner wrote:
-> > On Tue, May 14, 2013 at 02:15:22PM -0700, Zach Brown wrote:
-> > > I'm going to keep hacking away at this.  My next step is to get ext4
-> > > supporting .copy_range, probably with a quick hack to copy the
-> > > contents of bios.  Hopefully that'll give enough time to also integrate
-> > > review feedback.
-> > 
-> > Wouldn't the easiest "support all filesystems" hack just be to add
-> > a destination offset parameter to do_splice_direct() and call that
-> > when the filesystem doesn't supply a ->copy_range method? i.e. use
-> > the mechanisms we already have for copying from one file to another
-> > via the page cache as efficiently as possible?
-> 
-> Probably; and this in-kernel buffered fallback is particularly desirable
-> for nfsd when the exported fs doesn't provide .copy_range.  Having nfsd
-> service the COPY op is still a significant win over having the client
-> move the data backand forth over the wire.
+scsi.c includes vhost.c which uses memcpy_fromiovec.
 
-Sure. That's kind of what I was thinking to make it easy to test and
-have widespread support up front.
+This patch fixes this build failure.
 
-> But in that quote above I was talking about implementing .copy_range in
-> ext4 as though it could use XCOPY today.  I'd like to get a feel for how
-> bad it's going to be to juggle the bio XCOPY IO with unwritten extent
-> conversion, RMW with overlapping existing blocks, i_size advancing, etc.
-> (It's so much like O_DIRECT that I'm already crying a little.)
+   From Randy Dunlap:
+   '''
+   on x86_64:
 
-Toss anything that is hard back to the page cache path. Overlapping
-blocks, partial blocks and so can be handled by the slow path
-without making the offload path complex.
+   ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
 
-Make the offload do the simple stuff fast - the mapping and
-completion callbacks should be no different to the direct IO bits we
-have now, and if you only handle filesystem block aligned ranges in
-the offload (rather than sector alignment) most of the grot that DIO
-code has to handle goes away....
+   It needs to depend on NET since net/core/ provides that function.
+   '''
 
-Cheers,
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ drivers/vhost/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Dave.
+diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+index 8b9226d..0403323 100644
+--- a/drivers/vhost/Kconfig
++++ b/drivers/vhost/Kconfig
+@@ -12,7 +12,7 @@ config VHOST_NET
+ 
+ config VHOST_SCSI
+ 	tristate "VHOST_SCSI TCM fabric driver"
+-	depends on TARGET_CORE && EVENTFD && m
++	depends on NET && TARGET_CORE && EVENTFD && m
+ 	select VHOST_RING
+ 	default n
+ 	---help---
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.4
+
