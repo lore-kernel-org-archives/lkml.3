@@ -1,150 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759846Ab3EOTNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 15:13:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58865 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759756Ab3EOTNW (ORCPT
+	id S1759972Ab3EOTYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 15:24:54 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:37075 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759799Ab3EOTYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 15:13:22 -0400
-Date: Wed, 15 May 2013 21:13:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: [GIT pull] x86 fixes for 3.10
-Message-ID: <alpine.LFD.2.02.1305152111120.1388@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 15 May 2013 15:24:49 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1367383328-25700-1-git-send-email-skannan@codeaurora.org>
+References: <1367383328-25700-1-git-send-email-skannan@codeaurora.org>
+Date: Wed, 15 May 2013 21:24:48 +0200
+Message-ID: <CAPDyKFpZ6-O-zSyBVgGGFL4W+d=-k-qaXimUS12fgC=9TkUNVA@mail.gmail.com>
+Subject: Re: [PATCH] clk: Fix race condition between clk_set_parent and clk_enable()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 1 May 2013 06:42, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Without this patch, the following race conditions are possible.
+>
+> Race condition 1:
+> * clk-A has two parents - clk-X and clk-Y.
+> * All three are disabled and clk-X is current parent.
+> * Thread A: clk_set_parent(clk-A, clk-Y).
+> * Thread A: <snip execution flow>
+> * Thread A: Grabs enable lock.
+> * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+> * Thread A: Updates clk-A SW parent to clk-Y
+> * Thread A: Releases enable lock.
+> * Thread B: clk_enable(clk-A).
+> * Thread B: clk_enable() enables clk-Y, then enabled clk-A and returns.
+>
+> clk-A is now enabled in software, but not clocking in hardware since the
+> hardware parent is still clk-X.
+>
+> The only way to avoid race conditions between clk_set_parent() and
+> clk_enable/disable() is to ensure that clk_enable/disable() calls don't
+> require changes to hardware enable state between changes to software clock
+> topology and hardware clock topology.
+>
+> There are options to achieve the above:
+> 1. Grab the enable lock before changing software/hardware topology and
+>    release it afterwards.
+> 2. Keep the clock enabled for the duration of software/hardware topology
+>    change so that any additional enable/disable calls don't try to change
+>    the hardware state. Once the topology change is complete, the clock can
+>    be put back in its original enable state.
+>
+> Option (1) is not an acceptable solution since the set_parent() ops might
+> need to sleep.
+>
+> Therefore, this patch implements option (2).
+>
+> This patch doesn't violate any API semantics. clk_disable() doesn't
+> guarantee that the clock is actually disabled. So, no clients of a clock
+> can assume that a clock is disabled after their last call to clk_disable().
+> So, enabling the clock during a parent change is not a violation of any API
+> semantics.
+>
+> This also has the nice side effect of simplifying the error handling code.
+>
+> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> ---
+> It's been a while since I submitted a patch. So, apologies if I'm cc'ing
+> people who no longer care about the state of the common clock framework.
+>
+>  drivers/clk/clk.c |   72 +++++++++++++++++++++++-----------------------------
+>  1 files changed, 32 insertions(+), 40 deletions(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 934cfd1..fe4055f 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1377,67 +1377,59 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
+>         unsigned long flags;
+>         int ret = 0;
+>         struct clk *old_parent = clk->parent;
+> -       bool migrated_enable = false;
+>
+> -       /* migrate prepare */
+> -       if (clk->prepare_count)
+> +       /*
+> +        * Migrate prepare state between parents and prevent race with
+> +        * clk_enable().
+> +        *
+> +        * If the clock is not prepared, then a race with
+> +        * clk_enable/disable() is impossible since we already have the
+> +        * prepare lock (future calls to clk_enable() need to be preceded by
+> +        * a clk_prepare()).
+> +        *
+> +        * If the clock is prepared, migrate the prepared state to the new
+> +        * parent and also protect against a race with clk_enable() by
+> +        * forcing the clock and the new parent on.  This ensures that all
+> +        * future calls to clk_enable() are practically NOPs with respect to
+> +        * hardware and software states.
+> +        */
 
-please pull the latest x86-urgent-for-linus git tree from:
+Maybe an additional note about that since CLK_SET_PARENT_GATE is a
+prerequisite for doing migration of "prepare", we also interpreted
+this flags as it is acceptable to enable the clock(s) in this context.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+> +       if (clk->prepare_count) {
+>                 __clk_prepare(parent);
+> -
+> -       flags = clk_enable_lock();
+> -
+> -       /* migrate enable */
+> -       if (clk->enable_count) {
+> -               __clk_enable(parent);
+> -               migrated_enable = true;
+> +               clk_enable(parent);
+> +               clk_enable(clk);
+>         }
+>
+>         /* update the clk tree topology */
+> +       flags = clk_enable_lock();
+>         clk_reparent(clk, parent);
+> -
+>         clk_enable_unlock(flags);
+>
+>         /* change clock input source */
+>         if (parent && clk->ops->set_parent)
+>                 ret = clk->ops->set_parent(clk->hw, p_index);
+> -
+>         if (ret) {
+> -               /*
+> -                * The error handling is tricky due to that we need to release
+> -                * the spinlock while issuing the .set_parent callback. This
+> -                * means the new parent might have been enabled/disabled in
+> -                * between, which must be considered when doing rollback.
+> -                */
+> -               flags = clk_enable_lock();
+>
+> +               flags = clk_enable_lock();
+>                 clk_reparent(clk, old_parent);
+> -
+> -               if (migrated_enable && clk->enable_count) {
+> -                       __clk_disable(parent);
+> -               } else if (migrated_enable && (clk->enable_count == 0)) {
+> -                       __clk_disable(old_parent);
+> -               } else if (!migrated_enable && clk->enable_count) {
+> -                       __clk_disable(parent);
+> -                       __clk_enable(old_parent);
+> -               }
+> -
 
-Content:
+Really good, that we can remove this awkward error handling!
 
-	* Fix for a CPU hot-add deadlock in microcode update code
+>                 clk_enable_unlock(flags);
+>
+> -               if (clk->prepare_count)
+> +               if (clk->prepare_count) {
+> +                       clk_disable(clk);
+> +                       clk_disable(parent);
+>                         __clk_unprepare(parent);
+> -
+> +               }
+>                 return ret;
+>         }
+>
+> -       /* clean up enable for old parent if migration was done */
+> -       if (migrated_enable) {
+> -               flags = clk_enable_lock();
+> -               __clk_disable(old_parent);
+> -               clk_enable_unlock(flags);
+> -       }
+> -
+> -       /* clean up prepare for old parent if migration was done */
+> -       if (clk->prepare_count)
+> +       /*
+> +        * Finish the migration of prepare state and undo the changes done
+> +        * for preventing a race with clk_enable().
+> +        */
+> +       if (clk->prepare_count) {
+> +               clk_disable(clk);
+> +               clk_disable(old_parent);
+>                 __clk_unprepare(old_parent);
+> +       }
+>
+>         /* update debugfs with new clk tree topology */
+>         clk_debug_reparent(clk, parent);
+> --
+> 1.7.8.3
+>
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
 
-	* Fix for idle consolidation fallout 
+Looks good! Thanks for having another round to fixup this kind of
+tricky code. :-)
 
-	* Documentation update for initial kernel direct mapping
-
-Thanks,
-
-	tglx
-
------------------->
-Konrad Rzeszutek Wilk (1):
-      x86/microcode: Add local mutex to fix physical CPU hot-add deadlock
-
-Thomas Gleixner (1):
-      x86: Fix idle consolidation fallout
-
-Zhang Yanfei (1):
-      x86/mm: Add missing comments for initial kernel direct mapping
-
-
- arch/x86/kernel/microcode_intel_early.c |    5 +++--
- arch/x86/kernel/process.c               |    5 ++---
- arch/x86/mm/init.c                      |   19 ++++++++++++++++++-
- 3 files changed, 23 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index d893e8e..2e9e128 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -487,6 +487,7 @@ static inline void show_saved_mc(void)
- #endif
- 
- #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
-+static DEFINE_MUTEX(x86_cpu_microcode_mutex);
- /*
-  * Save this mc into mc_saved_data. So it will be loaded early when a CPU is
-  * hot added or resumes.
-@@ -507,7 +508,7 @@ int save_mc_for_early(u8 *mc)
- 	 * Hold hotplug lock so mc_saved_data is not accessed by a CPU in
- 	 * hotplug.
- 	 */
--	cpu_hotplug_driver_lock();
-+	mutex_lock(&x86_cpu_microcode_mutex);
- 
- 	mc_saved_count_init = mc_saved_data.mc_saved_count;
- 	mc_saved_count = mc_saved_data.mc_saved_count;
-@@ -544,7 +545,7 @@ int save_mc_for_early(u8 *mc)
- 	}
- 
- out:
--	cpu_hotplug_driver_unlock();
-+	mutex_unlock(&x86_cpu_microcode_mutex);
- 
- 	return ret;
- }
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 607af0d..4e7a37f 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -312,6 +312,8 @@ void arch_cpu_idle(void)
- {
- 	if (cpuidle_idle_call())
- 		x86_idle();
-+	else
-+		local_irq_enable();
- }
- 
- /*
-@@ -368,9 +370,6 @@ void amd_e400_remove_cpu(int cpu)
-  */
- static void amd_e400_idle(void)
- {
--	if (need_resched())
--		return;
--
- 	if (!amd_e400_c1e_detected) {
- 		u32 lo, hi;
- 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index fdc5dca..eaac174 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -359,7 +359,17 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- }
- 
- /*
-- * would have hole in the middle or ends, and only ram parts will be mapped.
-+ * We need to iterate through the E820 memory map and create direct mappings
-+ * for only E820_RAM and E820_KERN_RESERVED regions. We cannot simply
-+ * create direct mappings for all pfns from [0 to max_low_pfn) and
-+ * [4GB to max_pfn) because of possible memory holes in high addresses
-+ * that cannot be marked as UC by fixed/variable range MTRRs.
-+ * Depending on the alignment of E820 ranges, this may possibly result
-+ * in using smaller size (i.e. 4K instead of 2M or 1G) page tables.
-+ *
-+ * init_mem_mapping() calls init_range_memory_mapping() with big range.
-+ * That range would have hole in the middle or ends, and only ram parts
-+ * will be mapped in init_range_memory_mapping().
-  */
- static unsigned long __init init_range_memory_mapping(
- 					   unsigned long r_start,
-@@ -419,6 +429,13 @@ void __init init_mem_mapping(void)
- 	max_pfn_mapped = 0; /* will get exact value next */
- 	min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
-+
-+	/*
-+	 * We start from the top (end of memory) and go to the bottom.
-+	 * The memblock_find_in_range() gets us a block of RAM from the
-+	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
-+	 * for page table.
-+	 */
- 	while (last_start > ISA_END_ADDRESS) {
- 		if (last_start > step_size) {
- 			start = round_down(last_start - 1, step_size);
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
