@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3EOQ5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:57:05 -0400
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:38546 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab3EOQ5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:57:03 -0400
+	id S1759665Ab3EOQ6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:58:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27795 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758588Ab3EOQ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 12:58:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,678,1363158000"; 
+   d="scan'208";a="337783991"
+Message-ID: <5193BF58.1030805@intel.com>
+Date: Wed, 15 May 2013 10:01:12 -0700
+From: David Cohen <david.a.cohen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130315 Icedove/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-7-git-send-email-lee.jones@linaro.org>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-7-git-send-email-lee.jones@linaro.org>
-Date: Wed, 15 May 2013 18:51:38 +0200
-Message-ID: <CACRpkdZ=NJR3VRNJE2pSTJ8t1VCMq+wjH_s0NOi4AHko3no_KA@mail.gmail.com>
-Subject: Re: [PATCH 06/39] ARM: ux500: Move SDI (MMC) and UART devices under
- more descriptive heading
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio-langwell: fix irq conflicts when DT is not used
+References: <1367881863-6025-1-git-send-email-david.a.cohen@intel.com> <20130507075904.GE20562@intel.com> <51892D29.7030803@intel.com>
+In-Reply-To: <51892D29.7030803@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+Hi Grant,
 
-> Now DMA DT bindings exist and are in use by he MMC and UART drivers, it
-> should be possible to remove them from the auxdata structure. However,
-> after doing so the drivers fail. Common clk is still reliant on the
-> dev_name() call to do device name matching, which will fail due to the
-> fact that Device Tree naming differs somewhat do the more traditional
-> conventions.
+On 05/07/2013 09:34 AM, David Cohen wrote:
+> On 05/07/2013 12:59 AM, Mika Westerberg wrote:
+>> On Mon, May 06, 2013 at 04:11:03PM -0700, David Cohen wrote:
+>>> When DT is not used IOAPIC does not register irq domain. As result
+>>> IOAPIC won't care about gpio-langwell's virq and may cause conflict if
+>>> an irq number is equal to gpio-langwell's virq mapped beforehand.
+>>>
+>>> This patch tells gpio_langwell to not ignore irq_base if != 0 and
+>>> preferably use it to avoid the conflict.
+>>>
+>>> If DT is used, irq_base can safely be 0.
+>>>
+>>> Signed-off-by: David Cohen <david.a.cohen@intel.com>
+>> Presuming that you have tested this on Medfield and it still works 
+>> there.
 >
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Medfield and Clovertrail :)
+>
+> Br, David
+>
+>>
+>> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Cannot be applied due to dependency on 5/39.
+Kindly ping :)
+Comments?
 
-Yours,
-Linus Walleij
+Br, David
+
