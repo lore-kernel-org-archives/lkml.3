@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab3EOVUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 17:20:15 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:38083 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698Ab3EOVUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 17:20:13 -0400
-Message-ID: <5193FC08.5040002@gmail.com>
-Date: Wed, 15 May 2013 23:20:08 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S933100Ab3EOVVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 17:21:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932877Ab3EOVVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 17:21:16 -0400
+Date: Wed, 15 May 2013 23:20:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/15] perf ftrace: Add 'record' sub-command
+Message-ID: <20130515212052.GA5814@krava.redhat.com>
+References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
+ <1368526439-31966-10-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
-References: <201305111330.05046.heiko@sntech.de> <201305111331.25405.heiko@sntech.de> <CACRpkdaT195McX9NeccJYpmWbuYK-AZUTHr9AXKHnJdkf+Qzuw@mail.gmail.com> <201305152231.52423.heiko@sntech.de>
-In-Reply-To: <201305152231.52423.heiko@sntech.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368526439-31966-10-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 10:31 PM, Heiko Stübner wrote:
->>> +       BUG();
->> >
->> >  Isn't that a bit nasty. This macro should be used with care and we
->> >  should recover if possible. dev_err()?
->
-> runtime_config already denies any settings not in the 1,2 or 4bytes range -
-> the default-part should therefore never be reached. So if any other value
-> magically appears in the register and triggers the default-part, something is
-> seriously wrong. So my guess is, the BUG might be appropriate.
->
-> On the other hand the whole default+BUG part could also simply go away, for
-> the same reasons.
+On Tue, May 14, 2013 at 07:13:53PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The ftrace record command is for saving raw ftrace buffer contents
+> which can be get from per_cpu/cpuX/trace_pipe_raw.
+> 
+> Since ftrace events are generated very frequently so single thread for
+> recording mostly resulted in buffer overruns.  Thus it uses per-cpu
+> recorder thread to prevent such cases and they save the contents to
+> their own files.
+> 
 
-IMHO BUG() is not needed at all. As Linus suggested dev_err() is such case
-or WARN_ON() would be more appropriate. This has been discussed in the past
-extensively, not sure if you are aware of the other Linus' opinion on
-BUG()/BUG_ON() proliferation: https://lkml.org/lkml/2012/9/27/461
+SNIP
 
-Regards,
-Sylwester
+> +
+> +	/* synthesize sample data */
+> +	list_for_each_entry(fra, &recorders, node) {
+> +		struct perf_evsel *evsel = perf_evlist__first(ftrace->evlist);
+> +		union perf_event event = {
+> +			.sample = {
+> +				.header = {
+> +					.type = PERF_RECORD_SAMPLE,
+> +					.misc = PERF_RECORD_MISC_KERNEL,
+> +					.size = sizeof(event.sample.header) +
+> +						evsel->sample_size,
+> +				},
+> +			},
+> +		};
+> +		struct perf_sample sample = {
+> +			.cpu = fra->cpu,
+> +			.period = 1,
+> +		};
+> +		void *raw_data;
+> +		u32 raw_size;
+> +		int orig_size;
+> +
+> +		if (fra->state != RECORD_STATE__DONE) {
+> +			pr_warning("recorder failed for some reason on cpu%d\n",
+> +				   fra->cpu);
+> +			continue;
+> +		}
+> +
+> +		perf_event__synthesize_sample(&event, evsel->attr.sample_type,
+> +					      &sample, false);
+> +
+> +		raw_data = synthesize_raw_data(evsel);
+> +		if (raw_data == NULL) {
+> +			pr_err("synthesizing raw sample failed\n");
+> +			goto out_fra;
+> +		}
+> +
+> +		/*
+> +		 * start of raw data is the size of raw data excluding itself.
+> +		 */
+> +		raw_size = sizeof(u32) + (*(u32 *) raw_data);
+> +
+> +		orig_size = event.sample.header.size;
+> +		event.sample.header.size += raw_size;
+> +
+> +		err = write(perf_fd, &event.sample, orig_size);
+> +		if (err != orig_size) {
+> +			pr_err("write error occurred\n");
+> +			goto out_fra;
+> +		}
+> +
+> +		err = write(perf_fd, raw_data, raw_size);
+> +		if (err != (int)raw_size) {
+> +			pr_err("write error occurred\n");
+> +			goto out_fra;
+> +		}
+
+missing free(raw_data) ?
+
+jirka
+
+> +
+> +		session->header.data_size += event.sample.header.size;
+> +	}
+> +
+> +	perf_session__write_header(session, ftrace->evlist, perf_fd, true);
+> +
+> +out_fra:
+> +	list_for_each_entry_safe(fra, tmp, &recorders, node) {
+> +		list_del(&fra->node);
+> +		free(fra);
+> +	}
+> +out_session:
+> +	free(session);
+> +out_close:
+> +	close(perf_fd);
+> +out_reset:
+> +	reset_tracing_files(ftrace);
+>  	return done ? 0 : -1;
+>  }
+>  
