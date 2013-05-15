@@ -1,59 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab3EOUYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:24:15 -0400
-Received: from www.sr71.net ([198.145.64.142]:49368 "EHLO blackbird.sr71.net"
+	id S932951Ab3EOU35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:29:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58651 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932992Ab3EOUYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:24:11 -0400
-Message-ID: <5193EEE7.80603@sr71.net>
-Date: Wed, 15 May 2013 13:24:07 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S932623Ab3EOU34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 16:29:56 -0400
+Date: Wed, 15 May 2013 22:26:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/6] coredump: kill cn_escape(), introduce
+	cn_esc_printf()
+Message-ID: <20130515202606.GA15994@redhat.com>
+References: <20130515201158.GA14606@redhat.com> <20130515201229.GA14641@redhat.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Joe Perches <joe@perches.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv11 3/4] zswap: add to mm/
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com> <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com> <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default> <20130514163541.GC4024@medulla> <f0272a06-141a-4d33-9976-ee99467f3aa2@default> <20130514225501.GA11956@cerebellum> <4d74f5db-11c1-4f58-97f4-8d96bbe601ac@default> <20130515185506.GA23342@phenom.dumpdata.com> <20130515200942.GA17724@cerebellum>
-In-Reply-To: <20130515200942.GA17724@cerebellum>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515201229.GA14641@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 01:09 PM, Seth Jennings wrote:
-> On Wed, May 15, 2013 at 02:55:06PM -0400, Konrad Rzeszutek Wilk wrote:
->>> Sorry, but I don't think that's appropriate for a patch in the MM subsystem.
->>
->> Perhaps a compromise can be reached where this code is merged as a driver
->> not a core mm component. There is a high bar to be in the MM - it has to
->> work with many many different configurations. 
->>
->> And drivers don't have such a high bar. They just need to work on a specific
->> issue and that is it. If zswap ended up in say, drivers/mm that would make
->> it more palpable I think.
+On 05/15, Oleg Nesterov wrote:
+>
+> @@ -113,12 +123,8 @@ static int cn_print_exe_file(struct core_name *cn)
+>  	int ret;
+>  
+>  	exe_file = get_mm_exe_file(current->mm);
+> -	if (!exe_file) {
+> -		char *commstart = cn->corename + cn->used;
+> -		ret = cn_printf(cn, "%s (path unknown)", current->comm);
+> -		cn_escape(commstart);
+> -		return ret;
+> -	}
+> +	if (!exe_file)
+> +		ret = cn_esc_printf(cn, "%s (path unknown)", current->comm);
 
-The issue is not whether it is a loadable module or a driver.  Nobody
-here is stupid enough to say, "hey, now it's a driver/module, all of the
-complex VM interactions are finally fixed!"
+Argh, sorry, typo... should be "return cn_esc_printf(...);
 
-If folks don't want this in their system, there's a way to turn it off,
-today, with the sysfs tunables.  We don't need _another_ way to turn it
-off at runtime (unloading the module/driver).
+-------------------------------------------------------------------------------
+[PATCH v2 4/6] coredump: kill cn_escape(), introduce cn_esc_printf()
+
+The usage of cn_escape() looks really annoying, imho this
+sequence needs a wrapper. And it is buggy. If cn_printf()
+does expand_corename() cn_escape() writes to the freed
+memory.
+
+Introduce cn_esc_printf() which hopefully does this all right.
+It records the index before cn_vprintf(), not "char *" which
+is no longer valid (in general) after krealloc().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/coredump.c |   44 +++++++++++++++++++++-----------------------
+ 1 files changed, 21 insertions(+), 23 deletions(-)
+
+diff --git a/fs/coredump.c b/fs/coredump.c
+index 2b1d1f5..90d7cee 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -99,11 +99,21 @@ static int cn_printf(struct core_name *cn, const char *fmt, ...)
+ 	return ret;
+ }
+ 
+-static void cn_escape(char *str)
++static int cn_esc_printf(struct core_name *cn, const char *fmt, ...)
+ {
+-	for (; *str; str++)
+-		if (*str == '/')
+-			*str = '!';
++	int cur = cn->used;
++	va_list arg;
++	int ret;
++
++	va_start(arg, fmt);
++	ret = cn_vprintf(cn, fmt, arg);
++	va_end(arg);
++
++	for (; cur < cn->used; ++cur) {
++		if (cn->corename[cur] == '/')
++			cn->corename[cur] = '!';
++	}
++	return ret;
+ }
+ 
+ static int cn_print_exe_file(struct core_name *cn)
+@@ -113,12 +123,8 @@ static int cn_print_exe_file(struct core_name *cn)
+ 	int ret;
+ 
+ 	exe_file = get_mm_exe_file(current->mm);
+-	if (!exe_file) {
+-		char *commstart = cn->corename + cn->used;
+-		ret = cn_printf(cn, "%s (path unknown)", current->comm);
+-		cn_escape(commstart);
+-		return ret;
+-	}
++	if (!exe_file)
++		return cn_esc_printf(cn, "%s (path unknown)", current->comm);
+ 
+ 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+ 	if (!pathbuf) {
+@@ -132,9 +138,7 @@ static int cn_print_exe_file(struct core_name *cn)
+ 		goto free_buf;
+ 	}
+ 
+-	cn_escape(path);
+-
+-	ret = cn_printf(cn, "%s", path);
++	ret = cn_esc_printf(cn, "%s", path);
+ 
+ free_buf:
+ 	kfree(pathbuf);
+@@ -207,22 +211,16 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+ 				break;
+ 			}
+ 			/* hostname */
+-			case 'h': {
+-				char *namestart = cn->corename + cn->used;
++			case 'h':
+ 				down_read(&uts_sem);
+-				err = cn_printf(cn, "%s",
++				err = cn_esc_printf(cn, "%s",
+ 					      utsname()->nodename);
+ 				up_read(&uts_sem);
+-				cn_escape(namestart);
+ 				break;
+-			}
+ 			/* executable */
+-			case 'e': {
+-				char *commstart = cn->corename + cn->used;
+-				err = cn_printf(cn, "%s", current->comm);
+-				cn_escape(commstart);
++			case 'e':
++				err = cn_esc_printf(cn, "%s", current->comm);
+ 				break;
+-			}
+ 			case 'E':
+ 				err = cn_print_exe_file(cn);
+ 				break;
+-- 
+1.5.5.1
 
 
