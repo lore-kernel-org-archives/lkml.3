@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3EOWoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 18:44:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33446 "EHLO mail.skyhub.de"
+	id S1753949Ab3EOWpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 18:45:16 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:42618 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab3EOWoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 18:44:05 -0400
-Date: Thu, 16 May 2013 00:43:58 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule
-Message-ID: <20130515224358.GF11783@pd.tnic>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
- <20130509125040.GF27333@pd.tnic>
- <20130509125859.GG27333@pd.tnic>
- <20130515184528.GO4442@linux.vnet.ibm.com>
+	id S1752742Ab3EOWpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 18:45:14 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
+Date: Thu, 16 May 2013 00:45:03 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Dan Williams <djbw@fb.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc" <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+References: <201305111330.05046.heiko@sntech.de> <201305152348.32171.heiko@sntech.de> <45625193.0y3McEvmiD@flatron>
+In-Reply-To: <45625193.0y3McEvmiD@flatron>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130515184528.GO4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201305160045.03934.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:45:28AM -0700, Paul E. McKenney wrote:
-> Does the following patch help?
+Am Donnerstag, 16. Mai 2013, 00:02:40 schrieb Tomasz Figa:
+> On Wednesday 15 of May 2013 23:48:31 Heiko Stübner wrote:
+> > Am Mittwoch, 15. Mai 2013, 23:20:08 schrieb Sylwester Nawrocki:
+> > > On 05/15/2013 10:31 PM, Heiko Stübner wrote:
+> > > >>> +       BUG();
+> > > >>> 
+> > > >> >  Isn't that a bit nasty. This macro should be used with care and
+> > > >> >  we
+> > > >> >  should recover if possible. dev_err()?
+> > > > 
+> > > > runtime_config already denies any settings not in the 1,2 or 4bytes
+> > > > range - the default-part should therefore never be reached. So if
+> > > > any other value magically appears in the register and triggers the
+> > > > default-part, something is seriously wrong. So my guess is, the BUG
+> > > > might be appropriate.
+> > > > 
+> > > > On the other hand the whole default+BUG part could also simply go
+> > > > away,
+> > > > for the same reasons.
+> > > 
+> > > IMHO BUG() is not needed at all. As Linus suggested dev_err() is such
+> > > case or WARN_ON() would be more appropriate. This has been discussed
+> > > in the past extensively, not sure if you are aware of the other
+> > > Linus' opinion on BUG()/BUG_ON() proliferation:
+> > > https://lkml.org/lkml/2012/9/27/461
+> > 
+> > Very interesting read and I'll keep this in mind in the future. What
+> > about the other option ... i.e. simply getting rid of the whole "error
+> > handling", as the other code paths should already make sure that only
+> > valid values get written into the register.
+> > 
+> > Can the value change in the register somehow on its own without kernel
+> > intervention, or does this not happen?
+> 
+> Hmm, it depends on hardware, I guess. Not sure how it works on this
+> particular IP.
+> 
+> Still, the mentioned BUG() was about a value in a driver-filled struct,
+> wasn't it?
+> 
+> /* Quoting the the code for reference */
+> 
+> > +static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan *s3cchan)
+> > +{
+> > +       struct s3c24xx_dma_phy *phy = s3cchan->phy;
+> > +       struct s3c24xx_txd *txd = s3cchan->at;
+> > +       u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
+> > +
+> > +       switch (txd->dcon & DCON_DSZ_MASK) {
+> > +       case DCON_DSZ_BYTE:
+> > +               return tc;
+> > +       case DCON_DSZ_HALFWORD:
+> > +               return tc * 2;
+> > +       case DCON_DSZ_WORD:
+> > +               return tc * 4;
+> > +       default:
+> > +               break;
+> > +       }
+> > +
+> > +       BUG();
+> 
+> (Btw. I don't see anything setting the DCON_DSZ bits in this field. Am I
+> missing something?)
 
-Hmm, I just tried on 3.10-rc1
+this is for calculating the remaining bytes of the transaction. which is used 
+in s3c24xx_dma_tx_status. 
 
-CONFIG_NO_HZ_FULL_ALL=y
+And when looking at it again, I can't really fathom why I did it this way with 
+decoding the DSZ from the dcon value of the s3c24xx_txd again instead of 
+simply using the width value of the same struct .... 
 
-on the one hand and then
+So it can be much simpler as
+	(...)
+     u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
+	return tc * txd->width;
 
-CONFIG_NO_HZ_FULL=y
-# CONFIG_NO_HZ_FULL_ALL is not set
+getting rid of this stuff alltogether
 
-with "nohz_full=4-7 rcu_nocbs=4-7" on the cmdline and I don't see the
-splats anymore.
 
-Do I need to try something else?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+still puzzled how I came up with this strangeness in the first place
+Heiko
