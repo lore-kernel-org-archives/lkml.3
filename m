@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab3EORLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 13:11:09 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41417 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932900Ab3EORKy (ORCPT
+	id S933021Ab3EORLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 13:11:49 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:58364 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932945Ab3EORLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 13:10:54 -0400
-From: Zhouping Liu <sanweidaying@gmail.com>
-To: linux-mm@kvack.org
-Cc: Zhouping Liu <zliu@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm, slab: corrected the comment 'kmem_cache_alloc' to 'slab_alloc_node'
-Date: Thu, 16 May 2013 01:10:11 +0800
-Message-Id: <1368637812-7329-1-git-send-email-sanweidaying@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Wed, 15 May 2013 13:11:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368611522-9984-16-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-16-git-send-email-lee.jones@linaro.org>
+Date: Wed, 15 May 2013 19:11:46 +0200
+Message-ID: <CACRpkdY_9=OO_E9pFLuihVmE4YvLmydk_b+jsGr_R0sELt0UvA@mail.gmail.com>
+Subject: Re: [PATCH 15/39] crypto: ux500/cryp - Prepare clock before enabling it
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Andreas Westin <andreas.westin@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhouping Liu <zliu@redhat.com>
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-commit 48356303ff(mm, slab: Rename __cache_alloc() -> slab_alloc())
-forgot to update the comment 'kmem_cache_alloc' to 'slab_alloc_node'.
+> If we fail to prepare the ux500-cryp clock before enabling it the
+> platform will fail to boot. Here we insure this happens.
+>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andreas Westin <andreas.westin@stericsson.com>
+> Cc: linux-crypto@vger.kernel.org
+> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
----
- mm/slab.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch also looks like -rc series stuff for the crypto tree.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 8ccd296..8efb5f7 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3339,7 +3339,7 @@ done:
- }
- 
- /**
-- * kmem_cache_alloc_node - Allocate an object on the specified node
-+ * slab_alloc_node - Allocate an object on the specified node
-  * @cachep: The cache to allocate from.
-  * @flags: See kmalloc().
-  * @nodeid: node number of the target node.
--- 
-1.7.11.7
+BTW: these two clk_prepare_enable() patches are
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
