@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab3EOJrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:47:19 -0400
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:49158
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758594Ab3EOJrR (ORCPT
+	id S932215Ab3EOJrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:47:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56304 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab3EOJro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:47:17 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zz1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh668h839h947he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1889i1155h)
-X-WSS-ID: 0MMU35W-01-3BR-02
-X-M-MSG: 
-Message-ID: <51935981.3010808@amd.com>
-Date: Wed, 15 May 2013 11:46:41 +0200
-From: =?ISO-8859-15?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 15 May 2013 05:47:44 -0400
+Date: Wed, 15 May 2013 11:47:42 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 07/15] clocksource: Provide unbind interface in sysfs
+In-Reply-To: <517F1A27.3030206@linaro.org>
+Message-ID: <alpine.LFD.2.02.1305151144550.1388@ionos>
+References: <20130425142452.908423538@linutronix.de> <20130425143435.964218245@linutronix.de> <517F1A27.3030206@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: <hpa@linux.intel.com>, <yinghai@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: 3.9 breaks EFI boot on E350
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon, 29 Apr 2013, John Stultz wrote:
+> On 04/25/2013 01:31 PM, Thomas Gleixner wrote:
+> > With the module refcount held for the current clocksource there is no
+> > way to unload the module.
+> > 
+> > Provide a sysfs interface which allows to unbind the clocksource. One
+> > could argue that the clocksource override could be (ab)used to do so,
+> > but the clocksource override cannot be used from the kernel itself,
+> > while an unbind function can be used to programmatically check whether
+> > a clocksource can be shutdown or not.
+> > 
+> > The unbind functionality uses the new skip current feature of
+> > clocksource_select and verifies that a fallback clocksource has been
+> > installed. If the clocksource which should be unbound is the current
+> > clocksource and no fallback can be found, unbind returns -EBUSY.
+> > 
+> > This does not support the unbinding of a clocksource which is used as
+> > the watchdog clocksource. No point in fostering crappy hardware.
+> 
+> So.. if the clocksource you want to unbind is the highest rated continuous
+> clocksource that doesn't need a watchdog (basically what's likely to be in-use
+> and required to be unbinded), its likely to be selected as the watchdog
+> already.
+> 
+> ie: on a system that has only HPET/ACPI_PM, you can't unbind HPET, since its a
+> watchdog.
 
-the following commit breaks booting my E350 based test system in EFI mode:
+No. The thing is that I only prevent unbinding if it is used as the
+watchdog. In the above HPET/PM scenario both are potential watchdogs,
+but w/o a user it's valid to unbind one of them.
 
-> commit 8d57470d8f859635deffe3919d7d4867b488b85a
-> Author: Yinghai Lu <yinghai@kernel.org>
-> Date:   Fri Nov 16 19:38:58 2012 -0800
->
->     x86, mm: setup page table in top-down
+What I need to prevent is:
 
-This commit was supposed to fix it but obviously there still seem to be 
-some bugs left in 3.9
+TSC is current clocksource and we only have ACPI_PM as watchdog and
+its used. So now you try to unbind ACPI_PM then the TSC would be left
+w/o a watchdog instance. That's what I'm preventing. Will reword the
+changelog accordingly.
 
-> commit 98e7a989979b185f49e86ddaed2ad6890299d9f0
-> Author: Yinghai Lu <yinghai@kernel.org>
-> Date:   Wed Mar 6 20:18:21 2013 -0800
->
->     x86, mm: Make sure to find a 2M free block for the first mapped area
->
->     Henrik reported that his MacAir 3.1 would not boot with
->
->     | commit 8d57470d8f859635deffe3919d7d4867b488b85a
->     | Date:   Fri Nov 16 19:38:58 2012 -0800
->     |
->     |    x86, mm: setup page table in top-down
->
+Thanks,
 
-What do you guys need to debug it?
-
-Cheers,
-Christian.
-
+	tglx
