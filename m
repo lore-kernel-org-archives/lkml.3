@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab3EOIkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:40:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45931 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932478Ab3EOIka (ORCPT
+	id S932514Ab3EOIlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:41:25 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:38105 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932478Ab3EOIlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:40:30 -0400
-Message-ID: <519349F1.8050607@oracle.com>
-Date: Wed, 15 May 2013 16:40:17 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 15 May 2013 04:41:23 -0400
+Message-ID: <51934A62.2030606@parallels.com>
+Date: Wed, 15 May 2013 12:42:10 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Jan Beulich <JBeulich@suse.com>, xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tamon Shiose <tamon.shiose@oracle.com>, Feng Jin <joe.jin@oracle.com>
-Subject: Re: [Xen-devel] [PATCH-v2] xen: Don't call arch_trigger_all_cpu_backtrace
- in dom0(pvm)
-References: <51610A25.4010301@oracle.com>  <5162911202000078000CB38E@nat28.tlf.novell.com> <1365525374.17014.22.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1365525374.17014.22.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch v3 -mm 3/3] vmscan, memcg: Do softlimit reclaim also for
+ targeted reclaim
+References: <1368431172-6844-1-git-send-email-mhocko@suse.cz> <1368431172-6844-4-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1368431172-6844-4-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/13/2013 11:46 AM, Michal Hocko wrote:
+> Soft reclaim has been done only for the global reclaim (both background
+> and direct). Since "memcg: integrate soft reclaim tighter with zone
+> shrinking code" there is no reason for this limitation anymore as the
+> soft limit reclaim doesn't use any special code paths and it is a
+> part of the zone shrinking code which is used by both global and
+> targeted reclaims.
+> 
+> From semantic point of view it is even natural to consider soft limit
+> before touching all groups in the hierarchy tree which is touching the
+> hard limit because soft limit tells us where to push back when there is
+> a  memory pressure. It is not important whether the pressure comes from
+> the limit or imbalanced zones.
+> 
+> This patch simply enables soft reclaim unconditionally in
+> mem_cgroup_should_soft_reclaim so it is enabled for both global and
+> targeted reclaim paths. mem_cgroup_soft_reclaim_eligible needs to learn
+> about the root of the reclaim to know where to stop checking soft limit
+> state of parents up the hierarchy.
+> Say we have
+> A (over soft limit)
+>  \
+>   B (below s.l., hit the hard limit)
+>  / \
+> C   D (below s.l.)
+> 
+> B is the source of the outside memory pressure now for D but we
+> shouldn't soft reclaim it because it is behaving well under B subtree
+> and we can still reclaim from C (pressumably it is over the limit).
+> mem_cgroup_soft_reclaim_eligible should therefore stop climbing up the
+> hierarchy at B (root of the memory pressure).
+> 
+> Changes since v1
+> - add sc->target_mem_cgroup handling into mem_cgroup_soft_reclaim_eligible
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
 
-On 2013-04-10 00:36, Ian Campbell wrote:
-> On Mon, 2013-04-08 at 08:42 +0100, Jan Beulich wrote:
->>>>> On 07.04.13 at 07:54, Zhenzhong Duan <zhenzhong.duan@oracle.com> wrote:
->>> nmi isn't supported in dom0, fallback to general all cpu backtrace code.
->> Since when is sending NMIs not supported, and since when is this
->> Dom0-specific? If you want to deal with this, you should do so
->> properly: Special case sending NMIs in the respective Xen specific
->> code (using VCPUOP_send_nmi), and carry this out in a way not
->> dependent upon running (un)privileged.
-> You'd also need to implement the upcall support for receiving NMIs,
-> which IIRC isn't yet done for pvops.
-Hi Ian,
+Reviewed-by: Glauber Costa <glommer@openvz.org>
 
-Could you give a suggestion on which file to change to support NMI upcall?
-I compare with vMCE code, made similar change.
-Use VCPUOP_send_nmi to send nmi between pvm guest vcpus, but nmi isn't 
-triggered.
-
-thanks
-zduan
