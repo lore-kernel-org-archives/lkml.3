@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab3EOSVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 14:21:16 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:5761 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011Ab3EOSVO (ORCPT
+	id S933071Ab3EOSWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 14:22:44 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:51455 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932980Ab3EOSWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 14:21:14 -0400
-Message-ID: <1368642071.5673.37.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] acpi: Fix memory leak on acpi_scan_init_hotplug() error
- path
-From: Toshi Kani <toshi.kani@hp.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Date: Wed, 15 May 2013 12:21:11 -0600
-In-Reply-To: <1368636575-5480-1-git-send-email-catalin.marinas@arm.com>
-References: <1368636575-5480-1-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 15 May 2013 14:22:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAH3drwb743_q5ZrNDNsnOUUNVDMcefaq9NH3+t863OGc98-D-Q@mail.gmail.com>
+References: <cover.1368485053.git.luto@amacapital.net> <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
+ <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com>
+ <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
+ <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com> <CAH3drwb743_q5ZrNDNsnOUUNVDMcefaq9NH3+t863OGc98-D-Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 15 May 2013 11:22:20 -0700
+Message-ID: <CALCETrXA-nbdDEv1TyU9e4mcGZzAoCTTDX33M1o31rZkgHHTFg@mail.gmail.com>
+Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
+ missing ..._del
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-15 at 17:49 +0100, Catalin Marinas wrote:
-> Following commit 6b772e8f9 (ACPI: Update PNPID match handling for
-> notify), the acpi_scan_init_hotplug() calls acpi_set_pnp_ids() which
-> allocates acpi_hardware_id and copies a few strings (kstrdup). If the
-> devices does not have hardware_id set, the function exits without
-> freeing the previously allocated ids (and kmemleak complains). This
-> patch calls simply changes 'return' on error to a 'goto out' which calls
-> acpi_free_pnp_ids().
-> 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
-> Cc: Toshi Kani <toshi.kani@hp.com>
+On Wed, May 15, 2013 at 7:49 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Tue, May 14, 2013 at 5:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>>>>
+>>>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+>>>
+>>> I believe it will break something but we could deal with the fallout
+>>> once it happens.
+>>
+>> FWIW, I'm running with this code on my machine right now using the
+>> radeon driver.  Everything seems fine.  If I build without MTRRs and
+>> without PAT, though, graphics are slow (as expected).  So I think
+>> everything's okay.
+>>
+>> --Andy
+>
+> I am worried on p4 where i last see issue with that notably with agp.
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+Do you remember any details?  It looks like PAT is enabled on Pentium
+4 (i.e. famliy 0xF).
 
-Testing was performed by adding a fake ACPI object with _UID only.
-
-Thanks,
--Toshi
-
-> ---
->  drivers/acpi/scan.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index fe158fd..c1bc608 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1785,7 +1785,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
->  	acpi_set_pnp_ids(handle, &pnp, type);
->  
->  	if (!pnp.type.hardware_id)
-> -		return;
-> +		goto out;
->  
->  	/*
->  	 * This relies on the fact that acpi_install_notify_handler() will not
-> @@ -1800,6 +1800,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
->  		}
->  	}
->  
-> +out:
->  	acpi_free_pnp_ids(&pnp);
->  }
->  
-
-
+--Andy
