@@ -1,112 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab3EOOR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:17:59 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:47686 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab3EOOR6 (ORCPT
+	id S932540Ab3EOOTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:19:00 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17273 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758914Ab3EOOS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:17:58 -0400
-Message-ID: <51939948.3040307@parallels.com>
-Date: Wed, 15 May 2013 18:18:48 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Wed, 15 May 2013 10:18:59 -0400
+Message-ID: <51939933.3060601@oracle.com>
+Date: Wed, 15 May 2013 22:18:27 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Oskar Andero <oskar.andero@sonymobile.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Dave Chinner <david@fromorbit.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC PATCH 0/2] return value from shrinkers
-References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com> <5192523B.7030805@parallels.com> <20130515141057.GA24072@caracas.corpusers.net>
-In-Reply-To: <20130515141057.GA24072@caracas.corpusers.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
+Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load first
+ time
+References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com> <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com> <20130513140749.GQ6811@phenom.dumpdata.com> <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com> <20130513161714.GC10401@phenom.dumpdata.com> <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com> <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 06:10 PM, Oskar Andero wrote:
-> On 17:03 Tue 14 May     , Glauber Costa wrote:
->> On 05/13/2013 06:16 PM, Oskar Andero wrote:
->>> Hi,
->>>
->>> In a previous discussion on lkml it was noted that the shrinkers use the
->>> magic value "-1" to signal that something went wrong.
->>>
->>> This patch-set implements the suggestion of instead using errno.h values
->>> to return something more meaningful.
->>>
->>> The first patch simply changes the check from -1 to any negative value and
->>> updates the comment accordingly.
->>>
->>> The second patch updates the shrinkers to return an errno.h value instead
->>> of -1. Since this one spans over many different areas I need input on what is
->>> a meaningful return value. Right now I used -EBUSY on everything for consitency.
->>>
->>> What do you say? Is this a good idea or does it make no sense at all?
->>>
->>> Thanks!
->>>
+
+On 2013-05-15 17:41, Stefano Stabellini wrote:
+> On Tue, 14 May 2013, Konrad Rzeszutek Wilk wrote:
+>> On Tue, May 14, 2013 at 02:49:50PM +0100, Stefano Stabellini wrote:
+>>> On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>> On Mon, May 13, 2013 at 06:24:46PM +0100, Stefano Stabellini wrote:
+>>>>> On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>>>> On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini wrote:
+>>>>>>> On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>>>>>> On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini wrote:
+>>>>>>>>> On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
+>>>>>>>>>> On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan wrote:
+>>>>>>>>>>> When driver load and unload in a loop, pirq will exhaust finally.
+>>>>>>>>>>> Try to use the same pirq which was already mapped and binded at first time
+>>>>>>>>>> So what happens if I unload and reload two drivers in random order?
+>>>>>>>>>>
+>>>>>>>>>>> when driver loaded.
+>>>>>>>>>>>
+>>>>>>>>>>> Read pirq from msix entry and test if data is XEN_PIRQ_MSI_DATA
+>>>>>>>>>>> xen_irq_from_pirq(pirq) < 0 checking is wrong as irq will be freed
+>>>>>>>>>>> when driver unload, it's always true in second load.
+>>>>>>>>>> If my understanding is right the issue at hand is that the caching
+>>>>>>>>>> information about the pirq disappears once the driver has been
+>>>>>>>>>> unloaded b/c the event's irq-info is removed (as the driver is
+>>>>>>>>>> unloaded and free_irq is called).
+>>>>>>>>>>
+>>>>>>>>>> Stefano,
+>>>>>>>>>> Is there a specific write to the MSI structure that would cause the
+>>>>>>>>>> hypervisor to drop the PIRQ? Or a nice hypercall to "free" an
+>>>>>>>>>> PIRQ in usage?
+>>>>>>>>> We already have a "free PIRQ" hypercall, it's called
+>>>>>>>>> PHYSDEVOP_unmap_pirq and should be called by QEMU.
+>>>>>>>> Considering that we call function that allocates (PHYSDEVOP_get_free_pirq)
+>>>>>>>> it in the Linux kernel (and not in QEMU), perhaps that should be done in the
+>>>>>>>> Linux kernel as part of xen_destroy_irq()? Or would that confuse QEMU?
+>>>>>>> I think it would confuse QEMU. It is probably better to let the unmap
+>>>>>>> being handled by it.
+>>>>>>>
+>>>>>>>
+>>>>>>>> It looks like QEMU only does that hypercall (via xc_physdev_unmap_pirq)
+>>>>>>>> unregister_real_device which is only called during pci unplug?
+>>>>>>> You are right! I would think that this behaviour is erroneous unless it
+>>>>>>> was done on purpose to avoid allocating MSIs twice.
+>>>>>>> If that is the case we would need to do something similar in Linux too.
+>>>>>>>
+>>>>>>> I think that the issue is the mismatch between QEMU's and Linux's
+>>>>>>> behaviours: either both should be allocating MSIs once, or they should
+>>>>>>> both be allocating and deallocating MSIs every time the driver is loaded
+>>>>>>> and unloaded.
+>>>>>> Right. But we also have the scenario that QEMU and Linux are going to
+>>>>>> be out of sync. So we need fixes in both places - I think.
+>>>>> QEMU is the owner of the pirq, in fact it is the one that creates and
+>>>>> destroys the mapping. I think that the right place to fix this problem
+>>>>> is in QEMU, the ABI would be much cleaner as a result. As a side effect
+>>>>> we don't need to make any changes in Linux.
+>>>> You do. You need to remove the PHYSDEVOP_get_free_pirq call in that case.
+>>>   
+>>> PHYSDEVOP_get_free_pirq needs to stay, because Linux needs to know the
+>>> pirq that QEMU is going to use.
+>> That looks like an API violation. We have an hypercall that
+>> allocates the PIRQ in the Linux, then two hypercalls in the QEMU
+>> layer - one to map, and the other to unmap and free.
 >>
->> Right now me and Dave are completely reworking the way shrinkers
->> operate. I suggest, first of all, that you take a look at that cautiously.
-> 
-> Sounds good. Where can one find the code for that?
-> 
-linux-mm, linux-fsdevel
+>>> However I would let QEMU handle the mapping (it already does that in
+>>> pt_msi_setup calling xc_physdev_map_pirq_msi) and unmapping (that is
+>>> done by calling xc_domain_unbind_msi_irq from pt_msi_disable).
+>>> I think the problem is that pt_msi_disable is only called on
+>>> unregister_real_device and pt_reset_interrupt_and_io_mapping, not when
+>>> the guest disables MSIs.
+>> Sure, I am not disputing that. I think the fix in QEMU to call the
+>> unmap is correct.
+>>
+>> But I am also wondering whether it makes sense to do that in the Linux
+>> kernel - as it does the alloc in the first place. Seems like a bit of
+>> duct-tape has been used to connect this plumbing together.
+>
+> I admit that it is not a great interface.
+> I would be open to options that move the entire setup/freeing in Linux,
+> but keep in mind that we need to retain the pirq code in QEMU for pure
+> HVM guests.
+It seems MAP_PIRQ_TYPE_MSI is unsupported in physdev_hvm_map_pirq yet.
+Move setup/freeing in Linux need to add that support first.
 
-Subject is "kmemcg shrinkers", but only the second part is memcg related.
-
->> On the specifics of what you are doing here, what would be the benefit
->> of returning something other than -1 ? Is there anything we would do
->> differently for a return value lesser than 1?
-> 
-> Firstly, what bugs me is the magic and unintuitiveness of using -1 rather than a
-> more descriptive error code. IMO, even a #define SHRINK_ERROR -1 in some header
-> file would be better.
-> 
-> Expanding the test to <0 will open up for more granular error checks,
-> like -EAGAIN, -EBUSY and so on. Currently, they would all be treated the same,
-> but maybe in the future we would like to handle them differently?
-> 
-
-Then in the future we change it.
-This is not a user visible API, we are free to change it at any time,
-under any conditions. There is only value in supporting different error
-codes if we intend to do something different about it. Otherwise, it is
-just churn.
-
-Moreover, -1 does not necessarily mean error. It means "stop shrinking".
-There are many non-error conditions in which it could happen.
-
-> Finally, looking at the code:
->                         if (shrink_ret == -1)
->                                 break;
->                         if (shrink_ret < nr_before)
->                                 ret += nr_before - shrink_ret;
-> 
-> This piece of code will only function if shrink_ret is either greater than zero
-> or -1. If shrink_ret is -2 this will lead to undefined behaviour.
-> 
-Except it never is. But since we are touching this code anyway, I see no
-problems in expanding the test. What I don't see the point for, is the
-other patch in your series in which you return error codes.
-
->> So far, shrink_slab behaves the same, you are just expanding the test.
->> If you really want to push this through, I would suggest coming up with
->> a more concrete reason for why this is wanted.
-> 
-> I don't know how well this patch is aligned with your current rework, but
-> based on my comments above, I don't see a reason for not taking it.
-> 
-I see no objections for PATCH #1 that expands the check, as a cautionary
-measure. But I will oppose returning error codes from shrinkers without
-a solid reason for doing so (meaning a use case in which we really
-threat one of the errors differently)
-
-
-
+zduan
