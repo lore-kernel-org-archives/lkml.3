@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab3EOBf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 21:35:28 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:26892 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab3EOBf1 (ORCPT
+	id S1754131Ab3EOBf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 21:35:56 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:15481 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab3EOBfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 21:35:27 -0400
-X-Spam-Score: -100.8
-Message-ID: <5192E62C.5090107@asianux.com>
-Date: Wed, 15 May 2013 09:34:36 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 14 May 2013 21:35:55 -0400
+Message-ID: <5192E650.3070303@huawei.com>
+Date: Wed, 15 May 2013 09:35:12 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/workqueue.c: kfree issue, need check flag 'WQ_UNBOUND'
- when processing failure.
-References: <519236E0.4020301@asianux.com> <20130514152046.GC6795@mtj.dyndns.org>
-In-Reply-To: <20130514152046.GC6795@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+To: <grant.likely@linaro.org>, <rob.herring@calxeda.com>
+CC: <linux-mips@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] usb: omap2430: fix memleak in err case
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 11:20 PM, Tejun Heo wrote:
-> On Tue, May 14, 2013 at 09:06:40PM +0800, Chen Gang wrote:
->>  err_destroy:
->>  	destroy_workqueue(wq);
->> +	if (flags & WQ_UNBOUND) {
->> +err_free_wq:
->> +		free_workqueue_attrs(wq->unbound_attrs);
->> +		kfree(wq);
->> +	}
-> 
-> Doesn't the above make the code free wq twice on after err_destroy?
-> 
 
-Oh, it is my fault. I did not see the put_pwq_unlocked() in details,
-next I should read the code carefully.
+when omap_get_control_dev fail, we should release relational platform_device
 
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/usb/musb/omap2430.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks.
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 3551f1a..b626f19 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -549,7 +549,8 @@ static int omap2430_probe(struct platform_device *pdev)
+ 		glue->control_otghs = omap_get_control_dev();
+ 		if (IS_ERR(glue->control_otghs)) {
+ 			dev_vdbg(&pdev->dev, "Failed to get control device\n");
+-			return -ENODEV;
++			ret = -ENODEV;
++			goto err2;
+ 		}
+ 	} else {
+ 		glue->control_otghs = ERR_PTR(-ENODEV);
 -- 
-Chen Gang
+1.7.1
 
-Asianux Corporation
