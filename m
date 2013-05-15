@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab3EOCt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 22:49:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40979 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932066Ab3EOCtI (ORCPT
+	id S1755950Ab3EOCuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 22:50:17 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:33714 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab3EOCuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 22:49:08 -0400
-Date: Wed, 15 May 2013 12:48:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        User-mode Linux Kernel Development 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
-Message-Id: <20130515124853.6c8ef25177a1f15a0fc01142@canb.auug.org.au>
-In-Reply-To: <CAFLxGvxRK4E1VHpPYjs3Jg1oNWAFsBAuvjSq=xYn-gPO9GyiZQ@mail.gmail.com>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	<alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
-	<CAFLxGvzA5nzpQjOKWgz0nBKG2s3gPspted-25uduqkr7_ySj6A@mail.gmail.com>
-	<CAMuHMdWt0i6Q+i9Qh+tMs910a388NoddhHmq2LGr50f1=dJPvQ@mail.gmail.com>
-	<38896893-83c7-4eb4-848a-bb35663d945b@email.android.com>
-	<CAFLxGvyKANuy_vezO+E1aL3FzvdjiNgCD3j-BVGSyL_ne015Xw@mail.gmail.com>
-	<CAMuHMdVnbbJDq0vcc4e-NCWFUqgAzv3YU470B3jGFDN0xR+E=A@mail.gmail.com>
-	<CAFLxGvxRK4E1VHpPYjs3Jg1oNWAFsBAuvjSq=xYn-gPO9GyiZQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_May_2013_12_48_53_+1000_PL5YcTZEYhu__=pX"
+	Tue, 14 May 2013 22:50:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130514221748.6180.30597.stgit@ahduyck-cp1.jf.intel.com>
+References: <20130514221748.6180.30597.stgit@ahduyck-cp1.jf.intel.com>
+Date: Tue, 14 May 2013 19:50:14 -0700
+X-Google-Sender-Auth: nvuG-nU8sG5QdUgJFMWyMSzLb-c
+Message-ID: <CAE9FiQVrtM2kcRd_z+mciq8HFnaTu73Jezef+wnnmsFP_q5=TQ@mail.gmail.com>
+Subject: Re: [PATCH] pci: Avoid reentrant calls to work_on_cpu
+From: Yinghai Lu <yinghai@kernel.org>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_May_2013_12_48_53_+1000_PL5YcTZEYhu__=pX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Mon, 13 May 2013 12:20:24 +0200 richard -rw- weinberger <richard.weinber=
-ger@gmail.com> wrote:
+On Tue, May 14, 2013 at 3:26 PM, Alexander Duyck
+<alexander.h.duyck@intel.com> wrote:
+> This change is meant to fix a deadlock seen when pci_enable_sriov was
+> called from within a driver's probe routine.  The issue was that
+> work_on_cpu calls flush_work which attempts to flush a work queue for a
+> cpu that we are currently working in.  In order to avoid the reentrant
+> path we just skip the call to work_on_cpu in the case that the device
+> node matches our current node.
 >
-> On Mon, May 13, 2013 at 12:18 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > On Mon, May 13, 2013 at 12:07 PM, richard -rw- weinberger
-> > <richard.weinberger@gmail.com> wrote:
-> >> On Mon, May 13, 2013 at 11:54 AM, Michael Ellerman
-> >> <michael@ellerman.id.au> wrote:
-> >
-> >>> Possibly. We're cross compiling these on powerpc so perhaps we need t=
-o update the cross compiler.
-> >>
-> >> Looks like you are the first man on planet earth who tries do build
-> >> UML/x86 on powerpc. :D
-> >
-> > Well, it used to work: http://kisskb.ellerman.id.au/kisskb/target/2974/
->=20
-> Cool!
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> ---
+>
+> This patch is meant to address the issue pointed out in an earlier patch
+> sent by Yinghai Lu titled:
+>   [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
 
-We started getting these PTRACE_ errors on Nov 4, 2011.  Just before
-that, we have commit 966e803ab125 ("um: unify ptrace_user.h") which seems
-to have lost the include of linux/ptrace.h and now only includes
-sys/ptrace.h ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Yes, that help. my v2 patch will not need to device schecdule and
+device_initicall to wait
+first work_on_cpu is done.
 
---Signature=_Wed__15_May_2013_12_48_53_+1000_PL5YcTZEYhu__=pX
-Content-Type: application/pgp-signature
+Tested-by: Yinghai Lu <yinghai@kernel.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRkveVAAoJEECxmPOUX5FEMboP/20KbM9n4ix1rzYbAm2QhqfL
-TH+q1UNDzKH79Yr8yJABlJLJfcUMdzoe8x8inezxPGfzgW//kPmtgcAWESjjaPEA
-f0+Pzu4E1T1HLez5x56BWN9/PSUp6nbPPSPOvb7Pde686ULHjaEGGA4WYOS/wb+z
-3Bf5RZGjK9TtbrR8zGp3Qvh6X9cCgS+cIsPORMlm1X3o+XjwaaVTLteFKB3MQOoI
-d5cQ+3wY3lcviapFozbi9lNMkosFncaug0Ui+9/wGgbpvOpVkfcdBwPjoaX9E19c
-3EKz1P0uziDIEXLT4uQhvDshEIv/17/EtFX+BcMtqzBJST0hyNBF4mXpW/VSRGPC
-dojbm974u3gZ8QpbIeERHEYG493M95fNsFMDJMeIh2Qytc9WYwehZsFxsX8a6o0S
-sq77IteEbFO7xNi5t5NQwCJF9c/xIVET5dmQEeo7VNAwjyuatGnZnuIhpLNW2AYF
-4a+kRS71NX6AZ9Os5uXEEzGhAMXGK/30EkYYcr45LxtrTsgdm2ZgMYu/+15QScFZ
-T8YQIHSGYyh77z24hYw3JEHxl0NAhJqXn2hjiv1cJeO8yYJj//H28M3TA8xIIQ1n
-3xJNF/9mGTz2uskD4i1K59VWKSKZZqKT/0UXrMEHKmbW+vuwEXlhxqIPt++EdqrL
-S93j6YumJNusxB+RIal+
-=s9iT
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_May_2013_12_48_53_+1000_PL5YcTZEYhu__=pX--
+>
+>  drivers/pci/pci-driver.c |   14 +++++++++-----
+>  1 files changed, 9 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 79277fb..caeb1c0 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -277,12 +277,16 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+>         int error, node;
+>         struct drv_dev_and_id ddi = { drv, dev, id };
+>
+> -       /* Execute driver initialization on node where the device's
+> -          bus is attached to.  This way the driver likely allocates
+> -          its local memory on the right node without any need to
+> -          change it. */
+> +       /*
+> +        * Execute driver initialization on the node where the device's
+> +        * bus is attached.  This way the driver likely allocates
+> +        * its local memory on the right node without any need to
+> +        * change it.  If the node is the current node just call
+> +        * local_pci_probe and avoid the possibility of reentrant
+> +        * calls to work_on_cpu.
+> +        */
+>         node = dev_to_node(&dev->dev);
+> -       if (node >= 0) {
+> +       if ((node >= 0) && (node != numa_node_id())) {
+>                 int cpu;
+>
+>                 get_online_cpus();
+>
