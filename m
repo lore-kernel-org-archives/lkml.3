@@ -1,89 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3EOJE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:04:58 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:39707 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab3EOJE4 (ORCPT
+	id S1757284Ab3EOJFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:05:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33280 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3EOJFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:04:56 -0400
-Date: Wed, 15 May 2013 10:04:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: sameo@linux.intel.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
-Message-ID: <20130515090449.GA3494@gmail.com>
-References: <20130514091956.GG3297@gmail.com>
+	Wed, 15 May 2013 05:05:07 -0400
+Date: Wed, 15 May 2013 11:05:05 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.10-rc1 system starts regular boot when waking from s2ram
+Message-ID: <20130515090505.GA3995@amd.pavel.ucw.cz>
+References: <20130514160108.GA5055@dhcp22.suse.cz>
+ <1368567715.t1rym2H3RB@vostro.rjw.lan>
+ <20130515080122.GC8625@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130514091956.GG3297@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130515080122.GC8625@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+Hi!
 
-Since v1 of my MFD -fixes pull-request, I have applied a few more
-patches which really should be entered into the -rc:s. As it appears
-that you have not yet pulled v1, I figured sending a v2 in its place
-would be appropriate, so here it is.
+> > Well, it probably is.  I'll try to reproduce it, but if I can't ...
+> 
+> OK, I am bisecting now. 6 iterations left...
 
------
+Good luck. I tried to reproduce it locally on thinkpad x60, but it
+suspends/resumes ok.
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+(There seems to be regression in bluetooth; tray widget now shows
+bluetooth is unavailable and it can't be turned on. x60 uses btusb.)
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/ljones/mfd.git for-mfd-fixes
-
-for you to fetch changes up to 27df65e061f51f6bd2c8e9ad6b505c8dbab6460c:
-
-  mfd: db8500-prcmu: Update stored DSI PLL divider value (2013-05-14 15:58:04 +0100)
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      mfd: ab8500: Debugfs code depends on gpadc
-
-Fabio Baltieri (5):
-      mfd: abx500-core: Fix sparse warning
-      mfd: ab8500-sysctrl: Fix sparse warning
-      mfd: ab8500-sysctrl: Set sysctrl_dev during probe
-      mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-      mfd: ab8500-sysctrl: Always enable pm_power_off handler
-
-Lee Jones (4):
-      mfd: ab8500-gpadc: Suppress 'ignoring regulator_enable() return value' warning
-      mfd: ab8500-core: Use the correct driver name when enabling gpio/pinctrl
-      mfd: db8500-prcmu: Supply the pdata_size attribute for db8500-thermal
-      mfd: ab8500-core: Pass GPADC compatible string to MFD core
-
-Linus Walleij (1):
-      mfd: ab8500: Pass AB8500 IRQ to debugfs code by resource
-
-Ulf Hansson (1):
-      mfd: db8500-prcmu: Update stored DSI PLL divider value
-
- drivers/mfd/Kconfig               |    2 +-
- drivers/mfd/ab8500-core.c         |   24 +++++++++++++++++++++---
- drivers/mfd/ab8500-debugfs.c      |   16 ++++++++++++----
- drivers/mfd/ab8500-gpadc.c        |    7 +++++--
- drivers/mfd/ab8500-sysctrl.c      |   15 ++++++++++-----
- drivers/mfd/abx500-core.c         |    2 +-
- drivers/mfd/db8500-prcmu.c        |    3 +++
- include/linux/mfd/abx500/ab8500.h |    2 --
- 8 files changed, 53 insertions(+), 18 deletions(-)
-
+									Pavel
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
