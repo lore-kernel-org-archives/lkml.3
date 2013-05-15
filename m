@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab3EOPnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 11:43:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46127 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757009Ab3EOPnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 11:43:35 -0400
-Message-ID: <5193AD1A.9080100@ti.com>
-Date: Wed, 15 May 2013 21:13:22 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1759419Ab3EOPoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 11:44:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57747 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758967Ab3EOPoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 11:44:09 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, Kevin Hilman <khilman@linaro.org>
-CC: <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCHv5 1/2] driver: tty: serial: Move "uart_console" def to
- core header file.
-References: <1367006686-3720-1-git-send-email-sourav.poddar@ti.com> <1367006686-3720-2-git-send-email-sourav.poddar@ti.com> <87vc79uezo.fsf@linaro.org> <20130426221817.GA28377@kroah.com> <51939EFD.60900@ti.com> <20130515145711.GA1796@kroah.com> <5193A276.9030308@ti.com>
-In-Reply-To: <5193A276.9030308@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130515150450.GB2194@krava.brq.redhat.com>
+References: <1367421944-19082-1-git-send-email-jolsa@redhat.com>
+	<20130507122948.GD1076@krava.brq.redhat.com>
+	<20130515150450.GB2194@krava.brq.redhat.com>
+Date: Wed, 15 May 2013 17:44:07 +0200
+Message-ID: <CAFTL4hzFJ1cOvo0p_r0S+TC4cBJqurtfjkg7fYv-Gtrh2wTLkg@mail.gmail.com>
+Subject: Re: [PATCHv3 0/4] perf, signal x86: Fix breakpoint events overflow handling
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Wednesday 15 May 2013 08:27 PM, Sourav Poddar wrote:
-> On Wednesday 15 May 2013 08:27 PM, Greg KH wrote:
->> On Wed, May 15, 2013 at 08:13:09PM +0530, Sourav Poddar wrote:
->>> Hi Greg,
->>> On Saturday 27 April 2013 03:48 AM, Greg KH wrote:
->>>> On Fri, Apr 26, 2013 at 03:03:07PM -0700, Kevin Hilman wrote:
->>>>> Hi Greg,
->>>>>
->>>>> Sourav Poddar<sourav.poddar@ti.com>   writes:
->>>>>
->>>>>> Move "uart_console" definition to serial core header file, so 
->>>>>> that it can be
->>>>>> used by serial drivers.
->>>>>> Get rid of the uart_console defintion from mpc52xx_uart driver.
->>>>>>
->>>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>>>> Cc: Felipe Balbi<balbi@ti.com>
->>>>>> Cc: Rajendra nayak<rnayak@ti.com>
->>>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>>>>> Reviewed-by: Felipe Balbi<balbi@ti.com>
->>>>> Can you queue up this patch (and 2/2)?  Once these are in, I will 
->>>>> queue
->>>>> up the corresponding arch/arm changes which can go independently.
->>>>>
->>>>> And feel free to add
->>>>>
->>>>> Reviewed-by: Kevin Hilman<khilman@linaro.org>
->>>>> Tested-by: Kevin Hilman<khilman@linaro.org>
->>>> I will do so after 3.10-rc1 is out, it is _way_ too late in the
->>>> development cycle for me to add these to my trees right now, 
->>>> considering
->>>> they are pretty much closed at the moment.
->>>>
->>> Do you want me to rebase this patches on top of 3.10-rc1?
->> That would be great to have, thanks.
+2013/5/15 Jiri Olsa <jolsa@redhat.com>:
+> On Tue, May 07, 2013 at 02:29:48PM +0200, Jiri Olsa wrote:
+>> On Wed, May 01, 2013 at 05:25:40PM +0200, Jiri Olsa wrote:
+>> > hi,
+>> > sending v3 for initial patchset:
+>> > https://lkml.org/lkml/2013/3/1/324
+>> >
+>> > basically just sending remaining (not pulled) patches,
+>> > with '*-by: *' tags updated.
+>> >
+>> > v3 changes:
+>> >   - perf test patches already pulled in
+>> >   - added Oleg's Tested-by for signal related patches
+>> >   - added Frederic's Reviewed-by for signal related patches
+>> >   - added Peter's Reviewed-by for perf patch.
 >>
-[Greg]:
-            Have resend the patch series based on 3.10-rc1.
+>> hi,
+>>
+>> Thomas, Peter,
+>> any chance you could pull this in?
+>>
+>> Ingo,
+>> could you please take the perf change (4/4)?
+>> it's reviewed by PeterZ
+>
+> ping
 
-[Kevin]: Should I resend the omap specific changes also after rebasing it on
-              3.10-rc1, once greg pull in the serial part. ?
->> greg k-h
-> Ok. Will do that and resend.
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-serial" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+May be you can set up a branch based on v3.10-rc1 with these patches
+applied on top and send it as a pull request to Ingo (and LKML + other
+people Cc'ed). Your branch is not pullable as is because it seems to
+be based on tip:master (it's not targeted for mainline, just there for
+testing) and moreover an old enough version of it.
 
+Just suggesting that because clean pull requests based on sane
+starting points usually get better and faster attention than
+standalone patches because it's less maintainance noise. Also you have
+all the necessary acks so it's all good.
+
+Thanks!
