@@ -1,83 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab3EOAHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 20:07:23 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:12493 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758685Ab3EOAHV (ORCPT
+	id S1758806Ab3EOAKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 20:10:21 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:41767 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758668Ab3EOAKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 20:07:21 -0400
-Date: Wed, 15 May 2013 01:07:15 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Holger Hoffstaette <holger.hoffstaette@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: r8169 on 3.8.13, 3.9.2, 3.10-rc1, was Re: [ 00/73] 3.8.13-stable
- review
-Message-ID: <20130515000715.GA20099@milliways>
-References: <20130509222757.917088509@linuxfoundation.org>
- <pan.2013.05.10.10.54.26.943195@googlemail.com>
+	Tue, 14 May 2013 20:10:19 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-msm@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org, Amit Kucheria <amit.kucheria@linaro.org>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
+Subject: Re: [PATCH] clk: Fix race condition between clk_set_parent and clk_enable()
+Date: Wed, 15 May 2013 02:10:10 +0200
+Message-ID: <8297704.vcdTNl69IU@flatron>
+User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <5192BEC9.1040104@codeaurora.org>
+References: <1367383328-25700-1-git-send-email-skannan@codeaurora.org> <9066674.E2RzuEn3ap@flatron> <5192BEC9.1040104@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <pan.2013.05.10.10.54.26.943195@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=wom5GMh1gUkA:10 a=DKufjtCz-h8A:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=DfNHnWVPAAAA:8 a=WgTq_mZlXGbTuIDsb-AA:9 a=wPNLvfGTeEIA:10 a=lBRciGGoxdUA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 12:54:27PM +0200, Holger Hoffstaette wrote:
+On Tuesday 14 of May 2013 15:46:33 Saravana Kannan wrote:
+> On 05/14/2013 03:10 PM, Tomasz Figa wrote:
+> > Hi,
+> > 
+> > On Tuesday 14 of May 2013 11:54:17 Mike Turquette wrote:
+> >> Quoting Saravana Kannan (2013-04-30 21:42:08)
+> >> 
+> >>> Without this patch, the following race conditions are possible.
+> >>> 
+> >>> Race condition 1:
+> >>> * clk-A has two parents - clk-X and clk-Y.
+> >>> * All three are disabled and clk-X is current parent.
+> >>> * Thread A: clk_set_parent(clk-A, clk-Y).
+> >>> * Thread A: <snip execution flow>
+> >>> * Thread A: Grabs enable lock.
+> >>> * Thread A: Sees enable count of clk-A is 0, so doesn't enable
+> >>> clk-Y.
+> >>> * Thread A: Updates clk-A SW parent to clk-Y
+> >>> * Thread A: Releases enable lock.
+> >>> * Thread B: clk_enable(clk-A).
+> >>> * Thread B: clk_enable() enables clk-Y, then enabled clk-A and
+> >>> returns.
+> >>> 
+> >>> clk-A is now enabled in software, but not clocking in hardware since
+> >>> the hardware parent is still clk-X.
+> >>> 
+> >>> The only way to avoid race conditions between clk_set_parent() and
+> >>> clk_enable/disable() is to ensure that clk_enable/disable() calls
+> >>> don't
+> >>> require changes to hardware enable state between changes to software
+> >>> clock topology and hardware clock topology.
+> >>> 
+> >>> There are options to achieve the above:
+> >>> 1. Grab the enable lock before changing software/hardware topology
+> >>> and
+> >>> 
+> >>>     release it afterwards.
+> >>> 
+> >>> 2. Keep the clock enabled for the duration of software/hardware
+> >>> topology>
+> >>> 
+> >>>     change so that any additional enable/disable calls don't try to
+> >>>     change
+> >>>     the hardware state. Once the topology change is complete, the
+> >>>     clock
+> >>>     can
+> >>>     be put back in its original enable state.
+> >>> 
+> >>> Option (1) is not an acceptable solution since the set_parent() ops
+> >>> might need to sleep.
+> >>> 
+> >>> Therefore, this patch implements option (2).
+> >>> 
+> >>> This patch doesn't violate any API semantics. clk_disable() doesn't
+> >>> guarantee that the clock is actually disabled. So, no clients of a
+> >>> clock can assume that a clock is disabled after their last call to
+> >>> clk_disable(). So, enabling the clock during a parent change is not
+> >>> a
+> >>> violation of any API semantics.
+> >>> 
+> >>> This also has the nice side effect of simplifying the error handling
+> >>> code.
+> >>> 
+> >>> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+> >> 
+> >> I've taken this patch into clk-next for testing.  The code itself
+> >> looks
+> >> fine.  The only thing that remains to be seen is if any platforms
+> >> have a problem with disabled clocks getting turned on during a
+> >> reparent operation.
+> > 
+> > IMHO this behavior should be documented somewhere, with a note that
+> > the
+> > clock must not be prepared to keep it disabled during reparent
+> > operation and possibly also pointing to the CLK_SET_PARENT_GATE flag.
+> 
+> Reasonable request. I can update the documentation of clk_set_parent()
+> to indicate that the clock might get turned on for the duration of the
+> call and if they need a guarantee the GATE flag should be used.
+> 
+> >> On platforms that I have worked on this is OK, but I suppose there
+> >> could be some platform out there where a clock is prepared and
+> >> disabled, and briefly enabling the clock during the reparent
+> >> operation somehow puts the hardware in a bad state.
+> > 
+> > Well, on any platform where default clock settings are not completely
+> > correct this is likely to cause problems, because some device might
+> > get
+> > too high frequency for some period of time, which might crash it alone
+> > as well as the whole system.
+> 
+> I don't think this is really a problem with this patch. It's present
+> even without this patch.
+> 
+> The patch doesn't switch to some other unspecified parent. It only
+> switches between the new/old parent. Even without this patch, if a clock
+> is prepared while you reparent it, clk_enable() could be called at
+> anytime between the parent switch and the future clock API calls to set
+> up the new parent correctly. I think that's just crappy driver code to
+> switch to a new parent before setting it up correctly. There's
+> absolutely no good reason to do it that way.
 
- Cc'ing to netdev because I don't think this has had a response, and
-I care because I *might* be seeing the same problem on both 3.9.2
-and 3.10-rc1, but my take on the problem is slightly different [
-details after Holger's posting ]
+This is not exactly what I meant. I was just giving an example problem of 
+turning a clock on, if it's not set up correctly yet.
 
-> On Thu, 09 May 2013 15:31:23 -0700, Greg Kroah-Hartman wrote:
-> 
-> > This is the start of the stable review cycle for the 3.8.13 release. There
-> 
-> This patchset broke my internet, with all sorts of weird effects like
-> Samba clients having problems to talk to the server and only partially
-> working DNS resolution (CDNs broken, Amazon unreachable).
-> 
-> After two reboots to/from .12/.13 (to rule out temporary internet
-> brokenness) the problem has been identified as:
-> 
-> > Stefan Bader <stefan.bader@canonical.com>
-> >     r8169: fix 8168evl frame padding.
-> 
-> After reverting only this patch (turning r8169 back to 3.8.12) things
-> again behave as expected with the rest of .13. So far no other regressions
-> detected.
-> 
-> This patch should probably be removed from 3.9.2-rc as well.
-> 
-> -h
-> 
- For me, I'm seeing what might be a similar problem in about 2/5 of
-my boots of 3.9.2 and 3.10-rc1 : in my case, r8169 is a module [ most
-things are built in ], I use dhclient to get an ip address, and I
-have separate nfs shares for /sources [ in /etc/mtab ] and my user's
-~/notes [ mounted from ~/.bashrc ].
+AFAIK most (if not all) of current code either does necessary reparenting 
+and initial rate setting early, before clk_prepare(), so it is not a 
+problem or already after clk_enable() (in case of reparenting dynamically 
+at runtime), so there shouldn't be any problem.
 
- On a good boot, everything mounts.  On a bad boot, /sources is NOT
-mounted because eth0 is not up, but by the time anyone logs in it
-_is_ up so mounting ~/notes [and manually mounting /sources as root]
-works.  What seems to be happening is that eth0 is coming up
-slightly later on some occasions (about 11 seconds from booting,
-instead of 10.5 seconds) and somehow the dhclient script seems to
-have ended *before* that.
+Best regards,
+Tomasz
 
- For me, this isn't bisectable (so far, 10 boots of 3.9.2 and
-3.10-rc1 on this box, and 4 were problematic).  On this box, 3.9.0
-itself was perfect.
-
-Holger : apologies if I've hijacked this thread with what turns out
-to be a different problem.
-
-ken
--- 
-das eine Mal als Tragödie, das andere Mal als Farce
