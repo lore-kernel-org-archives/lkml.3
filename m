@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab3EOJuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:50:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56325 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab3EOJuR (ORCPT
+	id S932498Ab3EOJw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:52:28 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:43078 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932432Ab3EOJwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:50:17 -0400
-Date: Wed, 15 May 2013 11:50:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>, Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 13/15] clockevents: Provide sysfs interface
-In-Reply-To: <20130426223729.GA782@sboyd-linux.qualcomm.com>
-Message-ID: <alpine.LFD.2.02.1305151148470.1388@ionos>
-References: <20130425142452.908423538@linutronix.de> <20130425143436.371634778@linutronix.de> <20130426223729.GA782@sboyd-linux.qualcomm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 15 May 2013 05:52:24 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
+        davem@davemloft.net, herbert@gondor.hengli.com.au,
+        vinod.koul@intel.com
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 06/39] ARM: ux500: Move SDI (MMC) and UART devices under more descriptive heading
+Date: Wed, 15 May 2013 10:51:29 +0100
+Message-Id: <1368611522-9984-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Apr 2013, Stephen Boyd wrote:
+Now DMA DT bindings exist and are in use by he MMC and UART drivers, it
+should be possible to remove them from the auxdata structure. However,
+after doing so the drivers fail. Common clk is still reliant on the
+dev_name() call to do device name matching, which will fail due to the
+fact that Device Tree naming differs somewhat do the more traditional
+conventions.
 
-> On 04/25, Thomas Gleixner wrote:
-> > Provide a simple sysfs interface for the clockevent devices. Show the
-> > current active clockevent device.
-> > 
-> 
-> Neat. Does this do anything about clockevents that aren't in use
-> for the tick devices or broadcast device?
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/cpu-db8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-No, but that would be simple to add.
- 
-> > +static int tick_broadcast_init_sysfs(void)
-> 
-> __init?
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 96ddbae..b1c9241 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -230,15 +230,15 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	/* Requires call-back bindings. */
+ 	OF_DEV_AUXDATA("arm,cortex-a9-pmu", 0, "arm-pmu", &db8500_pmu_platdata),
+ 	/* Requires DMA bindings. */
++	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
++	/* Requires clock name bindings. */
+ 	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", NULL),
+ 	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", NULL),
+ 	OF_DEV_AUXDATA("arm,pl011", 0x80007000, "uart2", NULL),
+-	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
+ 	OF_DEV_AUXDATA("arm,pl18x", 0x80126000, "sdi0",  NULL),
+ 	OF_DEV_AUXDATA("arm,pl18x", 0x80118000, "sdi1",  NULL),
+ 	OF_DEV_AUXDATA("arm,pl18x", 0x80005000, "sdi2",  NULL),
+ 	OF_DEV_AUXDATA("arm,pl18x", 0x80114000, "sdi4",  NULL),
+-	/* Requires clock name bindings. */
+ 	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
+ 	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e080, "gpio.1", NULL),
+ 	OF_DEV_AUXDATA("st,nomadik-gpio", 0x8000e000, "gpio.2", NULL),
+-- 
+1.7.10.4
 
-Yes
- 
-> > +{
-> > +	int err = device_register(&tick_bc_dev);
-> > +
-> > +	if (!err)
-> > +		err = device_create_file(&tick_bc_dev, &dev_attr_current_device);
-> > +	return err;
-> > +}
-> > +#else
-> > +static struct tick_device *tick_get_tick_dev(struct device *dev)
-> > +{
-> > +	return &per_cpu(tick_cpu_device, dev->id);
-> > +}
-> > +static inline int tick_broadcast_init_sysfs(void) { return 0; }
-> >  #endif
-> > +
-> > +int __init tick_init_sysfs(void)
-> 
-> static?
-
-Yes
- 
-> > +{
-> > +	int cpu;
-> > +
-> > +	for_each_possible_cpu(cpu) {
-> > +		struct device *dev = &per_cpu(tick_percpu_dev, cpu);
-> > +		int err;
-> > +
-> > +		dev->id = cpu;
-> > +		dev->bus = &clockevents_subsys;
-> > +		err = device_register(dev);
-> > +		if (!err)
-> > +			err = device_create_file(dev, &dev_attr_current_device);
-> > +		if (err)
-> > +			return err;
-> > +	}
-> > +	return tick_broadcast_init_sysfs();
-> > +}
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
