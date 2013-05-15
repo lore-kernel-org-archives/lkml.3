@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab3EOOVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:21:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34684 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757852Ab3EOOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:21:31 -0400
-Date: Wed, 15 May 2013 16:21:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Victor Miasnikov <vvm@tut.by>, linux-pm@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@linuxdriverproject.org, olaf@aepfle.de,
-        "\"Andy Whitcroft\"" <apw@canonical.com>, jasowang@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, JBeulich@suse.com,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: CONFIG_HYPERVISOR_GUEST=y   {-- replace --
- CONFIG_PARAVIRT_GUEST=y {= { # CONFIG_HYPERVISOR_GUEST is not set } Re:
- 3.10-rc1 Fw: [PATCH 2/2] x86: Make Linux guest support optional
-Message-ID: <20130515142126.GA11783@pd.tnic>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
- <925E2E537ECB4D0C8EA18467A4D20174@local.st.by>
- <20130515133405.GC5455@dhcp22.suse.cz>
- <293D65E8F6CE48768FF47E438C57ECD2@local.st.by>
- <20130515134656.GF5455@dhcp22.suse.cz>
- <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
+	id S1759273Ab3EOOai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:30:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34426 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758992Ab3EOOai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:30:38 -0400
+Date: Wed, 15 May 2013 16:30:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for
+ PERF_SAMPLE_BRANCH_KERNEL
+Message-ID: <20130515143019.GA13916@laptop.home>
+References: <20130503121122.931661809@chello.nl>
+ <20130503121256.230745028@chello.nl>
+ <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <FC7F5007EF934194A48587DB6A0DBCC0@local.st.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 05:05:42PM +0300, Victor Miasnikov wrote:
-> CONFIG_PARAVIRT_GUEST in arch/ia64 :
+On Wed, May 15, 2013 at 03:37:22PM +0200, Stephane Eranian wrote:
+> On Fri, May 3, 2013 at 2:11 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > We should always have proper privileges when requesting kernel data.
+> >
+> > Cc: Andi Kleen <ak@linux.intel.com>
+> > Cc: eranian@google.com
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_lbr.c |    5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> >
+> > --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> > @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
+> >         if (br_type & PERF_SAMPLE_BRANCH_USER)
+> >                 mask |= X86_BR_USER;
+> >
+> > -       if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
+> > +       if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
+> > +               if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> > +                       return -EACCES;
+> >                 mask |= X86_BR_KERNEL;
+> > +       }
+> >
+> This will prevent regular users from capturing kernel -> kernel branches.
+> But it won't prevent users from getting kernel -> user branches. Thus
+> some kernel address will still be captured. I guess they could be eliminated
+> by the sw_filter.
 > 
-> ./linux-3.10-rc1/arch/ia64/include/asm/native/
-> inst.h
-> ./linux-3.10-rc1/arch/ia64/configs/
-> xen_domu_defconfig
-> ./linux-3.10-rc1/arch/ia64/include/asm/
-> hw_irq.h
-> iosapic.h
-> paravirt.h
+> When using LBR priv level filtering, the filter applies to the branch target
+> only.
 
-This is only an issue if hyperv or vmware balloon is designed to work on
-ia64.
-
-However, both hyperv and vmware balloon depend on X86 so they are never
-enabled on ia64.
-
-So the way I see it, it doesn't matter.
-
-Tony, what's your take on this - CONFIG_PARAVIRT_GUEST is
-present in ia64 and I recently changed the Kconfig symbol to
-CONFIG_HYPERVISOR_GUEST on x86. I can fix it for correctness but is
-hyperv and vmware balloon even attempted on ia64?
-
-Btw, it depends on BROKEN on ia64 so I'm already sceptical.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Ah, indeed. I'll try and whip up a patch.
