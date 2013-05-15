@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3EOFAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 01:00:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52596 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3EOFAC (ORCPT
+	id S1754361Ab3EOFAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 01:00:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34360 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab3EOFAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 01:00:02 -0400
-Message-ID: <5193164E.6050400@wwwdotorg.org>
-Date: Tue, 14 May 2013 22:59:58 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 15 May 2013 01:00:14 -0400
+Date: Wed, 15 May 2013 08:59:42 +0400
+From: Mark Brown <broonie@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130515045942.GK24524@sirena.org.uk>
+References: <1368544041.1350.111.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Jongsung Kim <neidhard.kim@lge.com>
-CC: "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-rpi-kernel@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: PL011: add support for extended FIFO-size of PL011-r1p5
-References: <007301ce375e$bcf6d6b0$36e48410$@lge.com> <5191D200.3040604@wwwdotorg.org> <01fd01ce5072$d6b9fcd0$842df670$@lge.com> <5192A692.4010700@wwwdotorg.org> <022d01ce5107$8bc668e0$a3533aa0$@lge.com>
-In-Reply-To: <022d01ce5107$8bc668e0$a3533aa0$@lge.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZQs1kEQY307C4ut"
+Content-Disposition: inline
+In-Reply-To: <1368544041.1350.111.camel@x61.thuisdomein>
+X-Cookie: You'll be sorry...
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.247.243.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: remove saarb and tavorevb3 machine drivers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 07:00 PM, Jongsung Kim wrote:
-> Stephen Warren <swarren@wwwdotorg.org> :
->> Looking at BCM2835-ARM-Peripherals.pdf (i.e. the public documentation for
->> the BCM2835 chip), I see:
->>
->> =====
->> The UART provides:
->> * Separate 16x8 transmit and 16x12 receive FIFO memory.
->> ...
->> For the in-depth UART overview, please, refer to the ARM PrimeCell UART
->> (PL011) Revision: r1p5 Technical Reference Manual.
->> =====
->>
->> That seems to imply that not all r1p5 PL011s actually have a depth-32 FIFO.
->> Perhaps this is a configurable property of the IP block, not something that
->> all r1p5 have?
-> 
-> All r1p5 have 32-byte FIFO depth and it's not configurable. From the PL011
-> TRM:
-> 
-> r1p4-r1p5	Contains the following differences in functionality:
-> 		* The receive and transmit FIFOs are increased to a depth of 32.
-> 		* The Revision field in the UARTPeriphID2 Register on page 3-24
-> 		  bits [7:4] now reads back as 0x3.
 
-Well, that certainly isn't true in practice. I think we should revert
-this commit until we can determine what the problem is.
+--YZQs1kEQY307C4ut
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I validated that the periphid register in HW contains the r1p5 revision
-(3), and the pcellid register does indeed contain the expected
-0xb105f00d value. However, if I run the following hacky code in U-Boot
-to determine the FIFO depth, it comes out as 16, which explains the
-symptoms I'm seeing:
+On Tue, May 14, 2013 at 05:07:21PM +0200, Paul Bolle wrote:
+> Support for PXA95x was removed in v3.8. This means that the Kconfig
+> symbols MACH_SAARB and MACH_TAVOREVB3 are no longer available. This
+> leaves the SoC Audio support for Marvell Saarb and Marvell Tavor EVB3
+> unbuildable. Remove these drivers too.
 
-void find_fifo_depth(void)
-{
-	volatile u8 *uart = 0x20201000;
-	int depth = 0;
+Applied, thanks.
 
-	/* Wait for TX FIFO empty */
-	while (!(uart[0x18] & 0x80))
-		;
+--YZQs1kEQY307C4ut
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	/* Disable UART */
-	uart[0x30] &= ~1;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-	/* Push chars into TX FIFO until full */
-	for (;;) {
-		uart[0] = 'A' + depth;
-		depth++;
-		/* Done if FIFO full */
-		if (uart[0x18] & 0x20)
-			break;
-		if (depth > 64) {
-			depth = -1;
-			break;
-		}
-	}
+iQIcBAEBAgAGBQJRkxY7AAoJELSic+t+oim9i+cP/j6W0qy+mM6Km08JaKKNB/2m
+z9pBkcjRcVJujr+jHJUBGkKF2IfZTKDcTAQ6+c7H3k8PYNBZbKBBz+Vrjgu7UJoe
+6VhFzCgkff7R193HIPVTsfrYidnU2xjPkRUhZgrFpAt6vKiPXVLewqoVrsh//uhi
+1bqzbw4Q04OP328r+jH27hQhp+6xteDYseJ9JxLkgLZDD69a4EE0ya0BtPmz/xz6
+Gx+5mCPUczvebt+cioF/3j1I6dH/QtRy3aJajP7VPBVBTKna+kxdeh4iELBf85vo
+TD05tEJJUKb9oAnMj5gqJl0K1yylWREofRjnIt6Mp3Cje6KXkfyZkSd0eI3bjQKF
+pSxp86s8cLw2BMutikxG2imR71KIQqsfNDfO1USoFWadFYhJogepGGIg987qfDb1
+dIMJo0terP8M5+eGqlcO3Snfzwy5/+oAsOLL+AfqLdm3nId4LYgV6TgVRLa67QcD
+QqhOJgNH5NCaeeTFGHmMKQiIc8QiDCVh/SlHyPNr8Cb4OntDLwk0fp66rHbG2l+l
+tRdn5+faAoQr+EvtC4KE4tjdFOtE+zaV8SBa7hzwJQjflZ4UQWxuFxEjm2jHgILj
+qIyQl7b0pj+A/NTtCQPi/DAOgwAsh6Vt9gUSM+hwAqeaIikZQkdr2xnV+U1cF5J1
+iCmvYgi6jYu/50ea5sD/
+=mlVL
+-----END PGP SIGNATURE-----
 
-	/* Re-enable UART */
-	uart[0x30] |= 1;
-
-	printf("FIFO depth: %d\n", depth);
-}
+--YZQs1kEQY307C4ut--
