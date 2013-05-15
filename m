@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab3EOO6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 10:58:48 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:40594 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758866Ab3EOO6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 10:58:45 -0400
+	id S1759301Ab3EOO7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 10:59:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758979Ab3EOO7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 10:59:31 -0400
+Date: Wed, 15 May 2013 16:59:10 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 02/15] perf util: Use evsel->name to get tracepoint_paths
+Message-ID: <20130515145910.GA2194@krava.brq.redhat.com>
+References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
+ <1368526439-31966-3-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <51939FB1.20203@gmail.com>
-References: <1368461313-4371-1-git-send-email-jiang.liu@huawei.com>
-	<1368461313-4371-4-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQVKKKmZRQ8CcKCzU8Gqzwb5SjWYagVB2OZiRqbSWXVpiw@mail.gmail.com>
-	<5191F53E.4000305@cn.fujitsu.com>
-	<51925136.5050302@gmail.com>
-	<CAE9FiQWO-jR5y35kKiW0m6gVR54ZyRsBsdhP4BmFLSsDzCS3rA@mail.gmail.com>
-	<51926CF6.1050706@gmail.com>
-	<CAE9FiQWXN_ETRFPb5oFx-6LXyuHviX3h3NXCQKjcxtv2Uma-JA@mail.gmail.com>
-	<51939E16.9090105@gmail.com>
-	<CAE9FiQUXrOmN0rkvOwE1G_acEGY3-gouzaXjBMT7EE6uAqvuZA@mail.gmail.com>
-	<51939FB1.20203@gmail.com>
-Date: Wed, 15 May 2013 07:58:44 -0700
-X-Google-Sender-Auth: 1e6S0ya4os951sHRvmUR19XiNWA
-Message-ID: <CAE9FiQVCSm14S0A1sVWewc7UX-dyOmu9aq1UwqdPZK6qSmbFxQ@mail.gmail.com>
-Subject: Re: [PATCH v2, part 1 3/9] PCI: Convert alloc_pci_dev(void) to
- pci_alloc_dev(bus) instead
-From: Yinghai Lu <yinghai@kernel.org>
-To: Liu Jiang <liuj97@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, linuxppc-dev@lists.ozlabs.org,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368526439-31966-3-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 7:46 AM, Liu Jiang <liuj97@gmail.com> wrote:
-> On Wed 15 May 2013 10:43:02 PM CST, Yinghai Lu wrote:
->>
->
->> that is another bug, let of guy handle it.
->>
->> Yinghai
->
-> Hi Yinghai,
->       I don't know any OF exports, could you please help to CC
-> some OF experts?
+On Tue, May 14, 2013 at 07:13:46PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 
-powerpc and sparc are using that.
+SNIP
 
-Ben,
+>  };
+>  
+>  extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+> +extern struct tracepoint_path *tracepoint_name_to_path(const char *name);
+>  extern bool have_tracepoints(struct list_head *evlist);
+>  
+>  const char *event_type(int type);
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index ab18bf12d54a..bfcaeac7ef9d 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -414,12 +414,23 @@ get_tracepoints_path(struct list_head *pattrs)
+>  		if (pos->attr.type != PERF_TYPE_TRACEPOINT)
+>  			continue;
+>  		++nr_tracepoints;
+> +
+> +		if (pos->name) {
+> +			ppath->next = tracepoint_name_to_path(pos->name);
 
-in drivers/pci/probe.c::pci_scan_device() there is
+yep, looks like big time saver ;)
 
-        pci_set_of_node(dev);
+> +			if (!ppath->next)
+> +				goto error;
 
-        if (pci_setup_device(dev)) {
-                kfree(dev);
-                return NULL;
-        }
+hum, the tracepoint_name_to_path fails also because of the
+malformed tracepoint name.. then the error message is
+misleading.. but not quite sure this could happen
 
-so if pci_setup_device fails, there is one dev reference is not release.
+jirka
 
-please check you can just move down pci_set_of_node down after that
-failing path, like
-
-
-        if (pci_setup_device(dev)) {
-                kfree(dev);
-                return NULL;
-        }
-
-        pci_set_of_node(dev);
-
-Yinghai
+> +
+> +			goto next;
+> +		}
+> +
+>  		ppath->next = tracepoint_id_to_path(pos->attr.config);
+>  		if (!ppath->next) {
+> +error:
+>  			pr_debug("No memory to alloc tracepoints list\n");
+>  			put_tracepoints_path(&path);
+>  			return NULL;
+>  		}
+> +next:
+>  		ppath = ppath->next;
+>  	}
+>  
+> -- 
+> 1.7.11.7
+> 
