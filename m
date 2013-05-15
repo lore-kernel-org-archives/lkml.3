@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab3EOUqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 16:46:43 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:37702 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab3EOUqm (ORCPT
+	id S933097Ab3EOUrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 16:47:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46253 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab3EOUrJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 16:46:42 -0400
-Message-ID: <5193F42D.7020301@lwfinger.net>
-Date: Wed, 15 May 2013 15:46:37 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 15 May 2013 16:47:09 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130515200942.GA17724@cerebellum>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com> <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com> <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default> <20130514163541.GC4024@medulla> <f0272a06-141a-4d33-9976-ee99467f3aa2@default> <20130514225501.GA11956@cerebellum> <4d74f5db-11c1-4f58-97f4-8d96bbe601ac@default> <20130515185506.GA23342@phenom.dumpdata.com> <20130515200942.GA17724@cerebellum>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: V3.10-rc1 memory leak
-References: <51912567.6090507@lwfinger.net> <1368558586.6828.53.camel@gandalf.local.home> <20130514203028.GA2997@MacBook-Pro.local> <5192A847.1000100@lwfinger.net> <1368566427.6828.58.camel@gandalf.local.home> <1368579423.6828.63.camel@gandalf.local.home> <5192FDE2.1020305@lwfinger.net> <20130515150228.GC1096@darko.cambridge.arm.com>
-In-Reply-To: <20130515150228.GC1096@darko.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 15 May 2013 16:45:36 -0400
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Message-ID: <d1bf29e8-ffba-454c-95cd-bdef572f7c62@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 10:02 AM, Catalin Marinas wrote:
-> On Wed, May 15, 2013 at 04:15:46AM +0100, Larry Finger wrote:
->> I do not see that particular one; however, I see 4 instances of
->>
->> unreferenced object 0xffff8800b7979750 (size 8):
->>     comm "swapper/0", pid 1, jiffies 4294892402 (age 21888.316s)
->>     hex dump (first 8 bytes):
->>       31 38 00 b7 00 88 ff ff                          18......
->>     backtrace:
->>       [<ffffffff81432ea1>] kmemleak_alloc+0x21/0x50
->>       [<ffffffff81145d50>] __kmalloc_track_caller+0x140/0x2b0
->>       [<ffffffff81119fb5>] kstrdup+0x35/0x70
->>       [<ffffffff8125febc>] acpi_set_pnp_ids+0xd0/0x304
->>       [<ffffffff81260c47>] acpi_scan_init_hotplug+0x47/0xa1
->>       [<ffffffff81261223>] acpi_bus_check_add+0x66/0xd7
->>       [<ffffffff8127877a>] acpi_ns_walk_namespace+0xb9/0x173
->>       [<ffffffff81278bf3>] acpi_walk_namespace+0x93/0xc6
->>       [<ffffffff812612dc>] acpi_bus_scan+0x48/0x9a
->>       [<ffffffff818c983d>] acpi_scan_init+0x57/0x14b
->>       [<ffffffff818c966a>] acpi_init+0x244/0x286
->>       [<ffffffff810002fa>] do_one_initcall+0x10a/0x160
->>       [<ffffffff8189cef0>] kernel_init_freeable+0x103/0x192
->>       [<ffffffff814313a9>] kernel_init+0x9/0xf0
->>       [<ffffffff8144992c>] ret_from_fork+0x7c/0xb0
->>       [<ffffffffffffffff>] 0xffffffffffffffff
->>
->> All four were allocated early in the bootup, and are the only leaks reported in
->> my system. I have not yet tested to see if they are false.
->
-> This looks to me like a real leak, possibly introduced by commit
-> 6b772e8f9 (ACPI: Update PNPID match handling for notify). The
-> acpi_scan_init_hotplug() function calls acpi_set_pnp_ids() which
-> allocates pnp.unique_id (kstrdup()) but for some reason it fails and
-> does not set pnp.type.hardware_id. The return does not call
-> acpi_free_pnp_ids() which would be responsible for such freeing.
-> Something like below, but not tested and may fail some NULL pointer
-> checks:
->
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index fe158fd..c1bc608 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1785,7 +1785,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
->   	acpi_set_pnp_ids(handle, &pnp, type);
->
->   	if (!pnp.type.hardware_id)
-> -		return;
-> +		goto out;
->
->   	/*
->   	 * This relies on the fact that acpi_install_notify_handler() will not
-> @@ -1800,6 +1800,7 @@ static void acpi_scan_init_hotplug(acpi_handle handle, int type)
->   		}
->   	}
->
-> +out:
->   	acpi_free_pnp_ids(&pnp);
->   }
+Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
 
-This patch fixes the memory leaks on my system. My kmemleak scans are now clean 
-again. You may add a "Tested-by: Larry Finger <Larry.Finger@lwfinger.net>".
+>On Wed, May 15, 2013 at 02:55:06PM -0400, Konrad Rzeszutek Wilk wrote:
+>> > Sorry, but I don't think that's appropriate for a patch in the MM
+>subsystem.
+>> 
+>> I am heading to the airport shortly so this email is a bit hastily
+>typed.
+>> 
+>> Perhaps a compromise can be reached where this code is merged as a
+>driver
+>> not a core mm component. There is a high bar to be in the MM - it has
+>to
+>> work with many many different configurations. 
+>> 
+>> And drivers don't have such a high bar. They just need to work on a
+>specific
+>> issue and that is it. If zswap ended up in say, drivers/mm that would
+>make
+>> it more palpable I think.
+>> 
+>> Thoughts?
+>
+>zswap, the writeback code particularly, depends on a number of
+>non-exported
+>kernel symbols, namely:
+>
+>swapcache_free
+>__swap_writepage
+>__add_to_swap_cache
+>swapcache_prepare
+>swapper_spaces
+>
+>So it can't currently be built as a module and I'm not sure what the MM
+>folks would think about exporting them and making them part of the
+>KABI.
+>
+>Seth
 
-Thanks,
-
-Larry
-
-
+Could those calls go through front swap? Meaning put the code that uses these calls in there?
+-- 
+Sent from my Android phone. Please excuse my brevity.
