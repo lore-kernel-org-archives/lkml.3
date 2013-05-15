@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab3EOMB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:01:56 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:64538 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758125Ab3EOMBy (ORCPT
+	id S1758827Ab3EOMCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:02:39 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:58943 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758125Ab3EOMCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:01:54 -0400
+	Wed, 15 May 2013 08:02:38 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH 4/6] media: i2c: ths7303: make the pdata as a constant pointer
-Date: Wed, 15 May 2013 17:27:20 +0530
-Message-Id: <1368619042-28252-5-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 5/6] media: i2c: ths7303: add support for asynchronous probing
+Date: Wed, 15 May 2013 17:27:21 +0530
+Message-Id: <1368619042-28252-6-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -30,9 +30,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-generally the pdata needs to be a constant pointer in the device
-state structure. This patch makes the pdata as a constant pointer
-and alongside returns -EINVAL when pdata is NULL.
+Both synchronous and asynchronous ths7303 subdevice probing is supported by
+this patch.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
@@ -44,56 +43,50 @@ Cc: Sakari Ailus <sakari.ailus@iki.fi>
 Cc: linux-kernel@vger.kernel.org
 Cc: davinci-linux-open-source@linux.davincidsp.com
 ---
- drivers/media/i2c/ths7303.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/media/i2c/ths7303.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
-index af06187c..b954195 100644
+index b954195..4f772a2 100644
 --- a/drivers/media/i2c/ths7303.c
 +++ b/drivers/media/i2c/ths7303.c
-@@ -35,7 +35,7 @@
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
  
- struct ths7303_state {
- 	struct v4l2_subdev		sd;
--	struct ths7303_platform_data	pdata;
-+	const struct ths7303_platform_data *pdata;
- 	struct v4l2_bt_timings		bt;
- 	int std_id;
- 	int stream_on;
-@@ -89,7 +89,7 @@ int ths7303_setval(struct v4l2_subdev *sd, enum ths7303_filter_mode mode)
- {
- 	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 	struct ths7303_state *state = to_state(sd);
--	struct ths7303_platform_data *pdata = &state->pdata;
-+	const struct ths7303_platform_data *pdata = state->pdata;
- 	u8 val, sel = 0;
- 	int err, disable = 0;
+ #include <media/ths7303.h>
++#include <media/v4l2-async.h>
+ #include <media/v4l2-chip-ident.h>
+ #include <media/v4l2-device.h>
  
-@@ -356,6 +356,11 @@ static int ths7303_probe(struct i2c_client *client,
+@@ -355,6 +356,7 @@ static int ths7303_probe(struct i2c_client *client,
+ 	struct ths7303_platform_data *pdata = client->dev.platform_data;
  	struct ths7303_state *state;
  	struct v4l2_subdev *sd;
++	int ret;
  
-+	if (pdata == NULL) {
-+		dev_err(&client->dev, "No platform data\n");
-+		return -EINVAL;
-+	}
+ 	if (pdata == NULL) {
+ 		dev_err(&client->dev, "No platform data\n");
+@@ -385,13 +387,20 @@ static int ths7303_probe(struct i2c_client *client,
+ 		return -EINVAL;
+ 	}
+ 
++	state->sd.dev = &client->dev;
++	ret = v4l2_async_register_subdev(&state->sd);
++	if (ret)
++		return ret;
 +
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -ENODEV;
+ 	return 0;
+ }
  
-@@ -367,11 +372,7 @@ static int ths7303_probe(struct i2c_client *client,
- 	if (!state)
- 		return -ENOMEM;
+ static int ths7303_remove(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
++	struct ths7303_state *ths7303 = to_state(sd);
  
--	if (!pdata)
--		v4l_warn(client, "No platform data, using default data!\n");
--	else
--		state->pdata = *pdata;
--
-+	state->pdata = pdata;
- 	sd = &state->sd;
- 	v4l2_i2c_subdev_init(sd, client, &ths7303_ops);
++	v4l2_async_unregister_subdev(&ths7303->sd);
+ 	v4l2_device_unregister_subdev(sd);
  
+ 	return 0;
 -- 
 1.7.4.1
 
