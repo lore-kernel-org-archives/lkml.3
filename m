@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab3EOJVE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:21:04 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:33069 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab3EOJU7 (ORCPT
+	id S1758383Ab3EOJVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:21:12 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:59671 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753986Ab3EOJVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:20:59 -0400
-Date: Wed, 15 May 2013 11:20:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130515092055.GB7027@gmail.com>
-References: <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514141245.GA4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 May 2013 05:21:03 -0400
+Message-ID: <1368609661.1350.185.camel@x61.thuisdomein>
+Subject: [PATCH] powerpc: remove dependency on MV64360
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Wed, 15 May 2013 11:21:01 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 May 2013 09:21:01.0716 (UTC) FILETIME=[8478BD40:01CE514D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Kconfig entry that allows to "Distribute interrupts on all CPUs by
+default" has a (negative) dependency on MV64360. But that Kconfig symbol
+was removed in v2.6.27, which means that this dependency has evaluated
+to true ever since. It can be removed too.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested by grepping the tree.
 
-> rcu: Fix comparison sense in rcu_needs_cpu()
-> 
-> Commit c0f4dfd4f (rcu: Make RCU_FAST_NO_HZ take advantage of numbered
-> callbacks) introduced a bug that can result in excessively long grace
-> periods.  This bug reverse the senes of the "if" statement checking
-> for lazy callbacks, so that RCU takes a lazy approach when there are
-> in fact non-lazy callbacks.  This can result in excessive boot, suspend,
-> and resume times.
-> 
-> This commit therefore fixes the sense of this "if" statement.
-> 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Reported-by: Bj?rn Mork <bjorn@mork.no>
-> Reported-by: Joerg Roedel <joro@8bytes.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 170814d..6d939a6 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -1667,7 +1667,7 @@ int rcu_needs_cpu(int cpu, unsigned long *dj)
->  	rdtp->last_accelerate = jiffies;
->  
->  	/* Request timer delay depending on laziness, and round. */
-> -	if (rdtp->all_lazy) {
-> +	if (!rdtp->all_lazy) {
->  		*dj = round_up(rcu_idle_gp_delay + jiffies,
->  			       rcu_idle_gp_delay) - jiffies;
+ arch/powerpc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Neat - could this explain sporadic long (but not infinite) boot times with 
-NOHZ_FULL?
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index c33e3ad..9a822d9 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -404,7 +404,7 @@ config FA_DUMP
+ 
+ config IRQ_ALL_CPUS
+ 	bool "Distribute interrupts on all CPUs by default"
+-	depends on SMP && !MV64360
++	depends on SMP
+ 	help
+ 	  This option gives the kernel permission to distribute IRQs across
+ 	  multiple CPUs.  Saying N here will route all IRQs to the first
+-- 
+1.7.11.7
 
-We changed HZ to be at least 1 Hz pretty recently, which might have worked 
-around this bug.
-
-Thanks,
-
-	Ingo
