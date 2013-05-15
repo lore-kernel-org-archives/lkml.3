@@ -1,113 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab3EOIaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 04:30:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60451 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755874Ab3EOI36 (ORCPT
+	id S1757783Ab3EOIaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 04:30:16 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37973 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3EOIaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 04:29:58 -0400
-Date: Wed, 15 May 2013 10:29:47 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10-rc1 system starts regular boot when waking from s2ram
-Message-ID: <20130515082947.GA8765@xo-6d-61-c0.localdomain>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
- <1368567715.t1rym2H3RB@vostro.rjw.lan>
- <20130515080122.GC8625@dhcp22.suse.cz>
+	Wed, 15 May 2013 04:30:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51934781.4040704@jp.fujitsu.com>
+Date: Wed, 15 May 2013 17:29:53 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515080122.GC8625@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org
+Subject: Re: [PATCH v5 5/8] vmcore: allocate ELF note segment in the 2nd kernel
+ vmalloc memory
+References: <20130514015622.18697.77191.stgit@localhost6.localdomain6> <20130514015734.18697.32447.stgit@localhost6.localdomain6> <20130514153552.GG13674@redhat.com>
+In-Reply-To: <20130514153552.GG13674@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+(2013/05/15 0:35), Vivek Goyal wrote:
+> On Tue, May 14, 2013 at 10:57:35AM +0900, HATAYAMA Daisuke wrote:
+>> The reasons why we don't allocate ELF note segment in the 1st kernel
+>> (old memory) on page boundary is to keep backward compatibility for
+>> old kernels, and that if doing so, we waste not a little memory due to
+>> round-up operation to fit the memory to page boundary since most of
+>> the buffers are in per-cpu area.
+>>
+>> ELF notes are per-cpu, so total size of ELF note segments depends on
+>> number of CPUs. The current maximum number of CPUs on x86_64 is 5192,
+>> and there's already system with 4192 CPUs in SGI, where total size
+>> amounts to 1MB. This can be larger in the near future or possibly even
+>> now on another architecture that has larger size of note per a single
+>> cpu. Thus, to avoid the case where memory allocation for large block
+>> fails, we allocate vmcore objects on vmalloc memory.
+>>
+>> This patch adds elfnotesegbuf and elfnotesegbuf_sz variables to keep
+>> pointer to the ELF note segment buffer and its size. There's no longer
+>> the vmcore object that corresponds to the ELF note segment in
+>> vmcore_list. Accordingly, read_vmcore() has new case for ELF note
+>> segment and set_vmcore_list_offsets_elf{64,32}() and other helper
+>> functions starts calculating offset from sum of size of ELF headers
+>> and size of ELF note segment.
+>>
+>> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>> ---
+>>
+>>   fs/proc/vmcore.c |  225 ++++++++++++++++++++++++++++++++++++++++--------------
+>>   1 files changed, 165 insertions(+), 60 deletions(-)
+>>
+>> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+>> index 48886e6..795efd2 100644
+>> --- a/fs/proc/vmcore.c
+>> +++ b/fs/proc/vmcore.c
+>> @@ -34,6 +34,9 @@ static char *elfcorebuf;
+>>   static size_t elfcorebuf_sz;
+>>   static size_t elfcorebuf_sz_orig;
+>>
+>> +static char *elfnotesegbuf;
+>> +static size_t elfnotesegbuf_sz;
+>
+> How about calling these just elfnotes_buf and elfnotes_sz.
+>
+> [..]
+>> +/* Merges all the PT_NOTE headers into one. */
+>> +static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>> +					   char **notesegptr, size_t *notesegsz,
+>> +					   struct list_head *vc_list)
+>> +{
+>> +	int i, nr_ptnote=0, rc=0;
+>> +	char *tmp;
+>> +	Elf64_Ehdr *ehdr_ptr;
+>> +	Elf64_Phdr phdr;
+>> +	u64 phdr_sz = 0, note_off;
+>> +	struct vm_struct *vm;
+>> +
+>> +	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>> +
+>> +	/* The first path calculates the number of PT_NOTE entries and
+>> +	 * total size of ELF note segment. */
+>> +	rc = process_note_headers_elf64(ehdr_ptr, &nr_ptnote, &phdr_sz, NULL);
+>> +	if (rc < 0)
+>> +		return rc;
+>> +
+>> +	*notesegsz = roundup(phdr_sz, PAGE_SIZE);
+>> +	*notesegptr = vzalloc(*notesegsz);
+>> +	if (!*notesegptr)
+>> +		return -ENOMEM;
+>> +
+>> +	vm = find_vm_area(*notesegptr);
+>> +	BUG_ON(!vm);
+>> +	vm->flags |= VM_USERMAP;
+>> +
+>> +	/* The second path copies the ELF note segment in the ELF note
+>> +	 * segment buffer. */
+>> +	rc = process_note_headers_elf64(ehdr_ptr, NULL, NULL, *notesegptr);
+>
+> So same function process_note_headers_elf64() is doing two different
+> things based on parameters passed. Please create two new functions
+> to do two different things and name these appropriately.
+>
+> Say
+>
+> get_elf_note_number_and_size()
+> copy_elf_notes()
 
-> > > $ echo platform > /sys/power/pm_test
-> > > $ echo mem > /sys/power/state
-> > > [   34.960477] PM: Syncing filesystems ... done.
-> > > [   34.967624] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> > > [   34.983936] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> > > [   35.056655] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-> > > [   35.056800] sd 0:0:0:0: [sda] Stopping disk
-> > > [   41.255957] ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-> > > [   41.316267] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> > > [   41.316354] ata5: SATA link down (SStatus 0 SControl 300)
-> > > [   41.316428] ata4: SATA link down (SStatus 0 SControl 300)
-> > > [   41.316507] ata6: SATA link down (SStatus 0 SControl 300)
-> > > [   41.316958] ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
-> > > [   41.388315] ata1.00: ACPI cmd 00/00:00:00:00:00:a0 (NOP) rejected by device (Stat=0x51 Err=0x04)
-> > > [   41.389142] ata1.00: configured for UDMA/133
-> > > [   41.391172] ata2.00: configured for UDMA/100
-> > > [   41.396198] sd 0:0:0:0: [sda] Starting disk
-> > > [   41.396533] iwlwifi 0000:02:00.0: L1 Enabled; Disabling L0S
-> > > [   41.396767] iwlwifi 0000:02:00.0: Radio type=0x0-0x3-0x1
-> > > [   41.638698] PM: resume of devices complete after 724.548 msecs
-> > > [   41.638835] Restarting tasks ... done.
-> > > [   41.640747] video LNXVIDEO:00: Restoring backlight state
-> > > [   42.848988] [drm] Enabling RC6 states: RC6 on, RC6p off, RC6pp off
-> > > [   42.850380] e1000e 0000:00:19.0 eth0: Detected Hardware Unit Hang:
-> > > [   42.850380]   TDH                  <0>
-> > > [   42.850380]   TDT                  <11>
-> > > [   42.850380]   next_to_use          <11>
-> > > [   42.850380]   next_to_clean        <0>
-> > > [   42.850380] buffer_info[next_to_clean]:
-> > > [   42.850380]   time_stamp           <ffff034b>
-> > > [   42.850380]   next_to_watch        <0>
-> > > [   42.850380]   jiffies              <ffff04d9>
-> > > [   42.850380]   next_to_watch.status <0>
-> > > [   42.850380] MAC Status             <80000>
-> > > [   42.850380] PHY Status             <7949>
-> > > [   42.850380] PHY 1000BASE-T Status  <0>
-> > > [   42.850380] PHY Extended Status    <3000>
-> > > [   42.850380] PCI Status             <10>
-> > > [   44.066855] e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
-> > > 
-> > > Is the issue known?
-> > 
-> > No.
-> > 
-> > > Can I provide more information to help with debugging this issue.
-> > 
-> > I'm not sure.
-> > 
-> > > I am quite busy to bisect this ATM but can do it
-> > > if this is the only choice left.
-> > 
-> > Well, it probably is.  I'll try to reproduce it, but if I can't ...
-> 
-> OK, I am bisecting now. 6 iterations left...
+I see. Similar to other functions, 32-bit and 64-bit versions are 
+needed. So I give them symbols:
 
-Do you have any watchdog active? Resume got slower and someone bisected it:
+get_note_number_and_size_elf64()
+copy_notes_elf64()
 
-Date: Sat, 11 May 2013 20:04:50 +0200
-From: Bj??rn Mork <bjorn@mork.no>
-To: "Paul E. McKenney" <paul.mckenney@linaro.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Bisected post-3.9 regression: Resume takes 5 times as much time as with v3.9
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+and elf32 counterpart.
 
-[-- Attachment #1 --]
-[-- Type: text/plain, Encoding: quoted-printable, Size: 1.6K --]
+>
+>
+>> +	if (rc < 0)
+>> +		return rc;
+>> +
+>>   	/* Prepare merged PT_NOTE program header. */
+>>   	phdr.p_type    = PT_NOTE;
+>>   	phdr.p_flags   = 0;
+>> @@ -304,23 +364,18 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>>   	return 0;
+>>   }
+>>
+>> -/* Merges all the PT_NOTE headers into one. */
+>> -static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>> -						struct list_head *vc_list)
+>> +static int __init process_note_headers_elf32(const Elf32_Ehdr *ehdr_ptr,
+>> +					     int *nr_ptnotep, u64 *phdr_szp,
+>> +					     char *notesegp)
+>
+> Can you please describe function parameters at the beginning of function
+> in a comment. Things are gettting little confusing now.
+>
+> What does notesegp signify? phdr_szp could be simply *phdr_sz,
+> nr_ptnotesp could be *nr_notes. Please simplify the naming a bit.
+> Seems too twisted to me.
 
-Hello,
-
-resuming from system suspend is intolerably slow in current mainline. I
-am not the most patient person around, and I actually started out
-bisecting this believing it was hanging...  Turned out it wasn't really
-hanging.  It just took 15 seconds to wake up from suspend-to-ram.
-Timing v3.9 I found that it used less than 3 seconds on this ancient
-laptop I'm using.
-
-Bisecting it ended up pointing to
-
-commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
+I see. I'll reflect that in addition to your other comments.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks.
+HATAYAMA, Daisuke
+
