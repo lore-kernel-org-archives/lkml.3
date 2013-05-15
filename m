@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab3EOJN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:13:58 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52571
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751060Ab3EOJN4 (ORCPT
+	id S1752987Ab3EOJSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:18:54 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:1772 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3EOJSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:13:56 -0400
-Date: Wed, 15 May 2013 11:13:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ulrich Drepper <drepper@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/8] perf tools: Add formula interface to interface
- formula definitions
-Message-ID: <20130515091331.GF10510@laptop.programming.kicks-ass.net>
-References: <1367421346-18257-1-git-send-email-jolsa@redhat.com>
- <1367421346-18257-5-git-send-email-jolsa@redhat.com>
+	Wed, 15 May 2013 05:18:52 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <hein_tibosch@yahoo.es>, <s.trumtrar@pengutronix.de>,
+        <michal.simek@xilinx.com>, <monstr@monstr.eu>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/3 v3] net/macb: RX path enhancement
+Date: Wed, 15 May 2013 11:18:45 +0200
+Message-ID: <cover.1368608928.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1367421346-18257-5-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 01, 2013 at 05:15:42PM +0200, Jiri Olsa wrote:
-> Each counter (cpi/branch-rate above) defines formula that
-> produces the counter number.
-> 
-> Formula grammar:
-> 
->   expr: '-' expr       |
->         expr '+' expr  |
->         expr '-' expr  |
->         expr '*' expr  |
->         expr '/' expr  |
->         value          |
->         name
-> 
+Here is the patch series for modifying the RX path in macb driver.
+This change applies on GEM variant of the Cadence IP and introduces
+function pointers to match the path to the proper adapter. The move
+to RX buffers adapted to MTU and that can be DMAed directly in SKB
+is done in two steps but can be merged in a single patch.
 
-I was going to suggest adding (), but then I saw
+v3: - rebased on top of net-next (containing recently added
+      net/macb: fix ISR clear-on-write behavior only for some SoC)
+    - added the ___cacheline_aligned_in_smp qualifier to napi field
+      following Ben Hutchings' advice
 
-> +<expr>{
-> +"*"		{ return '*'; }
-> +"-"		{ return '-'; }
-> +"+"		{ return '+'; }
-> +"/"		{ return '/'; }
-> +"("		{ return '('; }
-> +")"		{ return ')'; }
-> +
+v2: - gave up the idea of using non-coherent memory for
+      rx buffers
+    - addition of the struct macb layout optimization
 
-> +'(' expr ')'
-> +{
-> +	$$ = $2;
-> +	pr_debug2("( %F )\n", $$);
-> +}
+Havard Skinnemoen (1):
+  net/macb: Try to optimize struct macb layout
 
-:-)
+Nicolas Ferre (2):
+  net/macb: increase RX buffer size for GEM
+  net/macb: change RX path for GEM
+
+ drivers/net/ethernet/cadence/macb.c | 323 +++++++++++++++++++++++++++++++-----
+ drivers/net/ethernet/cadence/macb.h |  39 +++--
+ 2 files changed, 308 insertions(+), 54 deletions(-)
+
+-- 
+1.8.0
+
