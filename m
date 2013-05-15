@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab3EODAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 23:00:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16414 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755329Ab3EODAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 23:00:32 -0400
-X-IronPort-AV: E=Sophos;i="4.87,675,1363104000"; 
-   d="scan'208";a="7271872"
-Message-ID: <5192F9BF.2000802@cn.fujitsu.com>
-Date: Wed, 15 May 2013 10:58:07 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, 64bit: Correct phys_addr in cleanup_highmap comment
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/15 10:59:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/15 10:59:21,
-	Serialize complete at 2013/05/15 10:59:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1756153Ab3EODCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 23:02:34 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:33729 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3EODCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 23:02:32 -0400
+Message-ID: <1368587130.9012.32.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 3/3] target: simplify target_wait_for_sess_cmds()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+Date: Tue, 14 May 2013 20:05:30 -0700
+In-Reply-To: <20130514162939.GA32463@logfs.org>
+References: <1368477007-25274-1-git-send-email-joern@logfs.org>
+	 <1368477007-25274-4-git-send-email-joern@logfs.org>
+	 <1368486003.4020.37.camel@haakon3.risingtidesystems.com>
+	 <20130513220057.GA24539@logfs.org>
+	 <1368500924.11576.16.camel@haakon3.risingtidesystems.com>
+	 <20130514162939.GA32463@logfs.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For x86_64, we have phys_base, which means the delta between the
-the address kernel is actually running at and the address kernel
-is compiled to run at. Not phys_addr so correct it.
+On Tue, 2013-05-14 at 12:29 -0400, Jörn Engel wrote:
+> On Mon, 13 May 2013 20:08:44 -0700, Nicholas A. Bellinger wrote:
+> > On Mon, 2013-05-13 at 18:00 -0400, Jörn Engel wrote:
+> > > 
+> > > I agree that the overhead doesn't matter.  The msleep(100) spells this
+> > > out rather explicitly.  What does matter is that a) the patch retains
+> > > old behaviour with much simpler code and b) it fixes a race that kills
+> > > the machine.  I can live without a, but very much want to keep b. ;)
+> > 
+> > Fucking around with ->sess_cmd_lock during each loop of ->sess_cmd_list
+> > in target_wait_for_sess_cmds is not simpler code..
+> 
+> I could argue that fucking around with ->sess_cmd_lock during each
+> loop is simpler than the communication through cmd_wait_set and
+> cmd_wait_comp.  But simplicity is ultimately subjective and we can
+> argue all day.
+> 
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/x86/mm/init_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What I don't like is the endless loop in target_wait_for_sess_cmds()
+that acquires and releases ->sess_cmd_lock for every command, with a
+hard-coded msleep thrown in.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index bb00c46..b3940b6 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -368,7 +368,7 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
-  *
-  *   from __START_KERNEL_map to __START_KERNEL_map + size (== _end-_text)
-  *
-- * phys_addr holds the negative offset to the kernel, which is added
-+ * phys_base holds the negative offset to the kernel, which is added
-  * to the compile time generated pmds. This results in invalid pmds up
-  * to the point where we hit the physaddr 0 mapping.
-  *
--- 
-1.7.1
+> 
+> 
+>  drivers/infiniband/ulp/srpt/ib_srpt.c  |    2 +-
+>  drivers/scsi/qla2xxx/tcm_qla2xxx.c     |    2 +-
+>  drivers/target/target_core_transport.c |   64 +++++++++-----------------------
+>  include/target/target_core_base.h      |    2 -
+>  include/target/target_core_fabric.h    |    2 +-
+>  5 files changed, 20 insertions(+), 52 deletions(-)
+> 
+> But diffstat is reasonably objective.  Do you really want me to come
+> up with an alternative patch that adds code instead of removing it?
+> 
+
+What I want is the part of Roland's commit reverted that introduced the
+regression, that started you down this particular path of adding
+unnecessary locking to target_wait_for_sess_cmds().
+
+And if your using diffstat as a guide, after re-adding the handful of
+parts for ->sess_wait_list from commit 1c7b13fe6 plus removing the dead
+code in target_wait_for_sess_cmds(), the number of changed lines will
+still be a net minus.
+
+--nab
+
