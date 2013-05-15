@@ -1,139 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3EOEfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 00:35:21 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:64952 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab3EOEfE (ORCPT
+	id S1752853Ab3EOEj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 00:39:28 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:14606 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab3EOEj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 00:35:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368592193.5890.10.camel@rzhang1-mobl4>
-References: <CAPz6YkWr_D504UdeqXB0FXxgqOt3GYnF09ctoMaZ8P-znbVMGQ@mail.gmail.com>
- <1368591999.5890.9.camel@rzhang1-mobl4> <1368592193.5890.10.camel@rzhang1-mobl4>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Tue, 14 May 2013 21:34:41 -0700
-X-Google-Sender-Auth: xBlXeJZU_stK5Idnh12-ZrgJv_M
-Message-ID: <CAPz6YkVkB5JepBoL25DqZ8JHC6rgvQcLzs4wsN+a7Vb1NFmNkw@mail.gmail.com>
-Subject: Re: Fans at full speed after resume
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org, Sameer Nanda <snanda@chromium.org>,
-        "Triplett, Josh" <josh.triplett@intel.com>, Olof <olofj@chromium.org>,
-        len.brown@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 15 May 2013 00:39:26 -0400
+X-AuditID: cbfee690-b7efc6d000006d92-14-5193117ca8e4
+Message-id: <1368592699.11843.10.camel@kjgkr>
+Subject: Re: [PATCH 1/2] f2fs: fix inconsistency of block count during recovery
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Wed, 15 May 2013 13:38:19 +0900
+In-reply-to: <CAKYAXd8r7EcbrPuHJcz9Ft=ienP6gT84QBP8VWUDeKm=v=mcfA@mail.gmail.com>
+References: <1368575992-7142-1-git-send-email-jaegeuk.kim@samsung.com>
+ <CAKYAXd8r7EcbrPuHJcz9Ft=ienP6gT84QBP8VWUDeKm=v=mcfA@mail.gmail.com>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-FyiqWqBY2dpX7RQvBvNp"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zfd0awcmBBs2nbSyu373FbHFpkbvF
+	nr0nWSwu75rD5sDisXPWXXaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlfHt/ynmggNCFTsf
+	HWBuYGwR6GLk5JAQMJGY+HQnK4QtJnHh3nq2LkYuDiGBZYwSSzftYIUpOvSpnx0isYhR4l3T
+	daiq14wSV7qXMoNU8QroSmxobADrEBbwl3j/9hlQBwcHm4C2xOb9BiBhIQFFibf777KChEUE
+	1CQmPEsFCTMLZErMeT0ZrJNFQFXi+9R7LCA2p0CwxOKNjSwQq3oZJS63fAUr4hcQlTjZ+okR
+	orlK4v/8/ewQhypJ7G7vZIc4R1Dix+R7YM0SAj/ZJdauucEIsUFA4tvkQywgR0gIyEpsOsAM
+	0SspcXDFDZYJjOKzkIydhWQURFxTonX7b3YIW1ti2cLXzBC2rcS6de+hamwkNl1dwAhhy0ts
+	fzuHeQEj+ypG0dSC5ILipPQiE73ixNzi0rx0veT83E2MkNidsIPx3gHrQ4xVQCdOZJYSTc4H
+	xn5eSbyhsZmRhamJqbGRuaUZVYSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAW
+	Htx2+Mg2QYVIrpnis1YLzb5/ueP8sjtFa8uvKLM8Pr/ldNqfVYrTip1UbSRv7Q+Z+J3ZOLXl
+	1+IJ6v+eG21/9WKrrPGt131m83yaBIUSesSPvjBat6HzW8Lyu3ZP5BcZ/PubpjCnrELsKWNb
+	q5hq7sEdEUFMzzpdpk78oLE6c9X3t99PXFQUU2Ipzkg01GIuKk4EAHS6De4KAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBKsWRmVeSWpSXmKPExsVy+t9jAd0awcmBBs8eG1tcv3uL2eLSIneL
+	PXtPslhc3jWHzYHFY+esu+weuxd8ZvL4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjHj2/9TzAUHhCp2PjrA3MDYItDFyMkhIWAicehTPzuELSZx4d56ti5GLg4h
+	gUWMEu+arkM5rxklrnQvZQap4hXQldjQ2MAKYgsL+Eu8f/sMqJuDg01AW2LzfgOQsJCAosTb
+	/XdZQcIiAmoSE56lgoSZBTIl5ryeDNbJIqAq8X3qPRYQm1MgWGLxxkYWiFW9jBKXW76CFfEL
+	iEqcbP3ECNFcJfF//n6oQ5Ukdrd3skOcIyjxY/I9lgmMgrOQlM1CkoKIa0q0bv/NDmFrSyxb
+	+JoZwraVWLfuPVSNjcSmqwsYIWx5ie1v5zAvYGRfxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
+	iRGcGJ5J7WBc2WBxiFGAg1GJh7cgcFKgEGtiWXFl7iFGFaA5jzasvsAoxZKXn5eqJMJreA0o
+	zZuSWFmVWpQfX1Sak1p8iHEiIzA8JjJLiSbnA9NZXkm8obGJmZGlkZmFkYm5OS2FlcR5D7Ra
+	BwoJpCeWpGanphakFsEcxcTBKdXA2ND+u0SSN4i3tNTS3ViHT22nbenRrK6lU9PmNV48OtX2
+	nlju+kLR9W81Cxd0md7eNn+Leuvxs0InhK/tYntms1DhX4SpCUfVM1W5F//NvxZaiYQFcSzl
+	Nqv4tjBhlqrbxRZ2o1rusyq5MU4fNTK39QkeXMzVUD9N/alcmNHWnYWT7/O/Pj1biaU4I9FQ
+	i7moOBEAX1V8M4sDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 9:29 PM, Zhang Rui <rui.zhang@intel.com> wrote:
-> On Wed, 2013-05-15 at 12:26 +0800, Zhang Rui wrote:
->> please
->>
->> On Tue, 2013-05-14 at 21:18 -0700, Sonny Rao wrote:
->> > Hi, I've seen a regression in kernels since 3.7 on x86 devices where
->> > the kernel turns the system fans on to max speed after resuming from
->> > ram.  Other people have noticed it as well, for example see
->> > https://bugzilla.redhat.com/show_bug.cgi?id=895276
->> >
->> please check if this is a duplicate of bug
->> https://bugzilla.kernel.org/show_bug.cgi?id=56591
-> or you can try 3.10-rc1 to see if the problem still exists or not.
 
-Ok, I patched in the fix from that bugzilla --
-928c5edbe6f7cb0d1c71bc2353d091bc5b114fe3
-but I'm still seeing the issue, I'll try 3.10-rc1 next
+--=-FyiqWqBY2dpX7RQvBvNp
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
-> thanks,
-> rui
->> > For example on the Samsung 550 Chromebook, we have one thermal zone
->> > and have 5 cooling_devices, 0-4, which correspond to 5 possible fan
->> > speeds.  Under typical idle, only cooling_device4 and maybe
->> > cooling_device3 are active, depending on temperature:
->> >
->> > cat /sys/class/thermal/cooling_device[01234]/cur_state
->> > /sys/class/thermal/thermal_zone0/temp
->> > 0
->> > 0
->> > 0
->> > 0
->> > 1
->> > 57000
->> >
->> > however after a suspend/resume, we see that cooling_devices 0 and 1
->> > become active:
->> > cat /sys/class/thermal/cooling_device[01234]/cur_state
->> > /sys/class/thermal/thermal_zone0/temp
->> > 1
->> > 1
->> > 0
->> > 0
->> > 1
->> > 54000
->> >
->> > and it seems to stay that way, even though the temperature is low
->> > enough that the fan shouldn't be running at that speed.  If I manually
->> > disable cooling_devices 0 and 1 then fan control works normally again.
->> >
->> > I started bisecting it and was able to do so up until this commit:
->> > commit 29b19e250434c6193c8b8e4c34c9c6284dd4f101
->> > Merge: 125c4c7 c072fed
->> > Author:     Len Brown <len.brown@intel.com>
->> > AuthorDate: Tue Oct 9 01:35:52 2012 -0400
->> > Commit:     Len Brown <len.brown@intel.com>
->> > CommitDate: Tue Oct 9 01:35:52 2012 -0400
->> >
->> >     Merge branch 'release' of
->> > git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux into
->> > thermal
->> >
->> > unfortunately, I'm not able to successfully do a suspend/resume on the
->> > commits in that merge, so I wasn't able to bisect down to the exact
->> > commit.
->> >
->> > I did confirm that one parent of the merge is okay: commit
->> > 125c4c706b680c7831f0966ff873c1ad0354ec25 idr: rename MAX_LEVEL to
->> > MAX_IDR_LEVEL
->> >
->> > so I think it falls somewhere in this list of commits:
->> > c072fed95c9855a920c114d7fa3351f0f54ea06e...e3f25e6e5836c4790fbe395ff42e241f372d859d
->> >
->> > c072fed9 thermal: Exynos: Fix NULL pointer dereference in
->> > exynos_unregister_thermal()
->> > a4b6fec9 Thermal: Fix bug on cpu_cooling, cooling device's id conflict problem.
->> > 79e093c3 thermal: exynos: Use devm_* functions
->> > 17be868e ARM: exynos: add thermal sensor driver platform data support
->> > 7e0b55e6 thermal: exynos: register the tmu sensor with the kernel thermal layer
->> > f22d9c03c thermal: exynos5: add exynos5250 thermal sensor driver support
->> > c48cbba6 hwmon: exynos4: move thermal sensor driver to driver/thermal directory
->> > 02361418 thermal: add generic cpufreq cooling implementation
->> > a7a3b8c8 Fix a build error.
->> > 204dd1d3 thermal: Fix potential NULL pointer accesses
->> > 1e426ffdd thermal: add Renesas R-Car thermal sensor support
->> > 79a49168 thermal: fix potential out-of-bounds memory access
->> > f4a821ce6 Thermal: Introduce locking for cdev.thermal_instances list.
->> > 908b9fb79 Thermal: Unify the code for both active and passive cooling
->> > ce119f832 Thermal: Introduce simple arbitrator for setting device cooling state
->> > b5e4ae62 Thermal: List thermal_instance in thermal_cooling_device.
->> > cddf31b3b Thermal: Rename thermal_instance.node to thermal_instance.tz_node.
->> > 2d374139 Thermal: Rename thermal_zone_device.cooling_devices
->> > b81b6ba3 Thermal: rename structure thermal_cooling_device_instance to
->> > thermal_instance
->> > 4ae46befb Thermal: Introduce thermal_zone_trip_update()
->> > 1b7ddb84 Thermal: Remove tc1/tc2 in generic thermal layer.
->> > 601f3d424 Thermal: Introduce .get_trend() callback.
->> > 9d99842f9 Thermal: set upper and lower limits
->> > 74051ba5 Thermal: Introduce cooling states range support
->> >
->> > When I get time, I'll try to rebase those commits onto the IDR commit
->> > and see if I can get a better bisect.  Any insights into the problem
->> > would be appreciated, thanks.
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+2013-05-15 (=EC=88=98), 12:47 +0900, Namjae Jeon:
+> >
+> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > index 3df43b4..9641534 100644
+> > --- a/fs/f2fs/node.c
+> > +++ b/fs/f2fs/node.c
+> > @@ -1492,6 +1492,8 @@ int recover_inode_page(struct f2fs_sb_info *sbi,
+> > struct page *page)
+> >  	new_ni =3D old_ni;
+> >  	new_ni.ino =3D ino;
+> >
+> Hi. Jaegeuk.
+>=20
+> I have a minor comment.
+> > +	if (!inc_valid_node_count(sbi, NULL, 1))
+> > +		WARN_ON(1);
+
+Hi Namjae,
+
+Negative since inc_valid_node_count() is not for debugging.
+IMO, for readability, we need to make clear what the function call is
+used for.
+Thank you for the review. :)
+
+> How about change WARN_ON(!inc_valid_node_count(sbi, NULL, 1)); ?
+>=20
+> Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Thanks.
+> >  	set_node_addr(sbi, &new_ni, NEW_ADDR);
+> >  	inc_valid_inode_count(sbi);
+> >
+> > --
+> > 1.8.1.3.566.gaa39828
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel=
+" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+
+--=20
+Jaegeuk Kim
+Samsung
+
+--=-FyiqWqBY2dpX7RQvBvNp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRkxE7AAoJEEAUqH6CSFDSnbUP/2KBdvVlyPZfJuuKS2n7LGVq
+Dc6ej1Q4qEjn//q3boEzl9aCpkN0MoRryzxzgg1jk0bynk4jOHU8GZg80axpXTsl
+vB0yTTwWfrDuQB2v/ruIxnBJaaOIWRM76bdirMPT99g2t0ePModvtWLCkJS/4jZI
++7gjlB3ZS/PpgAwpPAyqHExRhqmH7sWonmzLPFcUdD0ChKov/jXYdNcdJ7LZhRyd
+hVfWOqGI5dtD2vHOD9CjRo8Tc5waDOALF0N0ZNquJQIbXrMNezHsDkf2lhleQuW9
+YZp3INHBNveE9LChZpdfQdNuvMsUcwF6u/zCynOSpDQH3+1GIYJtwtsnuPO+i3bw
+Lg1FB7shzCsaB9cH5S06yIS8TRbud+9lptC9JJnPp64NRbi3p7S7XA9+uWEOc06Z
+LkRYUHKjKSyU3XfwCFCbAP5VraedKDnIvBUn2sMwNsk8aaaqzCR5BIcqh2FdC128
+dswjYLOFcXvfK8i7QtOC2Moe/Mb548IpMyjOwNHrF61TEaKwCbYcwygWrGA+5Bvb
+vHp2MIiEM0dAw0zfkkN9j3IvMjPIxoWJkbMg4dXVoRCpe7ZT2BuCUeLtjW72cBnW
+/7U57K5xElqbijdFpdGJB9q031wZ7od+GjVwz4mV6KBmuVQY7MKYEwnC6mEfQ/9v
++V/r91bwrIDAS86mvqWg
+=4YMo
+-----END PGP SIGNATURE-----
+
+--=-FyiqWqBY2dpX7RQvBvNp--
+
