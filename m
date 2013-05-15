@@ -1,90 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab3EOMzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:55:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28536 "EHLO mga03.intel.com"
+	id S932709Ab3EOMz5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:55:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41188 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932490Ab3EOMzH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:55:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,677,1363158000"; 
-   d="scan'208";a="302803345"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tboot-devel@lists.sourceforge.net" 
-	<tboot-devel@lists.sourceforge.net>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH] x86: add a new SMP bring up way for tboot case
-Thread-Topic: [PATCH] x86: add a new SMP bring up way for tboot case
-Thread-Index: AQHOUKduon4Pn56HmkychJPawPQVZJkER8wAgAGLeBA=
-Date: Wed, 15 May 2013 12:55:04 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE9B851C@SHSMSX102.ccr.corp.intel.com>
-References: <1368566485-14785-1-git-send-email-qiaowei.ren@intel.com>
- <519257FC.8070708@zytor.com>
-In-Reply-To: <519257FC.8070708@zytor.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932490Ab3EOMz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 08:55:56 -0400
+Message-ID: <1368622556.20549.13.camel@dcbw.foobar.com>
+Subject: Re: RTL driver for RTL8191SEvB and/or wpa-supplicant really broken
+ at times
+From: Dan Williams <dcbw@redhat.com>
+To: Norbert Preining <preining@logic.at>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Matt Causey <matt.causey@gmail.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hostap@lists.shmoo.com
+Date: Wed, 15 May 2013 07:55:56 -0500
+In-Reply-To: <20130515120801.GA24670@gamma.logic.tuwien.ac.at>
+References: <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
+	 <CAGnc4p8w-Y8QHsEM_SbQLxFSfHC_X1ZCQpeKCXFJ8Qtk-cLHrA@mail.gmail.com>
+	 <20130509115630.GC5111@gamma.logic.tuwien.ac.at>
+	 <518BC290.2040306@lwfinger.net>
+	 <20130515120801.GA24670@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-05-14, H. Peter Anvin wrote:
-> On 05/14/2013 02:21 PM, Qiaowei Ren wrote:
->> tboot provides a better AP wakeup mechanism based on cpu MWAIT
->> feature for OS/VMM. With this mechanism, system will boot faster and
->> will NOT require VT to be enabled. But it requires that OS/VMM must
->> have support it, otherwise system can never boot up.
->> 
->> Once this mechanism is enabled, tboot will put APs waiting in MWAIT
->> loops before launching kernel. kernel can check the new flag field
->> in
->> v6 tboot shared page for the hint. If the bit
->> TB_FLAG_AP_WAKE_SUPPORT in flag field is set, kernel BSP has to
->> write the monitored memory
->> (tboot->ap_wake_trigger) to bring APs out of MWAIT loops. The sipi
->> vector should be written in
->> tboot->ap_wake_addr before waking up APs.
->> 
+On Wed, 2013-05-15 at 21:08 +0900, Norbert Preining wrote:
+> Hi everyone,
 > 
-> This really needs a *detailed* specification about the state the CPU is parked in.
-> Most BIOSes do in fact park the CPUs in an mwait loop, but we can't
-> use it because the CPU state they are parked in is ill-defined.
+> sorry for the late reply, business trip to Tokyo.
 > 
-> This is a good idea, but please write (or point to) a spec about what
-> the parked CPU state looks like and how the OS gets control.  From the
-> *looks* of the code I assume it is entered in 16-bit real mode but
-> then it is important to know what parts of the register state are well-defined.
+> On Do, 09 Mai 2013, Larry Finger wrote:
+> > absolutely critical, namely the PCI ID. There are at least three 
+> 
+> 10ec:8172
+> 
+> > I also recommend that you try either the wireless-testing git repo or the 
+> > mainline git repo. There are a lot of changes that cannot be backported.
+> 
+> Ok, I will try.
+> 
+> On Fr, 10 Mai 2013, Matt Causey wrote:
+> > Seems to indicate that the access point is ignoring your probe requests.
+> > If that is happening for your client somehow, wpa_supplicant won't work
+> > well.  :-)
+> 
+> I rebooted the rooter, after that it worked, for one day. After that
+> agian problems.
+> 
+> Then I rebooted also linux and it works again.
+> 
+> > "NecAcces" - but I'm not familiar with that vendor.  Also, do you have a
+> 
+> Aterm WR8600N http://121ware.com/aterm/
+> which is a NEC part, probably sold in other places under a different
+> name. In Japan it is sold as this.
+> 
+> > WLAN packet capture (from another host nearby on the same channel)?  That
+> > would be helpful as well.
+> 
+> Difficult, I only have an iPhone, and a wireless repeater for the TV,
+> and I guess both are not enough for wlan sniffing.
+> 
+> In the meantime I have also tried wpa_supplicatn 2.0, without
+> chagnes.
+> 
+> In the current log there are strange things:
+> May 15 20:36:38 tofuschnitzel kernel: [78541.678861] wlan0: send auth to 00:3a
+> :9d:b4:54:5a (try 1/3)
+> May 15 20:36:38 tofuschnitzel NetworkManager[16128]: <info> (wlan0): supplican
+> t interface state: scanning -> authenticating
+> May 15 20:36:38 tofuschnitzel kernel: [78541.681046] wlan0: authenticated
+> May 15 20:36:43 tofuschnitzel kernel: [78546.680713] wlan0: deauthenticating from 00:3a:9d:b4:54:5a by local choice (reason=3)
 
-The following is how to do mwait for tboot & kernel:
+The deauth by local choice can often be NM terminating the connection
+after a 20 second timeout, because if you haven't connected to the AP
+within 20 seconds, you probably aren't going to.  Look above in the logs
+for when NM actually tells the supplicant to connect.  Here's what the
+entire association process looks like on my machine:
 
-For bootstrap processor (BSP), "tboot TXT pre-launch" is executed after BIOS. In this stage, tboot will issue GETSEC[SENTER], which broadcasts messages to the chipset and other physical or logical processors in the platform. In response, other logical processors perform basic cleanup and other tasks, and then finally enter SENTER sleep state.
+May 15 07:00:14 dcbw NetworkManager[20259]: <info> Activation (wlan0) Stage 2 of 5 (Device Configure) complete.
+May 15 07:00:14 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: disconnected -> inactive
+May 15 07:00:14 dcbw NetworkManager[20259]: <info> Config: set interface ap_scan to 1
+May 15 07:00:14 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: inactive -> scanning
+May 15 07:00:17 dcbw kernel: wlan0: authenticate with 00:13:aa:bb:cc:dd
+May 15 07:00:17 dcbw kernel: wlan0: send auth to 00:13:aa:bb:cc:dd (try 1/3)
+May 15 07:00:17 dcbw kernel: wlan0: authenticated
+May 15 07:00:17 dcbw kernel: iwlwifi 0000:02:00.0 wlan0: disabling HT as WMM/QoS is not supported by the AP
+May 15 07:00:17 dcbw kernel: iwlwifi 0000:02:00.0 wlan0: disabling VHT as WMM/QoS is not supported by the AP
+May 15 07:00:17 dcbw kernel: wlan0: associate with 00:13:aa:bb:cc:dd (try 1/3)
+May 15 07:00:17 dcbw kernel: wlan0: RX AssocResp from 00:13:aa:bb:cc:dd (capab=0x411 status=0 aid=1)
+May 15 07:00:17 dcbw kernel: wlan0: associated
+May 15 07:00:17 dcbw kernel: IPv6: ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+May 15 07:00:17 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: scanning -> authenticating
+May 15 07:00:17 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: authenticating -> associating
+May 15 07:00:17 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: associating -> 4-way handshake
+May 15 07:00:17 dcbw NetworkManager[20259]: <info> (wlan0): supplicant interface state: 4-way handshake -> completed
+May 15 07:00:17 dcbw NetworkManager[20259]: <info> Activation (wlan0/wireless) Stage 2 of 5 (Device Configure) successful.  Connected to wireless n
 
-Next, for BSP, SINIT will run and then enter "tboot post-launch", which will start all sleeping APs. If tboot command line option " ap_wake_mwait=true" is set, APs will do some work and then enter mwait loop. Kernel will be launched in BSP by tboot post-launch, and bring APs out of mwait loop.
+Here it's a total of 3 seconds between telling the supplicant "GO!" and
+the supplicant completing the association.
 
-Tboot works in protected mode (but paging is disabled), and closes interrupt. For APs, MONITOR and MWAIT related code in tboot is as follows:
-    while ( _tboot_shared.ap_wake_trigger != cpuid ) {
-        cpu_monitor(&_tboot_shared.ap_wake_trigger, 0, 0);
-        mb();
-        if ( _tboot_shared.ap_wake_trigger == cpuid )
-            break;
-        cpu_mwait(0, 0);
-    }
-Their extension and hint are all 0. According Intel manual:
-	Extension=0: Treat interrupts as break events even if masked (e.g., even if EFLAGS.IF=0).
-	Hint=0: the preferred optimized state the processor should enter is C0.
-So, when "tboot->ap_wake_trigger" is set by kernel, APs can exit from mwait loop.
+Dan
 
-Peter, I don't know whether I explain your problem. What do you think about it?
+> May 15 20:36:43 tofuschnitzel NetworkManager[16128]: <info> (wlan0): supplicant interface state: authenticating -> disconnected
+> May 15 20:36:44 tofuschnitzel NetworkManager[16128]: <info> (wlan0): supplicant interface state: disconnected -> scanning
+> 
+> Why does it go from authenticated -> directly to deauthenticating. Uffa.
+> 
+> Anyway, I will try some more things, esp wireless-testing.
+> 
+> Norbert
+> 
+> ------------------------------------------------------------------------
+> PREINING, Norbert                               http://www.preining.info
+> JAIST, Japan                                 TeX Live & Debian Developer
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Qiaowei
+
