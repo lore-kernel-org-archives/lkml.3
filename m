@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3EOBrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 21:47:51 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:59207 "EHLO
+	id S1756128Ab3EOBsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 21:48:15 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:59231 "EHLO
 	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab3EOBrt (ORCPT
+	with ESMTP id S1755761Ab3EOBsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 21:47:49 -0400
-Date: Wed, 15 May 2013 10:47:44 +0900
+	Tue, 14 May 2013 21:48:14 -0400
+Date: Wed, 15 May 2013 10:48:09 +0900
 From: Simon Horman <horms@verge.net.au>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: Michal Simek <michal.simek@xilinx.com>,
@@ -23,22 +23,22 @@ Cc: Michal Simek <michal.simek@xilinx.com>,
         linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 09/20] ARM: shmobile: r8a73a4: Remove init_irq
+Subject: Re: [PATCH 10/20] ARM: shmobile: r8a7790: Remove init_irq
  declaration in machine description
-Message-ID: <20130515014744.GO12246@verge.net.au>
+Message-ID: <20130515014809.GP12246@verge.net.au>
 References: <1368545933-7430-1-git-send-email-maxime.ripard@free-electrons.com>
- <1368545933-7430-10-git-send-email-maxime.ripard@free-electrons.com>
+ <1368545933-7430-11-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368545933-7430-10-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1368545933-7430-11-git-send-email-maxime.ripard@free-electrons.com>
 Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 05:38:42PM +0200, Maxime Ripard wrote:
+On Tue, May 14, 2013 at 05:38:43PM +0200, Maxime Ripard wrote:
 > Commit ebafed7a ("ARM: irq: Call irqchip_init if no init_irq function is
 > specified") removed the need to explictly setup the init_irq field in
 > the machine description when using only irqchip_init. Remove that
@@ -46,31 +46,31 @@ On Tue, May 14, 2013 at 05:38:42PM +0200, Maxime Ripard wrote:
 > 
 > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 > ---
->  arch/arm/mach-shmobile/setup-r8a73a4.c | 2 --
+>  arch/arm/mach-shmobile/setup-r8a7790.c | 2 --
 >  1 file changed, 2 deletions(-)
 > 
-> diff --git a/arch/arm/mach-shmobile/setup-r8a73a4.c b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> index c5a75a7..0b78896 100644
-> --- a/arch/arm/mach-shmobile/setup-r8a73a4.c
-> +++ b/arch/arm/mach-shmobile/setup-r8a73a4.c
-> @@ -18,7 +18,6 @@
->   * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+> diff --git a/arch/arm/mach-shmobile/setup-r8a7790.c b/arch/arm/mach-shmobile/setup-r8a7790.c
+> index 49de2d5..2a7a276 100644
+> --- a/arch/arm/mach-shmobile/setup-r8a7790.c
+> +++ b/arch/arm/mach-shmobile/setup-r8a7790.c
+> @@ -19,7 +19,6 @@
 >   */
+>  
 >  #include <linux/irq.h>
 > -#include <linux/irqchip.h>
 >  #include <linux/kernel.h>
 >  #include <linux/of_platform.h>
->  #include <linux/platform_data/irq-renesas-irqc.h>
-> @@ -194,7 +193,6 @@ static const char *r8a73a4_boards_compat_dt[] __initdata = {
+>  #include <linux/serial_sci.h>
+> @@ -142,7 +141,6 @@ static const char *r8a7790_boards_compat_dt[] __initdata = {
 >  };
 >  
->  DT_MACHINE_START(R8A73A4_DT, "Generic R8A73A4 (Flattened Device Tree)")
+>  DT_MACHINE_START(R8A7790_DT, "Generic R8A7790 (Flattened Device Tree)")
 > -	.init_irq	= irqchip_init,
->  	.init_machine	= r8a73a4_add_standard_devices_dt,
->  	.init_time	= shmobile_timer_init,
->  	.dt_compat	= r8a73a4_boards_compat_dt,
+>  	.init_machine	= r8a7790_add_standard_devices_dt,
+>  	.init_time	= r8a7790_timer_init,
+>  	.dt_compat	= r8a7790_boards_compat_dt,
 
-Queued up for v3.11 in the boards-r8a73a4 branch of my renesas tree
+Queued up for v3.11 in the soc-r8a7790 branch of my renesas tree
 on kernel.org. It is included in the renesas-next-20130515 tag of
 that tree and should appear in linux-next in the not to distant future.
 
