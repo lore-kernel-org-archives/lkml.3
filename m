@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab3EOC5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 May 2013 22:57:17 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59678 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932150Ab3EOC5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 May 2013 22:57:16 -0400
-Date: Wed, 15 May 2013 12:57:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        User-mode Linux Kernel Development 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Tony Breeds <tony@bakeyournoodle.com>
-Subject: Re: Build regressions/improvements in v3.10-rc1 (um)
-Message-Id: <20130515125712.a6e04f8dd3345f1f4980e107@canb.auug.org.au>
-In-Reply-To: <1368447352.10679.0.camel@concordia>
-References: <alpine.DEB.2.00.1305122130270.3789@ayla.of.borg>
-	<alpine.DEB.2.00.1305122239040.5463@ayla.of.borg>
-	<alpine.DEB.2.00.1305122247320.5463@ayla.of.borg>
-	<CAFLxGvzA5nzpQjOKWgz0nBKG2s3gPspted-25uduqkr7_ySj6A@mail.gmail.com>
-	<CAMuHMdWt0i6Q+i9Qh+tMs910a388NoddhHmq2LGr50f1=dJPvQ@mail.gmail.com>
-	<38896893-83c7-4eb4-848a-bb35663d945b@email.android.com>
-	<CAFLxGvyKANuy_vezO+E1aL3FzvdjiNgCD3j-BVGSyL_ne015Xw@mail.gmail.com>
-	<1368447352.10679.0.camel@concordia>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_May_2013_12_57_12_+1000_3b0Oy=dY+1CZxjg7"
+	id S1756041Ab3EODAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 May 2013 23:00:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16414 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755329Ab3EODAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 May 2013 23:00:32 -0400
+X-IronPort-AV: E=Sophos;i="4.87,675,1363104000"; 
+   d="scan'208";a="7271872"
+Message-ID: <5192F9BF.2000802@cn.fujitsu.com>
+Date: Wed, 15 May 2013 10:58:07 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, 64bit: Correct phys_addr in cleanup_highmap comment
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/15 10:59:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/15 10:59:21,
+	Serialize complete at 2013/05/15 10:59:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_May_2013_12_57_12_+1000_3b0Oy=dY+1CZxjg7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For x86_64, we have phys_base, which means the delta between the
+the address kernel is actually running at and the address kernel
+is compiled to run at. Not phys_addr so correct it.
 
-On Mon, 13 May 2013 22:15:52 +1000 Michael Ellerman <michael@ellerman.id.au=
-> wrote:
->
-> On Mon, 2013-05-13 at 12:07 +0200, richard -rw- weinberger wrote:
-> > On Mon, May 13, 2013 at 11:54 AM, Michael Ellerman
-> > <michael@ellerman.id.au> wrote:
-> > >
-> > >
-> > > Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > >
-> > >>On Sun, May 12, 2013 at 11:17 PM, richard -rw- weinberger
-> > >><richard.weinberger@gmail.com> wrote:
-> > >>> On Sun, May 12, 2013 at 10:47 PM, Geert Uytterhoeven
-> > >>> <geert@linux-m68k.org> wrote:
-> > >>>> On Sun, 12 May 2013, Geert Uytterhoeven wrote:
-> > >>>>> However, the full list of errors isn't that unmanageable, so I'm
-> > >>following
-> > >>>>> up with a digested list...
-> > >>>>
-> > >>>> arch/um/drivers/cow_user.c:216: error: implicit declaration of
-> > >>function 'htobe32': 1 errors in 1 logs
-> > >>>> arch/um/drivers/cow_user.c:249: error: implicit declaration of
-> > >>function 'htobe64': 1 errors in 1 logs
-> > >>>> arch/um/drivers/cow_user.c:303: error: implicit declaration of
-> > >>function 'be32toh': 1 errors in 1 logs
-> > >>>> arch/um/drivers/cow_user.c:330: error: implicit declaration of
-> > >>function 'be64toh': 1 errors in 1 logs
-> > >>>>         v3.10-rc1/um-i386/um-defconfig
-> > >>>>         Old host environment on kissb?
-> > >>>
-> > >>> This really looks like a host environment issue.
-> > >>> PTRACE_O_TRACESYSGOOD for example is defined in
-> > >>/usr/include/linux/ptrace.h
-> > >>
-> > >>Yep, just like e.g. htobe32().
-> > >>
-> > >>Michael, Stephen: Any chance this can be fixed?
-> > >
-> > > Possibly. We're cross compiling these on powerpc so perhaps we need t=
-o update the cross compiler.
-> >=20
-> > Looks like you are the first man on planet earth who tries do build
-> > UML/x86 on powerpc. :D
->=20
-> :)  It has given us some trouble over the years.
->=20
-> I'll talk to Stephen tomorrow about it and see if we can get it working
-> again.
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/mm/init_64.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So htobe32 etc were introduced in glibc 2.9 - our build environment is
-glibc 2.3 ... Documentation/Changes does not specify a minimum version of
-glibc.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__15_May_2013_12_57_12_+1000_3b0Oy=dY+1CZxjg7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRkvmIAAoJEECxmPOUX5FE+8EQAKLvNhBuk3E5PsVO6y06SWHl
-BzURnibgr8Un5TPZW0Ey1S7183Tp8W6guPrr0YNKDHVluyxJ/ce7niPba8282/pX
-cLogFjFgHPDSqxnKvyG74ym9/Bz5eAG5rkoQuWNEHyr6Pb4ybHTS+mEOtwX5xhSG
-3ZBfmlXFJf5BQShDJ7fGuFOY6EfNuEVM6L+jd9elTw95VFd1mlkoUcegZSrabYte
-UCq+hDsVrvCp+YuBsYfrS9YNwe9AdWUsvGILuamXKpqbUquZ1cll/d9VxEgAMtfP
-7c/7ZMZxPKjMMdpPop9pZX/0oGOuBlbbBbUy3PUaLF9TW1Z8xf6DyyvAfil6naoC
-hz+cvLJup2T5+E/bO9fCZjGQJvWSf7V1KN6vP1OnIUdfRQfsU/qpT3mo1IIVVrhc
-HftvgIX+TpA/Id8Qv9YSwIbXQjbgvbVptDSa+9PEGW7/yRvWfJs4+XMjsQHMTFoY
-kpfnu7S4t4WjvQUxsW2ae57Sk434bZcSqyLt6mNnjZtinObdu8urb44Id/Ra/Ytj
-Fc66WU5LEdgYqGElAwbYBOCMdSlaECpLEFkfhDYRyHAXDP4U39xLJWeUCEhiNpT1
-Gd6IlqXVnI9Mnnw8nbsEpmOnAay8YUh+q8c97/x1dU7dhysfKdUmRSJFAFr9JIEw
-8RnEnhm6H9PrKkdUjx0q
-=9F1N
------END PGP SIGNATURE-----
-
---Signature=_Wed__15_May_2013_12_57_12_+1000_3b0Oy=dY+1CZxjg7--
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index bb00c46..b3940b6 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -368,7 +368,7 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+  *
+  *   from __START_KERNEL_map to __START_KERNEL_map + size (== _end-_text)
+  *
+- * phys_addr holds the negative offset to the kernel, which is added
++ * phys_base holds the negative offset to the kernel, which is added
+  * to the compile time generated pmds. This results in invalid pmds up
+  * to the point where we hit the physaddr 0 mapping.
+  *
+-- 
+1.7.1
