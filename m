@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab3EOMw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 08:52:56 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40035 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab3EOMwy (ORCPT
+	id S932629Ab3EOMya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 08:54:30 -0400
+Received: from mailrelay02.solcon.nl ([212.45.32.108]:39040 "EHLO
+	mailrelay02.solcon.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490Ab3EOMy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 08:52:54 -0400
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH RFC] media: OF: add field-active and sync-on-green endpoint properties
-Date: Wed, 15 May 2013 18:22:29 +0530
-Message-Id: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 15 May 2013 08:54:29 -0400
+Message-ID: <5193857D.4060809@solcon.nl>
+Date: Wed, 15 May 2013 14:54:21 +0200
+From: Albert Pool <albertpool@solcon.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: larry.finger@lwfinger.net, chaoming_li@realsil.com.cn
+CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] rtlwifi: rtl8192cu: Add new USB ID
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+This adds the USB ID of the On Networks N300MA, clone of Netgear WNA3100M.
 
-This patch adds "field-active" and "sync-on-green" as part of
-endpoint properties and also support to parse them in the parser.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: davinci-linux-open-source@linux.davincidsp.com
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Albert Pool<albertpool@solcon.nl>
+Reported-by: Ana Rey<Anazul77@hotmail.com>
 ---
- .../devicetree/bindings/media/video-interfaces.txt |    4 ++++
- drivers/media/v4l2-core/v4l2-of.c                  |    6 ++++++
- include/media/v4l2-mediabus.h                      |    2 ++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+  1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
-index e022d2d..6bf87d0 100644
---- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-+++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-@@ -101,6 +101,10 @@ Optional endpoint properties
-   array contains only one entry.
- - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
-   clock mode.
-+-field-active: a boolean property indicating active high filed ID output
-+ polarity is inverted.
-+-sync-on-green: a boolean property indicating to sync with the green signal in
-+ RGB.
- 
- 
- Example
-diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-index aa59639..1d59455 100644
---- a/drivers/media/v4l2-core/v4l2-of.c
-+++ b/drivers/media/v4l2-core/v4l2-of.c
-@@ -100,6 +100,12 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
- 	if (!of_property_read_u32(node, "data-shift", &v))
- 		bus->data_shift = v;
- 
-+	if (of_get_property(node, "field-active", &v))
-+		flags |= V4L2_MBUS_FIELD_ACTIVE;
-+
-+	if (of_get_property(node, "sync-on-green", &v))
-+		flags |= V4L2_MBUS_SOG;
-+
- 	bus->flags = flags;
- 
- }
-diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-index 83ae07e..b95553d 100644
---- a/include/media/v4l2-mediabus.h
-+++ b/include/media/v4l2-mediabus.h
-@@ -40,6 +40,8 @@
- #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
- /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
- #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
-+#define V4L2_MBUS_FIELD_ACTIVE			(1 << 12)
-+#define V4L2_MBUS_SOG				(1 << 13)
- 
- /* Serial flags */
- /* How many lanes the client can use */
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 23d640a..0b593de 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -349,6 +349,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
+  	{RTL_USB_DEVICE(0x07aa, 0x0056, rtl92cu_hal_cfg)}, /*ATKK-Gemtek*/
+  	{RTL_USB_DEVICE(0x07b8, 0x8178, rtl92cu_hal_cfg)}, /*Funai -Abocom*/
+  	{RTL_USB_DEVICE(0x0846, 0x9021, rtl92cu_hal_cfg)}, /*Netgear-Sercomm*/
++	{RTL_USB_DEVICE(0x0846, 0xf001, rtl92cu_hal_cfg)}, /*Netgear-On Networks*/
+  	{RTL_USB_DEVICE(0x0b05, 0x17ab, rtl92cu_hal_cfg)}, /*ASUS-Edimax*/
+  	{RTL_USB_DEVICE(0x0bda, 0x8186, rtl92cu_hal_cfg)}, /*Realtek 92CE-VAU*/
+  	{RTL_USB_DEVICE(0x0df6, 0x0061, rtl92cu_hal_cfg)}, /*Sitecom-Edimax*/
 -- 
-1.7.4.1
+1.7.9.5
 
