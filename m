@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759631Ab3EOQuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:50:50 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:39820 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759586Ab3EOQus (ORCPT
+	id S1759640Ab3EOQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:51:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37586 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759373Ab3EOQv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:50:48 -0400
+	Wed, 15 May 2013 12:51:57 -0400
+Date: Wed, 15 May 2013 18:51:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] perf, x86: Blacklist all MEM_*_RETIRED events for IVB
+Message-ID: <20130515165152.GB13916@laptop.home>
+References: <20130503121122.931661809@chello.nl>
+ <20130503121256.083340271@chello.nl>
+ <20130503143507.GP19487@tassilo.jf.intel.com>
+ <20130503170007.GA30733@dyad.programming.kicks-ass.net>
+ <CABPqkBSTMJebZLjvLhdQ1hiemoqvO2t=vi+CG=yLjkFabOr8XQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-6-git-send-email-lee.jones@linaro.org>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-6-git-send-email-lee.jones@linaro.org>
-Date: Wed, 15 May 2013 18:50:47 +0200
-Message-ID: <CACRpkdbOxzhgR=ugXLrSBJ_Y1rw=0mcrvtuRi=-c5v039xsPWA@mail.gmail.com>
-Subject: Re: [PATCH 05/39] ARM: ux500: Stop passing MMC's platform data for
- Device Tree boots
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSTMJebZLjvLhdQ1hiemoqvO2t=vi+CG=yLjkFabOr8XQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Wed, May 15, 2013 at 04:20:46PM +0200, Stephane Eranian wrote:
+> Hi,
+> 
+> Based on our testing, it appears the corruption occurs only
+> when the MEM_* events are used and only on the sibling
+> counter. In other words, if HT0 has MEM_* in cntr0, then
+> HT1 cntr0 cannot be used, otherwise whatever is there may
+> get corrupted.
 
-> It was required to pass DMA channel configuration information to the
-> MMC driver before the new DMA API was in place. Now that it is, and
-> is fully compatible with Device Tree we can stop doing that.
->
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Ah, great. That is the least horrid case :-)
 
-So since the use of dma_request_slave_channel() is not upstream,
-I guess this will break DMA use (i.e slow down transfers!) on all
-device tree boots?
+> So I think we could enhance Andi's initial patch
+> to handle this case instead of blacklist those events. They are
+> very important events.
 
-I'd be happy to apply it once the MMCI patch is in linux-next
-indicating there may just be a window in the merge period
-where it falls back to IRQ mode, but I don't want to disable
-DMA on DT boots for an entire kernel cycle just like that.
+Will you take a stab at it? I suppose you'll have to make each counter
+have a shared resource and have the mem_*_retired events mark the
+resource taken.
 
-Not applied as of yet.
+Also, did you test what happens when you turn SMT off in the BIOS so you
+get double the amount of counters; do we then leak into CNTn+4 or is all
+well again?
 
-Yours,
-Linus Walleij
+
