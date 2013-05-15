@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab3EOJxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:53:18 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:61416 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932734Ab3EOJxM (ORCPT
+	id S1757796Ab3EOJyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:54:39 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:51669 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757Ab3EOJxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:53:12 -0400
+	Wed, 15 May 2013 05:53:17 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
         Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 33/39] dmaengine: ste_dma40_ll: Use the BIT macro to replace ugly '(1 << x)'s
-Date: Wed, 15 May 2013 10:51:56 +0100
-Message-Id: <1368611522-9984-34-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 36/39] dmaengine: ste_dma40: Allow memcpy channels to be configured from DT
+Date: Wed, 15 May 2013 10:51:59 +0100
+Message-Id: <1368611522-9984-37-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
@@ -26,143 +26,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aim is to make the code that little more readable.
+At this moment in time the memcpy channels which can be used by the D40
+are fixed, as each supported platform in Mainline uses the same ones.
+However, platforms do exist which don't follow this convention, so
+these will need to be tailored. Fortunately, these platforms will be DT
+only, so this change has very little impact on platform data.
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
 Cc: Per Forlin <per.forlin@stericsson.com>
 Cc: Rabin Vincent <rabin@rab.in>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/dma/ste_dma40_ll.c |   44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+ .../devicetree/bindings/dma/ste-dma40.txt          |    2 +
+ drivers/dma/ste_dma40.c                            |   40 ++++++++++++++++----
+ include/linux/platform_data/dma-ste-dma40.h        |    2 +
+ 3 files changed, 36 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 121c0ce..5ddd724 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -20,28 +20,28 @@ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
- 	/* src is mem? -> increase address pos */
- 	if (cfg->dir ==  DMA_MEM_TO_DEV ||
- 	    cfg->dir ==  DMA_MEM_TO_MEM)
--		l1 |= 1 << D40_MEM_LCSP1_SCFG_INCR_POS;
-+		l1 |= BIT(D40_MEM_LCSP1_SCFG_INCR_POS);
+diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+index 2679a87..aa272d8 100644
+--- a/Documentation/devicetree/bindings/dma/ste-dma40.txt
++++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+@@ -6,6 +6,7 @@ Required properties:
+ - reg-names: Names of the above areas to use during resource look-up
+ - interrupt: Should contain the DMAC interrupt number
+ - #dma-cells: must be <3>
++- memcpy-channels: Channels to be used for memcpy
  
- 	/* dst is mem? -> increase address pos */
- 	if (cfg->dir ==  DMA_DEV_TO_MEM ||
- 	    cfg->dir ==  DMA_MEM_TO_MEM)
--		l3 |= 1 << D40_MEM_LCSP3_DCFG_INCR_POS;
-+		l3 |= BIT(D40_MEM_LCSP3_DCFG_INCR_POS);
+ Optional properties:
+ - dma-channels: Number of channels supported by hardware - if not present
+@@ -21,6 +22,7 @@ Example:
+ 		interrupts = <0 25 0x4>;
  
- 	/* src is hw? -> master port 1 */
- 	if (cfg->dir ==  DMA_DEV_TO_MEM ||
- 	    cfg->dir ==  DMA_DEV_TO_DEV)
--		l1 |= 1 << D40_MEM_LCSP1_SCFG_MST_POS;
-+		l1 |= BIT(D40_MEM_LCSP1_SCFG_MST_POS);
+ 		#dma-cells = <2>;
++		memcpy-channels  = <56 57 58 59 60>;
+ 		dma-channels = <8>;
+ 	};
  
- 	/* dst is hw? -> master port 1 */
- 	if (cfg->dir ==  DMA_MEM_TO_DEV ||
- 	    cfg->dir ==  DMA_DEV_TO_DEV)
--		l3 |= 1 << D40_MEM_LCSP3_DCFG_MST_POS;
-+		l3 |= BIT(D40_MEM_LCSP3_DCFG_MST_POS);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 76c255f..ae462d3 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -58,6 +58,8 @@
+ #define D40_ALLOC_PHY		BIT(30)
+ #define D40_ALLOC_LOG_FREE	0
  
--	l3 |= 1 << D40_MEM_LCSP3_DCFG_EIM_POS;
-+	l3 |= BIT(D40_MEM_LCSP3_DCFG_EIM_POS);
- 	l3 |= cfg->dst_info.psize << D40_MEM_LCSP3_DCFG_PSIZE_POS;
- 	l3 |= cfg->dst_info.data_width << D40_MEM_LCSP3_DCFG_ESIZE_POS;
- 
--	l1 |= 1 << D40_MEM_LCSP1_SCFG_EIM_POS;
-+	l1 |= BIT(D40_MEM_LCSP1_SCFG_EIM_POS);
- 	l1 |= cfg->src_info.psize << D40_MEM_LCSP1_SCFG_PSIZE_POS;
- 	l1 |= cfg->src_info.data_width << D40_MEM_LCSP1_SCFG_ESIZE_POS;
- 
-@@ -58,39 +58,39 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
- 	if ((cfg->dir == DMA_DEV_TO_MEM) ||
- 	    (cfg->dir == DMA_DEV_TO_DEV)) {
- 		/* Set master port to 1 */
--		src |= 1 << D40_SREG_CFG_MST_POS;
-+		src |= BIT(D40_SREG_CFG_MST_POS);
- 		src |= D40_TYPE_TO_EVENT(cfg->dev_type);
- 
- 		if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
--			src |= 1 << D40_SREG_CFG_PHY_TM_POS;
-+			src |= BIT(D40_SREG_CFG_PHY_TM_POS);
- 		else
- 			src |= 3 << D40_SREG_CFG_PHY_TM_POS;
- 	}
- 	if ((cfg->dir == DMA_MEM_TO_DEV) ||
- 	    (cfg->dir == DMA_DEV_TO_DEV)) {
- 		/* Set master port to 1 */
--		dst |= 1 << D40_SREG_CFG_MST_POS;
-+		dst |= BIT(D40_SREG_CFG_MST_POS);
- 		dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
- 
- 		if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
--			dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
-+			dst |= BIT(D40_SREG_CFG_PHY_TM_POS);
- 		else
- 			dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
- 	}
- 	/* Interrupt on end of transfer for destination */
--	dst |= 1 << D40_SREG_CFG_TIM_POS;
-+	dst |= BIT(D40_SREG_CFG_TIM_POS);
- 
- 	/* Generate interrupt on error */
--	src |= 1 << D40_SREG_CFG_EIM_POS;
--	dst |= 1 << D40_SREG_CFG_EIM_POS;
-+	src |= BIT(D40_SREG_CFG_EIM_POS);
-+	dst |= BIT(D40_SREG_CFG_EIM_POS);
- 
- 	/* PSIZE */
- 	if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
--		src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-+		src |= BIT(D40_SREG_CFG_PHY_PEN_POS);
- 		src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
- 	}
- 	if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
--		dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
-+		dst |= BIT(D40_SREG_CFG_PHY_PEN_POS);
- 		dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
++#define D40_MEMCPY_MAX_CHANS	8
++
+ /* Reserved event lines for memcpy only. */
+ #define DB8500_DMA_MEMCPY_EV_0	51
+ #define DB8500_DMA_MEMCPY_EV_1	56
+@@ -522,6 +524,8 @@ struct d40_gen_dmac {
+  * @phy_start: Physical memory start of the DMA registers.
+  * @phy_size: Size of the DMA register map.
+  * @irq: The IRQ number.
++ * @num_memcpy_chans: The number of channels used for memcpy (mem-to-mem
++ * transfers).
+  * @num_phy_chans: The number of physical channels. Read from HW. This
+  * is the number of available channels for this driver, not counting "Secure
+  * mode" allocated physical channels.
+@@ -565,6 +569,7 @@ struct d40_base {
+ 	phys_addr_t			  phy_start;
+ 	resource_size_t			  phy_size;
+ 	int				  irq;
++	int				  num_memcpy_chans;
+ 	int				  num_phy_chans;
+ 	int				  num_log_chans;
+ 	struct device_dma_parameters	  dma_parms;
+@@ -2938,7 +2943,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
  	}
  
-@@ -100,14 +100,14 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
+ 	d40_chan_init(base, &base->dma_memcpy, base->log_chans,
+-		      base->num_log_chans, ARRAY_SIZE(dma40_memcpy_channels));
++		      base->num_log_chans, base->num_memcpy_chans);
  
- 	/* Set the priority bit to high for the physical channel */
- 	if (cfg->high_priority) {
--		src |= 1 << D40_SREG_CFG_PRI_POS;
--		dst |= 1 << D40_SREG_CFG_PRI_POS;
-+		src |= BIT(D40_SREG_CFG_PRI_POS);
-+		dst |= BIT(D40_SREG_CFG_PRI_POS);
- 	}
- 
- 	if (cfg->src_info.big_endian)
--		src |= 1 << D40_SREG_CFG_LBE_POS;
-+		src |= BIT(D40_SREG_CFG_LBE_POS);
- 	if (cfg->dst_info.big_endian)
--		dst |= 1 << D40_SREG_CFG_LBE_POS;
-+		dst |= BIT(D40_SREG_CFG_LBE_POS);
- 
- 	*src_cfg = src;
- 	*dst_cfg = dst;
-@@ -157,15 +157,15 @@ static int d40_phy_fill_lli(struct d40_phy_lli *lli,
- 
- 	/* If this scatter list entry is the last one, no next link */
- 	if (next_lli == 0)
--		lli->reg_lnk = 0x1 << D40_SREG_LNK_PHY_TCP_POS;
-+		lli->reg_lnk = BIT(D40_SREG_LNK_PHY_TCP_POS);
+ 	dma_cap_zero(base->dma_memcpy.cap_mask);
+ 	dma_cap_set(DMA_MEMCPY, base->dma_memcpy.cap_mask);
+@@ -3139,6 +3144,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	struct d40_base *base = NULL;
+ 	int num_log_chans = 0;
+ 	int num_phy_chans;
++	int num_memcpy_chans;
+ 	int clk_ret = -EINVAL;
+ 	int i;
+ 	u32 pid;
+@@ -3209,6 +3215,12 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
  	else
- 		lli->reg_lnk = next_lli;
+ 		num_phy_chans = 4 * (readl(virtbase + D40_DREG_ICFG) & 0x7) + 4;
  
- 	/* Set/clear interrupt generation on this link item.*/
- 	if (term_int)
--		lli->reg_cfg |= 0x1 << D40_SREG_CFG_TIM_POS;
-+		lli->reg_cfg |= BIT(D40_SREG_CFG_TIM_POS);
- 	else
--		lli->reg_cfg &= ~(0x1 << D40_SREG_CFG_TIM_POS);
-+		lli->reg_cfg &= ~BIT(D40_SREG_CFG_TIM_POS);
++	/* The number of channels used for memcpy */
++	if (plat_data->num_of_memcpy_chans)
++		num_memcpy_chans = plat_data->num_of_memcpy_chans;
++	else
++		num_memcpy_chans = ARRAY_SIZE(dma40_memcpy_channels);
++
+ 	num_log_chans = num_phy_chans * D40_MAX_LOG_CHAN_PER_PHY;
  
- 	/* Post link */
- 	lli->reg_lnk |= 0 << D40_SREG_LNK_PHY_PRE_POS;
+ 	dev_info(&pdev->dev,
+@@ -3216,7 +3228,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		 rev, res->start, num_phy_chans, num_log_chans);
+ 
+ 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
+-		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
++		       (num_phy_chans + num_log_chans + num_memcpy_chans) *
+ 		       sizeof(struct d40_chan), GFP_KERNEL);
+ 
+ 	if (base == NULL) {
+@@ -3226,6 +3238,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 
+ 	base->rev = rev;
+ 	base->clk = clk;
++	base->num_memcpy_chans = num_memcpy_chans;
+ 	base->num_phy_chans = num_phy_chans;
+ 	base->num_log_chans = num_log_chans;
+ 	base->phy_start = res->start;
+@@ -3469,12 +3482,8 @@ static int __init d40_of_probe(struct platform_device *pdev,
+ 			       struct device_node *np)
+ {
+ 	struct stedma40_platform_data *pdata;
+-
+-	/*
+-	 * FIXME: Fill in this routine as more support is added.
+-	 * First platform enabled (u8500) doens't need any extra
+-	 * properties to run, so this is fairly sparce currently.
+-	 */
++	int num_memcpy = 0;
++	const const __be32 *list;
+ 
+ 	pdata = devm_kzalloc(&pdev->dev,
+ 			     sizeof(struct stedma40_platform_data),
+@@ -3482,6 +3491,21 @@ static int __init d40_of_probe(struct platform_device *pdev,
+ 	if (!pdata)
+ 		return -ENOMEM;
+ 
++	list = of_get_property(np, "memcpy-channels", &num_memcpy);
++	num_memcpy /= sizeof(*list);
++
++	if (num_memcpy > D40_MEMCPY_MAX_CHANS || num_memcpy <= 0) {
++		d40_err(&pdev->dev,
++			"Invalid number of memcpy channels specified (%d)\n",
++			num_memcpy);
++		return -EINVAL;
++	}
++	pdata->num_of_memcpy_chans = num_memcpy;
++
++	of_property_read_u32_array(np, "memcpy-channels",
++				   dma40_memcpy_channels,
++				   num_memcpy);
++
+ 	pdev->dev.platform_data = pdata;
+ 
+ 	return 0;
+diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
+index ceba6dc..1bb9b18 100644
+--- a/include/linux/platform_data/dma-ste-dma40.h
++++ b/include/linux/platform_data/dma-ste-dma40.h
+@@ -132,6 +132,7 @@ struct stedma40_chan_cfg {
+  * @num_of_soft_lli_chans: The number of channels that needs to be configured
+  * to use SoftLLI.
+  * @use_esram_lcla: flag for mapping the lcla into esram region
++ * @num_of_memcpy_chans: The number of channels reserved for memcpy.
+  * @num_of_phy_chans: The number of physical channels implemented in HW.
+  * 0 means reading the number of channels from DMA HW but this is only valid
+  * for 'multiple of 4' channels, like 8.
+@@ -141,6 +142,7 @@ struct stedma40_platform_data {
+ 	int				*soft_lli_chans;
+ 	int				 num_of_soft_lli_chans;
+ 	bool				 use_esram_lcla;
++	int				 num_of_memcpy_chans;
+ 	int				 num_of_phy_chans;
+ };
+ 
 -- 
 1.7.10.4
 
