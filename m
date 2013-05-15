@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759834Ab3EOSlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 14:41:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58778 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759672Ab3EOSln (ORCPT
+	id S1759935Ab3EOSp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 14:45:57 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53865 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759800Ab3EOSp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 14:41:43 -0400
-Date: Wed, 15 May 2013 20:41:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 07/15] clocksource: Provide unbind interface in sysfs
-In-Reply-To: <5193BD85.8030803@linaro.org>
-Message-ID: <alpine.LFD.2.02.1305152039350.1388@ionos>
-References: <20130425142452.908423538@linutronix.de> <20130425143435.964218245@linutronix.de> <517F1A27.3030206@linaro.org> <alpine.LFD.2.02.1305151144550.1388@ionos> <5193BD85.8030803@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 15 May 2013 14:45:56 -0400
+Message-ID: <5193D7E0.5010803@hurleysoftware.com>
+Date: Wed, 15 May 2013 14:45:52 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
+References: <20130515105656.GI24440@8bytes.org> <5193A3B5.7010400@suse.cz> <20130515154753.GJ24440@8bytes.org>
+In-Reply-To: <20130515154753.GJ24440@8bytes.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013, John Stultz wrote:
-> On 05/15/2013 02:47 AM, Thomas Gleixner wrote:
-> > TSC is current clocksource and we only have ACPI_PM as watchdog and
-> > its used. So now you try to unbind ACPI_PM then the TSC would be left
-> > w/o a watchdog instance. That's what I'm preventing. Will reword the
-> > changelog accordingly.
-> 
-> You might double check the logic, because I feel like I actually hit this
-> issue where on my vm machine w/ only hpet/acpi_pm I couldn't unbind the hpet.
+On 05/15/2013 11:47 AM, Joerg Roedel wrote:
+> On Wed, May 15, 2013 at 05:03:17PM +0200, Jiri Slaby wrote:
+>> On 05/15/2013 12:56 PM, Joerg Roedel wrote:
+>
+>> Are you fixing any bug here? output_lock does not protect
+>> tty->ops->write on the other places, not tty->ops->write.
+>
+> Yes, I am trying to fix a BUG_ON that triggered in
+> drivers/tty/hvc/hvc_xen.c in function __write_console().  This function
+> was called from the place I am patching in this fix. My current
+> explanation for that BUG_ON is a race condition that comes
+> from concurrent calls to that function.
+>
+> That is also the only explanation that makes sense because the
+> __write_console() function itself makes sure that the condition can not
+> hit.
+>
+> In the comment for the n_tty_write function there is this remark:
+>
+>   *      Locking: output_lock to protect column state and space left
+>   *               (note that the process_output*() functions take this
+>   *                lock themselves)
+>
+> So the space left is managed in the ->write callback and needs
+> protection.
 
-Yes, that might be true. I'm only checking whether the clocksource is
-assigned watchdog duty. So now if the TSC is not available we still
-assign watchdog duty to HPET and therefor unbinding it does not work.
+nack.
 
-I really don't worry about that. The whole watchdog workaround is
-horrible and all I want to prevent is wreckage of that fragile piece
-of ...
+"space left" is not honored when OPOST is clear, so it is not protected
+in this case. IOW, tty->ops->write_room() is not called, so by-definition
+there is "space left".
 
-Thanks,
+Are you certain your stack trace takes you through this particular
+invocation of tty->ops->write()?  Could it be that the compiler has
+inlined process_output_block() into n_tty_write() and that's what your
+seeing?
 
-	tglx
+Can you attach the BUG report?
+Are you certain OPOST is cleared? (output of stty -a -F </dev/xxxx>)
+Is CONFIG_CONSOLE_POLL=y?
+Is this happening during boot or much later?
+
+> The process_output*() functions all (unless I am missing something)
+> take the output_lock before calling the tty->ops->write (directly or
+> indirectly).
+>
+> The place I patched here is the only place in n_tty_write where the
+> ->write call-back is invoked directly, and it happens without taking the
+> lock. I think this is a problem.
+
+But not the only path to __write_console().
+
+For example, what serializes hvc_console_print() with hvc_write()
+for the same console index?
+
+Regards,
+Peter Hurley
 
