@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab3EOQBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:01:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59428 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759519Ab3EOQBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:01:52 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [Resend/PATCHv5 1/3] arm: omap2+: serial: remove no_console_suspend support
-Date: Wed, 15 May 2013 21:31:11 +0530
-Message-ID: <1368633673-32308-2-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1368633673-32308-1-git-send-email-sourav.poddar@ti.com>
-References: <1368633673-32308-1-git-send-email-sourav.poddar@ti.com>
+	id S1759184Ab3EOQF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:05:58 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:40602 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab3EOQF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 12:05:57 -0400
+Date: Wed, 15 May 2013 18:05:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: dynticks: CONFIG_VIRT_CPU_ACCOUNTING +  CONFIG_CONTEXT_TRACKING
+ breaks accounting on core2 CPUs only
+Message-ID: <20130515160546.GD24004@somewhere>
+References: <1368346669.5998.13.camel@marge.simpson.net>
+ <20130514005744.GA12749@somewhere>
+ <1368540440.6275.32.camel@marge.simpson.net>
+ <20130515002646.GA24004@somewhere>
+ <1368590955.5957.7.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368590955.5957.7.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"no_console_suspend" is no longer handled in platform file,
-Since the omap serial driver is now adapted to prevent
-console UART idleing during suspend.
+On Wed, May 15, 2013 at 06:09:15AM +0200, Mike Galbraith wrote:
+> On Wed, 2013-05-15 at 02:26 +0200, Frederic Weisbecker wrote: 
+> > On Tue, May 14, 2013 at 04:07:20PM +0200, Mike Galbraith wrote:
+> > > On Tue, 2013-05-14 at 02:57 +0200, Frederic Weisbecker wrote: 
+> > > > On Sun, May 12, 2013 at 10:17:49AM +0200, Mike Galbraith wrote:
+> > > > > Greetings,
+> > > > > 
+> > > > > Turning on new NO_HZ feature on my Q6600 box in master, I see that tasks
+> > > > > accrue zero utime/stime.  However, the same exact kernel on E5620 box
+> > > > > works fine, so it would appear there's a CPU dependency somewhere.
+> > > > 
+> > > > Ah indeed, I just managed to reproduce the same issue.
+> > > > 
+> > > > > 
+> > > > > Is core2 expected to go dysfunctional with context tracking enabled?
+> > > > > CONFIG_VIRT_CPU_ACCOUNTING alone works fine in 3.9-stable, turn on
+> > > > > CONFIG_CONTEXT_TRACKING_FORCE, and CPU accounting stops working on core2
+> > > > > boxen only, same exact kernel continues to work just fine on E5620
+> > > > > (Westmere) box.
+> > > > 
+> > > > There was no known issue with core2. The box where I'm seeing the it
+> > > > is a Phenom quad core that had NR_CPUS=2. May be the issue is more
+> > > > likely to happen with this low number. I don't know.
+> > > > 
+> > > > I'm investigating further.
+> > > 
+> > > So with CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, you can't mix sched_clock()
+> > > (pure tsc) with local_clock()/sched_clock_cpu(cpu).  The former is
+> > > always quite a bit ahead of the later, so mixing clocks is a nogo on
+> > > crusty old (but beloved) core2 box.
+> > 
+> > Right I have the same issue. So let's use local_clock() everywhere here,
+> > it takes care of unstable tsc.
+> > 
+> > Does the following fix the issue for you?
+> 
+> Yeah, both can use sched_clock_cpu() instead though.
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Rajendra nayak <rnayak@ti.com>
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
----
- arch/arm/mach-omap2/serial.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+Right, given that irqs are already disabled. I'm preparing the patch.
 
-diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
-index 8396b5b..25fb6e9 100644
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -63,7 +63,6 @@ struct omap_uart_state {
- static LIST_HEAD(uart_list);
- static u8 num_uarts;
- static u8 console_uart_id = -1;
--static u8 no_console_suspend;
- static u8 uart_debug;
- 
- #define DEFAULT_RXDMA_POLLRATE		1	/* RX DMA polling rate (us) */
-@@ -236,9 +235,6 @@ static int __init omap_serial_early_init(void)
- 					uart_name, uart->num);
- 			}
- 
--			if (cmdline_find_option("no_console_suspend"))
--				no_console_suspend = true;
--
- 			/*
- 			 * omap-uart can be used for earlyprintk logs
- 			 * So if omap-uart is used as console then prevent
-@@ -323,9 +319,6 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
- 		return;
- 	}
- 
--	if ((console_uart_id == bdata->id) && no_console_suspend)
--		omap_device_disable_idle_on_suspend(pdev);
--
- 	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
- 
- 	if (console_uart_id == bdata->id) {
--- 
-1.7.1
-
+Thanks!
