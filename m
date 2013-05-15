@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab3EOJC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 05:02:58 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:43226
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751699Ab3EOJCw (ORCPT
+	id S1758733Ab3EOJDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 05:03:09 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52505
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757923Ab3EOJDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 05:02:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(z3121kzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v2 1/4] mtd: add a new field to mtd_info{}
-Date: Wed, 15 May 2013 16:46:43 +0800
-Message-ID: <1368607606-4344-2-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1368607606-4344-1-git-send-email-b32955@freescale.com>
-References: <1368607606-4344-1-git-send-email-b32955@freescale.com>
+	Wed, 15 May 2013 05:03:05 -0400
+Date: Wed, 15 May 2013 11:02:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
+ delay from HZ
+Message-ID: <20130515090234.GE10510@laptop.programming.kicks-ass.net>
+References: <20130413063804.GV29861@linux.vnet.ibm.com>
+ <20130413181800.GA12096@leaf>
+ <20130413193425.GY29861@linux.vnet.ibm.com>
+ <20130413195336.GA14799@leaf>
+ <20130413220943.GB29861@linux.vnet.ibm.com>
+ <20130514122049.GH15942@dyad.programming.kicks-ass.net>
+ <20130514141245.GA4442@linux.vnet.ibm.com>
+ <20130514145119.GC19669@dyad.programming.kicks-ass.net>
+ <20130514154728.GC4442@linux.vnet.ibm.com>
+ <20130515085639.GD10510@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515085639.GD10510@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to implement the NAND boot for some Freescale's chips, such as
-imx23/imx28/imx50/imx6, we use a tool (called kobs-ng) to burn the uboot
-and some metadata to nand chip. And the ROM code will use the metadata to
-configrate the BCH, and to find the uboot.
+On Wed, May 15, 2013 at 10:56:39AM +0200, Peter Zijlstra wrote:
+> On Tue, May 14, 2013 at 08:47:28AM -0700, Paul E. McKenney wrote:
+> > On Tue, May 14, 2013 at 04:51:20PM +0200, Peter Zijlstra wrote:
+> > > > In theory, yes.  In practice, this requires lots of lock acquisitions
+> > > > and releases on large systems, including some global locks.  The weight
+> > > > could be reduced, but...
+> > > > 
+> > > > What I would like to do instead would be to specify expedited grace
+> > > > periods during boot.
+> > > 
+> > > But why, surely going idle without any RCU callbacks isn't completely unheard
+> > > of, even outside of the boot process?
+> > 
+> > Yep, and RCU has special-cased that for quite some time.
+> > 
+> > > Being able to quickly drop out of the RCU state machinery would be a good thing IMO.
+> > 
+> > And this is currently possible -- this is the job of rcu_idle_enter()
+> > and friends.  And it works well, at least when I get my "if" statements
+> > set up correctly (hence the earlier patch).
+> > 
+> > Or are you seeing a slowdown even with that earlier patch applied?  If so,
+> > please let me know what you are seeing.
+> 
+> I'm not running anything in particular, except maybe a broken mental
+> model of RCU ;-)
+> 
+> So what I'm talking about is the !rcu_cpu_has_callbacks() case, where
+> there's absolutely nothing for RCU to do except tell the state machine
+> its no longer participating.
+> 
+> Your patch to rcu_needs_cpu() frobbing the lazy condition is after that
+> and thus irrelevant for this AFAICT.
+> 
+> Now as far as I can see, rcu_needs_cpu() will return false in this case;
+> allowing the cpu to enter NO_HZ state. We then call rcu_idle_enter()
+> which would call rcu_eqs_enter(). Which should put the CPU in extended
+> quiescent state.
+> 
+> However, you're still running into these FQSs delaying boot. Why is
+> that? Is that because rcu_eqs_enter() doesn't really do enough?
+> 
+> The thing is, if all other CPUs are idle, detecting the end of a grace
+> period should be rather trivial and not involve FQSs and thus be tons
+> faster.
+> 
+> Clearly I'm missing something obvious and not communicating right or so.
 
-The ECC information(ecc step size, ecc strength) which is used to configrate
-the BCH is part of the metadata. The kobs-ng can gets the ecc strength from
-the sys node /sys/*/ecc_strength now. But it can not gets the ecc step size.
+Earlier you said that improving EQS behaviour was expensive in that it
+would require taking (global) locks or somesuch.
 
-This patch adds a new field to store the ecc step size in mtd_info{}, and
-it makes preparation for the next patches.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- include/linux/mtd/mtd.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
-index a5cf4e8..effdd41 100644
---- a/include/linux/mtd/mtd.h
-+++ b/include/linux/mtd/mtd.h
-@@ -173,6 +173,9 @@ struct mtd_info {
- 	/* ECC layout structure pointer - read only! */
- 	struct nand_ecclayout *ecclayout;
- 
-+	/* the ecc step size. */
-+	unsigned int ecc_step;
-+
- 	/* max number of correctible bit errors per ecc step */
- 	unsigned int ecc_strength;
- 
--- 
-1.7.1
+Would it not be possible to have the cpu performing a FQS finish this
+work; that way the first FQS would be a little slow, but after that no
+FQS would be needed anymore, right? Since we'd no longer require the
+other CPUs to end a grace period.
 
 
