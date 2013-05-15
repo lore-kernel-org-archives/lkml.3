@@ -1,122 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3EONYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 09:24:07 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:40986 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab3EONYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 09:24:04 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH RFC] media: OF: add field-active and sync-on-green endpoint properties
-Date: Wed, 15 May 2013 15:24:23 +0200
-Message-ID: <2510029.UKsn4JyZOW@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S932702Ab3EONZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 09:25:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58918 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932473Ab3EONZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 09:25:01 -0400
+Date: Wed, 15 May 2013 14:24:53 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
+        akpm@linux-foundation.org, bcrl@kvack.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+Message-ID: <20130515132453.GB11497@suse.de>
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com>
+ <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
+ <20130205120137.GG21389@suse.de>
+ <20130206004234.GD11197@blaptop>
+ <20130206095617.GN21389@suse.de>
+ <5190AE4F.4000103@cn.fujitsu.com>
+ <20130513091902.GP11497@suse.de>
+ <5191B5B3.7080406@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <5191B5B3.7080406@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Tue, May 14, 2013 at 11:55:31AM +0800, Tang Chen wrote:
+> Hi Mel,
+> 
+> On 05/13/2013 05:19 PM, Mel Gorman wrote:
+> >>For memory hot-remove case, the aio pages are pined in memory and making
+> >>the pages cannot be offlined, furthermore, the pages cannot be removed.
+> >>
+> >>IIUC, you mean implement migrate_unpin() and migrate_pin() callbacks in aio
+> >>subsystem, and call them when hot-remove code tries to offline
+> >>pages, right ?
+> >>
+> >>If so, I'm wondering where should we put this callback pointers ?
+> >>In struct page ?
+> >>
+> >
+> >No, I would expect the callbacks to be part the address space operations
+> >which can be found via page->mapping.
+> >
+> 
+> Two more problems I don't quite understand.
+> 
 
-Thank you for the patch.
+Bear in mind I've done no research on this particular problem. At best,
+the migrate pin/unpin is the direction that I'd start with if I was tasked
+with fixing this (which I'm not). Hence, I cannot answer your questions
+at the level of detail you are looking for.
 
-On Wednesday 15 May 2013 18:22:29 Lad Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 1. For an anonymous page, it has no address_space, and no address space
+>    operation. But the aio ring problem just happened when dealing with
+>    anonymous pages. Please refer to:
+>    (https://lkml.org/lkml/2012/11/29/69)
 > 
-> This patch adds "field-active" and "sync-on-green" as part of
-> endpoint properties and also support to parse them in the parser.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: davinci-linux-open-source@linux.davincidsp.com
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  .../devicetree/bindings/media/video-interfaces.txt |    4 ++++
->  drivers/media/v4l2-core/v4l2-of.c                  |    6 ++++++
->  include/media/v4l2-mediabus.h                      |    2 ++
->  3 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> b/Documentation/devicetree/bindings/media/video-interfaces.txt index
-> e022d2d..6bf87d0 100644
-> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> @@ -101,6 +101,10 @@ Optional endpoint properties
->    array contains only one entry.
->  - clock-noncontinuous: a boolean property to allow MIPI CSI-2
-> non-continuous clock mode.
-> +-field-active: a boolean property indicating active high filed ID output
-> + polarity is inverted.
 
-Looks like we already have field-even-active property to describe the level of 
-the field signal. Could you please check whether it fulfills your use cases ? 
-Sorry for not pointing you to it earlier.
+If it is to be an address space operations sturcture then you'll need a
+pseudo mapping structure for anonymous pages that are pinned by aio --
+similar in principal to how swapper_space is used for managing PageSwapCache 
+or how anon_vma structures can be associated with a page.
 
-> +-sync-on-green: a boolean property indicating to sync with the green signal
-> in + RGB.
+However, I warn you that you may find that the address_space is the
+wrong level to register such callbacks, it just seemed like the obvious
+first choice. A potential alternative implementation is to create a 1:1
+association between pages and a long-lived holder that is stored on a hash
+table (similar style of arrangement as page_waitqueue).  A page is looked up
+in the hash table and if an entry exists, it points to an callback structure
+to the subsystem holding the pin. It's up to the subsystem to register the
+callbacks when it is about to pin a page (get_user_pages_longlived(....,
+&release_ops) and figure out how to release the pin safely.
+
+> 2. How to find out the reason why page->count != 1 in
+> migrate_page_move_mapping() ?
 > 
+>    In the problem we are dealing with, get_user_pages() is called to
+> pin the pages
+>    in memory. And the pages are migratable. So we want to decrease
+> the page->count.
 > 
->  Example
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c
-> b/drivers/media/v4l2-core/v4l2-of.c index aa59639..1d59455 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -100,6 +100,12 @@ static void v4l2_of_parse_parallel_bus(const struct
-> device_node *node, if (!of_property_read_u32(node, "data-shift", &v))
->  		bus->data_shift = v;
+>    But get_user_pages() is not the only reason leading to
+> page->count increased.
+>    How can I know when should decrease teh page->count or when should not ?
 > 
-> +	if (of_get_property(node, "field-active", &v))
-> +		flags |= V4L2_MBUS_FIELD_ACTIVE;
-> +
-> +	if (of_get_property(node, "sync-on-green", &v))
-> +		flags |= V4L2_MBUS_SOG;
-> +
->  	bus->flags = flags;
-> 
->  }
-> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-> index 83ae07e..b95553d 100644
-> --- a/include/media/v4l2-mediabus.h
-> +++ b/include/media/v4l2-mediabus.h
-> @@ -40,6 +40,8 @@
->  #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
->  /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->  #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
-> +#define V4L2_MBUS_FIELD_ACTIVE			(1 << 12)
-> +#define V4L2_MBUS_SOG				(1 << 13)
-> 
->  /* Serial flags */
->  /* How many lanes the client can use */
+
+You cannot just arbitrarily drop the page->count without causing problems. It
+has to be released by the subsystem holding the pin because only it can
+know when it's safe.
+
 -- 
-Regards,
-
-Laurent Pinchart
-
+Mel Gorman
+SUSE Labs
