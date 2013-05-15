@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759712Ab3EOQ4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 12:56:24 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:33221 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759541Ab3EOQ4U (ORCPT
+	id S932902Ab3EOQ5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 12:57:05 -0400
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:38546 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758588Ab3EOQ5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 12:56:20 -0400
+	Wed, 15 May 2013 12:57:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1368611522-9984-9-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1368611522-9984-7-git-send-email-lee.jones@linaro.org>
 References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
-	<1368611522-9984-9-git-send-email-lee.jones@linaro.org>
-Date: Wed, 15 May 2013 18:56:05 +0200
-Message-ID: <CACRpkdZpx3=8dhGaZ9xW7vXTmvhi=OVE5vFCAW66-AnwV_i=rQ@mail.gmail.com>
-Subject: Re: [PATCH 08/39] dmaengine: ste_dma40: Remove redundant address
- fetching function
+	<1368611522-9984-7-git-send-email-lee.jones@linaro.org>
+Date: Wed, 15 May 2013 18:51:38 +0200
+Message-ID: <CACRpkdZ=NJR3VRNJE2pSTJ8t1VCMq+wjH_s0NOi4AHko3no_KA@mail.gmail.com>
+Subject: Re: [PATCH 06/39] ARM: ux500: Move SDI (MMC) and UART devices under
+ more descriptive heading
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
@@ -35,13 +35,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Addresses are now stored in local data structures and are easy to
-> obtain, thus a specialist function used to fetch them is now surplus
-> to requirement.
+> Now DMA DT bindings exist and are in use by he MMC and UART drivers, it
+> should be possible to remove them from the auxdata structure. However,
+> after doing so the drivers fail. Common clk is still reliant on the
+> dev_name() call to do device name matching, which will fail due to the
+> fact that Device Tree naming differs somewhat do the more traditional
+> conventions.
 >
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Patch tentatively applied, waiting for Vinod's ACK.
+Cannot be applied due to dependency on 5/39.
 
 Yours,
 Linus Walleij
