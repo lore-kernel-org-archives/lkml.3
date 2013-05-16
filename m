@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab3EPQlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:41:23 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:47409 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab3EPQlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:41:22 -0400
-Message-ID: <1368722480.1763.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 00/11] sysv mqueue: do not hold the ipc lock
- unnecessarily
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 16 May 2013 09:41:20 -0700
-In-Reply-To: <CA+55aFwJckiVkZWv1hFzXPR3fitT9uVq4RY8yGPaePK5zmAe+A@mail.gmail.com>
-References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
-	 <CA+55aFwJckiVkZWv1hFzXPR3fitT9uVq4RY8yGPaePK5zmAe+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752211Ab3EPQoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:44:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60663 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432Ab3EPQok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 12:44:40 -0400
+Date: Thu, 16 May 2013 19:44:46 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jason Wang <jasowang@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] virtio_pci: fix macro exported in uapi
+Message-ID: <20130516164446.GA32007@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 07:12 -0700, Linus Torvalds wrote:
-> On Wed, May 15, 2013 at 6:07 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
-> > This patchset continues the work that began in the sysv ipc semaphore scaling
-> 
-> Looks fine to me, but with the problems we had on the semaphore side,
-> and since we're out of the merge window, I'm not going to take it into
-> 3.10 (I assume you weren't expecting that either). But hopefully it
-> can go into Andrew''s -mm tree and get some testing.
+macro VIRTIO_PCI_CONFIG except in the unlikely event userspace
+actually has a structure with a field named msix_enabled.
+Get the msix_enabled by value instead, to make it useful
+for userspace.
 
-Yes, it is intended for Andrew's tree.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/virtio/virtio_pci.c     | 8 ++++----
+ include/uapi/linux/virtio_pci.h | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index a7ce730..1bb6ff3 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -132,8 +132,8 @@ static void vp_get(struct virtio_device *vdev, unsigned offset,
+ 		   void *buf, unsigned len)
+ {
+ 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+-	void __iomem *ioaddr = vp_dev->ioaddr +
+-				VIRTIO_PCI_CONFIG(vp_dev) + offset;
++	void __iomem *ioaddr = vp_dev->ioaddr + offset +
++				VIRTIO_PCI_CONFIG(vp_dev->msix_enabled);
+ 	u8 *ptr = buf;
+ 	int i;
+ 
+@@ -147,8 +147,8 @@ static void vp_set(struct virtio_device *vdev, unsigned offset,
+ 		   const void *buf, unsigned len)
+ {
+ 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
+-	void __iomem *ioaddr = vp_dev->ioaddr +
+-				VIRTIO_PCI_CONFIG(vp_dev) + offset;
++	void __iomem *ioaddr = vp_dev->ioaddr + offset +
++				VIRTIO_PCI_CONFIG(vp_dev->msix_enabled);
+ 	const u8 *ptr = buf;
+ 	int i;
+ 
+diff --git a/include/uapi/linux/virtio_pci.h b/include/uapi/linux/virtio_pci.h
+index ea66f3f..610c6c6 100644
+--- a/include/uapi/linux/virtio_pci.h
++++ b/include/uapi/linux/virtio_pci.h
+@@ -80,7 +80,7 @@
+ 
+ /* The remaining space is defined by each driver as the per-driver
+  * configuration space */
+-#define VIRTIO_PCI_CONFIG(dev)		((dev)->msix_enabled ? 24 : 20)
++#define VIRTIO_PCI_CONFIG(msix_enabled)	((msix_enabled) ? 24 : 20)
+ 
+ /* Virtio ABI version, this must match exactly */
+ #define VIRTIO_PCI_ABI_VERSION		0
+-- 
+MST
