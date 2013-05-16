@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3EPERP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 00:17:15 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:20150 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3EPERK (ORCPT
+	id S1751888Ab3EPEXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 00:23:08 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23623 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab3EPEXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 00:17:10 -0400
-X-Spam-Score: -100.8
-Message-ID: <51945D90.8010600@asianux.com>
-Date: Thu, 16 May 2013 12:16:16 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 16 May 2013 00:23:04 -0400
+X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
+   d="scan'208";a="47796564"
+Message-ID: <51945F27.7010003@codeaurora.org>
+Date: Wed, 15 May 2013 21:23:03 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/workqueue.c: need call device_remove_file() when
- failure occurs after called device_create_file()
-References: <51922D30.8000809@asianux.com> <20130514151752.GB6795@mtj.dyndns.org> <5192EFE0.4040903@asianux.com> <5193277A.3040506@asianux.com> <20130515212228.GE26222@htj.dyndns.org> <51945384.9060308@asianux.com>
-In-Reply-To: <51945384.9060308@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        =?ISO-8859-1?Q?Emilio_L=F3p?= =?ISO-8859-1?Q?ez?= 
+	<emilio@elopez.com.ar>,
+        =?ISO-8859-1?Q?S=F6ren_Bri?= =?ISO-8859-1?Q?nkmann?= 
+	<soren.brinkmann@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+References: <1368207091-32538-1-git-send-email-soren.brinkmann@xilinx.com> <1368207091-32538-2-git-send-email-soren.brinkmann@xilinx.com> <518D320C.4010707@elopez.com.ar> <fe9e603e-a432-4a29-a195-fd393b875a7e@TX2EHSMHS006.ehs.local> <518D411D.9070209@elopez.com.ar> <CAPtuhTgsP4gvMAFoQb3icXAZw3ucSg4dfrAdJMho-VxNmNTvwg@mail.gmail.com> <518D7C45.2090602@codeaurora.org> <20130511142132.GA3200@sirena.org.uk>
+In-Reply-To: <20130511142132.GA3200@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 11:33 AM, Chen Gang wrote:
-> On 05/16/2013 05:22 AM, Tejun Heo wrote:
->> On Wed, May 15, 2013 at 02:13:14PM +0800, Chen Gang wrote:
->>>
->>> In workqueue_sysfs_register(), when failure occurs after called
->>> device_create_file(), need call device_remove_file() to release the
->>> related resources, then call device_unregister().
->>>
->>> Or it will cause issue.
->>>
->>> For individual 'device_attributs' (just like our case), need call
->>> device_remove_file() explictly and then call device_unregister(),
->>> please reference drivers/base/*.c (e.g node.c or cpu.c).
->>
->> Hmm... isn't this already taken care of by __sysfs_remove_dir() which
->> device_unregister() calls?  That function removes all non-directory
->> files under the directory being removed.
->>
-> 
-> It just like what you said:
->   device_unregister() ->
->     kobject_del() ->
->       sysfs_remove_dir() ->
->         __sysfs_remove_dir() ->
->           sysfs_remove_one()
-> But:
->   device_remove_file() ->
->     sysfs_remove_file() ->
->       ...
->       sysfs_attr_ns() ->
->         ops->namespace()  (such as device_namespace() in workqueue.c)
->       ...
->       sysfs_hash_and_remove() ->
->         sysfs_remove_one().
-> 
-> So if not call device_remove_file() explicitly, the device_namespace()
-> may be not called.
-> 
+On 05/11/2013 07:21 AM, Mark Brown wrote:
+> On Fri, May 10, 2013 at 04:01:25PM -0700, Saravana Kannan wrote:
+>> On 05/10/2013 03:18 PM, Mike Turquette wrote:
+>
+> Guys please delete irrelevant context from replies...
+>
+>>> One way to do it is to introduce a new config option,
+>>> CONFIG_COMMON_CLK_DEBUG_CONTROL that would expose the controls for
+>>> every clock in the existing debugfs infrastructure.  The downside to
+>>> this approach is that it would get abused and ship in millions of
+>>> Android products using horrible userspace hacks to control clocks.
+>>> Maybe that's not our problem to solve, maybe it is.
+>
+>> We already have this for MSM. But I seem to have managed to keep our
+>> userspace guys away from abusing it. YMMV.
+>
+> It's much harder when it's in the standard kernel and there's no contact
+> with some of the users.  I've pushed back pretty strongly on some of
+> your equivalent stuff for regulators for this reason.
 
-It seems, if not call ops->namespace(), it still is OK. To get a result,
-it still has much details to continue to read.
+Agreed. I don't really keep up with what's going on with the MSM regulators.
 
-But all together, reference the related code of another subsystems, we
-really need device_remove_file() before call device_unregister().
+But at some point, I'll start requesting for this for debugfs. It's 
+terribly handy to debug power issues, run unit tests and for debug 
+sessions (debugfs. So, clearly!).
 
-
-> 
-> Even in device_unregister(), it still call device_remove_file() to
-> release the related attributes firstly, then call kobject_del().
-> 
-> 
-> 
-> Thanks.
-> 
-
+-Saravana
 
 -- 
-Chen Gang
-
-Asianux Corporation
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
