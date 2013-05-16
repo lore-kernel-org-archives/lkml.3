@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3EPG67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 02:58:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12877 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277Ab3EPG6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 02:58:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="314464794"
-Message-ID: <51948391.1020401@intel.com>
-Date: Thu, 16 May 2013 14:58:25 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1755406Ab3EPHA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:00:26 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:36190 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754949Ab3EPHAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 03:00:23 -0400
+Date: Thu, 16 May 2013 15:00:03 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Andreas Westin <andreas.westin@stericsson.com>
+Subject: Re: [PATCH 12/39] crypto: ux500/hash - Prepare clock before
+ enabling it
+Message-ID: <20130516070003.GA6634@gondor.apana.org.au>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-13-git-send-email-lee.jones@linaro.org>
+ <CACRpkdYdf1j+V516CigFeGKv1B+Mf4mZk8g3ZwYAwa=rDP=7vg@mail.gmail.com>
+ <20130516065355.GA3269@gmail.com>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v6 6/8] sched: compute runnable load avg in cpu_load and
- cpu_avg_load_per_task
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <1368199049-2798-7-git-send-email-alex.shi@intel.com> <20130513140625.GA15136@twins.programming.kicks-ass.net> <5191E75C.6030903@intel.com> <5194735B.5040005@linux.vnet.ibm.com>
-In-Reply-To: <5194735B.5040005@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516065355.GA3269@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 01:49 PM, Michael Wang wrote:
-> On 05/14/2013 03:27 PM, Alex Shi wrote:
-> [snip]
->> >  }
->> > diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-> This patch seems to be based on 3.10-rc1, while below one
+On Thu, May 16, 2013 at 07:53:55AM +0100, Lee Jones wrote:
+> On Wed, 15 May 2013, Linus Walleij wrote:
 > 
-> [patch v6 3/8] sched: set initial value of runnable avg for new forked task
+> > On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > 
+> > > If we fail to prepare the ux500-hash clock before enabling it the
+> > > platform will fail to boot. Here we insure this happens.
+> > >
+> > > Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> > > Cc: David S. Miller <davem@davemloft.net>
+> > > Cc: Andreas Westin <andreas.westin@stericsson.com>
+> > > Cc: linux-crypto@vger.kernel.org
+> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > > Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > This patch seems to be totally independent of the other stuff
+> > in the patch series, and it even seems like an -rc fix to me
+> > (I don't think the crypto device works without this).
+> > 
+> > This should go into the crypto tree?
 > 
-> is conflict with 3.10-rc1... I think it may need some rebase?
+> I agree. 
+> 
+> > Else please convince Herbert to give his ACK on this
+> > before I apply it.
+> 
+> Pleeeeaasseee Herbert, take this patch! :)
 
-With the updated 3rd patch. all patchset works on latest tip/sched/core.
-Thanks for testing, Michael!
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
+Thanks,
 -- 
-Thanks
-    Alex
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
