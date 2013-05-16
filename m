@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab3EPR3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:29:35 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43939 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab3EPR3d (ORCPT
+	id S1753338Ab3EPRj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:39:27 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47055 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752873Ab3EPRj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:29:33 -0400
-Date: Thu, 16 May 2013 18:26:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philip Balister <philip@balister.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Message-ID: <20130516172605.GB1627@sirena.org.uk>
-References: <0bf5a185-86f7-4a93-a90f-42caefb06a1d@TX2EHSMHS009.ehs.local>
- <519112F9.2010102@gmail.com>
- <7c5e7537-6ed5-4622-a7a9-bf46820ef695@VA3EHSMHS033.ehs.local>
- <519124D3.2040403@gmail.com>
- <af51c63e-7ff1-4e73-9305-08309217ab38@TX2EHSMHS037.ehs.local>
- <20130514164611.10068.46384@quantum>
- <51927DEB.7090001@balister.org>
- <20130515044604.GA24524@sirena.org.uk>
- <51946082.1000606@codeaurora.org>
- <5194F0C0.9020609@balister.org>
+	Thu, 16 May 2013 13:39:26 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18gDuYMnDswS31FSyCWkXfm
+Date: Thu, 16 May 2013 10:39:24 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Vincent =?utf-8?Q?Stehl=C3=A9?= <vincent.stehle@laposte.net>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vincent =?utf-8?Q?Stehl=C3=A9?= <v-stehle@ti.com>, trivial@kernel.org
+Subject: Re: [PATCH, v2] ARM: omap2: gpmc: fix compilation warning
+Message-ID: <20130516173923.GA5600@atomide.com>
+References: <20130508222639.GM32546@atomide.com>
+ <1368552043-3764-1-git-send-email-vincent.stehle@laposte.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5194F0C0.9020609@balister.org>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 176.12.107.141
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1368552043-3764-1-git-send-email-vincent.stehle@laposte.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Vincent Stehlé <vincent.stehle@laposte.net> [130514 10:26]:
+> From: Vincent Stehlé <v-stehle@ti.com>
+> 
+> Fix the following compilation warning:
+> 
+>   arch/arm/mach-omap2/gpmc.c: In function 'gpmc_probe_generic_child':
+>   arch/arm/mach-omap2/gpmc.c:1477:4: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'resource_size_t' [-Wformat]
+> 
+> Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
+> Cc: trivial@kernel.org
+> ---
+> 
+> Tony wrote:
+> > You should just change the format for dev_err instead of the casting.
+> 
+> Hi,
+> 
+> Sorry for the late answer; it seems this is a bit more complicated after all,
+> as res.start can be 32b or 64b in LPAE. The common solution seems to be: cast
+> to long long in all cases and print accordingly. Would you like this better?
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Oh OK. In this case the GPMC is always within the 32-bit address space.
 
-On Thu, May 16, 2013 at 10:44:16AM -0400, Philip Balister wrote:
-> On 05/16/2013 12:28 AM, Saravana Kannan wrote:
+But considering that similar issue will be there for other code with
+LPAE, how about add something generic to arch/arm/include/asm/io.h like:
 
-> > Agreed. I was about to reply with exactly the same point. I haven't done
-> > any UIO coding, but that device file will eventually have to be opened.
-> > Turn on the clocks in the open and turn them off at close.
+#define PHYS_ADDR32(x)	((__force u32)(x))
+#define PHYS_ADDR64(x)	((__force u64)(x))
 
-> > Rate to request can be a DT property.
+Or maybe something like that already exists.
 
-> But you are assuming each device implemented in the fpga uses one clock.
-> This assumption is clearly not valid since devices will ahve to share
-> clocks.
+Regards,
 
-The binding should obviously be defined as a set of clocks rather than a
-single clock - something like how we specify regulators on PMICs
-probably makes sense.  Each clock can have its own properties.
+Tony
 
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRlRaqAAoJELSic+t+oim9YxoP/1A/Y91neF9lTqA04grJCVbN
-g247qOpRrtgVCfsV/qda1yhTEOQtKdXkBVyJO/nDars9pczf4H0YBM55fBgycPJo
-rSkU2JcAuyJJn7vUjE05wRXaKxRk1TO1SVZvviVE6LQMabiBYxeSwIrqgakC6Frz
-myalDboIZbJ9EgA3gZq6qVWxRsTrqJsL4q3J4vLgfTxa33vdvBlgUlVwMuPItV6l
-6ADYNRinrw8y9HE6QLN4semMNmBnQDiF+w6+ggp7aP044gU0574e9jAzGdDfIWbz
-44Zo5JXKaTsWccnLGGBqc0pQXM2nf+04HWGK4gjXwjhrLiN8PudMDUasFFibIMp7
-eR/o+qE5nB6KmRkGoY0Dyhhjuec1PWaKuH5xYIw/8h47MhgsFnNQppOI12q7IjWL
-gfV5ogr+exSuOhVi3YCRl9jwN0YuKzjcOZY82fjPLwQaxLBtMROmw/fUL8T9apmT
-s4bfedfNsx1Cw9u7kx6N4tFpchwxZ7bjCzylQ7LKo7+aybtHlQEMAarjyU7YIuRX
-TOBGVkoEhQ2kVTS1NmIsa515PDJYt4dzFnXCIUSu5CuWt47fgIblnAC62kYudwF3
-gv7iktIq9yGr8zim+BabOwYc/QoSm7mks9adAj4gZp2aQEyOPn5ECx74rGjQkP0r
-sYowE0bHlRBSmB8pf+vM
-=KI8R
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
+>  arch/arm/mach-omap2/gpmc.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+> index 6c4da12..e74501e 100644
+> --- a/arch/arm/mach-omap2/gpmc.c
+> +++ b/arch/arm/mach-omap2/gpmc.c
+> @@ -1473,8 +1473,8 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
+>  	 */
+>  	ret = gpmc_cs_remap(cs, res.start);
+>  	if (ret < 0) {
+> -		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%x\n",
+> -			cs, res.start);
+> +		dev_err(&pdev->dev, "cannot remap GPMC CS %d to 0x%llx\n",
+> +			cs, (long long)res.start);
+>  		goto err;
+>  	}
+>  
+> -- 
+> 1.7.10.4
+> 
