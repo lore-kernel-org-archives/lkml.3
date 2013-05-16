@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3EPEjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 00:39:15 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:63917 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab3EPEjM (ORCPT
+	id S1754599Ab3EPEkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 00:40:52 -0400
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:6034
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750969Ab3EPEku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 00:39:12 -0400
+	Thu, 16 May 2013 00:40:50 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 May 2013 00:40:49 EDT
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz13e6Kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH v2 append] mtd: update the ABI document about the ecc step
+Date: Thu, 16 May 2013 12:09:43 +0800
+Message-ID: <1368677383-29224-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1368619642.15764.96.camel@sauron.fi.intel.com>
+References: <1368619642.15764.96.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJZOPZLjdALP4jkLo6p787jaPx=dkKj7+AmCr9+mgJN3z_xBxQ@mail.gmail.com>
-References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
-	<1368498506-25857-7-git-send-email-yinghai@kernel.org>
-	<0EE9A1CDC8D6434DB00095CD7DB873462CFB0E4E@MTLDAG01.mtl.com>
-	<CAE9FiQVn4F+dTrQn0xsg-6QY9+HwbnJR=1CrjdoZkmF_LMrgpg@mail.gmail.com>
-	<CAJZOPZLjdALP4jkLo6p787jaPx=dkKj7+AmCr9+mgJN3z_xBxQ@mail.gmail.com>
-Date: Wed, 15 May 2013 21:39:11 -0700
-X-Google-Sender-Auth: SsVLg-L3Axt6K8DKgB604Jj6rqU
-Message-ID: <CAE9FiQWvYQRCZjDx-Kh16nKfjfS=pyu8foJR+wWYS-x8DUZteg@mail.gmail.com>
-Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
-From: Yinghai Lu <yinghai@kernel.org>
-To: Or Gerlitz <or.gerlitz@gmail.com>
-Cc: Yan Burman <yanb@mellanox.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jack Morgenstein <jackm@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 9:00 PM, Or Gerlitz <or.gerlitz@gmail.com> wrote:
-> On Tue, May 14, 2013 at 11:43 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->
->> BTW, do you have any plan to make mlx4 support sriov_configure via sysfs?
->
-> yes we do, we're waiting for a firmware change that will allow for
-> such a patch to get working.
->
-> Please note that this whole lockdep warning was identified as false
-> positive by Tejun http://www.spinics.net/lists/linux-pci/msg21568.html
+We add a new sys node for ecc step. So update the ABI document about it.
 
-No, at least one time, I noticed there is one real hang happens.
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ Documentation/ABI/testing/sysfs-class-mtd |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-class-mtd b/Documentation/ABI/testing/sysfs-class-mtd
+index 3105644..62a1cda 100644
+--- a/Documentation/ABI/testing/sysfs-class-mtd
++++ b/Documentation/ABI/testing/sysfs-class-mtd
+@@ -173,3 +173,14 @@ Description:
+ 		This is generally applicable only to NAND flash devices with ECC
+ 		capability.  It is ignored on devices lacking ECC capability;
+ 		i.e., devices for which ecc_strength is zero.
++
++What:		/sys/class/mtd/mtdX/ecc_step
++Date:		May 2013
++KernelVersion:	3.10
++Contact:	linux-mtd@lists.infradead.org
++Description:
++		The size of ecc step which is used for per ecc correction.
++		See more in the ecc_strength above. This will always be a
++		non-negative integer.
++
++		In the case of devices lacking any ECC capability, it is 0.
+-- 
+1.7.1
+
+
