@@ -1,30 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3EPMKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 08:10:11 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47847 "EHLO
+	id S1753346Ab3EPMLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 08:11:31 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47870 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab3EPMKJ (ORCPT
+	with ESMTP id S1751033Ab3EPML2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 08:10:09 -0400
+	Thu, 16 May 2013 08:11:28 -0400
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+Cc: LMML <linux-media@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Sakari Ailus <sakari.ailus@iki.fi>,
         Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3] media: i2c: tvp514x: add OF support
-Date: Thu, 16 May 2013 14:10:28 +0200
-Message-ID: <11504129.E8jKKy4N2e@avalon>
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH RFC V4 FINAL] media: i2c: mt9p031: add OF support
+Date: Thu, 16 May 2013 14:11:47 +0200
+Message-ID: <3373593.tmPgXHFIzk@avalon>
 User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1368529236-18199-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368529236-18199-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1368422224-19590-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1368422224-19590-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -36,11 +39,11 @@ Hi Prabhakar,
 
 Thank you for the patch.
 
-On Tuesday 14 May 2013 16:30:36 Lad Prabhakar wrote:
+On Monday 13 May 2013 10:47:04 Lad Prabhakar wrote:
 > From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> add OF support for the tvp514x driver. Alongside this patch
-> removes unnecessary header file inclusion and sorts them alphabetically.
+> add OF support for the mt9p031 sensor driver.
+> Alongside this patch sorts the header inclusion alphabetically.
 > 
 > Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > Cc: Hans Verkuil <hans.verkuil@cisco.com>
@@ -50,230 +53,171 @@ On Tuesday 14 May 2013 16:30:36 Lad Prabhakar wrote:
 > Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > Cc: Sakari Ailus <sakari.ailus@iki.fi>
 > Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
 > Cc: Rob Herring <rob.herring@calxeda.com>
 > Cc: Rob Landley <rob@landley.net>
+> Cc: Arnd Bergmann <arnd@arndb.de>
 > Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
 > Cc: linux-doc@vger.kernel.org
 > Cc: linux-kernel@vger.kernel.org
-> Cc: davinci-linux-open-source@linux.davincidsp.com
 > ---
-> Tested on da850-evm.
-> 
->  RFC v1: https://patchwork.kernel.org/patch/2030061/
->  RFC v2: https://patchwork.kernel.org/patch/2061811/
-> 
->  Changes for current version from RFC v2:
->  1: Fixed review comments pointed by Sylwester.
-> 
->  Changes for v2:
->  1: Listed all the compatible property values in the documentation text
-> file. 2: Removed "-decoder" from compatible property values.
->  3: Added a reference to the V4L2 DT bindings documentation to explain
->     what the port and endpoint nodes are for.
->  4: Fixed some Nits pointed by Laurent.
->  5: Removed unnecessary header file includes and sort them alphabetically.
+>  Changes for v4:
+>  1: Renamed "gpio-reset" property to "reset-gpios".
+>  2: Dropped assigning the driver data from the of node.
 > 
 >  Changes for v3:
->  1: Rebased on patch https://patchwork.kernel.org/patch/2539411/
+>  1: Dropped check if gpio-reset is valid.
+>  2: Fixed some code nits.
+>  3: Included a reference to the V4L2 DT bindings documentation.
 > 
->  .../devicetree/bindings/media/i2c/tvp514x.txt      |   45 ++++++++++++
->  drivers/media/i2c/tvp514x.c                        |   74 +++++++++++++----
->  2 files changed, 103 insertions(+), 16 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/media/i2c/tvp514x.txt
+>  Changes for v2:
+>  1: Used '-' instead of '_' for device properties.
+>  2: Specified gpio reset pin as phandle in device node.
+>  3: Handle platform data properly even if kernel is compiled with
+>     devicetree support.
+>  4: Used dev_* for messages in drivers instead of pr_*.
+>  5: Changed compatible property to "aptina,mt9p031" and "aptina,mt9p031m".
+>  6: Sorted the header inclusion alphabetically and fixed some minor code
+> nits.
 > 
-> diff --git a/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-> b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt new file mode
+>  .../devicetree/bindings/media/i2c/mt9p031.txt      |   40 +++++++++++++++++
+>  drivers/media/i2c/mt9p031.c                        |   42 ++++++++++++++++-
+>  2 files changed, 80 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+> b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt new file mode
 > 100644
-> index 0000000..cc09424
+> index 0000000..59d613c
 > --- /dev/null
-> +++ b/Documentation/devicetree/bindings/media/i2c/tvp514x.txt
-> @@ -0,0 +1,45 @@
-> +* Texas Instruments TVP514x video decoder
+> +++ b/Documentation/devicetree/bindings/media/i2c/mt9p031.txt
+> @@ -0,0 +1,40 @@
+> +* Aptina 1/2.5-Inch 5Mp CMOS Digital Image Sensor
 > +
-> +The TVP5146/TVP5146m2/TVP5147/TVP5147m1 device is high quality, single-chip
-> +digital video decoder that digitizes and decodes all popular baseband
-> +analog video formats into digital video component. The tvp514x decoder
-> +supports analog-to-digital (A/D) conversion of component RGB and YPbPr
-> +signals as well as A/D conversion and decoding of NTSC, PAL and SECAM
-> +composite and S-video into component YCbCr.
+> +The Aptina MT9P031 is a 1/2.5-inch CMOS active pixel digital image sensor
+> with +an active array size of 2592H x 1944V. It is programmable through a
+> simple +two-wire serial interface.
 > +
 > +Required Properties :
 > +- compatible : value should be either one among the following
-> +	(a) "ti,tvp5146" for tvp5146 decoder.
-> +	(b) "ti,tvp5146m2" for tvp5146m2 decoder.
-> +	(c) "ti,tvp5147" for tvp5147 decoder.
-> +	(d) "ti,tvp5147m1" for tvp5147m1 decoder.
+> +	(a) "aptina,mt9p031" for mt9p031 sensor
+> +	(b) "aptina,mt9p031m" for mt9p031m sensor
 > +
-> +- hsync-active: HSYNC Polarity configuration for endpoint.
+> +- input-clock-frequency : Input clock frequency.
 > +
-> +- vsync-active: VSYNC Polarity configuration for endpoint.
+> +- pixel-clock-frequency : Pixel clock frequency.
 > +
-> +- pclk-sample: Clock polarity of the endpoint.
+> +Optional Properties :
+> +- reset-gpios: Chip reset GPIO
 > +
-> +
-> +For further reading of port node refer Documentation/devicetree/bindings/
-> +media/video-interfaces.txt.
+> +For further reading of port node refer
+> Documentation/devicetree/bindings/media/ +video-interfaces.txt.
 > +
 > +Example:
 > +
 > +	i2c0@1c22000 {
 > +		...
 > +		...
-> +		tvp514x@5c {
-> +			compatible = "ti,tvp5146";
-> +			reg = <0x5c>;
+> +		mt9p031@5d {
+> +			compatible = "aptina,mt9p031";
+> +			reg = <0x5d>;
+> +			reset-gpios = <&gpio3 30 0>;
 > +
 > +			port {
-> +				tvp514x_1: endpoint {
-> +					hsync-active = <1>;
-> +					vsync-active = <1>;
-> +					pclk-sample = <0>;
+> +				mt9p031_1: endpoint {
+> +					input-clock-frequency = <6000000>;
+> +					pixel-clock-frequency = <96000000>;
 > +				};
 > +			};
 > +		};
 > +		...
 > +	};
-> diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-> index 01d9757..202c8cb 100644
-> --- a/drivers/media/i2c/tvp514x.c
-> +++ b/drivers/media/i2c/tvp514x.c
-> @@ -29,21 +29,16 @@
->   *
+> diff --git a/drivers/media/i2c/mt9p031.c b/drivers/media/i2c/mt9p031.c
+> index 28cf95b..a58207c 100644
+> --- a/drivers/media/i2c/mt9p031.c
+> +++ b/drivers/media/i2c/mt9p031.c
+> @@ -16,9 +16,11 @@
+>  #include <linux/delay.h>
+>  #include <linux/device.h>
+>  #include <linux/gpio.h>
+> -#include <linux/module.h>
+>  #include <linux/i2c.h>
+>  #include <linux/log2.h>
+> +#include <linux/module.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_gpio.h>
+>  #include <linux/pm.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/slab.h>
+> @@ -28,6 +30,7 @@
+>  #include <media/v4l2-chip-ident.h>
+>  #include <media/v4l2-ctrls.h>
+>  #include <media/v4l2-device.h>
+> +#include <media/v4l2-of.h>
+>  #include <media/v4l2-subdev.h>
+> 
+>  #include "aptina-pll.h"
+> @@ -928,10 +931,35 @@ static const struct v4l2_subdev_internal_ops
+> mt9p031_subdev_internal_ops = { * Driver initialization and probing
 >   */
 > 
-> -#include <linux/i2c.h>
-> -#include <linux/slab.h>
->  #include <linux/delay.h>
-> -#include <linux/videodev2.h>
-> +#include <linux/i2c.h>
->  #include <linux/module.h>
-> -#include <linux/v4l2-mediabus.h>
-> 
-> +#include <media/media-entity.h>
-> +#include <media/tvp514x.h>
->  #include <media/v4l2-async.h>
-> -#include <media/v4l2-device.h>
-> -#include <media/v4l2-common.h>
-> -#include <media/v4l2-mediabus.h>
-> -#include <media/v4l2-chip-ident.h>
->  #include <media/v4l2-ctrls.h>
-> -#include <media/tvp514x.h>
-> -#include <media/media-entity.h>
-> +#include <media/v4l2-device.h>
-> +#include <media/v4l2-of.h>
-> 
->  #include "tvp514x_regs.h"
-> 
-> @@ -1056,6 +1051,40 @@ static struct tvp514x_decoder tvp514x_dev = {
-> 
->  };
-> 
-> +static struct tvp514x_platform_data *
-> +tvp514x_get_pdata(struct i2c_client *client)
+> +static struct mt9p031_platform_data *
+> +mt9p031_get_pdata(struct i2c_client *client)
 > +{
-> +	struct tvp514x_platform_data *pdata;
-> +	struct v4l2_of_endpoint bus_cfg;
-> +	struct device_node *endpoint;
-> +	unsigned int flags;
+> +	struct device_node *np;
+> +	struct mt9p031_platform_data *pdata;
 > +
 > +	if (!IS_ENABLED(CONFIG_OF) || !client->dev.of_node)
 > +		return client->dev.platform_data;
 > +
-> +	endpoint = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
-> +	if (!endpoint)
+> +	np = v4l2_of_get_next_endpoint(client->dev.of_node, NULL);
+> +	if (!np)
 > +		return NULL;
 > +
-> +	pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+> +	pdata = devm_kzalloc(&client->dev, sizeof(struct mt9p031_platform_data),
+> +			     GFP_KERNEL);
 > +	if (!pdata)
 
-I've started playing with the V4L2 OF bindings, and realized that should 
-should call of_node_put() here.
+As mentioned in my review of your tvp514x OF support patch, you're missing 
+of_node_put() calls here and at the end of this function.
 
 > +		return NULL;
 > +
-> +	v4l2_of_parse_endpoint(endpoint, &bus_cfg);
-> +	flags = bus_cfg.bus.parallel.flags;
+> +	pdata->reset = of_get_named_gpio(client->dev.of_node, "reset-gpios", 0);
+> +	of_property_read_u32(np, "input-clock-frequency", &pdata->ext_freq);
+> +	of_property_read_u32(np, "pixel-clock-frequency", &pdata->target_freq);
 > +
-> +	if (flags & V4L2_MBUS_HSYNC_ACTIVE_HIGH)
-> +		pdata->hs_polarity = 1;
-> +
-> +	if (flags & V4L2_MBUS_VSYNC_ACTIVE_HIGH)
-> +		pdata->vs_polarity = 1;
-> +
-> +	if (flags & V4L2_MBUS_PCLK_SAMPLE_RISING)
-> +		pdata->clk_polarity = 1;
-> +
-
-As well as here. Maybe a
-
-done:
-	of_node_put(endpoint);
-	return pdata;
-
-with a goto done in the devm_kzalloc error path would be better.
-
 > +	return pdata;
 > +}
 > +
->  /**
->   * tvp514x_probe() - decoder driver i2c probe handler
->   * @client: i2c driver client device structure
-> @@ -1067,19 +1096,20 @@ static struct tvp514x_decoder tvp514x_dev = {
->  static int
->  tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>  static int mt9p031_probe(struct i2c_client *client,
+>  			 const struct i2c_device_id *did)
 >  {
-> +	struct tvp514x_platform_data *pdata = tvp514x_get_pdata(client);
->  	struct tvp514x_decoder *decoder;
->  	struct v4l2_subdev *sd;
->  	int ret;
-> 
-> +	if (pdata == NULL) {
-> +		dev_err(&client->dev, "No platform data\n");
-> +		return -EINVAL;
-> +	}
-> +
->  	/* Check if the adapter supports the needed features */
->  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
->  		return -EIO;
-> 
-> -	if (!client->dev.platform_data) {
-> -		v4l2_err(client, "No platform data!!\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	decoder = devm_kzalloc(&client->dev, sizeof(*decoder), GFP_KERNEL);
->  	if (!decoder)
->  		return -ENOMEM;
-> @@ -1091,7 +1121,7 @@ tvp514x_probe(struct i2c_client *client, const struct
-> i2c_device_id *id) sizeof(tvp514x_reg_list_default));
-> 
->  	/* Copy board specific information here */
-> -	decoder->pdata = client->dev.platform_data;
-> +	decoder->pdata = pdata;
-> 
->  	/**
->  	 * Fetch platform specific data, and configure the
-> @@ -1239,8 +1269,20 @@ static const struct i2c_device_id tvp514x_id[] = {
-> 
->  MODULE_DEVICE_TABLE(i2c, tvp514x_id);
+> -	struct mt9p031_platform_data *pdata = client->dev.platform_data;
+> +	struct mt9p031_platform_data *pdata = mt9p031_get_pdata(client);
+>  	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+>  	struct mt9p031 *mt9p031;
+>  	unsigned int i;
+> @@ -1070,8 +1098,18 @@ static const struct i2c_device_id mt9p031_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, mt9p031_id);
 > 
 > +#if IS_ENABLED(CONFIG_OF)
-> +static const struct of_device_id tvp514x_of_match[] = {
-> +	{ .compatible = "ti,tvp5146", },
-> +	{ .compatible = "ti,tvp5146m2", },
-> +	{ .compatible = "ti,tvp5147", },
-> +	{ .compatible = "ti,tvp5147m1", },
+> +static const struct of_device_id mt9p031_of_match[] = {
+> +	{ .compatible = "aptina,mt9p031", },
+> +	{ .compatible = "aptina,mt9p031m", },
 > +	{ /* sentinel */ },
 > +};
-> +MODULE_DEVICE_TABLE(of, tvp514x_of_match);
+> +MODULE_DEVICE_TABLE(of, mt9p031_of_match);
 > +#endif
 > +
->  static struct i2c_driver tvp514x_driver = {
+>  static struct i2c_driver mt9p031_i2c_driver = {
 >  	.driver = {
-> +		.of_match_table = of_match_ptr(tvp514x_of_match),
->  		.owner = THIS_MODULE,
->  		.name = TVP514X_MODULE_NAME,
+> +		.of_match_table = of_match_ptr(mt9p031_of_match),
+>  		.name = "mt9p031",
 >  	},
+>  	.probe          = mt9p031_probe,
 -- 
 Regards,
 
