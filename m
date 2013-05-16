@@ -1,155 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3EPE7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 00:59:13 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:53999
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750767Ab3EPE7I (ORCPT
+	id S1754265Ab3EPFE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 01:04:57 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:53400 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab3EPFE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 00:59:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <vikram186@gmail.com>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v5 fix] mtd: get the ECC info from the Extended Parameter Page
-Date: Thu, 16 May 2013 12:42:10 +0800
-Message-ID: <1368679330-4101-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <5193BE8F.6010807@gmail.com>
-References: <5193BE8F.6010807@gmail.com>
+	Thu, 16 May 2013 01:04:56 -0400
+Date: Thu, 16 May 2013 14:04:53 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <damm@opensource.se>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the renesas tree with Linus' tree
+Message-ID: <20130516050450.GA13842@verge.net.au>
+References: <20130516132253.8865ca7b6503bd6fe9e6b05a@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516132253.8865ca7b6503bd6fe9e6b05a@canb.auug.org.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
+On Thu, May 16, 2013 at 01:22:53PM +1000, Stephen Rothwell wrote:
+> Hi Simon,
+> 
+> Today's linux-next merge of the renesas tree got a conflict in
+> arch/arm/mach-shmobile/board-lager.c between commit 65be2de17aae ("ARM:
+> shmobile: use r8a7790 timer setup code on Lager") from Linus' tree and
+> commit 993340a1390d ("ARM: shmobile: use r8a7790 timer setup code on
+> Lager") from the renesas tree.
+> 
+> These are the same patch but different commits :-( and there are further
+> commits touching this file in the renesas tree.  Please clean up your
+> tree and remove anything that has already gone upstream as different
+> patches.  I used the renesas tree version of this file.
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
 
-This patch implement the reading of the Extended Parameter Page, and parses
-the sections for ECC type, and get the ECC info from the ECC section.
-
-Tested this patch with Micron MT29F64G08CBABAWP.
-
-Acked-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
-fix the case:
-  "If a value of 0 is reported then this ECC Information Block is
-  invalid and should not be used". 
----
- drivers/mtd/nand/nand_base.c |   80 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 80 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 15630ef..918f6fc 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2835,6 +2835,71 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
- 	return crc;
- }
- 
-+/* Parse the Extended Parameter Page. */
-+static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-+		struct nand_chip *chip, struct nand_onfi_params *p)
-+{
-+	struct onfi_ext_param_page *ep;
-+	struct onfi_ext_section *s;
-+	struct onfi_ext_ecc_info *ecc;
-+	uint8_t *cursor;
-+	int len;
-+	int ret;
-+	int i;
-+
-+	len = le16_to_cpu(p->ext_param_page_length) * 16;
-+	ep = kmalloc(len, GFP_KERNEL);
-+	if (!ep) {
-+		ret = -ENOMEM;
-+		goto ext_out;
-+	}
-+
-+	/* Send our own NAND_CMD_PARAM. */
-+	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-+
-+	/* Use the Change Read Column command to skip the ONFI param pages. */
-+	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
-+			sizeof(*p) * p->num_of_param_pages , -1);
-+
-+	/* Read out the Extended Parameter Page. */
-+	chip->read_buf(mtd, (uint8_t *)ep, len);
-+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-+		!= le16_to_cpu(ep->crc)) || strncmp(ep->sig, "EPPS", 4)) {
-+		pr_debug("fail in the CRC.\n");
-+		ret = -EINVAL;
-+		goto ext_out;
-+	}
-+
-+	/* find the ECC section. */
-+	cursor = (uint8_t *)(ep + 1);
-+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
-+		s = ep->sections + i;
-+		if (s->type == ONFI_SECTION_TYPE_2)
-+			break;
-+		cursor += s->length * 16;
-+	}
-+	if (i == ONFI_EXT_SECTION_MAX) {
-+		pr_debug("We can not find the ECC section.\n");
-+		ret = -EINVAL;
-+		goto ext_out;
-+	}
-+
-+	/* get the info we want. */
-+	ecc = (struct onfi_ext_ecc_info *)cursor;
-+
-+	if (ecc->codeword_size) {
-+		chip->ecc_strength = ecc->ecc_bits;
-+		chip->ecc_step = 1 << ecc->codeword_size;
-+	}
-+
-+	pr_info("ONFI extended param page detected.\n");
-+	return 0;
-+
-+ext_out:
-+	kfree(ep);
-+	return ret;
-+}
-+
- /*
-  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
-  */
-@@ -2903,6 +2968,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (p->ecc_bits != 0xff) {
- 		chip->ecc_strength = p->ecc_bits;
- 		chip->ecc_step = 512;
-+	} else if (chip->onfi_version >= 21 &&
-+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
-+
-+		/*
-+		 * The nand_flash_detect_ext_param_page() uses the
-+		 * Change Read Column command which maybe not supported
-+		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
-+		 * now. We do not replace user supplied command function.
-+		 */
-+		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
-+			chip->cmdfunc = nand_command_lp;
-+
-+		/* The Extended Parameter Page is supported since ONFI 2.1. */
-+		if (nand_flash_detect_ext_param_page(mtd, chip, p))
-+			pr_info("Failed to detect the extended param page.\n");
- 	}
- 
- 	pr_info("ONFI flash detected\n");
--- 
-1.7.1
-
+Sorry about that. I am working on re-basing my branches on
+top of v3.10-rc1 and I have confirmed that in my current local
+branches the problem you describe is no longer present.
+I plan to push the refreshed branches, including a new next branch
+for linux-next, once a few bug-fix patches have been reviewed.
 
