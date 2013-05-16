@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3EPCBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 22:01:43 -0400
-Received: from out1.zte.com.cn ([202.103.147.172]:43835 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751887Ab3EPCBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 22:01:42 -0400
-In-Reply-To: <519436B7.2050101@linux.intel.com>
-References: <000101ce5174$1962bac0$4c283040$@com> <20130515142035.GD11497@suse.de> <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn> <519436B7.2050101@linux.intel.com>
-Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
- hugepage
-X-KeepSent: 7A810108:AA9BB6C1-48257B6D:000A1424;
- type=4; name=$KeepSent
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF7A810108.AA9BB6C1-ON48257B6D.000A1424-48257B6D.000B1EC6@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Thu, 16 May 2013 10:00:54 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-05-16 10:00:48
+	id S1754248Ab3EPCFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 22:05:47 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:49430 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab3EPCFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 22:05:46 -0400
+X-Spam-Score: -100.8
+Message-ID: <51943EC4.60400@asianux.com>
+Date: Thu, 16 May 2013 10:04:52 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: mse01.zte.com.cn r4G216C1009629
+To: Tejun Heo <tj@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/workqueue.c: kfree issue, need check flag 'WQ_UNBOUND'
+ when processing failure.
+References: <519236E0.4020301@asianux.com> <20130514152046.GC6795@mtj.dyndns.org> <5192E62C.5090107@asianux.com> <20130515211116.GD26222@htj.dyndns.org>
+In-Reply-To: <20130515211116.GD26222@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/16/2013 05:11 AM, Tejun Heo wrote:
+> On Wed, May 15, 2013 at 09:34:36AM +0800, Chen Gang wrote:
+>> On 05/14/2013 11:20 PM, Tejun Heo wrote:
+>>> On Tue, May 14, 2013 at 09:06:40PM +0800, Chen Gang wrote:
+>>>>  err_destroy:
+>>>>  	destroy_workqueue(wq);
+>>>> +	if (flags & WQ_UNBOUND) {
+>>>> +err_free_wq:
+>>>> +		free_workqueue_attrs(wq->unbound_attrs);
+>>>> +		kfree(wq);
+>>>> +	}
+>>>
+>>> Doesn't the above make the code free wq twice on after err_destroy?
+>>>
+>>
+>> Oh, it is my fault. I did not see the put_pwq_unlocked() in details,
+>> next I should read the code carefully.
+> 
+> We're still leaking unbound_attrs in the failure path, right?  We can
+> probably just add unconditional free_workqueue_attrs() in err_free_wq?
+> 
+
+It seems that it already done, the related patch is provided by you :
+"6029a91 workqueue: add workqueue->unbound_attrs".
+
+Please check.
 
 
-Darren Hart <dvhart@linux.intel.com> wrote on 2013/05/16 09:30:31:
+Thanks.
+-- 
+Chen Gang
 
->
-> pgoff_t is an unsigned long, and page_to_pfn() returns an unsigned long.
-> Since compound_idx can be assigned from page_to_pfn() and it is added
-> with index in the return value, unsigned long seems like a better choice
-> to me. Is there a specific reason you prefer an int? It might be "fine"
-> but it is likely to raise eyebrows whenever someone read through it.
->
-No other specific  reason. I just think that int is enough.
-
+Asianux Corporation
