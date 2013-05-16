@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3EPVQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:16:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63863 "EHLO mx1.redhat.com"
+	id S1754264Ab3EPVUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:20:06 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:52061 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215Ab3EPVQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:16:48 -0400
-Message-ID: <51954CBC.7070308@redhat.com>
-Date: Thu, 16 May 2013 17:16:44 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1751313Ab3EPVUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 17:20:04 -0400
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: samsung: fix suspend/resume functionality
+Date: Thu, 16 May 2013 23:19:47 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1368724352-10849-1-git-send-email-dianders@chromium.org> <1368724352-10849-2-git-send-email-dianders@chromium.org> <1944811.006SLH6aYj@flatron>
+In-Reply-To: <1944811.006SLH6aYj@flatron>
 MIME-Version: 1.0
-To: Zach Brown <zab@redhat.com>
-CC: Eric Wong <normalperson@yhbt.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [RFC v0 1/4] vfs: add copy_range syscall and vfs entry point
-References: <1368566126-17610-1-git-send-email-zab@redhat.com> <1368566126-17610-2-git-send-email-zab@redhat.com> <20130515194405.GA28720@dcvr.yhbt.net> <20130515200307.GD318@lenny.home.zabbo.net>
-In-Reply-To: <20130515200307.GD318@lenny.home.zabbo.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305162319.48168.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 04:03 PM, Zach Brown wrote:
-> On Wed, May 15, 2013 at 07:44:05PM +0000, Eric Wong wrote:
->> Why introduce a new syscall instead of extending sys_splice?
-> Personally, I think it's ugly to have different operations use the same
-> syscall just because their arguments match.
+Am Donnerstag, 16. Mai 2013, 21:19:20 schrieb Tomasz Figa:
+[...]
+> > +
+> > +		if (type->fld_width[PINCFG_TYPE_CON_PDN]) {
+> > +			bank->pm_save.conpdn = readl(reg +
+> > +				type->reg_offset[PINCFG_TYPE_CON_PDN]);
+> > +			bank->pm_save.pudpdn = readl(reg +
+> > +				type->reg_offset[PINCFG_TYPE_PUD_PDN]);
+> > +		}
+> 
+> I wonder if you couldn't do all the saving here in a single loop over all
+> pin control types, like:
+> 
+> 	unsigned int offsets = bank->type->reg_offsets;
+> 	unsigned int widths = bank->type->fld_width;
+> 
+> 	for (i = 0; i < PINCFG_TYPE_NUM; ++i)
+> 		if (widths[i])
+> 			bank->pm_save[i] = readl(reg + offsets[i]);
+> 
+> The only thing not handled by this loop is second CON registers in banks
+> with two of them. I can't think of any better solution for this other than
+> just adding a special case after the loop.
 
-I agree with Zach - having a system call called "splice" do copy offloads is not 
-intuitive.
+doing this in the loop over the pinctrl types like Tomasz suggests, also 
+nicely fixes the problem of s3c24xx [0] only having FUNC, DAT and PUD and some 
+(gpa) not even having the PUD, which was not checked in the original patch.
 
-This is a very reasonable name for something that battled its way through 
-several standards bodies (for NFS and SCSI :)), so we should give it a 
-reasonable name
 
-thanks!
+Heiko
 
-Ric
-
->
-> But that preference aside, sure, if the consensus is that we'd rather
-> use the splice() entry point then I can duck tape the pieces together to
-> make it work.
->
->> If the user doesn't need a out offset, then sendfile() should also be
->> able to transparently utilize COPY/CLONE_RANGE, too.
-> Perhaps, yeah.
->
-> - z
-
+[0] patch is with Kgene currently, so should make it into 3.11
