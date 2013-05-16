@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab3EPERI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 00:17:08 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15278 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab3EPERE (ORCPT
+	id S1752760Ab3EPERP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 00:17:15 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:20150 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3EPERK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 00:17:04 -0400
-X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="47795823"
-Message-ID: <51945DBF.60308@codeaurora.org>
-Date: Wed, 15 May 2013 21:17:03 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 16 May 2013 00:17:10 -0400
+X-Spam-Score: -100.8
+Message-ID: <51945D90.8010600@asianux.com>
+Date: Thu, 16 May 2013 12:16:16 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH] clk: Fix race condition between clk_set_parent and clk_enable()
-References: <1367383328-25700-1-git-send-email-skannan@codeaurora.org> <CAPDyKFpZ6-O-zSyBVgGGFL4W+d=-k-qaXimUS12fgC=9TkUNVA@mail.gmail.com>
-In-Reply-To: <CAPDyKFpZ6-O-zSyBVgGGFL4W+d=-k-qaXimUS12fgC=9TkUNVA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/workqueue.c: need call device_remove_file() when
+ failure occurs after called device_create_file()
+References: <51922D30.8000809@asianux.com> <20130514151752.GB6795@mtj.dyndns.org> <5192EFE0.4040903@asianux.com> <5193277A.3040506@asianux.com> <20130515212228.GE26222@htj.dyndns.org> <51945384.9060308@asianux.com>
+In-Reply-To: <51945384.9060308@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 12:24 PM, Ulf Hansson wrote:
-> On 1 May 2013 06:42, Saravana Kannan <skannan@codeaurora.org> wrote:
+On 05/16/2013 11:33 AM, Chen Gang wrote:
+> On 05/16/2013 05:22 AM, Tejun Heo wrote:
+>> On Wed, May 15, 2013 at 02:13:14PM +0800, Chen Gang wrote:
+>>>
+>>> In workqueue_sysfs_register(), when failure occurs after called
+>>> device_create_file(), need call device_remove_file() to release the
+>>> related resources, then call device_unregister().
+>>>
+>>> Or it will cause issue.
+>>>
+>>> For individual 'device_attributs' (just like our case), need call
+>>> device_remove_file() explictly and then call device_unregister(),
+>>> please reference drivers/base/*.c (e.g node.c or cpu.c).
+>>
+>> Hmm... isn't this already taken care of by __sysfs_remove_dir() which
+>> device_unregister() calls?  That function removes all non-directory
+>> files under the directory being removed.
+>>
+> 
+> It just like what you said:
+>   device_unregister() ->
+>     kobject_del() ->
+>       sysfs_remove_dir() ->
+>         __sysfs_remove_dir() ->
+>           sysfs_remove_one()
+> But:
+>   device_remove_file() ->
+>     sysfs_remove_file() ->
+>       ...
+>       sysfs_attr_ns() ->
+>         ops->namespace()  (such as device_namespace() in workqueue.c)
+>       ...
+>       sysfs_hash_and_remove() ->
+>         sysfs_remove_one().
+> 
+> So if not call device_remove_file() explicitly, the device_namespace()
+> may be not called.
+> 
 
-<snip>
+It seems, if not call ops->namespace(), it still is OK. To get a result,
+it still has much details to continue to read.
 
->> -       /* migrate prepare */
->> -       if (clk->prepare_count)
->> +       /*
->> +        * Migrate prepare state between parents and prevent race with
->> +        * clk_enable().
->> +        *
->> +        * If the clock is not prepared, then a race with
->> +        * clk_enable/disable() is impossible since we already have the
->> +        * prepare lock (future calls to clk_enable() need to be preceded by
->> +        * a clk_prepare()).
->> +        *
->> +        * If the clock is prepared, migrate the prepared state to the new
->> +        * parent and also protect against a race with clk_enable() by
->> +        * forcing the clock and the new parent on.  This ensures that all
->> +        * future calls to clk_enable() are practically NOPs with respect to
->> +        * hardware and software states.
->> +        */
->
-> Maybe an additional note about that since CLK_SET_PARENT_GATE is a
-> prerequisite for doing migration of "prepare", we also interpreted
-> this flags as it is acceptable to enable the clock(s) in this context.
+But all together, reference the related code of another subsystems, we
+really need device_remove_file() before call device_unregister().
 
-Done. Sent v2 patch.
 
-<snip>
+> 
+> Even in device_unregister(), it still call device_remove_file() to
+> release the related attributes firstly, then call kobject_del().
+> 
+> 
+> 
+> Thanks.
+> 
 
->
-> Looks good! Thanks for having another round to fixup this kind of
-> tricky code. :-)
-
-Thanks :-)
-
-> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
->
-
-Thanks again.
-
--Saravana
 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Chen Gang
+
+Asianux Corporation
