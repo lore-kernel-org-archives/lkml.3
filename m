@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3EPNRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:17:36 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:38286 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab3EPNRa (ORCPT
+	id S1753991Ab3EPNSU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:18:20 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:45672 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3EPNSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:17:30 -0400
-Message-ID: <5194DC6A.8080609@cogentembedded.com>
-Date: Thu, 16 May 2013 17:17:30 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-CC: Sekhar Nori <nsekhar@ti.com>,
+	Thu, 16 May 2013 09:18:18 -0400
+From: Lad Prabhakar <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: davinci: dma: Convert to devm_* api
-References: <1368687502-15551-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1368687502-15551-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH RFC v2] media: OF: add sync-on-green endpoint property
+Date: Thu, 16 May 2013 18:48:07 +0530
+Message-Id: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On 16-05-2013 10:58, Lad Prabhakar wrote:
+This patch adds "sync-on-green" property as part of
+endpoint properties and also support to parse them in the parser.
 
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Changes for v2:
+ 1: Dropped "field-active" property as it same as existing
+    "field-even-active" property.
 
-> Use devm_ioremap_resource instead of reques_mem_region()/ioremap() and
-> devm_request_irq() instead of request_irq().
+ .../devicetree/bindings/media/video-interfaces.txt |    2 ++
+ drivers/media/v4l2-core/v4l2-of.c                  |    3 +++
+ include/media/v4l2-mediabus.h                      |    1 +
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-> This ensures more consistent error values and simplifies error paths.
-
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->   NOte:- Boot tested on Logic-PD OMAP-L138 EVM
-
->   arch/arm/mach-davinci/dma.c |   63 ++++++++++++++++--------------------------
->   1 files changed, 24 insertions(+), 39 deletions(-)
-
-> diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
-> index 45b7c71..aeda496 100644
-> --- a/arch/arm/mach-davinci/dma.c
-> +++ b/arch/arm/mach-davinci/dma.c
-[...]
-> @@ -1422,25 +1421,16 @@ static int __init edma_probe(struct platform_device *pdev)
->   			found = 1;
->   		}
->
-> -		len[j] = resource_size(r[j]);
-> -
-> -		r[j] = request_mem_region(r[j]->start, len[j],
-> -			dev_name(&pdev->dev));
-> -		if (!r[j]) {
-> -			status = -EBUSY;
-> -			goto fail1;
-> -		}
-> -
-> -		edmacc_regs_base[j] = ioremap(r[j]->start, len[j]);
-> -		if (!edmacc_regs_base[j]) {
-> +		edmacc_regs_base[j] = devm_ioremap_resource(&pdev->dev, r[j]);
-> +		if (IS_ERR(edmacc_regs_base[j])) {
->   			status = -EBUSY;
-
-    And you call that "more consistent error values"? Why not:
-
-			status = PTR_ERR(edmacc_regs_base[j]);
-
->  		edma_cc[j] = kzalloc(sizeof(struct edma), GFP_KERNEL);
-
-    Maybe it's worth using devm_kzalloc() too?
-
-WBR, Sergei
+diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
+index e022d2d..f91821f 100644
+--- a/Documentation/devicetree/bindings/media/video-interfaces.txt
++++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+@@ -101,6 +101,8 @@ Optional endpoint properties
+   array contains only one entry.
+ - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
+   clock mode.
++-sync-on-green: a boolean property indicating to sync with the green signal in
++ RGB.
+ 
+ 
+ Example
+diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+index aa59639..b51d61f 100644
+--- a/drivers/media/v4l2-core/v4l2-of.c
++++ b/drivers/media/v4l2-core/v4l2-of.c
+@@ -100,6 +100,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+ 	if (!of_property_read_u32(node, "data-shift", &v))
+ 		bus->data_shift = v;
+ 
++	if (of_get_property(node, "sync-on-green", &v))
++		flags |= V4L2_MBUS_SYNC_ON_GREEN;
++
+ 	bus->flags = flags;
+ 
+ }
+diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+index 83ae07e..cf2c66f9 100644
+--- a/include/media/v4l2-mediabus.h
++++ b/include/media/v4l2-mediabus.h
+@@ -40,6 +40,7 @@
+ #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
+ /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
+ #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
++#define V4L2_MBUS_SYNC_ON_GREEN			(1 << 12)
+ 
+ /* Serial flags */
+ /* How many lanes the client can use */
+-- 
+1.7.4.1
 
