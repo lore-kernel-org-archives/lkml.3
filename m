@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab3EPSlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 14:41:08 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46130 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab3EPSlG (ORCPT
+	id S1753805Ab3EPSmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 14:42:32 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:64636 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab3EPSmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 14:41:06 -0400
-Message-ID: <51952839.1090902@linux.vnet.ibm.com>
-Date: Fri, 17 May 2013 02:40:57 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v5 3/8] KVM: MMU: fast invalidate all pages
-References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130516161816.GG14597@redhat.com>
-In-Reply-To: <20130516161816.GG14597@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051618-6102-0000-0000-00000389A0F3
+	Thu, 16 May 2013 14:42:31 -0400
+From: bmheight@gmail.com
+To: gregkh@linuxfoundation.org
+Cc: john.stultz@linaro.org, konkers@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Brandon Height <bmheight@gmail.com>
+Subject: [PATCH] Staging: android: sync: fixed a brace coding style issue
+Date: Thu, 16 May 2013 08:42:22 -1000
+Message-Id: <1368729742-14948-1-git-send-email-bmheight@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 12:18 AM, Gleb Natapov wrote:
+From: Brandon Height <bmheight@gmail.com>
 
->> +
->> +/*
->> + * Fast invalidate all shadow pages belong to @slot.
->> + *
->> + * @slot != NULL means the invalidation is caused the memslot specified
->> + * by @slot is being deleted, in this case, we should ensure that rmap
->> + * and lpage-info of the @slot can not be used after calling the function.
->> + *
->> + * @slot == NULL means the invalidation due to other reasons, we need
->> + * not care rmap and lpage-info since they are still valid after calling
->> + * the function.
->> + */
->> +void kvm_mmu_invalidate_memslot_pages(struct kvm *kvm,
->> +				      struct kvm_memory_slot *slot)
-> 
-> Why pass "slot" here? If we want the function to sometimes wait for purge
-> and sometimes not the more straightforward way is to have a "bool wait"
-> parameter instead.
-> 
+Fixed a coding style issue.
 
-That's my fault, i forgot to update it. Will use 'bool zap_invalid_pages'
-instead.
+Signed-off-by: Brandon Height <bmheight@gmail.com>
+---
+ drivers/staging/android/sync.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 3893a35..36ed35e 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -125,9 +125,8 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
+ 	spin_unlock_irqrestore(&obj->active_list_lock, flags);
+ 
+ 	spin_lock_irqsave(&obj->child_list_lock, flags);
+-	if (!list_empty(&pt->child_list)) {
++	if (!list_empty(&pt->child_list))
+ 		list_del_init(&pt->child_list);
+-	}
+ 	spin_unlock_irqrestore(&obj->child_list_lock, flags);
+ }
+ 
+-- 
+1.8.1.2
 
