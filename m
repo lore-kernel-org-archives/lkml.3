@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3EPRzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:55:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64622 "EHLO mga09.intel.com"
+	id S1753430Ab3EPR4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:56:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab3EPRzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:55:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,685,1363158000"; 
-   d="scan'208";a="338441944"
-From: Andi Kleen <andi@firstfloor.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/11] ipc: move locking out of ipcctl_pre_down_nolock
-References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
-	<1368666490-29055-5-git-send-email-davidlohr.bueso@hp.com>
-Date: Thu, 16 May 2013 10:55:28 -0700
-In-Reply-To: <1368666490-29055-5-git-send-email-davidlohr.bueso@hp.com>
-	(Davidlohr Bueso's message of "Wed, 15 May 2013 18:08:03 -0700")
-Message-ID: <m2vc6i3j3j.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1751643Ab3EPR41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 13:56:27 -0400
+Date: Thu, 16 May 2013 13:55:57 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, gleb@redhat.com,
+        Robert Richter <rric@kernel.org>
+Subject: Re: Drop WARN on AMD lack of perfctrs
+Message-ID: <20130516175557.GC18325@hansolo.jdub.homelinux.org>
+References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
+ <20130516175117.GK19669@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516175117.GK19669@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Davidlohr Bueso <davidlohr.bueso@hp.com> writes:
+On Thu, May 16, 2013 at 07:51:17PM +0200, Peter Zijlstra wrote:
+> On Thu, May 16, 2013 at 11:10:26AM -0400, Josh Boyer wrote:
+> > Hi All,
+> > 
+> > If you boot a KVM guest on an AMD family 15h and specify -cpu host,
+> > you'll get the following splat:
+> > 
+> > [    0.031000] ------------[ cut here ]------------
+> > [    0.031000] WARNING: at arch/x86/kernel/cpu/perf_event_amd.c:772
+> > amd_pmu_init+0x18c/0x249()
+> > [    0.031000] Hardware name: Bochs
+> > [    0.031000] Odd, counter constraints enabled but no core perfctrs
+> > detected!
+> > [    0.031000] Modules linked in:
+> > 
+> > [    0.031000] Pid: 1, comm: swapper/0 Not tainted
+> > 3.9.0-0.rc1.git0.4.fc19.x86_64 #1
+> > [    0.031000] Call Trace:
+> > [    0.031000]  [<ffffffff81d10c67>] ? amd_pmu_init+0x18c/0x249
+> > [    0.031000]  [<ffffffff8105c9a0>] warn_slowpath_common+0x70/0xa0
+> > [    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+> > [    0.031000]  [<ffffffff8105ca1c>] warn_slowpath_fmt+0x4c/0x50
+> > [    0.031000]  [<ffffffff81d10c67>] amd_pmu_init+0x18c/0x249
+> > [    0.031000]  [<ffffffff81d106e7>] init_hw_perf_events+0x34/0x428
+> > [    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+> > [    0.031000]  [<ffffffff8100210a>] do_one_initcall+0x10a/0x160
+> > [    0.031000]  [<ffffffff81d06fa5>] kernel_init_freeable+0xcf/0x1fa
+> > [    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+> > [    0.031000]  [<ffffffff8162980e>] kernel_init+0xe/0x190
+> > [    0.031000]  [<ffffffff8164e22c>] ret_from_fork+0x7c/0xb0
+> > [    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+> > [    0.031000] ---[ end trace a1e57d3cb8668105 ]---
+> > 
+> > That seems a bit excessive, and it gets picked up by auto-reporting
+> > tools like ABRT as a bug.  Can we remove the WARN and just use pr_err or
+> > something else instead?
+> 
+> Robert put that in, I suppose its because the CPUID crap indicates its got perf
+> counters but then it doesn't actually have them.
+> 
+> Clearly this is something that should be fixed in your virt thingy instead.
 
-> This function currently acquires both the rw_mutex and the rcu lock on
-> successful lookups, leaving the callers to explicitly unlock them, creating
-> another two level locking situation.
+Maybe.  But do you really need to dump a stack trace here?  What is a
+user supposed to do with that information?  Can they fix the kernel?
+Can the fix the CPU?  As far as I can tell, they can't do either.
 
-Note that the rcu read lock is not a real lock, so it doesn't have the
-usual ordering problems.
+Is using pr_err with the same message really somehow worse than using
+WARN?
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+josh
