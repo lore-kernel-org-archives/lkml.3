@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3EPCv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 22:51:57 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58688 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab3EPCv4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 22:51:56 -0400
-X-AuditID: 9c93017d-b7b62ae000004f69-7c-519449caee0b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 03/15] perf util: Save pid-cmdline mapping into tracing header
-References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
-	<1368526439-31966-4-git-send-email-namhyung@kernel.org>
-	<20130515212124.GC5814@krava.redhat.com>
-Date: Thu, 16 May 2013 11:51:54 +0900
-In-Reply-To: <20130515212124.GC5814@krava.redhat.com> (Jiri Olsa's message of
-	"Wed, 15 May 2013 23:21:24 +0200")
-Message-ID: <877giz4oxh.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1754194Ab3EPDGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:06:36 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:36520 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab3EPDGd (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 15 May 2013 23:06:33 -0400
+Message-ID: <1368673581.2272.5.camel@linux-04b7.site>
+Subject: Re: [PATCH] Staging: add USB MTK bluetooth driver
+From: AL Yu-Chen Cho <acho@suse.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        jay.hung@mediatek.com
+Date: Thu, 16 May 2013 11:06:21 +0800
+In-Reply-To: <20130514192748.GA16887@kroah.com>
+References: <1367490436-8438-1-git-send-email-acho@suse.com>
+	 <20130514192748.GA16887@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013 23:21:24 +0200, Jiri Olsa wrote:
-> On Tue, May 14, 2013 at 07:13:47PM +0900, Namhyung Kim wrote:
->> +void parse_saved_cmdline(struct pevent *pevent,
->> +			 char *file, unsigned int size __maybe_unused)
->
-> any reason for the size parameter? I can see some other
-> functions already following this prototype, but I dont
-> see the reason.. just curious ;)
+Hi Greg,
 
-I don't know, but copied those. ;)  I guess we can get rid of it.
-Steve, any comments?
+On 二, 2013-05-14 at 15:27 -0400, Greg KH wrote:
+> On Thu, May 02, 2013 at 06:27:16PM +0800, Cho, Yu-Chen wrote:
+> > diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+> > index fa41b04..e33cfe0 100644
+> > --- a/drivers/staging/Makefile
+> > +++ b/drivers/staging/Makefile
+> > @@ -62,3 +62,4 @@ obj-$(CONFIG_SB105X)		+= sb105x/
+> >  obj-$(CONFIG_GOLDFISH)		+= goldfish/
+> >  obj-$(CONFIG_USB_DWC2)		+= dwc2/
+> >  obj-$(CONFIG_LUSTRE_FS)		+= lustre/
+> > +obj-$(CONFIG_USB_BTMTK)		+= btmkt_usb/
+> 
+> You didn't actually test this patch, it breaks the build:
+> 
+> scripts/Makefile.build:44:
+> /home/gregkh/linux/work/staging/drivers/staging/btmkt_usb/Makefile: No such file or directory
+> make[3]: *** No rule to make target
+> `/home/gregkh/linux/work/staging/drivers/staging/btmkt_usb/Makefile'.  Stop.
+> 
+> Please refresh this against 3.10-rc1 and test that it builds properly
+> and then resend it.
+> 
 
-Thanks,
-Namhyung
+Yes, I found that , and I will refresh this against 3.10-rc1 and test
+that it builds then resend it soon.
 
->
-> void parse_ftrace_printk(struct pevent *pevent,
->                          char *file, unsigned int size __maybe_unused)
->
-> void parse_proc_kallsyms(struct pevent *pevent,
->                          char *file, unsigned int size __maybe_unused)
->
->
-> jirka
+Thanks a lot.
+
+Sincerely,
+         AL
+
