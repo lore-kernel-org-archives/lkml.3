@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3EPAsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 20:48:15 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:10509 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752833Ab3EPAsO (ORCPT
+	id S1754172Ab3EPAtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 20:49:06 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:63338 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab3EPAtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 20:48:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnUPADAslFF5LKxY/2dsb2JhbABbgweDCrhlhSAEAYEAF3SCHwEBBTocIxAIAxgJJQ8FJQMhE4gLvRYWjWuBHQeCdGEDlzORPoFYgUoq
-Date: Thu, 16 May 2013 10:47:49 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC PATCH 1/2] mm: vmscan: let any negative return value from
- shrinker mean error
-Message-ID: <20130516004749.GD24635@dastard>
-References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
- <1368454595-5121-2-git-send-email-oskar.andero@sonymobile.com>
+	Wed, 15 May 2013 20:49:01 -0400
+X-AuditID: 9c93017e-b7cf8ae000004f65-a5-51942cfbe639
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [RFC/PATCH 2/2] perf report: Add --time-filter option
+References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
+	<1368609839-19899-2-git-send-email-namhyung@kernel.org>
+	<CABPqkBSEGpa3wyxdfsBRey=4J_yQXP7QG_=+1rLy0vhD03vp4A@mail.gmail.com>
+Date: Thu, 16 May 2013 09:48:58 +0900
+In-Reply-To: <CABPqkBSEGpa3wyxdfsBRey=4J_yQXP7QG_=+1rLy0vhD03vp4A@mail.gmail.com>
+	(Stephane Eranian's message of "Wed, 15 May 2013 13:51:20 +0200")
+Message-ID: <871u97696t.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368454595-5121-2-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 04:16:34PM +0200, Oskar Andero wrote:
-> The shrinkers must return -1 to indicate that it is busy. Instead of
-> relaying on magical numbers, let any negative value indicate error. This
-> opens up for using the errno.h error codes in the shrinker
-> implementations.
+Hi Stephane,
 
-Just what is the shrinker infrastructure supposed to do with a
-random error code?
+On Wed, 15 May 2013 13:51:20 +0200, Stephane Eranian wrote:
+> Hi,
+>
+> I think what could also be useful would be an option to consider only
+> the samples when the rate as reported by the timestamp exceed a
+> user provided rate per sec. That would eliminate samples which are
+> coming from low activity periods.
 
-Cheers,
+Sounds good.  I'll try to play with it next time.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+Namhyung
