@@ -1,77 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3EPPgP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:36:15 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:41249 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3EPPgL (ORCPT
+	id S1753057Ab3EPPgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:36:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57792 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab3EPPga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:36:11 -0400
+	Thu, 16 May 2013 11:36:30 -0400
+Message-ID: <5194FCDD.8080209@ti.com>
+Date: Thu, 16 May 2013 10:35:57 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130516111634.GA15314@twins.programming.kicks-ass.net>
-References: <20130503121122.931661809@chello.nl>
-	<20130503121256.230745028@chello.nl>
-	<CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
-	<20130516090916.GF19669@dyad.programming.kicks-ass.net>
-	<8578.1368699317@ale.ozlabs.ibm.com>
-	<20130516111634.GA15314@twins.programming.kicks-ass.net>
-Date: Thu, 16 May 2013 17:36:11 +0200
-Message-ID: <CABPqkBSCXJN7gLK_e_Q3YVVVFVGS78fo4j2z0+MmriqoXszH+w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+To: Nishanth Menon <nm@ti.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] ARM:dts:omap4-panda: Update the LED support for the
+ panda DTS
+References: <1368636386-17138-1-git-send-email-dmurphy@ti.com> <20130515170516.GA6135@kahuna>
+In-Reply-To: <20130515170516.GA6135@kahuna>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 1:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, May 16, 2013 at 08:15:17PM +1000, Michael Neuling wrote:
->> Peter,
+On 05/15/2013 12:05 PM, Nishanth Menon wrote:
+> On 11:46-20130515, Dan Murphy wrote:
+>> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+>> are different.
 >>
->> BTW PowerPC also has the ability to filter on conditional branches.  Any
->> chance we could add something like the follow to perf also?
+>> A1-A3 = gpio_wk7
+>> ES = gpio_110
 >>
->
-> I don't see an immediate problem with that except that we on x86 need to
-> implement that in the software filter. Stephane do you see any
-> fundamental issue with that?
->
-On X86, the LBR cannot filter on conditional in HW. Thus as Peter said, it would
-have to be done in SW. I did not add that because I think those branches are
-not necessarily useful for tools.
+>> There is no change to LED D2
+>>
+>> Abstract away the pinmux and the LED definitions for the two boards into
+>> the respective DTS files.
+>>
+>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>> ---
+> nit: Giving patch history is a nice practise.
+>>  arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++-
+>>  arch/arm/boot/dts/omap4-panda-es.dts      |   40 +++++++++++++++++++++++++++++
+>>  2 files changed, 55 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>> index 03bd60d..2b516af 100644
+>> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+>> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+>> @@ -16,7 +16,7 @@
+>>  		reg = <0x80000000 0x40000000>; /* 1 GB */
+>>  	};
+>>  
+>> -	leds {
+>> +	leds: leds {
+>>  		compatible = "gpio-leds";
+>>  		heartbeat {
+>>  			label = "pandaboard::status1";
+>> @@ -137,6 +137,20 @@
+> I missed noticing this previously, Apologies on the same.
+> Considering that drivers/leds/leds-gpio.c has ability to handle pinctrl,
+> One better option might be to provide pinctrl phandle with leds -
+> Couple of reasons why this might be good:
+> a) one gets the following warning at boot:
+> "leds-gpio leds.8: pins are not configured from the driver"
+> b) you donot need to setup the pins by default at boot - it is not
+> mandatory for the system functionality, instead we do it *if* the driver
+> is enabled.
+> Further, optionally, all you'd have to do in panda-es.dts is the following
+> &led_wkgpio_pins {
+> 		pinctrl-single,pins = <
+> 			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+> 		>;
+> }
+> Similarly for gpios override for panda-es.
+I am not sure you really want to do this.
+If I make the pinctrl part of the led structure then the only way the gpio_wk7 on a1-a3 to be configured is when
+the CONFIG_LEDS_GPIO flag is set.
 
->>
->> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
->> index fb104e5..891c769 100644
->> --- a/include/uapi/linux/perf_event.h
->> +++ b/include/uapi/linux/perf_event.h
->> @@ -157,8 +157,9 @@ enum perf_branch_sample_type {
->>       PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << 4, /* any call branch */
->>       PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << 5, /* any return branch */
->>       PERF_SAMPLE_BRANCH_IND_CALL     = 1U << 6, /* indirect calls */
->> +     PERF_SAMPLE_BRANCH_CONDITIONAL  = 1U << 7, /* conditional branches */
->>
->> -     PERF_SAMPLE_BRANCH_MAX          = 1U << 7, /* non-ABI */
->> +     PERF_SAMPLE_BRANCH_MAX          = 1U << 8, /* non-ABI */
+Do you really want that dependency?  You did say it was a key fix
+At least this way the pins are configured regardless of that flag.
+>>  	};
 >>  };
->>
->>  #define PERF_SAMPLE_BRANCH_PLM_ALL \
->> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
->> index cdf58ec..5b0b89d 100644
->> --- a/tools/perf/builtin-record.c
->> +++ b/tools/perf/builtin-record.c
->> @@ -676,6 +676,7 @@ static const struct branch_mode branch_modes[] = {
->>       BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
->>       BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
->>       BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
->> +     BRANCH_OPT("cnd", PERF_SAMPLE_BRANCH_CONDITIONAL),
->>       BRANCH_END
+>>  
+>> +&omap4_pmx_wkup {
+>> +	pinctrl-names = "default";
+>> +	pinctrl-0 = <
+>> +		&led_wkgpio_pins
+>> +	>;
+>> +
+>> +	led_wkgpio_pins: pinmux_leds_wkpins {
+>> +		pinctrl-single,pins = <
+>> +			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
+>> +			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+>> +		>;
+>> +	};
+>> +};
+>> +
+>>  &i2c1 {
+>>  	pinctrl-names = "default";
+>>  	pinctrl-0 = <&i2c1_pins>;
+>> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+>> index f1d8c21..e6f696d 100644
+>> --- a/arch/arm/boot/dts/omap4-panda-es.dts
+>> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
+>> @@ -34,3 +34,43 @@
+>>  		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
+>>  		>;
 >>  };
+>> +
+>> +&leds {
+>> +	compatible = "gpio-leds";
+>> +	heartbeat {
+>> +		label = "pandaboard::status1";
+>> +		gpios = <&gpio4 14 0>;
+>> +		linux,default-trigger = "heartbeat";
+>> +	};
+>> +	mmc {
+>> +		label = "pandaboard::status2";
+>> +		gpios = <&gpio1 8 0>;
+>> +		linux,default-trigger = "mmc0";
+>> +	};
+>> +};
+>> +
+>> +&omap4_pmx_core {
+>> +	pinctrl-names = "default";
+>> +	pinctrl-0 = <
+>> +		&led_gpio_pins
+>> +	>;
+>> +
+>> +	led_gpio_pins: gpio_led_pmx {
+>> +		pinctrl-single,pins = <
+>> +			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
+>> +		>;
+>> +	};
+>> +};
+>> +
+>> +&omap4_pmx_wkup {
+>> +	pinctrl-names = "default";
+>> +	pinctrl-0 = <
+>> +		&led_wkgpio_pins
+>> +	>;
+>> +
+>> +	led_wkgpio_pins: pinmux_leds_wkpins {
+>> +		pinctrl-single,pins = <
+>> +			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
+>> +		>;
+>> +	};
+>> +};
+>> -- 
+>> 1.7.5.4
 >>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+------------------
+Dan Murphy
+
