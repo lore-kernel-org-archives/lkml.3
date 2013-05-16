@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3EPQ1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:27:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42298 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab3EPQ1x (ORCPT
+	id S1751591Ab3EPQlX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:41:23 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:47409 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab3EPQlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:27:53 -0400
-Date: Thu, 16 May 2013 09:27:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC PATCH 0/2] return value from shrinkers
-Message-Id: <20130516092746.d838ea18.akpm@linux-foundation.org>
-In-Reply-To: <20130516075205.GD24072@caracas.corpusers.net>
-References: <1368454595-5121-1-git-send-email-oskar.andero@sonymobile.com>
-	<20130515160532.c965e92707c354100e25f79b@linux-foundation.org>
-	<20130516075205.GD24072@caracas.corpusers.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 16 May 2013 12:41:22 -0400
+Message-ID: <1368722480.1763.0.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 00/11] sysv mqueue: do not hold the ipc lock
+ unnecessarily
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 16 May 2013 09:41:20 -0700
+In-Reply-To: <CA+55aFwJckiVkZWv1hFzXPR3fitT9uVq4RY8yGPaePK5zmAe+A@mail.gmail.com>
+References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+	 <CA+55aFwJckiVkZWv1hFzXPR3fitT9uVq4RY8yGPaePK5zmAe+A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 May 2013 09:52:05 +0200 Oskar Andero <oskar.andero@sonymobile.com> wrote:
-
-> > If we want the capability to return more than a binary yes/no message
-> > to callers then yes, we could/should enumerate the shrinker return
-> > values.  But as that is a different concept from errnos, it should be
-> > done with a different and shrinker-specific namespace.
+On Thu, 2013-05-16 at 07:12 -0700, Linus Torvalds wrote:
+> On Wed, May 15, 2013 at 6:07 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> > This patchset continues the work that began in the sysv ipc semaphore scaling
 > 
-> Agreed, but even if there right now is only a binary return message, is a
-> hardcoded -1 considered to be acceptable for an interface? IMHO, it is not
-> very readable nor intuitive for the users of the interface. Why not, as you
-> mention, add a define or enum in shrinker.h instead, e.g. SHRINKER_STOP or
-> something.
+> Looks fine to me, but with the problems we had on the semaphore side,
+> and since we're out of the merge window, I'm not going to take it into
+> 3.10 (I assume you weren't expecting that either). But hopefully it
+> can go into Andrew''s -mm tree and get some testing.
 
-That sounds OK to me.
+Yes, it is intended for Andrew's tree.
+
