@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3EPLT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:19:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24102 "EHLO mx1.redhat.com"
+	id S1753230Ab3EPLSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:18:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab3EPLTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:19:24 -0400
-Date: Thu, 16 May 2013 14:16:10 +0300
+	id S1752984Ab3EPLPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:36 -0400
+Date: Thu, 16 May 2013 14:12:35 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -24,8 +24,8 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
         linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
         linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
-Message-ID: <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
+Subject: [PATCH v2 06/10] mn10300: uaccess s/might_sleep/might_fault/
+Message-ID: <affedb5f30410296ad0bb43a69158b38e32378ea.1368702323.git.mst@redhat.com>
 References: <cover.1368702323.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -36,72 +36,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several ways to make sure might_fault
-calling function does not sleep.
-One is to use it on kernel or otherwise locked memory - apparently
-nfs/sunrpc does this. As noted by Ingo, this is handled by the
-migh_fault() implementation in mm/memory.c but not the one in
-linux/kernel.h so in the current code might_fault() schedules
-differently depending on CONFIG_PROVE_LOCKING, which is an undesired
-semantical side effect.
-
-Another is to call pagefault_disable: in this case the page fault
-handler will go to fixups processing and we get an error instead of
-sleeping, so the might_sleep annotation is a false positive.
-vhost driver wants to do this now in order to reuse socket ops
-under a spinlock (and fall back on slower thread handler
-on error).
-
-Address both issues by:
-	- dropping the unconditional call to might_sleep
-	  from the fast might_fault code in linux/kernel.h
-	- checking for pagefault_disable() in the
-	  CONFIG_PROVE_LOCKING implementation
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/kernel.h |  1 -
- mm/memory.c            | 14 +++++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ arch/mn10300/include/asm/uaccess.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e96329c..322b065 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -198,7 +198,6 @@ void might_fault(void);
- #else
- static inline void might_fault(void)
- {
--	might_sleep();
- }
- #endif
+diff --git a/arch/mn10300/include/asm/uaccess.h b/arch/mn10300/include/asm/uaccess.h
+index 780560b..107508a 100644
+--- a/arch/mn10300/include/asm/uaccess.h
++++ b/arch/mn10300/include/asm/uaccess.h
+@@ -471,13 +471,13 @@ extern unsigned long __generic_copy_from_user(void *, const void __user *,
  
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..1b8327b 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4222,13 +4222,17 @@ void might_fault(void)
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return;
+ #define __copy_to_user(to, from, n)			\
+ ({							\
+-	might_sleep();					\
++	might_fault();					\
+ 	__copy_to_user_inatomic((to), (from), (n));	\
+ })
  
--	might_sleep();
- 	/*
--	 * it would be nicer only to annotate paths which are not under
--	 * pagefault_disable, however that requires a larger audit and
--	 * providing helpers like get_user_atomic.
-+	 * It would be nicer to annotate paths which are under preempt_disable
-+	 * but not under pagefault_disable, however that requires a new flag
-+	 * for differentiating between the two.
- 	 */
--	if (!in_atomic() && current->mm)
-+	if (in_atomic())
-+		return;
-+
-+	might_sleep();
-+
-+	if (current->mm)
- 		might_lock_read(&current->mm->mmap_sem);
- }
- EXPORT_SYMBOL(might_fault);
+ #define __copy_from_user(to, from, n)			\
+ ({							\
+-	might_sleep();					\
++	might_fault();					\
+ 	__copy_from_user_inatomic((to), (from), (n));	\
+ })
+ 
 -- 
 MST
+
