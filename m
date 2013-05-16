@@ -1,71 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3EPM14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 08:27:56 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11159 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753441Ab3EPM1z (ORCPT
+	id S1753748Ab3EPM21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 08:28:27 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44073 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab3EPM2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 08:27:55 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-Date: Thu, 16 May 2013 14:27:52 +0200
-To: Dave Chinner <dchinner@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] mm: vmscan: handle any negative return value from
- scan_objects
-Message-ID: <20130516122752.GG24072@caracas.corpusers.net>
-References: <1368693736-15486-1-git-send-email-oskar.andero@sonymobile.com>
- <20130516115212.GC11167@devil.localdomain>
+	Thu, 16 May 2013 08:28:25 -0400
+Message-ID: <5194D0AF.3010407@ti.com>
+Date: Thu, 16 May 2013 08:27:27 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130516115212.GC11167@devil.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 3/3] arm: dts: add bandgap entry for OMAP4460 devices
+References: <1368629928-6723-1-git-send-email-eduardo.valentin@ti.com> <1368629928-6723-4-git-send-email-eduardo.valentin@ti.com> <5193A875.1020000@ti.com> <5193B9AA.7020507@ti.com> <519488D3.5070003@ti.com>
+In-Reply-To: <519488D3.5070003@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2WPGVVWNXVXLSNVGIKHOK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:52 Thu 16 May     , Dave Chinner wrote:
-> On Thu, May 16, 2013 at 10:42:16AM +0200, Oskar Andero wrote:
-> > The shrinkers must return -1 to indicate that it is busy. Instead, treat
-> > any negative value as busy.
-> 
-> Why? The API defines return condition for aborting a scan and gives
-> a specific value for doing that. i.e. explain why should change the
-> API to over-specify the 'abort scan" return value like this.
+------enig2WPGVVWNXVXLSNVGIKHOK
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-As I pointed out earlier, looking in to the code (from master):
-	if (shrink_ret == -1)
-		break;
-	if (shrink_ret < nr_before)
-		ret += nr_before - shrink_ret;
+On 16-05-2013 03:20, Benoit Cousson wrote:
+> Hi Eduardo,
+>=20
+> On 05/15/2013 06:36 PM, Eduardo Valentin wrote:
+>> On 15-05-2013 11:23, Benoit Cousson wrote:
+>>> Hi Eduardo,
+>>>
+>>> On 05/15/2013 04:58 PM, Eduardo Valentin wrote:
+>>>> Include bandgap devices for OMAP4460 devices.
+>>>>
+>>>> Cc: "Beno=C3=AEt Cousson" <b-cousson@ti.com>
+>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: linux-omap@vger.kernel.org
+>>>> Cc: devicetree-discuss@lists.ozlabs.org
+>>>> Cc: linux-arm-kernel@lists.infradead.org
+>>>> Cc: linux-kernel@vger.kernel.org
+>>>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>>>> ---
+>>>>  arch/arm/boot/dts/omap4460.dtsi | 9 +++++++++
+>>>>  1 file changed, 9 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/oma=
+p4460.dtsi
+>>>> index 2cf227c..e5bfbfe 100644
+>>>> --- a/arch/arm/boot/dts/omap4460.dtsi
+>>>> +++ b/arch/arm/boot/dts/omap4460.dtsi
+>>>> @@ -29,4 +29,13 @@
+>>>>  			     <0 55 0x4>;
+>>>>  		ti,hwmods =3D "debugss";
+>>>>  	};
+>>>> +
+>>>> +	bandgap {
+>>>> +		reg =3D <0x4a002260 0x4
+>>>> +			0x4a00232C 0x4
+>>>> +			0x4a002378 0x18>;
+>>>> +		compatible =3D "ti,omap4460-bandgap";
+>>>> +		interrupts =3D <0 126 4>; /* talert */
+>>>> +		ti,tshut-gpio =3D <86>;
+>>
+>>
+>>
+>>>
+>>> Why do you need a custom attribute for GPIO? Cannot you use the stand=
+ard
+>>> one?
+>>
+>> I believe it was by your suggestion :-), during the first attempts to
+>> send this driver. But could not find the thread link :-( sorry.
+>=20
+> Ooops :-) I do not remember that... maybe it was long time ago, before
+> we had any decent binding available for GPIO and IRQ...
+>=20
 
-This piece of code lacks a sanity check and will only function if shrink_ret
-is either greater than zero or exactly -1. If shrink_ret is e.g. -2 this will
-lead to undefined behaviour.
 
-> FWIW, using "any" negative number for "abort scan" is a bad API
-> design decision. It means that in future we can't introduce
-> different negative return values in the API if we have a new to.
-> i.e. each specific negative return value needs to have the potential
-> for defining a different behaviour. 
+Probably it was because by that time we didnt have GPIO binding ready, ye=
+ah.
 
-An alternative to my patch would be to add:
-if (shrink_ret < -1)
-   /* handle illegal return code in some way */
+>> I guess the reasoning to mark it as a ti specific is because it will b=
+e
+>> used as IRQ line to treat thermal shutdown (in SW).
+>=20
+> Mmm, ok, so in that case, it is not even a gpio, but an interrupt entry=
 
-> So if any change needs to be made, it is to change the -1 return
-> value to an enum and have the shrinkers return that enum when they
-> want an abort.
+> that is needed like that:
+>=20
+> 	interrupt-parent =3D <&gpio3>;
+> 	interrupts =3D <22>; /* gpio line 86 */
+>=20
+> Except that we already have an IRQ line connected to GIC for the
+> Talert... I'm not sure we can have 2 different IRQ controllers for one
+> device :-(
+>=20
+> We need to check.
+>=20
 
-I am all for an enum, but I still believe we should handle the case where
-the shrinkers return something wicked.
 
--Oskar
+Yeah, I also dont think this will work, because we will reparent the
+interrupt, setting to a different controller. That will break the TALERT
+signal already defined at GIC (check original patch).
+
+I propose keeping the way I sent. Unless there is a way to set two
+different controllers to same device.
+
+> Regards,
+> Benoit
+>=20
+>=20
+>>> Where is the gpio controller phandle?
+>>>
+>>> Usually it looks like this:
+>>>
+>>> 	gpios =3D <&gpio1 8 0>;
+>>>
+>>>
+>>> Regards,
+>>> Benoit
+>>>
+>>>
+>>>
+>>
+>>
+>=20
+>=20
+>=20
+
+
+
+------enig2WPGVVWNXVXLSNVGIKHOK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGU0K8ACgkQCXcVR3XQvP3STgEA3qVqjYpu0sXO/xLYF2jcIQAO
+k2rSR8Wr7+SFbbuNmmgA/25JHmBHftgHR19NSqadmsQKq8SQ8iUookOvkC9bm4zV
+=s5/6
+-----END PGP SIGNATURE-----
+
+------enig2WPGVVWNXVXLSNVGIKHOK--
