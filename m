@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3EPLpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:45:39 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9280 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab3EPLpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:45:38 -0400
-X-Spam-Score: -100.7
-Message-ID: <5194C6AF.1020304@asianux.com>
-Date: Thu, 16 May 2013 19:44:47 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: jason.wessel@windriver.com
-CC: kgdb-bugreport@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] kernel: debug: kdb: strncpy issue, using strlcpy instead
- of strncpy
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752902Ab3EPLp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:45:57 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:51513
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab3EPLpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:45:52 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org, apw@canonical.com, jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V1 0/7] Drivers: hv/scsi: Implement multi-channel support 
+Date: Thu, 16 May 2013 05:19:44 -0700
+Message-Id: <1368706784-32276-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch-set implements multi-channel support for Hyper-V devices. Also
+support for synthetic Fiber Channel device is included. The first two
+patches in the series are the foundational pieces for many of the remaining
+patches.
 
-'kdb_prompt_str' is NUL terminated string, need always set '\0' at the
-end.
+James, once Greg accepts the first two patches, you can consider the scsi
+patches.
 
-Or kdb_printf() below will cause issue.
+In this version, based on Greg's comments, I have fixed the names of the
+exported symbols from the vmbus driver.
 
+K. Y. Srinivasan (7):
+  Drivers: hv: vmbus: Implement multi-channel support
+  Drivers: hv: Add the GUID fot synthetic fiber channel device
+  Drivers: scsi: storvsc: Make the scsi timeout a module parameter
+  Drivers: scsi: storvsc: Update the storage protocol to win8 level
+  Drivers: scsi: storvsc: Implement multi-channel support
+  Drivers: scsi: storvsc: Support FC devices
+  Drivers: scsi: storvsc: Increase the value of STORVSC_MAX_IO_REQUESTS
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/debug/kdb/kdb_io.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/hv/channel.c       |   41 +++++-
+ drivers/hv/channel_mgmt.c  |  116 ++++++++++++++-
+ drivers/scsi/storvsc_drv.c |  342 +++++++++++++++++++++++++++++++++++++++-----
+ include/linux/hyperv.h     |   70 +++++++++
+ 4 files changed, 522 insertions(+), 47 deletions(-)
 
-diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 14ff484..932b436 100644
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -442,7 +442,7 @@ poll_again:
- char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
- {
- 	if (prompt && kdb_prompt_str != prompt)
--		strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
-+		strlcpy(kdb_prompt_str, prompt, CMD_BUFLEN);
- 	kdb_printf(kdb_prompt_str);
- 	kdb_nextline = 1;	/* Prompt and input resets line number */
- 	return kdb_read(buffer, bufsize);
 -- 
-1.7.7.6
+1.7.4.1
+
