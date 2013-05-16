@@ -1,45 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3EPO3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:29:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50048 "EHLO comal.ext.ti.com"
+	id S1754564Ab3EPO3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:29:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49797 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab3EPO3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:29:13 -0400
-Message-ID: <5194ED33.7050502@ti.com>
-Date: Thu, 16 May 2013 16:29:07 +0200
-From: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <v-stehle@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1754126Ab3EPO3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 10:29:48 -0400
+Date: Thu, 16 May 2013 15:29:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 2/4] mm: pagevec: Defer deciding what LRU to add a page
+ to until pagevec drain time
+Message-ID: <20130516142941.GK11497@suse.de>
+References: <1368440482-27909-1-git-send-email-mgorman@suse.de>
+ <1368440482-27909-3-git-send-email-mgorman@suse.de>
+ <20130515155330.35036978515a6d8e0fe98feb@linux-foundation.org>
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@laposte.net>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP5: select SCU
-References: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net> <51938169.4060109@ti.com> <5194DAC5.9080203@ti.com>
-In-Reply-To: <5194DAC5.9080203@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130515155330.35036978515a6d8e0fe98feb@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So the exact commit breaking OMAP5 link for me is:
+On Wed, May 15, 2013 at 03:53:30PM -0700, Andrew Morton wrote:
+> On Mon, 13 May 2013 11:21:20 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > mark_page_accessed cannot activate an inactive page that is located on
+> > an inactive LRU pagevec. Hints from filesystems may be ignored as a
+> > result. In preparation for fixing that problem, this patch removes the
+> > per-LRU pagevecs and leaves just one pagevec. The final LRU the page is
+> > added to is deferred until the pagevec is drained.
+> > 
+> > This means that fewer pagevecs are available and potentially there is
+> > greater contention on the LRU lock. However, this only applies in the case
+> > where there is an almost perfect mix of file, anon, active and inactive
+> > pages being added to the LRU. In practice I expect that we are adding
+> > stream of pages of a particular time and that the changes in contention
+> > will barely be measurable.
+> > 
+> > ...
+> >
+> > index c612a6a..0911579 100644
+> > --- a/mm/swap.c
+> > +++ b/mm/swap.c
+> > @@ -39,7 +39,7 @@
+> >  /* How many pages do we try to swap or page in/out together? */
+> >  int page_cluster;
+> >  
+> > -static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+> > +static DEFINE_PER_CPU(struct pagevec, lru_add_pvec);
+> >  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+> >  static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+> >  
+> > @@ -460,13 +460,18 @@ EXPORT_SYMBOL(mark_page_accessed);
+> >   */
+> 
+> The comment preceding __lru_cache_add() needs an update.
+> 
 
-  883a106 ARM: default machine descriptor for multiplatform
+This?
 
-The breakage seems to be a side effect of not selecting ARCH_VEXPRESS
-any more, which causes HAVE_ARM_SCU to not be selected any more, too,
-when compiling only for OMAP5. IMHO this only reveals a deeper issue.
-
-Probably the ideal fix would be to remove all references to the scu_
-functions for OMAP5, but those seem to exist in files and functions,
-common to OMAP4 and 5 (sleep44xx.S, omap-smp.c).
-
-How would you deal with that, please?
-
-Best regards,
-
-V.
-
+---8<---
+diff --git a/mm/swap.c b/mm/swap.c
+index 05944d4..ac23602 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -489,12 +489,10 @@ void mark_page_accessed(struct page *page)
+ EXPORT_SYMBOL(mark_page_accessed);
+ 
+ /*
+- * Order of operations is important: flush the pagevec when it's already
+- * full, not when adding the last page, to make sure that last page is
+- * not added to the LRU directly when passed to this function. Because
+- * mark_page_accessed() (called after this when writing) only activates
+- * pages that are on the LRU, linear writes in subpage chunks would see
+- * every PAGEVEC_SIZE page activated, which is unexpected.
++ * Queue the page for addition to the LRU via pagevec. The decision on whether
++ * to add the page to the [in]active [file|anon] list is deferred until the
++ * pagevec is drained. This gives a chance for the caller of __lru_cache_add()
++ * have the page added to the active list using mark_page_accessed().
+  */
+ void __lru_cache_add(struct page *page)
+ {
