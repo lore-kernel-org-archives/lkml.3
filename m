@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab3EPLRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:17:41 -0400
-Received: from sauhun.de ([89.238.76.85]:56275 "EHLO pokefinder.org"
+	id S1753265Ab3EPLSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:18:09 -0400
+Received: from sauhun.de ([89.238.76.85]:56265 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab3EPLPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:38 -0400
+	id S1752748Ab3EPLPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:35 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 30/33] arch/arm/plat-samsung: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:58 +0200
-Message-Id: <1368702961-4325-31-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: [PATCH 28/33] drivers/watchdog: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:56 +0200
+Message-Id: <1368702961-4325-29-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
@@ -28,25 +25,59 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- arch/arm/plat-samsung/adc.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/watchdog/ath79_wdt.c   |    5 -----
+ drivers/watchdog/davinci_wdt.c |    5 -----
+ drivers/watchdog/imx2_wdt.c    |    5 -----
+ 3 files changed, 15 deletions(-)
 
-diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
-index ca07cb1..79690f2 100644
---- a/arch/arm/plat-samsung/adc.c
-+++ b/arch/arm/plat-samsung/adc.c
-@@ -381,11 +381,6 @@ static int s3c_adc_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
+index d184c48..37cb09b 100644
+--- a/drivers/watchdog/ath79_wdt.c
++++ b/drivers/watchdog/ath79_wdt.c
+@@ -248,11 +248,6 @@ static int ath79_wdt_probe(struct platform_device *pdev)
+ 		return -EBUSY;
  
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!regs) {
--		dev_err(dev, "failed to find registers\n");
--		return -ENXIO;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "no memory resource found\n");
+-		return -EINVAL;
 -	}
 -
- 	adc->regs = devm_ioremap_resource(dev, regs);
- 	if (IS_ERR(adc->regs))
- 		return PTR_ERR(adc->regs);
+ 	wdt_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(wdt_base))
+ 		return PTR_ERR(wdt_base);
+diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
+index 100d4fb..bead774 100644
+--- a/drivers/watchdog/davinci_wdt.c
++++ b/drivers/watchdog/davinci_wdt.c
+@@ -217,11 +217,6 @@ static int davinci_wdt_probe(struct platform_device *pdev)
+ 	dev_info(dev, "heartbeat %d sec\n", heartbeat);
+ 
+ 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (wdt_mem == NULL) {
+-		dev_err(dev, "failed to get memory region resource\n");
+-		return -ENOENT;
+-	}
+-
+ 	wdt_base = devm_ioremap_resource(dev, wdt_mem);
+ 	if (IS_ERR(wdt_base))
+ 		return PTR_ERR(wdt_base);
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index ff90882..62946c2 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -257,11 +257,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "can't get device resources\n");
+-		return -ENODEV;
+-	}
+-
+ 	imx2_wdt.base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(imx2_wdt.base))
+ 		return PTR_ERR(imx2_wdt.base);
 -- 
 1.7.10.4
 
