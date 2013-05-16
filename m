@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3EPPHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:07:17 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42222 "EHLO e8.ny.us.ibm.com"
+	id S1751975Ab3EPPKm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:10:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22512 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527Ab3EPPHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:07:15 -0400
-Date: Thu, 16 May 2013 08:07:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
- enabled
-Message-ID: <20130516150706.GY4442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
- <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
- <20130515083729.GC10510@laptop.programming.kicks-ass.net>
- <20130515150652.GP23604@redhat.com>
- <1368631622.6828.69.camel@gandalf.local.home>
- <20130515165915.GE13916@laptop.home>
- <1368637441.6828.70.camel@gandalf.local.home>
- <20130516081027.GD19669@dyad.programming.kicks-ass.net>
+	id S1751644Ab3EPPKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 11:10:41 -0400
+Date: Thu, 16 May 2013 11:10:26 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, gleb@redhat.com
+Subject: Drop WARN on AMD lack of perfctrs
+Message-ID: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130516081027.GD19669@dyad.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051615-9360-0000-0000-000012387726
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 10:10:27AM +0200, Peter Zijlstra wrote:
-> On Wed, May 15, 2013 at 01:04:01PM -0400, Steven Rostedt wrote:
-> > On Wed, 2013-05-15 at 18:59 +0200, Peter Zijlstra wrote:
-> > 
-> > > At which point we could run the watchdog without perf_event_task_tick().
-> > 
-> > At which point we can drop the disable LOCKUP_DETECTOR when NO_HZ_FULL
-> > is enabled ;-)
-> > 
-> 
-> Can we? The thing I'm worried about is RCU (of course!). ISTR we rely on RCU
-> working in NMI context. AFAIR for RCU to work, we need to come out of out magic
-> NO_HZ state since that would've put RCU into EQS.
-> 
-> Frederic, PaulMck?
+Hi All,
 
-Not sure I understand the question, but hopefully the verbiage below helps.
+If you boot a KVM guest on an AMD family 15h and specify -cpu host,
+you'll get the following splat:
 
-Only RCU read-side critical sections need to work in NMI context,
-and RCU hooks into nmi_enter() and nmi_exit() to handle this, and this
-will work in NO_HZ_FULL in the same way that it works for NO_HZ_IDLE.
+[    0.031000] ------------[ cut here ]------------
+[    0.031000] WARNING: at arch/x86/kernel/cpu/perf_event_amd.c:772
+amd_pmu_init+0x18c/0x249()
+[    0.031000] Hardware name: Bochs
+[    0.031000] Odd, counter constraints enabled but no core perfctrs
+detected!
+[    0.031000] Modules linked in:
 
-But if there are no NMIs, RCU doesn't care.  In other words, RCU needs
-to know about NMIs so that it can deal with any RCU read-side critical
-sections in the NMI handlers, but RCU doesn't rely on NMIs happening at
-any particular time or frequency.
+[    0.031000] Pid: 1, comm: swapper/0 Not tainted
+3.9.0-0.rc1.git0.4.fc19.x86_64 #1
+[    0.031000] Call Trace:
+[    0.031000]  [<ffffffff81d10c67>] ? amd_pmu_init+0x18c/0x249
+[    0.031000]  [<ffffffff8105c9a0>] warn_slowpath_common+0x70/0xa0
+[    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+[    0.031000]  [<ffffffff8105ca1c>] warn_slowpath_fmt+0x4c/0x50
+[    0.031000]  [<ffffffff81d10c67>] amd_pmu_init+0x18c/0x249
+[    0.031000]  [<ffffffff81d106e7>] init_hw_perf_events+0x34/0x428
+[    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+[    0.031000]  [<ffffffff8100210a>] do_one_initcall+0x10a/0x160
+[    0.031000]  [<ffffffff81d06fa5>] kernel_init_freeable+0xcf/0x1fa
+[    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+[    0.031000]  [<ffffffff8162980e>] kernel_init+0xe/0x190
+[    0.031000]  [<ffffffff8164e22c>] ret_from_fork+0x7c/0xb0
+[    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+[    0.031000] ---[ end trace a1e57d3cb8668105 ]---
 
-							Thanx, Paul
+That seems a bit excessive, and it gets picked up by auto-reporting
+tools like ABRT as a bug.  Can we remove the WARN and just use pr_err or
+something else instead?
 
+josh
