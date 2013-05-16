@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab3EPCN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 22:13:58 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55156 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3EPCNz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 22:13:55 -0400
-X-AuditID: 9c930197-b7b76ae000003523-42-519440e1e18a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/15] perf util: Use evsel->name to get tracepoint_paths
-References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
-	<1368526439-31966-3-git-send-email-namhyung@kernel.org>
-	<20130515145910.GA2194@krava.brq.redhat.com>
-Date: Thu, 16 May 2013 11:13:53 +0900
-In-Reply-To: <20130515145910.GA2194@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Wed, 15 May 2013 16:59:10 +0200")
-Message-ID: <87obcb4qou.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754720Ab3EPCOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 22:14:21 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:19216
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754381Ab3EPCOR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 22:14:17 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(z3121kz98dIc89bh936eIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h93fhe5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1889i1155h)
+Message-ID: <51944184.7090107@freescale.com>
+Date: Thu, 16 May 2013 10:16:36 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: <dedekind1@gmail.com>
+CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 01/11] mtd: add datasheet's ECC information to nand_chip{}
+References: <1368607232-2210-1-git-send-email-b32955@freescale.com>	 <1368607232-2210-2-git-send-email-b32955@freescale.com> <1368619917.15764.99.camel@sauron.fi.intel.com>
+In-Reply-To: <1368619917.15764.99.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Wed, 15 May 2013 16:59:10 +0200, Jiri Olsa wrote:
-> On Tue, May 14, 2013 at 07:13:46PM +0900, Namhyung Kim wrote:
->> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
->> index ab18bf12d54a..bfcaeac7ef9d 100644
->> --- a/tools/perf/util/trace-event-info.c
->> +++ b/tools/perf/util/trace-event-info.c
->> @@ -414,12 +414,23 @@ get_tracepoints_path(struct list_head *pattrs)
->>  		if (pos->attr.type != PERF_TYPE_TRACEPOINT)
->>  			continue;
->>  		++nr_tracepoints;
->> +
->> +		if (pos->name) {
->> +			ppath->next = tracepoint_name_to_path(pos->name);
+于 2013年05月15日 20:11, Artem Bityutskiy 写道:
+> On Wed, 2013-05-15 at 16:40 +0800, Huang Shijie wrote:
+>> + * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
+>> + *			Minimum amount of bit errors per @ecc_step guaranteed to
+>> + *			be correctable. If unknown, set to zero.
+>> + * @ecc_step:		[INTERN] ECC step required by the @ecc_strength,
+>> + *                      also from the datasheet. It is the recommended ECC step
+>> + *			size, if known; if unknown, set to zero.
+> Here and in other places you talk about "datasheet". Do you assume that
+> the real ECC strength/step used by NAND chips may be different? Or you
+> assume it must be the same?
 >
-> yep, looks like big time saver ;)
->
->> +			if (!ppath->next)
->> +				goto error;
->
-> hum, the tracepoint_name_to_path fails also because of the
-> malformed tracepoint name.. then the error message is
-> misleading.. but not quite sure this could happen
+The two fields are used to store the ecc info from the datasheet.
+The two fields are just for a reference.
 
-AFAIK it's called on the record path so every event is generated by
-perf_evsel__newtp() and has a proper name.  But there's a way to specify
-events using numeric form.. :(
+[1] The nand controller may do not use these two fields, it's ok;
+     For example, the datasheet requires "4bits per 512 bytes".
+     The nand controller can uses 8bits per 512 bytes.
 
-So yes, I think it's better to consider such a exceptional case.
 
-Thanks,
-Namhyung
+[2] but sometimes the nand controller must use these two fields.
+     For example, the datasheet requires "40bits per 1024 bytes".
+     For the hardware limit, the nand controller(BCH) may supports the 
+40bits ecc in the maximum.
+     So the nand controller must use these two fields now.
+
+
+thanks
+Huang Shijie
+
+
+
