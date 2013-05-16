@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3EPPmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:42:24 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:48407 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab3EPPmT (ORCPT
+	id S1753577Ab3EPPnU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:43:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39130 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753265Ab3EPPnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:42:19 -0400
+	Thu, 16 May 2013 11:43:17 -0400
+Date: Thu, 16 May 2013 16:35:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "djbw@fb.com" <djbw@fb.com>, "vinod.koul@intel.com" <vinod.koul@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "andriy.shevchenko@linux.intel.com" 
+	<andriy.shevchenko@linux.intel.com>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
+Subject: Re: dmatest regression in 3.10-rc1
+Message-ID: <20130516153553.GI11706@mudshark.cambridge.arm.com>
+References: <20130515152803.GL23869@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130515165152.GB13916@laptop.home>
-References: <20130503121122.931661809@chello.nl>
-	<20130503121256.083340271@chello.nl>
-	<20130503143507.GP19487@tassilo.jf.intel.com>
-	<20130503170007.GA30733@dyad.programming.kicks-ass.net>
-	<CABPqkBSTMJebZLjvLhdQ1hiemoqvO2t=vi+CG=yLjkFabOr8XQ@mail.gmail.com>
-	<20130515165152.GB13916@laptop.home>
-Date: Thu, 16 May 2013 17:42:19 +0200
-Message-ID: <CABPqkBSrLdXrg+p_A537O1mkv8Ewm-qt+0ugWOwJvLa6yn9ERg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] perf, x86: Blacklist all MEM_*_RETIRED events for IVB
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515152803.GL23869@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 6:51 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, May 15, 2013 at 04:20:46PM +0200, Stephane Eranian wrote:
->> Hi,
->>
->> Based on our testing, it appears the corruption occurs only
->> when the MEM_* events are used and only on the sibling
->> counter. In other words, if HT0 has MEM_* in cntr0, then
->> HT1 cntr0 cannot be used, otherwise whatever is there may
->> get corrupted.
->
-> Ah, great. That is the least horrid case :-)
->
-Yeah.
+On Wed, May 15, 2013 at 04:28:03PM +0100, Will Deacon wrote:
+> I've been observing a regression in the dmatest module with 3.10-rc1. It
+> manifests as either:
+> 
+>  - a spurious timeout on one or more of the channel threads
+>  - a complete kernel lockup (loss of console)
+>  - a panic (see below, noting that the callback [dmatest_callback] is
+>    dereferencing a NULL pointer)
+> 
+> If I revert 77101ce578bb ("dmatest: cancel thread immediately when asked
+> for") then things are rosy again, but I'm not sure if this is hiding another
+> problem.
 
->> So I think we could enhance Andi's initial patch
->> to handle this case instead of blacklist those events. They are
->> very important events.
->
-> Will you take a stab at it? I suppose you'll have to make each counter
-> have a shared resource and have the mem_*_retired events mark the
-> resource taken.
->
-Yes, I will try to come up with a patch to force multiplexing when those
-events are used.
+Right, so I think I understand what's causing this, but I'll leave it to
+Andriy to suggest a fix. The problem comes about because the dmatest
+module is now driven from debugfs, making it possible to unload the module
+whilst a test run is in progress. In this case:
 
-The difficulty is that we cannot use the shared_regs infrastructure because
-the constraint is quite different. Here we need to say that if a mem event
-uses cnt0 on one thread, then nothing can be using cnt0 on the other thread.
-The current shared_regs infrastructure does not work on the counter level.
-So we need to invent something else. It cannot even be extended. We need
-to schedule the mem event, then look at the assignment and exclude all
-the counters used by the mem event from the other thread. Alternatively,
-we can only schedule mem event on counters which are not currently used
-by the sibling thread. We need to peek at the used counters cross HT threads.
-Not so easy to do.
+	- The DMA threads will return from wait_event_freezable_timeout(...)
+	  due to kthread_should_stop() returning true, and subsequently
+	  report failure because done.done is false.
 
+	- The DMA engines may not be idle, so the asynchronous callback can
+	  be invoked after we've started cleaning up, explaining the NULL
+	  dereference I'm seeing.
 
-> Also, did you test what happens when you turn SMT off in the BIOS so you
-> get double the amount of counters; do we then leak into CNTn+4 or is all
-> well again?
->
-I have not tried that yet. Hopefully, it won't exhibit the problem.
+The solutions are either fixing the module exit code to cope with concurrent
+DMA transfers or to revert 77101ce578bb and not allow the channel threads to
+return mid-transfer.
+
+Will
