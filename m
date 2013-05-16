@@ -1,134 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab3EPWzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:55:42 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:53415 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab3EPWzj (ORCPT
+	id S1755213Ab3EPW4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:56:47 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:52798 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab3EPW4p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:55:39 -0400
-Date: Thu, 16 May 2013 16:55:35 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Emmanuel Grumbach <egrumbach@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        John Linville <linville@tuxdriver.com>,
-        Roman Yepishev <roman.yepishev@gmail.com>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Mike Miller <mike.miller@hp.com>,
-        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
-        Guo-Fu Tseng <cooldavid@cooldavid.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
-        "aacraid@adaptec.com" <aacraid@adaptec.com>,
+	Thu, 16 May 2013 18:56:45 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: is L1 really disabled in iwlwifi
-Message-ID: <20130516225535.GA27962@google.com>
-References: <CANUX_P2Hy02SnyYS24dyUGLv3wB3L5xkXt8Y1s+8_RG9d5ReAw@mail.gmail.com>
- <CAErSpo6OCyTy19u6Xaf=xr0TSDriwCD3n-oMc7eJyLzuJ9d60g@mail.gmail.com>
- <20130510225257.GA10847@google.com>
- <1725435.3DlCxYF2FV@vostro.rjw.lan>
- <1368303730.2425.47.camel@x230>
+Subject: Re: [PATCH 1/2] pinctrl: samsung: fix suspend/resume functionality
+Date: Fri, 17 May 2013 00:56:41 +0200
+Message-ID: <1475116.qtX3b3bLWZ@flatron>
+User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <201305170030.39266.heiko@sntech.de>
+References: <1368724352-10849-1-git-send-email-dianders@chromium.org> <2099430.Q29j0K3hPy@flatron> <201305170030.39266.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368303730.2425.47.camel@x230>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 11, 2013 at 08:22:11PM +0000, Matthew Garrett wrote:
-> On Sat, 2013-05-11 at 22:26 +0200, Rafael J. Wysocki wrote:
-> > On Friday, May 10, 2013 04:52:57 PM Bjorn Helgaas wrote:
-> > > I propose the following patch.  Any comments?
+On Friday 17 of May 2013 00:30:38 Heiko Stübner wrote:
+> Am Freitag, 17. Mai 2013, 00:08:34 schrieb Tomasz Figa:
+> > On Thursday 16 of May 2013 14:51:53 Doug Anderson wrote:
+> > > Tomasz,
+> > > 
+> > > On Thu, May 16, 2013 at 2:27 PM, Tomasz Figa <tomasz.figa@gmail.com>
 > > 
-> > In my opinion this is dangerous, because it opens us to bugs that right now
-> > are prevented from happening due to the way the code works.
+> > wrote:
+> > > > OK. I will be fine to go with your patches, after addressing the
+> > > > comments. In the end it's good that you posted them, as reviewing
+> > > > them allowed me to find even better ways of doing some things than
+> > > > I
+> > > > had in mine ;) .
+> > > 
+> > > Yes.  I often find that the best way to review code is to think
+> > > about
+> > > how I would implement it myself.  Certainly I think we've ended up
+> > > with something better / less buggy this way.  ;)
+> > > 
+> > > > How all of this works is basically a good question. I couldn't
+> > > > find
+> > > > any
+> > > > mention about pins switching from power down to normal mode in the
+> > > > documentation, but maybe there is a small side note somewhere,
+> > > > which I
+> > > > could miss.
+> > > > 
+> > > > On S3C6410, for example, there are two modes. State is switched to
+> > > > power down mode automatically, but can be switched out either
+> > > > automatically on wake-up (exact timing is unknown to me) or by
+> > > > clearing a special bit, depending on value of other special bit.
+> > > > 
+> > > > IMHO this is rather important, so we should find out how it work
+> > > > on
+> > > > other SoCs and make the code account for it.
+> > > 
+> > > Agreed that it's important.  ...but it's also good not to have tons
+> > > of
+> > > complexity when it's not needed.  It sounds like S3C6410 could be
+> > > handled OK by just using the special bits and waiting to take things
+> > > out of power down mode.
+> > > 
+> > > ...thinking about it, all SoCs that have power down modes (which you
+> > > _must_ have if your pinctrl state is lost across a low power) would
+> > > be
+> > > slightly broken if they didn't have a bit to switch out of power
+> > > down
+> > > mode.  Otherwise you're asking for at least some type of glitch
+> > > because you'll end up in the default state of pins for a little
+> > > while
+> > > during resume.
+> > > 
+> > > That's not to say that there aren't broken SoCs out there and it's
+> > > entirely possible that people even designed systems around them
+> > > (knowing that the default state of each pin after wakeup is not
+> > > harmful to whatever is connected to that pin).  If there are any
+> > > cases
+> > > like this then they would need the special code like my V1 patch
+> > > had.
+> > > Do you know of any SoCs like this that we need to support on kernel
+> > > 3.10 and higher?
+> > 
+> > Hmm, I just checked documentation of S3C2440 and S3C2416 they seem to
+> > retain GPIO settings completely in sleep mode. This would mean that
+> > they don't require any suspend/resume support in pinctrl driver.
+> > Heiko, can you confirm this?
 > 
-> Right, I'm also not entirely comfortable with this. The current
-> behaviour may be confusing, but we could reduce that by renaming the
-> functions. I'm still not clear on whether anyone's actually seeing
-> problems caused by the existing behaviour.
+> Hmm, my system does not have a working suspend right now, but looking at
+> the legacy code (mach-s3c24xx/pm.c, etc) tells me that the gpio banks
+> were never saved during suspend.
+> 
+> And as there were (and still are) systems with working suspend around,
+> I'd assume that you're correct that the pins retain their state.
+> 
+> Is the same true for the s3c64xx, as I didn't find any gpio suspend
+> handling for it either.
 
-I couldn't imagine that silently ignoring the request to disable ASPM
-would be the right thing, but I spent a long time experimenting with
-Windows on qemu, and I think you're right.  Windows 7 also seems to
-ignore the "PciASPMOptOut" directive when we don't have permission
-to manage ASPM.  All the gory details are at
-https://bugzilla.kernel.org/show_bug.cgi?id=57331
+Seems like I need some sleep, as I'm already starting to overlook large 
+blobs of code. 
 
-The current behavior is definitely confusing.  I hate to rename or change
-pci_disable_link_state() because it's exported and we'd have to maintain
-the old interface for a while anyway.  And I don't really want to return
-failure to drivers, because I think that would encourage people to fiddle
-with the Link Control register directly in the driver, which doesn't seem
-like a good idea.
+Originally, GPIO suspend/resume handlers have been configured in 
+drivers/gpio/gpio-samsung.c, by setting pm field of samsung_gpio_chip 
+struct to point to appropriate samsung_gpio_pm struct, which contains 
+pointers to save and resume callbacks.
 
-And you're also right that (as far as I know) there's not an actual
-problem with the current behavior other than the confusion it causes.
+In result, samsung_gpio_pm_2bit_* or samsung_gpio_pm_4bit_* have been 
+used, depending on bank type, on all SoCs.
 
-So, how about something like the following patch, which just prints a
-warning when we can't do what the driver requested?  I suppose this may
-also be a nuisance, because users will be worried, but they can't actually
-*do* anything about it.  Maybe it should be dev_info() instead.
+Now since the documentation states that wake-up reset doesn't reset GPIO 
+registers (at least on S3C2440 and S3C2416), I wonder what is the correct 
+way of handling them.
 
-commit f1956960fa0759c53b28e3a2810bd7e1b6e8925f
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Wed May 15 17:02:37 2013 -0600
+Best regards,
+Tomasz
 
-    PCI/ASPM: Warn when driver asks to disable ASPM, but we can't do it
-    
-    Some devices have hardware problems related to using ASPM.  Drivers for
-    these devices use pci_disable_link_state() to prevent their device from
-    entering L0s or L1.  But on platforms where the OS doesn't have permission
-    to manage ASPM, pci_disable_link_state() doesn't actually disable ASPM.
-    
-    Windows has a similar mechanism ("PciASPMOptOut"), and when the OS doesn't
-    have control of ASPM, it doesn't actually disable ASPM either.
-    
-    This patch just adds a warning in dmesg about the fact that
-    pci_disable_link_state() is doing nothing.
-    
-    Reported-by: Emmanuel Grumbach <egrumbach@gmail.com>
-    Reference: https://lkml.kernel.org/r/CANUX_P3F5YhbZX3WGU-j1AGpbXb_T9Bis2ErhvKkFMtDvzatVQ@mail.gmail.com
-    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=57331
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index d320df6..faa83b6 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -724,9 +724,6 @@ static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
- 	struct pci_dev *parent = pdev->bus->self;
- 	struct pcie_link_state *link;
- 
--	if (aspm_disabled && !force)
--		return;
--
- 	if (!pci_is_pcie(pdev))
- 		return;
- 
-@@ -736,6 +733,19 @@ static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
- 	if (!parent || !parent->link_state)
- 		return;
- 
-+	/*
-+	 * A driver requested that ASPM be disabled on this device, but
-+	 * if we don't have permission to manage ASPM (e.g., on ACPI
-+	 * systems we have to observe the FADT ACPI_FADT_NO_ASPM bit and
-+	 * the _OSC method), we can't honor that request.  Windows has
-+	 * a similar mechanism using "PciASPMOptOut", which is also
-+	 * ignored in this situation.
-+	 */
-+	if (aspm_disabled && !force) {
-+		dev_warn(&pdev->dev, "can't disable ASPM; OS doesn't have ASPM control\n");
-+		return;
-+	}
-+
- 	if (sem)
- 		down_read(&pci_bus_sem);
- 	mutex_lock(&aspm_lock);
