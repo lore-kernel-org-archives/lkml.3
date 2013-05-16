@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab3EPLN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:13:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56909 "EHLO mx1.redhat.com"
+	id S1752486Ab3EPLNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab3EPLN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:13:26 -0400
-Date: Thu, 16 May 2013 14:11:04 +0300
+	id S1752226Ab3EPLNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:13:50 -0400
+Date: Thu, 16 May 2013 14:11:19 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -24,8 +24,8 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
         linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
         linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v2 04/10] m32r: uaccess s/might_sleep/might_fault/
-Message-ID: <8b99c8a5fb9dc4ee9a39f96ecb3b9c02c97a8ba2.1368702323.git.mst@redhat.com>
+Subject: [PATCH v2 05/10] microblaze: uaccess s/might_sleep/might_fault/
+Message-ID: <b6ae099df81bf07ad812189a0fe83ae3ebde9306.1368702323.git.mst@redhat.com>
 References: <cover.1368702323.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -41,67 +41,40 @@ is if they fault. Make this explicit.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/m32r/include/asm/uaccess.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/microblaze/include/asm/uaccess.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/m32r/include/asm/uaccess.h b/arch/m32r/include/asm/uaccess.h
-index 1c7047b..84fe7ba 100644
---- a/arch/m32r/include/asm/uaccess.h
-+++ b/arch/m32r/include/asm/uaccess.h
-@@ -216,7 +216,7 @@ extern int fixup_exception(struct pt_regs *regs);
- ({									\
- 	long __gu_err = 0;						\
- 	unsigned long __gu_val;						\
--	might_sleep();							\
-+	might_fault();							\
- 	__get_user_size(__gu_val,(ptr),(size),__gu_err);		\
- 	(x) = (__typeof__(*(ptr)))__gu_val;				\
- 	__gu_err;							\
-@@ -227,7 +227,7 @@ extern int fixup_exception(struct pt_regs *regs);
- 	long __gu_err = -EFAULT;					\
- 	unsigned long __gu_val = 0;					\
- 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
--	might_sleep();							\
-+	might_fault();							\
- 	if (access_ok(VERIFY_READ,__gu_addr,size))			\
- 		__get_user_size(__gu_val,__gu_addr,(size),__gu_err);	\
- 	(x) = (__typeof__(*(ptr)))__gu_val;				\
-@@ -295,7 +295,7 @@ do {									\
- #define __put_user_nocheck(x,ptr,size)					\
- ({									\
- 	long __pu_err;							\
--	might_sleep();							\
-+	might_fault();							\
- 	__put_user_size((x),(ptr),(size),__pu_err);			\
- 	__pu_err;							\
- })
-@@ -305,7 +305,7 @@ do {									\
- ({									\
- 	long __pu_err = -EFAULT;					\
- 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
--	might_sleep();							\
-+	might_fault();							\
- 	if (access_ok(VERIFY_WRITE,__pu_addr,size))			\
- 		__put_user_size((x),__pu_addr,(size),__pu_err);		\
- 	__pu_err;							\
-@@ -597,7 +597,7 @@ unsigned long __generic_copy_from_user(void *, const void __user *, unsigned lon
-  */
- #define copy_to_user(to,from,n)				\
- ({							\
--	might_sleep();					\
-+	might_fault();					\
- 	__generic_copy_to_user((to),(from),(n));	\
- })
+diff --git a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
+index efe59d8..2fc8bf7 100644
+--- a/arch/microblaze/include/asm/uaccess.h
++++ b/arch/microblaze/include/asm/uaccess.h
+@@ -145,7 +145,7 @@ static inline unsigned long __must_check __clear_user(void __user *to,
+ static inline unsigned long __must_check clear_user(void __user *to,
+ 							unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (unlikely(!access_ok(VERIFY_WRITE, to, n)))
+ 		return n;
  
-@@ -638,7 +638,7 @@ unsigned long __generic_copy_from_user(void *, const void __user *, unsigned lon
-  */
- #define copy_from_user(to,from,n)			\
- ({							\
--	might_sleep();					\
-+	might_fault();					\
- 	__generic_copy_from_user((to),(from),(n));	\
- })
- 
+@@ -371,7 +371,7 @@ extern long __user_bad(void);
+ static inline long copy_from_user(void *to,
+ 		const void __user *from, unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (access_ok(VERIFY_READ, from, n))
+ 		return __copy_from_user(to, from, n);
+ 	return n;
+@@ -385,7 +385,7 @@ static inline long copy_from_user(void *to,
+ static inline long copy_to_user(void __user *to,
+ 		const void *from, unsigned long n)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (access_ok(VERIFY_WRITE, to, n))
+ 		return __copy_to_user(to, from, n);
+ 	return n;
 -- 
 MST
 
