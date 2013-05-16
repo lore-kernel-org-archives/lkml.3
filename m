@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3EPU4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:56:08 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33476 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3EPU4F (ORCPT
+	id S1753634Ab3EPU5F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:57:05 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18030 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab3EPU5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:56:05 -0400
-Date: Thu, 16 May 2013 22:55:58 +0200
-From: Robert Richter <rric@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130516205558.GE8356@rric.localhost>
-References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
- <20130516175117.GK19669@dyad.programming.kicks-ass.net>
- <20130516175557.GC18325@hansolo.jdub.homelinux.org>
- <20130516181018.GO19669@dyad.programming.kicks-ass.net>
+	Thu, 16 May 2013 16:57:03 -0400
+Message-ID: <51954802.1040309@oracle.com>
+Date: Thu, 16 May 2013 16:56:34 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516181018.GO19669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        riel@redhat.com, aquini@redhat.com, mst@redhat.com,
+        amit.shah@redhat.com, anton@enomsg.org
+Subject: Re: [RFC v2 0/2] virtio_balloon: auto-ballooning support
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+In-Reply-To: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.05.13 20:10:18, Peter Zijlstra wrote:
-> On Thu, May 16, 2013 at 01:55:57PM -0400, Josh Boyer wrote:
-> > Maybe.  But do you really need to dump a stack trace here?  What is a
-> > user supposed to do with that information?  Can they fix the kernel?
-> > Can the fix the CPU?  As far as I can tell, they can't do either.
+On 05/09/2013 10:53 AM, Luiz Capitulino wrote:
+> Hi,
 > 
-> Send their CPU back to AMD is I suppose the best they can do ;-)
->  
-> > Is using pr_err with the same message really somehow worse than using
-> > WARN?
+> This series is a respin of automatic ballooning support I started
+> working on last year. Patch 2/2 contains all relevant technical
+> details and performance measurements results.
 > 
-> I would make it a FW_BUG as well. But yeah, I suppose that is a better option
-> than the WARN_ON. Unless Robert had a different reason...
+> This is in RFC state because it's a work in progress.
 
-iirc the reason was the different msr range that is switched on fam15h
-with a different counter to counter msr offset of 2 instead of 1. The
-code relies on the assumption that the msrs exist on that cpu. Thus
-the warning if not. Also note that code may have changed in 3.10 in
-that area.
+Hi Luiz,
 
--Robert
+Is there a virtio spec patch I could use to get it implemented on
+kvmtool?
+
+
+Thanks,
+Sasha
