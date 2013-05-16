@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3EPLPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:15:45 -0400
-Received: from sauhun.de ([89.238.76.85]:56296 "EHLO pokefinder.org"
+	id S1753180Ab3EPLQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:16:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab3EPLPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:42 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
+	id S1752686Ab3EPLQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:16:17 -0400
+Date: Thu, 16 May 2013 14:10:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: [PATCH 33/33] sound/soc/kirkwood: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:16:01 +0200
-Message-Id: <1368702961-4325-34-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: [PATCH v2 03/10] frv: uaccess s/might_sleep/might_fault/
+Message-ID: <89d860b7fb23b35e6a15beda9df6ebccf820a2f6.1368702323.git.mst@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1368702323.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- sound/soc/kirkwood/kirkwood-i2s.c |    5 -----
- 1 file changed, 5 deletions(-)
+ arch/frv/include/asm/uaccess.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index befe68f..4c9dad3 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -471,11 +471,6 @@ static int kirkwood_i2s_dev_probe(struct platform_device *pdev)
- 	dev_set_drvdata(&pdev->dev, priv);
+diff --git a/arch/frv/include/asm/uaccess.h b/arch/frv/include/asm/uaccess.h
+index 0b67ec5..3ac9a59 100644
+--- a/arch/frv/include/asm/uaccess.h
++++ b/arch/frv/include/asm/uaccess.h
+@@ -280,14 +280,14 @@ extern long __memcpy_user(void *dst, const void *src, unsigned long count);
+ static inline unsigned long __must_check
+ __copy_to_user(void __user *to, const void *from, unsigned long n)
+ {
+-       might_sleep();
++       might_fault();
+        return __copy_to_user_inatomic(to, from, n);
+ }
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "platform_get_resource failed\n");
--		return -ENXIO;
--	}
--
- 	priv->io = devm_ioremap_resource(&pdev->dev, mem);
- 	if (IS_ERR(priv->io))
- 		return PTR_ERR(priv->io);
+ static inline unsigned long
+ __copy_from_user(void *to, const void __user *from, unsigned long n)
+ {
+-       might_sleep();
++       might_fault();
+        return __copy_from_user_inatomic(to, from, n);
+ }
+ 
 -- 
-1.7.10.4
+MST
 
