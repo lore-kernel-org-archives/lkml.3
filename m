@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3EPOFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:05:43 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:47696 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3EPOFj (ORCPT
+	id S1754458Ab3EPOFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:05:49 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:60382 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754387Ab3EPOFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:05:39 -0400
-Date: Thu, 16 May 2013 10:01:13 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        ohering@suse.com, jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org, apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH V1 1/7] Drivers: hv: vmbus: Implement multi-channel
- support
-Message-ID: <20130516140113.GB2629@kroah.com>
-References: <1368706784-32276-1-git-send-email-kys@microsoft.com>
- <1368706879-32321-1-git-send-email-kys@microsoft.com>
+	Thu, 16 May 2013 10:05:42 -0400
+Date: Thu, 16 May 2013 10:05:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: channing <chao.bi@intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty_buffer: avoid race due to tty_buffer_free_all()
+ being misused
+Message-ID: <20130516140518.GC2629@kroah.com>
+References: <1368694762.2911.16.camel@bichao>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368706879-32321-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1368694762.2911.16.camel@bichao>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 05:21:13AM -0700, K. Y. Srinivasan wrote:
-> Starting with Win8, the host supports multiple sub-channels for a given
-> device. As in the past, the initial channel offer specifies the device and
-> is associated with both the type and the instance GUIDs. For performance
-> critical devices, the host may support multiple sub-channels. The sub-channels
-> share the same type and instance GUID as the primary channel. The number of
-> sub-channels offerrred to the guest depends on the number of virtual CPUs
-> assigned to the guest. The guest can request the creation of these sub-channels
-> and once created and opened, the guest can distribute the traffic across all
-> the channels (the primary and the sub-channels). A request sent on a sub-channel
-> will have the response delivered on the same sub-channel.
+On Thu, May 16, 2013 at 04:59:22PM +0800, channing wrote:
 > 
-> At channel (sub-channel) creation we bind the channel interrupt to a CPU and
-> with this sub-channel support we will be able to spread the interrupt load
-> of a given device across all available CPUs.
+> In tty_buffer.c, function tty_buffer_free_all() is used to remove
+> all buffers for a tty, although it's declared that it mustn't be called
+> when the tty is in use, it cannot guarantee that. we can observe some
+> device driver make use it by mistake, for example, while tty device is
+> releasing, the tty data forwarding is not stopped, then it might hit
+> the case that tty buffer is being used while tty_buffer_free_all()
+> free this tty buffer, and finally lead to random error at any places,
+> and it's not clear to debug.
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Although device driver could do better, it's simpler and safer to
+> strengthen protection in the view of tty buffer, by adding a tty->buf.lock
+> in tty_buffer_free_all() to avoid it racing with ongoing tty buffer
+> operations.
+> 
+> Signed-off-by: channing <chao.bi@intel.com>
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Note, in the future, I need a "full" name for a signed-off-by: line and
+>From line in the patch.
+
+thanks,
+
+greg k-h
