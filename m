@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab3EPVv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:51:56 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:46479 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3EPVvy (ORCPT
+	id S1754632Ab3EPVxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:53:07 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:49743 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752097Ab3EPVxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:51:54 -0400
+	Thu, 16 May 2013 17:53:05 -0400
+Message-ID: <5195553C.90608@hurleysoftware.com>
+Date: Thu, 16 May 2013 17:53:00 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <2469545.4zh8j9i5RI@flatron>
-References: <1368724352-10849-1-git-send-email-dianders@chromium.org>
-	<1944811.006SLH6aYj@flatron>
-	<CAD=FV=Wk4sib4RvgVqonSj_wANmUh6vftTqveFNn6X4ceFc6Gw@mail.gmail.com>
-	<2469545.4zh8j9i5RI@flatron>
-Date: Thu, 16 May 2013 14:51:53 -0700
-X-Google-Sender-Auth: Qy1P3PNa-evwoCk9uUJyMWimRDc
-Message-ID: <CAD=FV=Uqhw4GXjfQrnxzJ4U95wudF1whBcRxK8y3LZMWHTurNw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: samsung: fix suspend/resume functionality
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Prathyush K <prathyush.k@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: BUG: tty: memory corruption through tty_release/tty_ldisc_release
+References: <519480A1.6030909@ahsoftware.de> <5194E380.1030109@hurleysoftware.com> <5194E64A.3040003@ahsoftware.de>
+In-Reply-To: <5194E64A.3040003@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
-
-On Thu, May 16, 2013 at 2:27 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> OK. I will be fine to go with your patches, after addressing the comments.
-> In the end it's good that you posted them, as reviewing them allowed me to
-> find even better ways of doing some things than I had in mine ;) .
-
-Yes.  I often find that the best way to review code is to think about
-how I would implement it myself.  Certainly I think we've ended up
-with something better / less buggy this way.  ;)
-
-
-> How all of this works is basically a good question. I couldn't find any
-> mention about pins switching from power down to normal mode in the
-> documentation, but maybe there is a small side note somewhere, which I
-> could miss.
+On 05/16/2013 09:59 AM, Alexander Holler wrote:
+> Am 16.05.2013 15:47, schrieb Peter Hurley:
+>> On 05/16/2013 02:45 AM, Alexander Holler wrote:
+>>> Hello,
+>>>
+>>> after some pain because the "big step" (ecbbfd4) happened while the
+>>> support for my AMD CPU was broken and thus git bisect hit a series of
+>>> kernels which didn't boot, I've finally found the cause for a memory
+>>> corruption: tty_ldisc_release().
+>>>
+>>> What happens is the following:
+>>>
+>>> tty_port is self-destructing, that means it destroys itself in
+>>> tty_port.c:tty_port_destructor() when the last reference is gone. E.g.
+>>> in case of rfcomm this happens with the call to tty->ops->close() in
+>>> tty_io.c:tty_release().
+>>>
+>>> The problem here is that tty_io.c:tty_release() calls
+>>> tty_ldisc.c:tty_ldisc_release() which uses the tty_port to flush the
+>>> ldisc work queues.
+>>>
+>>> In the best case this hits a BUG() in cancel_work_sync() but often it
+>>> just causes a memory corruption without a BUG() got hit before.
+>>
+>> Hi Alexander,
+>>
+>> Actually, the problem is that tty->ops->close() shouldn't be
+>> the last kref on the port.
+>>
+>> It doesn't look to me like device removal is being handled
+>> properly.
+>>
 >
-> On S3C6410, for example, there are two modes. State is switched to power
-> down mode automatically, but can be switched out either automatically on
-> wake-up (exact timing is unknown to me) or by clearing a special bit,
-> depending on value of other special bit.
->
-> IMHO this is rather important, so we should find out how it work on other
-> SoCs and make the code account for it.
+> Maybe, but if so, that should be documented (and ideally prevented).
 
-Agreed that it's important.  ...but it's also good not to have tons of
-complexity when it's not needed.  It sounds like S3C6410 could be
-handled OK by just using the special bits and waiting to take things
-out of power down mode.
+The tty_port documentation is trapped in the place as _all_ the
+bluetooth documentation :)
 
-...thinking about it, all SoCs that have power down modes (which you
-_must_ have if your pinctrl state is lost across a low power) would be
-slightly broken if they didn't have a bit to switch out of power down
-mode.  Otherwise you're asking for at least some type of glitch
-because you'll end up in the default state of pins for a little while
-during resume.
+And the tty layer can't really _prevent_ the tty driver from mishandling
+the port kref.
 
-That's not to say that there aren't broken SoCs out there and it's
-entirely possible that people even designed systems around them
-(knowing that the default state of each pin after wakeup is not
-harmful to whatever is connected to that pin).  If there are any cases
-like this then they would need the special code like my V1 patch had.
-Do you know of any SoCs like this that we need to support on kernel
-3.10 and higher?
+> Especially since it seemed to have been worked before tty_ports got introduced.
 
+Well, at the time tty_port was introduced to RFCOMM, there was nothing
+to tear-down in tty_port. Now that tty_port owns the flip buffers and
+must do proper tear-down, the problem has surfaced.
 
-I'm planning on going back to the "simpler" code for my next patchset
-unless I can find a problem with it.
+> But I can't add much more to this discussion, as I'm rather a novice in regard to the tty subsystem. I even don't know much about the task sharing between tty, tty_port and tty_ldisc, except the stuff I found out because I got hit by that bug and therefor have read some of the sources.
 
+Ok. Could you paste the BUG() and steps to reproduce?
+I have a plan to fix it but I'd like to review what you have
+first.
 
--Doug
+Regards,
+Peter Hurley
+
