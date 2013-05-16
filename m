@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3EPJ1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:27:11 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:26329 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab3EPJ1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:27:08 -0400
-Message-ID: <5194A618.3040900@imgtec.com>
-Date: Thu, 16 May 2013 10:25:44 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
-References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <51945C7F.2030605@codeaurora.org>
-In-Reply-To: <51945C7F.2030605@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751588Ab3EPJbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:31:14 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:45591 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3EPJbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 05:31:07 -0400
+Message-ID: <1368696660.8439.1.camel@phoenix>
+Subject: [PATCH] power_supply: pm2301_charger: Fix NULL pointer dereference
+From: Axel Lin <axel.lin@ingics.com>
+To: Anton Vorontsov <cbou@mail.ru>
+Cc: Rupesh Kumar <rupesh.kumar@stericsson.com>,
+        Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Thu, 16 May 2013 17:31:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_16_10_27_07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/05/13 05:11, Saravana Kannan wrote:
-> I really want to review this because I solved the same problem in our
-> internal clock framework and want to make sure upstream doesn't go
-> through the same mistakes. But haven't had the time. Hopefully, I'll go
-> it before this gets accepted by Mike. I'll try to do it this week/weekend.
+Add checking pl_data in probe, this prevent possible NULL pointer dereference.
+Also fix NULL pointer deference in dev_err when allocate memory for pm2 fails.
 
-Great! FYI I submitted a v3 yesterday, but screwed up and forgot to CC
-LKML :-(
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/power/pm2301_charger.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-It can be found on linux-arm-kernel archives here (or if it's a real
-PITA I can resubmit cc'ing LKML):
+diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
+index a441751..c972389 100644
+--- a/drivers/power/pm2301_charger.c
++++ b/drivers/power/pm2301_charger.c
+@@ -1007,9 +1007,14 @@ static int pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+ 	u8 val;
+ 	int i;
+ 
++	if (!pl_data) {
++		dev_err(&i2c_client->dev, "No platform data supplied\n");
++		return -EINVAL;
++	}
++
+ 	pm2 = kzalloc(sizeof(struct pm2xxx_charger), GFP_KERNEL);
+ 	if (!pm2) {
+-		dev_err(pm2->dev, "pm2xxx_charger allocation failed\n");
++		dev_err(&i2c_client->dev, "pm2xxx_charger allocation failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-- 
+1.8.1.2
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/168485.html
 
-Cheers
-James
 
