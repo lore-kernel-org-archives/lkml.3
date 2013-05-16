@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab3EPDGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:06:36 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:36520 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3EPDGd (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Wed, 15 May 2013 23:06:33 -0400
-Message-ID: <1368673581.2272.5.camel@linux-04b7.site>
-Subject: Re: [PATCH] Staging: add USB MTK bluetooth driver
-From: AL Yu-Chen Cho <acho@suse.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        jay.hung@mediatek.com
-Date: Thu, 16 May 2013 11:06:21 +0800
-In-Reply-To: <20130514192748.GA16887@kroah.com>
-References: <1367490436-8438-1-git-send-email-acho@suse.com>
-	 <20130514192748.GA16887@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 
+	id S1753694Ab3EPDLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:11:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40761 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab3EPDK7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 23:10:59 -0400
+Date: Wed, 15 May 2013 20:10:55 -0700 (PDT)
+Message-Id: <20130515.201055.1401062016041347476.davem@davemloft.net>
+To: rusty@rustcorp.com.au
+Cc: nab@linux-iscsi.org, asias@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, sfr@canb.auug.org.au,
+        rdunlap@infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <871u9724vp.fsf@rustcorp.com.au>
+References: <8761yk254u.fsf@rustcorp.com.au>
+	<1368657450.6899.29.camel@haakon3.risingtidesystems.com>
+	<871u9724vp.fsf@rustcorp.com.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 15 May 2013 20:10:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Rusty Russell <rusty@rustcorp.com.au>
+Date: Thu, 16 May 2013 09:05:38 +0930
 
-On 二, 2013-05-14 at 15:27 -0400, Greg KH wrote:
-> On Thu, May 02, 2013 at 06:27:16PM +0800, Cho, Yu-Chen wrote:
-> > diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-> > index fa41b04..e33cfe0 100644
-> > --- a/drivers/staging/Makefile
-> > +++ b/drivers/staging/Makefile
-> > @@ -62,3 +62,4 @@ obj-$(CONFIG_SB105X)		+= sb105x/
-> >  obj-$(CONFIG_GOLDFISH)		+= goldfish/
-> >  obj-$(CONFIG_USB_DWC2)		+= dwc2/
-> >  obj-$(CONFIG_LUSTRE_FS)		+= lustre/
-> > +obj-$(CONFIG_USB_BTMTK)		+= btmkt_usb/
-> 
-> You didn't actually test this patch, it breaks the build:
-> 
-> scripts/Makefile.build:44:
-> /home/gregkh/linux/work/staging/drivers/staging/btmkt_usb/Makefile: No such file or directory
-> make[3]: *** No rule to make target
-> `/home/gregkh/linux/work/staging/drivers/staging/btmkt_usb/Makefile'.  Stop.
-> 
-> Please refresh this against 3.10-rc1 and test that it builds properly
-> and then resend it.
-> 
+> memcpy_fromiovec() has nothing to do with networking: that was just the
+> first user.  Note that crypto/algif_skcipher.c also uses it.  The
+> obvious answer is to move it into lib/.
 
-Yes, I found that , and I will refresh this against 3.10-rc1 and test
-that it builds then resend it soon.
-
-Thanks a lot.
-
-Sincerely,
-         AL
-
++1
