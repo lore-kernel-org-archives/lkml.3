@@ -1,198 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab3EPDf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:35:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:40060 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab3EPDfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:35:54 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Asias He <asias@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
-In-Reply-To: <20130516020848.GB23441@hj.localdomain>
-References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au> <1368579583-13097-1-git-send-email-asias@redhat.com> <8761yk254u.fsf@rustcorp.com.au> <20130516020848.GB23441@hj.localdomain>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 16 May 2013 13:04:58 +0930
-Message-ID: <87d2sra97h.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754248Ab3EPDgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:36:39 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:42827 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab3EPDgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 23:36:37 -0400
+From: sanweidaying@gmail.com
+To: linux-mm@kvack.org
+Cc: Zhouping Liu <zliu@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mm, slab: moved kmem_cache_alloc_node comment to correct place
+Date: Thu, 16 May 2013 11:36:23 +0800
+Message-Id: <1368675383-3976-1-git-send-email-sanweidaying@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asias He <asias@redhat.com> writes:
-> On Wed, May 15, 2013 at 02:47:53PM +0930, Rusty Russell wrote:
->> Asias He <asias@redhat.com> writes:
->> > scsi.c includes vhost.c which uses memcpy_fromiovec.
->> >
->> > This patch fixes this build failure.
->> >
->> >    From Randy Dunlap:
->> >    '''
->> >    on x86_64:
->> >
->> >    ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
->> >
->> >    It needs to depend on NET since net/core/ provides that function.
->> >    '''
->> 
->> Proper fix please.
->
-> --verbose please ;-)
->
-> Making VHOST_SCSI depends on NET looks weird but this is because vhost
-> core depends on it. A bunch of patches are cleaning this up. Since MST
-> wanted do the vhost.ko split up in 3.11, plus your WIP vringh work, so I
-> wanted the fix for 3.10 as minimum as possible.
+From: Zhouping Liu <zliu@redhat.com>
 
-If this isn't the only symbol causing the problem, then this should be
-mentioned in the changelog.  If it is, it should be fixed: we have
-plenty of time for that.
+After several fixing about kmem_cache_alloc_node(), its comment
+was splitted. This patch moved it on top of kmem_cache_alloc_node()
+definition.
 
-Either way, your commit message or the commit itself needs to justify
-it!
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
+---
+ mm/slab.c | 23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-> Other users are using memcpy_fromiovec and friends outside net. It seems
-> a good idea to put it in a util library. e.g.  crypto/algif_skcipher.c
-> which also depends on NET for it.
->
->> Though I can't see why you thought this was a good idea.  Nonetheless, I
->> shan't highlight why: I have far too much respect for your intellects
->> and abilities.
->> 
->> No, don't thank me!
->
-> Interesting.
-
-Heh... I originally wrote an explanation, then found it a bit insulting:
-I knew I didn't need to tell you :)
-
-How's this?
-
-From: Rusty Russell <rusty@rustcorp.com.au>
-Subject: Hoist memcpy_fromiovec into lib/
-
-ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
-
-That function is only present with CONFIG_NET.  Turns out that
-crypto/algif_skcipher.c also uses that outside net, but it actually
-needs sockets anyway.
-
-socket.h already include uio.h, so no callers need updating.
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index 428c37a..7266775 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -305,7 +305,6 @@ struct ucred {
- 
- extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
- 
--extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
- extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			       int offset, int len);
- extern int csum_partial_copy_fromiovecend(unsigned char *kdata, 
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 629aaf5..21628d3 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -35,4 +35,6 @@ static inline size_t iov_length(const struct iovec *iov, unsigned long nr_segs)
+diff --git a/mm/slab.c b/mm/slab.c
+index 8ccd296..be12f68 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3338,18 +3338,6 @@ done:
+ 	return obj;
  }
  
- unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to);
-+
-+int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
- #endif
-diff --git a/lib/Makefile b/lib/Makefile
-index e9c52e1..2377211 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -9,7 +9,7 @@ endif
- 
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
--	 idr.o int_sqrt.o extable.o \
-+	 idr.o int_sqrt.o extable.o iovec.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-diff --git a/lib/iovec.c b/lib/iovec.c
-new file mode 100644
-index 0000000..632c5ea
---- /dev/null
-+++ b/lib/iovec.c
-@@ -0,0 +1,29 @@
-+#include <linux/uaccess.h>
-+#include <linux/export.h>
-+#include <linux/uio.h>
-+
-+/*
-+ *	Copy iovec to kernel. Returns -EFAULT on error.
-+ *
-+ *	Note: this modifies the original iovec.
-+ */
-+
-+int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
-+{
-+	while (len > 0) {
-+		if (iov->iov_len) {
-+			int copy = min_t(unsigned int, len, iov->iov_len);
-+			if (copy_from_user(kdata, iov->iov_base, copy))
-+				return -EFAULT;
-+			len -= copy;
-+			kdata += copy;
-+			iov->iov_base += copy;
-+			iov->iov_len -= copy;
-+		}
-+		iov++;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(memcpy_fromiovec);
-+
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 7e7aeb0..d81257f 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -125,31 +125,6 @@ int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
- EXPORT_SYMBOL(memcpy_toiovecend);
- 
- /*
-- *	Copy iovec to kernel. Returns -EFAULT on error.
+-/**
+- * kmem_cache_alloc_node - Allocate an object on the specified node
+- * @cachep: The cache to allocate from.
+- * @flags: See kmalloc().
+- * @nodeid: node number of the target node.
+- * @caller: return address of caller, used for debug information
 - *
-- *	Note: this modifies the original iovec.
+- * Identical to kmem_cache_alloc but it will allocate memory on the given
+- * node, which can improve the performance for cpu bound structures.
+- *
+- * Fallback to other node is possible if __GFP_THISNODE is not set.
 - */
--
--int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
--{
--	while (len > 0) {
--		if (iov->iov_len) {
--			int copy = min_t(unsigned int, len, iov->iov_len);
--			if (copy_from_user(kdata, iov->iov_base, copy))
--				return -EFAULT;
--			len -= copy;
--			kdata += copy;
--			iov->iov_base += copy;
--			iov->iov_len -= copy;
--		}
--		iov++;
--	}
--
--	return 0;
--}
--EXPORT_SYMBOL(memcpy_fromiovec);
--
--/*
-  *	Copy iovec from kernel. Returns -EFAULT on error.
-  */
+ static __always_inline void *
+ slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+ 		   unsigned long caller)
+@@ -3643,6 +3631,17 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
+ #endif
  
+ #ifdef CONFIG_NUMA
++/**
++ * kmem_cache_alloc_node - Allocate an object on the specified node
++ * @cachep: The cache to allocate from.
++ * @flags: See kmalloc().
++ * @nodeid: node number of the target node.
++ *
++ * Identical to kmem_cache_alloc but it will allocate memory on the given
++ * node, which can improve the performance for cpu bound structures.
++ *
++ * Fallback to other node is possible if __GFP_THISNODE is not set.
++ */
+ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ {
+ 	void *ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP_);
+-- 
+1.7.11.7
+
