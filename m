@@ -1,100 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab3EPJS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:18:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58358
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074Ab3EPJSy (ORCPT
+	id S1751410Ab3EPJZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:25:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48819 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3EPJZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:18:54 -0400
-Date: Thu, 16 May 2013 11:17:07 +0200
+	Thu, 16 May 2013 05:25:11 -0400
+Date: Thu, 16 May 2013 11:23:08 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for
- PERF_SAMPLE_BRANCH_KERNEL
-Message-ID: <20130516091707.GG19669@dyad.programming.kicks-ass.net>
-References: <20130503121122.931661809@chello.nl>
- <20130503121256.230745028@chello.nl>
- <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
- <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
+        wangyun@linux.vnet.ibm.com
+Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
+Message-ID: <20130516092308.GH19669@dyad.programming.kicks-ass.net>
+References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
+ <1368199049-2798-9-git-send-email-alex.shi@intel.com>
+ <20130514083148.GD15942@dyad.programming.kicks-ass.net>
+ <5192217D.5030706@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+In-Reply-To: <5192217D.5030706@intel.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 11:09:16AM +0200, Peter Zijlstra wrote:
-> How about something like the below? It also adds the branch flags Mikey wanted
-> for PowerPC.
+On Tue, May 14, 2013 at 07:35:25PM +0800, Alex Shi wrote:
 
-The asymmetry is unfortunate, but I think its more useful to have the from
-kernel branch target than it is not to have it. This way you at least know
-there was a kernel entry/exit and where you've continued.
+> I tested all benchmarks on cover letter maintained, aim7, kbuild etc.
+> with autogroup enabled. There is no clear performance change.
+> But since the machine just run benchmark without anyother load, that
+> doesn't enough.
 
-Without either branch to kernel and branch from kernel entries you'd be
-wondering WTF happend to your control flow.
+Back when we started with smp-fair cgroup muck someone wrote a test for it. I
+_think_ it ended up in the LTP test-suite.
 
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 12 +++++++++---
->  include/linux/perf_event.h                 | 10 +++++++---
->  2 files changed, 16 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index d978353..f44d635 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -585,17 +585,23 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
->  
->  		/* if type does not correspond, then discard */
->  		if (type == X86_BR_NONE || (br_sel & type) != type) {
-> -			cpuc->lbr_entries[i].from = 0;
-> +			cpuc->lbr_entries[i].__delete = 1;
->  			compress = true;
->  		}
-> +
-> +		/* hide kernel addresses if we're not privileged  */
-> +		if (!(br_sel & X86_BR_KERNEL) && kernel_ip(from)) {
-> +			cpuc->lbr_entries[i].from = -1L;
-> +			cpuc->lbr_entries[i].invalid_from = 1;
-> +		}
->  	}
->  
->  	if (!compress)
->  		return;
->  
-> -	/* remove all entries with from=0 */
-> +	/* remove all entries with __delete */
->  	for (i = 0; i < cpuc->lbr_stack.nr; ) {
-> -		if (!cpuc->lbr_entries[i].from) {
-> +		if (cpuc->lbr_entries[i].__delete) {
->  			j = i;
->  			while (++j < cpuc->lbr_stack.nr)
->  				cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index f463a46..7acf1c9 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -77,9 +77,13 @@ struct perf_raw_record {
->  struct perf_branch_entry {
->  	__u64	from;
->  	__u64	to;
-> -	__u64	mispred:1,  /* target mispredicted */
-> -		predicted:1,/* target predicted */
-> -		reserved:62;
-> +	__u64	mispred:1,	/* target mispredicted		*/
-> +		predicted:1,	/* target predicted		*/
-> +		invalid_to:1,	/* @to isn't to be trusted	*/
-> +		invalid_from:1, /* @from isn't to be trusted	*/
-> +		reserved:59,
-> +		__delete:1;	/* Implementation; userspace should
-> +				   always see a 0 		*/
->  };
->  
->  /*
-> 
+Now I don't know if that's up-to-date enough to catch some of the cases we've
+recently fixed (as in the past few years) so it might want to be updated.
+
+Paul, do you guys at Google have some nice test-cases for all this?
