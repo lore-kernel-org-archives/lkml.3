@@ -1,130 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3EPQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:18:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57108 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752545Ab3EPQO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:14:59 -0400
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russ Anderson <rja@sgi.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH -v11 resend 02/11] Migrate shutdown/reboot to boot cpu.
-Date: Thu, 16 May 2013 11:14:41 -0500
-Message-Id: <1368720890-57711-3-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1368720890-57711-1-git-send-email-holt@sgi.com>
-References: <1368720890-57711-1-git-send-email-holt@sgi.com>
+	id S1754820Ab3EPQSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:18:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52325 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890Ab3EPQSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 12:18:41 -0400
+Date: Thu, 16 May 2013 19:18:16 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v5 3/8] KVM: MMU: fast invalidate all pages
+Message-ID: <20130516161816.GG14597@redhat.com>
+References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+On Thu, May 16, 2013 at 08:17:48PM +0800, Xiao Guangrong wrote:
+> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+> walk and zap all shadow pages one by one, also it need to zap all guest
+> page's rmap and all shadow page's parent spte list. Particularly, things
+> become worse if guest uses more memory or vcpus. It is not good for
+> scalability
+> 
+> In this patch, we introduce a faster way to invalidate all shadow pages.
+> KVM maintains a global mmu invalid generation-number which is stored in
+> kvm->arch.mmu_valid_gen and every shadow page stores the current global
+> generation-number into sp->mmu_valid_gen when it is created
+> 
+> When KVM need zap all shadow pages sptes, it just simply increase the
+> global generation-number then reload root shadow pages on all vcpus.
+> Vcpu will create a new shadow page table according to current kvm's
+> generation-number. It ensures the old pages are not used any more.
+> Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+> are zapped by using lock-break technique
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    2 +
+>  arch/x86/kvm/mmu.c              |   98 +++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kvm/mmu.h              |    2 +
+>  3 files changed, 102 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 3741c65..bff7d46 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -222,6 +222,7 @@ struct kvm_mmu_page {
+>  	int root_count;          /* Currently serving as active root */
+>  	unsigned int unsync_children;
+>  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+> +	unsigned long mmu_valid_gen;
+>  	DECLARE_BITMAP(unsync_child_bitmap, 512);
+>  
+>  #ifdef CONFIG_X86_32
+> @@ -529,6 +530,7 @@ struct kvm_arch {
+>  	unsigned int n_requested_mmu_pages;
+>  	unsigned int n_max_mmu_pages;
+>  	unsigned int indirect_shadow_pages;
+> +	unsigned long mmu_valid_gen;
+>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>  	/*
+>  	 * Hash table of struct kvm_mmu_page.
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 682ecb4..d9343fe 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1839,6 +1839,11 @@ static void clear_sp_write_flooding_count(u64 *spte)
+>  	__clear_sp_write_flooding_count(sp);
+>  }
+>  
+> +static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+> +{
+> +	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+> +}
+> +
+>  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  					     gfn_t gfn,
+>  					     gva_t gaddr,
+> @@ -1865,6 +1870,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  		role.quadrant = quadrant;
+>  	}
+>  	for_each_gfn_sp(vcpu->kvm, sp, gfn) {
+> +		if (is_obsolete_sp(vcpu->kvm, sp))
+> +			continue;
+> +
+>  		if (!need_sync && sp->unsync)
+>  			need_sync = true;
+>  
+> @@ -1901,6 +1909,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  
+>  		account_shadowed(vcpu->kvm, gfn);
+>  	}
+> +	sp->mmu_valid_gen = vcpu->kvm->arch.mmu_valid_gen;
+>  	init_shadow_page_table(sp);
+>  	trace_kvm_mmu_get_page(sp, true);
+>  	return sp;
+> @@ -2071,8 +2080,10 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>  	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+>  	kvm_mmu_page_unlink_children(kvm, sp);
+>  	kvm_mmu_unlink_parents(kvm, sp);
+> +
+>  	if (!sp->role.invalid && !sp->role.direct)
+>  		unaccount_shadowed(kvm, sp->gfn);
+> +
+>  	if (sp->unsync)
+>  		kvm_unlink_unsync_page(kvm, sp);
+>  
+> @@ -4196,6 +4207,93 @@ restart:
+>  	spin_unlock(&kvm->mmu_lock);
+>  }
+>  
+> +static void zap_invalid_pages(struct kvm *kvm)
+> +{
+> +	struct kvm_mmu_page *sp, *node;
+> +	LIST_HEAD(invalid_list);
+> +
+> +restart:
+> +	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
+> +		if (!is_obsolete_sp(kvm, sp))
+> +			continue;
+> +
+> +		/*
+> +		 * Do not repeatedly zap a root page to avoid unnecessary
+> +		 * KVM_REQ_MMU_RELOAD, otherwise we may not be able to
+> +		 * progress:
+> +		 *    vcpu 0                        vcpu 1
+> +		 *                         call vcpu_enter_guest():
+> +		 *                            1): handle KVM_REQ_MMU_RELOAD
+> +		 *                                and require mmu-lock to
+> +		 *                                load mmu
+> +		 * repeat:
+> +		 *    1): zap root page and
+> +		 *        send KVM_REQ_MMU_RELOAD
+> +		 *
+> +		 *    2): if (cond_resched_lock(mmu-lock))
+> +		 *
+> +		 *                            2): hold mmu-lock and load mmu
+> +		 *
+> +		 *                            3): see KVM_REQ_MMU_RELOAD bit
+> +		 *                                on vcpu->requests is set
+> +		 *                                then return 1 to call
+> +		 *                                vcpu_enter_guest() again.
+> +		 *            goto repeat;
+> +		 *
+> +		 */
+> +		if (sp->role.invalid)
+> +			continue;
+> +		/*
+> +		 * Need not flush tlb since we only zap the sp with invalid
+> +		 * generation number.
+> +		 */
+> +		if (cond_resched_lock(&kvm->mmu_lock))
+> +			goto restart;
+> +
+> +		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+> +			goto restart;
+> +	}
+> +
+> +	/*
+> +	 * Should flush tlb before free page tables since lockless-walking
+> +	 * may use the pages.
+> +	 */
+> +	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+> +}
+> +
+> +/*
+> + * Fast invalidate all shadow pages belong to @slot.
+> + *
+> + * @slot != NULL means the invalidation is caused the memslot specified
+> + * by @slot is being deleted, in this case, we should ensure that rmap
+> + * and lpage-info of the @slot can not be used after calling the function.
+> + *
+> + * @slot == NULL means the invalidation due to other reasons, we need
+> + * not care rmap and lpage-info since they are still valid after calling
+> + * the function.
+> + */
+> +void kvm_mmu_invalidate_memslot_pages(struct kvm *kvm,
+> +				      struct kvm_memory_slot *slot)
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-boot cpu and then continuing with shutdown/reboot.
+Why pass "slot" here? If we want the function to sometimes wait for purge
+and sometimes not the more straightforward way is to have a "bool wait"
+parameter instead.
 
-This also has the effect of not breaking x86's command line parameter for
-specifying the reboot cpu.  Note, this code was shamelessly copied from
-arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
-command line parameter.
+> +{
+> +	spin_lock(&kvm->mmu_lock);
+> +	kvm->arch.mmu_valid_gen++;
+> +
+> +	/*
+> +	 * Notify all vcpus to reload its shadow page table
+> +	 * and flush TLB. Then all vcpus will switch to new
+> +	 * shadow page table with the new mmu_valid_gen.
+> +	 *
+> +	 * Note: we should do this under the protection of
+> +	 * mmu-lock, otherwise, vcpu would purge shadow page
+> +	 * but miss tlb flush.
+> +	 */
+> +	kvm_reload_remote_mmus(kvm);
+> +
+> +	if (slot)
+> +		zap_invalid_pages(kvm);
+> +	spin_unlock(&kvm->mmu_lock);
+> +}
+> +
+>  void kvm_mmu_zap_mmio_sptes(struct kvm *kvm)
+>  {
+>  	struct kvm_mmu_page *sp, *node;
+> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+> index 2adcbc2..bd57466 100644
+> --- a/arch/x86/kvm/mmu.h
+> +++ b/arch/x86/kvm/mmu.h
+> @@ -97,4 +97,6 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+>  	return (mmu->permissions[pfec >> 1] >> pte_access) & 1;
+>  }
+>  
+> +void kvm_mmu_invalidate_memslot_pages(struct kvm *kvm,
+> +				      struct kvm_memory_slot *slot);
+>  #endif
+> -- 
+> 1.7.7.6
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Russ Anderson <rja@sgi.com>
-Cc: Robin Holt <holt@sgi.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
-Cc: <stable@vger.kernel.org>
-
----
-
-Changes since -v8
- - Change stack parameter to make future patches cleaner.
-
-Changes since -v6:
- - Add #define for PF_THREAD_BOUND as compatibility to make stable easier.
- - Fixup s/reboot_cpu_id/reboot_cpu/
----
- kernel/sys.c | 29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index b95d3c7..2bbd9a7 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -362,6 +362,29 @@ int unregister_reboot_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
-+/* Add backwards compatibility for stable trees. */
-+#ifndef PF_NO_SETAFFINITY
-+#define PF_NO_SETAFFINITY		PF_THREAD_BOUND
-+#endif
-+
-+static void migrate_to_reboot_cpu(void)
-+{
-+	/* The boot cpu is always logical cpu 0 */
-+	int cpu = 0;
-+
-+	cpu_hotplug_disable();
-+
-+	/* Make certain the cpu I'm about to reboot on is online */
-+	if (!cpu_online(cpu))
-+		cpu = cpumask_first(cpu_online_mask);
-+
-+	/* Prevent races with other tasks migrating this task */
-+	current->flags |= PF_NO_SETAFFINITY;
-+
-+	/* Make certain I only run on the appropriate processor */
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
-+}
-+
- /**
-  *	kernel_restart - reboot the system
-  *	@cmd: pointer to buffer containing command to execute for restart
-@@ -373,7 +396,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
- void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
-@@ -400,7 +423,7 @@ static void kernel_shutdown_prepare(enum system_states state)
- void kernel_halt(void)
- {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
-@@ -419,7 +442,7 @@ void kernel_power_off(void)
- 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
- 	if (pm_power_off_prepare)
- 		pm_power_off_prepare();
--	disable_nonboot_cpus();
-+	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "Power down.\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
--- 
-1.8.2.1
-
+--
+			Gleb.
