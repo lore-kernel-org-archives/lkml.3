@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab3EPLPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:15:47 -0400
-Received: from sauhun.de ([89.238.76.85]:56288 "EHLO pokefinder.org"
+	id S1753042Ab3EPLPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:15:40 -0400
+Received: from sauhun.de ([89.238.76.85]:56247 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab3EPLPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:41 -0400
+	id S1752967Ab3EPLPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:32 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: [PATCH 32/33] sound/soc/fsl: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:16:00 +0200
-Message-Id: <1368702961-4325-33-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: [PATCH 26/33] drivers/video/omap2/dss: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:54 +0200
+Message-Id: <1368702961-4325-27-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
@@ -26,33 +26,24 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- sound/soc/fsl/imx-ssi.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/video/omap2/dss/hdmi.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/sound/soc/fsl/imx-ssi.c b/sound/soc/fsl/imx-ssi.c
-index 902fab0..c6fa03e 100644
---- a/sound/soc/fsl/imx-ssi.c
-+++ b/sound/soc/fsl/imx-ssi.c
-@@ -540,11 +540,6 @@ static int imx_ssi_probe(struct platform_device *pdev)
- 	clk_prepare_enable(ssi->clk);
+diff --git a/drivers/video/omap2/dss/hdmi.c b/drivers/video/omap2/dss/hdmi.c
+index 17f4d55..a109934 100644
+--- a/drivers/video/omap2/dss/hdmi.c
++++ b/drivers/video/omap2/dss/hdmi.c
+@@ -1065,10 +1065,6 @@ static int omapdss_hdmihw_probe(struct platform_device *pdev)
+ 	mutex_init(&hdmi.ip_data.lock);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	res = platform_get_resource(hdmi.pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		ret = -ENODEV;
--		goto failed_get_resource;
+-		DSSERR("can't get IORESOURCE_MEM HDMI\n");
+-		return -EINVAL;
 -	}
--
- 	ssi->base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(ssi->base)) {
- 		ret = PTR_ERR(ssi->base);
-@@ -633,7 +628,6 @@ failed_pdev_fiq_alloc:
- 	snd_soc_unregister_component(&pdev->dev);
- failed_register:
- 	release_mem_region(res->start, resource_size(res));
--failed_get_resource:
- 	clk_disable_unprepare(ssi->clk);
- failed_clk:
  
+ 	/* Base address taken from platform */
+ 	hdmi.ip_data.base_wp = devm_ioremap_resource(&pdev->dev, res);
 -- 
 1.7.10.4
 
