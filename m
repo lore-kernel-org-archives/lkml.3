@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3EPUmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:42:42 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:46941 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3EPUmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:42:40 -0400
+	id S1753476Ab3EPUnG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:43:06 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:52283 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831Ab3EPUmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 16:42:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Subject: Re: [PATCH 0/3] CPUFreq Fixes for 3.10-rc2
+Date: Thu, 16 May 2013 22:51:25 +0200
+Message-ID: <4482296.g7Mb85DDVP@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpom=_i8MgWy7eoa+wBtaRZ288CMfcYsGBi-4qzu4ZqR3uw@mail.gmail.com>
+References: <cover.1368679353.git.viresh.kumar@linaro.org> <6691801.RqjZrI7EgH@vostro.rjw.lan> <CAKohpom=_i8MgWy7eoa+wBtaRZ288CMfcYsGBi-4qzu4ZqR3uw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5195401B.5070209@ti.com>
-References: <1368636386-17138-1-git-send-email-dmurphy@ti.com>
-	<20130515170516.GA6135@kahuna>
-	<5194FCDD.8080209@ti.com>
-	<CAGo_u6pX+DdVNWqdPXDChzMr27YAXL_Zvt7DxWBijOCW0rXpkA@mail.gmail.com>
-	<5195401B.5070209@ti.com>
-Date: Thu, 16 May 2013 15:42:39 -0500
-X-Google-Sender-Auth: ycuc5JWwznaHyo4aZT6ppGDYCIw
-Message-ID: <CAGo_u6oQP6eGkCQe=uTBmUsKQqFbS9_xXYt24_HRtjEr561O=g@mail.gmail.com>
-Subject: Re: [PATCH v4] ARM:dts:omap4-panda: Update the LED support for the
- panda DTS
-From: Nishanth Menon <nm@ti.com>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, devicetree-discuss@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 3:22 PM, Dan Murphy <dmurphy@ti.com> wrote:
-> On 05/16/2013 01:18 PM, Nishanth Menon wrote:
->> On Thu, May 16, 2013 at 10:35 AM, Dan Murphy <dmurphy@ti.com> wrote:
->>> I am not sure you really want to do this.
->>> If I make the pinctrl part of the led structure then the only way the gpio_wk7 on a1-a3 to be configured is when
->>> the CONFIG_LEDS_GPIO flag is set.
->>>
->>> Do you really want that dependency?  You did say it was a key fix
->>> At least this way the pins are configured regardless of that flag.
->> That is better as the system will be left in the pinmux configuration
->> handed over from bootloader.
-> So you want to depend on a boot loader to configure pins correctly for the kernel?
-> Hmmm seems risky to me.
+On Thursday, May 16, 2013 02:09:46 PM Viresh Kumar wrote:
+> On 16 May 2013 14:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, May 16, 2013 10:39:55 AM Viresh Kumar wrote:
+> >> Hi Rafael,
+> >
+> > Hi,
+> >
+> >> Here are few more fixes for 3.10-rc2.
+> >
+> > I'm actually going to sent the for-rc2 request today, so these are for -rc3.
+> 
+> Okay. No issues.
 
-Not really! if it is a critical pinmux, pinmux defaults are great,
-else belongs definitely to device->pinctrl :) depending on bootloader
-pinmux implies NOT having pinmux even for device - NO. that is
-definitely not what I stated.
-Regards,
-NM
+While I kind of understand why you want [3/3] to go into 3.10, I'm wondering
+about the other two patches.  Why exactly are they needed now?
+
+And speaking of patch [3/3], if you paste kernel logs into changelogs, please
+remove the time stamps (unless they are relevant to the problem being fixed).
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
