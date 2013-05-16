@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3EPLQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:16:46 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:45661 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab3EPLPn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:43 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, rob.herring@calxeda.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: Only configure wake-up reasons on ux500 based platforms
-Date: Thu, 16 May 2013 12:15:35 +0100
-Message-Id: <1368702935-25599-1-git-send-email-lee.jones@linaro.org>
+	id S1753199Ab3EPLRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:17:03 -0400
+Received: from sauhun.de ([89.238.76.85]:56281 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753022Ab3EPLPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:39 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [PATCH 31/33] arch/mips/lantiq/xway: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:59 +0200
+Message-Id: <1368702961-4325-32-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Multiplatform calls all enabled platforms' initcalls. In the
-ux500_idle_init() initcall we call into the DBx500-PRCMU which in turn
-executes some ux500 specific register reads/writes. When running on
-some !ux500 platforms this ends up causing a kernel Oops. This patch
-ensures the PRCMU call is only invoked when running on ux500 based
-platforms.
+devm_ioremap_resource does sanity checks on the given resource. No need to
+duplicate this in the driver.
 
-Reported-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- arch/arm/mach-ux500/cpuidle.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/mips/lantiq/xway/gptu.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/cpuidle.c b/arch/arm/mach-ux500/cpuidle.c
-index 317a2be..a45dd09 100644
---- a/arch/arm/mach-ux500/cpuidle.c
-+++ b/arch/arm/mach-ux500/cpuidle.c
-@@ -21,6 +21,7 @@
- #include <asm/proc-fns.h>
+diff --git a/arch/mips/lantiq/xway/gptu.c b/arch/mips/lantiq/xway/gptu.c
+index 9861c86..d6a79b8 100644
+--- a/arch/mips/lantiq/xway/gptu.c
++++ b/arch/mips/lantiq/xway/gptu.c
+@@ -144,10 +144,6 @@ static int gptu_probe(struct platform_device *pdev)
+ 	}
  
- #include "db8500-regs.h"
-+#include "id.h"
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "Failed to get resource\n");
+-		return -ENOMEM;
+-	}
  
- static atomic_t master = ATOMIC_INIT(0);
- static DEFINE_SPINLOCK(master_lock);
-@@ -114,6 +115,9 @@ static struct cpuidle_driver ux500_idle_driver = {
- 
- int __init ux500_idle_init(void)
- {
-+	if (!(cpu_is_u8500_family() || cpu_is_ux540_family()))
-+		return -ENODEV;
-+
- 	/* Configure wake up reasons */
- 	prcmu_enable_wakeups(PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) |
- 			     PRCMU_WAKEUP(ABB));
+ 	/* remap gptu register range */
+ 	gptu_membase = devm_ioremap_resource(&pdev->dev, res);
 -- 
 1.7.10.4
 
