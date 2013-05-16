@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3EPQ7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:59:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8510 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab3EPQ7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:59:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,684,1363158000"; 
-   d="scan'208";a="314736669"
-Subject: Re: linux-next: Tree for May 15 (crypto /crct10dif)
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Xiong Zhou <jencce.kernel@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
-In-Reply-To: <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
-References: <20130515132627.817585a3d9fb3a3e502eb586@canb.auug.org.au>
-	 <5193CCEC.7070909@infradead.org>
-	 <alpine.DEB.2.02.1305161152530.31865@M2420>
-	 <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 May 2013 09:59:12 -0700
-Message-ID: <1368723552.27102.286.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752656Ab3EPRB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:01:56 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:36555 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab3EPRBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 13:01:54 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v2] of_net.h: Make of_get_phy_mode() return int i.s.o. const int
+Date: Thu, 16 May 2013 19:01:45 +0200
+Message-Id: <1368723705-19500-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 09:22 +0200, Geert Uytterhoeven wrote:
-> On Thu, May 16, 2013 at 5:57 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
-> > --- a/crypto/Kconfig
-> > +++ b/crypto/Kconfig
-> > @@ -378,6 +378,7 @@ config CRYPTO_CRC32_PCLMUL
-> >
-> >  config CRYPTO_CRCT10DIF
-> >         tristate "CRCT10DIF algorithm"
-> > +       depends on CRC_T10DIF
-> 
-> This is a library symbol, so "select CRC_T10DIF"?
-> 
-> >         select CRYPTO_HASH
-> >         help
-> >           CRC T10 Data Integrity Field computation is being cast as
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
+include/linux/of_net.h:16: warning: type qualifiers ignored on function return type
 
-This is the fix I think that will resolve the build issues.  The generic
-crc-t10dif transform depends on the library function crc_t10dif_generic
-in lib/crc-t10dif.c, so "depends on CRC_T10DIF" for CRYPTO_CRCT10DIF is
-needed.
-
-Now for CRC_T10DIF, we should use select CRYPTO_HASH, so it can try to
-allocate a T10DIF transform if it is available.  If not, it will simply
-use the crc_t10dif_generic function. Loading the
-generic t10dif crypto transform is not mandatory for the library
-function crc_t10dif. 
-
-Thanks for catching the issues.
-
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index d1ca631..015df24 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -379,6 +379,7 @@ config CRYPTO_CRC32_PCLMUL
- config CRYPTO_CRCT10DIF
- 	tristate "CRCT10DIF algorithm"
- 	select CRYPTO_HASH
-+	depends on CRC_T10DIF
- 	help
- 	  CRC T10 Data Integrity Field computation is being cast as
- 	  a crypto transform.  This allows for faster crc t10 diff
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 0cee056..e6ad2e4 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -63,7 +63,7 @@ config CRC16
- 
- config CRC_T10DIF
- 	tristate "CRC calculation for the T10 Data Integrity Field"
--	select CRYPTO_CRCT10DIF
-+	select CRYPTO_HASH
- 	help
- 	  This option is only needed if a module that's not in the
- 	  kernel tree needs to calculate CRC checks for use with the
+[v2] Update drivers/of/of_net.c, too
 
+ drivers/of/of_net.c    |    2 +-
+ include/linux/of_net.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/of/of_net.c b/drivers/of/of_net.c
+index ffab033..fafb6ca 100644
+--- a/drivers/of/of_net.c
++++ b/drivers/of/of_net.c
+@@ -38,7 +38,7 @@ static const char *phy_modes[] = {
+  * The function gets phy interface string from property 'phy-mode',
+  * and return its index in phy_modes table, or errno in error case.
+  */
+-const int of_get_phy_mode(struct device_node *np)
++int of_get_phy_mode(struct device_node *np)
+ {
+ 	const char *pm;
+ 	int err, i;
+diff --git a/include/linux/of_net.h b/include/linux/of_net.h
+index 61bf53b..34597c8 100644
+--- a/include/linux/of_net.h
++++ b/include/linux/of_net.h
+@@ -9,10 +9,10 @@
+ 
+ #ifdef CONFIG_OF_NET
+ #include <linux/of.h>
+-extern const int of_get_phy_mode(struct device_node *np);
++extern int of_get_phy_mode(struct device_node *np);
+ extern const void *of_get_mac_address(struct device_node *np);
+ #else
+-static inline const int of_get_phy_mode(struct device_node *np)
++static inline int of_get_phy_mode(struct device_node *np)
+ {
+ 	return -ENODEV;
+ }
+-- 
+1.7.0.4
 
