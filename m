@@ -1,137 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab3EPHL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 03:11:26 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55628 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988Ab3EPHLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 03:11:21 -0400
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LFBDEV <linux-fbdev@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 2/2] video:da8xx-fb: Convert to devm_* api
-Date: Thu, 16 May 2013 12:40:57 +0530
-Message-Id: <1368688257-18705-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1368688257-18705-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368688257-18705-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1755651Ab3EPHLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:11:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21071 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755231Ab3EPHLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 03:11:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
+   d="scan'208";a="303231695"
+Message-ID: <1368688465.15764.172.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v5 01/11] mtd: add datasheet's ECC information to
+ nand_chip{}
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <b32955@freescale.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Thu, 16 May 2013 10:14:25 +0300
+In-Reply-To: <51944184.7090107@freescale.com>
+References: <1368607232-2210-1-git-send-email-b32955@freescale.com>
+		 <1368607232-2210-2-git-send-email-b32955@freescale.com>
+	 <1368619917.15764.99.camel@sauron.fi.intel.com>
+	 <51944184.7090107@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Thu, 2013-05-16 at 10:16 +0800, Huang Shijie wrote:
+> 于 2013年05月15日 20:11, Artem Bityutskiy 写道:
+> > On Wed, 2013-05-15 at 16:40 +0800, Huang Shijie wrote:
+> >> + * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
+> >> + *			Minimum amount of bit errors per @ecc_step guaranteed to
+> >> + *			be correctable. If unknown, set to zero.
+> >> + * @ecc_step:		[INTERN] ECC step required by the @ecc_strength,
+> >> + *                      also from the datasheet. It is the recommended ECC step
+> >> + *			size, if known; if unknown, set to zero.
+> > Here and in other places you talk about "datasheet". Do you assume that
+> > the real ECC strength/step used by NAND chips may be different? Or you
+> > assume it must be the same?
+> >
+> The two fields are used to store the ecc info from the datasheet.
+> The two fields are just for a reference.
+> 
+> [1] The nand controller may do not use these two fields, it's ok;
+>      For example, the datasheet requires "4bits per 512 bytes".
+>      The nand controller can uses 8bits per 512 bytes.
+> 
+> 
+> [2] but sometimes the nand controller must use these two fields.
+>      For example, the datasheet requires "40bits per 1024 bytes".
+>      For the hardware limit, the nand controller(BCH) may supports the 
+> 40bits ecc in the maximum.
+>      So the nand controller must use these two fields now.
 
-Use devm_ioremap_resource instead of reques_mem_region()/ioremap() and
-devm_request_irq() instead of request_irq().
+I wonder if it makes sense to name things so that it is clear form the
+names whether that is the "theoretical" datasheet values or the real
+ones. I would prefer to clearly distinguish between them, in names and
+comments. Thoughts?
 
-This ensures more consistent error values and simplifies error paths.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/video/da8xx-fb.c |   39 +++++++--------------------------------
- 1 files changed, 7 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index aafe8b9..d35ea1d 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -134,7 +134,6 @@
- #define LOWER_MARGIN	32
- 
- static void __iomem *da8xx_fb_reg_base;
--static struct resource *lcdc_regs;
- static unsigned int lcd_revision;
- static irq_handler_t lcdc_irq_handler;
- static wait_queue_head_t frame_done_wq;
-@@ -1015,12 +1014,9 @@ static int fb_remove(struct platform_device *dev)
- 				  par->p_palette_base);
- 		dma_free_coherent(NULL, par->vram_size, par->vram_virt,
- 				  par->vram_phys);
--		free_irq(par->irq, par);
- 		pm_runtime_put_sync(&dev->dev);
- 		pm_runtime_disable(&dev->dev);
- 		framebuffer_release(info);
--		iounmap(da8xx_fb_reg_base);
--		release_mem_region(lcdc_regs->start, resource_size(lcdc_regs));
- 
- 	}
- 	return 0;
-@@ -1212,12 +1208,12 @@ static int fb_probe(struct platform_device *device)
- {
- 	struct da8xx_lcdc_platform_data *fb_pdata =
- 						device->dev.platform_data;
-+	static struct resource *lcdc_regs;
- 	struct lcd_ctrl_config *lcd_cfg;
- 	struct fb_videomode *lcdc_info;
- 	struct fb_info *da8xx_fb_info;
- 	struct clk *fb_clk = NULL;
- 	struct da8xx_fb_par *par;
--	resource_size_t len;
- 	int ret, i;
- 	unsigned long ulcm;
- 
-@@ -1227,29 +1223,14 @@ static int fb_probe(struct platform_device *device)
- 	}
- 
- 	lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
--	if (!lcdc_regs) {
--		dev_err(&device->dev,
--			"Can not get memory resource for LCD controller\n");
--		return -ENOENT;
--	}
--
--	len = resource_size(lcdc_regs);
--
--	lcdc_regs = request_mem_region(lcdc_regs->start, len, lcdc_regs->name);
--	if (!lcdc_regs)
--		return -EBUSY;
--
--	da8xx_fb_reg_base = ioremap(lcdc_regs->start, len);
--	if (!da8xx_fb_reg_base) {
--		ret = -EBUSY;
--		goto err_request_mem;
--	}
-+	da8xx_fb_reg_base = devm_ioremap_resource(&device->dev, lcdc_regs);
-+	if (IS_ERR(da8xx_fb_reg_base))
-+		return PTR_ERR(da8xx_fb_reg_base);
- 
- 	fb_clk = clk_get(&device->dev, "fck");
- 	if (IS_ERR(fb_clk)) {
- 		dev_err(&device->dev, "Can not get device clock\n");
--		ret = -ENODEV;
--		goto err_ioremap;
-+		return -ENODEV;
- 	}
- 
- 	pm_runtime_enable(&device->dev);
-@@ -1430,8 +1411,8 @@ static int fb_probe(struct platform_device *device)
- 		lcdc_irq_handler = lcdc_irq_handler_rev02;
- 	}
- 
--	ret = request_irq(par->irq, lcdc_irq_handler, 0,
--			DRIVER_NAME, par);
-+	ret = devm_request_irq(&device->dev, par->irq, lcdc_irq_handler, 0,
-+			       DRIVER_NAME, par);
- 	if (ret)
- 		goto irq_freq;
- 	return 0;
-@@ -1460,12 +1441,6 @@ err_pm_runtime_disable:
- 	pm_runtime_put_sync(&device->dev);
- 	pm_runtime_disable(&device->dev);
- 
--err_ioremap:
--	iounmap(da8xx_fb_reg_base);
--
--err_request_mem:
--	release_mem_region(lcdc_regs->start, len);
--
- 	return ret;
- }
- 
 -- 
-1.7.4.1
+Best Regards,
+Artem Bityutskiy
 
