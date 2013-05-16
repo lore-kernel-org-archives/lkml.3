@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3EPLVP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38123 "EHLO mx1.redhat.com"
+	id S1752999Ab3EPLVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:21:34 -0400
+Received: from sauhun.de ([89.238.76.85]:56204 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963Ab3EPLVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:21:11 -0400
-Date: Thu, 16 May 2013 14:10:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1752717Ab3EPLPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:18 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v2 01/10] asm-generic: uaccess s/might_sleep/might_fault/
-Message-ID: <0138f31b9c0f1764a0d6bbed2ee9aa3aedea6815.1368702323.git.mst@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1368702323.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 21/33] drivers/usb/chipidea: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:49 +0200
+Message-Id: <1368702961-4325-22-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason uaccess routines might sleep
-is if they fault. Make this explicit.
+devm_ioremap_resource does sanity checks on the given resource. No need to
+duplicate this in the driver.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- include/asm-generic/uaccess.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/chipidea/core.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
-index c184aa8..dc1269c 100644
---- a/include/asm-generic/uaccess.h
-+++ b/include/asm-generic/uaccess.h
-@@ -163,7 +163,7 @@ static inline __must_check long __copy_to_user(void __user *to,
+diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+index 450107e..49b098b 100644
+--- a/drivers/usb/chipidea/core.c
++++ b/drivers/usb/chipidea/core.c
+@@ -370,11 +370,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+ 	}
  
- #define put_user(x, ptr)					\
- ({								\
--	might_sleep();						\
-+	might_fault();						\
- 	access_ok(VERIFY_WRITE, ptr, sizeof(*ptr)) ?		\
- 		__put_user(x, ptr) :				\
- 		-EFAULT;					\
-@@ -225,7 +225,7 @@ extern int __put_user_bad(void) __attribute__((noreturn));
- 
- #define get_user(x, ptr)					\
- ({								\
--	might_sleep();						\
-+	might_fault();						\
- 	access_ok(VERIFY_READ, ptr, sizeof(*ptr)) ?		\
- 		__get_user(x, ptr) :				\
- 		-EFAULT;					\
-@@ -255,7 +255,7 @@ extern int __get_user_bad(void) __attribute__((noreturn));
- static inline long copy_from_user(void *to,
- 		const void __user * from, unsigned long n)
- {
--	might_sleep();
-+	might_fault();
- 	if (access_ok(VERIFY_READ, from, n))
- 		return __copy_from_user(to, from, n);
- 	else
-@@ -265,7 +265,7 @@ static inline long copy_from_user(void *to,
- static inline long copy_to_user(void __user *to,
- 		const void *from, unsigned long n)
- {
--	might_sleep();
-+	might_fault();
- 	if (access_ok(VERIFY_WRITE, to, n))
- 		return __copy_to_user(to, from, n);
- 	else
-@@ -336,7 +336,7 @@ __clear_user(void __user *to, unsigned long n)
- static inline __must_check unsigned long
- clear_user(void __user *to, unsigned long n)
- {
--	might_sleep();
-+	might_fault();
- 	if (!access_ok(VERIFY_WRITE, to, n))
- 		return n;
- 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "missing resource\n");
+-		return -ENODEV;
+-	}
+-
+ 	base = devm_ioremap_resource(dev, res);
+ 	if (IS_ERR(base))
+ 		return PTR_ERR(base);
 -- 
-MST
+1.7.10.4
 
