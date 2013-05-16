@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab3EPNPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:15:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753648Ab3EPNPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:15:17 -0400
-Message-ID: <5194DBBB.3060102@redhat.com>
-Date: Thu, 16 May 2013 15:14:35 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
-        mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v5 3/8] KVM: MMU: fast invalidate all pages
-References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130516124349.GC14597@redhat.com>
-In-Reply-To: <20130516124349.GC14597@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753939Ab3EPNRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:17:12 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40582 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648Ab3EPNRL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 09:17:11 -0400
+Message-ID: <1368710224.5500.1.camel@phoenix>
+Subject: [PATCH] power_supply: pm2301_charger: Return error if
+ create_singlethread_workqueue fails
+From: Axel Lin <axel.lin@ingics.com>
+To: Anton Vorontsov <cbou@mail.ru>
+Cc: Rupesh Kumar <rupesh.kumar@stericsson.com>,
+        Michel JAOUEN <michel.jaouen@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Date: Thu, 16 May 2013 21:17:04 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/05/2013 14:43, Gleb Natapov ha scritto:
->> > +restart:
->> > +	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
->> > +		if (!is_obsolete_sp(kvm, sp))
->> > +			continue;
-> What if we save kvm->arch.active_mmu_pages on the stack and init
-> kvm->arch.active_mmu_pages to be empty at the entrance to
-> zap_invalid_pages(). This loop will iterate over saved list. This will
-> allow us to drop the is_obsolete_sp() check and will save time since we
-> will not be iterating over newly created sps.
-> 
+Return error instead of 0 if create_singlethread_workqueue call fails.
 
-But when you add cond_resched_lock a thread may want to zap pages itself
-(e.g. from prepare_zap_oldest_mmu_page) and it won't find them.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/power/pm2301_charger.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Here is another proposal...  The idea is to avoid looking at new pages
-more than necessary after a "goto restart".
+diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
+index c972389..6ae3957 100644
+--- a/drivers/power/pm2301_charger.c
++++ b/drivers/power/pm2301_charger.c
+@@ -1075,9 +1075,9 @@ static int pm2xxx_wall_charger_probe(struct i2c_client *i2c_client,
+ 	pm2->ac_chg.external = true;
+ 
+ 	/* Create a work queue for the charger */
+-	pm2->charger_wq =
+-		create_singlethread_workqueue("pm2xxx_charger_wq");
++	pm2->charger_wq = create_singlethread_workqueue("pm2xxx_charger_wq");
+ 	if (pm2->charger_wq == NULL) {
++		ret = -ENOMEM;
+ 		dev_err(pm2->dev, "failed to create work queue\n");
+ 		goto free_device_info;
+ 	}
+-- 
+1.8.1.2
 
-Basically, you alternate between two phases:
 
-- look for pages to be zapped, group them together
 
-- zap the pages
-
-Something like:
-
-      moved = 0;
-restart:
-      zapping = true;
-      for each page in active_mmu_pages [reverse and safe] {
-             if (!is_obsolete || invalid) {
-                 /*
-                  * Found a new page, stop zapping for now and
-                  * try to segregate the invalid ones at one end
-                  * of the list.
-                  */
-                 zapping = false;
-                 continue;
-             }
-
-             if (batch > 10 && ...) {
-                 cond_resched_lock
-                 batch = 0;
-                 goto restart;
-             }
-
-             if (!zapping) {
-                 /*
-                  * Segregate pages to one end of the list where
-                  * new pages don't get in the way.
-                  */
-                 list_move_tail(page, active_mmu_pages)
-                 batch++; /* or maybe not? */
-                 moved++;
-             } else {
-                 batch += prepare_zap_page
-                 goto restart;
-             }
-     }
-
-     /* Need another pass to look at segregated pages?  */
-     if (moved) {
-         moved = 0;
-         goto restart;
-     }
