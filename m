@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3EPXgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 19:36:17 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36995 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3EPXgP (ORCPT
+	id S1755210Ab3EPXqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 19:46:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48389 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab3EPXqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 19:36:15 -0400
-Message-ID: <51956D6C.7090005@intel.com>
-Date: Thu, 16 May 2013 16:36:12 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 16 May 2013 19:46:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51956FA3.6040806@jp.fujitsu.com>
+Date: Fri, 17 May 2013 08:45:39 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Power management and ACPI fixes for v3.10-rc2
-References: <68458966.ga8OpWyZtA@vostro.rjw.lan> <CA+55aFxhDO0D1nQgTFWSiZT9AJMSF9oOUoxWj=Y=5en0nWC92g@mail.gmail.com>
-In-Reply-To: <CA+55aFxhDO0D1nQgTFWSiZT9AJMSF9oOUoxWj=Y=5en0nWC92g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: "riel@redhat.com" <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        jingbai.ma@hp.com, kexec@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, lisa.mitchell@hp.com,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        kumagai-atsushi@mxc.nes.nec.co.jp,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        zhangyanfei@cn.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, cpw@sgi.com, vgoyal@redhat.com
+Subject: Re: [PATCH v6 4/8] vmalloc: make find_vm_area check in range
+References: <20130515090507.28109.28956.stgit@localhost6.localdomain6> <20130515090602.28109.90142.stgit@localhost6.localdomain6> <CAHGf_=q-91cYOMPFfSGLsWWst7STgp6pxX4__9UMYUGh=Ef3oA@mail.gmail.com>
+In-Reply-To: <CAHGf_=q-91cYOMPFfSGLsWWst7STgp6pxX4__9UMYUGh=Ef3oA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 03:25 PM, Linus Torvalds wrote:
-> On Thu, May 16, 2013 at 1:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+(2013/05/16 6:37), KOSAKI Motohiro wrote:
+> On Wed, May 15, 2013 at 5:06 AM, HATAYAMA Daisuke
+> <d.hatayama@jp.fujitsu.com> wrote:
+>> Currently, __find_vmap_area searches for the kernel VM area starting
+>> at a given address. This patch changes this behavior so that it
+>> searches for the kernel VM area to which the address belongs. This
+>> change is needed by remap_vmalloc_range_partial to be introduced in
+>> later patch that receives any position of kernel VM area as target
+>> address.
 >>
->> - intel_pstate driver fixes and cleanups from Dirk Brandewie and
->>    Wei Yongjun.
+>> This patch changes the condition (addr > va->va_start) to the
+>> equivalent (addr >= va->va_end) by taking advantage of the fact that
+>> each kernel VM area is non-overlapping.
+>>
+>> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+>> ---
+>>
+>>   mm/vmalloc.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+>> index d365724..3875fa2 100644
+>> --- a/mm/vmalloc.c
+>> +++ b/mm/vmalloc.c
+>> @@ -292,7 +292,7 @@ static struct vmap_area *__find_vmap_area(unsigned long addr)
+>>                  va = rb_entry(n, struct vmap_area, rb_node);
+>>                  if (addr < va->va_start)
+>>                          n = n->rb_left;
+>> -               else if (addr > va->va_start)
+>> +               else if (addr >= va->va_end)
+>>                          n = n->rb_right;
 >
-> Btw, is there some fundamental reason why the pstate driver is limited
-> to so few models?
+> OK. This is natural definition. Looks good.
 >
-> I've tested it on models 0x25 (i5-670) and 0x3a (i5-3427U), and it
-> seems to work. But neither model is listed. (only 0x2a and 0x2d are).
->
-> I understand that people want to be careful, but it's not actually
-> getting very much *testing* right now, is it? Are models 0x2a/0x2d
-> actually special in any way?
->
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-No they are not I will send the patch out in the morning.
+Thanks for your reviewing. Could you or other someone review the next 
+5/8 patch too? It also changes vmalloc and cc people's review is needed.
 
->                    Linus
->
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
