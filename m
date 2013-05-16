@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab3EPKfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 06:35:45 -0400
-Received: from abc.logicbricks.com ([89.201.165.132]:61457 "EHLO
-	abc.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3EPKfn (ORCPT
+	id S1751957Ab3EPKnL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 06:43:11 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:37139 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3EPKnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 06:35:43 -0400
-Content-Class: urn:content-classes:message
-Subject: RE: fb driver for logiCVC
+	Thu, 16 May 2013 06:43:08 -0400
+Message-ID: <5194B836.1020808@gmail.com>
+Date: Thu, 16 May 2013 12:43:02 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Date: Thu, 16 May 2013 12:35:38 +0200
-Message-ID: <ABCSCiTtUDvkm6WeI5J00000073@abc.logicbricks.com>
-In-Reply-To: <20130515184112.251bb949@neptune.home>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: fb driver for logiCVC
-thread-index: Ac5RixGTCs3yvSDiQMqCfL/AA883WAAkr3eg
-References: <9D79B9A9194389468A922F618415D0A401229E7E@abc.xylon.local> <20130515184112.251bb949@neptune.home>
-From: "Davor Joja" <Davor.Joja@logicbricks.com>
-To: =?utf-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH RFC] media: OF: add field-active and sync-on-green endpoint
+ properties
+References: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com> <2510029.UKsn4JyZOW@avalon> <CA+V-a8tsohAyGRCn3NhwsS19X84N_xOwLB_wd0bPvyu1fLy3+g@mail.gmail.com>
+In-Reply-To: <CA+V-a8tsohAyGRCn3NhwsS19X84N_xOwLB_wd0bPvyu1fLy3+g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4GAZnxt021347
 
-Hello Bruno,
+Hi,
 
-Thank you for the answer!
+On 05/16/2013 06:53 AM, Prabhakar Lad wrote:
+>>> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt
+>>> >>  b/Documentation/devicetree/bindings/media/video-interfaces.txt index
+>>> >>  e022d2d..6bf87d0 100644
+>>> >>  --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
+>>> >>  +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+>>> >>  @@ -101,6 +101,10 @@ Optional endpoint properties
+>>> >>      array contains only one entry.
+>>> >>    - clock-noncontinuous: a boolean property to allow MIPI CSI-2
+>>> >>  non-continuous clock mode.
+>>> >>  +-field-active: a boolean property indicating active high filed ID output
+>>> >>  + polarity is inverted.
+>> >
+>> >  Looks like we already have field-even-active property to describe the level of
+>> >  the field signal. Could you please check whether it fulfills your use cases ?
+>> >  Sorry for not pointing you to it earlier.
+>> >
+> I had looked at it earlier it only means "field signal level during the even
+> field data transmission" it only speaks of even filed. Ideally the field ID
+> output is set to logic 1 for odd field and set to 0 for even field, what I
+> want is to invert the FID out polarity when "field-active" property is set.
+>
+> May be we rename "field-active" to "fid-pol" ?
 
-I did not send it before to linux-fbdev since I thought that it is more likely to get answer at linux-kernel list.
-Will do that from now.
+I guess we failed to clearly describe the 'field-even-active' property then.
+It seems to be exactly what you need.
 
-Unfortunately, I have this driver on mentioned git only for few weeks, so there is no usable history.
-Since this is new driver, tested and functional (on kernel 3.8), without git history as stated above, do you have idea how to break it to smaller pieces? I can only think off as one big patch against 3.8.x version.
-That could be accepted for new driver?
+It is not enough to say e.g. field-active = <1>;, because it would not have
+been clear which field it refers to, odd or even ? Unlike VSYNC, HSYNC both
+levels of the FIELD signal are "active", there is no "idle" state for FIELD.
 
-You are right about git, it is not organized in standard way.
-It is created for our customers to easily get latest drivers for Xylon IP cores because they already know what they need and in which folder to search. Maybe this was not good idea to send that git link for review. Will stitch to patches in the future, even for new drivers.
+So field-even-active = <1>; means the FIELD signal at logic high level
+indicates EVEN field _and_ this implies FIELD = 0 indicates ODD field, i.e.
 
-Regards,
-Davor
+FIELD = 0 => odd field
+FIELD = 1 => even field
 
+For field-even-active = <0>; it is the other way around:
 
------Original Message-----
-From: Bruno PrÃ©mont [mailto:bonbons@linux-vserver.org] 
-Sent: Wednesday, May 15, 2013 6:41 PM
-To: Davor Joja
-Cc: linux-kernel@vger.kernel.org; linux-fbdev@vger.kernel.org
-Subject: Re: fb driver for logiCVC
+FIELD = 0 => even field
+FIELD = 1 => odd field
 
-Hello Davor,
+It looks like only "sync-on-green" property is missing. BTW, is it really
+commonly used ? What drivers would need it ?
+I'm not against making it a common property, it's just first time I see it.
 
-On Tue, 14 May 2013 "Davor Joja" wrote:
-> Can I get suggestion how to send driver to this list which consists of 
-> several files and folders, as one (big) patch or as described in 
-> "how-to" as link to some ftp or git?
-> My previous mail has not been replied, because of link to driver or 
-> other issue (tested on kernel 3.8)?
-
-You should also send it to linux-fbdev (CCed) so interested people have a better chance of seeing it (and quoting previous mail below).
-
-If you have a git tree with history it might be nice. Otherwise it's easier to review if you can split the big-patch into multiple incremental parts adding some functionality each (that incremental nature would also be expected from a git tree).
-
-Your tree at https://github.com/logicbricks/linux_kernel looks weird, you seem to have imported just the subfolders of kernel tree you worked on instead of cloning e.g. v3.8 release and applying your driver on top of it. This way it's not possible to merge your tree and it's rather hard to find out what belongs to your driver or not.
-
-Bruno
-
-On Wed, 08 May 2013 "Davor Joja" wrote:
-> I am sending link to frame buffer driver for Xylon "logiCVC" FPGA IP 
-> core, so I would kindly ask for driver review.
-> logiCVC is Configurable Video Controller developed for Xilinx FPGA 
-> devices.
-> logiCVC device together with xylonfb driver is widely used in Xilinx 
-> Targeted Referent Designs on Zynq SoC platforms (ZC702, ZC706, ZED, 
-> TED, Xilinx customers and Xilinx university program) and on custom 
-> projects from Xylon and Xylon customers.
-> 
-> Driver implements platform and open firmware registration types.
-> It has built in interface with V4L2 ADV7511 HDMI transmitter driver 
-> for handling EDID and miscellaneous clock generator SI570 driver.
-> I would seek an advice for above mentioned and other issues which will 
-> get to surface in review.
-> 
-> For now fb driver runs on 3.8 kernel (ARM architecture), and it was 
-> tested in all its configurations with:
-> - Xylon test application
-> - fbdev - Frame buffer device test application
-> - DirectFB,
-> - QT
-> - Ubuntu 10.04 (16bpp and 32bpp color depth) Driver build was tested 
-> by Open Source Technology Center.
-> 
-> Latest driver is available at
-> https://github.com/logicbricks/linux_kernel.git under 
-> "drivers/video/xylon" and "include/linux" "Documentation (xylonfb 
-> devicetree parameters)"
-> It is available on https://github.com/xilinx but not latest version.
-> 
-> I have placed on ftp.logicbricks.com logiCVC datasheet, application 
-> note, current xylonfb driver user manual and test applications.
-> Username: xylonfb
-> Password: xylonfb
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Sylwester
