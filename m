@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab3EPLWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:22:50 -0400
-Received: from sauhun.de ([89.238.76.85]:56127 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab3EPLO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:14:57 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, netdev@vger.kernel.org
-Subject: [PATCH 13/33] drivers/net/ethernet/renesas: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:41 +0200
-Message-Id: <1368702961-4325-14-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+	id S1752966Ab3EPLXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:23:13 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:52802 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab3EPLXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:23:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <ABCSCiTtUDvkm6WeI5J00000073@abc.logicbricks.com>
+References: <9D79B9A9194389468A922F618415D0A401229E7E@abc.xylon.local>
+	<20130515184112.251bb949@neptune.home>
+	<ABCSCiTtUDvkm6WeI5J00000073@abc.logicbricks.com>
+Date: Thu, 16 May 2013 13:23:07 +0200
+X-Google-Sender-Auth: 3xFa3vf8_gtaZQEfl_kjdcZEeJA
+Message-ID: <CAMuHMdUW-tVY6=Bu9mabKrkNJsTxJM+Umo6jjcnXpWpzh_5AVw@mail.gmail.com>
+Subject: Re: fb driver for logiCVC
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Davor Joja <Davor.Joja@logicbricks.com>
+Cc: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+On Thu, May 16, 2013 at 12:35 PM, Davor Joja <Davor.Joja@logicbricks.com> wrote:
+> Unfortunately, I have this driver on mentioned git only for few weeks, so there is no usable history.
+> Since this is new driver, tested and functional (on kernel 3.8), without git history as stated above, do you have idea how to break it to smaller pieces? I can only think off as one big patch against 3.8.x version.
+> That could be accepted for new driver?
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/net/ethernet/renesas/sh_eth.c |    5 -----
- 1 file changed, 5 deletions(-)
+A single patch is OK for a new driver.
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index 33dc6f2..42e9dd0 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -2745,11 +2745,6 @@ static int sh_eth_drv_probe(struct platform_device *pdev)
- 	if (mdp->cd->tsu) {
- 		struct resource *rtsu;
- 		rtsu = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--		if (!rtsu) {
--			dev_err(&pdev->dev, "Not found TSU resource\n");
--			ret = -ENODEV;
--			goto out_release;
--		}
- 		mdp->tsu_addr = devm_ioremap_resource(&pdev->dev, rtsu);
- 		if (IS_ERR(mdp->tsu_addr)) {
- 			ret = PTR_ERR(mdp->tsu_addr);
--- 
-1.7.10.4
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
