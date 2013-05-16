@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab3EPQrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:47:04 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60612 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab3EPQrD (ORCPT
+	id S1752526Ab3EPQtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:49:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21959 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3EPQtd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:47:03 -0400
-Date: Thu, 16 May 2013 18:46:58 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
-Message-ID: <20130516184658.0650f838@skate>
-In-Reply-To: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 16 May 2013 12:49:33 -0400
+MIME-Version: 1.0
+Message-ID: <b12c2e22-f41c-490d-9d74-c85aa397e017@default>
+Date: Thu, 16 May 2013 09:45:43 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [PATCHv11 3/4] zswap: add to mm/
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <15c5b1da-132a-4c9e-9f24-bc272d3865d5@default>
+ <20130514163541.GC4024@medulla>
+ <f0272a06-141a-4d33-9976-ee99467f3aa2@default> <519408D6.10903@redhat.com>
+In-Reply-To: <519408D6.10903@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian, Jason, Andrew, Gregory,
-
-On Sat, 11 May 2013 03:08:00 +0200, Sebastian Hesselbarth wrote:
-> Marvell EBU SoCs share some common clock functions that register core
-> clocks or clock gates from SoC specific data. These clock drivers are
-> organized by function and over time the drivers filled up with #ifdefs
-> to separate different SoC specific code.
+> From: Rik van Riel [mailto:riel@redhat.com]
+> Sent: Wednesday, May 15, 2013 4:15 PM
+> To: Dan Magenheimer
+> Cc: Seth Jennings; Andrew Morton; Greg Kroah-Hartman; Nitin Gupta; Minchan Kim; Konrad Wilk; Robert
+> Jennings; Jenifer Hopper; Mel Gorman; Johannes Weiner; Larry Woodman; Benjamin Herrenschmidt; Dave
+> Hansen; Joe Perches; Joonsoo Kim; Cody P Schafer; Hugh Dickens; Paul Mackerras; linux-mm@kvack.org;
+> linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org
+> Subject: Re: [PATCHv11 3/4] zswap: add to mm/
 > 
-> This patch set first adds a new element to clock gate descriptors to
-> allow to pass clk flags per clock gate. (Patch 1)
+> On 05/14/2013 04:18 PM, Dan Magenheimer wrote:
 > 
-> Then it restructures MVEBU clock drivers into common clock setup and
-> SoC specific files and Kconfig options. The driver's init functions
-> are also registered to get called with of_clk_init. (Patches 2, 3-6)
+> > It's unfortunate that my proposed topic for LSFMM was pre-empted
+> > by the zsmalloc vs zbud discussion and zswap vs zcache, because
+> > I think the real challenge of zswap (or zcache) and the value to
+> > distros and end users requires us to get this right BEFORE users
+> > start filing bugs about performance weirdness.  After which most
+> > users and distros will simply default to 0% (i.e. turn zswap off)
+> > because zswap unpredictably sometimes sucks.
 > 
-> It then switches Dove, Kirkwood, and Armada 370/XP to make use of
-> of_clk_init instead of mvebu_clocks_init. (Patches 7-9)
+> I'm not sure we can get it right before people actually start
+> using it for real world setups, instead of just running benchmarks
+> on it.
 > 
-> Finally, all obsolete files and Kconfig options are removed. (Patch 10)
-> 
-> It has been tested on CuBox (Dove) and Dockstar (Kirkwood) by me.
-> Armada 370 and XP are compile tested only and should get their Tested-by
-> from Thomas and Gregory, respectively.
-> 
-> @Mike: As this only touches MVEBU related code, I suggest to take it
-> all through the corresponding ARM branch.
-> 
-> Sebastian Hesselbarth (10):
->   clk: mvebu: introduce per-clock-gate flags
->   clk: mvebu: add common clock functions for core clk and clk gating
->   clk: mvebu: add Dove SoC-centric clock init
->   clk: mvebu: add Kirkwood SoC-centric clock init
->   clk: mvebu: add Armada 370 SoC-centric clock init
->   clk: mvebu: add Armada XP SoC-centric clock init
->   ARM: dove: move DT boards to SoC-centric clock init
->   ARM: kirkwood: move DT boards to SoC-centric clock init
->   ARM: mvebu: move DT boards to SoC-centric clock init
->   clk: mvebu: desintegrate obsolete file
+> The sooner we get the code out there, where users can play with
+> it (even if it is disabled by default and needs a sysfs or
+> sysctl config option to enable it), the sooner we will know how
+> well it works, and what needs to be changed.
 
-Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+/me sets stage of first Star Wars (1977)
 
-I've tested on Armada 370 DB (after reverting the ARM core patch that
-prevents this platform from booting) and the Armada XP DB. Both boards
-boot fine, and detect PCIe devices as they should.
+/me envisions self as Obi-Wan Kenobi, old and tired of fighting,
+in lightsaber battle with protege Darth Vader / Anakin Skywalker
 
-There is some conflict between this set of commits and the two commits
-that modify the PCIe clocks in my PCIe series. I've pushed a branch at
-https://github.com/MISL-EBU-System-SW/mainline-public/tree/marvell-pcie-v10-and-seb-clks
-which has the mvebu PCIe stuff + Sebastian patches on top of it, with
-the conflicts resolved. The tricky thing is that since Sebastian is
-adding new clock files, and then removing the old ones, it's pretty
-easy to "loose" the changes the two PCIe clock patches are doing. The
-branch above works on Armada 370/XP, so you can compare the clock files
-if needed.
+/me sadly turns off lightsaber, holds useless handle at waist,
+takes a deep breath, and promptly gets sliced into oblivion.
 
-Of course, I'm willing to do another final test once you've done the
-merged to confirm that everything is alright.
+Time for A New Hope(tm).
 
-I haven't done a detailed review of the patches, but I definitely agree
-with the principle, and I trust Sebastian for having done the right
-thing in here.
-
-Thanks!
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+(/me cc's Jon Corbet for a longshot last chance of making LWN's
+Kernel Development Quotes of the Week.)
