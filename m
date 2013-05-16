@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab3EPWoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:44:17 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:47145 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3EPWoQ convert rfc822-to-8bit (ORCPT
+	id S1755143Ab3EPWzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:55:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37665 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479Ab3EPWy7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:44:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <5195486F.1040603@cogentembedded.com>
-References: <201302190258.25726.sergei.shtylyov@cogentembedded.com>
-	<20130301070925.GA24369@verge.net.au>
-	<5130B12F.20409@gmail.com>
-	<5130B1A7.9060001@gmail.com>
-	<5130B34F.2090700@cogentembedded.com>
-	<5130B506.5020908@gmail.com>
-	<5195486F.1040603@cogentembedded.com>
-Date: Thu, 16 May 2013 17:44:15 -0500
-Message-ID: <CAL_JsqLkshrBDDKtdf+KYufg=83Yn7zAFmHKUpoA848JzbQKmw@mail.gmail.com>
-Subject: Re: [PATCH] <linux/of_platform.h>: fix compilation warnings with DT disabled
-From: Rob Herring <robherring2@gmail.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
+	Thu, 16 May 2013 18:54:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
+   d="scan'208";a="338908784"
+From: "Ralston, James D" <james.d.ralston@intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Peter Tyser <ptyser@xes-inc.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        vladimir.barinov@cogentembedded.com
-Content-Type: text/plain; charset=windows-1252
+        "Heasley, Seth" <seth.heasley@intel.com>
+Subject: RE: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
+Thread-Topic: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
+Thread-Index: AQHOUoMWQ9ZmEHmdE0OfCES40Kds0pkIa66Q
+Date: Thu, 16 May 2013 22:54:56 +0000
+Message-ID: <92A8E3E1132F2F478648ABA9A4E1EC998CCEC0A2@ORSMSX105.amr.corp.intel.com>
+References: <1368128333-1765-1-git-send-email-james.d.ralston@intel.com>
+ <20130516221655.GT22822@zurbaran>
+In-Reply-To: <20130516221655.GT22822@zurbaran>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 3:58 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Hello.
->
->
-> On 03/01/2013 05:02 PM, Rob Herring wrote:
->
->>>>>>> Fix the following compilation warnings (in Simon Horman's
->>>>>>> renesas.git repo):
->>>>>>> In file included from arch/arm/mach-shmobile/setup-r8a7779.c:24:0:
->>>>>>> include/linux/of_platform.h:107:13: warning: ‘struct of_device_id’
->>>>>>> declared
->>>>>>> inside parameter list [enabled by default]
->>>>>>> include/linux/of_platform.h:107:13: warning: its scope is only this
->>>>>>> definition
->>>>>>> or declaration, which is probably not what you want [enabled by
->>>>>>> default]
->>>>>>> include/linux/of_platform.h:107:13: warning: ‘struct device_node’
->>>>>>> declared
->>>>>>> inside parameter list [enabled by default]
->>>>>>> <linux/of_platform.h> only #include's headers with definitions of
->>>>>>> the above
->>>>>>> mentioned structures if CONFIG_OF_DEVICE=y but uses them even if
->>>>>>> not. One
->>>>>>> solution is to move some #include's out of #ifdef CONFIG_OF_DEVICE
->>>>>>> and use
->>>>>>> incomplete declarations for the rest of the structures where the
->>>>>>> #ifdef move
->>>>>>> doesn't help...
->>>>>>> Reported-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
->>>>>>> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
->>>>>>
->>>>>> Reviewed-by: Simon Horman <horms+renesas@verge.net.au>
->>>>>> Grant, could you consider taking this patch?
->>>>>
->>>>> Yes, I can, but I don't seem to have the original patch. Can you send
->>>>> it
->>>>> again.
->>>>
->>>> Nevermind. Found it. I'll apply it.
->>>
->>>     Will you drop 'struct device_node' declaration then or should I
->>> resend? In fact, I think I should better resend it with the changelog
->>> somewhat edited.
->>
->> No, I plan to leave it as is and not rely on device.h by chance
->> declaring device_node.
->
->
->     I hoped to see this fix in 3.10-rc1. Is there any hope to see it in
-> 3.10-rc's?
-> The code it fixes the warnings in is already in Linus tree.
+Good to hear. Thanks!
 
-So I had this queued up, but Grant did not send DT update to Linus for
-3.10. The main thing we had was the preprocessor support and that went
-thru arm-soc tree. I plan to send this and other fixes to Linus for
-3.10.
+James Ralston
 
-Rob
+
+-----Original Message-----
+From: Samuel Ortiz [mailto:sameo@linux.intel.com] 
+Sent: Thursday, May 16, 2013 3:17 PM
+To: Ralston, James D
+Cc: Peter Tyser; linux-kernel@vger.kernel.org; Heasley, Seth
+Subject: Re: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
+
+Hi James,
+
+On Thu, May 09, 2013 at 12:38:53PM -0700, James Ralston wrote:
+> This patch adds the LPC Controller Device IDs for Watchdog and GPIO for the Intel Avoton SoC.
+> 
+> Signed-off-by: James Ralston <james.d.ralston@intel.com>
+> ---
+> Change notes for v2:
+> *corrected version number
+> 
+>  drivers/mfd/lpc_ich.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+Applied to my mfd-next tree, it should make it to Linux 3.11.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
