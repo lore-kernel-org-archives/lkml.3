@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab3EPIuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 04:50:24 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52600 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab3EPIuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 04:50:21 -0400
-X-AuditID: 9c93017e-b7c8fae000000f00-3f-51949dcb104b
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
-References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
-	<5193A6E7.9040501@gmail.com> <87sj1n4rh3.fsf@sejong.aot.lge.com>
-	<51944796.7020505@gmail.com>
-Date: Thu, 16 May 2013 17:50:18 +0900
-In-Reply-To: <51944796.7020505@gmail.com> (David Ahern's message of "Wed, 15
-	May 2013 20:42:30 -0600")
-Message-ID: <8738tn48c5.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756645Ab3EPI7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 04:59:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32703 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755785Ab3EPI7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 04:59:42 -0400
+X-IronPort-AV: E=Sophos;i="4.87,683,1363104000"; 
+   d="scan'208";a="7284955"
+Message-ID: <51949F70.9020306@cn.fujitsu.com>
+Date: Thu, 16 May 2013 16:57:20 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Vahram Martirosyan <vmartirosyan@gmail.com>
+CC: Dave Kleikamp <shaggy@kernel.org>,
+        Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
+        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        spruce-project@linuxtesting.org
+Subject: Re: [PATCH] jfs: Functions jfs_freeze() and jfs_unfreeze() always
+ return 0
+References: <1368681273-869-1-git-send-email-vahram.martirosyan@linuxtesting.org>
+In-Reply-To: <1368681273-869-1-git-send-email-vahram.martirosyan@linuxtesting.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 16:58:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 16:58:25,
+	Serialize complete at 2013/05/16 16:58:25
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 05/16/2013 01:14 PM, Vahram Martirosyan wrote:
 
-On Wed, 15 May 2013 20:42:30 -0600, David Ahern wrote:
-> On 5/15/13 7:56 PM, Namhyung Kim wrote:
->>> How about just --time? less typing.
->>
->> Thanks, I'm fine with '--time' too but '--time-filter' looks more
->
-> yes, I just have really long command lines now. Is there a consistent
-> single letter (X?)?
+> The mentioned functions do not pay attention to the error codes returned
+> by the functions updateSuper(), lmLogInit() and lmLogShutdown(). It brings to
+> system crash later when writing to log.
+> 
+> The patch adds corresponding code to check and return the error codes
+> and to print correct error messages in case of errors.
+> 
+> Found by Linux File System Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
 
-Do you mean a single-letter option "-X" for this?
 
->
->> obvious.  What does the timehist command do, btw? ;)
->
-> task scheduling time history including run time and time between
-> sched-in. It needs to be updated to use tracepoints and perhaps fold
-> into perf-sched (e.g., perf sched history). Too many features; too
-> little time. I hope to get to it in the next month or so.
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-Looks useful.
+> ---
+>  fs/jfs/super.c | 29 ++++++++++++++++++++++-------
+>  1 file changed, 22 insertions(+), 7 deletions(-)
+> 
+> diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+> index 2003e83..a3d424d 100644
+> --- a/fs/jfs/super.c
+> +++ b/fs/jfs/super.c
+> @@ -611,11 +611,20 @@ static int jfs_freeze(struct super_block *sb)
+>  {
+>  	struct jfs_sb_info *sbi = JFS_SBI(sb);
+>  	struct jfs_log *log = sbi->log;
+> +	int rc = 0;
+>  
+>  	if (!(sb->s_flags & MS_RDONLY)) {
+>  		txQuiesce(sb);
+> -		lmLogShutdown(log);
+> -		updateSuper(sb, FM_CLEAN);
+> +		rc = lmLogShutdown(log);
+> +		if (rc != 0) {
 
->
->>> I would expect parse_nsec_time to fail. e.g., a time string like 123455.a
->>
->> It looks like current strtol() returns 0 when failed to parse like
->> above.  Hmm.. do I have to check whether the return value is 0 or just
->> ignore invalid inputs?
->
-> end will point to the next character not converted so make sure it is
-> as expected (*end == '\0').
-
-Arh, okay.  So I'll change it to check the 'end' and fails if an
-unexpected input comes.
+"if (rc)", and the following. 
 
 Thanks,
-Namhyung
+Gu
+
+> +			jfs_err("lmLogShutdown failed with return code %d", rc);
+> +			return rc;
+> +		}
+> +		rc = updateSuper(sb, FM_CLEAN);
+> +		if (rc != 0) {
+> +			jfs_err("updateSuper failed with return code %d", rc);
+> +			return rc;
+> +		}
+>  	}
+>  	return 0;
+>  }
+> @@ -627,11 +636,17 @@ static int jfs_unfreeze(struct super_block *sb)
+>  	int rc = 0;
+>  
+>  	if (!(sb->s_flags & MS_RDONLY)) {
+> -		updateSuper(sb, FM_MOUNT);
+> -		if ((rc = lmLogInit(log)))
+> -			jfs_err("jfs_unlock failed with return code %d", rc);
+> -		else
+> -			txResume(sb);
+> +		rc = updateSuper(sb, FM_MOUNT);
+> +		if (rc != 0) {
+> +			jfs_err("updateSuper failed with return code %d", rc);
+> +			return rc;
+> +		}
+> +		rc = lmLogInit(log);
+> +		if (rc != 0) {
+> +			jfs_err("lmLogInit failed with return code %d", rc);
+> +			return rc;
+> +		}
+> +		txResume(sb);
+>  	}
+>  	return 0;
+>  }
+
+
