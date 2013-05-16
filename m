@@ -1,228 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab3EPUfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:35:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40993 "EHLO mga14.intel.com"
+	id S1753022Ab3EPUff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:35:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61512 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab3EPUfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:35:03 -0400
+	id S1751921Ab3EPUe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 16:34:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="242653898"
-Subject: [RFCv2][PATCH 5/5] batch shrink_page_list() locking operations
+   d="scan'208";a="338517492"
+Subject: [RFCv2][PATCH 1/5] defer clearing of page_private() for swap cache pages
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
         tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Thu, 16 May 2013 13:34:34 -0700
+Date: Thu, 16 May 2013 13:34:28 -0700
 References: <20130516203427.E3386936@viggo.jf.intel.com>
 In-Reply-To: <20130516203427.E3386936@viggo.jf.intel.com>
-Message-Id: <20130516203434.41DFD429@viggo.jf.intel.com>
+Message-Id: <20130516203428.EEB32399@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
-changes for v2:
- * remove batch_has_same_mapping() helper.  A local varible makes
-   the check cheaper and cleaner
- * Move batch draining later to where we already know
-   page_mapping().  This probably fixes a truncation race anyway
- * rename batch_for_mapping_removal -> batch_for_mapping_rm.  It
-   caused a line over 80 chars and needed shortening anyway.
- * Note: we only set 'batch_mapping' when there are pages in the
-   batch_for_mapping_rm list
 
---
+This patch defers the destruction of swapcache-specific data in
+'struct page'.  This simplifies the code because we do not have
+to keep extra copies of the data during the removal of a page
+from the swap cache.
 
-We batch like this so that several pages can be freed with a
-single mapping->tree_lock acquisition/release pair.  This reduces
-the number of atomic operations and ensures that we do not bounce
-cachelines around.
+There are only two callers of swapcache_free() which actually
+pass in a non-NULL 'struct page'.  Both of them (__remove_mapping
+and delete_from_swap_cache())  create a temporary on-stack
+'swp_entry_t' and set entry.val to page_private().
 
-Tim Chen's earlier version of these patches just unconditionally
-created large batches of pages, even if they did not share a
-page_mapping().  This is a bit suboptimal for a few reasons:
-1. if we can not consolidate lock acquisitions, it makes little
-   sense to batch
-2. The page locks are held for long periods of time, so we only
-   want to do this when we are sure that we will gain a
-   substantial throughput improvement because we pay a latency
-   cost by holding the locks.
+They need to do this since __delete_from_swap_cache() does
+set_page_private(page, 0) and destroys the information.
 
-This patch makes sure to only batch when all the pages on
-'batch_for_mapping_rm' continue to share a page_mapping().
-This only happens in practice in cases where pages in the same
-file are close to each other on the LRU.  That seems like a
-reasonable assumption.
+However, I'd like to batch a few of these operations on several
+pages together in a new version of __remove_mapping(), and I
+would prefer not to have to allocate temporary storage for each
+page.  The code is pretty ugly, and it's a bit silly to create
+these on-stack 'swp_entry_t's when it is so easy to just keep the
+information around in 'struct page'.
 
-In a 128MB virtual machine doing kernel compiles, the average
-batch size when calling __remove_mapping_batch() is around 5,
-so this does seem to do some good in practice.
+There should not be any danger in doing this since we are
+absolutely on the path of freeing these page.  There is no
+turning back, and no other rerferences can be obtained after it
+comes out of the radix tree.
 
-On a 160-cpu system doing kernel compiles, I still saw an
-average batch length of about 2.8.  One promising feature:
-as the memory pressure went up, the average batches seem to
-have gotten larger.
-
-It has shown some substantial performance benefits on
-microbenchmarks.
+Note: This patch is separate from the next one since it
+introduces the behavior change.  I've seen issues with this patch
+by itself in various forms and I think having it separate like
+this aids bisection.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 ---
 
- linux.git-davehans/mm/vmscan.c |   95 +++++++++++++++++++++++++++++++++++++----
- 1 file changed, 86 insertions(+), 9 deletions(-)
+ linux.git-davehans/mm/swap_state.c |    4 ++--
+ linux.git-davehans/mm/vmscan.c     |    2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff -puN mm/vmscan.c~create-remove_mapping_batch mm/vmscan.c
---- linux.git/mm/vmscan.c~create-remove_mapping_batch	2013-05-16 13:27:25.775185544 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-16 13:27:25.779185721 -0700
-@@ -552,6 +552,61 @@ int remove_mapping(struct address_space
- 	return 0;
+diff -puN mm/swap_state.c~__delete_from_swap_cache-dont-clear-page-private mm/swap_state.c
+--- linux.git/mm/swap_state.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-16 13:27:24.686137407 -0700
++++ linux.git-davehans/mm/swap_state.c	2013-05-16 13:27:24.691137629 -0700
+@@ -146,8 +146,6 @@ void __delete_from_swap_cache(struct pag
+ 	entry.val = page_private(page);
+ 	address_space = swap_address_space(entry);
+ 	radix_tree_delete(&address_space->page_tree, page_private(page));
+-	set_page_private(page, 0);
+-	ClearPageSwapCache(page);
+ 	address_space->nrpages--;
+ 	__dec_zone_page_state(page, NR_FILE_PAGES);
+ 	INC_CACHE_INFO(del_total);
+@@ -224,6 +222,8 @@ void delete_from_swap_cache(struct page
+ 	spin_unlock_irq(&address_space->tree_lock);
+ 
+ 	swapcache_free(entry, page);
++	set_page_private(page, 0);
++	ClearPageSwapCache(page);
+ 	page_cache_release(page);
  }
  
-+/*
-+ * pages come in here (via remove_list) locked and leave unlocked
-+ * (on either ret_pages or free_pages)
-+ *
-+ * We do this batching so that we free batches of pages with a
-+ * single mapping->tree_lock acquisition/release.  This optimization
-+ * only makes sense when the pages on remove_list all share a
-+ * page_mapping().  If this is violated you will BUG_ON().
-+ */
-+static int __remove_mapping_batch(struct list_head *remove_list,
-+				  struct list_head *ret_pages,
-+				  struct list_head *free_pages)
-+{
-+	int nr_reclaimed = 0;
-+	struct address_space *mapping;
-+	struct page *page;
-+	LIST_HEAD(need_free_mapping);
-+
-+	if (list_empty(remove_list))
-+		return 0;
-+
-+	mapping = page_mapping(lru_to_page(remove_list));
-+	spin_lock_irq(&mapping->tree_lock);
-+	while (!list_empty(remove_list)) {
-+		page = lru_to_page(remove_list);
-+		BUG_ON(!PageLocked(page));
-+		BUG_ON(page_mapping(page) != mapping);
-+		list_del(&page->lru);
-+
-+		if (!__remove_mapping(mapping, page)) {
-+			unlock_page(page);
-+			list_add(&page->lru, ret_pages);
-+			continue;
-+		}
-+		list_add(&page->lru, &need_free_mapping);
-+	}
-+	spin_unlock_irq(&mapping->tree_lock);
-+
-+	while (!list_empty(&need_free_mapping)) {
-+		page = lru_to_page(&need_free_mapping);
-+		list_move(&page->list, free_pages);
-+		mapping_release_page(mapping, page);
-+		/*
-+		 * At this point, we have no other references and there is
-+		 * no way to pick any more up (removed from LRU, removed
-+		 * from pagecache). Can use non-atomic bitops now (and
-+		 * we obviously don't have to worry about waking up a process
-+		 * waiting on the page lock, because there are no references.
-+		 */
-+		__clear_page_locked(page);
-+		nr_reclaimed++;
-+	}
-+	return nr_reclaimed;
-+}
-+
- /**
-  * putback_lru_page - put previously isolated page onto appropriate LRU list
-  * @page: page to be put back to appropriate lru list
-@@ -700,6 +755,8 @@ static unsigned long shrink_page_list(st
- {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
-+	LIST_HEAD(batch_for_mapping_rm);
-+	struct address_space *batch_mapping = NULL;
- 	int pgactivate = 0;
- 	unsigned long nr_dirty = 0;
- 	unsigned long nr_congested = 0;
-@@ -718,6 +775,7 @@ static unsigned long shrink_page_list(st
- 		cond_resched();
+diff -puN mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private mm/vmscan.c
+--- linux.git/mm/vmscan.c~__delete_from_swap_cache-dont-clear-page-private	2013-05-16 13:27:24.687137451 -0700
++++ linux.git-davehans/mm/vmscan.c	2013-05-16 13:27:24.692137673 -0700
+@@ -494,6 +494,8 @@ static int __remove_mapping(struct addre
+ 		__delete_from_swap_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		swapcache_free(swap, page);
++		set_page_private(page, 0);
++		ClearPageSwapCache(page);
+ 	} else {
+ 		void (*freepage)(struct page *);
  
- 		page = lru_to_page(page_list);
-+
- 		list_del(&page->lru);
- 
- 		if (!trylock_page(page))
-@@ -776,6 +834,10 @@ static unsigned long shrink_page_list(st
- 				nr_writeback++;
- 				goto keep_locked;
- 			}
-+			/*
-+			 * batch_for_mapping_rm could be drained here
-+			 * if its lock_page()s hurt latency elsewhere.
-+			 */
- 			wait_on_page_writeback(page);
- 		}
- 
-@@ -805,6 +867,18 @@ static unsigned long shrink_page_list(st
- 		}
- 
- 		mapping = page_mapping(page);
-+		/*
-+		 * batching only makes sense when we can save lock
-+		 * acquisitions, so drain the previously-batched
-+		 * pages when we move over to a different mapping
-+		 */
-+		if (batch_mapping && (batch_mapping != mapping)) {
-+			nr_reclaimed +=
-+				__remove_mapping_batch(&batch_for_mapping_rm,
-+							&ret_pages,
-+							&free_pages);
-+			batch_mapping = NULL;
-+		}
- 
- 		/*
- 		 * The page is mapped into the page tables of one or more
-@@ -922,17 +996,18 @@ static unsigned long shrink_page_list(st
- 			}
- 		}
- 
--		if (!mapping || !__remove_mapping(mapping, page))
-+		if (!mapping)
- 			goto keep_locked;
--
- 		/*
--		 * At this point, we have no other references and there is
--		 * no way to pick any more up (removed from LRU, removed
--		 * from pagecache). Can use non-atomic bitops now (and
--		 * we obviously don't have to worry about waking up a process
--		 * waiting on the page lock, because there are no references.
-+		 * This list contains pages all in the same mapping, but
-+		 * in effectively random order and we hold lock_page()
-+		 * on *all* of them.  This can potentially cause lock
-+		 * ordering issues, but the reclaim code only trylocks
-+		 * them which saves us.
- 		 */
--		__clear_page_locked(page);
-+		list_add(&page->lru, &batch_for_mapping_rm);
-+		batch_mapping = mapping;
-+		continue;
- free_it:
- 		nr_reclaimed++;
- 
-@@ -963,7 +1038,9 @@ keep:
- 		list_add(&page->lru, &ret_pages);
- 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
- 	}
--
-+	nr_reclaimed += __remove_mapping_batch(&batch_for_mapping_rm,
-+						&ret_pages,
-+						&free_pages);
- 	/*
- 	 * Tag a zone as congested if all the dirty pages encountered were
- 	 * backed by a congested BDI. In this case, reclaimers should just
 _
