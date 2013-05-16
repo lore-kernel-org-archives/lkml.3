@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3EPLvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:51:37 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50696 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3EPLvc (ORCPT
+	id S1753378Ab3EPLvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:51:40 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49485 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156Ab3EPLvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:51:32 -0400
-X-AuditID: 85900ec0-d56cbb900000151e-04-5194c8416ae2
-Subject: [PATCH 2/5] perf: Reorder parameters of strglobmatch
+	Thu, 16 May 2013 07:51:35 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-05-5194c8439d3e
+Subject: [PATCH 3/5] lib/string: Add a generic wildcard string matching
+ function
 To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Irina Tirdea <irina.tirdea@intel.com>,
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         Tom Zanussi <tom.zanussi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@suse.de>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu, 16 May 2013 20:48:52 +0900
-Message-ID: <20130516114852.13508.72995.stgit@mhiramat-M0-7522>
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 16 May 2013 20:48:55 +0900
+Message-ID: <20130516114855.13508.34529.stgit@mhiramat-M0-7522>
 In-Reply-To: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>
 References: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>
 User-Agent: StGit/0.15
@@ -35,192 +33,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder parameters of strglobmatch() so that the first
-parameter is the glob pattern as like as regexec(),
-because the subjective parameter of strglobmatch() must
-be the glob pattern, but not a sample string.
-So, the new interface is:
-
-bool strglobmatch(const char *glob, const char *str);
+Add strglobmatch() for generic wildcard string matching.
+This code is originally from perf-tools. For porting in
+the kernel, the limitation of the number of wildcards is
+introduced, because of the limitation of the stack.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
 ---
- tools/perf/util/parse-events.c |   14 +++++++-------
- tools/perf/util/probe-event.c  |    2 +-
- tools/perf/util/strfilter.c    |    2 +-
- tools/perf/util/string.c       |   16 ++++++++--------
- tools/perf/util/util.h         |    4 ++--
- 5 files changed, 19 insertions(+), 19 deletions(-)
+ include/linux/string.h |    8 ++++
+ lib/string.c           |   91 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 99 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6c8bb0f..26fb64a 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -402,7 +402,7 @@ static int add_tracepoint_multi_event(struct list_head **list, int *idx,
- 		    || !strcmp(evt_ent->d_name, "filter"))
- 			continue;
+diff --git a/include/linux/string.h b/include/linux/string.h
+index ac889c5..fcb1506 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -122,6 +122,14 @@ extern void argv_free(char **argv);
+ extern bool sysfs_streq(const char *s1, const char *s2);
+ extern int strtobool(const char *s, bool *res);
  
--		if (!strglobmatch(evt_ent->d_name, evt_name))
-+		if (!strglobmatch(evt_name, evt_ent->d_name))
- 			continue;
- 
- 		ret = add_tracepoint(list, idx, sys_name, evt_ent->d_name);
-@@ -441,7 +441,7 @@ static int add_tracepoint_multi_sys(struct list_head **list, int *idx,
- 		    || !strcmp(events_ent->d_name, "header_page"))
- 			continue;
- 
--		if (!strglobmatch(events_ent->d_name, sys_name))
-+		if (!strglobmatch(sys_name, events_ent->d_name))
- 			continue;
- 
- 		ret = add_tracepoint_event(list, idx, events_ent->d_name,
-@@ -955,7 +955,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 
- 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
- 		if (subsys_glob != NULL && 
--		    !strglobmatch(sys_dirent.d_name, subsys_glob))
-+		    !strglobmatch(subsys_glob, sys_dirent.d_name))
- 			continue;
- 
- 		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
-@@ -966,7 +966,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob,
- 
- 		for_each_event(sys_dirent, evt_dir, evt_dirent, evt_next) {
- 			if (event_glob != NULL && 
--			    !strglobmatch(evt_dirent.d_name, event_glob))
-+			    !strglobmatch(event_glob, evt_dirent.d_name))
- 				continue;
- 
- 			if (name_only) {
-@@ -1065,7 +1065,7 @@ int print_hwcache_events(const char *event_glob, bool name_only)
- 			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
- 				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
- 									name, sizeof(name));
--				if (event_glob != NULL && !strglobmatch(name, event_glob))
-+				if (event_glob != NULL && !strglobmatch(event_glob, name))
- 					continue;
- 
- 				if (name_only)
-@@ -1091,8 +1091,8 @@ static void print_symbol_events(const char *event_glob, unsigned type,
- 	for (i = 0; i < max; i++, syms++) {
- 
- 		if (event_glob != NULL && 
--		    !(strglobmatch(syms->symbol, event_glob) ||
--		      (syms->alias && strglobmatch(syms->alias, event_glob))))
-+		    !(strglobmatch(event_glob, syms->symbol) ||
-+		      (syms->alias && strglobmatch(event_glob, syms->alias))))
- 			continue;
- 
- 		if (name_only) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index aa04bf9..4d3b498 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2106,7 +2106,7 @@ static int del_trace_probe_event(int fd, const char *buf,
- 
- 	if (strpbrk(buf, "*?")) { /* Glob-exp */
- 		strlist__for_each_safe(ent, n, namelist)
--			if (strglobmatch(ent->s, buf)) {
-+			if (strglobmatch(buf, ent->s)) {
- 				ret = __del_trace_probe_event(fd, ent);
- 				if (ret < 0)
- 					break;
-diff --git a/tools/perf/util/strfilter.c b/tools/perf/util/strfilter.c
-index 834c8eb..e50bfc5 100644
---- a/tools/perf/util/strfilter.c
-+++ b/tools/perf/util/strfilter.c
-@@ -186,7 +186,7 @@ static bool strfilter_node__compare(struct strfilter_node *self,
- 	case '!':	/* NOT */
- 		return !strfilter_node__compare(self->r, str);
- 	default:
--		return strglobmatch(str, self->p);
-+		return strglobmatch(self->p, str);
- 	}
++/*
++ * Maximum number of wildcards in a glob pattern
++ * This limits the number of wildcards in a glob pattern, because
++ * more wildcards consume more kernel stack.
++ */
++#define MAX_GLOB_WILDCARDS	10
++extern bool strglobmatch(const char *glob, const char *str);
++
+ #ifdef CONFIG_BINARY_PRINTF
+ int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
+ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
+diff --git a/lib/string.c b/lib/string.c
+index e5878de..640fb10 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -824,3 +824,94 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+ 	return check_bytes8(start, value, bytes % 8);
  }
- 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index 29c7b2c..f4204a5 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -223,7 +223,7 @@ error:
- }
- 
- /* Glob/lazy pattern matching */
--static bool __match_glob(const char *str, const char *pat, bool ignore_space)
-+static bool __match_glob(const char *pat, const char *str, bool ignore_space)
- {
- 	while (*str && *pat && *pat != '*') {
- 		if (ignore_space) {
-@@ -259,7 +259,7 @@ static bool __match_glob(const char *str, const char *pat, bool ignore_space)
- 		if (!*pat)	/* Tail wild card matches all */
- 			return true;
- 		while (*str)
--			if (__match_glob(str++, pat, ignore_space))
-+			if (__match_glob(pat, str++, ignore_space))
- 				return true;
- 	}
- 	return !*str && !*pat;
-@@ -267,8 +267,8 @@ static bool __match_glob(const char *str, const char *pat, bool ignore_space)
- 
- /**
-  * strglobmatch - glob expression pattern matching
-- * @str: the target string to match
-  * @pat: the pattern string to match
+ EXPORT_SYMBOL(memchr_inv);
++
++/* Character class matching */
++static bool __match_charclass(const char *pat, char c, const char **npat)
++{
++	bool complement = false, ret = true;
++
++	if (*pat == '!') {
++		complement = true;
++		pat++;
++	}
++	if (*pat++ == c)	/* First character is special */
++		goto end;
++
++	while (*pat && *pat != ']') {	/* Matching */
++		if (*pat == '-' && *(pat + 1) != ']') {	/* Range */
++			if (*(pat - 1) <= c && c <= *(pat + 1))
++				goto end;
++			if (*(pat - 1) > *(pat + 1))
++				goto error;
++			pat += 2;
++		} else if (*pat++ == c)
++			goto end;
++	}
++	if (!*pat)
++		goto error;
++	ret = false;
++
++end:
++	while (*pat && *pat != ']')	/* Searching closing */
++		pat++;
++	if (!*pat)
++		goto error;
++	*npat = pat + 1;
++	return complement ? !ret : ret;
++
++error:
++	return false;
++}
++
++/* Glob pattern(wildcard and char-class) matching */
++static bool __match_glob(const char *pat, const char *str, int nest)
++{
++	if (nest > MAX_GLOB_WILDCARDS)
++		return false;
++
++	while (*str && *pat && *pat != '*') {
++		if (*pat == '?') {	/* Matches any single character */
++			str++;
++			pat++;
++			continue;
++		} else if (*pat == '[')	/* Character classes/Ranges */
++			if (__match_charclass(pat + 1, *str, &pat)) {
++				str++;
++				continue;
++			} else
++				return false;
++		else if (*pat == '\\') /* Escaped char match as normal char */
++			pat++;
++		if (*str++ != *pat++)
++			return false;
++	}
++	/* Check wild card */
++	if (*pat == '*') {
++		while (*pat == '*')
++			pat++;
++		if (!*pat)	/* Tail wild card matches all */
++			return true;
++		while (*str)
++			if (__match_glob(pat, str++, nest + 1))
++				return true;
++	}
++	return !*str && !*pat;
++}
++
++/**
++ * strglobmatch - glob expression pattern matching
++ * @pat: the pattern string to match
 + * @str: the target string to match
-  *
-  * This returns true if the @str matches @pat. @pat can includes wildcards
-  * ('*','?') and character classes ([CHARS], complementation and ranges are
-@@ -277,22 +277,22 @@ static bool __match_glob(const char *str, const char *pat, bool ignore_space)
-  *
-  * Note: if @pat syntax is broken, this always returns false.
-  */
--bool strglobmatch(const char *str, const char *pat)
++ *
++ * This returns true if the @str matches @pat. @pat can includes wildcards
++ * ('*','?') and character classes ([CHARS], complementation and ranges are
++ * also supported). Also, this supports escape character ('\') to use special
++ * characters as normal character.
++ *
++ * Note: if @pat syntax is broken, this always returns false.
++ */
 +bool strglobmatch(const char *pat, const char *str)
- {
--	return __match_glob(str, pat, false);
-+	return __match_glob(pat, str, false);
- }
- 
- /**
-  * strlazymatch - matching pattern strings lazily with glob pattern
-- * @str: the target string to match
-  * @pat: the pattern string to match
-+ * @str: the target string to match
-  *
-  * This is similar to strglobmatch, except this ignores spaces in
-  * the target string.
-  */
--bool strlazymatch(const char *str, const char *pat)
-+bool strlazymatch(const char *pat, const char *str)
- {
--	return __match_glob(str, pat, true);
-+	return __match_glob(pat, str, true);
- }
- 
- /**
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index a45710b..f493590 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -239,8 +239,8 @@ int copyfile(const char *from, const char *to);
- s64 perf_atoll(const char *str);
- char **argv_split(const char *str, int *argcp);
- void argv_free(char **argv);
--bool strglobmatch(const char *str, const char *pat);
--bool strlazymatch(const char *str, const char *pat);
-+bool strglobmatch(const char *pat, const char *str);
-+bool strlazymatch(const char *pat, const char *str);
- int strtailcmp(const char *s1, const char *s2);
- char *strxfrchar(char *s, char from, char to);
- unsigned long convert_unit(unsigned long value, char *unit);
++{
++	return __match_glob(pat, str, 0);
++}
++EXPORT_SYMBOL(strglobmatch);
 
