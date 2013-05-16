@@ -1,70 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3EPKpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 06:45:55 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:35529 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab3EPKpv (ORCPT
+	id S1752176Ab3EPKv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 06:51:29 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:59399 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751763Ab3EPKv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 06:45:51 -0400
-Message-ID: <5194B8DA.4080204@gmail.com>
-Date: Thu, 16 May 2013 12:45:46 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH RFC] media: OF: add field-active and sync-on-green endpoint
- properties
-References: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 16 May 2013 06:51:28 -0400
+Message-ID: <1368701485.1350.204.camel@x61.thuisdomein>
+Subject: [PATCH] acornfb: remove dead code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 16 May 2013 12:51:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2013 10:51:25.0581 (UTC) FILETIME=[4FC29BD0:01CE5223]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 02:52 PM, Lad Prabhakar wrote:
-> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> index e022d2d..6bf87d0 100644
-> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> @@ -101,6 +101,10 @@ Optional endpoint properties
->     array contains only one entry.
->   - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
->     clock mode.
-> +-field-active: a boolean property indicating active high filed ID output
-> + polarity is inverted.
+acornfb checks for HAS_VIDC while support for that macro was removed in
+v2.6.23 (when the arm26 port was removed). So we can remove a bit of
+dead code.
 
-You can drop this property and use the existing 'field-even-active' property
-instead.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested (do not have the hardware, do not build with CONFIG_FB_ACORN
+set myself, etc.).
 
-> +-sync-on-green: a boolean property indicating to sync with the green signal in
-> + RGB.
+ drivers/video/acornfb.c | 266 +-----------------------------------------------
+ drivers/video/acornfb.h |  29 ------
+ 2 files changed, 1 insertion(+), 294 deletions(-)
 
-> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-> index 83ae07e..b95553d 100644
-> --- a/include/media/v4l2-mediabus.h
-> +++ b/include/media/v4l2-mediabus.h
-> @@ -40,6 +40,8 @@
->   #define V4L2_MBUS_FIELD_EVEN_HIGH		(1<<  10)
->   /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->   #define V4L2_MBUS_FIELD_EVEN_LOW		(1<<  11)
-> +#define V4L2_MBUS_FIELD_ACTIVE			(1<<  12)
-> +#define V4L2_MBUS_SOG				(1<<  13)
+diff --git a/drivers/video/acornfb.c b/drivers/video/acornfb.c
+index 6488a73..7e8346e 100644
+--- a/drivers/video/acornfb.c
++++ b/drivers/video/acornfb.c
+@@ -38,14 +38,6 @@
+ #include "acornfb.h"
+ 
+ /*
+- * VIDC machines can't do 16 or 32BPP modes.
+- */
+-#ifdef HAS_VIDC
+-#undef FBCON_HAS_CFB16
+-#undef FBCON_HAS_CFB32
+-#endif
+-
+-/*
+  * Default resolution.
+  * NOTE that it has to be supported in the table towards
+  * the end of this file.
+@@ -106,238 +98,6 @@ static struct vidc_timing current_vidc;
+ 
+ extern unsigned int vram_size;	/* set by setup.c */
+ 
+-#ifdef HAS_VIDC
+-
+-#define MAX_SIZE	480*1024
+-
+-/* CTL     VIDC	Actual
+- * 24.000  0	 8.000
+- * 25.175  0	 8.392
+- * 36.000  0	12.000
+- * 24.000  1	12.000
+- * 25.175  1	12.588
+- * 24.000  2	16.000
+- * 25.175  2	16.783
+- * 36.000  1	18.000
+- * 24.000  3	24.000
+- * 36.000  2	24.000
+- * 25.175  3	25.175
+- * 36.000  3	36.000
+- */
+-struct pixclock {
+-	u_long	min_clock;
+-	u_long	max_clock;
+-	u_int	vidc_ctl;
+-	u_int	vid_ctl;
+-};
+-
+-static struct pixclock arc_clocks[] = {
+-	/* we allow +/-1% on these */
+-	{ 123750, 126250, VIDC_CTRL_DIV3,   VID_CTL_24MHz },	/*  8.000MHz */
+-	{  82500,  84167, VIDC_CTRL_DIV2,   VID_CTL_24MHz },	/* 12.000MHz */
+-	{  61875,  63125, VIDC_CTRL_DIV1_5, VID_CTL_24MHz },	/* 16.000MHz */
+-	{  41250,  42083, VIDC_CTRL_DIV1,   VID_CTL_24MHz },	/* 24.000MHz */
+-};
+-
+-static struct pixclock *
+-acornfb_valid_pixrate(struct fb_var_screeninfo *var)
+-{
+-	u_long pixclock = var->pixclock;
+-	u_int i;
+-
+-	if (!var->pixclock)
+-		return NULL;
+-
+-	for (i = 0; i < ARRAY_SIZE(arc_clocks); i++)
+-		if (pixclock > arc_clocks[i].min_clock &&
+-		    pixclock < arc_clocks[i].max_clock)
+-			return arc_clocks + i;
+-
+-	return NULL;
+-}
+-
+-/* VIDC Rules:
+- * hcr  : must be even (interlace, hcr/2 must be even)
+- * hswr : must be even
+- * hdsr : must be odd
+- * hder : must be odd
+- *
+- * vcr  : must be odd
+- * vswr : >= 1
+- * vdsr : >= 1
+- * vder : >= vdsr
+- * if interlaced, then hcr/2 must be even
+- */
+-static void
+-acornfb_set_timing(struct fb_var_screeninfo *var)
+-{
+-	struct pixclock *pclk;
+-	struct vidc_timing vidc;
+-	u_int horiz_correction;
+-	u_int sync_len, display_start, display_end, cycle;
+-	u_int is_interlaced;
+-	u_int vid_ctl, vidc_ctl;
+-	u_int bandwidth;
+-
+-	memset(&vidc, 0, sizeof(vidc));
+-
+-	pclk = acornfb_valid_pixrate(var);
+-	vidc_ctl = pclk->vidc_ctl;
+-	vid_ctl  = pclk->vid_ctl;
+-
+-	bandwidth = var->pixclock * 8 / var->bits_per_pixel;
+-	/* 25.175, 4bpp = 79.444ns per byte, 317.776ns per word: fifo = 2,6 */
+-	if (bandwidth > 143500)
+-		vidc_ctl |= VIDC_CTRL_FIFO_3_7;
+-	else if (bandwidth > 71750)
+-		vidc_ctl |= VIDC_CTRL_FIFO_2_6;
+-	else if (bandwidth > 35875)
+-		vidc_ctl |= VIDC_CTRL_FIFO_1_5;
+-	else
+-		vidc_ctl |= VIDC_CTRL_FIFO_0_4;
+-
+-	switch (var->bits_per_pixel) {
+-	case 1:
+-		horiz_correction = 19;
+-		vidc_ctl |= VIDC_CTRL_1BPP;
+-		break;
+-
+-	case 2:
+-		horiz_correction = 11;
+-		vidc_ctl |= VIDC_CTRL_2BPP;
+-		break;
+-
+-	case 4:
+-		horiz_correction = 7;
+-		vidc_ctl |= VIDC_CTRL_4BPP;
+-		break;
+-
+-	default:
+-	case 8:
+-		horiz_correction = 5;
+-		vidc_ctl |= VIDC_CTRL_8BPP;
+-		break;
+-	}
+-
+-	if (var->sync & FB_SYNC_COMP_HIGH_ACT) /* should be FB_SYNC_COMP */
+-		vidc_ctl |= VIDC_CTRL_CSYNC;
+-	else {
+-		if (!(var->sync & FB_SYNC_HOR_HIGH_ACT))
+-			vid_ctl |= VID_CTL_HS_NHSYNC;
+-
+-		if (!(var->sync & FB_SYNC_VERT_HIGH_ACT))
+-			vid_ctl |= VID_CTL_VS_NVSYNC;
+-	}
+-
+-	sync_len	= var->hsync_len;
+-	display_start	= sync_len + var->left_margin;
+-	display_end	= display_start + var->xres;
+-	cycle		= display_end + var->right_margin;
+-
+-	/* if interlaced, then hcr/2 must be even */
+-	is_interlaced = (var->vmode & FB_VMODE_MASK) == FB_VMODE_INTERLACED;
+-
+-	if (is_interlaced) {
+-		vidc_ctl |= VIDC_CTRL_INTERLACE;
+-		if (cycle & 2) {
+-			cycle += 2;
+-			var->right_margin += 2;
+-		}
+-	}
+-
+-	vidc.h_cycle		= (cycle - 2) / 2;
+-	vidc.h_sync_width	= (sync_len - 2) / 2;
+-	vidc.h_border_start	= (display_start - 1) / 2;
+-	vidc.h_display_start	= (display_start - horiz_correction) / 2;
+-	vidc.h_display_end	= (display_end - horiz_correction) / 2;
+-	vidc.h_border_end	= (display_end - 1) / 2;
+-	vidc.h_interlace	= (vidc.h_cycle + 1) / 2;
+-
+-	sync_len	= var->vsync_len;
+-	display_start	= sync_len + var->upper_margin;
+-	display_end	= display_start + var->yres;
+-	cycle		= display_end + var->lower_margin;
+-
+-	if (is_interlaced)
+-		cycle = (cycle - 3) / 2;
+-	else
+-		cycle = cycle - 1;
+-
+-	vidc.v_cycle		= cycle;
+-	vidc.v_sync_width	= sync_len - 1;
+-	vidc.v_border_start	= display_start - 1;
+-	vidc.v_display_start	= vidc.v_border_start;
+-	vidc.v_display_end	= display_end - 1;
+-	vidc.v_border_end	= vidc.v_display_end;
+-
+-	if (machine_is_a5k())
+-		__raw_writeb(vid_ctl, IOEB_VID_CTL);
+-
+-	if (memcmp(&current_vidc, &vidc, sizeof(vidc))) {
+-		current_vidc = vidc;
+-
+-		vidc_writel(0xe0000000 | vidc_ctl);
+-		vidc_writel(0x80000000 | (vidc.h_cycle << 14));
+-		vidc_writel(0x84000000 | (vidc.h_sync_width << 14));
+-		vidc_writel(0x88000000 | (vidc.h_border_start << 14));
+-		vidc_writel(0x8c000000 | (vidc.h_display_start << 14));
+-		vidc_writel(0x90000000 | (vidc.h_display_end << 14));
+-		vidc_writel(0x94000000 | (vidc.h_border_end << 14));
+-		vidc_writel(0x98000000);
+-		vidc_writel(0x9c000000 | (vidc.h_interlace << 14));
+-		vidc_writel(0xa0000000 | (vidc.v_cycle << 14));
+-		vidc_writel(0xa4000000 | (vidc.v_sync_width << 14));
+-		vidc_writel(0xa8000000 | (vidc.v_border_start << 14));
+-		vidc_writel(0xac000000 | (vidc.v_display_start << 14));
+-		vidc_writel(0xb0000000 | (vidc.v_display_end << 14));
+-		vidc_writel(0xb4000000 | (vidc.v_border_end << 14));
+-		vidc_writel(0xb8000000);
+-		vidc_writel(0xbc000000);
+-	}
+-#ifdef DEBUG_MODE_SELECTION
+-	printk(KERN_DEBUG "VIDC registers for %dx%dx%d:\n", var->xres,
+-	       var->yres, var->bits_per_pixel);
+-	printk(KERN_DEBUG " H-cycle          : %d\n", vidc.h_cycle);
+-	printk(KERN_DEBUG " H-sync-width     : %d\n", vidc.h_sync_width);
+-	printk(KERN_DEBUG " H-border-start   : %d\n", vidc.h_border_start);
+-	printk(KERN_DEBUG " H-display-start  : %d\n", vidc.h_display_start);
+-	printk(KERN_DEBUG " H-display-end    : %d\n", vidc.h_display_end);
+-	printk(KERN_DEBUG " H-border-end     : %d\n", vidc.h_border_end);
+-	printk(KERN_DEBUG " H-interlace      : %d\n", vidc.h_interlace);
+-	printk(KERN_DEBUG " V-cycle          : %d\n", vidc.v_cycle);
+-	printk(KERN_DEBUG " V-sync-width     : %d\n", vidc.v_sync_width);
+-	printk(KERN_DEBUG " V-border-start   : %d\n", vidc.v_border_start);
+-	printk(KERN_DEBUG " V-display-start  : %d\n", vidc.v_display_start);
+-	printk(KERN_DEBUG " V-display-end    : %d\n", vidc.v_display_end);
+-	printk(KERN_DEBUG " V-border-end     : %d\n", vidc.v_border_end);
+-	printk(KERN_DEBUG " VIDC Ctrl (E)    : 0x%08X\n", vidc_ctl);
+-	printk(KERN_DEBUG " IOEB Ctrl        : 0x%08X\n", vid_ctl);
+-#endif
+-}
+-
+-static int
+-acornfb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+-		  u_int trans, struct fb_info *info)
+-{
+-	union palette pal;
+-
+-	if (regno >= current_par.palette_size)
+-		return 1;
+-
+-	pal.p = 0;
+-	pal.vidc.reg   = regno;
+-	pal.vidc.red   = red >> 12;
+-	pal.vidc.green = green >> 12;
+-	pal.vidc.blue  = blue >> 12;
+-
+-	current_par.palette[regno] = pal;
+-
+-	vidc_writel(pal.p);
+-
+-	return 0;
+-}
+-#endif
+-
+ #ifdef HAS_VIDC20
+ #include <mach/acornfb.h>
+ 
+@@ -634,16 +394,7 @@ acornfb_adjust_timing(struct fb_info *info, struct fb_var_screeninfo *var, u_int
+ 	/* hsync_len must be even */
+ 	var->hsync_len = (var->hsync_len + 1) & ~1;
+ 
+-#ifdef HAS_VIDC
+-	/* left_margin must be odd */
+-	if ((var->left_margin & 1) == 0) {
+-		var->left_margin -= 1;
+-		var->right_margin += 1;
+-	}
+-
+-	/* right_margin must be odd */
+-	var->right_margin |= 1;
+-#elif defined(HAS_VIDC20)
++#if defined(HAS_VIDC20)
+ 	/* left_margin must be even */
+ 	if (var->left_margin & 1) {
+ 		var->left_margin += 1;
+@@ -787,11 +538,7 @@ static int acornfb_set_par(struct fb_info *info)
+ 		break;
+ 	case 8:
+ 		current_par.palette_size = VIDC_PALETTE_SIZE;
+-#ifdef HAS_VIDC
+-		info->fix.visual = FB_VISUAL_STATIC_PSEUDOCOLOR;
+-#else
+ 		info->fix.visual = FB_VISUAL_PSEUDOCOLOR;
+-#endif
+ 		break;
+ #ifdef HAS_VIDC20
+ 	case 16:
+@@ -971,9 +718,6 @@ static void acornfb_init_fbinfo(void)
+ #if defined(HAS_VIDC20)
+ 	fb_info.var.red.length	   = 8;
+ 	fb_info.var.transp.length  = 4;
+-#elif defined(HAS_VIDC)
+-	fb_info.var.red.length	   = 4;
+-	fb_info.var.transp.length  = 1;
+ #endif
+ 	fb_info.var.green	   = fb_info.var.red;
+ 	fb_info.var.blue	   = fb_info.var.red;
+@@ -1310,14 +1054,6 @@ static int acornfb_probe(struct platform_device *dev)
+ 		fb_info.fix.smem_start = handle;
+ 	}
+ #endif
+-#if defined(HAS_VIDC)
+-	/*
+-	 * Archimedes/A5000 machines use a fixed address for their
+-	 * framebuffers.  Free unused pages
+-	 */
+-	free_unused_pages(PAGE_OFFSET + size, PAGE_OFFSET + MAX_SIZE);
+-#endif
+-
+ 	fb_info.fix.smem_len = size;
+ 	current_par.palette_size   = VIDC_PALETTE_SIZE;
+ 
+diff --git a/drivers/video/acornfb.h b/drivers/video/acornfb.h
+index fb2a7ff..175c8ff 100644
+--- a/drivers/video/acornfb.h
++++ b/drivers/video/acornfb.h
+@@ -13,10 +13,6 @@
+ #include <asm/hardware/iomd.h>
+ #define VIDC_PALETTE_SIZE	256
+ #define VIDC_NAME		"VIDC20"
+-#elif defined(HAS_VIDC)
+-#include <asm/hardware/memc.h>
+-#define VIDC_PALETTE_SIZE	16
+-#define VIDC_NAME		"VIDC"
+ #endif
+ 
+ #define EXTEND8(x) ((x)|(x)<<8)
+@@ -101,31 +97,6 @@ struct modex_params {
+ 	const struct modey_params *modey;
+ };
+ 
+-#ifdef HAS_VIDC
+-
+-#define VID_CTL_VS_NVSYNC	(1 << 3)
+-#define VID_CTL_HS_NHSYNC	(1 << 2)
+-#define VID_CTL_24MHz		(0)
+-#define VID_CTL_25MHz		(1)
+-#define VID_CTL_36MHz		(2)
+-
+-#define VIDC_CTRL_CSYNC		(1 << 7)
+-#define VIDC_CTRL_INTERLACE	(1 << 6)
+-#define VIDC_CTRL_FIFO_0_4	(0 << 4)
+-#define VIDC_CTRL_FIFO_1_5	(1 << 4)
+-#define VIDC_CTRL_FIFO_2_6	(2 << 4)
+-#define VIDC_CTRL_FIFO_3_7	(3 << 4)
+-#define VIDC_CTRL_1BPP		(0 << 2)
+-#define VIDC_CTRL_2BPP		(1 << 2)
+-#define VIDC_CTRL_4BPP		(2 << 2)
+-#define VIDC_CTRL_8BPP		(3 << 2)
+-#define VIDC_CTRL_DIV3		(0 << 0)
+-#define VIDC_CTRL_DIV2		(1 << 0)
+-#define VIDC_CTRL_DIV1_5	(2 << 0)
+-#define VIDC_CTRL_DIV1		(3 << 0)
+-
+-#endif
+-
+ #ifdef HAS_VIDC20
+ /*
+  * VIDC20 registers
+-- 
+1.7.11.7
 
-How about V4L2_MBUS_SYNC_ON_GREEN ?
-
-Thanks,
-Sylwester
