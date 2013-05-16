@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab3EPWnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:43:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45727 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab3EPWnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:43:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="242704203"
-Date: Fri, 17 May 2013 00:43:37 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@linaro.org>,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
-Message-ID: <20130516224337.GZ22822@zurbaran>
-References: <20130514091956.GG3297@gmail.com>
- <20130515090449.GA3494@gmail.com>
+	id S1755198Ab3EPWoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:44:17 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:47145 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab3EPWoQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 18:44:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515090449.GA3494@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5195486F.1040603@cogentembedded.com>
+References: <201302190258.25726.sergei.shtylyov@cogentembedded.com>
+	<20130301070925.GA24369@verge.net.au>
+	<5130B12F.20409@gmail.com>
+	<5130B1A7.9060001@gmail.com>
+	<5130B34F.2090700@cogentembedded.com>
+	<5130B506.5020908@gmail.com>
+	<5195486F.1040603@cogentembedded.com>
+Date: Thu, 16 May 2013 17:44:15 -0500
+Message-ID: <CAL_JsqLkshrBDDKtdf+KYufg=83Yn7zAFmHKUpoA848JzbQKmw@mail.gmail.com>
+Subject: Re: [PATCH] <linux/of_platform.h>: fix compilation warnings with DT disabled
+From: Rob Herring <robherring2@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        vladimir.barinov@cogentembedded.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On Thu, May 16, 2013 at 3:58 PM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+> Hello.
+>
+>
+> On 03/01/2013 05:02 PM, Rob Herring wrote:
+>
+>>>>>>> Fix the following compilation warnings (in Simon Horman's
+>>>>>>> renesas.git repo):
+>>>>>>> In file included from arch/arm/mach-shmobile/setup-r8a7779.c:24:0:
+>>>>>>> include/linux/of_platform.h:107:13: warning: ‘struct of_device_id’
+>>>>>>> declared
+>>>>>>> inside parameter list [enabled by default]
+>>>>>>> include/linux/of_platform.h:107:13: warning: its scope is only this
+>>>>>>> definition
+>>>>>>> or declaration, which is probably not what you want [enabled by
+>>>>>>> default]
+>>>>>>> include/linux/of_platform.h:107:13: warning: ‘struct device_node’
+>>>>>>> declared
+>>>>>>> inside parameter list [enabled by default]
+>>>>>>> <linux/of_platform.h> only #include's headers with definitions of
+>>>>>>> the above
+>>>>>>> mentioned structures if CONFIG_OF_DEVICE=y but uses them even if
+>>>>>>> not. One
+>>>>>>> solution is to move some #include's out of #ifdef CONFIG_OF_DEVICE
+>>>>>>> and use
+>>>>>>> incomplete declarations for the rest of the structures where the
+>>>>>>> #ifdef move
+>>>>>>> doesn't help...
+>>>>>>> Reported-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+>>>>>>> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+>>>>>>
+>>>>>> Reviewed-by: Simon Horman <horms+renesas@verge.net.au>
+>>>>>> Grant, could you consider taking this patch?
+>>>>>
+>>>>> Yes, I can, but I don't seem to have the original patch. Can you send
+>>>>> it
+>>>>> again.
+>>>>
+>>>> Nevermind. Found it. I'll apply it.
+>>>
+>>>     Will you drop 'struct device_node' declaration then or should I
+>>> resend? In fact, I think I should better resend it with the changelog
+>>> somewhat edited.
+>>
+>> No, I plan to leave it as is and not rely on device.h by chance
+>> declaring device_node.
+>
+>
+>     I hoped to see this fix in 3.10-rc1. Is there any hope to see it in
+> 3.10-rc's?
+> The code it fixes the warnings in is already in Linus tree.
 
-On Wed, May 15, 2013 at 10:04:49AM +0100, Lee Jones wrote:
-> Hi Sam,
-> 
-> Since v1 of my MFD -fixes pull-request, I have applied a few more
-> patches which really should be entered into the -rc:s. As it appears
-> that you have not yet pulled v1, I figured sending a v2 in its place
-> would be appropriate, so here it is.
-This almost looks good, I just have one comment:
+So I had this queued up, but Grant did not send DT update to Linus for
+3.10. The main thing we had was the preprocessor support and that went
+thru arm-soc tree. I plan to send this and other fixes to Linus for
+3.10.
 
-> Fabio Baltieri (5):
->       mfd: abx500-core: Fix sparse warning
->       mfd: ab8500-sysctrl: Fix sparse warning
->       mfd: ab8500-sysctrl: Set sysctrl_dev during probe
->       mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-Unless I'm missing something here, this one is not really rcN material, so
-I'd appreciate if you could queue it to your for-mfd branch instead.
-
-The rest is pulled and applied, thanks again.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Rob
