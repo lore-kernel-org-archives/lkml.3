@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab3EPUDN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:03:13 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50438 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab3EPUDM (ORCPT
+	id S1754061Ab3EPUFK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:05:10 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:14760 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299Ab3EPUFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:03:12 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, rob@landley.net
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] hdio.txt: fix typos
-Date: Thu, 16 May 2013 23:02:40 +0300
-Message-Id: <1368734560-6765-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.7.12.4
+	Thu, 16 May 2013 16:05:07 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 May 2013 16:05:07 EDT
+From: Corey Minyard <cminyard@mvista.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Corey Minyard <cminyard@mvista.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3/4] ipmi: Improve error messages on failed irq enable
+Date: Thu, 16 May 2013 14:04:26 -0500
+Message-id: <1368731067-31404-4-git-send-email-cminyard@mvista.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1368731067-31404-1-git-send-email-cminyard@mvista.com>
+References: <1368731067-31404-1-git-send-email-cminyard@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Example code contained incorrect ioctl call name.
+When the interrupt enable message returns an error, the messages are
+not entirely accurate nor helpful.  So improve them.
 
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
 ---
- Documentation/ioctl/hdio.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/ioctl/hdio.txt b/Documentation/ioctl/hdio.txt
-index 18eb98c..69e4ed3 100644
---- a/Documentation/ioctl/hdio.txt
-+++ b/Documentation/ioctl/hdio.txt
-@@ -453,7 +453,7 @@ HDIO_GET_BUSSTATE		get the bus state of the hwif
- 	usage:
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 313538a..af4b23f 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -663,8 +663,10 @@ static void handle_transaction_done(struct smi_info *smi_info)
+ 		/* We got the flags from the SMI, now handle them. */
+ 		smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
+ 		if (msg[2] != 0) {
+-			dev_warn(smi_info->dev, "Could not enable interrupts"
+-				 ", failed get, using polled mode.\n");
++			dev_warn(smi_info->dev,
++				 "Couldn't get irq info: %x.\n", msg[2]);
++			dev_warn(smi_info->dev,
++				 "Maybe ok, but ipmi might run very slowly.\n");
+ 			smi_info->si_state = SI_NORMAL;
+ 		} else {
+ 			msg[0] = (IPMI_NETFN_APP_REQUEST << 2);
+@@ -685,10 +687,12 @@ static void handle_transaction_done(struct smi_info *smi_info)
  
- 	  long state;
--	  ioctl(fd, HDIO_SCAN_HWIF, &state);
-+	  ioctl(fd, HDIO_GET_BUSSTATE, &state);
- 
- 	inputs:		none
- 
-@@ -473,7 +473,7 @@ HDIO_SET_BUSSTATE		set the bus state of the hwif
- 
- 	  int state;
- 	  ...
--	  ioctl(fd, HDIO_SCAN_HWIF, state);
-+	  ioctl(fd, HDIO_SET_BUSSTATE, state);
- 
- 	inputs:
- 	  Desired IDE power state.  One of BUSSTATE_OFF, BUSSTATE_ON,
+ 		/* We got the flags from the SMI, now handle them. */
+ 		smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
+-		if (msg[2] != 0)
+-			dev_warn(smi_info->dev, "Could not enable interrupts"
+-				 ", failed set, using polled mode.\n");
+-		else
++		if (msg[2] != 0) {
++			dev_warn(smi_info->dev,
++				 "Couldn't set irq info: %x.\n", msg[2]);
++			dev_warn(smi_info->dev,
++				 "Maybe ok, but ipmi might run very slowly.\n");
++		} else
+ 			smi_info->interrupt_disabled = 0;
+ 		smi_info->si_state = SI_NORMAL;
+ 		break;
 -- 
-1.7.12.4
+1.7.9.5
 
