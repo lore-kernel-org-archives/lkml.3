@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3EPPRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:17:35 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:38245 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab3EPPRd convert rfc822-to-8bit (ORCPT
+	id S1752339Ab3EPPUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:20:44 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:59821 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab3EPPUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:17:33 -0400
+	Thu, 16 May 2013 11:20:43 -0400
+Message-ID: <5194F944.2040803@free-electrons.com>
+Date: Thu, 16 May 2013 17:20:36 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <5194D5E6.2070605@amd.com>
-References: <51935981.3010808@amd.com>
-	<CAE9FiQXN9fG7RYM_mh17kEkSZT=Qm5fgG=8_YmBR+H6kLyokUg@mail.gmail.com>
-	<5193A7C3.4010503@amd.com>
-	<CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com>
-	<5194A9CF.3080509@amd.com>
-	<5194D5E6.2070605@amd.com>
-Date: Thu, 16 May 2013 08:17:33 -0700
-X-Google-Sender-Auth: Pz4icwouIcCjhwVR0SjCQQ1HCGk
-Message-ID: <CAE9FiQU4AQmQ6gzUK5gcnVebGPCNjAWFxh5=wXdEbZ_gHM4KaQ@mail.gmail.com>
-Subject: Re: 3.9 breaks EFI boot on E350
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Wolfram Gloger <wg@malloc.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] ARM: Remove boilerplate debug_ll_io_init code
+References: <1368440169-29088-1-git-send-email-maxime.ripard@free-electrons.com> <201305160040.54399.arnd@arndb.de>
+In-Reply-To: <201305160040.54399.arnd@arndb.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 5:49 AM, Christian König
-<christian.koenig@amd.com> wrote:
-> Am 16.05.2013 11:41, schrieb Christian König:
->
-> Ups, the board DOES have a serial port, and I've got a log now that shows
-> the mentioned patch above isn't the root cause.
->
-> After commit 8d57470d8f859635deffe3919d7d4867b488b85a it indeed crashes very
-> early in the boot sequence, but commit
-> 98e7a989979b185f49e86ddaed2ad6890299d9f0 fixes that and now it crashes while
-> trying to unpack the initrd with a completely different backtrace.
->
+Hi Arnd,
 
-ok, did you post the boot log for that failing boot ?
+Le 16/05/2013 00:40, Arnd Bergmann a écrit :
+> On Monday 13 May 2013, Maxime Ripard wrote:
+>> The recent introduction of debug_ll_io_init made possible to not rely
+>> anymore on a custom map_io function but on debug_ll_io_init for the
+>> early mapping and then on the various drivers to do the needed mappings for
+>> the kernel to boot.
+>>
+>> Some architectures begin to use only this function as the map_io callback in
+>> the machine description.
+>>
+>> In order to remove some boilerplate code, make the ARM mm code call
+>> debug_ll_io_init by itself when no .map_io callback is defined.
+>>
+>> This has been tested on the sunxi platform.
+> 
+> Great stuff!
+> 
+> I didn't notice the addition of debug_ll_io_init, so this is a nice surprise
+> for me.
 
-Thanks
+Well, you can thank Rob for that, I wasn't involved in it in the first
+place :)
 
-Yinghai
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Thanks,
+
+How will we merge this? The first patch would be merged by Russel and
+the 3 others by their respective maintainers?
+
+Maxime
+
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
