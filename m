@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3EPN4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:56:19 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43791 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab3EPN4Q (ORCPT
+	id S1753929Ab3EPOAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:00:44 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44805 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab3EPOAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:56:16 -0400
-Date: Thu, 16 May 2013 16:55:28 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH V1 7/7] Drivers: scsi: storvsc: Increase the value of
- STORVSC_MAX_IO_REQUESTS
-Message-ID: <20130516135528.GX30128@mwanda>
-References: <1368706784-32276-1-git-send-email-kys@microsoft.com>
- <1368706879-32321-1-git-send-email-kys@microsoft.com>
- <1368706879-32321-7-git-send-email-kys@microsoft.com>
- <20130516120200.GN1360@mwanda>
- <797ed8d967414124a00ee151077c70fa@SN2PR03MB061.namprd03.prod.outlook.com>
+	Thu, 16 May 2013 10:00:42 -0400
+Message-ID: <5194E64A.3040003@ahsoftware.de>
+Date: Thu, 16 May 2013 15:59:38 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <797ed8d967414124a00ee151077c70fa@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: BUG: tty: memory corruption through tty_release/tty_ldisc_release
+References: <519480A1.6030909@ahsoftware.de> <5194E380.1030109@hurleysoftware.com>
+In-Reply-To: <5194E380.1030109@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 01:37:41PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> > Sent: Thursday, May 16, 2013 8:02 AM
-> > To: KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; ohering@suse.com; jbottomley@parallels.com;
-> > hch@infradead.org; linux-scsi@vger.kernel.org; apw@canonical.com;
-> > jasowang@redhat.com
-> > Subject: Re: [PATCH V1 7/7] Drivers: scsi: storvsc: Increase the value of
-> > STORVSC_MAX_IO_REQUESTS
-> > 
-> > On Thu, May 16, 2013 at 05:21:19AM -0700, K. Y. Srinivasan wrote:
-> > > Increase the value of STORVSC_MAX_IO_REQUESTS to 200 requests. The
-> > current
-> > > ringbuffer size can support this higher value.
-> > >
-> > 
-> > The ringbuffer size is a module parameter so it's odd to talk about
-> > the "current" size.
-> 
-> While the ringbuffer size is a module parameter; there is a default value. The current size refers to the default. 
-> Your comment applies to the current value (of 128) as well in that it is possible for somebody to load this
-> driver  with a ringbuffer size that could not support  the value of 128. If this  is the case, we fail the load.
-> This safety check continues to exist. 
+Am 16.05.2013 15:47, schrieb Peter Hurley:
+> On 05/16/2013 02:45 AM, Alexander Holler wrote:
+>> Hello,
+>>
+>> after some pain because the "big step" (ecbbfd4) happened while the
+>> support for my AMD CPU was broken and thus git bisect hit a series of
+>> kernels which didn't boot, I've finally found the cause for a memory
+>> corruption: tty_ldisc_release().
+>>
+>> What happens is the following:
+>>
+>> tty_port is self-destructing, that means it destroys itself in
+>> tty_port.c:tty_port_destructor() when the last reference is gone. E.g.
+>> in case of rfcomm this happens with the call to tty->ops->close() in
+>> tty_io.c:tty_release().
+>>
+>> The problem here is that tty_io.c:tty_release() calls
+>> tty_ldisc.c:tty_ldisc_release() which uses the tty_port to flush the
+>> ldisc work queues.
+>>
+>> In the best case this hits a BUG() in cancel_work_sync() but often it
+>> just causes a memory corruption without a BUG() got hit before.
+>
+> Hi Alexander,
+>
+> Actually, the problem is that tty->ops->close() shouldn't be
+> the last kref on the port.
+>
+> It doesn't look to me like device removal is being handled
+> properly.
+>
 
-The issue is there in the original code, true.
+Maybe, but if so, that should be documented (and ideally prevented). 
+Especially since it seemed to have been worked before tty_ports got 
+introduced.
 
-Would the right fix be to add some sanity checks in module_init()?
+But I can't add much more to this discussion, as I'm rather a novice in 
+regard to the tty subsystem. I even don't know much about the task 
+sharing between tty, tty_port and tty_ldisc, except the stuff I found 
+out because I got hit by that bug and therefor have read some of the 
+sources.
 
-regards,
-dan carpenter
+Regards,
 
+Alexander Holler
