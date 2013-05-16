@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab3EPNfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:35:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51725 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab3EPNfH (ORCPT
+	id S1753729Ab3EPNhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:37:20 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53667 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab3EPNhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:35:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
-Date: Thu, 16 May 2013 15:35:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jonas Jensen <jonas.jensen@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Daniel Mack <zonque@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com> <201305160054.21064.arnd@arndb.de> <20130516085711.GP18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130516085711.GP18614@n2100.arm.linux.org.uk>
+	Thu, 16 May 2013 09:37:17 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305161535.03742.arnd@arndb.de>
-X-Provags-ID: V02:K0:2DwCvEY4VTD+iel13zBspMsw71j9SpNBUEzFlztDCsQ
- uzhxBQSqTlKkXv0suSA+N4Hnw1NRnIqkJTk4M2L8bzzjSv6UPS
- IX6I2jRjD1S/1yvHSfWH0iYau/X1FC9iny523b+I6uuuiUxmE3
- B52BbBDkjNHuUJO+FBozw8vLQ6X4TsuYBJWsjIrS6dtY9O3QxN
- eRHGBrCHdYEim0MKnIZATLYec3SoVkpK4q17Uc6oBfsp0AK9A7
- JulTpkGcQT/EBxJJnPPj4wlZUDRudSGxroKCilHAbeL0PkfyW9
- Yvbww/8RWq89mBJ+vIX2TmcJI8J5e6h+Q1H587KXefIos9YPDo
- CUY/RTFJDMNJnacmNIgw=
+In-Reply-To: <201305151516.52389.arnd@arndb.de>
+References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com>
+	<201303181503.49491.arnd@arndb.de>
+	<CACmBeS1empYyoaKidgTrYwUFCw447OKndxZjT98TvYfKVWB00A@mail.gmail.com>
+	<201305151516.52389.arnd@arndb.de>
+Date: Thu, 16 May 2013 15:37:16 +0200
+Message-ID: <CACmBeS3JZ8bm6jJbmrKTfmZqshezN6QKdmyPCKdQ2HUwzY7ggA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 May 2013, Russell King - ARM Linux wrote:
-> Well, if its a CPU core thing, then it's even easier - the proc-*.S
-> file can handle it just fine (because that's where the WFI code is.)
-> Just delete the contents of the processor specific idle function, IOW:
-> 
-> /*
->  * cpu_fa526_do_idle()
->  */
->         .align  4
-> ENTRY(cpu_fa526_do_idle)
->         mcr     p15, 0, r0, c7, c0, 4           @ Wait for interrupt
->         mov     pc, lr
-> 
-> remove the WFI from there.
+On 15 May 2013 15:16, Arnd Bergmann <arnd@arndb.de> wrote:
+> The part that I don't understand at all is the "timer0" part. Is that a string
+> from the data sheet?
 
-Yes, that was what I meant.
+I have next to no data sheets or documentation on the SoC itself. What
+I know is from looking at old sources, which suggest there are more
+than one timer (the rest were never implemented).
 
-	Arnd
+It only needs one for timer_tick? Does it make sense to just call it "timer"?
+
+> Can you provide some more detail why what PMU registers are used here? Is that
+> a "Performance Measurement Unit", "Power Management Unit" or something else?
+> Are you sure that those registers are only ever needed for GPIO?
+
+It's "Power Management Unit". The MMC driver uses it to read system
+clock and write it to clock control, but I suspect it can be removed.
+It's code under #ifdef MSD_SUPPORT_GET_CLOCK but I think the else is
+perfectly acceptable.
+GPIO uses it only to enable or disable pins.
+
+>> diff --git a/arch/arm/mach-moxart/Makefile.boot
+>> b/arch/arm/mach-moxart/Makefile.boot
+>> new file mode 100644
+>> index 0000000..760a0ef
+>> --- /dev/null
+>> +++ b/arch/arm/mach-moxart/Makefile.boot
+>> @@ -0,0 +1,3 @@
+>> +   zreladdr-y        += 0x00008000
+>> +params_phys-y        := 0x00000100
+>> +initrd_phys-y        := 0x00800000
+>
+> Is this still used?
+
+Looks like this is no longer needed. Boots without it. Removed.
+
+> You can leave out moxart_init() now, it's the default implementation.
+> moxart_init_irq, moxart_handle_irq and nr_irqs should be obsolete if
+> you did the irqchip driver correctly, same for moxart_timer_init and
+> the clocksource driver.
+>
+> I think the only part remaining here is moxart_restart, but that is
+> broken as long as reg_wdt does not get initialized. I think you could
+> move that function into the watchdog driver and assign it to
+> arm_pm_restart when you add that driver.
+
+All removed. It boots after some additions to clocksource and irqchip.
+arm_pm_restart is set in watchdog.
+
+
+What I haven't commented on should already be fixed @
+https://code.google.com/p/linux-3-10-rc1-moxart/
+
+I'll send new patches.
+
+Best regards,
+Jonas
