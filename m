@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3EPCYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 22:24:13 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60659 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3EPCYM (ORCPT
+	id S1755219Ab3EPCmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 22:42:37 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42412 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3EPCme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 22:24:12 -0400
-X-AuditID: 9c930197-b7b76ae000003523-05-5194434aafe9
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Wed, 15 May 2013 22:42:34 -0400
+Message-ID: <51944796.7020505@gmail.com>
+Date: Wed, 15 May 2013 20:42:30 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/15] perf ftrace: Add 'record' sub-command
-References: <1368526439-31966-1-git-send-email-namhyung@kernel.org>
-	<1368526439-31966-10-git-send-email-namhyung@kernel.org>
-	<20130515212052.GA5814@krava.redhat.com>
-Date: Thu, 16 May 2013 11:24:10 +0900
-In-Reply-To: <20130515212052.GA5814@krava.redhat.com> (Jiri Olsa's message of
-	"Wed, 15 May 2013 23:20:52 +0200")
-Message-ID: <87k3mz4q7p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
+References: <1368609839-19899-1-git-send-email-namhyung@kernel.org> <5193A6E7.9040501@gmail.com> <87sj1n4rh3.fsf@sejong.aot.lge.com>
+In-Reply-To: <87sj1n4rh3.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013 23:20:52 +0200, Jiri Olsa wrote:
-> On Tue, May 14, 2013 at 07:13:53PM +0900, Namhyung Kim wrote:
->> +		raw_data = synthesize_raw_data(evsel);
->> +		if (raw_data == NULL) {
->> +			pr_err("synthesizing raw sample failed\n");
->> +			goto out_fra;
->> +		}
->> +
->> +		/*
->> +		 * start of raw data is the size of raw data excluding itself.
->> +		 */
->> +		raw_size = sizeof(u32) + (*(u32 *) raw_data);
->> +
->> +		orig_size = event.sample.header.size;
->> +		event.sample.header.size += raw_size;
->> +
->> +		err = write(perf_fd, &event.sample, orig_size);
->> +		if (err != orig_size) {
->> +			pr_err("write error occurred\n");
->> +			goto out_fra;
->> +		}
->> +
->> +		err = write(perf_fd, raw_data, raw_size);
->> +		if (err != (int)raw_size) {
->> +			pr_err("write error occurred\n");
->> +			goto out_fra;
->> +		}
+On 5/15/13 7:56 PM, Namhyung Kim wrote:
+>> How about just --time? less typing.
 >
-> missing free(raw_data) ?
+> Thanks, I'm fine with '--time' too but '--time-filter' looks more
 
-Argh, right!
+yes, I just have really long command lines now. Is there a consistent 
+single letter (X?)?
 
-Thanks,
-Namhyung
+> obvious.  What does the timehist command do, btw? ;)
+
+task scheduling time history including run time and time between 
+sched-in. It needs to be updated to use tracepoints and perhaps fold 
+into perf-sched (e.g., perf sched history). Too many features; too 
+little time. I hope to get to it in the next month or so.
+
+
+>> I would expect parse_nsec_time to fail. e.g., a time string like 123455.a
+>
+> It looks like current strtol() returns 0 when failed to parse like
+> above.  Hmm.. do I have to check whether the return value is 0 or just
+> ignore invalid inputs?
+
+end will point to the next character not converted so make sure it is as 
+expected (*end == '\0').
+
+David
