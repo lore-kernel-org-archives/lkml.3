@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab3EPLOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:14:38 -0400
-Received: from sauhun.de ([89.238.76.85]:56050 "EHLO pokefinder.org"
+	id S1752525Ab3EPLOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:14:41 -0400
+Received: from sauhun.de ([89.238.76.85]:56053 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab3EPLOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:14:36 -0400
+	id S1752478Ab3EPLOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:14:39 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: [PATCH 01/33] drivers/ata: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:29 +0200
-Message-Id: <1368702961-4325-2-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Deepak Saxena <dsaxena@plexity.net>
+Subject: [PATCH 02/33] drivers/char/hw_random: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:30 +0200
+Message-Id: <1368702961-4325-3-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
@@ -25,25 +26,50 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/ata/pata_ep93xx.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/char/hw_random/mxc-rnga.c |    6 ------
+ drivers/char/hw_random/omap-rng.c |    5 -----
+ 2 files changed, 11 deletions(-)
 
-diff --git a/drivers/ata/pata_ep93xx.c b/drivers/ata/pata_ep93xx.c
-index c1bfaf4..980b88e 100644
---- a/drivers/ata/pata_ep93xx.c
-+++ b/drivers/ata/pata_ep93xx.c
-@@ -933,11 +933,6 @@ static int ep93xx_pata_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
+index 4ca35e8..19a12ac 100644
+--- a/drivers/char/hw_random/mxc-rnga.c
++++ b/drivers/char/hw_random/mxc-rnga.c
+@@ -167,11 +167,6 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 	clk_prepare_enable(mxc_rng->clk);
  
- 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem_res) {
--		err = -ENXIO;
--		goto err_rel_gpio;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		err = -ENOENT;
+-		goto err_region;
 -	}
 -
- 	ide_base = devm_ioremap_resource(&pdev->dev, mem_res);
- 	if (IS_ERR(ide_base)) {
- 		err = PTR_ERR(ide_base);
+ 	mxc_rng->mem = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(mxc_rng->mem)) {
+ 		err = PTR_ERR(mxc_rng->mem);
+@@ -189,7 +184,6 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_ioremap:
+-err_region:
+ 	clk_disable_unprepare(mxc_rng->clk);
+ 
+ out:
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index 749dc16..d2903e7 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -119,11 +119,6 @@ static int omap_rng_probe(struct platform_device *pdev)
+ 	dev_set_drvdata(&pdev->dev, priv);
+ 
+ 	priv->mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!priv->mem_res) {
+-		ret = -ENOENT;
+-		goto err_ioremap;
+-	}
+-
+ 	priv->base = devm_ioremap_resource(&pdev->dev, priv->mem_res);
+ 	if (IS_ERR(priv->base)) {
+ 		ret = PTR_ERR(priv->base);
 -- 
 1.7.10.4
 
