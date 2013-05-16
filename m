@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3EPDgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:36:39 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:42827 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab3EPDgh (ORCPT
+	id S1754888Ab3EPDyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:54:44 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56181 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754624Ab3EPDym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:36:37 -0400
-From: sanweidaying@gmail.com
-To: linux-mm@kvack.org
-Cc: Zhouping Liu <zliu@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] mm, slab: moved kmem_cache_alloc_node comment to correct place
-Date: Thu, 16 May 2013 11:36:23 +0800
-Message-Id: <1368675383-3976-1-git-send-email-sanweidaying@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Wed, 15 May 2013 23:54:42 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 23:54:42 EDT
+X-Sasl-enc: u6zz1qoVqF2VcVNYxOJD1SlFITx/Orc/inydevEXV2qw 1368675902
+Date: Thu, 16 May 2013 13:44:55 +1000
+From: Robert Norris <robn@opera.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-kernel@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
+Message-ID: <20130516034455.GA19452@pyro.melbourne.osa>
+References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
+ <20130514231626.GA12961@pyro.melbourne.osa>
+ <20130515112044.753bb7bb@endymion.delvare>
+ <20130515112741.GA23766@pyro.melbourne.osa>
+ <20130515214923.036dabdb@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515214923.036dabdb@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhouping Liu <zliu@redhat.com>
+On Wed, May 15, 2013 at 09:49:23PM +0200, Jean Delvare wrote:
+> >     Interrupt: pin B routed to IRQ 0
+> 
+> Hmm, this "IRQ 0" is quite odd. I'm wondering if this could be the
+> reason for this hang. Was it with the i2c-i801 driver loaded, or
+> blacklisted? Please check if it makes a difference.
 
-After several fixing about kmem_cache_alloc_node(), its comment
-was splitted. This patch moved it on top of kmem_cache_alloc_node()
-definition.
+That was without the driver loaded (blacklisted). After loading (with
+interrupts enabled) we get:
 
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
----
- mm/slab.c | 23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+    Interrupt: pin B routed to IRQ 20
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 8ccd296..be12f68 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3338,18 +3338,6 @@ done:
- 	return obj;
- }
- 
--/**
-- * kmem_cache_alloc_node - Allocate an object on the specified node
-- * @cachep: The cache to allocate from.
-- * @flags: See kmalloc().
-- * @nodeid: node number of the target node.
-- * @caller: return address of caller, used for debug information
-- *
-- * Identical to kmem_cache_alloc but it will allocate memory on the given
-- * node, which can improve the performance for cpu bound structures.
-- *
-- * Fallback to other node is possible if __GFP_THISNODE is not set.
-- */
- static __always_inline void *
- slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
- 		   unsigned long caller)
-@@ -3643,6 +3631,17 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
- #endif
- 
- #ifdef CONFIG_NUMA
-+/**
-+ * kmem_cache_alloc_node - Allocate an object on the specified node
-+ * @cachep: The cache to allocate from.
-+ * @flags: See kmalloc().
-+ * @nodeid: node number of the target node.
-+ *
-+ * Identical to kmem_cache_alloc but it will allocate memory on the given
-+ * node, which can improve the performance for cpu bound structures.
-+ *
-+ * Fallback to other node is possible if __GFP_THISNODE is not set.
-+ */
- void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- {
- 	void *ret = slab_alloc_node(cachep, flags, nodeid, _RET_IP_);
--- 
-1.7.11.7
+> Do you see the same (and more generally, this issue) on one, some or
+> all of your x3550 servers?
 
+The issue has occured on at least three x3550s (we have 11). I haven't
+tested more, because knowingly crashing production machines sucks.
+
+This appears to be the case on other machines. With the module
+blacklisted (never loaded), lspci shows IRQ 0. After load, IRQ 20.
+(tested on 3.4 and 3.9).
+
+> Are you using IPMI on these machines?
+
+Yes, but only for monitoring/sensors, if that makes a difference.
+
+> I would appreciate if you could test the following:
+> * Blacklist i2c-i801 and ics932s401 so that none of them get
+>   auto-loaded.
+
+Done.
+
+> * Manually load i2c-i801 with interrupts enabled, and see what
+>   happens.
+
+Returned immediately:
+
+[   60.527140] i801_smbus 0000:00:1f.3: SMBus using PCI Interrupt
+
+> * If no hang happens, load i2c-dev, find the i801 bus number with
+>   i2cdetect -l (from the i2c-tools package - it should be 4 according
+>   to what you reported so far but there is no guarantee that it won't
+>   change across reboots.)
+
+$ i2cdetect -l
+i2c-0   i2c         Radeon i2c bit bus DVI_DDC          I2C adapter
+i2c-1   i2c         Radeon i2c bit bus VGA_DDC          I2C adapter
+i2c-2   i2c         Radeon i2c bit bus MONID            I2C adapter
+i2c-3   i2c         Radeon i2c bit bus CRT2_DDC         I2C adapter
+i2c-4   smbus       SMBus I801 adapter at 0440          SMBus adapter
+
+> Then do a simple read from a random address
+>   with:
+>   # i2cget 4 0x50 0x00
+>   (Adjust the bus number as needed.)
+>   I am curious if this will hang as well or only when accessing the
+>   clock chip at address 0x69.
+
+Yep, that one hangs. The hung task handler picked it up after a few
+minutes.
+
+Cheers,
+Rob.
