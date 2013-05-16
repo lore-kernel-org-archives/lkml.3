@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3EPLSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:18:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29298 "EHLO mx1.redhat.com"
+	id S1753235Ab3EPLSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:18:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab3EPLSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:18:15 -0400
-Date: Thu, 16 May 2013 14:15:36 +0300
+	id S1752993Ab3EPLSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:18:39 -0400
+Date: Thu, 16 May 2013 14:15:48 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -24,8 +24,8 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
         linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
         linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v2 07/10] powerpc: uaccess s/might_sleep/might_fault/
-Message-ID: <2aa6c3da21a28120126732b5e0b4ecd6cba8ca3b.1368702323.git.mst@redhat.com>
+Subject: [PATCH v2 08/10] tile: uaccess s/might_sleep/might_fault/
+Message-ID: <018bba1e097552bc4054e6d90e3f03e7c9a632bb.1368702323.git.mst@redhat.com>
 References: <cover.1368702323.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -41,84 +41,22 @@ is if they fault. Make this explicit.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/powerpc/include/asm/uaccess.h | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/tile/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
-index 4db4959..9485b43 100644
---- a/arch/powerpc/include/asm/uaccess.h
-+++ b/arch/powerpc/include/asm/uaccess.h
-@@ -178,7 +178,7 @@ do {								\
- 	long __pu_err;						\
- 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);		\
- 	if (!is_kernel_addr((unsigned long)__pu_addr))		\
--		might_sleep();					\
-+		might_fault();					\
- 	__chk_user_ptr(ptr);					\
- 	__put_user_size((x), __pu_addr, (size), __pu_err);	\
- 	__pu_err;						\
-@@ -188,7 +188,7 @@ do {								\
- ({									\
- 	long __pu_err = -EFAULT;					\
- 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
--	might_sleep();							\
-+	might_fault();							\
- 	if (access_ok(VERIFY_WRITE, __pu_addr, size))			\
- 		__put_user_size((x), __pu_addr, (size), __pu_err);	\
- 	__pu_err;							\
-@@ -268,7 +268,7 @@ do {								\
- 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
- 	__chk_user_ptr(ptr);					\
- 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
--		might_sleep();					\
-+		might_fault();					\
- 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
- 	(x) = (__typeof__(*(ptr)))__gu_val;			\
- 	__gu_err;						\
-@@ -282,7 +282,7 @@ do {								\
- 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
- 	__chk_user_ptr(ptr);					\
- 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
--		might_sleep();					\
-+		might_fault();					\
- 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
- 	(x) = (__typeof__(*(ptr)))__gu_val;			\
- 	__gu_err;						\
-@@ -294,7 +294,7 @@ do {								\
- 	long __gu_err = -EFAULT;					\
- 	unsigned long  __gu_val = 0;					\
- 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
--	might_sleep();							\
-+	might_fault();							\
- 	if (access_ok(VERIFY_READ, __gu_addr, (size)))			\
- 		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
- 	(x) = (__typeof__(*(ptr)))__gu_val;				\
-@@ -419,14 +419,14 @@ static inline unsigned long __copy_to_user_inatomic(void __user *to,
- static inline unsigned long __copy_from_user(void *to,
- 		const void __user *from, unsigned long size)
+diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
+index 8a082bc..e4d44bd 100644
+--- a/arch/tile/include/asm/uaccess.h
++++ b/arch/tile/include/asm/uaccess.h
+@@ -442,7 +442,7 @@ extern unsigned long __copy_in_user_inatomic(
+ static inline unsigned long __must_check
+ __copy_in_user(void __user *to, const void __user *from, unsigned long n)
  {
 -	might_sleep();
 +	might_fault();
- 	return __copy_from_user_inatomic(to, from, size);
+ 	return __copy_in_user_inatomic(to, from, n);
  }
  
- static inline unsigned long __copy_to_user(void __user *to,
- 		const void *from, unsigned long size)
- {
--	might_sleep();
-+	might_fault();
- 	return __copy_to_user_inatomic(to, from, size);
- }
- 
-@@ -434,7 +434,7 @@ extern unsigned long __clear_user(void __user *addr, unsigned long size);
- 
- static inline unsigned long clear_user(void __user *addr, unsigned long size)
- {
--	might_sleep();
-+	might_fault();
- 	if (likely(access_ok(VERIFY_WRITE, addr, size)))
- 		return __clear_user(addr, size);
- 	if ((unsigned long)addr < TASK_SIZE) {
 -- 
 MST
 
