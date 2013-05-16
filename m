@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab3EPOL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:11:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48678 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab3EPOL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:11:57 -0400
-Date: Thu, 16 May 2013 15:11:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] Reduce system disruption due to kswapd V4
-Message-ID: <20130516141151.GI11497@suse.de>
-References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
- <20130515133748.5db2c6fb61c72ec61381d941@linux-foundation.org>
- <20130516103344.GF11497@suse.de>
- <20130516135428.GG13848@dhcp22.suse.cz>
+	id S1754366Ab3EPOMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:12:46 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:38771 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3EPOMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 10:12:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130516135428.GG13848@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+Date: Thu, 16 May 2013 07:12:44 -0700
+X-Google-Sender-Auth: 73q13jQlP8fAaTub2t7Q8d81-Aw
+Message-ID: <CA+55aFwJckiVkZWv1hFzXPR3fitT9uVq4RY8yGPaePK5zmAe+A@mail.gmail.com>
+Subject: Re: [PATCH 00/11] sysv mqueue: do not hold the ipc lock unnecessarily
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 03:54:28PM +0200, Michal Hocko wrote:
-> On Thu 16-05-13 11:33:45, Mel Gorman wrote:
-> [...]
-> > swapin in this case is an indication as to whether we are swap trashing.
-> > 	The closer the swapin/swapout ratio is to 0, the worse the
-> 
-> I guess you meant the ratio is closer to 1 not zero.
+On Wed, May 15, 2013 at 6:07 PM, Davidlohr Bueso <davidlohr.bueso@hp.com> wrote:
+> This patchset continues the work that began in the sysv ipc semaphore scaling
 
-Damnit, yes! I was even thinking 1 at the time I was typing. It's not
-like the keys are even near each other.
+Looks fine to me, but with the problems we had on the semaphore side,
+and since we're out of the merge window, I'm not going to take it into
+3.10 (I assume you weren't expecting that either). But hopefully it
+can go into Andrew''s -mm tree and get some testing.
 
--- 
-Mel Gorman
-SUSE Labs
+              Linus
