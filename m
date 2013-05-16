@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3EPCOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 22:14:21 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:19216
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754381Ab3EPCOR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 22:14:17 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z3121kz98dIc89bh936eIzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h93fhe5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1889i1155h)
-Message-ID: <51944184.7090107@freescale.com>
+	id S1754863Ab3EPCRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 22:17:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab3EPCRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 22:17:06 -0400
 Date: Thu, 16 May 2013 10:16:36 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+From: Asias He <asias@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+Message-ID: <20130516021636.GA24175@hj.localdomain>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
+ <1368579583-13097-1-git-send-email-asias@redhat.com>
+ <8761yk254u.fsf@rustcorp.com.au>
+ <1368657450.6899.29.camel@haakon3.risingtidesystems.com>
+ <871u9724vp.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 01/11] mtd: add datasheet's ECC information to nand_chip{}
-References: <1368607232-2210-1-git-send-email-b32955@freescale.com>	 <1368607232-2210-2-git-send-email-b32955@freescale.com> <1368619917.15764.99.camel@sauron.fi.intel.com>
-In-Reply-To: <1368619917.15764.99.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u9724vp.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月15日 20:11, Artem Bityutskiy 写道:
-> On Wed, 2013-05-15 at 16:40 +0800, Huang Shijie wrote:
->> + * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
->> + *			Minimum amount of bit errors per @ecc_step guaranteed to
->> + *			be correctable. If unknown, set to zero.
->> + * @ecc_step:		[INTERN] ECC step required by the @ecc_strength,
->> + *                      also from the datasheet. It is the recommended ECC step
->> + *			size, if known; if unknown, set to zero.
-> Here and in other places you talk about "datasheet". Do you assume that
-> the real ECC strength/step used by NAND chips may be different? Or you
-> assume it must be the same?
->
-The two fields are used to store the ecc info from the datasheet.
-The two fields are just for a reference.
+On Thu, May 16, 2013 at 09:05:38AM +0930, Rusty Russell wrote:
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> writes:
+> > On Wed, 2013-05-15 at 14:47 +0930, Rusty Russell wrote:
+> >> Asias He <asias@redhat.com> writes:
+> >> > scsi.c includes vhost.c which uses memcpy_fromiovec.
+> >> >
+> >> > This patch fixes this build failure.
+> >> >
+> >> >    From Randy Dunlap:
+> >> >    '''
+> >> >    on x86_64:
+> >> >
+> >> >    ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
+> >> >
+> >> >    It needs to depend on NET since net/core/ provides that function.
+> >> >    '''
+> >> 
+> >> Proper fix please.
+> >> 
+> >> Though I can't see why you thought this was a good idea.  Nonetheless, I
+> >> shan't highlight why: I have far too much respect for your intellects
+> >> and abilities.
+> >> 
+> >> No, don't thank me!
+> >
+> > Hi Rusty & Asias,
+> >
+> > I assume you mean something like the following patch to allow kbuild to
+> > work when VHOST_NET + VHOST_SCSI are both enabled and sharing vhost.o,
+> > yes..?
+> 
+> No, that's a separate issue.
+> 
+> memcpy_fromiovec() has nothing to do with networking: that was just the
+> first user.  Note that crypto/algif_skcipher.c also uses it.  The
+> obvious answer is to move it into lib/.
 
-[1] The nand controller may do not use these two fields, it's ok;
-     For example, the datasheet requires "4bits per 512 bytes".
-     The nand controller can uses 8bits per 512 bytes.
+That's true. I also want this.
 
+> OTOH making vhost_scsi depend on CONFIG_NET is breathtakingly lazy.  I
+> expect better from experienced kernel hackers :(
 
-[2] but sometimes the nand controller must use these two fields.
-     For example, the datasheet requires "40bits per 1024 bytes".
-     For the hardware limit, the nand controller(BCH) may supports the 
-40bits ecc in the maximum.
-     So the nand controller must use these two fields now.
+But do you think moving the memcpy_fromiovec stuff is a 3.10 material?
 
+> Rusty.
 
-thanks
-Huang Shijie
-
-
-
+-- 
+Asias
