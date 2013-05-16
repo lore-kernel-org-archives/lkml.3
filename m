@@ -1,167 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3EPDSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:18:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23494 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753978Ab3EPDQh (ORCPT
+	id S1754449Ab3EPDXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:23:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35579 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab3EPDXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:16:37 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v4 3/9] liblockdep: Add public headers for pthread_mutex_t implementation
-Date: Wed, 15 May 2013 23:15:35 -0400
-Message-Id: <1368674141-10796-4-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
-References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 15 May 2013 23:23:08 -0400
+Date: Thu, 16 May 2013 13:22:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <damm@opensource.se>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Subject: linux-next: manual merge of the renesas tree with Linus' tree
+Message-Id: <20130516132253.8865ca7b6503bd6fe9e6b05a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_May_2013_13_22_53_+1000_/w5v36AORU/wlVZt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These headers provide the same API as their pthread mutex
-counterparts.
+--Signature=_Thu__16_May_2013_13_22_53_+1000_/w5v36AORU/wlVZt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The design here is to allow to easily switch to liblockdep lock
-validation just by adding a "liblockdep_" to pthread_mutex_*()
-calls, which means that it's easy to integrate liblockdep into
-existing codebases.
+Hi Simon,
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- tools/lib/lockdep/include/liblockdep/common.h | 42 ++++++++++++++++
- tools/lib/lockdep/include/liblockdep/mutex.h  | 70 +++++++++++++++++++++++++++
- 2 files changed, 112 insertions(+)
- create mode 100644 tools/lib/lockdep/include/liblockdep/common.h
- create mode 100644 tools/lib/lockdep/include/liblockdep/mutex.h
+Today's linux-next merge of the renesas tree got a conflict in
+arch/arm/mach-shmobile/board-lager.c between commit 65be2de17aae ("ARM:
+shmobile: use r8a7790 timer setup code on Lager") from Linus' tree and
+commit 993340a1390d ("ARM: shmobile: use r8a7790 timer setup code on
+Lager") from the renesas tree.
 
-diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
-new file mode 100644
-index 0000000..1113cad
---- /dev/null
-+++ b/tools/lib/lockdep/include/liblockdep/common.h
-@@ -0,0 +1,42 @@
-+#ifndef _LIBLOCKDEP_COMMON_H
-+#define _LIBLOCKDEP_COMMON_H
-+
-+#include <pthread.h>
-+
-+#ifndef _THIS_IP_
-+#define _RET_IP_ (unsigned long)__builtin_return_address(0)
-+#endif
-+
-+#define NR_LOCKDEP_CACHING_CLASSES 2
-+#define MAX_LOCKDEP_SUBCLASSES 8UL
-+
-+struct lockdep_subclass_key {
-+	char __one_byte;
-+};
-+
-+struct lock_class_key {
-+	struct lockdep_subclass_key subkeys[MAX_LOCKDEP_SUBCLASSES];
-+};
-+
-+struct lockdep_map {
-+	struct lock_class_key	*key;
-+	struct lock_class	*class_cache[NR_LOCKDEP_CACHING_CLASSES];
-+	const char		*name;
-+#ifdef CONFIG_LOCK_STAT
-+	int			cpu;
-+	unsigned long		ip;
-+#endif
-+};
-+
-+void lockdep_init_map(struct lockdep_map *lock, const char *name,
-+			struct lock_class_key *key, int subclass);
-+void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
-+			int trylock, int read, int check,
-+			struct lockdep_map *nest_lock, unsigned long ip);
-+void lock_release(struct lockdep_map *lock, int nested,
-+			unsigned long ip);
-+
-+#define STATIC_LOCKDEP_MAP_INIT(_name, _key) \
-+	{ .name = (_name), .key = (void *)(_key), }
-+
-+#endif
-diff --git a/tools/lib/lockdep/include/liblockdep/mutex.h b/tools/lib/lockdep/include/liblockdep/mutex.h
-new file mode 100644
-index 0000000..c342f70
---- /dev/null
-+++ b/tools/lib/lockdep/include/liblockdep/mutex.h
-@@ -0,0 +1,70 @@
-+#ifndef _LIBLOCKDEP_MUTEX_H
-+#define _LIBLOCKDEP_MUTEX_H
-+
-+#include <pthread.h>
-+#include "common.h"
-+
-+struct liblockdep_pthread_mutex {
-+	pthread_mutex_t mutex;
-+	struct lockdep_map dep_map;
-+};
-+
-+typedef struct liblockdep_pthread_mutex liblockdep_pthread_mutex_t;
-+
-+#define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx)			\
-+		(const struct liblockdep_pthread_mutex) {		\
-+	.mutex = PTHREAD_MUTEX_INITIALIZER,				\
-+	.dep_map = STATIC_LOCKDEP_MAP_INIT(#mtx, &((&(mtx))->dep_map)),	\
-+}
-+
-+static inline int __mutex_init(liblockdep_pthread_mutex_t *lock,
-+				const char *name,
-+				struct lock_class_key *key,
-+				const pthread_mutexattr_t *__mutexattr)
-+{
-+	lockdep_init_map(&lock->dep_map, name, key, 0);
-+	return pthread_mutex_init(&lock->mutex, __mutexattr);
-+}
-+
-+#define liblockdep_pthread_mutex_init(mutex, mutexattr)		\
-+({								\
-+	static struct lock_class_key __key;			\
-+								\
-+	__mutex_init((mutex), #mutex, &__key, (mutexattr));	\
-+})
-+
-+static inline int liblockdep_pthread_mutex_lock(liblockdep_pthread_mutex_t *lock)
-+{
-+	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_RET_IP_);
-+	return pthread_mutex_lock(&lock->mutex);
-+}
-+
-+static inline int liblockdep_pthread_mutex_unlock(liblockdep_pthread_mutex_t *lock)
-+{
-+	lock_release(&lock->dep_map, 0, (unsigned long)_RET_IP_);
-+	return pthread_mutex_unlock(&lock->mutex);
-+}
-+
-+static inline int liblockdep_pthread_mutex_trylock(liblockdep_pthread_mutex_t *lock)
-+{
-+	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_RET_IP_);
-+	return pthread_mutex_trylock(&lock->mutex) == 0 ? 1 : 0;
-+}
-+
-+static inline int liblockdep_pthread_mutex_destroy(liblockdep_pthread_mutex_t *lock)
-+{
-+	return pthread_mutex_destroy(&lock->mutex);
-+}
-+
-+#ifdef __USE_LIBLOCKDEP
-+
-+#define pthread_mutex_t         liblockdep_pthread_mutex_t
-+#define pthread_mutex_init      liblockdep_pthread_mutex_init
-+#define pthread_mutex_lock      liblockdep_pthread_mutex_lock
-+#define pthread_mutex_unlock    liblockdep_pthread_mutex_unlock
-+#define pthread_mutex_trylock   liblockdep_pthread_mutex_trylock
-+#define pthread_mutex_destroy   liblockdep_pthread_mutex_destroy
-+
-+#endif
-+
-+#endif
--- 
-1.8.2.1
+These are the same patch but different commits :-( and there are further
+commits touching this file in the renesas tree.  Please clean up your
+tree and remove anything that has already gone upstream as different
+patches.  I used the renesas tree version of this file.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__16_May_2013_13_22_53_+1000_/w5v36AORU/wlVZt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRlFENAAoJEECxmPOUX5FEcu8P/iNUEHp91h85VpCgFfT5yaVO
+MA5m1zJTeWquC8iYN4iL9n6pqf0TTA5dj8MhuNP+ISk7UUaW9BaIkzM3y79zrlI+
+Y4jJAZXuCQBjj8qy+D8rQ8nCimSzacSoyEldj5gOCHljWROW8rRRblzVsb5UjJJY
+n0E4yl6TNL624VtnHdKgCuF/t+Bbf4MbYG9pwOevBV9xEaFOD1DVuRNRJWu5twbq
+M13HNHT1HfS7iy/EqOASA4DVyMdQ6FOpzm67kb7Z1SJFetBKKMXGnUYWDsXQibO+
+gX8KrVbqtVfcdK49211l9HR6CaWfSyjfeyK7FIYL4I5bEE53qU0GxKOgnSem+pEJ
+7BTcg5oun6Cf9cKuZcrYopjR9Zceifd2Mq1xNKDFTeSiEkaxvBm6dyK+qNl5/w40
+yNAoVHPo1S1j2avyoyNkGyJyqT0zkI6haNBJQfxRBb9QSwMUf1hWqlJtegvc8Hol
+4h1OkfHcgTJhq1cRukc81iDmAsH3xg68Y1BplyMR+L2dwGcgJtcSJraNhDtZQWwQ
+Mb7pLo1jfKHOmOo2BsMj4Hs1ltIlY0++Vz60G8IwzR9AcjfLOj9r7o11+/MNtc87
+rQtfi+k8lqjXfqb7Ho+ST2j4FcM1AeRpFdnHQuDcoREAUaQTqxy6Fz1w36fnsNG2
+bbgDS0GDuUfYlCRZ7Pnv
+=fVlR
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_May_2013_13_22_53_+1000_/w5v36AORU/wlVZt--
