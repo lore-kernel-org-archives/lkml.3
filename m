@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751323Ab3EPJMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:12:50 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:23448 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab3EPJMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:12:47 -0400
-Message-ID: <5194A30C.7040402@imgtec.com>
-Date: Thu, 16 May 2013 10:12:44 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751392Ab3EPJS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:18:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58358
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751074Ab3EPJSy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 05:18:54 -0400
+Date: Thu, 16 May 2013 11:17:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for
+ PERF_SAMPLE_BRANCH_KERNEL
+Message-ID: <20130516091707.GG19669@dyad.programming.kicks-ass.net>
+References: <20130503121122.931661809@chello.nl>
+ <20130503121256.230745028@chello.nl>
+ <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
+ <20130516090916.GF19669@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 5/8] pinctrl-tz1090: add TZ1090 pinctrl driver
-References: <1366727607-27444-1-git-send-email-james.hogan@imgtec.com> <1366727607-27444-6-git-send-email-james.hogan@imgtec.com> <CACRpkdbYwDvF=gNurLzc+wE0BYpoqog7sPdRTY59BGS7yn3n9Q@mail.gmail.com> <517A6B01.5000708@imgtec.com> <CACRpkdYooPNgJuA-fZOiGJV03R_783uAOmR=QgYOahYdHcad9w@mail.gmail.com> <5183AC54.30503@imgtec.com> <CACRpkdYYhsY-2vQnxpM-rB9_6yXiY4XBNhb4eyNvK=eD=dxK5w@mail.gmail.com> <5183D262.7000107@imgtec.com> <CACRpkdbJpnpZwoCqtFk+U9fsJXPLw+AhPBSCxawS2-QwAjBftA@mail.gmail.com> <51922C89.30403@imgtec.com> <CACRpkdZ5KW0qUF7vG1ZTmc0gez2T+e4KBugUGMpkXnXNmEMdEw@mail.gmail.com>
-In-Reply-To: <CACRpkdZ5KW0qUF7vG1ZTmc0gez2T+e4KBugUGMpkXnXNmEMdEw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_16_10_12_44
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, May 16, 2013 at 11:09:16AM +0200, Peter Zijlstra wrote:
+> How about something like the below? It also adds the branch flags Mikey wanted
+> for PowerPC.
 
-On 15/05/13 20:07, Linus Walleij wrote:
-> On Tue, May 14, 2013 at 2:22 PM, James Hogan <james.hogan@imgtec.com> wrote:
+The asymmetry is unfortunate, but I think its more useful to have the from
+kernel branch target than it is not to have it. This way you at least know
+there was a kernel entry/exit and where you've continued.
+
+Without either branch to kernel and branch from kernel entries you'd be
+wondering WTF happend to your control flow.
+
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 12 +++++++++---
+>  include/linux/perf_event.h                 | 10 +++++++---
+>  2 files changed, 16 insertions(+), 6 deletions(-)
 > 
->> I think that's the other way around, i.e. that's talking about mapping
->> several pingroups to the same function. The next paragraph is closer to
->> the problem:
->>
->> Documentation/pinctrl.txt
->>> - PINS for a certain FUNCTION using a certain PIN GROUP on a certain
->>>   PIN CONTROLLER are provided on a first-come first-serve basis, so if some
->>>   other device mux setting or GPIO pin request has already taken your physical
->>>   pin, you will be denied the use of it. To get (activate) a new setting, the
->>>   old one has to be put (deactivated) first.
->>
->> In my example the tft pingroup contains all the tft pins, but I might
->> want a particular pin inside that pingroup to never be controlled by the
->> mux (using the per-pin mux disable (SELECT) bits).
->>
->> So if I use pinmux I'd have something like:
->> * "tft" pingroup maps to "tft" function
->> * "tft_green0" pingroup (containing individual pin inside "tft"
->> pingroup) maps to "none" function to disable muxing (or the inverse,
->> with each pin in use mapping to "periph" to enable muxing).
->> in which case the pin has multiple muxes "controlling" it (even though
->> they're sort of nested). The above paragraph seems to condemn this
->> arrangement.
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index d978353..f44d635 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -585,17 +585,23 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+>  
+>  		/* if type does not correspond, then discard */
+>  		if (type == X86_BR_NONE || (br_sel & type) != type) {
+> -			cpuc->lbr_entries[i].from = 0;
+> +			cpuc->lbr_entries[i].__delete = 1;
+>  			compress = true;
+>  		}
+> +
+> +		/* hide kernel addresses if we're not privileged  */
+> +		if (!(br_sel & X86_BR_KERNEL) && kernel_ip(from)) {
+> +			cpuc->lbr_entries[i].from = -1L;
+> +			cpuc->lbr_entries[i].invalid_from = 1;
+> +		}
+>  	}
+>  
+>  	if (!compress)
+>  		return;
+>  
+> -	/* remove all entries with from=0 */
+> +	/* remove all entries with __delete */
+>  	for (i = 0; i < cpuc->lbr_stack.nr; ) {
+> -		if (!cpuc->lbr_entries[i].from) {
+> +		if (cpuc->lbr_entries[i].__delete) {
+>  			j = i;
+>  			while (++j < cpuc->lbr_stack.nr)
+>  				cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index f463a46..7acf1c9 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -77,9 +77,13 @@ struct perf_raw_record {
+>  struct perf_branch_entry {
+>  	__u64	from;
+>  	__u64	to;
+> -	__u64	mispred:1,  /* target mispredicted */
+> -		predicted:1,/* target predicted */
+> -		reserved:62;
+> +	__u64	mispred:1,	/* target mispredicted		*/
+> +		predicted:1,	/* target predicted		*/
+> +		invalid_to:1,	/* @to isn't to be trusted	*/
+> +		invalid_from:1, /* @from isn't to be trusted	*/
+> +		reserved:59,
+> +		__delete:1;	/* Implementation; userspace should
+> +				   always see a 0 		*/
+>  };
+>  
+>  /*
 > 
-> So if this usecase is what you want to support, why don't you just
-> exclude that one pin from the "tft" group and put it into another
-> group?
-
-It's a very board specific thing (that was just one example). To
-generalise your suggestion would make all muxing pingroups contain no
-pins (which is perhaps accurate since the thing that's muxed by the
-group is a set of internal signals that may be muxed out to pins via the
-SELECT bits).
-
-Cheers
-James
-
