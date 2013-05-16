@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3EPLSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:18:07 -0400
-Received: from sauhun.de ([89.238.76.85]:56271 "EHLO pokefinder.org"
+	id S1753309Ab3EPLTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:19:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50574 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab3EPLPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:36 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
+	id S1753125Ab3EPLTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:19:03 -0400
+Date: Thu, 16 May 2013 14:15:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: [PATCH 29/33] arch/arm/mach-tegra: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:57 +0200
-Message-Id: <1368702961-4325-30-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: [PATCH v2 09/10] x86: uaccess s/might_sleep/might_fault/
+Message-ID: <4fe705ad6d48e166bfe77c1401140008eac8f6f6.1368702323.git.mst@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1368702323.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/arm/mach-tegra/tegra2_emc.c |    5 -----
- 1 file changed, 5 deletions(-)
+ arch/x86/include/asm/uaccess_64.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-tegra/tegra2_emc.c b/arch/arm/mach-tegra/tegra2_emc.c
-index 9e8bdfa..31e69a0 100644
---- a/arch/arm/mach-tegra/tegra2_emc.c
-+++ b/arch/arm/mach-tegra/tegra2_emc.c
-@@ -307,11 +307,6 @@ static int tegra_emc_probe(struct platform_device *pdev)
- 	}
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 142810c..4f7923d 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -235,7 +235,7 @@ extern long __copy_user_nocache(void *dst, const void __user *src,
+ static inline int
+ __copy_from_user_nocache(void *dst, const void __user *src, unsigned size)
+ {
+-	might_sleep();
++	might_fault();
+ 	return __copy_user_nocache(dst, src, size, 1);
+ }
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "missing register base\n");
--		return -ENOMEM;
--	}
--
- 	emc_regbase = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(emc_regbase))
- 		return PTR_ERR(emc_regbase);
 -- 
-1.7.10.4
+MST
 
