@@ -1,69 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3EPWzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:55:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37665 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab3EPWy7 convert rfc822-to-8bit (ORCPT
+	id S1755205Ab3EPWzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:55:42 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53415 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab3EPWzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:54:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="338908784"
-From: "Ralston, James D" <james.d.ralston@intel.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Peter Tyser <ptyser@xes-inc.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Heasley, Seth" <seth.heasley@intel.com>
-Subject: RE: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
-Thread-Topic: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
-Thread-Index: AQHOUoMWQ9ZmEHmdE0OfCES40Kds0pkIa66Q
-Date: Thu, 16 May 2013 22:54:56 +0000
-Message-ID: <92A8E3E1132F2F478648ABA9A4E1EC998CCEC0A2@ORSMSX105.amr.corp.intel.com>
-References: <1368128333-1765-1-git-send-email-james.d.ralston@intel.com>
- <20130516221655.GT22822@zurbaran>
-In-Reply-To: <20130516221655.GT22822@zurbaran>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 16 May 2013 18:55:39 -0400
+Date: Thu, 16 May 2013 16:55:35 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Emmanuel Grumbach <egrumbach@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        John Linville <linville@tuxdriver.com>,
+        Roman Yepishev <roman.yepishev@gmail.com>,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        Mike Miller <mike.miller@hp.com>,
+        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
+        Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "aacraid@adaptec.com" <aacraid@adaptec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: is L1 really disabled in iwlwifi
+Message-ID: <20130516225535.GA27962@google.com>
+References: <CANUX_P2Hy02SnyYS24dyUGLv3wB3L5xkXt8Y1s+8_RG9d5ReAw@mail.gmail.com>
+ <CAErSpo6OCyTy19u6Xaf=xr0TSDriwCD3n-oMc7eJyLzuJ9d60g@mail.gmail.com>
+ <20130510225257.GA10847@google.com>
+ <1725435.3DlCxYF2FV@vostro.rjw.lan>
+ <1368303730.2425.47.camel@x230>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368303730.2425.47.camel@x230>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good to hear. Thanks!
-
-James Ralston
-
-
------Original Message-----
-From: Samuel Ortiz [mailto:sameo@linux.intel.com] 
-Sent: Thursday, May 16, 2013 3:17 PM
-To: Ralston, James D
-Cc: Peter Tyser; linux-kernel@vger.kernel.org; Heasley, Seth
-Subject: Re: [PATCH v2] lpc_ich: Watchdog/GPIO patch for Intel Avoton SoC
-
-Hi James,
-
-On Thu, May 09, 2013 at 12:38:53PM -0700, James Ralston wrote:
-> This patch adds the LPC Controller Device IDs for Watchdog and GPIO for the Intel Avoton SoC.
+On Sat, May 11, 2013 at 08:22:11PM +0000, Matthew Garrett wrote:
+> On Sat, 2013-05-11 at 22:26 +0200, Rafael J. Wysocki wrote:
+> > On Friday, May 10, 2013 04:52:57 PM Bjorn Helgaas wrote:
+> > > I propose the following patch.  Any comments?
+> > 
+> > In my opinion this is dangerous, because it opens us to bugs that right now
+> > are prevented from happening due to the way the code works.
 > 
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
-> ---
-> Change notes for v2:
-> *corrected version number
-> 
->  drivers/mfd/lpc_ich.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-Applied to my mfd-next tree, it should make it to Linux 3.11.
+> Right, I'm also not entirely comfortable with this. The current
+> behaviour may be confusing, but we could reduce that by renaming the
+> functions. I'm still not clear on whether anyone's actually seeing
+> problems caused by the existing behaviour.
 
-Cheers,
-Samuel.
+I couldn't imagine that silently ignoring the request to disable ASPM
+would be the right thing, but I spent a long time experimenting with
+Windows on qemu, and I think you're right.  Windows 7 also seems to
+ignore the "PciASPMOptOut" directive when we don't have permission
+to manage ASPM.  All the gory details are at
+https://bugzilla.kernel.org/show_bug.cgi?id=57331
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+The current behavior is definitely confusing.  I hate to rename or change
+pci_disable_link_state() because it's exported and we'd have to maintain
+the old interface for a while anyway.  And I don't really want to return
+failure to drivers, because I think that would encourage people to fiddle
+with the Link Control register directly in the driver, which doesn't seem
+like a good idea.
+
+And you're also right that (as far as I know) there's not an actual
+problem with the current behavior other than the confusion it causes.
+
+So, how about something like the following patch, which just prints a
+warning when we can't do what the driver requested?  I suppose this may
+also be a nuisance, because users will be worried, but they can't actually
+*do* anything about it.  Maybe it should be dev_info() instead.
+
+commit f1956960fa0759c53b28e3a2810bd7e1b6e8925f
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Wed May 15 17:02:37 2013 -0600
+
+    PCI/ASPM: Warn when driver asks to disable ASPM, but we can't do it
+    
+    Some devices have hardware problems related to using ASPM.  Drivers for
+    these devices use pci_disable_link_state() to prevent their device from
+    entering L0s or L1.  But on platforms where the OS doesn't have permission
+    to manage ASPM, pci_disable_link_state() doesn't actually disable ASPM.
+    
+    Windows has a similar mechanism ("PciASPMOptOut"), and when the OS doesn't
+    have control of ASPM, it doesn't actually disable ASPM either.
+    
+    This patch just adds a warning in dmesg about the fact that
+    pci_disable_link_state() is doing nothing.
+    
+    Reported-by: Emmanuel Grumbach <egrumbach@gmail.com>
+    Reference: https://lkml.kernel.org/r/CANUX_P3F5YhbZX3WGU-j1AGpbXb_T9Bis2ErhvKkFMtDvzatVQ@mail.gmail.com
+    Reference: https://bugzilla.kernel.org/show_bug.cgi?id=57331
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index d320df6..faa83b6 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -724,9 +724,6 @@ static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
+ 	struct pci_dev *parent = pdev->bus->self;
+ 	struct pcie_link_state *link;
+ 
+-	if (aspm_disabled && !force)
+-		return;
+-
+ 	if (!pci_is_pcie(pdev))
+ 		return;
+ 
+@@ -736,6 +733,19 @@ static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
+ 	if (!parent || !parent->link_state)
+ 		return;
+ 
++	/*
++	 * A driver requested that ASPM be disabled on this device, but
++	 * if we don't have permission to manage ASPM (e.g., on ACPI
++	 * systems we have to observe the FADT ACPI_FADT_NO_ASPM bit and
++	 * the _OSC method), we can't honor that request.  Windows has
++	 * a similar mechanism using "PciASPMOptOut", which is also
++	 * ignored in this situation.
++	 */
++	if (aspm_disabled && !force) {
++		dev_warn(&pdev->dev, "can't disable ASPM; OS doesn't have ASPM control\n");
++		return;
++	}
++
+ 	if (sem)
+ 		down_read(&pci_bus_sem);
+ 	mutex_lock(&aspm_lock);
