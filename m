@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab3EQD3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 23:29:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64580 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab3EQD3p (ORCPT
+	id S1753369Ab3EQDdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 23:33:22 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:37896 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab3EQDdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 23:29:45 -0400
-Message-ID: <5195A41D.7050507@huawei.com>
-Date: Fri, 17 May 2013 11:29:33 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 16 May 2013 23:33:20 -0400
+Date: Thu, 16 May 2013 15:59:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com,
+        Stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/1] Staging: hv: Fix a bug in get_vp_index()
+Message-ID: <20130516225943.GA12820@kroah.com>
+References: <1368200821-20964-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH] memcg: update TODO list in Documentation
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368200821-20964-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hugetlb cgroup has already been implemented.
+On Fri, May 10, 2013 at 08:47:01AM -0700, K. Y. Srinivasan wrote:
+> Linux' notion of cpuid is different from the Host's notion of CPUID. In the
+> call to bind the channel interrupts, we should use the host's notion of
+> CPU Ids. Fix this bug.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: Stable <stable@vger.kernel.org> (V3.9)
+> ---
+>  drivers/hv/channel_mgmt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- Documentation/cgroups/memory.txt | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Why do you have "Staging" in the Subject:?  This isn't a staging driver
+anymore, right?
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index ddf4f93..327acec 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -834,10 +834,9 @@ Test:
- 
- 12. TODO
- 
--1. Add support for accounting huge pages (as a separate controller)
--2. Make per-cgroup scanner reclaim not-shared pages first
--3. Teach controller to account for shared-pages
--4. Start reclamation in the background when the limit is
-+1. Make per-cgroup scanner reclaim not-shared pages first
-+2. Teach controller to account for shared-pages
-+3. Start reclamation in the background when the limit is
-    not yet hit but the usage is getting closer
- 
- Summary
--- 
-1.8.0.2
+greg k-h
