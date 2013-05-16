@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab3EPU6Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:58:24 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56882 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab3EPU6V (ORCPT
+	id S1753472Ab3EPVAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:00:53 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:48439 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab3EPVAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:58:21 -0400
-Message-ID: <5195486F.1040603@cogentembedded.com>
-Date: Fri, 17 May 2013 00:58:23 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 16 May 2013 17:00:50 -0400
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Simon Horman <horms@verge.net.au>, linux-sh@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, vladimir.barinov@cogentembedded.com
-Subject: Re: [PATCH] <linux/of_platform.h>: fix compilation warnings with
- DT disabled
-References: <201302190258.25726.sergei.shtylyov@cogentembedded.com> <20130301070925.GA24369@verge.net.au> <5130B12F.20409@gmail.com> <5130B1A7.9060001@gmail.com> <5130B34F.2090700@cogentembedded.com> <5130B506.5020908@gmail.com>
-In-Reply-To: <5130B506.5020908@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAH3drwY0vVGnf05v-coSmS4OQyHuufycLojEn9que6iL_r3AUw@mail.gmail.com>
+References: <cover.1368485053.git.luto@amacapital.net> <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
+ <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com>
+ <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
+ <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
+ <CAH3drwb743_q5ZrNDNsnOUUNVDMcefaq9NH3+t863OGc98-D-Q@mail.gmail.com>
+ <CALCETrXA-nbdDEv1TyU9e4mcGZzAoCTTDX33M1o31rZkgHHTFg@mail.gmail.com> <CAH3drwY0vVGnf05v-coSmS4OQyHuufycLojEn9que6iL_r3AUw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 16 May 2013 14:00:28 -0700
+Message-ID: <CALCETrUMeZSvPfV0m+S7nXDiOJrzATMzvoi48Yv116tJw1fPzA@mail.gmail.com>
+Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
+ missing ..._del
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 03/01/2013 05:02 PM, Rob Herring wrote:
-
->>>>>> Fix the following compilation warnings (in Simon Horman's
->>>>>> renesas.git repo):
->>>>>> In file included from arch/arm/mach-shmobile/setup-r8a7779.c:24:0:
->>>>>> include/linux/of_platform.h:107:13: warning: ‘struct of_device_id’
->>>>>> declared
->>>>>> inside parameter list [enabled by default]
->>>>>> include/linux/of_platform.h:107:13: warning: its scope is only this
->>>>>> definition
->>>>>> or declaration, which is probably not what you want [enabled by
->>>>>> default]
->>>>>> include/linux/of_platform.h:107:13: warning: ‘struct device_node’
->>>>>> declared
->>>>>> inside parameter list [enabled by default]
->>>>>> <linux/of_platform.h> only #include's headers with definitions of
->>>>>> the above
->>>>>> mentioned structures if CONFIG_OF_DEVICE=y but uses them even if
->>>>>> not. One
->>>>>> solution is to move some #include's out of #ifdef CONFIG_OF_DEVICE
->>>>>> and use
->>>>>> incomplete declarations for the rest of the structures where the
->>>>>> #ifdef move
->>>>>> doesn't help...
->>>>>> Reported-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
->>>>>> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
->>>>> Reviewed-by: Simon Horman <horms+renesas@verge.net.au>
->>>>> Grant, could you consider taking this patch?
->>>> Yes, I can, but I don't seem to have the original patch. Can you send it
->>>> again.
->>> Nevermind. Found it. I'll apply it.
->>     Will you drop 'struct device_node' declaration then or should I
->> resend? In fact, I think I should better resend it with the changelog
->> somewhat edited.
-> No, I plan to leave it as is and not rely on device.h by chance
-> declaring device_node.
-
-     I hoped to see this fix in 3.10-rc1. Is there any hope to see it in 
-3.10-rc's?
-The code it fixes the warnings in is already in Linus tree.
-
+On Thu, May 16, 2013 at 6:50 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+> On Wed, May 15, 2013 at 2:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Wed, May 15, 2013 at 7:49 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>> On Tue, May 14, 2013 at 5:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
+>>>>> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>>>> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>>>>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>>>>>>
+>>>>>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+>>>>>
+>>>>> I believe it will break something but we could deal with the fallout
+>>>>> once it happens.
+>>>>
+>>>> FWIW, I'm running with this code on my machine right now using the
+>>>> radeon driver.  Everything seems fine.  If I build without MTRRs and
+>>>> without PAT, though, graphics are slow (as expected).  So I think
+>>>> everything's okay.
+>>>>
+>>>> --Andy
+>>>
+>>> I am worried on p4 where i last see issue with that notably with agp.
+>>
+>> Do you remember any details?  It looks like PAT is enabled on Pentium
+>> 4 (i.e. famliy 0xF).
+>>
+>> --Andy
 >
->>> Rob
+> No i don't, i think it was some pat errata on those about non real ram
+> address and with agp. Memory is fuzzy. I might have time in couple of
+> week to plug back my p4 and see how it behave.
 
-WBR, Sergei
+Hmm.  I couldn't find any PAT errata related to AGP.
 
+Is it possible that the issue was that, if there was no MTRR covering
+the AGP aperture, that the mapping ended up as writeback?  If so, I
+fixed that in this series.
+
+In any case, if you see any problems, please let me know.
+
+--Andy
