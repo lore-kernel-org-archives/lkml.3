@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab3EPSDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 14:03:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64423 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab3EPSDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 14:03:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,685,1363158000"; 
-   d="scan'208";a="338447047"
-Subject: Re: linux-next: Tree for May 15 (crypto /crct10dif)
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Xiong Zhou <jencce.kernel@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
-In-Reply-To: <1368723552.27102.286.camel@schen9-DESK>
-References: <20130515132627.817585a3d9fb3a3e502eb586@canb.auug.org.au>
-	 <5193CCEC.7070909@infradead.org>
-	 <alpine.DEB.2.02.1305161152530.31865@M2420>
-	 <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
-	 <1368723552.27102.286.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 16 May 2013 11:03:32 -0700
-Message-ID: <1368727412.27102.289.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753537Ab3EPSFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 14:05:00 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60626
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753359Ab3EPSE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 14:04:59 -0400
+Date: Thu, 16 May 2013 20:03:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: majianpeng <majianpeng@gmail.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, mingo@redhat.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-f2fs <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [RFC][PATCH] f2fs: Avoid print false deadlock messages.
+Message-ID: <20130516180312.GN19669@dyad.programming.kicks-ass.net>
+References: <5193322D.1080009@gmail.com>
+ <20130515082834.GB10510@laptop.programming.kicks-ass.net>
+ <5194337D.1080503@gmail.com>
+ <20130516084143.GE19669@dyad.programming.kicks-ass.net>
+ <5194C437.4070801@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5194C437.4070801@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 09:59 -0700, Tim Chen wrote:
-> On Thu, 2013-05-16 at 09:22 +0200, Geert Uytterhoeven wrote:
-> > On Thu, May 16, 2013 at 5:57 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
-> > > --- a/crypto/Kconfig
-> > > +++ b/crypto/Kconfig
-> > > @@ -378,6 +378,7 @@ config CRYPTO_CRC32_PCLMUL
-> > >
-> > >  config CRYPTO_CRCT10DIF
-> > >         tristate "CRCT10DIF algorithm"
-> > > +       depends on CRC_T10DIF
-> > 
-> > This is a library symbol, so "select CRC_T10DIF"?
-> > 
-> > >         select CRYPTO_HASH
-> > >         help
-> > >           CRC T10 Data Integrity Field computation is being cast as
-> > 
-> > Gr{oetje,eeting}s,
-> > 
-> >                         Geert
-> > 
-> 
-> This is the fix I think that will resolve the build issues.  The generic
-> crc-t10dif transform depends on the library function crc_t10dif_generic
-> in lib/crc-t10dif.c, so "depends on CRC_T10DIF" for CRYPTO_CRCT10DIF is
-> needed.
-> 
-> Now for CRC_T10DIF, we should use select CRYPTO_HASH, so it can try to
-> allocate a T10DIF transform if it is available.  If not, it will simply
-> use the crc_t10dif_generic function. Loading the
-> generic t10dif crypto transform is not mandatory for the library
-> function crc_t10dif. 
-> 
-> Thanks for catching the issues.
-> 
-> Tim
-> 
+On Thu, May 16, 2013 at 07:34:15PM +0800, majianpeng wrote:
 
-Need to also add select CRYPTO for CRC_T10DIF.  Updated fix below:
+> Thanks very much! I'll take times to understand.
+> Can you send a patch about this?
 
+You mean the below or something else?
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index d1ca631..015df24 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -379,6 +379,7 @@ config CRYPTO_CRC32_PCLMUL
- config CRYPTO_CRCT10DIF
- 	tristate "CRCT10DIF algorithm"
- 	select CRYPTO_HASH
-+	depends on CRC_T10DIF
- 	help
- 	  CRC T10 Data Integrity Field computation is being cast as
- 	  a crypto transform.  This allows for faster crc t10 diff
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 0cee056..6407793 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -63,7 +63,8 @@ config CRC16
- 
- config CRC_T10DIF
- 	tristate "CRC calculation for the T10 Data Integrity Field"
--	select CRYPTO_CRCT10DIF
-+	select CRYPTO
-+	select CRYPTO_HASH
- 	help
- 	  This option is only needed if a module that's not in the
- 	  kernel tree needs to calculate CRC checks for use with the
+Subject: f2fs, lockdep: Annotate mutex_lock_all()
 
+Majianpeng reported a lockdep splat for f2fs. It turns out mutex_lock_all()
+acquires an array of locks (in global/local lock style).
+
+Any such operation is always serialized using cp_mutex, therefore there is no
+fs_lock[] lock-order issue; tell lockdep about this using the
+mutex_lock_nest_lock() primitive.
+
+Reported-by: majianpeng <majianpeng@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ fs/f2fs/f2fs.h | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 20aab02..8454277 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -495,9 +495,17 @@ static inline void clear_ckpt_flags(struct f2fs_checkpoint *cp, unsigned int f)
+ 
+ static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
+ {
+-	int i = 0;
+-	for (; i < NR_GLOBAL_LOCKS; i++)
+-		mutex_lock(&sbi->fs_lock[i]);
++	int i;
++
++	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
++		/*
++		 * This is the only time we take multiple fs_lock[]
++		 * instances; the order is immaterial since we
++		 * always hold cp_mutex, which serializes multiple
++		 * such operations.
++		 */
++		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
++	}
+ }
+ 
+ static inline void mutex_unlock_all(struct f2fs_sb_info *sbi)
 
