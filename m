@@ -1,149 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3EPB5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:57:00 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51752 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab3EPB46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:56:58 -0400
-X-AuditID: 9c93016f-b7b9bae000002df2-00-51943ce8b138
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
-References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
-	<5193A6E7.9040501@gmail.com>
-Date: Thu, 16 May 2013 10:56:56 +0900
-In-Reply-To: <5193A6E7.9040501@gmail.com> (David Ahern's message of "Wed, 15
-	May 2013 09:16:55 -0600")
-Message-ID: <87sj1n4rh3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753748Ab3EPCBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 22:01:43 -0400
+Received: from out1.zte.com.cn ([202.103.147.172]:43835 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751887Ab3EPCBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 22:01:42 -0400
+In-Reply-To: <519436B7.2050101@linux.intel.com>
+References: <000101ce5174$1962bac0$4c283040$@com> <20130515142035.GD11497@suse.de> <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn> <519436B7.2050101@linux.intel.com>
+Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
+X-KeepSent: 7A810108:AA9BB6C1-48257B6D:000A1424;
+ type=4; name=$KeepSent
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OF7A810108.AA9BB6C1-ON48257B6D.000A1424-48257B6D.000B1EC6@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Thu, 16 May 2013 10:00:54 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-05-16 10:00:48
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-type: text/plain; charset=US-ASCII
+X-MAIL: mse01.zte.com.cn r4G216C1009629
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-On Wed, 15 May 2013 09:16:55 -0600, David Ahern wrote:
-> On 5/15/13 3:23 AM, Namhyung Kim wrote:
-[SNIP]
->> +--time-filter::
->> +	Display samples within a range of time only. A time range can be given
->> +	like 'time1-time2' and treated as a start time and end time
->> +        respectively. The time format is like "<sec>.<usec>". Either of time1
->> +	or time2 can be omitted.
->
-> I have this option internally on all analysis commands for while now -- 
-> on report, script and my timehist command. Very useful feature.
->
-> How about just --time? less typing.
 
-Thanks, I'm fine with '--time' too but '--time-filter' looks more
-obvious.  What does the timehist command do, btw? ;)
+Darren Hart <dvhart@linux.intel.com> wrote on 2013/05/16 09:30:31:
 
 >
->> +
->>   SEE ALSO
->>   --------
->>   linkperf:perf-record[1], linkperf:perf-script-perl[1],
->> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
->> index 92d4658f56fb..fec624b9f8e3 100644
->> --- a/tools/perf/builtin-script.c
->> +++ b/tools/perf/builtin-script.c
->> @@ -28,6 +28,17 @@ static bool			system_wide;
->>   static const char		*cpu_list;
->>   static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
->>
->> +#define TIME_FILTER_START 1
->> +#define TIME_FILTER_END   2
->> +
->> +struct time_range {
->> +	int filter;
->> +	u64 start;
->> +	u64 end;
->> +};
+> pgoff_t is an unsigned long, and page_to_pfn() returns an unsigned long.
+> Since compound_idx can be assigned from page_to_pfn() and it is added
+> with index in the return value, unsigned long seems like a better choice
+> to me. Is there a specific reason you prefer an int? It might be "fine"
+> but it is likely to raise eyebrows whenever someone read through it.
 >
-> The FILTER parts should not be needed.
+No other specific  reason. I just think that int is enough.
 
-Right.  I'll remove it.
-
->
->> +
->> +static struct time_range trange;
->> +
->>   enum perf_output_field {
->>   	PERF_OUTPUT_COMM            = 1U << 0,
->>   	PERF_OUTPUT_TID             = 1U << 1,
->> @@ -510,6 +521,12 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
->>   	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
->>   		return 0;
->>
->> +	if ((trange.filter & TIME_FILTER_START) && trange.start > sample->time)
->> +		return 0;
->
-> How about just:
-> if (trange.start && trange.start < sample->time)
->     return 0;
->
->> +
->> +	if ((trange.filter & TIME_FILTER_END) && trange.end < sample->time)
->> +		return 0;
->
-> and similarly:
-> if (trange.end && trange.end > sample->time)
->     return 0;
-
-Okay.
-
->
->> +
->>   	scripting_ops->process_event(event, sample, evsel, machine, &al);
->>
->>   	evsel->hists.stats.total_period += sample->period;
->> @@ -1236,6 +1253,33 @@ static int have_cmd(int argc, const char **argv)
->>   	return 0;
->>   }
->>
->> +static int
->> +parse_time_filter(const struct option *opt, const char *str,
->> +		  int unset __maybe_unused)
->> +{
->> +	struct time_range *time_range = opt->value;
->> +	char *sep;
->> +
->> +	sep = strchr(str, '-');
->> +	if (sep == NULL || sep[1] == '\0') {
->> +		time_range->filter = TIME_FILTER_START;
->> +		time_range->start = parse_nsec_time(str);
->> +		return 0;
->> +	} else if (sep == str) {
->> +		time_range->filter = TIME_FILTER_END;
->> +		time_range->end = parse_nsec_time(++str);
->> +		return 0;
->> +	}
->> +
->> +	*sep++ = '\0';
->> +
->> +	time_range->filter = TIME_FILTER_START | TIME_FILTER_END;
->> +	time_range->start = parse_nsec_time(str);
->> +	time_range->end = parse_nsec_time(sep);
->
-> I would expect parse_nsec_time to fail. e.g., a time string like 123455.a
-
-It looks like current strtol() returns 0 when failed to parse like
-above.  Hmm.. do I have to check whether the return value is 0 or just
-ignore invalid inputs?
-
-Thanks,
-Namhyung
