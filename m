@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab3EPQvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:51:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45384 "EHLO mx1.redhat.com"
+	id S1752607Ab3EPQ7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:59:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8510 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751761Ab3EPQvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:51:43 -0400
-Date: Thu, 16 May 2013 12:51:05 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
-        riel@redhat.com, walken@google.com, hughd@google.com,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH v6 2/8] vmcore: allocate buffer for ELF headers on
- page-size alignment
-Message-ID: <20130516165105.GB8726@redhat.com>
-References: <20130515090507.28109.28956.stgit@localhost6.localdomain6>
- <20130515090551.28109.73350.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515090551.28109.73350.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752330Ab3EPQ7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 12:59:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,684,1363158000"; 
+   d="scan'208";a="314736669"
+Subject: Re: linux-next: Tree for May 15 (crypto /crct10dif)
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Xiong Zhou <jencce.kernel@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
+In-Reply-To: <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
+References: <20130515132627.817585a3d9fb3a3e502eb586@canb.auug.org.au>
+	 <5193CCEC.7070909@infradead.org>
+	 <alpine.DEB.2.02.1305161152530.31865@M2420>
+	 <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 16 May 2013 09:59:12 -0700
+Message-ID: <1368723552.27102.286.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 06:05:51PM +0900, HATAYAMA Daisuke wrote:
+On Thu, 2013-05-16 at 09:22 +0200, Geert Uytterhoeven wrote:
+> On Thu, May 16, 2013 at 5:57 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
+> > --- a/crypto/Kconfig
+> > +++ b/crypto/Kconfig
+> > @@ -378,6 +378,7 @@ config CRYPTO_CRC32_PCLMUL
+> >
+> >  config CRYPTO_CRCT10DIF
+> >         tristate "CRCT10DIF algorithm"
+> > +       depends on CRC_T10DIF
+> 
+> This is a library symbol, so "select CRC_T10DIF"?
+> 
+> >         select CRYPTO_HASH
+> >         help
+> >           CRC T10 Data Integrity Field computation is being cast as
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
 
-[..]
-> @@ -398,9 +403,7 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
->  	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
->  
->  	/* First program header is PT_NOTE header. */
-> -	vmcore_off = sizeof(Elf64_Ehdr) +
-> -			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr) +
-> -			phdr_ptr->p_memsz; /* Note sections */
-> +	vmcore_off = elfsz + roundup(phdr_ptr->p_memsz, PAGE_SIZE);
->  
->  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
->  		if (phdr_ptr->p_type != PT_LOAD)
-> @@ -435,9 +438,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
->  	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
->  
->  	/* First program header is PT_NOTE header. */
-> -	vmcore_off = sizeof(Elf32_Ehdr) +
-> -			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr) +
-> -			phdr_ptr->p_memsz; /* Note sections */
-> +	vmcore_off = elfsz + roundup(phdr_ptr->p_memsz, PAGE_SIZE);
+This is the fix I think that will resolve the build issues.  The generic
+crc-t10dif transform depends on the library function crc_t10dif_generic
+in lib/crc-t10dif.c, so "depends on CRC_T10DIF" for CRYPTO_CRCT10DIF is
+needed.
 
-Hmm.., so we are rounding up ELF note data size too here. I think this belongs
-in some other patch as in this patch we are just rounding up the elf
-headers.
+Now for CRC_T10DIF, we should use select CRYPTO_HASH, so it can try to
+allocate a T10DIF transform if it is available.  If not, it will simply
+use the crc_t10dif_generic function. Loading the
+generic t10dif crypto transform is not mandatory for the library
+function crc_t10dif. 
 
-This might create read problems too as we have not taking care of this
-rounding when adding note to vc_list and it might happen that we are
-reading wrong data at a particular offset.
+Thanks for catching the issues.
 
-So may be this rounding up we should do in later patches when we take
-care of copying ELF notes data to second kernel.
+Tim
 
-Vivek
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index d1ca631..015df24 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -379,6 +379,7 @@ config CRYPTO_CRC32_PCLMUL
+ config CRYPTO_CRCT10DIF
+ 	tristate "CRCT10DIF algorithm"
+ 	select CRYPTO_HASH
++	depends on CRC_T10DIF
+ 	help
+ 	  CRC T10 Data Integrity Field computation is being cast as
+ 	  a crypto transform.  This allows for faster crc t10 diff
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 0cee056..e6ad2e4 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -63,7 +63,7 @@ config CRC16
+ 
+ config CRC_T10DIF
+ 	tristate "CRC calculation for the T10 Data Integrity Field"
+-	select CRYPTO_CRCT10DIF
++	select CRYPTO_HASH
+ 	help
+ 	  This option is only needed if a module that's not in the
+ 	  kernel tree needs to calculate CRC checks for use with the
+
+
