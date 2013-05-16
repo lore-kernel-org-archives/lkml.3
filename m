@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3EPSp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 14:45:29 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46619 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3EPSp1 (ORCPT
+	id S1751697Ab3EPSxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 14:53:15 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:63855 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab3EPSxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 14:45:27 -0400
-Message-ID: <5195293D.1060107@linux.vnet.ibm.com>
-Date: Fri, 17 May 2013 02:45:17 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 16 May 2013 14:53:13 -0400
+Message-ID: <51952B18.4060004@cogentembedded.com>
+Date: Thu, 16 May 2013 22:53:12 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v5 4/8] KVM: x86: use the fast way to invalidate all pages
-References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1368706673-8530-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130516161903.GH14597@redhat.com>
-In-Reply-To: <20130516161903.GH14597@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Lad Prabhakar <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jiri Kosina <trivial@kernel.org>, netdev@vger.kernel.org,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] davinci: net: cpdma: remove unwanted header file
+ incusion and sort thme alphabetically
+References: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com> <1368689438-23889-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1368689438-23889-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051618-5564-0000-0000-000007F52D1A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 12:19 AM, Gleb Natapov wrote:
-> On Thu, May 16, 2013 at 08:17:49PM +0800, Xiao Guangrong wrote:
->> Replace kvm_mmu_zap_all by kvm_mmu_invalidate_memslot_pages except on
->> the path of mmu_notifier->release() which will be fixed in
->> the later patch
->>
-> Why ->release() cannot use kvm_mmu_invalidate_memslot_pages()?
+Hello.
 
-Good eyes.
+On 16-05-2013 11:30, Lad Prabhakar wrote:
 
-Forgot to update this part after applying new approach of
-kvm_mmu_invalidate_memslot_pages(). Will update it.
+    s/incusion/inclusion/, s/thme/them/ in the subject. Though instead 
+of "them" it would be better to write "headers".
+
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+
+    Changelog won't hurt here... which unwanted #include's you are 
+removing and why are they unwanted?
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   drivers/net/ethernet/ti/davinci_cpdma.c |   10 +++-------
+>   1 files changed, 3 insertions(+), 7 deletions(-)
+
+> diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
+> index 49dfd59..f7ce97f 100644
+> --- a/drivers/net/ethernet/ti/davinci_cpdma.c
+> +++ b/drivers/net/ethernet/ti/davinci_cpdma.c
+> @@ -12,15 +12,11 @@
+>    * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>    * GNU General Public License for more details.
+>    */
+> -#include <linux/kernel.h>
+> -#include <linux/spinlock.h>
+> -#include <linux/device.h>
+> +
+> +#include <linux/delay.h>
+> +#include <linux/dma-mapping.h>
+>   #include <linux/module.h>
+>   #include <linux/slab.h>
+> -#include <linux/err.h>
+> -#include <linux/dma-mapping.h>
+> -#include <linux/io.h>
+> -#include <linux/delay.h>
+>
+>   #include "davinci_cpdma.h"
+
+WBR, Sergei
 
