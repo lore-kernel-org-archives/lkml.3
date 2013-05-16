@@ -1,107 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab3EPVb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:31:26 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:25735 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab3EPVbZ (ORCPT
+	id S1754536Ab3EPVeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:34:15 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:53134 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab3EPVeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:31:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="47968933"
-Message-ID: <5195502B.3070003@codeaurora.org>
-Date: Thu, 16 May 2013 14:31:23 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 16 May 2013 17:34:13 -0400
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, Paul Walmsley <paul@pwsan.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] clk: Fix race condition between clk_set_parent and
- clk_enable()
-References: <1367383328-25700-1-git-send-email-skannan@codeaurora.org> <1368677244-7279-1-git-send-email-skannan@codeaurora.org> <20130516204455.12127.75296@quantum>
-In-Reply-To: <20130516204455.12127.75296@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5191B5C4.2020609@signal11.us>
+References: <1368112788-25701-1-git-send-email-david@hauweele.net>
+	<1368112788-25701-2-git-send-email-david@hauweele.net>
+	<5191B5C4.2020609@signal11.us>
+Date: Thu, 16 May 2013 23:34:11 +0200
+X-Google-Sender-Auth: 6NJUX2P6rl88WqQon_xO4nJseq0
+Message-ID: <CAO+c-UWi5UH-ZN5G0JiJCrCrScaYprKT7jLpFH0wEJecgoHgig@mail.gmail.com>
+Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
+ line enabled
+From: David Hauweele <david@hauweele.net>
+To: Alan Ott <alan@signal11.us>
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 01:44 PM, Mike Turquette wrote:
-> Quoting Saravana Kannan (2013-05-15 21:07:24)
->> Without this patch, the following race condition is possible.
->> * clk-A has two parents - clk-X and clk-Y.
->> * All three are disabled and clk-X is current parent.
->> * Thread A: clk_set_parent(clk-A, clk-Y).
->> * Thread A: <snip execution flow>
->> * Thread A: Grabs enable lock.
->> * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
->> * Thread A: Updates clk-A SW parent to clk-Y
->> * Thread A: Releases enable lock.
->> * Thread B: clk_enable(clk-A).
->> * Thread B: clk_enable() enables clk-Y, then enabled clk-A and returns.
+I have seen the interrupt line going low forever with heavy traffic.
+
+The at86rf230 driver has two isr, one for edge-triggered and another
+for level-triggered interrupt. The latter uses
+disable_irq_nosync/enable_irq which makes sense for level-triggered
+interrupt. Otherwise the interrupt would be triggered again and again
+until the scheduled work read the status register.
+
+However I don't see the use of disable_irq/enable_irq with an
+edge-triggered interrupt. Perhaps I'm missing something. Though I
+don't see any harm using it anyway. As you said the interrupt should
+be delayed until enable_irq() is called. In particular when
+CONFIG_HARDIRQS_SW_RESEND is set.
+
+David
+
+2013/5/14 Alan Ott <alan@signal11.us>:
+> On 5/9/13 11:19 AM, David Hauweele wrote:
 >>
->> clk-A is now enabled in software, but not clocking in hardware since the
->> hardware parent is still clk-X.
+>> Disabling the interrupt line could miss an IRQ and leave the line into a
+>> low state hence locking the driver.
 >>
->> The only way to avoid race conditions between clk_set_parent() and
->> clk_enable/disable() is to ensure that clk_enable/disable() calls don't
->> require changes to hardware enable state between changes to software clock
->> topology and hardware clock topology.
->>
->> The options to achieve the above are:
->> 1. Grab the enable lock before changing software/hardware topology and
->>     release it afterwards.
->> 2. Keep the clock enabled for the duration of software/hardware topology
->>     change so that any additional enable/disable calls don't try to change
->>     the hardware state. Once the topology change is complete, the clock can
->>     be put back in its original enable state.
->>
->> Option (1) is not an acceptable solution since the set_parent() ops might
->> need to sleep.
->>
->> Therefore, this patch implements option (2).
->>
->> This patch doesn't violate any API semantics. clk_disable() doesn't
->> guarantee that the clock is actually disabled. So, no clients of a clock
->> can assume that a clock is disabled after their last call to clk_disable().
->> So, enabling the clock during a parent change is not a violation of any API
->> semantics.
->>
->> This also has the nice side effect of simplifying the error handling code.
->>
->> Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
 >
-> Updated to this version in clk-next.
+> Have you observed this? My understanding is that the interrupt won't be lost
+> but instead delayed until enable_irq() is called.
 >
-
-Thanks Mike. I forgot to add the Ack by Ulf. Would be nice if you can 
-put that in.
-
-Btw, I did send this email to the list. But looks like this mail is 
-wedged in the series of tubes in the arm mailing list.
-
--Saravana
-
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> I got this pattern from the other 802.15.4 drivers. Perhaps my understanding
+> is wrong.
+>
+>
+>
+>> Signed-off-by: David Hauweele <david@hauweele.net>
+>> ---
+>>   drivers/net/ieee802154/mrf24j40.c |    7 +------
+>>   1 file changed, 1 insertion(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/net/ieee802154/mrf24j40.c
+>> b/drivers/net/ieee802154/mrf24j40.c
+>> index 1e3ddf3..6ef32f7 100644
+>> --- a/drivers/net/ieee802154/mrf24j40.c
+>> +++ b/drivers/net/ieee802154/mrf24j40.c
+>> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
+>>   {
+>>         struct mrf24j40 *devrec = data;
+>>
+>> -       disable_irq_nosync(irq);
+>> -
+>>         schedule_work(&devrec->irqwork);
+>>
+>>         return IRQ_HANDLED;
+>> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>>         /* Read the interrupt status */
+>>         ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
+>>         if (ret)
+>> -               goto out;
+>> +               return;
+>>
+>>         /* Check for TX complete */
+>>         if (intstat & 0x1)
+>> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>>         /* Check for Rx */
+>>         if (intstat & 0x8)
+>>                 schedule_work(&devrec->rxwork);
+>> -
+>> -out:
+>> -       enable_irq(devrec->spi->irq);
+>>   }
+>>
+>>   static void mrf24j40_rxwork(struct work_struct *work)
+>>
+>
