@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3EPLSF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:18:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23060 "EHLO mx1.redhat.com"
+	id S1753341Ab3EPLUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:20:05 -0400
+Received: from sauhun.de ([89.238.76.85]:56240 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984Ab3EPLPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:36 -0400
-Date: Thu, 16 May 2013 14:12:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1752673Ab3EPLPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:15:30 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: [PATCH v2 06/10] mn10300: uaccess s/might_sleep/might_fault/
-Message-ID: <affedb5f30410296ad0bb43a69158b38e32378ea.1368702323.git.mst@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1368702323.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
+Cc: Wolfram Sang <wsa@the-dreams.de>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: [PATCH 25/33] drivers/video/omap2: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:53 +0200
+Message-Id: <1368702961-4325-26-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason uaccess routines might sleep
-is if they fault. Make this explicit.
+devm_ioremap_resource does sanity checks on the given resource. No need to
+duplicate this in the driver.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- arch/mn10300/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/omap2/vrfb.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/arch/mn10300/include/asm/uaccess.h b/arch/mn10300/include/asm/uaccess.h
-index 780560b..107508a 100644
---- a/arch/mn10300/include/asm/uaccess.h
-+++ b/arch/mn10300/include/asm/uaccess.h
-@@ -471,13 +471,13 @@ extern unsigned long __generic_copy_from_user(void *, const void __user *,
+diff --git a/drivers/video/omap2/vrfb.c b/drivers/video/omap2/vrfb.c
+index 5261229..f346b02 100644
+--- a/drivers/video/omap2/vrfb.c
++++ b/drivers/video/omap2/vrfb.c
+@@ -353,11 +353,6 @@ static int __init vrfb_probe(struct platform_device *pdev)
+ 	/* first resource is the register res, the rest are vrfb contexts */
  
- #define __copy_to_user(to, from, n)			\
- ({							\
--	might_sleep();					\
-+	might_fault();					\
- 	__copy_to_user_inatomic((to), (from), (n));	\
- })
- 
- #define __copy_from_user(to, from, n)			\
- ({							\
--	might_sleep();					\
-+	might_fault();					\
- 	__copy_from_user_inatomic((to), (from), (n));	\
- })
- 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!mem) {
+-		dev_err(&pdev->dev, "can't get vrfb base address\n");
+-		return -EINVAL;
+-	}
+-
+ 	vrfb_base = devm_ioremap_resource(&pdev->dev, mem);
+ 	if (IS_ERR(vrfb_base))
+ 		return PTR_ERR(vrfb_base);
 -- 
-MST
+1.7.10.4
 
