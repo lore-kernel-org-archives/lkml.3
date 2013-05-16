@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3EPFLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 01:11:35 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:51832 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab3EPFLe (ORCPT
+	id S1754849Ab3EPFOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 01:14:45 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:39277 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab3EPFOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 01:11:34 -0400
-MIME-Version: 1.0
-Date: Thu, 16 May 2013 13:11:32 +0800
-Message-ID: <CAPgLHd93xOKX3ot+RUP5FXM_Nz6xZD-ODU_=ZEebBEJm=OM76g@mail.gmail.com>
-Subject: [PATCH] spi: coldfire-qspi: fix error return code in mcfqspi_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: broonie@kernel.org, grant.likely@linaro.org
-Cc: yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 16 May 2013 01:14:44 -0400
+From: Vahram Martirosyan <vmartirosyan@gmail.com>
+To: Dave Kleikamp <shaggy@kernel.org>
+Cc: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
+        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        spruce-project@linuxtesting.org
+Subject: [PATCH] jfs: Functions jfs_freeze() and jfs_unfreeze() always return 0
+Date: Thu, 16 May 2013 10:14:33 +0500
+Message-Id: <1368681273-869-1-git-send-email-vahram.martirosyan@linuxtesting.org>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+The mentioned functions do not pay attention to the error codes returned
+by the functions updateSuper(), lmLogInit() and lmLogShutdown(). It brings to
+system crash later when writing to log.
 
-If pdev->dev.platform_data is not set, mcfqspi_probe() will return 0
-and release all the resources, in this case, we should return a error
-code instead of 0.
-This patch fix to return -ENOENT in this case and move the check for
-pdev->dev.platform_data to the begin of this function.
+The patch adds corresponding code to check and return the error codes
+and to print correct error messages in case of errors.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Found by Linux File System Verification project (linuxtesting.org).
+
+Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
 ---
- drivers/spi/spi-coldfire-qspi.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/jfs/super.c | 29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/spi/spi-coldfire-qspi.c b/drivers/spi/spi-coldfire-qspi.c
-index 3f17660..f2acb90 100644
---- a/drivers/spi/spi-coldfire-qspi.c
-+++ b/drivers/spi/spi-coldfire-qspi.c
-@@ -408,6 +408,12 @@ static int mcfqspi_probe(struct platform_device *pdev)
- 	struct mcfqspi_platform_data *pdata;
- 	int status;
+diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+index 2003e83..a3d424d 100644
+--- a/fs/jfs/super.c
++++ b/fs/jfs/super.c
+@@ -611,11 +611,20 @@ static int jfs_freeze(struct super_block *sb)
+ {
+ 	struct jfs_sb_info *sbi = JFS_SBI(sb);
+ 	struct jfs_log *log = sbi->log;
++	int rc = 0;
  
-+	pdata = pdev->dev.platform_data;
-+	if (!pdata) {
-+		dev_dbg(&pdev->dev, "platform data is missing\n");
-+		return -ENOENT;
-+	}
-+
- 	master = spi_alloc_master(&pdev->dev, sizeof(*mcfqspi));
- 	if (master == NULL) {
- 		dev_dbg(&pdev->dev, "spi_alloc_master failed\n");
-@@ -458,11 +464,6 @@ static int mcfqspi_probe(struct platform_device *pdev)
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		txQuiesce(sb);
+-		lmLogShutdown(log);
+-		updateSuper(sb, FM_CLEAN);
++		rc = lmLogShutdown(log);
++		if (rc != 0) {
++			jfs_err("lmLogShutdown failed with return code %d", rc);
++			return rc;
++		}
++		rc = updateSuper(sb, FM_CLEAN);
++		if (rc != 0) {
++			jfs_err("updateSuper failed with return code %d", rc);
++			return rc;
++		}
  	}
- 	clk_enable(mcfqspi->clk);
+ 	return 0;
+ }
+@@ -627,11 +636,17 @@ static int jfs_unfreeze(struct super_block *sb)
+ 	int rc = 0;
  
--	pdata = pdev->dev.platform_data;
--	if (!pdata) {
--		dev_dbg(&pdev->dev, "platform data is missing\n");
--		goto fail4;
--	}
- 	master->bus_num = pdata->bus_num;
- 	master->num_chipselect = pdata->num_chipselect;
- 
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+-		updateSuper(sb, FM_MOUNT);
+-		if ((rc = lmLogInit(log)))
+-			jfs_err("jfs_unlock failed with return code %d", rc);
+-		else
+-			txResume(sb);
++		rc = updateSuper(sb, FM_MOUNT);
++		if (rc != 0) {
++			jfs_err("updateSuper failed with return code %d", rc);
++			return rc;
++		}
++		rc = lmLogInit(log);
++		if (rc != 0) {
++			jfs_err("lmLogInit failed with return code %d", rc);
++			return rc;
++		}
++		txResume(sb);
+ 	}
+ 	return 0;
+ }
+-- 
+1.8.2.3
 
