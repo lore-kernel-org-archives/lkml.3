@@ -1,111 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab3EPQOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 12:14:16 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:49235 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab3EPQOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 12:14:15 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: linux-kernel@vger.kernel.org, mchehab@redhat.com,
-        linux-media@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] [media] uvcvideo: quirk PROBE_DEF for Alienware X51 OmniVision webcam
-Date: Thu, 16 May 2013 18:14:34 +0200
-Message-ID: <2723511.q21HKkPEEg@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <5195045A.5080507@canonical.com>
-References: <1368650328-21128-1-git-send-email-joseph.salisbury@canonical.com> <4475290.i8RRTUStdI@avalon> <5195045A.5080507@canonical.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754541Ab3EPQPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 12:15:10 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:57127 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753721Ab3EPQPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 12:15:07 -0400
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russ Anderson <rja@sgi.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Arm Mailing List <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH -v11 resend 05/11] checkpatch.pl the new kernel/reboot.c file.
+Date: Thu, 16 May 2013 11:14:44 -0500
+Message-Id: <1368720890-57711-6-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368720890-57711-1-git-send-email-holt@sgi.com>
+References: <1368720890-57711-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joseph,
+Get the new file to pass scripts/checkpatch.pl
 
-On Thursday 16 May 2013 12:07:54 Joseph Salisbury wrote:
-> On 05/16/2013 08:03 AM, Laurent Pinchart wrote:
-> > On Wednesday 15 May 2013 16:38:48 joseph.salisbury@canonical.com wrote:
-> >> From: Joseph Salisbury <joseph.salisbury@canonical.com>
-> >> 
-> >> BugLink: http://bugs.launchpad.net/bugs/1180409
-> >> 
-> >> OminiVision webcam 0x05a9:0x2643 needs the same UVC_QUIRK_PROBE_DEF as
-> >> other OmniVision models to work properly.
-> >> 
-> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> >> Cc: linux-media@vger.kernel.org
-> >> Cc: stable@vger.kernel.org
-> >> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> > 
-> > There's already a 05a9:2643 webcam model, found in a Dell monitor, that
-> > has been reported to work properly without the UVC_QUIRK_PROBE_DEF.
-> > Enabling the quirk shouldn't hurt, but I'd like to check differences
-> > between the two devices. Could you please send me the output of
-> > 
-> > lsusb -v -d 05a9:2643
-> > 
-> > (running as root if possible) ?
-> 
-> The lsusb output can be seen at:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1180409/comments/10/+do
-> wnload
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russ Anderson <rja@sgi.com>
+Cc: Robin Holt <holt@sgi.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Arm Mailing List <linux-arm-kernel@lists.infradead.org>
 
-Thank you. It looks like the two devices are identical. I don't know why the 
-PROBE_DEF quirk hasn't been reported as necessary before. Anyway, I've applied 
-your patch to my tree.
+---
 
-> I can also send this to you as an attachment if needed.
-> 
-> >> ---
-> >> 
-> >>  drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
-> >>  1 file changed, 9 insertions(+)
-> >> 
-> >> diff --git a/drivers/media/usb/uvc/uvc_driver.c
-> >> b/drivers/media/usb/uvc/uvc_driver.c index 5dbefa6..411682c 100644
-> >> --- a/drivers/media/usb/uvc/uvc_driver.c
-> >> +++ b/drivers/media/usb/uvc/uvc_driver.c
-> >> @@ -2163,6 +2163,15 @@ static struct usb_device_id uvc_ids[] = {
-> >> 
-> >>  	  .bInterfaceSubClass	= 1,
-> >>  	  .bInterfaceProtocol	= 0,
-> >>  	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
-> >> 
-> >> + 	/* Alienware X51*/
-> >> +        { .match_flags          = USB_DEVICE_ID_MATCH_DEVICE
-> >> +                                | USB_DEVICE_ID_MATCH_INT_INFO,
-> >> +          .idVendor             = 0x05a9,
-> >> +          .idProduct            = 0x2643,
-> >> +          .bInterfaceClass      = USB_CLASS_VIDEO,
-> >> +          .bInterfaceSubClass   = 1,
-> >> +          .bInterfaceProtocol   = 0,
-> >> +          .driver_info          = UVC_QUIRK_PROBE_DEF },
-> > 
-> > Your mailer messed up formatting. As the patch is small I've fixed it
-> > manually, but please make sure to use a proper mail client next time. I
-> > advise using git-send-email to send patches.
-> 
-> Thanks.  I did in fact use git-send-email, which is what I use to send
-> all patches.  Can you point out the bad formatting.  Is it that   '|
-> USB_DEVICE_ID_MATCH_INT_INFO,' was not indented?  If so, I'll
-> investigate why that happened.
+Changes since v6:
+ - Removed last remaining line length warning.
+---
+ include/linux/reboot.h |  2 +-
+ kernel/reboot.c        | 28 +++++++++++++---------------
+ 2 files changed, 14 insertions(+), 16 deletions(-)
 
-Tabs were replaced with spaces, I assumed it was due to a mailer issue.
-
-> >>  	/* Apple Built-In iSight */
-> >>  	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
-> >>  	
-> >>  				| USB_DEVICE_ID_MATCH_INT_INFO,
-> 
-> Thanks again for reviewing this patch.
-
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 23b3630..c6eba21 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -26,7 +26,7 @@ extern void machine_shutdown(void);
+ struct pt_regs;
+ extern void machine_crash_shutdown(struct pt_regs *);
+ 
+-/* 
++/*
+  * Architecture independent implemenations of sys_reboot commands.
+  */
+ 
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 0616483..abb6a04 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -4,6 +4,8 @@
+  *  Copyright (C) 2013  Linus Torvalds
+  */
+ 
++#define pr_fmt(fmt)	"reboot: " fmt
++
+ #include <linux/export.h>
+ #include <linux/kexec.h>
+ #include <linux/kmod.h>
+@@ -114,9 +116,9 @@ void kernel_restart(char *cmd)
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+-		printk(KERN_EMERG "Restarting system.\n");
++		pr_emerg("Restarting system\n");
+ 	else
+-		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
++		pr_emerg("Restarting system with command '%s'\n", cmd);
+ 	kmsg_dump(KMSG_DUMP_RESTART);
+ 	machine_restart(cmd);
+ }
+@@ -125,7 +127,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
+ static void kernel_shutdown_prepare(enum system_states state)
+ {
+ 	blocking_notifier_call_chain(&reboot_notifier_list,
+-		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
++		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
+ 	system_state = state;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+@@ -140,11 +142,10 @@ void kernel_halt(void)
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+-	printk(KERN_EMERG "System halted.\n");
++	pr_emerg("System halted\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+ 	machine_halt();
+ }
+-
+ EXPORT_SYMBOL_GPL(kernel_halt);
+ 
+ /**
+@@ -159,7 +160,7 @@ void kernel_power_off(void)
+ 		pm_power_off_prepare();
+ 	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+-	printk(KERN_EMERG "Power down.\n");
++	pr_emerg("Power down\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
+ 	machine_power_off();
+ }
+@@ -188,10 +189,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 
+ 	/* For safety, we require "magic" arguments. */
+ 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
+-	    (magic2 != LINUX_REBOOT_MAGIC2 &&
+-	                magic2 != LINUX_REBOOT_MAGIC2A &&
++			(magic2 != LINUX_REBOOT_MAGIC2 &&
++			magic2 != LINUX_REBOOT_MAGIC2A &&
+ 			magic2 != LINUX_REBOOT_MAGIC2B &&
+-	                magic2 != LINUX_REBOOT_MAGIC2C))
++			magic2 != LINUX_REBOOT_MAGIC2C))
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -234,7 +235,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		break;
+ 
+ 	case LINUX_REBOOT_CMD_RESTART2:
+-		if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
++		ret = strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1);
++		if (ret < 0) {
+ 			ret = -EFAULT;
+ 			break;
+ 		}
+@@ -282,7 +284,6 @@ void ctrl_alt_del(void)
+ 	else
+ 		kill_cad_pid(SIGINT, 1);
+ }
+-	
+ 
+ char poweroff_cmd[POWEROFF_CMD_PATH_LEN] = "/sbin/poweroff";
+ 
+@@ -301,14 +302,11 @@ static int __orderly_poweroff(bool force)
+ 		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+ 		argv_free(argv);
+ 	} else {
+-		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+-					 __func__, poweroff_cmd);
+ 		ret = -ENOMEM;
+ 	}
+ 
+ 	if (ret && force) {
+-		printk(KERN_WARNING "Failed to start orderly shutdown: "
+-					"forcing the issue\n");
++		pr_warn("Failed to start orderly shutdown: forcing the issue\n");
+ 		/*
+ 		 * I guess this should try to kick off some daemon to sync and
+ 		 * poweroff asap.  Or not even bother syncing if we're doing an
 -- 
-Regards,
-
-Laurent Pinchart
+1.8.2.1
 
