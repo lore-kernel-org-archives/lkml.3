@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3EPDyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:54:44 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56181 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754624Ab3EPDym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:54:42 -0400
-X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 May 2013 23:54:42 EDT
-X-Sasl-enc: u6zz1qoVqF2VcVNYxOJD1SlFITx/Orc/inydevEXV2qw 1368675902
-Date: Thu, 16 May 2013 13:44:55 +1000
-From: Robert Norris <robn@opera.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
-Message-ID: <20130516034455.GA19452@pyro.melbourne.osa>
-References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
- <20130514231626.GA12961@pyro.melbourne.osa>
- <20130515112044.753bb7bb@endymion.delvare>
- <20130515112741.GA23766@pyro.melbourne.osa>
- <20130515214923.036dabdb@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515214923.036dabdb@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754985Ab3EPDzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:55:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:45253 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753781Ab3EPDzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 23:55:08 -0400
+Message-ID: <1368676505.2194.47.camel@joe-AO722>
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+From: Joe Perches <joe@perches.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Asias He <asias@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Date: Wed, 15 May 2013 20:55:05 -0700
+In-Reply-To: <87d2sra97h.fsf@rustcorp.com.au>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
+	 <1368579583-13097-1-git-send-email-asias@redhat.com>
+	 <8761yk254u.fsf@rustcorp.com.au> <20130516020848.GB23441@hj.localdomain>
+	 <87d2sra97h.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 09:49:23PM +0200, Jean Delvare wrote:
-> >     Interrupt: pin B routed to IRQ 0
-> 
-> Hmm, this "IRQ 0" is quite odd. I'm wondering if this could be the
-> reason for this hang. Was it with the i2c-i801 driver loaded, or
-> blacklisted? Please check if it makes a difference.
+On Thu, 2013-05-16 at 13:04 +0930, Rusty Russell wrote:
+> Asias He <asias@redhat.com> writes:
+> > On Wed, May 15, 2013 at 02:47:53PM +0930, Rusty Russell wrote:
+[]
+> > Other users are using memcpy_fromiovec and friends outside net. It seems
+> > a good idea to put it in a util library. e.g.  crypto/algif_skcipher.c
+> > which also depends on NET for it.
 
-That was without the driver loaded (blacklisted). After loading (with
-interrupts enabled) we get:
+[]
+> Subject: Hoist memcpy_fromiovec into lib/
 
-    Interrupt: pin B routed to IRQ 20
+You'll need the "friends" memcpy_toiovec too.
 
-> Do you see the same (and more generally, this issue) on one, some or
-> all of your x3550 servers?
+$ git grep -E \bmemcpy\w+iovec\w*"
+crypto/algif_hash.c:    err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
+crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg)) +
+crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg + i)),
+drivers/dma/iovlock.c:#include <net/tcp.h> /* for memcpy_toiovec */
+drivers/dma/iovlock.c:          return memcpy_toiovec(iov, kdata, len);
+drivers/dma/iovlock.c:          err = memcpy_toiovec(iov, vaddr + offset, len);
+drivers/isdn/mISDN/socket.c:    if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
+drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_fromiovec((u8 *)va + page_o
+drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_toiovec(iov, (u8 *)va + pag
 
-The issue has occured on at least three x3550s (we have 11). I haven't
-tested more, because knowingly crashing production machines sucks.
 
-This appears to be the case on other machines. With the module
-blacklisted (never loaded), lspci shows IRQ 0. After load, IRQ 20.
-(tested on 3.4 and 3.9).
-
-> Are you using IPMI on these machines?
-
-Yes, but only for monitoring/sensors, if that makes a difference.
-
-> I would appreciate if you could test the following:
-> * Blacklist i2c-i801 and ics932s401 so that none of them get
->   auto-loaded.
-
-Done.
-
-> * Manually load i2c-i801 with interrupts enabled, and see what
->   happens.
-
-Returned immediately:
-
-[   60.527140] i801_smbus 0000:00:1f.3: SMBus using PCI Interrupt
-
-> * If no hang happens, load i2c-dev, find the i801 bus number with
->   i2cdetect -l (from the i2c-tools package - it should be 4 according
->   to what you reported so far but there is no guarantee that it won't
->   change across reboots.)
-
-$ i2cdetect -l
-i2c-0   i2c         Radeon i2c bit bus DVI_DDC          I2C adapter
-i2c-1   i2c         Radeon i2c bit bus VGA_DDC          I2C adapter
-i2c-2   i2c         Radeon i2c bit bus MONID            I2C adapter
-i2c-3   i2c         Radeon i2c bit bus CRT2_DDC         I2C adapter
-i2c-4   smbus       SMBus I801 adapter at 0440          SMBus adapter
-
-> Then do a simple read from a random address
->   with:
->   # i2cget 4 0x50 0x00
->   (Adjust the bus number as needed.)
->   I am curious if this will hang as well or only when accessing the
->   clock chip at address 0x69.
-
-Yep, that one hangs. The hung task handler picked it up after a few
-minutes.
-
-Cheers,
-Rob.
