@@ -1,104 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab3EPBRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:17:05 -0400
-Received: from out1.zte.com.cn ([202.103.147.172]:51578 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754983Ab3EPBQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:16:59 -0400
-In-Reply-To: <20130515142035.GD11497@suse.de>
-References: <000101ce5174$1962bac0$4c283040$@com> <20130515142035.GD11497@suse.de>
-Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
- hugepage
-X-KeepSent: 1450163D:E6FBE6A2-48257B6D:00048ADD;
- type=4; name=$KeepSent
-To: Mel Gorman <mgorman@suse.de>
-Cc: "'Darren Hart'" <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Thu, 16 May 2013 09:16:20 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-05-16 09:16:14
+	id S1754983Ab3EPBWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 21:22:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32118 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab3EPBWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 21:22:05 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=gZNcz0yrxDgA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=o0DOYjv4zn4A:10 a=PtDNVHqPAAAA:8 a=fxJcL_dCAAAA:8 a=20KFwNOVAAAA:8 a=D19gQVrFAAAA:8 a=cbXIOlfOAUVm-qHza74A:9 a=CjuIK1q_8ugA:10 a=4gZ4WExUoD4A:10 a=wYE_KDyynt4A:10 a=2eKvNQJKnqYA:10 a=jEp0ucaQiEUA:10 a=BowpvxSqkqVERDpy:21 a=86iZi5sp8u_hX6fG:21 a=tLUlnkoJZcZI9ocdGARlSQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.114.148.7
+Date: Wed, 15 May 2013 20:23:10 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
+        morgan@kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-ID: <20130516012310.GA17819@austin.hallyn.com>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20130514150539.GA26090@sergelap>
+ <20130514155111.GJ680@redhat.com>
+ <20130514162238.GA9056@sergelap>
+ <87y5bhwa0h.fsf@xmission.com>
+ <20130516011401.GA17462@austin.hallyn.com>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: mse01.zte.com.cn r4G1GW60032891
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516011401.GA17462@austin.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Serge E. Hallyn (serge@hallyn.com):
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+> > Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+> > 
+> > > Quoting Aristeu Rozanski (aris@redhat.com):
+> > >> On Tue, May 14, 2013 at 10:05:39AM -0500, Serge Hallyn wrote:
+> > >> > so now that the device cgroup properly respects hierarchy, not allowing
+> > >> > a cgroup to be given greater permission than its parent, should we consider
+> > >> > relaxing the capability checks?
+> > >> > 
+> > >> > There are two capable(CAP_SYS_ADMIN) checks in deice_cgroup.c: one in
+> > >> > devcgroup_can_attach() to protect changing another task's cgroup, and
+> > >> > one in devcgroup_update_access() to protect writes to the devices.allow
+> > >> > and devices.deny files.
+> > >> > 
+> > >> > I think the first should be changed to a check for ns_capable() to
+> > >> > the victim's user_ns.  Something like 
+> > >> > 
+> > >> > --- a/security/device_cgroup.c
+> > >> > +++ b/security/device_cgroup.c
+> > >> > @@ -70,10 +70,16 @@ static int devcgroup_can_attach(struct cgroup *new_cgrp,
+> > >> >                                 struct cgroup_taskset *set)
+> > >> >  {
+> > >> >         struct task_struct *task = cgroup_taskset_first(set);
+> > >> > +       struct user_namespace *ns;
+> > >> > +       int ret = -EPERM;
+> > >> > 
+> > >> > -       if (current != task && !capable(CAP_SYS_ADMIN))
+> > >> > -               return -EPERM;
+> > >> > -       return 0;
+> > >> > +       if (current == task)
+> > >> > +               return 0;
+> > >> > +
+> > >> > +       ns = userns_get(task);;
+> > >> > +       ret = ns_capable(ns, CAP_SYS_ADMIN) ? 0 : -EPERM;
+> > >> > +       put_user_ns(ns);
+> > >> > +       return ret;
+> > >> >  }
+> > >> 
+> > >> wouldn't this allow a userns root to move a task in the same userns into
+> > >> a parent cgroup? I believe than anything but moving down the hierarchy
+> > >> would be very complicated to verify (how far up can you go).
+> > >
+> > > But only if they are able to open the tasks file for writing, which
+> > > they shouldn't be able to do, right?
+> > 
+> > That should be looked at very closely.  There are some funny exploits of
+> > setuid root applications writing to files that have required some
+> > additional permission checks on /proc/<pid>/uid_map.  I think the
+> > cgroups files may be vulnerable to some of the same kind of exploits.
+> > 
+> > Certainly we should be verifying that the opener of the file had the
+> > capabilities we are trying to use to avoid being open to those kinds of
+> > problems.
+> > 
+> > I am trying to see the utilitity of the proposed patch.  It doesn't
+> > allow mknod.  So what is the benefit of having the user namespace bits?
+> 
+> I'm still thinking through it, which is why I haven't sent a real
+> patch.  What I'm working on is the unprivileged startup of a container.
+> Right now most things are not allowed in a private user ns, so device
+> cgroup is not as useful.  But it should be possible eventually to use
+> block devices, which the original unprivileged user owned, by chowning
+> the blockdev to a user mapped into the target userns.
+> 
+> The unprivileged user may want to use devices cgroup so he can chown
+> the loop file into the container, but only allow read-only mounts, for
+> instance.
+> 
+> > Is the point to allow the userns root to remove access to selected
+> > devices from it's children even if the DAC permissions would allow the
+> > access?
+> 
+> Yes I think that's it - except userns root before forking the container
+> init (and venturing into the really untrusted category).
+> 
+> ...
+> 
+> > That said I haven't looked at open or mknod, and usually we are talking
+> > about calls that aren't made by suid apps so I think there is a fair
+> > chance that dropping some of those permissions could cause issues.
+> > The first danger that crosses my mind is what happens if you remove
+> > access to /dev/tty from a normal application that would trying and log
+> > strange goings on to a user if they could.
+> 
+> If they were going to do that over tty, that would be to the malicious
+> user anyway, so that should just either be ignored, or result in the
+> program exiting early.
+> 
+> > Shrug mostly I don't see the advantage of this change.
+> 
+> It's also possible that this will end up being worked around by the new
+> (not-yet-designed) interface/library which Tejun wants people to use,
+> sitting above the cgroupfs.  At least at a first layer.
+> 
+> Anyway this isn't urgent, as it's not in the way for general unprivileged
+> container creation.  But in general if we don't need the check to be
+> capable(), it would be better to introduce the right check.
+> 
+> -serge
 
+I'm terribly sorry, Andrew, I have no idea how that address for you got
+into my address book.  (Corrected)  fwiw the thread can be followed at
+https://lkml.org/lkml/2013/5/14/363 .
 
-Mel Gorman <mgorman@suse.de> wrote on 2013/05/15 22:20:35:
-
-
-> Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
->
-> On Wed, May 15, 2013 at 09:57:03PM +0800, Zhang Yi wrote:
-> > The futex-keys of processes share futex determined by page-offset,
-> > mapping-host, and mapping-index of the user space address. User
-> > appications using hugepage for futex may lead to futex-key conflict.
-> >
-> > Assume there are two or more futexes in diffrent normal pages of the
-> > hugepage, and each futex has the same offset in its normal page,
-> > causing all the futexes have the same futex-key.
-> >
-> > This patch adds the normal page index in the compound page into
-> > the pgoff of futex-key.
-> >
-> > Steps to reproduce the bug:
-> > 1. The 1st thread map a file of hugetlbfs, and use the return address
-> > as the 1st mutex's address, and use the return address with PAGE_SIZE
-> > added as the 2nd mutex's address.
-> > 2. The 1st thread initialize the two mutexes with pshared attribute,
-> > and lock the two mutexes.
-> > 3. The 1st thread create the 2nd thread, and the 2nd thread block on
-> > the 1st mutex.
-> > 4. The 1st thread create the 3rd thread, and the 3rd thread block on
-> > the 2nd mutex.
-> > 5. The 1st thread unlock the 2nd mutex, the 3rd thread cannot take
-> > the 2nd mutex, and may block forever.
-> >
-> >
-> > Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-> > Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
-> > Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-> > Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
-> > Reviewed-by: Mel Gorman <mgorman@suse.de>
-> > Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
-> > Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
-> > Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-> > Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
-> >
->
-> Did all these people really review it? I just whinged about the last
-patch
-> and didn't put a Reviewed-by on it. That said, I don't actually have a
-> problem with this patch and I assumed it passed your testing so
->
-I mistakenly think that I should list all the people here. : )
-Shall I cleanup the name list and send the patch again?
-
-> Reviewed-by: Mel Gorman <mgorman@suse.de>
->
-> The others might not agree though.
->
-> I note the conversion from int offset to long offset in futex_key appears
-> to have gotten lost. Is that in a separate cleanup patch now?
-
-In old patch, I add the compound index into offset, so I make the offset
-from int
-to long. It is unnecessary for this patch.
-
->
-> --
-> Mel Gorman
-> SUSE Labs
-
-
-BTW, Does anyone have other advices for the patch?
-
+-serge
