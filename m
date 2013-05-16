@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab3EPRRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:17:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab3EPRRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:17:31 -0400
-Date: Thu, 16 May 2013 19:13:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Neil Horman <nhorman@tuxdriver.com>, security@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usermodehelper: check subprocess_info->path != NULL
-Message-ID: <20130516171337.GA24031@redhat.com>
-References: <20130515201158.GA14606@redhat.com> <20130516154323.GA19060@redhat.com> <20130516154355.GB19060@redhat.com> <CAKi4VAKj+s0Z9QHfqwG3+y33puL4dVaou5ys+eiD-yLf8h5QrA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKi4VAKj+s0Z9QHfqwG3+y33puL4dVaou5ys+eiD-yLf8h5QrA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753190Ab3EPRSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:18:12 -0400
+Received: from mail-gh0-f202.google.com ([209.85.160.202]:46953 "EHLO
+	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab3EPRSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 13:18:07 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Fix suspend/resume issues created by pinmux on exynos
+Date: Thu, 16 May 2013 10:12:30 -0700
+Message-Id: <1368724352-10849-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16, Lucas De Marchi wrote:
->
-> >
-> >         - kill or justify ->path[0] check
->
-> I'm not sure about this, it's already there before my refactor and I
-> don't think it makes any good. From modprobe pespective, I'd say it
-> would be better to give an error than say everything went ok.
 
-Agreed. And, I forgot to mention, if we kill this check then we do
-not need this patch (although I need to recheck), execve will fail
-and nothing bad should happen.
+This set of patches fixes some problems with suspend/resume that were
+introduced by the switch from the old gpio code to the new pinmux
+code.  Specifically:
+* It adds saving and restoring of pincontrol registers.
+* It fixes eint wakeups.
 
-Just I think it would be better to start with the trivial fix, then
-decide what should we actually do.
+This set of two patches was verified on a backport of the current
+pinmux code onto 3.8 on a Samsung ARM Chromebook.  Suspend/resume does
+not seem functional on the ARM Chromebook on current ToT Linux so I
+couldn't validate there.  This gets us one step closer, though!  Since
+patches applied cleanly I'm fairly certain that they will work on ToT
+as well as they do in our tree.
 
-> Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
+These patches have only been tested on exynos5250.  I have made an
+effort to support other samsung boards (even those with two CONF
+registers), but that support is untested.
 
-Thanks,
+Tomasz Figa has said that he has similar patches in development.  I'm
+posting what we have here but if Tomasz's patches end up being more
+suitable I have no objections to taking them over these (or of Tomasz
+wants to merge the two?).
 
-Oleg.
+If you'd like to see the gerrit reviews of these in the Chrome OS tree,
+you can see:
+* https://gerrit.chromium.org/gerrit/#/c/51336/4
+* https://gerrit.chromium.org/gerrit/#/c/51342/3
+
+
+Doug Anderson (1):
+  pinctrl: samsung: fix suspend/resume functionality
+
+Prathyush K (1):
+  pinctrl: exynos: fix eint wakeup by using irq_set_wake()
+
+ drivers/pinctrl/pinctrl-exynos.c  |  45 ++++++---
+ drivers/pinctrl/pinctrl-exynos.h  |   3 +-
+ drivers/pinctrl/pinctrl-samsung.c | 199 ++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-samsung.h |  13 +++
+ 4 files changed, 247 insertions(+), 13 deletions(-)
+
+-- 
+1.8.2.1
 
