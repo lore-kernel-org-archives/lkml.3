@@ -1,383 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab3EPMUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 08:20:34 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37764 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab3EPMUb (ORCPT
+	id S1753500Ab3EPMVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 08:21:00 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34841 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3EPMSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 08:20:31 -0400
-Message-ID: <5194CF04.1040404@linux.vnet.ibm.com>
-Date: Thu, 16 May 2013 20:20:20 +0800
+	Thu, 16 May 2013 08:18:03 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v5 0/8] KVM: MMU: fast zap all shadow pages
-References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-In-Reply-To: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------050305040302070101000406"
-X-TM-AS-MML: No
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v5 0/8] KVM: MMU: fast zap all shadow pages
+Date: Thu, 16 May 2013 20:17:45 +0800
+Message-Id: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051612-5564-0000-0000-000007F31530
+x-cbid: 13051612-0260-0000-0000-00000302C3CF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050305040302070101000406
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Bechmark result:
+I have tested this patchset and the previous version that only zaps the
+pages linked on invalid slot's rmap. The benchmark is written by myself
+which has been attached, it writes large memory when do pci rom read.
 
-Attach the benchmark.
+Host: Intel(R) Xeon(R) CPU X5690  @ 3.47GHz + 36G Memory
+Guest: 12 VCPU + 32G Memory
 
-On 05/16/2013 08:17 PM, Xiao Guangrong wrote:
-> Bechmark result:
-> I have tested this patchset and the previous version that only zaps the
-> pages linked on invalid slot's rmap. The benchmark is written by myself
-> which has been attached, it writes large memory when do pci rom read.
-> 
-> Host: Intel(R) Xeon(R) CPU X5690  @ 3.47GHz + 36G Memory
-> Guest: 12 VCPU + 32G Memory
-> 
-> Current code:           This patchset         Previous Version 
-> 2405434959 ns           2323016424 ns         2368810003 ns
-> 
-> The interesting thing is, the previous version is slower than this patch,
-> i guess the reason is that the former keeps lots of invalid pages in mmu
-> which cause shadow page to be reclaimed due to used-pages > request-pages
-> or host memory shrink.
-> 
-> Changlog:
-> V5:
->   1): rename is_valid_sp to is_obsolete_sp
->   2): use lock-break technique to zap all old pages instead of only pages
->       linked on invalid slot's rmap suggested by Marcelo.
->   3): trace invalid pages and kvm_mmu_invalidate_memslot_pages() 
->   4): rename kvm_mmu_invalid_memslot_pages to kvm_mmu_invalidate_memslot_pages
->       according to Takuya's comments. 
-> 
-> V4:
->   1): drop unmapping invalid rmap out of mmu-lock and use lock-break technique
->       instead. Thanks to Gleb's comments.
-> 
->   2): needn't handle invalid-gen pages specially due to page table always
->       switched by KVM_REQ_MMU_RELOAD. Thanks to Marcelo's comments.
-> 
-> V3:
->   completely redesign the algorithm, please see below.
-> 
-> V2:
->   - do not reset n_requested_mmu_pages and n_max_mmu_pages
->   - batch free root shadow pages to reduce vcpu notification and mmu-lock
->     contention
->   - remove the first patch that introduce kvm->arch.mmu_cache since we only
->     'memset zero' on hashtable rather than all mmu cache members in this
->     version
->   - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
-> 
-> * Issue
-> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
-> walk and zap all shadow pages one by one, also it need to zap all guest
-> page's rmap and all shadow page's parent spte list. Particularly, things
-> become worse if guest uses more memory or vcpus. It is not good for
-> scalability.
-> 
-> * Idea
-> KVM maintains a global mmu invalid generation-number which is stored in
-> kvm->arch.mmu_valid_gen and every shadow page stores the current global
-> generation-number into sp->mmu_valid_gen when it is created.
-> 
-> When KVM need zap all shadow pages sptes, it just simply increase the
-> global generation-number then reload root shadow pages on all vcpus.
-> Vcpu will create a new shadow page table according to current kvm's
-> generation-number. It ensures the old pages are not used any more.
-> 
-> Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
-> are zapped by using lock-break technique.
-> 
-> Xiao Guangrong (8):
->   KVM: MMU: drop unnecessary kvm_reload_remote_mmus
->   KVM: MMU: delete shadow page from hash list in
->     kvm_mmu_prepare_zap_page
->   KVM: MMU: fast invalidate all pages
->   KVM: x86: use the fast way to invalidate all pages
->   KVM: MMU: make kvm_mmu_zap_all preemptable
->   KVM: MMU: show mmu_valid_gen in shadow page related tracepoints
->   KVM: MMU: add tracepoint for kvm_mmu_invalidate_memslot_pages
->   KVM: MMU: zap pages in batch
-> 
->  arch/x86/include/asm/kvm_host.h |    2 +
->  arch/x86/kvm/mmu.c              |  124 ++++++++++++++++++++++++++++++++++++++-
->  arch/x86/kvm/mmu.h              |    2 +
->  arch/x86/kvm/mmutrace.h         |   45 +++++++++++---
->  arch/x86/kvm/x86.c              |    9 +--
->  5 files changed, 163 insertions(+), 19 deletions(-)
-> 
+Current code:           This patchset         Previous Version 
+2405434959 ns           2323016424 ns         2368810003 ns
 
+The interesting thing is, the previous version is slower than this patch,
+i guess the reason is that the former keeps lots of invalid pages in mmu
+which cause shadow page to be reclaimed due to used-pages > request-pages
+or host memory shrink.
 
---------------050305040302070101000406
-Content-Type: application/x-bzip;
- name="mmtest.tar.bz2"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="mmtest.tar.bz2"
+Changlog:
+V5:
+  1): rename is_valid_sp to is_obsolete_sp
+  2): use lock-break technique to zap all old pages instead of only pages
+      linked on invalid slot's rmap suggested by Marcelo.
+  3): trace invalid pages and kvm_mmu_invalidate_memslot_pages() 
+  4): rename kvm_mmu_invalid_memslot_pages to kvm_mmu_invalidate_memslot_pages
+      according to Takuya's comments. 
 
-QlpoOTFBWSZTWSsYLS4ALCF/////////////////////////////////////////////4DL/
-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
-En9H0lGBPG7w/+LuSKcKEgVjBaXA
---------------050305040302070101000406--
+V4:
+  1): drop unmapping invalid rmap out of mmu-lock and use lock-break technique
+      instead. Thanks to Gleb's comments.
+
+  2): needn't handle invalid-gen pages specially due to page table always
+      switched by KVM_REQ_MMU_RELOAD. Thanks to Marcelo's comments.
+
+V3:
+  completely redesign the algorithm, please see below.
+
+V2:
+  - do not reset n_requested_mmu_pages and n_max_mmu_pages
+  - batch free root shadow pages to reduce vcpu notification and mmu-lock
+    contention
+  - remove the first patch that introduce kvm->arch.mmu_cache since we only
+    'memset zero' on hashtable rather than all mmu cache members in this
+    version
+  - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
+
+* Issue
+The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+walk and zap all shadow pages one by one, also it need to zap all guest
+page's rmap and all shadow page's parent spte list. Particularly, things
+become worse if guest uses more memory or vcpus. It is not good for
+scalability.
+
+* Idea
+KVM maintains a global mmu invalid generation-number which is stored in
+kvm->arch.mmu_valid_gen and every shadow page stores the current global
+generation-number into sp->mmu_valid_gen when it is created.
+
+When KVM need zap all shadow pages sptes, it just simply increase the
+global generation-number then reload root shadow pages on all vcpus.
+Vcpu will create a new shadow page table according to current kvm's
+generation-number. It ensures the old pages are not used any more.
+
+Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+are zapped by using lock-break technique.
+
+Xiao Guangrong (8):
+  KVM: MMU: drop unnecessary kvm_reload_remote_mmus
+  KVM: MMU: delete shadow page from hash list in
+    kvm_mmu_prepare_zap_page
+  KVM: MMU: fast invalidate all pages
+  KVM: x86: use the fast way to invalidate all pages
+  KVM: MMU: make kvm_mmu_zap_all preemptable
+  KVM: MMU: show mmu_valid_gen in shadow page related tracepoints
+  KVM: MMU: add tracepoint for kvm_mmu_invalidate_memslot_pages
+  KVM: MMU: zap pages in batch
+
+ arch/x86/include/asm/kvm_host.h |    2 +
+ arch/x86/kvm/mmu.c              |  124 ++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/mmu.h              |    2 +
+ arch/x86/kvm/mmutrace.h         |   45 +++++++++++---
+ arch/x86/kvm/x86.c              |    9 +--
+ 5 files changed, 163 insertions(+), 19 deletions(-)
+
+-- 
+1.7.7.6
 
