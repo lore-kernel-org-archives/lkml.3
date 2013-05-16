@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab3EPUeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:34:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21559 "EHLO mga11.intel.com"
+	id S1753036Ab3EPUfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:35:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22238 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752323Ab3EPUee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:34:34 -0400
+	id S1752270Ab3EPUed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 16:34:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="335308182"
-Subject: [RFCv2][PATCH 4/5] break out mapping "freepage" code
+   d="scan'208";a="303598578"
+Subject: [RFCv2][PATCH 3/5] break up __remove_mapping()
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mgorman@suse.de,
         tim.c.chen@linux.intel.com, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Thu, 16 May 2013 13:34:33 -0700
+Date: Thu, 16 May 2013 13:34:31 -0700
 References: <20130516203427.E3386936@viggo.jf.intel.com>
 In-Reply-To: <20130516203427.E3386936@viggo.jf.intel.com>
-Message-Id: <20130516203433.CC770268@viggo.jf.intel.com>
+Message-Id: <20130516203431.E7D7BAE7@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,66 +25,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-__remove_mapping() only deals with pages with mappings, meaning
-page cache and swap cache.
+Our goal here is to eventually reduce the number of repetitive
+acquire/release operations on mapping->tree_lock.
 
-At this point, the page has been removed from the mapping's radix
-tree, and we need to ensure that any fs-specific (or swap-
-specific) resources are freed up.
+Logically, this patch has two steps:
+1. rename __remove_mapping() to lock_remove_mapping() since
+   "__" usually means "this us the unlocked version.
+2. Recreate __remove_mapping() to _be_ the lock_remove_mapping()
+   but without the locks.
 
-We will be using this function from a second location in a
-following patch.
+I think this actually makes the code flow around the locking
+_much_ more straighforward since the locking just becomes:
+
+	spin_lock_irq(&mapping->tree_lock);
+	ret = __remove_mapping(mapping, page);
+	spin_unlock_irq(&mapping->tree_lock);
+
+One non-obvious part of this patch: the
+
+	freepage = mapping->a_ops->freepage;
+
+used to happen under the mapping->tree_lock, but this patch
+moves it to outside of the lock.  All of the other
+a_ops->freepage users do it outside the lock, and we only
+assign it when we create inodes, so that makes it safe.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
+
 ---
 
- linux.git-davehans/mm/vmscan.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ linux.git-davehans/mm/vmscan.c |   43 ++++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
 
-diff -puN mm/vmscan.c~free_mapping_page mm/vmscan.c
---- linux.git/mm/vmscan.c~free_mapping_page	2013-05-16 13:27:25.520174273 -0700
-+++ linux.git-davehans/mm/vmscan.c	2013-05-16 13:27:25.525174493 -0700
-@@ -497,6 +497,24 @@ static int __remove_mapping(struct addre
- 	return 1;
- }
+diff -puN mm/vmscan.c~make-remove-mapping-without-locks mm/vmscan.c
+--- linux.git/mm/vmscan.c~make-remove-mapping-without-locks	2013-05-16 13:27:25.268163133 -0700
++++ linux.git-davehans/mm/vmscan.c	2013-05-16 13:27:25.273163355 -0700
+@@ -450,12 +450,12 @@ static pageout_t pageout(struct page *pa
+  * Same as remove_mapping, but if the page is removed from the mapping, it
+  * gets returned with a refcount of 0.
+  */
+-static int __remove_mapping(struct address_space *mapping, struct page *page)
++static int __remove_mapping(struct address_space *mapping,
++			    struct page *page)
+ {
+ 	BUG_ON(!PageLocked(page));
+ 	BUG_ON(mapping != page_mapping(page));
  
-+/*
-+ * Release any resources the mapping had tied up in
-+ * the page.
-+ */
-+static void mapping_release_page(struct address_space *mapping,
-+				 struct page *page)
-+{
-+	if (PageSwapCache(page)) {
-+		swapcache_free_page_entry(page);
+-	spin_lock_irq(&mapping->tree_lock);
+ 	/*
+ 	 * The non racy check for a busy page.
+ 	 *
+@@ -482,35 +482,44 @@ static int __remove_mapping(struct addre
+ 	 * and thus under tree_lock, then this ordering is not required.
+ 	 */
+ 	if (!page_freeze_refs(page, 2))
+-		goto cannot_free;
++		return 0;
+ 	/* note: atomic_cmpxchg in page_freeze_refs provides the smp_rmb */
+ 	if (unlikely(PageDirty(page))) {
+ 		page_unfreeze_refs(page, 2);
+-		goto cannot_free;
++		return 0;
+ 	}
+ 
+ 	if (PageSwapCache(page)) {
+ 		__delete_from_swap_cache(page);
+-		spin_unlock_irq(&mapping->tree_lock);
 +	} else {
-+		void (*freepage)(struct page *);
-+		freepage = mapping->a_ops->freepage;
-+		mem_cgroup_uncharge_cache_page(page);
-+		if (freepage != NULL)
-+			freepage(page);
++		__delete_from_page_cache(page);
 +	}
++	return 1;
 +}
 +
- static int lock_remove_mapping(struct address_space *mapping, struct page *page)
- {
- 	int ret;
-@@ -510,15 +528,7 @@ static int lock_remove_mapping(struct ad
- 	if (!ret)
- 		return 0;
- 
--	if (PageSwapCache(page)) {
--		swapcache_free_page_entry(page);
--	} else {
--		void (*freepage)(struct page *);
--		freepage = mapping->a_ops->freepage;
--		mem_cgroup_uncharge_cache_page(page);
--		if (freepage != NULL)
--			freepage(page);
--	}
-+	mapping_release_page(mapping, page);
- 	return ret;
++static int lock_remove_mapping(struct address_space *mapping, struct page *page)
++{
++	int ret;
++	BUG_ON(!PageLocked(page));
++
++	spin_lock_irq(&mapping->tree_lock);
++	ret = __remove_mapping(mapping, page);
++	spin_unlock_irq(&mapping->tree_lock);
++
++	/* unable to free */
++	if (!ret)
++		return 0;
++
++	if (PageSwapCache(page)) {
+ 		swapcache_free_page_entry(page);
+ 	} else {
+ 		void (*freepage)(struct page *);
+-
+ 		freepage = mapping->a_ops->freepage;
+-
+-		__delete_from_page_cache(page);
+-		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
+-
+ 		if (freepage != NULL)
+ 			freepage(page);
+ 	}
+-
+-	return 1;
+-
+-cannot_free:
+-	spin_unlock_irq(&mapping->tree_lock);
+-	return 0;
++	return ret;
  }
  
+ /*
+@@ -521,7 +530,7 @@ cannot_free:
+  */
+ int remove_mapping(struct address_space *mapping, struct page *page)
+ {
+-	if (__remove_mapping(mapping, page)) {
++	if (lock_remove_mapping(mapping, page)) {
+ 		/*
+ 		 * Unfreezing the refcount with 1 rather than 2 effectively
+ 		 * drops the pagecache ref for us without requiring another
 _
