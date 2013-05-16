@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3EPSZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 14:25:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39980 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab3EPSY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 14:24:59 -0400
-Message-ID: <5195242A.4040007@oracle.com>
-Date: Thu, 16 May 2013 14:23:38 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
+	id S1753425Ab3EPSZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 14:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898Ab3EPSZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 14:25:23 -0400
+Date: Thu, 16 May 2013 14:25:10 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>, netdev@vger.kernel.org,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: net: cdc_ncm, cdc_mbim: allow user to prefer NCM for backwards
+ compatibility
+Message-ID: <20130516182510.GA4728@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	=?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+	netdev@vger.kernel.org,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-CC: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "eag0628@gmail.com" <eag0628@gmail.com>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: WARNING: at kernel/smp.c:385 smp_call_function_many
-References: <5170602E.3050206@oracle.com> <27240C0AC20F114CBF8149A2696CBE4AC1B56C@SHSMSX101.ccr.corp.intel.com> <51708FE5.6000301@oracle.com>
-In-Reply-To: <51708FE5.6000301@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 08:29 PM, Sasha Levin wrote:
-> Hi Liu,
-> 
-> On 04/18/2013 08:10 PM, Liu, Chuansheng wrote:
->>> It seems that with commit "smp: Give WARN()ing when calling
->>>> smp_call_function_many()/single() in serving irq" I'm getting a bunch of these:
->> This patch gives the warning even when the smp_call_function_many() is called in softirq context,
->> because it will bring the possible deadlock cases, the example is below:
->> CPUA                            CPUB
->>                                 spin_lock(&spinlock)
->>                                 Any irq coming, call the irq handler
->>                                 irq_exit()
->> spin_lock_irq(&spinlock)
->> <== Blocking here due to
->> CPUB hold it
->>                                   __do_softirq()
->>                                     run_timer_softirq()
->>                                       timer_cb()
->>                                         call smp_call_function_many()
->>                                           send IPI interrupt to CPUA
->>                                             wait_csd()
->>
->> Then both CPUA and CPUB will be deadlocked here.
-> 
-> Right.
-> 
-> So commit f55a6faa3 ("hrtimer: Provide clock_was_set_delayed()") followed by one
-> of the commits that used clock_was_set_delayed() may trigger the deadlock you've
-> described. (cc John Stultz...)
+Hi Bjørn,
 
-Ping?
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=1e8bbe6cd02fc300c88bd48244ce61ad9c7d1776
+ > Commit:     1e8bbe6cd02fc300c88bd48244ce61ad9c7d1776
+ > Parent:     a5b8db91442fce9c9713fcd656c3698f1adde1d6
+ > Author:     Bjørn Mork <bjorn@mork.no>
+ > AuthorDate: Thu Mar 14 01:05:13 2013 +0000
+ > Committer:  David S. Miller <davem@davemloft.net>
+ > CommitDate: Sun Mar 17 11:59:03 2013 -0400
+ > 
+ >     net: cdc_ncm, cdc_mbim: allow user to prefer NCM for backwards compatibility
+ >     
+ >     commit bd329e1 ("net: cdc_ncm: do not bind to NCM compatible MBIM devices")
+ >     introduced a new policy, preferring MBIM for dual NCM/MBIM functions if
+ >     the cdc_mbim driver was enabled.  This caused a regression for users
+ >     wanting to use NCM.
+ >     
+ >     Devices implementing NCM backwards compatibility according to section
+ >     3.2 of the MBIM v1.0 specification allow either NCM or MBIM on a single
+ >     USB function, using different altsettings.  The cdc_ncm and cdc_mbim
+ >     drivers will both probe such functions, and must agree on a common
+ >     policy for selecting either MBIM or NCM.  Until now, this policy has
+ >     been set at build time based on CONFIG_USB_NET_CDC_MBIM.
+ >     
+ >     Use a module parameter to set the system policy at runtime, allowing the
+ >     user to prefer NCM on systems with the cdc_mbim driver.
 
+Is there any way we can set this automatically based on the type of device connected
+and have it just work without users needing to edit modprobe.conf ?
 
-Thanks,
-Sasha
+Since this change, we've now getting reports like https://bugzilla.redhat.com/show_bug.cgi?id=963663
+
+	Dave
 
