@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab3EPPBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:01:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42512 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab3EPPBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:01:31 -0400
-Message-ID: <5194F431.9050003@redhat.com>
-Date: Thu, 16 May 2013 10:58:57 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1751710Ab3EPPEA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:04:00 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:57288 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3EPPD4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 11:03:56 -0400
+From: "Mehaffey, John" <John_Mehaffey@mentor.com>
+To: Lennart Poettering <mzxreary@0pointer.de>
+CC: Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Jeremiah Foster <jeremiah.foster@pelagicore.com>,
+        "systemd-devel@lists.freedesktop.org" 
+	<systemd-devel@lists.freedesktop.org>,
+        "wd@denx.de" <wd@denx.de>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>,
+        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>,
+        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
+        "yoush@cs.msu.su" <yoush@cs.msu.su>
+Subject: RE: [systemd-devel] 2013 Plumber's CFP: Fastboot
+Thread-Topic: [systemd-devel] 2013 Plumber's CFP: Fastboot
+Thread-Index: Ac5QL8BaNyuX4Q42TyivWIVMiXMwVABW5x4AAAaIggAAApDXAP//l9iggAHg/oD//7MFnw==
+Date: Thu, 16 May 2013 15:03:44 +0000
+Message-ID: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D4CC4@NA-MBX-03.mgc.mentorg.com>
+References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
+ <CADVDRBjOX2Jy5t36jwZt9i9OGt3Ca_rBx_FbptYJ34CK2EP+AA@mail.gmail.com>
+ <20130515125048.GC2206@tango.0pointer.de>
+ <CAKi4VA+ru8_h=NW_X49GNL06XinsboM_ZicD8Js73Mw7x-xphA@mail.gmail.com>
+ <371E240E6FC1D44DA5E51EE9DCDCB7845E3D32D3@NA-MBX-03.mgc.mentorg.com>,<20130516123301.GA20195@tango.0pointer.de>
+In-Reply-To: <20130516123301.GA20195@tango.0pointer.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [147.34.91.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv11 1/4] debugfs: add get/set for atomic types
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com> <1368448803-2089-2-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1368448803-2089-2-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 May 2013 15:03:45.0240 (UTC) FILETIME=[8FB33D80:01CE5246]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2013 08:40 AM, Seth Jennings wrote:
-> debugfs currently lack the ability to create attributes
-> that set/get atomic_t values.
->
-> This patch adds support for this through a new
-> debugfs_create_atomic_t() function.
->
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Acked-by: Mel Gorman <mgorman@suse.de>
+> From: Lennart Poettering [mzxreary@0pointer.de]
+> Sent: Thursday, May 16, 2013 5:33 AM
+> On Wed, 15.05.13 15:01, Mehaffey, John (John_Mehaffey@mentor.com) wrote:
+> 
+> > > What if we merge the proposals?
+> > >
+> > > John, are you ok with proposing (some of) these topics in the "Boot
+> > > and Core OS" track? I could help with the module-related part, too.
+> > >
+> > >
+> > > Lucas De Marchi
+> >
+> > Hi Lucas, Lennart,
+> > I am fine with merging the two boot related sessions.  I did not want to have it be a topic in the automotive microconf, as I believe there is enough material for a couple of hours on fastboot alone.
+> >
+> > It was not clear to me what topics might be in the boot and core os microconf, so I proposed fastboot as separate.
+> 
+> Let's merge this then (the LPC guys want this to).
+> 
+> We could copy the stuff from the fastboot MC wiki page into the
+> boot/core OS wiki page, or the other way round. And preference? I'd
+> still call this "Boot and Core OS MC" as this has the slightler broader
+> topic, I guess...
+> 
+> Lennart
+> 
+> --
+> Lennart Poettering - Red Hat, Inc.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Hi Lennart,
+I have merged the topics from the fastboot proposal to the Boot and Core OS proposal.
 
+Please take a look and make any improvements.
 
--- 
-All rights reversed
+I am keeping the fastboot proposal on the wiki as reference material for now, but I have linked it to the Boot and Core OS page.
+
+-mehaf
+
