@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3EPInd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 04:43:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48353 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab3EPIn2 (ORCPT
+	id S1756901Ab3EPIuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 04:50:24 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52600 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427Ab3EPIuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 04:43:28 -0400
-Date: Thu, 16 May 2013 10:41:43 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: majianpeng <majianpeng@gmail.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, mingo@redhat.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-f2fs <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [RFC][PATCH] f2fs: Avoid print false deadlock messages.
-Message-ID: <20130516084143.GE19669@dyad.programming.kicks-ass.net>
-References: <5193322D.1080009@gmail.com>
- <20130515082834.GB10510@laptop.programming.kicks-ass.net>
- <5194337D.1080503@gmail.com>
+	Thu, 16 May 2013 04:50:21 -0400
+X-AuditID: 9c93017e-b7c8fae000000f00-3f-51949dcb104b
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
+References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
+	<5193A6E7.9040501@gmail.com> <87sj1n4rh3.fsf@sejong.aot.lge.com>
+	<51944796.7020505@gmail.com>
+Date: Thu, 16 May 2013 17:50:18 +0900
+In-Reply-To: <51944796.7020505@gmail.com> (David Ahern's message of "Wed, 15
+	May 2013 20:42:30 -0600")
+Message-ID: <8738tn48c5.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5194337D.1080503@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 09:16:45AM +0800, majianpeng wrote:
+Hi David,
 
-> > There isn't. What you typically want to do is annotate the lock site.
-> > In particular it looks like mutex_lock_all() is the offensive piece of
-> > code (horrible function name though; the only redeeming thing being that
-> > f2fs.h isn't likely to be included elsewhere).
-> >
-> > One thing you can do here is modify it to look like:
-> >
-> > static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
-> > {
-> > 	int i;
-> >
-> > 	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
-> > 		/*
-> > 		 * This is the only time we take multiple fs_lock[]
-> > 		 * instances; the order is immaterial since we
-> > 		 * always hold cp_mutex, which serializes multiple
-> > 		 * such operations.
-> > 		 */
-> > 		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
-> > 	}
-> > }
-> >
-> > That tells the lock validator that it is ok to lock multiple instances
-> > of the fs_lock[i] class because the lock order is guarded by cp_mutex.
-> > While your patch also works, it has multiple down-sides; its easy to get
-> > out of sync when you modify NR_GLOBAL_LOCKS; also it consumes more
-> > static lockdep resources (lockdep has to allocate all its resources
-> > from static arrays since allocating memory also uses locks -- recursive
-> > problem).
-> >
-> Yes, but there is a problem if fs_block[] met deadlock. How to find which one?
-> Because the lock->name is the same.
+On Wed, 15 May 2013 20:42:30 -0600, David Ahern wrote:
+> On 5/15/13 7:56 PM, Namhyung Kim wrote:
+>>> How about just --time? less typing.
+>>
+>> Thanks, I'm fine with '--time' too but '--time-filter' looks more
+>
+> yes, I just have really long command lines now. Is there a consistent
+> single letter (X?)?
 
-The most useful part of the lockdep report are the call traces that tell you
-where locks where acquired; the names are secondary. That is, while they are at
-times helpful in finding the right lock site, they're rarely _that_ important.
+Do you mean a single-letter option "-X" for this?
 
-Remember, your code will very likely not have the exact number hardcoded either.
-It'll be a variable. So having the number in the lockdep output will not help
-you find the offending code any sooner.
+>
+>> obvious.  What does the timehist command do, btw? ;)
+>
+> task scheduling time history including run time and time between
+> sched-in. It needs to be updated to use tracepoints and perhaps fold
+> into perf-sched (e.g., perf sched history). Too many features; too
+> little time. I hope to get to it in the next month or so.
 
-Suppose there's another site that acquires two fs_block[] locks; currently this
-would generate another such warning as this thread started with -- lockdep
-doesn't look at lock instances but at classes; and it cannot differentiate
-between two locks of the same class and thus reports the possible deadlock.
+Looks useful.
 
-The way to find the offending code is to look at the "locks held" section of
-the lockdep report along with the call traces.
+>
+>>> I would expect parse_nsec_time to fail. e.g., a time string like 123455.a
+>>
+>> It looks like current strtol() returns 0 when failed to parse like
+>> above.  Hmm.. do I have to check whether the return value is 0 or just
+>> ignore invalid inputs?
+>
+> end will point to the next character not converted so make sure it is
+> as expected (*end == '\0').
 
-Once you find the way in which the two locks nest the specific numbers are
-irrelevant. Your aim then is to prove your locking scheme is indeed deadlock
-free and then tell lockdep about it.
+Arh, okay.  So I'll change it to check the 'end' and fails if an
+unexpected input comes.
 
-
+Thanks,
+Namhyung
