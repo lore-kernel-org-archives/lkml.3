@@ -1,81 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab3EPJ6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:58:13 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:23393 "EHLO multi.imgtec.com"
+	id S1751482Ab3EPKJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 06:09:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:49095 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab3EPJ6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:58:09 -0400
-Message-ID: <5194AD63.9020804@imgtec.com>
-Date: Thu, 16 May 2013 10:56:51 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH RFC 0/2] clk: add metag specific gate/mux clocks
-References: <1368198127-1295-1-git-send-email-james.hogan@imgtec.com> <51940CAF.6010808@codeaurora.org>
-In-Reply-To: <51940CAF.6010808@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_16_10_58_06
+	id S1751120Ab3EPKJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 06:09:39 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, michael@ellerman.id.au,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
+In-reply-to: <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+References: <20130503121122.931661809@chello.nl> <20130503121256.230745028@chello.nl> <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com> <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
+   message dated "Thu, 16 May 2013 11:09:16 +0200."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Thu, 16 May 2013 20:09:36 +1000
+Message-ID: <8166.1368698976@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/05/13 23:31, Stephen Boyd wrote:
-> On 05/10/13 08:02, James Hogan wrote:
->> This adds a metag architecture specific clk-gate and clk-mux which
->> extends the generic ones to use global lock2 to protect the register
->> fields. It is common with metag to have an RTOS running on a different
->> thread or core with access to different bits in the same register (which
->> contain clock gate/switch bits for other clocks). Access to such
->> registers must be serialised with a global lock such as the one provided
->> by the metag architecture port in <asm/global_lock.h>
->>
->> RFC because despite extending the generic clocks there's still a bit of
->> duplicated code necessary. One alternative is to add special cases to
->> the generic clock components for when a global or callback function
->> based lock is desired instead of a spinlock, but I wasn't sure if that
->> sort of hack would really be appreciated in the generic drivers.
->>
->> Comments?
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, May 15, 2013 at 03:37:22PM +0200, Stephane Eranian wrote:
+> > On Fri, May 3, 2013 at 2:11 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > > We should always have proper privileges when requesting kernel data.
+> > >
+> > > Cc: Andi Kleen <ak@linux.intel.com>
+> > > Cc: eranian@google.com
+> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
+> > > ---
+> > >  arch/x86/kernel/cpu/perf_event_intel_lbr.c |    5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > >
+> > > --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> > > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> > > @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
+> > >         if (br_type & PERF_SAMPLE_BRANCH_USER)
+> > >                 mask |= X86_BR_USER;
+> > >
+> > > -       if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
+> > > +       if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
+> > > +               if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> > > +                       return -EACCES;
+> > >                 mask |= X86_BR_KERNEL;
+> > > +       }
+> > >
+> > This will prevent regular users from capturing kernel -> kernel branches.
+> > But it won't prevent users from getting kernel -> user branches. Thus
+> > some kernel address will still be captured. I guess they could be eliminated
+> > by the sw_filter.
+> > 
+> > When using LBR priv level filtering, the filter applies to the branch target
+> > only.
 > 
-> Can you please Cc the devicetree mailing list when proposing new bindings?
+> How about something like the below? It also adds the branch flags
+> Mikey wanted for PowerPC.
+> 
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 12 +++++++++---
+>  include/linux/perf_event.h                 | 10 +++++++---
+>  2 files changed, 16 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index d978353..f44d635 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -585,17 +585,23 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+>  
+>  		/* if type does not correspond, then discard */
+>  		if (type == X86_BR_NONE || (br_sel & type) != type) {
+> -			cpuc->lbr_entries[i].from = 0;
+> +			cpuc->lbr_entries[i].__delete = 1;
+>  			compress = true;
+>  		}
+> +
+> +		/* hide kernel addresses if we're not privileged  */
+> +		if (!(br_sel & X86_BR_KERNEL) && kernel_ip(from)) {
+> +			cpuc->lbr_entries[i].from = -1L;
+> +			cpuc->lbr_entries[i].invalid_from = 1;
+> +		}
+>  	}
+>  
+>  	if (!compress)
+>  		return;
+>  
+> -	/* remove all entries with from=0 */
+> +	/* remove all entries with __delete */
+>  	for (i = 0; i < cpuc->lbr_stack.nr; ) {
+> -		if (!cpuc->lbr_entries[i].from) {
+> +		if (cpuc->lbr_entries[i].__delete) {
+>  			j = i;
+>  			while (++j < cpuc->lbr_stack.nr)
+>  				cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index f463a46..7acf1c9 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -77,9 +77,13 @@ struct perf_raw_record {
+>  struct perf_branch_entry {
+>  	__u64	from;
+>  	__u64	to;
+> -	__u64	mispred:1,  /* target mispredicted */
+> -		predicted:1,/* target predicted */
+> -		reserved:62;
+> +	__u64	mispred:1,	/* target mispredicted		*/
+> +		predicted:1,	/* target predicted		*/
+> +		invalid_to:1,	/* @to isn't to be trusted	*/
+> +		invalid_from:1, /* @from isn't to be trusted	*/
 
-Erm, I think it was on Cc (devicetree-discuss@lists.ozlabs.org yeh?)
+Thanks Peter.  One possible issue...
 
-> Your patchset brings up a question I've had which is if we should be
-> putting the bits and register width information in devicetree at all. On
-> the one hand it's nice to not have anything in C code, just iterate over
-> nodes and register clocks. On the other hand, it's the first time I've
-> seen anyone put the register interface into devicetree. From what I can
-> tell, the regulator bindings have put at most the register base and
-> physical properties like enable-time, max voltage, etc., but not what
-> bits are needed to enable/disable a regulator. Also I thought I read
-> somewhere that reg properties shouldn't overlap each other, so if you
-> ever have two clocks living in the same register we're going to violate
-> that.
+When the kernel has to read the branch from memory, there is no way for
+it to know that it's the same one that the HW actually executed.  Hence
+there's a possibility that the to address is invalid but we can't tell
+for sure.
 
-Oh, I wasn't aware of that limitation.
+I'm happy to just ignore that and mark calculated to address as valid,
+unless you think it would be worthwhile extra information to pass onto
+the user?
 
-The SoC I'm working with has some registers full of clock enable bits (I
-guess one could have a gate array component with up to 32 clock inputs
-and outputs) and some registers full of clock mux switch bits (that
-would get really messy to define as a block since each bit switches
-between 2 parents, and some of the parents are other clock muxes in the
-same block). Some registers contain a bunch of low power related bits
-together, including clock enable bits in the same register as various
-pinconf settings which is used by a separate pinctrl driver.
+If we wanted this extra fidelity we could add a possibly_invalid_to:1
+flag to your patch but I'm not sure it's worth it to be honest.
 
-Cheers
-James
-
+mikey
