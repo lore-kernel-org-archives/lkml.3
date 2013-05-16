@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3EPAtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 20:49:06 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:63338 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab3EPAtB (ORCPT
+	id S1754339Ab3EPAzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 20:55:14 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55064 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3EPAzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 20:49:01 -0400
-X-AuditID: 9c93017e-b7cf8ae000004f65-a5-51942cfbe639
+	Wed, 15 May 2013 20:55:12 -0400
+X-AuditID: 9c93017d-b7b62ae000004f69-4d-51942e6d3106
 From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Pekka Enberg <penberg@kernel.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC/PATCH 2/2] perf report: Add --time-filter option
+Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
 References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
-	<1368609839-19899-2-git-send-email-namhyung@kernel.org>
-	<CABPqkBSEGpa3wyxdfsBRey=4J_yQXP7QG_=+1rLy0vhD03vp4A@mail.gmail.com>
-Date: Thu, 16 May 2013 09:48:58 +0900
-In-Reply-To: <CABPqkBSEGpa3wyxdfsBRey=4J_yQXP7QG_=+1rLy0vhD03vp4A@mail.gmail.com>
-	(Stephane Eranian's message of "Wed, 15 May 2013 13:51:20 +0200")
-Message-ID: <871u97696t.fsf@sejong.aot.lge.com>
+	<20130515135608.GF17814@two.firstfloor.org>
+Date: Thu, 16 May 2013 09:55:09 +0900
+In-Reply-To: <20130515135608.GF17814@two.firstfloor.org> (Andi Kleen's message
+	of "Wed, 15 May 2013 15:56:08 +0200")
+Message-ID: <87wqqz4uc2.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -34,17 +33,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+Hi Andi,
 
-On Wed, 15 May 2013 13:51:20 +0200, Stephane Eranian wrote:
-> Hi,
+On Wed, 15 May 2013 15:56:08 +0200, Andi Kleen wrote:
+> On Wed, May 15, 2013 at 06:23:58PM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> The --time-filter option is for limiting samples within a range of
+>> time.  A time range looks like <time1>-<time2> and at most one of them
+>> can be omitted.  For instance:
 >
-> I think what could also be useful would be an option to consider only
-> the samples when the rate as reported by the timestamp exceed a
-> user provided rate per sec. That would eliminate samples which are
-> coming from low activity periods.
+> It would be more useful for report or inject than for script.
+> After all with a script it's trivial to do an own filter.
+> Not so easy with report.
 
-Sounds good.  I'll try to play with it next time.
+Right.  I actually sent the patch 2/2 for report side and it's the main
+aim for this patch.  This was included almost for verification. :)
+
+Anyway, I didn't think about the inject command, I will apply it to the
+inject too in next spin.
 
 Thanks,
 Namhyung
