@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab3EPOXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:23:10 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2059 "EHLO
+	id S1754558Ab3EPOWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:22:17 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2035 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3EPOW3 (ORCPT
+	with ESMTP id S1754466Ab3EPOWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:22:29 -0400
+	Thu, 16 May 2013 10:22:10 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 16 May 2013 07:18:39 -0700
+	by hqnvupgp07.nvidia.com on Thu, 16 May 2013 07:18:20 -0700
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
         <swarren@wwwdotorg.org>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>,
         Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v4 6/8] usb: phy: tegra: get ULPI reset GPIO info using DT.
-Date: Thu, 16 May 2013 19:43:00 +0530
-Message-ID: <1368713582-29038-7-git-send-email-vbyravarasu@nvidia.com>
+Subject: [PATCH v4 2/8] arm: dt: Tegra20: Modify ULPI reset GPIO properties
+Date: Thu, 16 May 2013 19:42:56 +0530
+Message-ID: <1368713582-29038-3-git-send-email-vbyravarasu@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com>
 References: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com>
@@ -28,87 +28,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As GPIO information is avail through DT, used it to get Tegra ULPI
-reset GPIO number. Added a new member to tegra_usb_phy structure to
-store this number.
+1. All Tegra20 ULPI reset GPIO DT properties are modified to indicate active
+low nature of the GPIO.
+2. Placed USB PHY DT node immediately below the EHCI controller DT nodes
+and corrected reg value in the name of USB PHY DT node.
 
 Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
-delta from v1, v2 & v3: no change.
+delta from v3:
+No code changes. Commit message only updated.
 
- drivers/usb/phy/phy-tegra-usb.c   |   25 +++++++++++--------------
- include/linux/usb/tegra_usb_phy.h |    1 +
- 2 files changed, 12 insertions(+), 14 deletions(-)
+delta from v2:
+Created this patch as per comments received at:
+http://marc.info/?l=linux-usb&m=136501761810344&w=2
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 0ff1f3e..b8c688a 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -541,11 +541,10 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 	int ret;
- 	unsigned long val;
- 	void __iomem *base = phy->regs;
--	struct tegra_ulpi_config *config = phy->config;
+ arch/arm/boot/dts/tegra20-colibri-512.dtsi |    6 +++++-
+ arch/arm/boot/dts/tegra20-harmony.dts      |   10 +++++-----
+ arch/arm/boot/dts/tegra20-paz00.dts        |   10 +++++-----
+ arch/arm/boot/dts/tegra20-seaboard.dts     |   10 +++++-----
+ arch/arm/boot/dts/tegra20-trimslice.dts    |   10 +++++-----
+ arch/arm/boot/dts/tegra20-ventana.dts      |   10 +++++-----
+ 6 files changed, 30 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arm/boot/dts/tegra20-colibri-512.dtsi b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+index a573b94..c12af78 100644
+--- a/arch/arm/boot/dts/tegra20-colibri-512.dtsi
++++ b/arch/arm/boot/dts/tegra20-colibri-512.dtsi
+@@ -449,7 +449,11 @@
  
--	gpio_direction_output(config->reset_gpio, 0);
-+	gpio_direction_output(phy->reset_gpio, 0);
- 	msleep(5);
--	gpio_direction_output(config->reset_gpio, 1);
-+	gpio_direction_output(phy->reset_gpio, 1);
- 
- 	clk_prepare_enable(phy->clk);
- 	msleep(1);
-@@ -603,10 +602,8 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 
- static int ulpi_phy_power_off(struct tegra_usb_phy *phy)
- {
--	struct tegra_ulpi_config *config = phy->config;
--
- 	clk_disable(phy->clk);
--	return gpio_direction_output(config->reset_gpio, 0);
-+	return gpio_direction_output(phy->reset_gpio, 0);
- }
- 
- static int	tegra_phy_init(struct usb_phy *x)
-@@ -622,18 +619,18 @@ static int	tegra_phy_init(struct usb_phy *x)
- 			pr_err("%s: can't get ulpi clock\n", __func__);
- 			return PTR_ERR(phy->clk);
- 		}
--		if (!gpio_is_valid(ulpi_config->reset_gpio))
--			ulpi_config->reset_gpio =
--				of_get_named_gpio(phy->dev->of_node,
--						  "nvidia,phy-reset-gpio", 0);
--		if (!gpio_is_valid(ulpi_config->reset_gpio)) {
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
++	};
 +
-+		phy->reset_gpio =
-+			of_get_named_gpio(phy->dev->of_node,
-+					  "nvidia,phy-reset-gpio", 0);
-+		if (!gpio_is_valid(phy->reset_gpio)) {
- 			pr_err("%s: invalid reset gpio: %d\n", __func__,
--			       ulpi_config->reset_gpio);
-+			       phy->reset_gpio);
- 			err = -EINVAL;
- 			goto err1;
- 		}
--		gpio_request(ulpi_config->reset_gpio, "ulpi_phy_reset_b");
--		gpio_direction_output(ulpi_config->reset_gpio, 0);
-+		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
-+		gpio_direction_output(phy->reset_gpio, 0);
- 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
- 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
- 	} else {
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index ff2d959..97d123c 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -62,6 +62,7 @@ struct tegra_usb_phy {
- 	struct device *dev;
- 	bool is_legacy_phy;
- 	bool is_ulpi_phy;
-+	int reset_gpio;
- 	void (*set_pts)(struct usb_phy *x, u8 pts_val);
- 	void (*set_phcd)(struct usb_phy *x, bool enable);
- };
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+ 	sdhci@c8000600 {
+diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
+index e7d5de4..e84f3f6 100644
+--- a/arch/arm/boot/dts/tegra20-harmony.dts
++++ b/arch/arm/boot/dts/tegra20-harmony.dts
+@@ -430,15 +430,15 @@
+ 
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb@c5008000 {
+-		status = "okay";
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb-phy@c5004400 {
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++	usb@c5008000 {
++		status = "okay";
+ 	};
+ 
+ 	sdhci@c8000200 {
+diff --git a/arch/arm/boot/dts/tegra20-paz00.dts b/arch/arm/boot/dts/tegra20-paz00.dts
+index e3e0c99..e9ac2a9 100644
+--- a/arch/arm/boot/dts/tegra20-paz00.dts
++++ b/arch/arm/boot/dts/tegra20-paz00.dts
+@@ -429,15 +429,15 @@
+ 
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
++		nvidia,phy-reset-gpio = <&gpio 168 1>; /* gpio PV0, active low */
+ 	};
+ 
+-	usb@c5008000 {
+-		status = "okay";
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 168 1>; /* gpio PV0, active low */
+ 	};
+ 
+-	usb-phy@c5004400 {
+-		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
++	usb@c5008000 {
++		status = "okay";
+ 	};
+ 
+ 	sdhci@c8000000 {
+diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
+index cee4c34..9dd4f8e 100644
+--- a/arch/arm/boot/dts/tegra20-seaboard.dts
++++ b/arch/arm/boot/dts/tegra20-seaboard.dts
+@@ -571,15 +571,15 @@
+ 
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb@c5008000 {
+-		status = "okay";
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb-phy@c5004400 {
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++	usb@c5008000 {
++		status = "okay";
+ 	};
+ 
+ 	sdhci@c8000000 {
+diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
+index 9cc78a1..fd7afd6 100644
+--- a/arch/arm/boot/dts/tegra20-trimslice.dts
++++ b/arch/arm/boot/dts/tegra20-trimslice.dts
+@@ -316,15 +316,15 @@
+ 
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
++		nvidia,phy-reset-gpio = <&gpio 168 1>; /* gpio PV0, active low */
+ 	};
+ 
+-	usb@c5008000 {
+-		status = "okay";
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 168 1>; /* gpio PV0, active low */
+ 	};
+ 
+-	usb-phy@c5004400 {
+-		nvidia,phy-reset-gpio = <&gpio 168 0>; /* gpio PV0 */
++	usb@c5008000 {
++		status = "okay";
+ 	};
+ 
+ 	sdhci@c8000000 {
+diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
+index dd38f1f..a75a0e7 100644
+--- a/arch/arm/boot/dts/tegra20-ventana.dts
++++ b/arch/arm/boot/dts/tegra20-ventana.dts
+@@ -507,15 +507,15 @@
+ 
+ 	usb@c5004000 {
+ 		status = "okay";
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb@c5008000 {
+-		status = "okay";
++	usb-phy@c5004000 {
++		nvidia,phy-reset-gpio = <&gpio 169 1>; /* gpio PV1, active low */
+ 	};
+ 
+-	usb-phy@c5004400 {
+-		nvidia,phy-reset-gpio = <&gpio 169 0>; /* gpio PV1 */
++	usb@c5008000 {
++		status = "okay";
+ 	};
+ 
+ 	sdhci@c8000000 {
 -- 
 1.7.0.4
 
