@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab3EPROr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:14:47 -0400
-Received: from www.sr71.net ([198.145.64.142]:59051 "EHLO blackbird.sr71.net"
+	id S1753039Ab3EPRRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:17:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1371 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215Ab3EPROq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:14:46 -0400
-Message-ID: <51951403.6030605@sr71.net>
-Date: Thu, 16 May 2013 10:14:43 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1752734Ab3EPRRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 13:17:31 -0400
+Date: Thu, 16 May 2013 19:13:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Neil Horman <nhorman@tuxdriver.com>, security@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usermodehelper: check subprocess_info->path != NULL
+Message-ID: <20130516171337.GA24031@redhat.com>
+References: <20130515201158.GA14606@redhat.com> <20130516154323.GA19060@redhat.com> <20130516154355.GB19060@redhat.com> <CAKi4VAKj+s0Z9QHfqwG3+y33puL4dVaou5ys+eiD-yLf8h5QrA@mail.gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
-Subject: Re: [RFC][PATCH 5/7] create __remove_mapping_batch()
-References: <20130507211954.9815F9D1@viggo.jf.intel.com> <20130507212001.49F5E197@viggo.jf.intel.com> <20130514155117.GW11497@suse.de>
-In-Reply-To: <20130514155117.GW11497@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKi4VAKj+s0Z9QHfqwG3+y33puL4dVaou5ys+eiD-yLf8h5QrA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 08:51 AM, Mel Gorman wrote:
-> The same comments I had before about potentially long page lock hold
-> times still apply at this point. Andrew's concerns about the worst-case
-> scenario where no adjacent page on the LRU has the same mapping also
-> still applies. Is there any noticable overhead with his suggested
-> workload of a single threaded process that opens files touching one page
-> in each file until reclaim starts?
+On 05/16, Lucas De Marchi wrote:
+>
+> >
+> >         - kill or justify ->path[0] check
+>
+> I'm not sure about this, it's already there before my refactor and I
+> don't think it makes any good. From modprobe pespective, I'd say it
+> would be better to give an error than say everything went ok.
 
-This is an attempt to address some of Andrew's concerns from here:
+Agreed. And, I forgot to mention, if we kill this check then we do
+not need this patch (although I need to recheck), execve will fail
+and nothing bad should happen.
 
- 	http://lkml.kernel.org/r/20120912122758.ad15e10f.akpm@linux-foundation.org
+Just I think it would be better to start with the trivial fix, then
+decide what should we actually do.
 
-The executive summary: This does cause a small amount of increased CPU
-time in __remove_mapping_batch().  But, it *is* small and it comes with
-a throughput increase.
+> Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
 
-Test #1:
+Thanks,
 
-1. My goal here was to create an LRU with as few adjacent pages in the
-   same file as possible.
-2. Using lots of small files turned out to be a pain in the butt just
-   because I need to create tens of thousands of them.
-3. I ended up writing a program that does:
-	for (offset = 0; offset < somenumber; offset += PAGE_SIZE)
-		for_each_file(f)
-			read(f, offset)...
-4. This was sitting in a loop where the working set of my file reads was
-   slightly larger than the total amount of memory, so we were
-   effectively evicting page cache with streaming reads.
+Oleg.
 
-Even doing that above loop across ~2k files at once, __remove_mapping()
-itself isn't CPU intensive in the single-threaded case.  In my testing,
-it only shows up at 0.021% of CPU usage.  That went up to 0.036% (and
-shifted to __remove_mapping_batch()) with these patches applied.
-
-In any case, there are no showstoppers here.  We're way down looking at
-the 0.01% of CPU time scale.
-
-    sample    %
-     delta   change
-    ------   ------
-       462     2.7% ata_scsi_queuecmd
-       194     0.1% default_idle
-        59   999.9% __remove_mapping_batch
-        54   490.9% prepare_to_wait
-        41   585.7% rcu_process_callbacks
-       -32   -49.2% blk_queue_bio
-       -35  -100.0% __remove_mapping
-       -38   -33.6% generic_file_aio_read
-       -41   -68.3% mix_pool_bytes.constprop.0
-       -48   -11.9% __wake_up
-       -53   -66.2% copy_user_generic_string
-       -75    -8.4% finish_task_switch
-       -79   -53.4% cpu_startup_entry
-       -87   -15.9% blk_end_bidi_request
-      -109   -14.3% scsi_request_fn
-      -172    -3.6% __do_softirq
-
-Test #2:
-
-The second test I did was a single-threaded dd.  I did a 4GB dd over and
-over with just barely less than 4GB of memory available.  This was the
-test that we would expect to hurt us in the single-threaded case since
-we spread out accesses to 'struct page' over time and have less cache
-warmth.  The total disk throughput (as reported by vmstat) actually went
-_up_ 6% in this case with these patches.
-
-Here are the relevant bits grepped out of 'perf report' during the dd:
-
-> -------- perf.vanilla.data ----------
->      3.75%         swapper  [kernel.kallsyms]     [k] intel_idle                                
->      2.83%              dd  [kernel.kallsyms]     [k] put_page                                  
->      1.30%         kswapd0  [kernel.kallsyms]     [k] __ticket_spin_lock                        
->      1.05%              dd  [kernel.kallsyms]     [k] __ticket_spin_lock                        
->      1.04%         kswapd0  [kernel.kallsyms]     [k] shrink_page_list                          
->      0.38%         kswapd0  [kernel.kallsyms]     [k] __remove_mapping                          
->      0.34%         kswapd0  [kernel.kallsyms]     [k] put_page                                  
-> -------- perf.patched.data ----------
->      4.47%          swapper  [kernel.kallsyms]           [k] intel_idle                                               
->      2.02%               dd  [kernel.kallsyms]           [k] put_page                                                 
->      1.55%               dd  [kernel.kallsyms]           [k] __ticket_spin_lock                                       
->      1.21%          kswapd0  [kernel.kallsyms]           [k] shrink_page_list                                         
->      0.97%          kswapd0  [kernel.kallsyms]           [k] __ticket_spin_lock                                       
->      0.43%          kswapd0  [kernel.kallsyms]           [k] put_page                                                 
->      0.36%          kswapd0  [kernel.kallsyms]           [k] __remove_mapping                                         
->      0.28%          kswapd0  [kernel.kallsyms]           [k] __remove_mapping_batch                 
-
-And the same functions from 'perf diff':
-
->              +4.47%  [kernel.kallsyms]           [k] intel_idle                                               
->      3.22%   -0.77%  [kernel.kallsyms]           [k] put_page                                                 
->              +1.21%  [kernel.kallsyms]           [k] shrink_page_list                                         
->              +0.36%  [kernel.kallsyms]           [k] __remove_mapping                                         
->              +0.28%  [kernel.kallsyms]           [k] __remove_mapping_batch                                   
->      0.39%   -0.39%  [kernel.kallsyms]           [k] __remove_mapping                                         
->      1.04%   -1.04%  [kernel.kallsyms]           [k] shrink_page_list                                         
->      3.68%   -3.68%  [kernel.kallsyms]           [k] intel_idle                                    
-
-1. Idle time goes up by quite a bit, probably since we hold the page
-   locks longer amounts of time, and cause more sleeping on them
-2. put_page() got substantially cheaper, probably since we are now doing
-   all the put_page()s closer to each other.
-3. __remove_mapping_batch() is definitely costing us CPU, and not
-   directly saving it anywhere else (like shrink_page_list() which also
-   gets a bit worse)
