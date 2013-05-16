@@ -1,42 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3EPVIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:08:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43792 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab3EPVId (ORCPT
+	id S1754032Ab3EPVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:13:16 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:56293 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab3EPVNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:08:33 -0400
-Message-ID: <51954ACD.4070101@wwwdotorg.org>
-Date: Thu, 16 May 2013 15:08:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v4 7/8] usb: phy: tegra: Add error handling & clean up.
-References: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com> <1368713582-29038-8-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1368713582-29038-8-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 16 May 2013 17:13:12 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v6 0/7] KVM: MMU: fast zap all shadow pages
+Date: Fri, 17 May 2013 05:12:55 +0800
+Message-Id: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051621-1396-0000-0000-000002FBF048
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 08:13 AM, Venu Byravarasu wrote:
-> Check return values from all GPIO APIs and handle errors accordingly.
-> 
-> Remove the call to clk_disable_unprepare(); this function does not
-> prepare or enable the clock, so the error path should not disable or
-> unprepare it.
-> 
-> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-> ---
-> delta from v3:
-> Modified comment section to indicate 'otg_ulpi_create returned NULL'.
+The benchmark and the result can be found at:
+http://www.spinics.net/lists/kvm/msg91391.html
 
-I'm being really anal here, but note this wasn't a change to a comment,
-but to the error message printed by the code.
+Changlog:
+V6:
+  1): reversely walk active_list to skip the new created pages based
+      on the comments from Gleb and Paolo.
+
+  2): completely replace kvm_mmu_zap_all by kvm_mmu_invalidate_all_pages
+      based on Gleb's comments.
+
+  3): improve the parameters of kvm_mmu_invalidate_all_pages based on
+      Gleb's comments.
+ 
+  4): rename kvm_mmu_invalidate_memslot_pages to kvm_mmu_invalidate_all_pages
+  5): rename zap_invalid_pages to kvm_zap_obsolete_pages
+
+V5:
+  1): rename is_valid_sp to is_obsolete_sp
+  2): use lock-break technique to zap all old pages instead of only pages
+      linked on invalid slot's rmap suggested by Marcelo.
+  3): trace invalid pages and kvm_mmu_invalidate_memslot_pages()
+  4): rename kvm_mmu_invalid_memslot_pages to kvm_mmu_invalidate_memslot_pages
+      according to Takuya's comments.
+
+V4:
+  1): drop unmapping invalid rmap out of mmu-lock and use lock-break technique
+      instead. Thanks to Gleb's comments.
+
+  2): needn't handle invalid-gen pages specially due to page table always
+      switched by KVM_REQ_MMU_RELOAD. Thanks to Marcelo's comments.
+
+V3:
+  completely redesign the algorithm, please see below.
+
+V2:
+  - do not reset n_requested_mmu_pages and n_max_mmu_pages
+  - batch free root shadow pages to reduce vcpu notification and mmu-lock
+    contention
+  - remove the first patch that introduce kvm->arch.mmu_cache since we only
+    'memset zero' on hashtable rather than all mmu cache members in this
+    version
+  - remove unnecessary kvm_reload_remote_mmus after kvm_mmu_zap_all
+
+* Issue
+The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+walk and zap all shadow pages one by one, also it need to zap all guest
+page's rmap and all shadow page's parent spte list. Particularly, things
+become worse if guest uses more memory or vcpus. It is not good for
+scalability.
+
+* Idea
+KVM maintains a global mmu invalid generation-number which is stored in
+kvm->arch.mmu_valid_gen and every shadow page stores the current global
+generation-number into sp->mmu_valid_gen when it is created.
+
+When KVM need zap all shadow pages sptes, it just simply increase the
+global generation-number then reload root shadow pages on all vcpus.
+Vcpu will create a new shadow page table according to current kvm's
+generation-number. It ensures the old pages are not used any more.
+
+Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+are zapped by using lock-break technique.
+
+Xiao Guangrong (7):
+  KVM: MMU: drop unnecessary kvm_reload_remote_mmus
+  KVM: MMU: delete shadow page from hash list in
+    kvm_mmu_prepare_zap_page
+  KVM: MMU: fast invalidate all pages
+  KVM: MMU: zap pages in batch
+  KVM: x86: use the fast way to invalidate all pages
+  KVM: MMU: show mmu_valid_gen in shadow page related tracepoints
+  KVM: MMU: add tracepoint for kvm_mmu_invalidate_all_pages
+
+ arch/x86/include/asm/kvm_host.h |    2 +
+ arch/x86/kvm/mmu.c              |  115 +++++++++++++++++++++++++++++++++++++--
+ arch/x86/kvm/mmu.h              |    1 +
+ arch/x86/kvm/mmutrace.h         |   45 ++++++++++++----
+ arch/x86/kvm/x86.c              |   11 ++---
+ 5 files changed, 151 insertions(+), 23 deletions(-)
+
+-- 
+1.7.7.6
+
