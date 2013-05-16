@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab3EPWNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:13:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22203 "EHLO mga09.intel.com"
+	id S1754829Ab3EPWN5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:13:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34988 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870Ab3EPWNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:13:44 -0400
+	id S1752598Ab3EPWNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 18:13:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,686,1363158000"; 
-   d="scan'208";a="338561384"
-Date: Fri, 17 May 2013 00:13:41 +0200
+   d="scan'208";a="338561516"
+Date: Fri, 17 May 2013 00:13:53 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Michal Marek <mmarek@suse.cz>
+To: Lars-Peter Clausen <lars@metafoo.de>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: MFD_TPS65912 needs MFD_CORE
-Message-ID: <20130516221341.GI22822@zurbaran>
-References: <1366373156-24248-1-git-send-email-mmarek@suse.cz>
+Subject: Re: [PATCH] mfd: jz4740-adc: Use
+ clk_prepare_enable/clk_disable_unprepare
+Message-ID: <20130516221353.GJ22822@zurbaran>
+References: <1368381948-4050-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366373156-24248-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1368381948-4050-1-git-send-email-lars@metafoo.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+Hi Lars,
 
-On Fri, Apr 19, 2013 at 02:05:56PM +0200, Michal Marek wrote:
-> With MFD_TPS65912=y and MFD_CORE=m/n, the build fails with
+On Sun, May 12, 2013 at 08:05:48PM +0200, Lars-Peter Clausen wrote:
+> In preparation to switching the jz4740 clk driver to the common clk framework
+> update the clk enable/disable calls to clk_prepare_enable/clk_disable_unprepare.
 > 
-> drivers/mfd/tps65912-core.c:147: undefined reference to `mfd_add_devices'
-> drivers/mfd/tps65912-core.c:164: undefined reference to `mfd_remove_devices'
-> drivers/mfd/tps65912-core.c:171: undefined reference to `mfd_remove_devices'
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > ---
->  drivers/mfd/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-This one is on my mfd-fixes tree already, thanks.
+>  drivers/mfd/jz4740-adc.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+Applied to my mfd-next tree, thanks.
 
 Cheers,
 Samuel.
