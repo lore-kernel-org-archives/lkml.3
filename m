@@ -1,111 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab3EPJnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:43:24 -0400
-Received: from [213.199.154.184] ([213.199.154.184]:58379 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750713Ab3EPJnV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:43:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371Ic89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MMVXLF-01-4CM-02
-X-M-MSG: 
-Message-ID: <5194A9CF.3080509@amd.com>
-Date: Thu, 16 May 2013 11:41:35 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751752Ab3EPJqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:46:23 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:53907 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab3EPJqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 05:46:20 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.9 breaks EFI boot on E350
-References: <51935981.3010808@amd.com> <CAE9FiQXN9fG7RYM_mh17kEkSZT=Qm5fgG=8_YmBR+H6kLyokUg@mail.gmail.com> <5193A7C3.4010503@amd.com> <CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com>
-In-Reply-To: <CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+In-Reply-To: <19650694.136921368693687337.JavaMail.weblogic@epml12>
+References: <19650694.136921368693687337.JavaMail.weblogic@epml12>
+Date: Thu, 16 May 2013 11:46:19 +0200
+Message-ID: <CAH7P7NiA98MFLwNTdOGh36MvgV0gGTPyk0oTud6GYYXvRKJ4Ng@mail.gmail.com>
+Subject: Re: [PATCH] drivers: video: mxsfb: clean use of devm_ioremap_resource()
+From: Laurent Navet <laurent.navet@gmail.com>
+To: jg1.han@samsung.com
+Cc: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.05.2013 22:57, schrieb Yinghai Lu:
-> On Wed, May 15, 2013 at 8:20 AM, Christian König
-> <christian.koenig@amd.com> wrote:
->> Am 15.05.2013 16:46, schrieb Yinghai Lu:
->>
->>> On Wed, May 15, 2013 at 2:46 AM, Christian König
->>> <christian.koenig@amd.com> wrote:
->>>> Hi guys,
->>>>
->>>> the following commit breaks booting my E350 based test system in EFI
->>>> mode:
->>>>
->>>>> commit 8d57470d8f859635deffe3919d7d4867b488b85a
->>>>> Author: Yinghai Lu <yinghai@kernel.org>
->>>>> Date:   Fri Nov 16 19:38:58 2012 -0800
->>>>>
->>>>>       x86, mm: setup page table in top-down
->>>>
->>>> This commit was supposed to fix it but obviously there still seem to be
->>>> some
->>>> bugs left in 3.9
->>>>
->>>>> commit 98e7a989979b185f49e86ddaed2ad6890299d9f0
->>>>> Author: Yinghai Lu <yinghai@kernel.org>
->>>>> Date:   Wed Mar 6 20:18:21 2013 -0800
->>>>>
->>>>>       x86, mm: Make sure to find a 2M free block for the first mapped
->>>>> area
->>>>>
->>>>>       Henrik reported that his MacAir 3.1 would not boot with
->>>>>
->>>>>       | commit 8d57470d8f859635deffe3919d7d4867b488b85a
->>>>>       | Date:   Fri Nov 16 19:38:58 2012 -0800
->>>>>       |
->>>>>       |    x86, mm: setup page table in top-down
->>>>>
->>> can you send out working boot log with memory map?
->>>
->>> you need to boot system with "debug ignore_loglevel"
->>
->> Sure, dmesg output it attached. Let me know if you need anything else.
->>
-> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] usable
-> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000006ea07fff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000006ea08000-0x000000006ea55fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x000000006ea56000-0x000000006f47efff] ACPI NVS
-> [    0.000000] BIOS-e820: [mem 0x000000006f47f000-0x000000006f87bfff] reserved
-> [    0.000000] BIOS-e820: [mem 0x000000006f87c000-0x000000006f87cfff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000006f87d000-0x000000006f883fff] ACPI NVS
-> [    0.000000] BIOS-e820: [mem 0x000000006f884000-0x000000006fc97fff] usable
-> [    0.000000] BIOS-e820: [mem 0x000000006fc98000-0x000000006fef2fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x000000006fef3000-0x000000006fefffff] usable
-> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed61000-0x00000000fed70fff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff] reserved
-> [    0.000000] BIOS-e820: [mem 0x00000000fef00000-0x00000000ffffffff] reserved
+2013/5/16, Jingoo Han <jg1.han@samsung.com>:
+> It makes build warning as below:
 >
-> the kernel code should handle the memmap properly. and I use user
-> memmap to simulate the
-> that memmap, kernel could boot well.
+> drivers/video/mxsfb.c:887:13: warning: 'host' is used uninitialized in this
+> function [-Wuninitialized]
+> drivers/video/mxsfb.c:965:21: warning: 'fb_info' may be used uninitialized
+> in this function [-Wuninitialized]
 >
-> so your system does not have serial port?
-
-Unfortunately not, this board doesn't even have an PCI slot otherwise I 
-could install a card there.
-
-Anything else I could do?
-
-Christian.
-
+> It breaks the assignment.
+> 	host = to_imxfb_host(fb_info);
 >
-> Can you boot failed kernel on your system with "earlyprintk=ttyS0,115200
-> memblock=debug" to see
-> where is crash or hang?
+> Also, 'goto fb_release;' is not good.
+> Please use ' return PTR_ERR(host->base);' as below:
+> +       host->base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(host->base))
+> +               return PTR_ERR(host->base);
 >
+>
+> Best regards,
+> Jingoo Han
 
+Thank's for reviewing, I'll look at and resend.
 
+Laurent,
