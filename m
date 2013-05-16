@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab3EPBQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:16:54 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46879 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3EPBQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:16:53 -0400
-Message-ID: <5194337D.1080503@gmail.com>
-Date: Thu, 16 May 2013 09:16:45 +0800
-From: majianpeng <majianpeng@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+	id S1755042Ab3EPBRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 21:17:05 -0400
+Received: from out1.zte.com.cn ([202.103.147.172]:51578 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754983Ab3EPBQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 21:16:59 -0400
+In-Reply-To: <20130515142035.GD11497@suse.de>
+References: <000101ce5174$1962bac0$4c283040$@com> <20130515142035.GD11497@suse.de>
+Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
+X-KeepSent: 1450163D:E6FBE6A2-48257B6D:00048ADD;
+ type=4; name=$KeepSent
+To: Mel Gorman <mgorman@suse.de>
+Cc: "'Darren Hart'" <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Thu, 16 May 2013 09:16:20 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-05-16 09:16:14
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jaegeuk Kim <jaegeuk.kim@samsung.com>, mingo@redhat.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-f2fs <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [RFC][PATCH] f2fs: Avoid print false deadlock messages.
-References: <5193322D.1080009@gmail.com> <20130515082834.GB10510@laptop.programming.kicks-ass.net>
-In-Reply-To: <20130515082834.GB10510@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=US-ASCII
+X-MAIL: mse01.zte.com.cn r4G1GW60032891
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2013 04:28 PM, Peter Zijlstra wrote:
-> On Wed, May 15, 2013 at 02:58:53PM +0800, majianpeng wrote:
->> When mounted the f2fs, kernel will print the following messages:
->>
->> [  105.533038] =============================================
->> [  105.533065] [ INFO: possible recursive locking detected ]
->> [  105.533088] 3.10.0-rc1+ #101 Not tainted
->> [  105.533105] ---------------------------------------------
->> [  105.533127] mount/5833 is trying to acquire lock:
->> [  105.533147]  (&sbi->fs_lock[i]){+.+...}, at: [<ffffffffa02017a6>] write_checkpoint+0xb6/0xaf0 [f2fs]
->> [  105.533204]
->> [  105.533204] but task is already holding lock:
->> [  105.533228]  (&sbi->fs_lock[i]){+.+...}, at: [<ffffffffa02017a6>] write_checkpoint+0xb6/0xaf0 [f2fs]
->> [  105.533278]
->> [  105.533278] other info that might help us debug this:
->> [  105.533305]  Possible unsafe locking scenario:
->> [  105.533305]
->> [  105.533329]        CPU0
->> [  105.533341]        ----
->> [  105.533353]   lock(&sbi->fs_lock[i]);
->> [  105.533373]   lock(&sbi->fs_lock[i]);
->> [  105.533394]
->> [  105.533394]  *** DEADLOCK ***
->> [  105.533394]
->> By adding some messages, i found this problem because the gcc
->> optimizing. For those codes:
->>>        for (i = 0; i < NR_GLOBAL_LOCKS; i++)
->>>                mutex_init(&sbi->fs_lock[i]);
->> The defination of mutex_init is:
->>> #define mutex_init(mutex)
->>> do {
->>>
->>>        static struct lock_class_key __key;
->>>
->>>                                                                      
->>>        __mutex_init((mutex), #mutex, &__key);
->>>
->>> } while (0)
->> Because the optimizing of gcc, there are only one __key rather than
->> NR_GLOBAL_LOCKS times.
-> Its not a gcc specific optimization, any C compiler would. Its also very
-> much on purpose.
->
->> Add there is other problems about lockname.Using 'for()' the lockname is
->> the same which is '&sbi->fs_lock[i]'.If it met problem about
->> mutex-operation, it can't find which one.
->>
->> Although my patch can work,i think it's not best.Because if
->> NR_GLOBAL_LOCKS changed, we may leak to change this.
->>
->> BTY, if who know how to avoid optimize, please tell me. Thanks!
-Thanks your answer! Your patch looks good.
-> There isn't. What you typically want to do is annotate the lock site.
-> In particular it looks like mutex_lock_all() is the offensive piece of
-> code (horrible function name though; the only redeeming thing being that
-> f2fs.h isn't likely to be included elsewhere).
->
-> One thing you can do here is modify it to look like:
->
-> static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
-> {
-> 	int i;
->
-> 	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
-> 		/*
-> 		 * This is the only time we take multiple fs_lock[]
-> 		 * instances; the order is immaterial since we
-> 		 * always hold cp_mutex, which serializes multiple
-> 		 * such operations.
-> 		 */
-> 		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
-> 	}
-> }
->
-> That tells the lock validator that it is ok to lock multiple instances
-> of the fs_lock[i] class because the lock order is guarded by cp_mutex.
-> While your patch also works, it has multiple down-sides; its easy to get
-> out of sync when you modify NR_GLOBAL_LOCKS; also it consumes more
-> static lockdep resources (lockdep has to allocate all its resources
-> from static arrays since allocating memory also uses locks -- recursive
-> problem).
->
-Yes, but there is a problem if fs_block[] met deadlock. How to find which one?
-Because the lock->name is the same.
 
-Thanks!
-Jianpeng Ma
+
+Mel Gorman <mgorman@suse.de> wrote on 2013/05/15 22:20:35:
+
+
+> Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
+>
+> On Wed, May 15, 2013 at 09:57:03PM +0800, Zhang Yi wrote:
+> > The futex-keys of processes share futex determined by page-offset,
+> > mapping-host, and mapping-index of the user space address. User
+> > appications using hugepage for futex may lead to futex-key conflict.
+> >
+> > Assume there are two or more futexes in diffrent normal pages of the
+> > hugepage, and each futex has the same offset in its normal page,
+> > causing all the futexes have the same futex-key.
+> >
+> > This patch adds the normal page index in the compound page into
+> > the pgoff of futex-key.
+> >
+> > Steps to reproduce the bug:
+> > 1. The 1st thread map a file of hugetlbfs, and use the return address
+> > as the 1st mutex's address, and use the return address with PAGE_SIZE
+> > added as the 2nd mutex's address.
+> > 2. The 1st thread initialize the two mutexes with pshared attribute,
+> > and lock the two mutexes.
+> > 3. The 1st thread create the 2nd thread, and the 2nd thread block on
+> > the 1st mutex.
+> > 4. The 1st thread create the 3rd thread, and the 3rd thread block on
+> > the 2nd mutex.
+> > 5. The 1st thread unlock the 2nd mutex, the 3rd thread cannot take
+> > the 2nd mutex, and may block forever.
+> >
+> >
+> > Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+> > Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+> > Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+> > Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
+> > Reviewed-by: Mel Gorman <mgorman@suse.de>
+> > Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
+> > Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
+> > Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+> > Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+> >
+>
+> Did all these people really review it? I just whinged about the last
+patch
+> and didn't put a Reviewed-by on it. That said, I don't actually have a
+> problem with this patch and I assumed it passed your testing so
+>
+I mistakenly think that I should list all the people here. : )
+Shall I cleanup the name list and send the patch again?
+
+> Reviewed-by: Mel Gorman <mgorman@suse.de>
+>
+> The others might not agree though.
+>
+> I note the conversion from int offset to long offset in futex_key appears
+> to have gotten lost. Is that in a separate cleanup patch now?
+
+In old patch, I add the compound index into offset, so I make the offset
+from int
+to long. It is unnecessary for this patch.
+
+>
+> --
+> Mel Gorman
+> SUSE Labs
+
+
+BTW, Does anyone have other advices for the patch?
 
