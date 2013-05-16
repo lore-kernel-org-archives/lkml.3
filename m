@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3EPGnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 02:43:10 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:40883 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab3EPGnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 02:43:05 -0400
+	id S1755392Ab3EPGoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 02:44:23 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5682 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402Ab3EPGoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 02:44:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
+   d="scan'208";a="242307020"
+Date: Thu, 16 May 2013 11:38:50 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
+        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 39/39] dmaengine: ste_dma40: Fetch disabled channels
+ from DT
+Message-ID: <20130516060850.GI27639@intel.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-40-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <9F78FA13B8C7A749B307D9AECB279EB713E7B327F3@ITSVLEX06.it.maxim-ic.internal>
-References: <1368640112-1417-1-git-send-email-abrestic@chromium.org>
-	<A453F1AE3B5DC14DB19666C506CE75A710ABEB1EFF@ITSVLEX06.it.maxim-ic.internal>
-	<9F78FA13B8C7A749B307D9AECB279EB713E7B327F3@ITSVLEX06.it.maxim-ic.internal>
-Date: Wed, 15 May 2013 23:43:03 -0700
-X-Google-Sender-Auth: q0VtT75XZs7HNKYHh4JcA6r5wXU
-Message-ID: <CAL1qeaEFsZmR5Cpe3GE8djBhEib585ni7hxs=FtjddRXKYENxg@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: max98090: add digital mic mux to record path
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Matthew Mowdy <Matthew.Mowdy@maximintegrated.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Dylan Reid <dgreid@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ralph Birt <Ralph.Birt@maximintegrated.com>,
-        Evan Ragsdale <Evan.Ragsdale@maximintegrated.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368611522-9984-40-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
+On Wed, May 15, 2013 at 10:52:02AM +0100, Lee Jones wrote:
+> Some platforms have channels which are not available for normal use.
+> This information is currently passed though platform data in internal
+> BSP kernels. Once those platforms land, they'll need to configure them
+> appropriately, so we may as well add the infrastructure.
+> 
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
-> Default Routing:
->
-> Of note (software can confirm) I believe the default DAPM routing for the
-> driver was intentional setup such that :
->
-> Record:
->
-> o   If a headset MIC is present, record from it.
->
-> o   If not, digital MIC is the default record input.
-
-While this may have been the intention, that's not what the driver is
-currently doing.  This is how the capture route looks before this
-patch:
-
-HiFi Capture -> AIFOUT{L,R} -> LBEN{L,R}_MUX[0] -> DMIC{L,R}_ENA
-
-So, since DMIC{L,R}_ENA are configured as supplies, they will always
-be turned on during record when the loopback mux is set to 0 (i.e. no
-loopback)  That's obviously wrong, so this patch changes the
-DMIC{L,R}_ENA to muxes.
-
-> The defaults can be modified by each end user as needed (for analog
-> microphones, line inputs, etc.). Please insure any patch to the baseline
-> driver reflects the correct operation of the digital microphone enable bits,
-> and preserves the intended default operation.
-
-Ok, I'll change it so that the DMIC{L,R} muxes aren't individually controllable.
-
-Thanks,
-Andrew
+> ---
+>  Documentation/devicetree/bindings/dma/ste-dma40.txt |    2 ++
+>  drivers/dma/ste_dma40.c                             |   17 ++++++++++++++++-
+>  2 files changed, 18 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+> index aa272d8..bea5b73 100644
+> --- a/Documentation/devicetree/bindings/dma/ste-dma40.txt
+> +++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
+> @@ -11,6 +11,7 @@ Required properties:
+>  Optional properties:
+>  - dma-channels: Number of channels supported by hardware - if not present
+>  		the driver will attempt to obtain the information from H/W
+> +- disabled-channels: Channels which can not be used
+>  
+>  Example:
+>  
+> @@ -23,6 +24,7 @@ Example:
+>  
+>  		#dma-cells = <2>;
+>  		memcpy-channels  = <56 57 58 59 60>;
+> +		disabled-channels  = <12>;
+>  		dma-channels = <8>;
+>  	};
+>  
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index 4e528dd..ffac822 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -3482,7 +3482,7 @@ static int __init d40_of_probe(struct platform_device *pdev,
+>  			       struct device_node *np)
+>  {
+>  	struct stedma40_platform_data *pdata;
+> -	int num_phy = 0, num_memcpy = 0;
+> +	int num_phy = 0, num_memcpy = 0, num_disabled = 0;
+>  	const const __be32 *list;
+>  
+>  	pdata = devm_kzalloc(&pdev->dev,
+> @@ -3511,6 +3511,21 @@ static int __init d40_of_probe(struct platform_device *pdev,
+>  				   dma40_memcpy_channels,
+>  				   num_memcpy);
+>  
+> +	list = of_get_property(np, "disabled-channels", &num_disabled);
+> +	num_disabled /= sizeof(*list);
+> +
+> +	if (num_disabled > STEDMA40_MAX_PHYS || num_disabled < 0) {
+> +		d40_err(&pdev->dev,
+> +			"Invalid number of disabled channels specified (%d)\n",
+> +			num_disabled);
+> +		return -EINVAL;
+> +	}
+> +
+> +	of_property_read_u32_array(np, "disabled-channels",
+> +				   pdata->disabled_channels,
+> +				   num_disabled);
+> +	pdata->disabled_channels[num_disabled] = -1;
+> +
+>  	pdev->dev.platform_data = pdata;
+>  
+>  	return 0;
+> -- 
+> 1.7.10.4
+> 
