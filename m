@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab3EPLX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:23:58 -0400
-Received: from sauhun.de ([89.238.76.85]:56109 "EHLO pokefinder.org"
+	id S1752589Ab3EPLOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:14:50 -0400
+Received: from sauhun.de ([89.238.76.85]:56074 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab3EPLOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:14:52 -0400
+	id S1752479Ab3EPLOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:14:43 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 10/33] drivers/mfd: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:38 +0200
-Message-Id: <1368702961-4325-11-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org
+Subject: [PATCH 05/33] drivers/gpio: don't check resource with devm_ioremap_resource
+Date: Thu, 16 May 2013 13:15:33 +0200
+Message-Id: <1368702961-4325-6-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
 References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
@@ -24,25 +26,42 @@ duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- drivers/mfd/intel_msic.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/gpio/gpio-mvebu.c |    5 -----
+ drivers/gpio/gpio-tegra.c |    5 -----
+ 2 files changed, 10 deletions(-)
 
-diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
-index 5be3b5e..d8d5137 100644
---- a/drivers/mfd/intel_msic.c
-+++ b/drivers/mfd/intel_msic.c
-@@ -414,11 +414,6 @@ static int intel_msic_probe(struct platform_device *pdev)
- 	 * the clients via intel_msic_irq_read().
- 	 */
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index bf69a7e..3a4816a 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -619,11 +619,6 @@ static int mvebu_gpio_probe(struct platform_device *pdev)
+ 	 * per-CPU registers */
+ 	if (soc_variant == MVEBU_GPIO_SOC_VARIANT_ARMADAXP) {
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-		if (!res) {
+-			dev_err(&pdev->dev, "Cannot get memory resource\n");
+-			return -ENODEV;
+-		}
+-
+ 		mvchip->percpu_membase = devm_ioremap_resource(&pdev->dev,
+ 							       res);
+ 		if (IS_ERR(mvchip->percpu_membase))
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index da4cb5b..9a62672 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -463,11 +463,6 @@ static int tegra_gpio_probe(struct platform_device *pdev)
+ 	}
+ 
  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(&pdev->dev, "failed to get SRAM iomem resource\n");
+-		dev_err(&pdev->dev, "Missing MEM resource\n");
 -		return -ENODEV;
 -	}
 -
- 	msic->irq_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(msic->irq_base))
- 		return PTR_ERR(msic->irq_base);
+ 	regs = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(regs))
+ 		return PTR_ERR(regs);
 -- 
 1.7.10.4
 
