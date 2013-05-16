@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3EPHLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 03:11:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21071 "EHLO mga03.intel.com"
+	id S1755675Ab3EPHMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:12:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63797 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755231Ab3EPHLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 03:11:43 -0400
+	id S1755298Ab3EPHMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 03:12:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="303231695"
-Message-ID: <1368688465.15764.172.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v5 01/11] mtd: add datasheet's ECC information to
- nand_chip{}
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 16 May 2013 10:14:25 +0300
-In-Reply-To: <51944184.7090107@freescale.com>
-References: <1368607232-2210-1-git-send-email-b32955@freescale.com>
-		 <1368607232-2210-2-git-send-email-b32955@freescale.com>
-	 <1368619917.15764.99.camel@sauron.fi.intel.com>
-	 <51944184.7090107@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+   d="scan'208";a="314470547"
+Date: Thu, 16 May 2013 12:06:40 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
+        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 03/39] dmaengine: ste_dma40: Don't configure runtime
+ configurable setup during allocate
+Message-ID: <20130516063640.GE14863@intel.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-4-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368611522-9984-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 10:16 +0800, Huang Shijie wrote:
-> 于 2013年05月15日 20:11, Artem Bityutskiy 写道:
-> > On Wed, 2013-05-15 at 16:40 +0800, Huang Shijie wrote:
-> >> + * @ecc_strength:	[INTERN] ECC correctability from the datasheet.
-> >> + *			Minimum amount of bit errors per @ecc_step guaranteed to
-> >> + *			be correctable. If unknown, set to zero.
-> >> + * @ecc_step:		[INTERN] ECC step required by the @ecc_strength,
-> >> + *                      also from the datasheet. It is the recommended ECC step
-> >> + *			size, if known; if unknown, set to zero.
-> > Here and in other places you talk about "datasheet". Do you assume that
-> > the real ECC strength/step used by NAND chips may be different? Or you
-> > assume it must be the same?
-> >
-> The two fields are used to store the ecc info from the datasheet.
-> The two fields are just for a reference.
+On Wed, May 15, 2013 at 10:51:26AM +0100, Lee Jones wrote:
+> Using the dmaengine API, allocating and configuring a channel are two
+> separate actions. Here we're removing logical channel configuration from
+> the channel allocating routines.
 > 
-> [1] The nand controller may do not use these two fields, it's ok;
->      For example, the datasheet requires "4bits per 512 bytes".
->      The nand controller can uses 8bits per 512 bytes.
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+
+--
+~Vinod
+>  drivers/dma/ste_dma40.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index b7fe46b..ba84df8 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+> @@ -2040,6 +2040,9 @@ static int d40_config_memcpy(struct d40_chan *d40c)
+>  		d40c->dma_cfg = dma40_memcpy_conf_log;
+>  		d40c->dma_cfg.dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+>  
+> +		d40_log_cfg(&d40c->dma_cfg,
+> +			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+> +
+>  	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
+>  		   dma_has_cap(DMA_SLAVE, cap)) {
+>  		d40c->dma_cfg = dma40_memcpy_conf_phy;
+> @@ -2508,9 +2511,6 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
+>  	d40_set_prio_realtime(d40c);
+>  
+>  	if (chan_is_logical(d40c)) {
+> -		d40_log_cfg(&d40c->dma_cfg,
+> -			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+> -
+>  		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
+>  			d40c->lcpa = d40c->base->lcpa_base +
+>  				d40c->dma_cfg.dev_type * D40_LCPA_CHAN_SIZE;
+> -- 
+> 1.7.10.4
 > 
-> [2] but sometimes the nand controller must use these two fields.
->      For example, the datasheet requires "40bits per 1024 bytes".
->      For the hardware limit, the nand controller(BCH) may supports the 
-> 40bits ecc in the maximum.
->      So the nand controller must use these two fields now.
-
-I wonder if it makes sense to name things so that it is clear form the
-names whether that is the "theoretical" datasheet values or the real
-ones. I would prefer to clearly distinguish between them, in names and
-comments. Thoughts?
-
--- 
-Best Regards,
-Artem Bityutskiy
-
