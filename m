@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3EPRrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:47:05 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37939 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab3EPRrB (ORCPT
+	id S1753310Ab3EPRu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:50:26 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:62246 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab3EPRuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:47:01 -0400
-Message-ID: <51951B92.1040102@acm.org>
-Date: Thu, 16 May 2013 12:46:58 -0500
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 16 May 2013 13:50:23 -0400
+Date: Thu, 16 May 2013 10:50:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/workqueue.c: need call device_remove_file() when
+ failure occurs after called device_create_file()
+Message-ID: <20130516175017.GA7171@mtj.dyndns.org>
+References: <51922D30.8000809@asianux.com>
+ <20130514151752.GB6795@mtj.dyndns.org>
+ <5192EFE0.4040903@asianux.com>
+ <5193277A.3040506@asianux.com>
+ <20130515212228.GE26222@htj.dyndns.org>
+ <51945384.9060308@asianux.com>
+ <51945D90.8010600@asianux.com>
+ <5194652B.4010209@asianux.com>
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: openipmi-developer@lists.sourceforge.net,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ipmi: ipmi_devintf: compat_ioctl method failes to take
- ipmi_mutex
-References: <20130513193934.GA17394@kvack.org>
-In-Reply-To: <20130513193934.GA17394@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5194652B.4010209@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, you are right.  I've pulled this in to my tree.  Looking at this, 
-ipmi_mutex really should go away and be replaced bu something that 
-scales better, but I guess it's not that critical for IPMI.
+Hey,
 
--corey
-
-On 05/13/2013 02:39 PM, Benjamin LaHaise wrote:
-> When a 32 bit version of ipmitool is used on a 64 bit kernel, the
-> ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
-> incomplete data being retrieved in some cases, or other possible failures.
-> Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
-> This is probably a candidate for -stable as well.
->
-> Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-> ---
->   drivers/char/ipmi/ipmi_devintf.c |   14 +++++++++++++-
->   1 files changed, 13 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-> index 9eb360f..d5a5f02 100644
-> --- a/drivers/char/ipmi/ipmi_devintf.c
-> +++ b/drivers/char/ipmi/ipmi_devintf.c
-> @@ -837,13 +837,25 @@ static long compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
->   		return ipmi_ioctl(filep, cmd, arg);
->   	}
+On Thu, May 16, 2013 at 12:48:43PM +0800, Chen Gang wrote:
+> __sysfs_remove_dir() remove all related things, but not deref the count.
+> 
+> For __sysfs_remove_dir() ->
+>   ...
+>   sysfs_addrm_start()
+>   ...
+>   while() {
+>     ...
+>     sysfs_remove_one()  (not deref the related file)
 >   }
-> +
-> +static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
-> +				       unsigned long arg)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&ipmi_mutex);
-> +	ret = compat_ipmi_ioctl(filep, cmd, arg);
-> +	mutex_unlock(&ipmi_mutex);
-> +
-> +	return ret;
-> +}
->   #endif
->   
->   static const struct file_operations ipmi_fops = {
->   	.owner		= THIS_MODULE,
->   	.unlocked_ioctl	= ipmi_unlocked_ioctl,
->   #ifdef CONFIG_COMPAT
-> -	.compat_ioctl   = compat_ipmi_ioctl,
-> +	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
->   #endif
->   	.open		= ipmi_open,
->   	.release	= ipmi_release,
+>   sysfs_addrm_finish()  (will deref current dir)
+> 
+> For device_remove_file() ->
+>   sysfs_remove_file() ->
+>     sysfs_hash_and_remove() ->
+>       ...
+>       sysfs_addrm_start()
+>       ...
+>       sysfs_remove_one() (not deref the current file)
+>       sysfs_addrm_finish()  (will deref current file)
+> 
+> 
+> So if not call device_remove_file() firstly, the all files under the
+> directory are removed, but the related resources are not released which
+> will cause resource leak.
 
+Can you please be more specific on what gets leaked and if possible
+fix it from sysfs side?
+
+Thanks.
+
+-- 
+tejun
