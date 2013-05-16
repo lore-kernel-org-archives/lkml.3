@@ -1,172 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab3EPT0Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 15:26:24 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:63793 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab3EPT0U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 15:26:20 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Prathyush K <prathyush.k@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] pinctrl: exynos: fix eint wakeup by using irq_set_wake()
-Date: Thu, 16 May 2013 21:26:16 +0200
-Message-ID: <1483058.pKLP2TAAG6@flatron>
-User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
-In-Reply-To: <1368724352-10849-3-git-send-email-dianders@chromium.org>
-References: <1368724352-10849-1-git-send-email-dianders@chromium.org> <1368724352-10849-3-git-send-email-dianders@chromium.org>
+	id S1753227Ab3EPTcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 15:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab3EPTcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 15:32:11 -0400
+Date: Thu, 16 May 2013 22:31:37 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Robert Richter <rric@kernel.org>
+Subject: Re: Drop WARN on AMD lack of perfctrs
+Message-ID: <20130516193137.GI14597@redhat.com>
+References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
+ <20130516175117.GK19669@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516175117.GK19669@dyad.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 of May 2013 10:12:32 Doug Anderson wrote:
-> From: Prathyush K <prathyush.k@samsung.com>
+On Thu, May 16, 2013 at 07:51:17PM +0200, Peter Zijlstra wrote:
+> On Thu, May 16, 2013 at 11:10:26AM -0400, Josh Boyer wrote:
+> > Hi All,
+> > 
+> > If you boot a KVM guest on an AMD family 15h and specify -cpu host,
+> > you'll get the following splat:
+> > 
+> > [    0.031000] ------------[ cut here ]------------
+> > [    0.031000] WARNING: at arch/x86/kernel/cpu/perf_event_amd.c:772
+> > amd_pmu_init+0x18c/0x249()
+> > [    0.031000] Hardware name: Bochs
+> > [    0.031000] Odd, counter constraints enabled but no core perfctrs
+> > detected!
+> > [    0.031000] Modules linked in:
+> > 
+> > [    0.031000] Pid: 1, comm: swapper/0 Not tainted
+> > 3.9.0-0.rc1.git0.4.fc19.x86_64 #1
+> > [    0.031000] Call Trace:
+> > [    0.031000]  [<ffffffff81d10c67>] ? amd_pmu_init+0x18c/0x249
+> > [    0.031000]  [<ffffffff8105c9a0>] warn_slowpath_common+0x70/0xa0
+> > [    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+> > [    0.031000]  [<ffffffff8105ca1c>] warn_slowpath_fmt+0x4c/0x50
+> > [    0.031000]  [<ffffffff81d10c67>] amd_pmu_init+0x18c/0x249
+> > [    0.031000]  [<ffffffff81d106e7>] init_hw_perf_events+0x34/0x428
+> > [    0.031000]  [<ffffffff81d106b3>] ? check_bugs+0x2d/0x2d
+> > [    0.031000]  [<ffffffff8100210a>] do_one_initcall+0x10a/0x160
+> > [    0.031000]  [<ffffffff81d06fa5>] kernel_init_freeable+0xcf/0x1fa
+> > [    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+> > [    0.031000]  [<ffffffff8162980e>] kernel_init+0xe/0x190
+> > [    0.031000]  [<ffffffff8164e22c>] ret_from_fork+0x7c/0xb0
+> > [    0.031000]  [<ffffffff81629800>] ? rest_init+0x80/0x80
+> > [    0.031000] ---[ end trace a1e57d3cb8668105 ]---
+> > 
+> > That seems a bit excessive, and it gets picked up by auto-reporting
+> > tools like ABRT as a bug.  Can we remove the WARN and just use pr_err or
+> > something else instead?
 > 
-> Add the irq_set_wake function for exynos pinctrl to configure the
-> external interrupt wakeup mask register.
+> Robert put that in, I suppose its because the CPUID crap indicates its got perf
+> counters but then it doesn't actually have them.
 > 
-> [dianders: minor nit fixes; port to ToT]
-> 
-> Signed-off-by: Prathyush K <prathyush.k@samsung.com>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/pinctrl/pinctrl-exynos.c  | 45
-> ++++++++++++++++++++++++++++-----------
-> drivers/pinctrl/pinctrl-exynos.h  |  3 ++-
->  drivers/pinctrl/pinctrl-samsung.h |  2 ++
->  3 files changed, 37 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-exynos.c
-> b/drivers/pinctrl/pinctrl-exynos.c index ac74281..3ebb2ff 100644
-> --- a/drivers/pinctrl/pinctrl-exynos.c
-> +++ b/drivers/pinctrl/pinctrl-exynos.c
-> @@ -30,6 +30,8 @@
->  #include <linux/spinlock.h>
->  #include <linux/err.h>
-> 
-> +#include <plat/pm.h>
-> +
+Actually it looks like it is the opposite: CPUID crap indicates
+it got no perf, but the code expects this cpu model to have it.
 
-This is not going to work with CONFIG_MULTIPLATFORM.
+> Clearly this is something that should be fixed in your virt thingy instead.
+The only way to fix it is to implement perf virtualization for AMD, but
+then it is odd for a guest to try and match CPUIDs with CPU model. This
+defeats the purpose of CPUIDs in the first place.
 
-Now this raises a question what is the preferred way to pass some data 
-from generic driver to platform code.
-
-I would suggest adding a function called exynos_pinctrl_get_eintmask() (or 
-whatever) that would return the wake-up mask configured in the driver and 
-then modify platform code to use it.
-
->  #include "pinctrl-samsung.h"
->  #include "pinctrl-exynos.h"
-> 
-> @@ -326,6 +328,24 @@ static int exynos_wkup_irq_set_type(struct irq_data
-> *irqd, unsigned int type) return 0;
->  }
-> 
-> +static int exynos_wkup_irq_set_wake(struct irq_data *irqd, unsigned int
-> state) +{
-> +	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
-> +	const int eint_num = bank->eint_base + irqd->hwirq;
-> +	unsigned long bit = 1L << eint_num;
-> +
-> +	pr_info("wake %s for eint %d / %s[%ld]\n",
-> +		state ? "enabled" : "disabled",
-> +		eint_num, bank->name, irqd->hwirq);
-> +
-> +	if (!state)
-> +		s3c_irqwake_eintmask |= bit;
-> +	else
-> +		s3c_irqwake_eintmask &= ~bit;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * irq_chip for wakeup interrupts
->   */
-> @@ -335,6 +355,7 @@ static struct irq_chip exynos_wkup_irq_chip = {
->  	.irq_mask	= exynos_wkup_irq_mask,
->  	.irq_ack	= exynos_wkup_irq_ack,
->  	.irq_set_type	= exynos_wkup_irq_set_type,
-> +	.irq_set_wake	= exynos_wkup_irq_set_wake,
->  };
-> 
->  /* interrupt handler for wakeup interrupts 0..15 */
-> @@ -543,10 +564,10 @@ static struct samsung_pin_bank
-> exynos4210_pin_banks1[] = { EXYNOS_PIN_BANK_EINTN(8, 0x1A0, "gpy4"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x1C0, "gpy5"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x1E0, "gpy6"),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
->  };
-> 
->  /* pin banks of exynos4210 pin-controller 2 */
-> @@ -629,10 +650,10 @@ static struct samsung_pin_bank
-> exynos4x12_pin_banks1[] = { EXYNOS_PIN_BANK_EINTN(8, 0x1A0, "gpy4"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x1C0, "gpy5"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x1E0, "gpy6"),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
->  };
-> 
->  /* pin banks of exynos4x12 pin-controller 2 */
-> @@ -724,10 +745,10 @@ static struct samsung_pin_bank
-> exynos5250_pin_banks0[] = { EXYNOS_PIN_BANK_EINTN(8, 0x220, "gpy4"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x240, "gpy5"),
->  	EXYNOS_PIN_BANK_EINTN(8, 0x260, "gpy6"),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
-> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
-> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
->  };
-> 
->  /* pin banks of exynos5250 pin-controller 1 */
-> diff --git a/drivers/pinctrl/pinctrl-exynos.h
-> b/drivers/pinctrl/pinctrl-exynos.h index 9b1f77a..d98e9ff 100644
-> --- a/drivers/pinctrl/pinctrl-exynos.h
-> +++ b/drivers/pinctrl/pinctrl-exynos.h
-> @@ -65,13 +65,14 @@
->  		.name		= id			\
->  	}
-> 
-> -#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs)	\
-> +#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs, base)\
->  	{						\
->  		.type		= &bank_type_alive,	\
->  		.pctl_offset	= reg,			\
->  		.nr_pins	= pins,			\
->  		.eint_type	= EINT_TYPE_WKUP,	\
->  		.eint_offset	= offs,			\
-> +		.eint_base	= base,			\
-
-I can't look at my patch at the moment, but I think I have managed to get 
-EINT index without adding this extra field.
-
-Best regards,
-Tomasz
-
+--
+			Gleb.
