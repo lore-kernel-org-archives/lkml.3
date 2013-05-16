@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3EPWXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 18:23:47 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39344 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab3EPWXp (ORCPT
+	id S1755117Ab3EPWZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 18:25:20 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:34883 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab3EPWZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 18:23:45 -0400
+	Thu, 16 May 2013 18:25:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1368731067-31404-4-git-send-email-cminyard@mvista.com>
-References: <1368731067-31404-1-git-send-email-cminyard@mvista.com> <1368731067-31404-4-git-send-email-cminyard@mvista.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 16 May 2013 15:23:24 -0700
-Message-ID: <CALCETrXu2At7pRWReYpdFa6OgY79M4KiEKXR=beH+5FcTOL6zg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] ipmi: Improve error messages on failed irq enable
-To: Corey Minyard <cminyard@mvista.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
+In-Reply-To: <1483058.pKLP2TAAG6@flatron>
+References: <1368724352-10849-1-git-send-email-dianders@chromium.org>
+	<1368724352-10849-3-git-send-email-dianders@chromium.org>
+	<1483058.pKLP2TAAG6@flatron>
+Date: Thu, 16 May 2013 15:25:15 -0700
+X-Google-Sender-Auth: GK3tr2Q93VrWaXm6SWoOth-wCrI
+Message-ID: <CAD=FV=V=QWg8fYX7iZeG6RoQQFGtsQhd7ZLodyVVuYWYZ9fRFg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pinctrl: exynos: fix eint wakeup by using irq_set_wake()
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 12:04 PM, Corey Minyard <cminyard@mvista.com> wrote:
-> When the interrupt enable message returns an error, the messages are
-> not entirely accurate nor helpful.  So improve them.
+Tomasz,
+
+On Thu, May 16, 2013 at 12:26 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On Thursday 16 of May 2013 10:12:32 Doug Anderson wrote:
+>> From: Prathyush K <prathyush.k@samsung.com>
+>>
+>> Add the irq_set_wake function for exynos pinctrl to configure the
+>> external interrupt wakeup mask register.
+>>
+>> [dianders: minor nit fixes; port to ToT]
+>>
+>> Signed-off-by: Prathyush K <prathyush.k@samsung.com>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>>  drivers/pinctrl/pinctrl-exynos.c  | 45
+>> ++++++++++++++++++++++++++++-----------
+>> drivers/pinctrl/pinctrl-exynos.h  |  3 ++-
+>>  drivers/pinctrl/pinctrl-samsung.h |  2 ++
+>>  3 files changed, 37 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-exynos.c
+>> b/drivers/pinctrl/pinctrl-exynos.c index ac74281..3ebb2ff 100644
+>> --- a/drivers/pinctrl/pinctrl-exynos.c
+>> +++ b/drivers/pinctrl/pinctrl-exynos.c
+>> @@ -30,6 +30,8 @@
+>>  #include <linux/spinlock.h>
+>>  #include <linux/err.h>
+>>
+>> +#include <plat/pm.h>
+>> +
 >
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> ---
->  drivers/char/ipmi/ipmi_si_intf.c |   16 ++++++++++------
->  1 file changed, 10 insertions(+), 6 deletions(-)
+> This is not going to work with CONFIG_MULTIPLATFORM.
+
+Hmm, this sounds like it might be a bit of a long path, especially
+since I haven't been keeping up with what's been going on with
+MULTIPLATFORM and I'm currently midway through making 3.8 work (which
+has no MULTIPLATFORM).
+
+Perhaps for this patch it makes more sense for you to post your
+version and I can review it?  We may end up just keeping our version
+of this patch for 3.8 and pick up yours when we do our next rebase.
+Does that sound OK?
+
+
+>> -#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs)   \
+>> +#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs, base)\
+>>       {                                               \
+>>               .type           = &bank_type_alive,     \
+>>               .pctl_offset    = reg,                  \
+>>               .nr_pins        = pins,                 \
+>>               .eint_type      = EINT_TYPE_WKUP,       \
+>>               .eint_offset    = offs,                 \
+>> +             .eint_base      = base,                 \
 >
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 313538a..af4b23f 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -663,8 +663,10 @@ static void handle_transaction_done(struct smi_info *smi_info)
->                 /* We got the flags from the SMI, now handle them. */
->                 smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
->                 if (msg[2] != 0) {
-> -                       dev_warn(smi_info->dev, "Could not enable interrupts"
-> -                                ", failed get, using polled mode.\n");
-> +                       dev_warn(smi_info->dev,
-> +                                "Couldn't get irq info: %x.\n", msg[2]);
-> +                       dev_warn(smi_info->dev,
-> +                                "Maybe ok, but ipmi might run very slowly.\n");
->                         smi_info->si_state = SI_NORMAL;
->                 } else {
->                         msg[0] = (IPMI_NETFN_APP_REQUEST << 2);
-> @@ -685,10 +687,12 @@ static void handle_transaction_done(struct smi_info *smi_info)
->
->                 /* We got the flags from the SMI, now handle them. */
->                 smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
-> -               if (msg[2] != 0)
-> -                       dev_warn(smi_info->dev, "Could not enable interrupts"
-> -                                ", failed set, using polled mode.\n");
-> -               else
-> +               if (msg[2] != 0) {
-> +                       dev_warn(smi_info->dev,
-> +                                "Couldn't set irq info: %x.\n", msg[2]);
-> +                       dev_warn(smi_info->dev,
-> +                                "Maybe ok, but ipmi might run very slowly.\n");
-> +               } else
+> I can't look at my patch at the moment, but I think I have managed to get
+> EINT index without adding this extra field.
 
-Minor nit: it would be nice if these warnings were collapsed into a
-single printk -- that would save me a whitelist entry of acceptable
-KERN_WARNING messages :)
+It looks like this is always 2 * eint_offset in the code above.  Maybe
+you just multiplied?  The multiplication works fine although I think
+specifying eint_base like this might be more generic and handle future
+chips better?  Ya never know...
 
-My Dell 12g server says:
-
-[97627.407724] ipmi_si ipmi_si.0: Using irq 10
-[97627.421369] ipmi_si ipmi_si.0: Couldn't set irq info: cc.
-[97627.427389] ipmi_si ipmi_si.0: Maybe ok, but ipmi might run very slowly.
-
-Tested-by: Andy Lutomirski <luto@amacapital.net>
-
---Andy
+-Doug
