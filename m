@@ -1,72 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab3EPFxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 01:53:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32313 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754333Ab3EPFxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 01:53:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="314435673"
-Date: Thu, 16 May 2013 10:48:20 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 35/39] dmaengine: ste_dma40_ll: Replace meaningless
- register set with comment
-Message-ID: <20130516051820.GH27639@intel.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-36-git-send-email-lee.jones@linaro.org>
+	id S1755341Ab3EPGIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 02:08:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:12192 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754950Ab3EPGIM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 02:08:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,682,1363104000"; 
+   d="scan'208";a="7283466"
+Message-ID: <5194758D.90502@cn.fujitsu.com>
+Date: Thu, 16 May 2013 13:58:37 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368611522-9984-36-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
+        cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jingbai.ma@hp.com, linux-mm@kvack.org, riel@redhat.com,
+        walken@google.com, hughd@google.com, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH v6 2/8] vmcore: allocate buffer for ELF headers on page-size
+ alignment
+References: <20130515090507.28109.28956.stgit@localhost6.localdomain6> <20130515090551.28109.73350.stgit@localhost6.localdomain6>
+In-Reply-To: <20130515090551.28109.73350.stgit@localhost6.localdomain6>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 13:59:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 14:06:56
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 10:51:58AM +0100, Lee Jones wrote:
-> Unsure of the author's intentions, rather than just removing the nop,
-> we're replacing it with a comment containing the possible intention
-> of the statement OR:ing with 0.
-Would be worthwhile to check w/ Linus W on this (or check whom to blame)
-
---
-~Vinod
+于 2013年05月15日 17:05, HATAYAMA Daisuke 写道:
+> Allocate ELF headers on page-size boundary using __get_free_pages()
+> instead of kmalloc().
 > 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Later patch will merge PT_NOTE entries into a single unique one and
+> decrease the buffer size actually used. Keep original buffer size in
+> variable elfcorebuf_sz_orig to kfree the buffer later and actually
+> used buffer size with rounded up to page-size boundary in variable
+> elfcorebuf_sz separately.
+> 
+> The size of part of the ELF buffer exported from /proc/vmcore is
+> elfcorebuf_sz.
+> 
+> The merged, removed PT_NOTE entries, i.e. the range [elfcorebuf_sz,
+> elfcorebuf_sz_orig], is filled with 0.
+> 
+> Use size of the ELF headers as an initial offset value in
+> set_vmcore_list_offsets_elf{64,32} and
+> process_ptload_program_headers_elf{64,32} in order to indicate that
+> the offset includes the holes towards the page boundary.
+> 
+> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 > ---
->  drivers/dma/ste_dma40_ll.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
 > 
-> diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-> index a035dfe..27b818d 100644
-> --- a/drivers/dma/ste_dma40_ll.c
-> +++ b/drivers/dma/ste_dma40_ll.c
-> @@ -182,8 +182,10 @@ static int d40_phy_fill_lli(struct d40_phy_lli *lli,
->  	else
->  		lli->reg_cfg &= ~BIT(D40_SREG_CFG_TIM_POS);
+>  fs/proc/vmcore.c |   80 ++++++++++++++++++++++++++++++------------------------
+>  1 files changed, 45 insertions(+), 35 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index ab0c92e..48886e6 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -32,6 +32,7 @@ static LIST_HEAD(vmcore_list);
+>  /* Stores the pointer to the buffer containing kernel elf core headers. */
+>  static char *elfcorebuf;
+>  static size_t elfcorebuf_sz;
+> +static size_t elfcorebuf_sz_orig;
 >  
-> -	/* Post link */
-> -	lli->reg_lnk |= 0 << D40_SREG_LNK_PHY_PRE_POS;
-> +	/*
-> +	 * Post link - D40_SREG_LNK_PHY_PRE_POS = 0
-> +	 * Relink happens after transfer completion.
-> +	 */
+>  /* Total size of vmcore file. */
+>  static u64 vmcore_size;
+> @@ -186,7 +187,7 @@ static struct vmcore* __init get_new_element(void)
+>  	return kzalloc(sizeof(struct vmcore), GFP_KERNEL);
+>  }
 >  
+> -static u64 __init get_vmcore_size_elf64(char *elfptr)
+> +static u64 __init get_vmcore_size_elf64(char *elfptr, size_t elfsz)
+>  {
+>  	int i;
+>  	u64 size;
+> @@ -195,7 +196,7 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
+>  
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>  	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> -	size = sizeof(Elf64_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr));
+> +	size = elfsz;
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+> @@ -203,7 +204,7 @@ static u64 __init get_vmcore_size_elf64(char *elfptr)
+>  	return size;
+>  }
+>  
+> -static u64 __init get_vmcore_size_elf32(char *elfptr)
+> +static u64 __init get_vmcore_size_elf32(char *elfptr, size_t elfsz)
+>  {
+>  	int i;
+>  	u64 size;
+> @@ -212,7 +213,7 @@ static u64 __init get_vmcore_size_elf32(char *elfptr)
+>  
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>  	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+> -	size = sizeof(Elf32_Ehdr) + ((ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr));
+> +	size = elfsz;
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+>  		size += phdr_ptr->p_memsz;
+>  		phdr_ptr++;
+> @@ -280,7 +281,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	phdr.p_flags   = 0;
+>  	note_off = sizeof(Elf64_Ehdr) +
+>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
+> -	phdr.p_offset  = note_off;
+> +	phdr.p_offset  = roundup(note_off, PAGE_SIZE);
+>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+>  	phdr.p_filesz  = phdr.p_memsz = phdr_sz;
+>  	phdr.p_align   = 0;
+> @@ -294,6 +295,8 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+>  	i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
+>  	*elfsz = *elfsz - i;
+>  	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
+> +	memset(elfptr + *elfsz, 0, i);
+> +	*elfsz = roundup(*elfsz, PAGE_SIZE);
+>  
+>  	/* Modify e_phnum to reflect merged headers. */
+>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+> @@ -361,7 +364,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	phdr.p_flags   = 0;
+>  	note_off = sizeof(Elf32_Ehdr) +
+>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf32_Phdr);
+> -	phdr.p_offset  = note_off;
+> +	phdr.p_offset  = roundup(note_off, PAGE_SIZE);
+>  	phdr.p_vaddr   = phdr.p_paddr = 0;
+>  	phdr.p_filesz  = phdr.p_memsz = phdr_sz;
+>  	phdr.p_align   = 0;
+> @@ -375,6 +378,8 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+>  	i = (nr_ptnote - 1) * sizeof(Elf32_Phdr);
+>  	*elfsz = *elfsz - i;
+>  	memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf32_Ehdr)-sizeof(Elf32_Phdr)));
+> +	memset(elfptr + *elfsz, 0, i);
+> +	*elfsz = roundup(*elfsz, PAGE_SIZE);
+>  
+>  	/* Modify e_phnum to reflect merged headers. */
+>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
+> @@ -398,9 +403,7 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+>  	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
+>  
+>  	/* First program header is PT_NOTE header. */
+> -	vmcore_off = sizeof(Elf64_Ehdr) +
+> -			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr) +
+> -			phdr_ptr->p_memsz; /* Note sections */
+> +	vmcore_off = elfsz + roundup(phdr_ptr->p_memsz, PAGE_SIZE);
+>  
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>  		if (phdr_ptr->p_type != PT_LOAD)
+> @@ -435,9 +438,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>  	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
+>  
+>  	/* First program header is PT_NOTE header. */
+> -	vmcore_off = sizeof(Elf32_Ehdr) +
+> -			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr) +
+> -			phdr_ptr->p_memsz; /* Note sections */
+> +	vmcore_off = elfsz + roundup(phdr_ptr->p_memsz, PAGE_SIZE);
+>  
+>  	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+>  		if (phdr_ptr->p_type != PT_LOAD)
+> @@ -459,7 +460,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+>  }
+>  
+>  /* Sets offset fields of vmcore elements. */
+> -static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+> +static void __init set_vmcore_list_offsets_elf64(char *elfptr, size_t elfsz,
+>  						struct list_head *vc_list)
+>  {
+>  	loff_t vmcore_off;
+> @@ -469,8 +470,7 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+>  	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+>  
+>  	/* Skip Elf header and program headers. */
+> -	vmcore_off = sizeof(Elf64_Ehdr) +
+> -			(ehdr_ptr->e_phnum) * sizeof(Elf64_Phdr);
+> +	vmcore_off = elfsz;
+>  
+>  	list_for_each_entry(m, vc_list, list) {
+>  		m->offset = vmcore_off;
+> @@ -479,7 +479,7 @@ static void __init set_vmcore_list_offsets_elf64(char *elfptr,
+>  }
+>  
+>  /* Sets offset fields of vmcore elements. */
+> -static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+> +static void __init set_vmcore_list_offsets_elf32(char *elfptr, size_t elfsz,
+>  						struct list_head *vc_list)
+>  {
+>  	loff_t vmcore_off;
+> @@ -489,8 +489,7 @@ static void __init set_vmcore_list_offsets_elf32(char *elfptr,
+>  	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+>  
+>  	/* Skip Elf header and program headers. */
+> -	vmcore_off = sizeof(Elf32_Ehdr) +
+> -			(ehdr_ptr->e_phnum) * sizeof(Elf32_Phdr);
+> +	vmcore_off = elfsz;
+>  
+>  	list_for_each_entry(m, vc_list, list) {
+>  		m->offset = vmcore_off;
+> @@ -526,30 +525,35 @@ static int __init parse_crash_elf64_headers(void)
+>  	}
+>  
+>  	/* Read in all elf headers. */
+> -	elfcorebuf_sz = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
+> -	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+> +	elfcorebuf_sz_orig = sizeof(Elf64_Ehdr) + ehdr.e_phnum * sizeof(Elf64_Phdr);
+> +	elfcorebuf_sz = elfcorebuf_sz_orig;
+> +	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
+> +					       get_order(elfcorebuf_sz_orig));
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+>  	addr = elfcorehdr_addr;
+> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
+> +	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
+>  	if (rc < 0) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+>  
+>  	/* Merge all PT_NOTE headers into one. */
+>  	rc = merge_note_headers_elf64(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+>  	if (rc) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+>  	rc = process_ptload_program_headers_elf64(elfcorebuf, elfcorebuf_sz,
+>  							&vmcore_list);
+>  	if (rc) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+> -	set_vmcore_list_offsets_elf64(elfcorebuf, &vmcore_list);
+> +	set_vmcore_list_offsets_elf64(elfcorebuf, elfcorebuf_sz, &vmcore_list);
 >  	return 0;
 >  }
-> -- 
-> 1.7.10.4
+>  
+> @@ -581,30 +585,35 @@ static int __init parse_crash_elf32_headers(void)
+>  	}
+>  
+>  	/* Read in all elf headers. */
+> -	elfcorebuf_sz = sizeof(Elf32_Ehdr) + ehdr.e_phnum * sizeof(Elf32_Phdr);
+> -	elfcorebuf = kmalloc(elfcorebuf_sz, GFP_KERNEL);
+> +	elfcorebuf_sz_orig = sizeof(Elf32_Ehdr) + ehdr.e_phnum * sizeof(Elf32_Phdr);
+> +	elfcorebuf_sz = elfcorebuf_sz_orig;
+> +	elfcorebuf = (void *) __get_free_pages(GFP_KERNEL | __GFP_ZERO,
+> +					       get_order(elfcorebuf_sz_orig));
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+>  	addr = elfcorehdr_addr;
+> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz, &addr, 0);
+> +	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
+>  	if (rc < 0) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+>  
+>  	/* Merge all PT_NOTE headers into one. */
+>  	rc = merge_note_headers_elf32(elfcorebuf, &elfcorebuf_sz, &vmcore_list);
+>  	if (rc) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+>  	rc = process_ptload_program_headers_elf32(elfcorebuf, elfcorebuf_sz,
+>  								&vmcore_list);
+>  	if (rc) {
+> -		kfree(elfcorebuf);
+> +		free_pages((unsigned long)elfcorebuf,
+> +			   get_order(elfcorebuf_sz_orig));
+>  		return rc;
+>  	}
+> -	set_vmcore_list_offsets_elf32(elfcorebuf, &vmcore_list);
+> +	set_vmcore_list_offsets_elf32(elfcorebuf, elfcorebuf_sz, &vmcore_list);
+>  	return 0;
+>  }
+>  
+> @@ -629,14 +638,14 @@ static int __init parse_crash_elf_headers(void)
+>  			return rc;
+>  
+>  		/* Determine vmcore size. */
+> -		vmcore_size = get_vmcore_size_elf64(elfcorebuf);
+> +		vmcore_size = get_vmcore_size_elf64(elfcorebuf, elfcorebuf_sz);
+>  	} else if (e_ident[EI_CLASS] == ELFCLASS32) {
+>  		rc = parse_crash_elf32_headers();
+>  		if (rc)
+>  			return rc;
+>  
+>  		/* Determine vmcore size. */
+> -		vmcore_size = get_vmcore_size_elf32(elfcorebuf);
+> +		vmcore_size = get_vmcore_size_elf32(elfcorebuf, elfcorebuf_sz);
+>  	} else {
+>  		pr_warn("Warning: Core image elf header is not sane\n");
+>  		return -EINVAL;
+> @@ -683,7 +692,8 @@ void vmcore_cleanup(void)
+>  		list_del(&m->list);
+>  		kfree(m);
+>  	}
+> -	kfree(elfcorebuf);
+> +	free_pages((unsigned long)elfcorebuf,
+> +		   get_order(elfcorebuf_sz_orig));
+>  	elfcorebuf = NULL;
+>  }
+>  EXPORT_SYMBOL_GPL(vmcore_cleanup);
 > 
+> 
+
