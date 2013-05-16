@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab3EPLjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:39:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab3EPLjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:39:39 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1368667529-31456-1-git-send-email-haicheng.li@linux.intel.com>
-References: <1368667529-31456-1-git-send-email-haicheng.li@linux.intel.com>
-To: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
-        Haicheng Li <haicheng.lee@gmail.com>
-Subject: Re: [PATCH] cachefiles: remove unused macro list_to_page()
-Date: Thu, 16 May 2013 12:39:35 +0100
-Message-ID: <10527.1368704375@warthog.procyon.org.uk>
+	id S1752600Ab3EPLpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:45:39 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:9280 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab3EPLpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:45:38 -0400
+X-Spam-Score: -100.7
+Message-ID: <5194C6AF.1020304@asianux.com>
+Date: Thu, 16 May 2013 19:44:47 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: jason.wessel@windriver.com
+CC: kgdb-bugreport@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] kernel: debug: kdb: strncpy issue, using strlcpy instead
+ of strncpy
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Haicheng Li <haicheng.li@linux.intel.com> wrote:
 
-> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+'kdb_prompt_str' is NUL terminated string, need always set '\0' at the
+end.
 
-Applied, thanks.
+Or kdb_printf() below will cause issue.
 
-David
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/debug/kdb/kdb_io.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index 14ff484..932b436 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -442,7 +442,7 @@ poll_again:
+ char *kdb_getstr(char *buffer, size_t bufsize, char *prompt)
+ {
+ 	if (prompt && kdb_prompt_str != prompt)
+-		strncpy(kdb_prompt_str, prompt, CMD_BUFLEN);
++		strlcpy(kdb_prompt_str, prompt, CMD_BUFLEN);
+ 	kdb_printf(kdb_prompt_str);
+ 	kdb_nextline = 1;	/* Prompt and input resets line number */
+ 	return kdb_read(buffer, bufsize);
+-- 
+1.7.7.6
