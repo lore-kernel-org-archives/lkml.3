@@ -1,63 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab3EPLwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:52:04 -0400
-Received: from abc.logicbricks.com ([89.201.165.132]:2121 "EHLO
-	abc.logicbricks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab3EPLvj (ORCPT
+	id S1753453Ab3EPLwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:52:34 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49507 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab3EPLvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:51:39 -0400
-Content-Class: urn:content-classes:message
-Subject: RE: fb driver for logiCVC
+	Thu, 16 May 2013 07:51:36 -0400
+X-AuditID: 85900ec0-d2ec7b900000151e-06-5194c846569d
+Subject: [PATCH 4/5] tracing/kprobes: Allow user to delete kprobe events by
+ wild cards
+To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
+Date: Thu, 16 May 2013 20:48:57 +0900
+Message-ID: <20130516114857.13508.31664.stgit@mhiramat-M0-7522>
+In-Reply-To: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>
+References: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Date: Thu, 16 May 2013 13:51:34 +0200
-Message-ID: <ABCPY3ZCHWRJhEG4r3o0000007d@abc.logicbricks.com>
-In-Reply-To: <CAMuHMdUW-tVY6=Bu9mabKrkNJsTxJM+Umo6jjcnXpWpzh_5AVw@mail.gmail.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: fb driver for logiCVC
-thread-index: Ac5SJ73g2dfOfjp8Q/6ACAp1S5llaQAA3M2A
-References: <9D79B9A9194389468A922F618415D0A401229E7E@abc.xylon.local><20130515184112.251bb949@neptune.home><ABCSCiTtUDvkm6WeI5J00000073@abc.logicbricks.com> <CAMuHMdUW-tVY6=Bu9mabKrkNJsTxJM+Umo6jjcnXpWpzh_5AVw@mail.gmail.com>
-From: "Davor Joja" <Davor.Joja@logicbricks.com>
-To: "Geert Uytterhoeven" <geert@linux-m68k.org>
-Cc: =?utf-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Linux Fbdev development list" <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4GBqA3t021958
 
-Thanks Geert!
+Allow user to delete multiple kprobe events by using
+wild cards. This makes removing events on a specific
+function easy.
 
-Regards,
-Davor
+e.g.)
+ # echo p vfs_symlink >> kprobe_events
+ # echo p vfs_symlink+5 >> kprobe_events
+ # echo p vfs_read >> kprobe_events
+ # cat kprobe_events
+p:kprobes/p_vfs_symlink_0 vfs_symlink
+p:kprobes/p_vfs_symlink_5 vfs_symlink+5
+p:kprobes/p_vfs_read_0 vfs_read
+ # echo -:kprobes/\*vfs_symlink_\* >> kprobe_events
+ # cat kprobe_events
+p:kprobes/p_vfs_read_0 vfs_read
 
------Original Message-----
-From: geert.uytterhoeven@gmail.com [mailto:geert.uytterhoeven@gmail.com] On Behalf Of Geert Uytterhoeven
-Sent: Thursday, May 16, 2013 1:23 PM
-To: Davor Joja
-Cc: Bruno Pr√©mont; linux-kernel@vger.kernel.org; Linux Fbdev development list
-Subject: Re: fb driver for logiCVC
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ Documentation/trace/kprobetrace.txt |   19 ++++---
+ kernel/trace/trace_kprobe.c         |   97 +++++++++++++++++++++++++----------
+ 2 files changed, 82 insertions(+), 34 deletions(-)
 
-On Thu, May 16, 2013 at 12:35 PM, Davor Joja <Davor.Joja@logicbricks.com> wrote:
-> Unfortunately, I have this driver on mentioned git only for few weeks, so there is no usable history.
-> Since this is new driver, tested and functional (on kernel 3.8), without git history as stated above, do you have idea how to break it to smaller pieces? I can only think off as one big patch against 3.8.x version.
-> That could be accepted for new driver?
+diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
+index d68ea5f..04f22be 100644
+--- a/Documentation/trace/kprobetrace.txt
++++ b/Documentation/trace/kprobetrace.txt
+@@ -26,9 +26,9 @@ Synopsis of kprobe_events
+   r[:[GRP/]EVENT] [MOD:]SYM[+0] [FETCHARGS]		: Set a return probe
+   -:[GRP/]EVENT						: Clear a probe
+ 
+- GRP		: Group name. If omitted, use "kprobes" for it.
++ GRP		: Group name. If omitted, use "kprobes" for it.(*)
+  EVENT		: Event name. If omitted, the event name is generated
+-		  based on SYM+offs or MEMADDR.
++		  based on SYM+offs or MEMADDR.(*)
+  MOD		: Module name which has given SYM.
+  SYM[+offs]	: Symbol+offset where the probe is inserted.
+  MEMADDR	: Address where the probe is inserted.
+@@ -39,15 +39,16 @@ Synopsis of kprobe_events
+   @SYM[+|-offs]	: Fetch memory at SYM +|- offs (SYM should be a data symbol)
+   $stackN	: Fetch Nth entry of stack (N >= 0)
+   $stack	: Fetch stack address.
+-  $retval	: Fetch return value.(*)
+-  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
++  $retval	: Fetch return value.(**)
++  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(***)
+   NAME=FETCHARG : Set NAME as the argument name of FETCHARG.
+   FETCHARG:TYPE : Set TYPE as the type of FETCHARG. Currently, basic types
+ 		  (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
+ 		  are supported.
+ 
+-  (*) only for return probe.
+-  (**) this is useful for fetching a field of data structures.
++  (*) both GRP and EVENT accept glob-style wild cards when clearing probes.
++  (**) only for return probe.
++  (***) this is useful for fetching a field of data structures.
+ 
+ Types
+ -----
+@@ -143,7 +144,11 @@ REC->dfd, REC->filename, REC->flags, REC->mode
+ 
+   echo -:myprobe >> kprobe_events
+ 
+- This clears probe points selectively.
++ This removes a probe points selectively. Since the event name and group
++ name accept wild cards only when removing, you can clear all event as
++ below too.
++
++  echo '-:*/*' >> kprobe_events
+ 
+  Right after definition, each event is disabled by default. For tracing these
+ events, you need to enable it.
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 9f46e98..b619853 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -171,16 +171,32 @@ static void free_trace_probe(struct trace_probe *tp)
+ 	kfree(tp);
+ }
+ 
+-static struct trace_probe *find_trace_probe(const char *event,
+-					    const char *group)
++/**
++ * find_trace_probes - find matched trace_probe and return the number of it
++ * @event: event name (glob pattern)
++ * @group: group(subsystem) name (glob pattern)
++ * @buf:   the address of an array of trace_probe *
++ * @size:  the size of @buf array
++ *
++ * Search trace_probe matched with given name (pattern) and returns
++ * the number of it. If @buf is not NULL, it records the address of
++ * the matched trace_probe on it.
++ */
++static int
++find_trace_probes(const char *event, const char *group,
++		  struct trace_probe **buf, int size)
+ {
+ 	struct trace_probe *tp;
++	int count = 0;
+ 
+ 	list_for_each_entry(tp, &probe_list, list)
+-		if (strcmp(tp->call.name, event) == 0 &&
+-		    strcmp(tp->call.class->system, group) == 0)
+-			return tp;
+-	return NULL;
++		if (strglobmatch(event, tp->call.name) &&
++		    strglobmatch(group, tp->call.class->system)) {
++			if (buf && count < size)
++				buf[count] = tp;
++			count++;
++		}
++	return count;
+ }
+ 
+ static int trace_probe_nr_files(struct trace_probe *tp)
+@@ -414,8 +430,9 @@ static int register_trace_probe(struct trace_probe *tp)
+ 	mutex_lock(&probe_lock);
+ 
+ 	/* Delete old (same name) event if exist */
+-	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
+-	if (old_tp) {
++	ret = find_trace_probes(tp->call.name, tp->call.class->system,
++				&old_tp, 1);
++	if (ret) {
+ 		ret = unregister_trace_probe(old_tp);
+ 		if (ret < 0)
+ 			goto end;
+@@ -475,6 +492,49 @@ static struct notifier_block trace_probe_module_nb = {
+ 	.priority = 1	/* Invoked after kprobe module callback */
+ };
+ 
++static int delete_trace_probe(const char *event, const char *group)
++{
++	struct trace_probe **tps;
++	int nr_tps, i, ret = 0;
++
++	if (!event) {
++		pr_info("Delete command needs an event name.\n");
++		return -EINVAL;
++	}
++
++	mutex_lock(&probe_lock);
++
++	nr_tps = find_trace_probes(event, group, NULL, 0);
++	if (nr_tps == 0) {
++		pr_info("Event %s/%s doesn't matched.\n", group, event);
++		ret = -ENOENT;
++		goto out_unlock;
++	}
++
++	tps = kzalloc(nr_tps * sizeof(*tps), GFP_KERNEL);
++	if (!tps) {
++		ret = -ENOMEM;
++		goto out_unlock;
++	}
++
++	find_trace_probes(event, group, tps, nr_tps);
++
++	for (i = 0; i < nr_tps; i++) {
++		ret = unregister_trace_probe(tps[i]);
++		if (ret < 0) {
++			pr_info("Failed to delete event: %d\n", ret);
++			continue;	/* Greedy cleanup */
++		}
++		free_trace_probe(tps[i]);
++	}
++	ret = 0;
++	kfree(tps);
++
++ out_unlock:
++	mutex_unlock(&probe_lock);
++	return ret;
++}
++
+ static int create_trace_probe(int argc, char **argv)
+ {
+ 	/*
+@@ -536,25 +596,8 @@ static int create_trace_probe(int argc, char **argv)
+ 	if (!group)
+ 		group = KPROBE_EVENT_SYSTEM;
+ 
+-	if (is_delete) {
+-		if (!event) {
+-			pr_info("Delete command needs an event name.\n");
+-			return -EINVAL;
+-		}
+-		mutex_lock(&probe_lock);
+-		tp = find_trace_probe(event, group);
+-		if (!tp) {
+-			mutex_unlock(&probe_lock);
+-			pr_info("Event %s/%s doesn't exist.\n", group, event);
+-			return -ENOENT;
+-		}
+-		/* delete an event */
+-		ret = unregister_trace_probe(tp);
+-		if (ret == 0)
+-			free_trace_probe(tp);
+-		mutex_unlock(&probe_lock);
+-		return ret;
+-	}
++	if (is_delete)
++		return delete_trace_probe(event, group);
+ 
+ 	if (argc < 2) {
+ 		pr_info("Probe point is not specified.\n");
 
-A single patch is OK for a new driver.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
