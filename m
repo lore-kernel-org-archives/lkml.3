@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3EPR54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:57:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60607
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751643Ab3EPR5x (ORCPT
+	id S1753488Ab3EPR7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:59:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59491 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab3EPR7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:57:53 -0400
-Date: Thu, 16 May 2013 19:56:02 +0200
+	Thu, 16 May 2013 13:59:06 -0400
+Date: Thu, 16 May 2013 19:57:14 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
 Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
  enabled
-Message-ID: <20130516175602.GL19669@dyad.programming.kicks-ass.net>
+Message-ID: <20130516175714.GM19669@dyad.programming.kicks-ass.net>
 References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
  <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
  <20130515083729.GC10510@laptop.programming.kicks-ass.net>
@@ -26,17 +26,17 @@ References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
  <20130515165915.GE13916@laptop.home>
  <1368637441.6828.70.camel@gandalf.local.home>
  <20130516081027.GD19669@dyad.programming.kicks-ass.net>
- <20130516150706.GY4442@linux.vnet.ibm.com>
+ <20130516113811.GB2341@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130516150706.GY4442@linux.vnet.ibm.com>
+In-Reply-To: <20130516113811.GB2341@somewhere>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 08:07:06AM -0700, Paul E. McKenney wrote:
+On Thu, May 16, 2013 at 01:38:12PM +0200, Frederic Weisbecker wrote:
 > On Thu, May 16, 2013 at 10:10:27AM +0200, Peter Zijlstra wrote:
 > > On Wed, May 15, 2013 at 01:04:01PM -0400, Steven Rostedt wrote:
 > > > On Wed, 2013-05-15 at 18:59 +0200, Peter Zijlstra wrote:
@@ -53,22 +53,12 @@ On Thu, May 16, 2013 at 08:07:06AM -0700, Paul E. McKenney wrote:
 > > 
 > > Frederic, PaulMck?
 > 
-> Not sure I understand the question, but hopefully the verbiage below helps.
+> But they are protected inside rcu_nmi_*() functions, that's the only thing we need.
+> If this interrupt userspace then we resume back to it quickly after the NMI and
+> re-enter EQS.
 > 
-> Only RCU read-side critical sections need to work in NMI context,
-> and RCU hooks into nmi_enter() and nmi_exit() to handle this, and this
-> will work in NO_HZ_FULL in the same way that it works for NO_HZ_IDLE.
-> 
-> But if there are no NMIs, RCU doesn't care.  In other words, RCU needs
-> to know about NMIs so that it can deal with any RCU read-side critical
-> sections in the NMI handlers, but RCU doesn't rely on NMIs happening at
-> any particular time or frequency.
+> No need to restart the tick for that. A remote CPU that wants a quiescent state
+> from the dyntick CPU will notice soon enough the EQS.
 
-I suppose the fundamental question was: will receiving NMIs negate NO_HZ_FULL's
-functionality? That is, will the getting of NMIs make us drop out of NO_HZ_FULL
-and re-enable all sorts of things?
-
-Because clearly RCU needs to exit from EQS, which might (or might not) mean
-leaving NO_HZ_FULL.
-
-I'm not entirely up-to-date on those details.
+Right.. I just wasn't sure how much damage the RCU EQS stop/(re)start did to
+the entire NO_HZ_FULL situation.
