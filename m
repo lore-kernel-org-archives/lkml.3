@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3EPKyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 06:54:43 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:40601 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab3EPKyl (ORCPT
+	id S1752246Ab3EPLAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:00:08 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:48388 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab3EPLAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 06:54:41 -0400
+	Thu, 16 May 2013 07:00:05 -0400
+Date: Thu, 16 May 2013 11:59:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
+        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
+Subject: Re: [PATCH 02/39] dmaengine: ste_dma40: Remove unnecessary call to
+ d40_phy_cfg()
+Message-ID: <20130516105959.GI3269@gmail.com>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+ <1368611522-9984-3-git-send-email-lee.jones@linaro.org>
+ <20130516063546.GD14863@intel.com>
+ <20130516072557.GD3269@gmail.com>
+ <20130516094014.GJ14863@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <5194B8DA.4080204@gmail.com>
-References: <1368622349-32185-1-git-send-email-prabhakar.csengg@gmail.com> <5194B8DA.4080204@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 16 May 2013 16:24:19 +0530
-Message-ID: <CA+V-a8v9AuwyQqnSekASGyVHz9RRux+ttQqPf+35rux5YehaCw@mail.gmail.com>
-Subject: Re: [PATCH RFC] media: OF: add field-active and sync-on-green
- endpoint properties
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130516094014.GJ14863@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+On Thu, 16 May 2013, Vinod Koul wrote:
 
-Thanks for the review.
+> On Thu, May 16, 2013 at 08:25:57AM +0100, Lee Jones wrote:
+> > On Thu, 16 May 2013, Vinod Koul wrote:
+> > 
+> > > On Wed, May 15, 2013 at 10:51:25AM +0100, Lee Jones wrote:
+> > > > All configuration left in d40_phy_cfg() is runtime configurable and
+> > > > there is already a call into it from d40_runtime_config(), so let's
+> > > > rely on that.
+> > > > 
+> > > > Acked-by: Vinod Koul <vnod.koul@intel.com>
+> > > That needs up update!
+> > 
+> > Ah, where did I get that from that?
+> > 
+> > Was that my mistake, or was this in the MAINTAINERS file?
+> Certainly not in MAINTAINERS file :)
 
-On Thu, May 16, 2013 at 4:15 PM, Sylwester Nawrocki
-<sylvester.nawrocki@gmail.com> wrote:
-> On 05/15/2013 02:52 PM, Lad Prabhakar wrote:
->>
->> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt
->> b/Documentation/devicetree/bindings/media/video-interfaces.txt
->> index e022d2d..6bf87d0 100644
->> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
->> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
->> @@ -101,6 +101,10 @@ Optional endpoint properties
->>     array contains only one entry.
->>   - clock-noncontinuous: a boolean property to allow MIPI CSI-2
->> non-continuous
->>     clock mode.
->> +-field-active: a boolean property indicating active high filed ID output
->> + polarity is inverted.
->
->
-> You can drop this property and use the existing 'field-even-active' property
-> instead.
->
-OK
+My bad then, sorry.
 
->
->> +-sync-on-green: a boolean property indicating to sync with the green
->> signal in
->> + RGB.
->
->
->> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
->> index 83ae07e..b95553d 100644
->> --- a/include/media/v4l2-mediabus.h
->> +++ b/include/media/v4l2-mediabus.h
->> @@ -40,6 +40,8 @@
->>   #define V4L2_MBUS_FIELD_EVEN_HIGH             (1<<  10)
->>   /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->>   #define V4L2_MBUS_FIELD_EVEN_LOW              (1<<  11)
->> +#define V4L2_MBUS_FIELD_ACTIVE                 (1<<  12)
->> +#define V4L2_MBUS_SOG                          (1<<  13)
->
->
-> How about V4L2_MBUS_SYNC_ON_GREEN ?
->
-OK makes it more readable.
+Linus,
 
-Regards,
---Prabhakar Lad
+Would you be kind enough to fix it please, as it's in your tree now.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
