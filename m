@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab3EPJZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:25:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48819 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3EPJZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:25:11 -0400
-Date: Thu, 16 May 2013 11:23:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, riel@redhat.com,
-        wangyun@linux.vnet.ibm.com
-Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
-Message-ID: <20130516092308.GH19669@dyad.programming.kicks-ass.net>
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com>
- <1368199049-2798-9-git-send-email-alex.shi@intel.com>
- <20130514083148.GD15942@dyad.programming.kicks-ass.net>
- <5192217D.5030706@intel.com>
+	id S1751502Ab3EPJ1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:27:11 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:26329 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038Ab3EPJ1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 05:27:08 -0400
+Message-ID: <5194A618.3040900@imgtec.com>
+Date: Thu, 16 May 2013 10:25:44 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5192217D.5030706@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] clk: implement remuxing during set_rate
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com> <51945C7F.2030605@codeaurora.org>
+In-Reply-To: <51945C7F.2030605@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_16_10_27_07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 07:35:25PM +0800, Alex Shi wrote:
+On 16/05/13 05:11, Saravana Kannan wrote:
+> I really want to review this because I solved the same problem in our
+> internal clock framework and want to make sure upstream doesn't go
+> through the same mistakes. But haven't had the time. Hopefully, I'll go
+> it before this gets accepted by Mike. I'll try to do it this week/weekend.
 
-> I tested all benchmarks on cover letter maintained, aim7, kbuild etc.
-> with autogroup enabled. There is no clear performance change.
-> But since the machine just run benchmark without anyother load, that
-> doesn't enough.
+Great! FYI I submitted a v3 yesterday, but screwed up and forgot to CC
+LKML :-(
 
-Back when we started with smp-fair cgroup muck someone wrote a test for it. I
-_think_ it ended up in the LTP test-suite.
+It can be found on linux-arm-kernel archives here (or if it's a real
+PITA I can resubmit cc'ing LKML):
 
-Now I don't know if that's up-to-date enough to catch some of the cases we've
-recently fixed (as in the past few years) so it might want to be updated.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/168485.html
 
-Paul, do you guys at Google have some nice test-cases for all this?
+Cheers
+James
+
