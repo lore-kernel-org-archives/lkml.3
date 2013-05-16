@@ -1,54 +1,1019 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab3EPDQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:16:40 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28888 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3EPDQg (ORCPT
+	id S1754807Ab3EPDQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:16:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23511 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238Ab3EPDQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:16:36 -0400
+	Wed, 15 May 2013 23:16:40 -0400
 From: Sasha Levin <sasha.levin@oracle.com>
 To: torvalds@linux-foundation.org
 Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v4 6/9] liblockdep: Add pthread_rwlock_t test suite
-Date: Wed, 15 May 2013 23:15:38 -0400
-Message-Id: <1368674141-10796-7-git-send-email-sasha.levin@oracle.com>
+Subject: [PATCH v4 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage from userspace
+Date: Wed, 15 May 2013 23:15:34 -0400
+Message-Id: <1368674141-10796-3-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
 References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A simple test to make sure we handle rwlocks correctly.
+kernel/lockdep.c deals with validating locking scenarios for
+various architectures supported by the kernel. There isn't
+anything kernel specific going on in lockdep, and when we
+compare userspace to other architectures that don't have to deal
+with irqs such as s390, they become all too similar.
+
+We wrap kernel/lockdep.c and include/linux/lockdep.h with
+several headers which allow us to build and use lockdep from
+userspace. We don't touch the kernel code itself which means
+that any work done on lockdep in the kernel will automatically
+benefit userspace lockdep as well!
 
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- tools/lib/lockdep/tests/WW.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
- create mode 100644 tools/lib/lockdep/tests/WW.c
+ tools/lib/lockdep/Makefile                         | 251 +++++++++++++++++++++
+ tools/lib/lockdep/common.c                         |  33 +++
+ tools/lib/lockdep/lockdep.c                        |   2 +
+ tools/lib/lockdep/lockdep_internals.h              |   1 +
+ tools/lib/lockdep/lockdep_states.h                 |   1 +
+ tools/lib/lockdep/rbtree.c                         |   1 +
+ tools/lib/lockdep/uinclude/asm/hweight.h           |   0
+ tools/lib/lockdep/uinclude/asm/sections.h          |   0
+ tools/lib/lockdep/uinclude/linux/bitops.h          |   0
+ tools/lib/lockdep/uinclude/linux/compiler.h        |   7 +
+ tools/lib/lockdep/uinclude/linux/debug_locks.h     |  12 +
+ tools/lib/lockdep/uinclude/linux/delay.h           |   0
+ tools/lib/lockdep/uinclude/linux/export.h          |   7 +
+ tools/lib/lockdep/uinclude/linux/ftrace.h          |   0
+ tools/lib/lockdep/uinclude/linux/gfp.h             |   0
+ tools/lib/lockdep/uinclude/linux/hardirq.h         |  11 +
+ tools/lib/lockdep/uinclude/linux/hash.h            |   1 +
+ tools/lib/lockdep/uinclude/linux/interrupt.h       |   0
+ tools/lib/lockdep/uinclude/linux/irqflags.h        |  38 ++++
+ tools/lib/lockdep/uinclude/linux/kallsyms.h        |  32 +++
+ tools/lib/lockdep/uinclude/linux/kern_levels.h     |  25 ++
+ tools/lib/lockdep/uinclude/linux/kernel.h          |  37 +++
+ tools/lib/lockdep/uinclude/linux/kmemcheck.h       |   8 +
+ tools/lib/lockdep/uinclude/linux/linkage.h         |   0
+ tools/lib/lockdep/uinclude/linux/list.h            |   1 +
+ tools/lib/lockdep/uinclude/linux/lockdep.h         |  55 +++++
+ tools/lib/lockdep/uinclude/linux/mm_types.h        |   0
+ tools/lib/lockdep/uinclude/linux/module.h          |   6 +
+ tools/lib/lockdep/uinclude/linux/mutex.h           |   0
+ tools/lib/lockdep/uinclude/linux/poison.h          |   1 +
+ tools/lib/lockdep/uinclude/linux/prefetch.h        |   6 +
+ tools/lib/lockdep/uinclude/linux/proc_fs.h         |   0
+ tools/lib/lockdep/uinclude/linux/rbtree.h          |   1 +
+ .../lib/lockdep/uinclude/linux/rbtree_augmented.h  |   2 +
+ tools/lib/lockdep/uinclude/linux/rcu.h             |  16 ++
+ tools/lib/lockdep/uinclude/linux/seq_file.h        |   0
+ tools/lib/lockdep/uinclude/linux/spinlock.h        |  25 ++
+ tools/lib/lockdep/uinclude/linux/stacktrace.h      |  32 +++
+ tools/lib/lockdep/uinclude/linux/stringify.h       |   7 +
+ tools/lib/lockdep/uinclude/linux/system.h          |   0
+ tools/lib/lockdep/uinclude/linux/types.h           |  58 +++++
+ tools/lib/lockdep/uinclude/linux/util.h            |   0
+ tools/lib/lockdep/uinclude/trace/events/lock.h     |   0
+ 43 files changed, 677 insertions(+)
+ create mode 100644 tools/lib/lockdep/Makefile
+ create mode 100644 tools/lib/lockdep/common.c
+ create mode 100644 tools/lib/lockdep/lockdep.c
+ create mode 100644 tools/lib/lockdep/lockdep_internals.h
+ create mode 100644 tools/lib/lockdep/lockdep_states.h
+ create mode 100644 tools/lib/lockdep/rbtree.c
+ create mode 100644 tools/lib/lockdep/uinclude/asm/hweight.h
+ create mode 100644 tools/lib/lockdep/uinclude/asm/sections.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/bitops.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/compiler.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/debug_locks.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/delay.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/export.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/ftrace.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/gfp.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/hardirq.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/hash.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/interrupt.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/irqflags.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/kallsyms.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/kern_levels.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/kernel.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/kmemcheck.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/linkage.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/list.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/lockdep.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/mm_types.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/module.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/mutex.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/poison.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/prefetch.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/proc_fs.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/rbtree_augmented.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/rcu.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/seq_file.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/spinlock.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/stacktrace.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/stringify.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/system.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/types.h
+ create mode 100644 tools/lib/lockdep/uinclude/linux/util.h
+ create mode 100644 tools/lib/lockdep/uinclude/trace/events/lock.h
 
-diff --git a/tools/lib/lockdep/tests/WW.c b/tools/lib/lockdep/tests/WW.c
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
 new file mode 100644
-index 0000000..d44f77d
+index 0000000..66c14f2
 --- /dev/null
-+++ b/tools/lib/lockdep/tests/WW.c
-@@ -0,0 +1,13 @@
-+#include <liblockdep/rwlock.h>
++++ b/tools/lib/lockdep/Makefile
+@@ -0,0 +1,251 @@
++# liblockdep version
++LL_VERSION = 0
++LL_PATCHLEVEL = 0
++LL_EXTRAVERSION = 1
 +
-+void main(void)
++# file format version
++FILE_VERSION = 1
++
++MAKEFLAGS += --no-print-directory
++
++
++# Makefiles suck: This macro sets a default value of $(2) for the
++# variable named by $(1), unless the variable has been set by
++# environment or command line. This is necessary for CC and AR
++# because make sets default values, so the simpler ?= approach
++# won't work as expected.
++define allow-override
++  $(if $(or $(findstring environment,$(origin $(1))),\
++            $(findstring command line,$(origin $(1)))),,\
++    $(eval $(1) = $(2)))
++endef
++
++# Allow setting CC and AR, or setting CROSS_COMPILE as a prefix.
++$(call allow-override,CC,$(CROSS_COMPILE)gcc)
++$(call allow-override,AR,$(CROSS_COMPILE)ar)
++
++INSTALL = install
++
++# Use DESTDIR for installing into a different root directory.
++# This is useful for building a package. The program will be
++# installed in this directory as if it was the root directory.
++# Then the build tool can move it later.
++DESTDIR ?=
++DESTDIR_SQ = '$(subst ','\'',$(DESTDIR))'
++
++prefix ?= /usr/local
++libdir_relative = lib
++libdir = $(prefix)/$(libdir_relative)
++bindir_relative = bin
++bindir = $(prefix)/$(bindir_relative)
++
++export DESTDIR DESTDIR_SQ INSTALL
++
++# copy a bit from Linux kbuild
++
++ifeq ("$(origin V)", "command line")
++  VERBOSE = $(V)
++endif
++ifndef VERBOSE
++  VERBOSE = 0
++endif
++
++ifeq ("$(origin O)", "command line")
++  BUILD_OUTPUT := $(O)
++endif
++
++ifeq ($(BUILD_SRC),)
++ifneq ($(BUILD_OUTPUT),)
++
++define build_output
++	$(if $(VERBOSE:1=),@)$(MAKE) -C $(BUILD_OUTPUT) 	\
++	BUILD_SRC=$(CURDIR) -f $(CURDIR)/Makefile $1
++endef
++
++saved-output := $(BUILD_OUTPUT)
++BUILD_OUTPUT := $(shell cd $(BUILD_OUTPUT) && /bin/pwd)
++$(if $(BUILD_OUTPUT),, \
++     $(error output directory "$(saved-output)" does not exist))
++
++all: sub-make
++
++gui: force
++	$(call build_output, all_cmd)
++
++$(filter-out gui,$(MAKECMDGOALS)): sub-make
++
++sub-make: force
++	$(call build_output, $(MAKECMDGOALS))
++
++
++# Leave processing to above invocation of make
++skip-makefile := 1
++
++endif # BUILD_OUTPUT
++endif # BUILD_SRC
++
++# We process the rest of the Makefile if this is the final invocation of make
++ifeq ($(skip-makefile),)
++
++srctree		:= $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR))
++objtree		:= $(CURDIR)
++src		:= $(srctree)
++obj		:= $(objtree)
++
++export prefix libdir bindir src obj
++
++# Shell quotes
++libdir_SQ = $(subst ','\'',$(libdir))
++bindir_SQ = $(subst ','\'',$(bindir))
++
++LIB_FILE = liblockdep.a liblockdep.so
++BIN_FILE = lockdep
++
++CONFIG_INCLUDES =
++CONFIG_LIBS	=
++CONFIG_FLAGS	=
++
++OBJ		= $@
++N		=
++
++export Q VERBOSE
++
++LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
++
++INCLUDES = -I. -I/usr/local/include -I./uinclude $(CONFIG_INCLUDES)
++
++# Set compile option CFLAGS if not set elsewhere
++CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
++
++override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
++
++ifeq ($(VERBOSE),1)
++  Q =
++  print_compile =
++  print_app_build =
++  print_fpic_compile =
++  print_shared_lib_compile =
++  print_install =
++else
++  Q = @
++  print_compile =		echo '  CC                 '$(OBJ);
++  print_app_build =		echo '  BUILD              '$(OBJ);
++  print_fpic_compile =		echo '  CC FPIC            '$(OBJ);
++  print_shared_lib_compile =	echo '  BUILD SHARED LIB   '$(OBJ);
++  print_static_lib_build =	echo '  BUILD STATIC LIB   '$(OBJ);
++  print_install =		echo '  INSTALL     '$1'	to	$(DESTDIR_SQ)$2';
++endif
++
++do_fpic_compile =					\
++	($(print_fpic_compile)				\
++	$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@)
++
++do_app_build =						\
++	($(print_app_build)				\
++	$(CC) $^ -rdynamic -o $@ $(CONFIG_LIBS) $(LIBS))
++
++do_compile_shared_library =			\
++	($(print_shared_lib_compile)		\
++	$(CC) --shared $^ -o $@ -lpthread -ldl)
++
++do_build_static_lib =				\
++	($(print_static_lib_build)		\
++	$(RM) $@;  $(AR) rcs $@ $^)
++
++
++define do_compile
++	$(print_compile)						\
++	$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
++endef
++
++$(obj)/%.o: $(src)/%.c
++	$(Q)$(call do_compile)
++
++%.o: $(src)/%.c
++	$(Q)$(call do_compile)
++
++PEVENT_LIB_OBJS = common.o lockdep.o preload.o rbtree.o
++
++ALL_OBJS = $(PEVENT_LIB_OBJS)
++
++CMD_TARGETS = $(LIB_FILE)
++
++TARGETS = $(CMD_TARGETS)
++
++
++all: all_cmd
++
++all_cmd: $(CMD_TARGETS)
++
++liblockdep.so: $(PEVENT_LIB_OBJS)
++	$(Q)$(do_compile_shared_library)
++
++liblockdep.a: $(PEVENT_LIB_OBJS)
++	$(Q)$(do_build_static_lib)
++
++$(PEVENT_LIB_OBJS): %.o: $(src)/%.c
++	$(Q)$(do_fpic_compile)
++
++## make deps
++
++all_objs := $(sort $(ALL_OBJS))
++all_deps := $(all_objs:%.o=.%.d)
++
++# let .d file also depends on the source and header files
++define check_deps
++		@set -e; $(RM) $@; \
++		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
++		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
++		$(RM) $@.$$$$
++endef
++
++$(all_deps): .%.d: $(src)/%.c
++	$(Q)$(call check_deps)
++
++$(all_objs) : %.o : .%.d
++
++dep_includes := $(wildcard $(all_deps))
++
++ifneq ($(dep_includes),)
++ include $(dep_includes)
++endif
++
++### Detect environment changes
++TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
++
++tags:	force
++	$(RM) tags
++	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px \
++	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
++
++TAGS:	force
++	$(RM) TAGS
++	find . -name '*.[ch]' | xargs etags \
++	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'
++
++define do_install
++	$(print_install)				\
++	if [ ! -d '$(DESTDIR_SQ)$2' ]; then		\
++		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$2';	\
++	fi;						\
++	$(INSTALL) $1 '$(DESTDIR_SQ)$2'
++endef
++
++install_lib: all_cmd
++	$(Q)$(call do_install,$(LIB_FILE),$(libdir_SQ))
++	$(Q)$(call do_install,$(BIN_FILE),$(bindir_SQ))
++
++install: install_lib
++
++clean:
++	$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES) .*.d
++	$(RM) tags TAGS
++
++endif # skip-makefile
++
++PHONY += force
++force:
++
++# Declare the contents of the .PHONY variable as phony.  We keep that
++# information in a variable so we can use it in if_changed and friends.
++.PHONY: $(PHONY)
+diff --git a/tools/lib/lockdep/common.c b/tools/lib/lockdep/common.c
+new file mode 100644
+index 0000000..8ef602f
+--- /dev/null
++++ b/tools/lib/lockdep/common.c
+@@ -0,0 +1,33 @@
++#include <stddef.h>
++#include <stdbool.h>
++#include <linux/compiler.h>
++#include <linux/lockdep.h>
++#include <unistd.h>
++#include <sys/syscall.h>
++
++static __thread struct task_struct current_obj;
++
++/* lockdep wants these */
++bool debug_locks = true;
++bool debug_locks_silent;
++
++__attribute__((constructor)) static void liblockdep_init(void)
 +{
-+	pthread_rwlock_t a, b;
-+
-+	pthread_rwlock_init(&a, NULL);
-+	pthread_rwlock_init(&b, NULL);
-+
-+	pthread_rwlock_wrlock(&a);
-+	pthread_rwlock_rdlock(&b);
-+	pthread_rwlock_wrlock(&a);
++	lockdep_init();
 +}
++
++__attribute__((destructor)) static void liblockdep_exit(void)
++{
++	debug_check_no_locks_held(&current_obj);
++}
++
++struct task_struct *__curr(void)
++{
++	if (current_obj.pid == 0) {
++		/* Makes lockdep output pretty */
++		prctl(PR_GET_NAME, current_obj.comm);
++		current_obj.pid = syscall(__NR_gettid);
++	}
++
++	return &current_obj;
++}
+diff --git a/tools/lib/lockdep/lockdep.c b/tools/lib/lockdep/lockdep.c
+new file mode 100644
+index 0000000..8ddd0ff
+--- /dev/null
++++ b/tools/lib/lockdep/lockdep.c
+@@ -0,0 +1,2 @@
++#include <linux/lockdep.h>
++#include "../../../kernel/lockdep.c"
+diff --git a/tools/lib/lockdep/lockdep_internals.h b/tools/lib/lockdep/lockdep_internals.h
+new file mode 100644
+index 0000000..109e96f
+--- /dev/null
++++ b/tools/lib/lockdep/lockdep_internals.h
+@@ -0,0 +1 @@
++#include "../../../kernel/lockdep_internals.h"
+diff --git a/tools/lib/lockdep/lockdep_states.h b/tools/lib/lockdep/lockdep_states.h
+new file mode 100644
+index 0000000..6b75423
+--- /dev/null
++++ b/tools/lib/lockdep/lockdep_states.h
+@@ -0,0 +1 @@
++#include "../../../kernel/lockdep_states.h"
+diff --git a/tools/lib/lockdep/rbtree.c b/tools/lib/lockdep/rbtree.c
+new file mode 100644
+index 0000000..f7f4303
+--- /dev/null
++++ b/tools/lib/lockdep/rbtree.c
+@@ -0,0 +1 @@
++#include "../../../lib/rbtree.c"
+diff --git a/tools/lib/lockdep/uinclude/asm/hweight.h b/tools/lib/lockdep/uinclude/asm/hweight.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/asm/sections.h b/tools/lib/lockdep/uinclude/asm/sections.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/bitops.h b/tools/lib/lockdep/uinclude/linux/bitops.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/compiler.h b/tools/lib/lockdep/uinclude/linux/compiler.h
+new file mode 100644
+index 0000000..7ac838a
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/compiler.h
+@@ -0,0 +1,7 @@
++#ifndef _LIBLOCKDEP_LINUX_COMPILER_H_
++#define _LIBLOCKDEP_LINUX_COMPILER_H_
++
++#define __used		__attribute__((__unused__))
++#define unlikely
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/debug_locks.h b/tools/lib/lockdep/uinclude/linux/debug_locks.h
+new file mode 100644
+index 0000000..f38eb64
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/debug_locks.h
+@@ -0,0 +1,12 @@
++#ifndef _LIBLOCKDEP_DEBUG_LOCKS_H_
++#define _LIBLOCKDEP_DEBUG_LOCKS_H_
++
++#include <stddef.h>
++#include <linux/compiler.h>
++
++#define DEBUG_LOCKS_WARN_ON(x) (x)
++
++extern bool debug_locks;
++extern bool debug_locks_silent;
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/delay.h b/tools/lib/lockdep/uinclude/linux/delay.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/export.h b/tools/lib/lockdep/uinclude/linux/export.h
+new file mode 100644
+index 0000000..6bdf349
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/export.h
+@@ -0,0 +1,7 @@
++#ifndef _LIBLOCKDEP_LINUX_EXPORT_H_
++#define _LIBLOCKDEP_LINUX_EXPORT_H_
++
++#define EXPORT_SYMBOL(sym)
++#define EXPORT_SYMBOL_GPL(sym)
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/ftrace.h b/tools/lib/lockdep/uinclude/linux/ftrace.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/gfp.h b/tools/lib/lockdep/uinclude/linux/gfp.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/hardirq.h b/tools/lib/lockdep/uinclude/linux/hardirq.h
+new file mode 100644
+index 0000000..c8f3f8f
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/hardirq.h
+@@ -0,0 +1,11 @@
++#ifndef _LIBLOCKDEP_LINUX_HARDIRQ_H_
++#define _LIBLOCKDEP_LINUX_HARDIRQ_H_
++
++#define SOFTIRQ_BITS	0UL
++#define HARDIRQ_BITS	0UL
++#define SOFTIRQ_SHIFT	0UL
++#define HARDIRQ_SHIFT	0UL
++#define hardirq_count()	0UL
++#define softirq_count()	0UL
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/hash.h b/tools/lib/lockdep/uinclude/linux/hash.h
+new file mode 100644
+index 0000000..0f84798
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/hash.h
+@@ -0,0 +1 @@
++#include "../../../include/linux/hash.h"
+diff --git a/tools/lib/lockdep/uinclude/linux/interrupt.h b/tools/lib/lockdep/uinclude/linux/interrupt.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/irqflags.h b/tools/lib/lockdep/uinclude/linux/irqflags.h
+new file mode 100644
+index 0000000..6cc296f
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/irqflags.h
+@@ -0,0 +1,38 @@
++#ifndef _LIBLOCKDEP_LINUX_TRACE_IRQFLAGS_H_
++#define _LIBLOCKDEP_LINUX_TRACE_IRQFLAGS_H_
++
++# define trace_hardirq_context(p)	0
++# define trace_softirq_context(p)	0
++# define trace_hardirqs_enabled(p)	0
++# define trace_softirqs_enabled(p)	0
++# define trace_hardirq_enter()		do { } while (0)
++# define trace_hardirq_exit()		do { } while (0)
++# define lockdep_softirq_enter()	do { } while (0)
++# define lockdep_softirq_exit()		do { } while (0)
++# define INIT_TRACE_IRQFLAGS
++
++# define stop_critical_timings() do { } while (0)
++# define start_critical_timings() do { } while (0)
++
++#define raw_local_irq_disable() do { } while (0)
++#define raw_local_irq_enable() do { } while (0)
++#define raw_local_irq_save(flags) ((flags) = 0)
++#define raw_local_irq_restore(flags) do { } while (0)
++#define raw_local_save_flags(flags) ((flags) = 0)
++#define raw_irqs_disabled_flags(flags) do { } while (0)
++#define raw_irqs_disabled() 0
++#define raw_safe_halt()
++
++#define local_irq_enable() do { } while (0)
++#define local_irq_disable() do { } while (0)
++#define local_irq_save(flags) ((flags) = 0)
++#define local_irq_restore(flags) do { } while (0)
++#define local_save_flags(flags)	((flags) = 0)
++#define irqs_disabled() (1)
++#define irqs_disabled_flags(flags) (0)
++#define safe_halt() do { } while (0)
++
++#define trace_lock_release(x, y)
++#define trace_lock_acquire(a, b, c, d, e, f, g)
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/kallsyms.h b/tools/lib/lockdep/uinclude/linux/kallsyms.h
+new file mode 100644
+index 0000000..b0f2dbd
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/kallsyms.h
+@@ -0,0 +1,32 @@
++#ifndef _LIBLOCKDEP_LINUX_KALLSYMS_H_
++#define _LIBLOCKDEP_LINUX_KALLSYMS_H_
++
++#include <linux/kernel.h>
++#include <stdio.h>
++
++#define KSYM_NAME_LEN 128
++
++struct module;
++
++static inline const char *kallsyms_lookup(unsigned long addr,
++					  unsigned long *symbolsize,
++					  unsigned long *offset,
++					  char **modname, char *namebuf)
++{
++	return NULL;
++}
++
++#include <execinfo.h>
++#include <stdlib.h>
++static inline void print_ip_sym(unsigned long ip)
++{
++	char **name;
++
++	name = backtrace_symbols((void **)&ip, 1);
++
++	printf("%s\n", *name);
++
++	free(name);
++}
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/kern_levels.h b/tools/lib/lockdep/uinclude/linux/kern_levels.h
+new file mode 100644
+index 0000000..3b9bade
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/kern_levels.h
+@@ -0,0 +1,25 @@
++#ifndef __KERN_LEVELS_H__
++#define __KERN_LEVELS_H__
++
++#define KERN_SOH	""		/* ASCII Start Of Header */
++#define KERN_SOH_ASCII	''
++
++#define KERN_EMERG	KERN_SOH ""	/* system is unusable */
++#define KERN_ALERT	KERN_SOH ""	/* action must be taken immediately */
++#define KERN_CRIT	KERN_SOH ""	/* critical conditions */
++#define KERN_ERR	KERN_SOH ""	/* error conditions */
++#define KERN_WARNING	KERN_SOH ""	/* warning conditions */
++#define KERN_NOTICE	KERN_SOH ""	/* normal but significant condition */
++#define KERN_INFO	KERN_SOH ""	/* informational */
++#define KERN_DEBUG	KERN_SOH ""	/* debug-level messages */
++
++#define KERN_DEFAULT	KERN_SOH ""	/* the default kernel loglevel */
++
++/*
++ * Annotation for a "continued" line of log printout (only done after a
++ * line that had no enclosing \n). Only to be used by core/arch code
++ * during early bootup (a continued line is not SMP-safe otherwise).
++ */
++#define KERN_CONT	""
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/kernel.h b/tools/lib/lockdep/uinclude/linux/kernel.h
+new file mode 100644
+index 0000000..afa8323
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/kernel.h
+@@ -0,0 +1,37 @@
++#ifndef _LIBLOCKDEP_LINUX_KERNEL_H_
++#define _LIBLOCKDEP_LINUX_KERNEL_H_
++
++#include <linux/export.h>
++#include <linux/types.h>
++#include <linux/rcu.h>
++#include <linux/hardirq.h>
++#include <linux/kern_levels.h>
++
++#ifndef container_of
++#define container_of(ptr, type, member) ({			\
++	const typeof(((type *)0)->member) * __mptr = (ptr);	\
++	(type *)((char *)__mptr - offsetof(type, member)); })
++#endif
++
++#define max(x, y) ({				\
++	typeof(x) _max1 = (x);			\
++	typeof(y) _max2 = (y);			\
++	(void) (&_max1 == &_max2);		\
++	_max1 > _max2 ? _max1 : _max2; })
++
++#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
++#define WARN_ON(x) (x)
++#define WARN_ON_ONCE(x) (x)
++#define likely(x) (x)
++#define WARN(x, y, z) (x)
++#define uninitialized_var(x) x
++#define __init
++#define noinline
++#define list_add_tail_rcu list_add_tail
++
++#ifndef CALLER_ADDR0
++#define _THIS_IP_ CALLER_ADDR0
++#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
++#endif
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/kmemcheck.h b/tools/lib/lockdep/uinclude/linux/kmemcheck.h
+new file mode 100644
+index 0000000..94d598b
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/kmemcheck.h
+@@ -0,0 +1,8 @@
++#ifndef _LIBLOCKDEP_LINUX_KMEMCHECK_H_
++#define _LIBLOCKDEP_LINUX_KMEMCHECK_H_
++
++static inline void kmemcheck_mark_initialized(void *address, unsigned int n)
++{
++}
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/linkage.h b/tools/lib/lockdep/uinclude/linux/linkage.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/list.h b/tools/lib/lockdep/uinclude/linux/list.h
+new file mode 100644
+index 0000000..6e9ef31
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/list.h
+@@ -0,0 +1 @@
++#include "../../../include/linux/list.h"
+diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
+new file mode 100644
+index 0000000..d0f5d6e
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
+@@ -0,0 +1,55 @@
++#ifndef _LIBLOCKDEP_LOCKDEP_H_
++#define _LIBLOCKDEP_LOCKDEP_H_
++
++#include <sys/prctl.h>
++#include <sys/syscall.h>
++#include <string.h>
++#include <limits.h>
++#include <linux/utsname.h>
++
++
++#define MAX_LOCK_DEPTH 2000UL
++
++#include "../../../include/linux/lockdep.h"
++
++struct task_struct {
++	u64 curr_chain_key;
++	int lockdep_depth;
++	unsigned int lockdep_recursion;
++	struct held_lock held_locks[MAX_LOCK_DEPTH];
++	gfp_t lockdep_reclaim_gfp;
++	int pid;
++	char comm[17];
++};
++
++extern struct task_struct *__curr(void);
++
++#define current (__curr())
++
++#define debug_locks_off() 1
++#define task_pid_nr(tsk) ((tsk)->pid)
++
++#define KSYM_NAME_LEN 128
++#define printk printf
++
++#define list_del_rcu list_del
++
++#define atomic_t unsigned long
++#define atomic_inc(x) ((*(x))++)
++
++static struct new_utsname *init_utsname(void)
++{
++	static struct new_utsname n = (struct new_utsname) {
++		.release = "liblockdep",
++		.version = LIBLOCKDEP_VERSION,
++	};
++
++	return &n;
++}
++
++#define print_tainted() ""
++#define static_obj(x) 1
++
++#define debug_show_all_locks()
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/mm_types.h b/tools/lib/lockdep/uinclude/linux/mm_types.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/module.h b/tools/lib/lockdep/uinclude/linux/module.h
+new file mode 100644
+index 0000000..09c7a7b
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/module.h
+@@ -0,0 +1,6 @@
++#ifndef _LIBLOCKDEP_LINUX_MODULE_H_
++#define _LIBLOCKDEP_LINUX_MODULE_H_
++
++#define module_param(name, type, perm)
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/mutex.h b/tools/lib/lockdep/uinclude/linux/mutex.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/poison.h b/tools/lib/lockdep/uinclude/linux/poison.h
+new file mode 100644
+index 0000000..0c27bdf
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/poison.h
+@@ -0,0 +1 @@
++#include "../../../include/linux/poison.h"
+diff --git a/tools/lib/lockdep/uinclude/linux/prefetch.h b/tools/lib/lockdep/uinclude/linux/prefetch.h
+new file mode 100644
+index 0000000..d73fe6f
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/prefetch.h
+@@ -0,0 +1,6 @@
++#ifndef _LIBLOCKDEP_LINUX_PREFETCH_H_
++#define _LIBLOCKDEP_LINUX_PREFETCH_H
++
++static inline void prefetch(void *a __attribute__((unused))) { }
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/proc_fs.h b/tools/lib/lockdep/uinclude/linux/proc_fs.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/rbtree.h b/tools/lib/lockdep/uinclude/linux/rbtree.h
+new file mode 100644
+index 0000000..965901d
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/rbtree.h
+@@ -0,0 +1 @@
++#include "../../../include/linux/rbtree.h"
+diff --git a/tools/lib/lockdep/uinclude/linux/rbtree_augmented.h b/tools/lib/lockdep/uinclude/linux/rbtree_augmented.h
+new file mode 100644
+index 0000000..c375947
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/rbtree_augmented.h
+@@ -0,0 +1,2 @@
++#define __always_inline
++#include "../../../include/linux/rbtree_augmented.h"
+diff --git a/tools/lib/lockdep/uinclude/linux/rcu.h b/tools/lib/lockdep/uinclude/linux/rcu.h
+new file mode 100644
+index 0000000..4c99fcb
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/rcu.h
+@@ -0,0 +1,16 @@
++#ifndef _LIBLOCKDEP_RCU_H_
++#define _LIBLOCKDEP_RCU_H_
++
++int rcu_scheduler_active;
++
++static inline int rcu_lockdep_current_cpu_online(void)
++{
++	return 1;
++}
++
++static inline int rcu_is_cpu_idle(void)
++{
++	return 1;
++}
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/seq_file.h b/tools/lib/lockdep/uinclude/linux/seq_file.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/spinlock.h b/tools/lib/lockdep/uinclude/linux/spinlock.h
+new file mode 100644
+index 0000000..68c1aa2
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/spinlock.h
+@@ -0,0 +1,25 @@
++#ifndef _LIBLOCKDEP_SPINLOCK_H_
++#define _LIBLOCKDEP_SPINLOCK_H_
++
++#include <pthread.h>
++#include <stdbool.h>
++
++#define arch_spinlock_t pthread_mutex_t
++#define __ARCH_SPIN_LOCK_UNLOCKED PTHREAD_MUTEX_INITIALIZER
++
++static inline void arch_spin_lock(arch_spinlock_t *mutex)
++{
++	pthread_mutex_lock(mutex);
++}
++
++static inline void arch_spin_unlock(arch_spinlock_t *mutex)
++{
++	pthread_mutex_unlock(mutex);
++}
++
++static inline bool arch_spin_is_locked(arch_spinlock_t *mutex)
++{
++	return true;
++}
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/stacktrace.h b/tools/lib/lockdep/uinclude/linux/stacktrace.h
+new file mode 100644
+index 0000000..39aecc6
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/stacktrace.h
+@@ -0,0 +1,32 @@
++#ifndef _LIBLOCKDEP_LINUX_STACKTRACE_H_
++#define _LIBLOCKDEP_LINUX_STACKTRACE_H_
++
++#include <execinfo.h>
++
++struct stack_trace {
++	unsigned int nr_entries, max_entries;
++	unsigned long *entries;
++	int skip;
++};
++
++static inline void print_stack_trace(struct stack_trace *trace, int spaces)
++{
++	backtrace_symbols_fd((void **)trace->entries, trace->nr_entries, 1);
++}
++
++#define save_stack_trace(trace)	\
++	((trace)->nr_entries =	\
++		backtrace((void **)(trace)->entries, (trace)->max_entries))
++
++static inline int dump_stack(void)
++{
++	void *array[64];
++	size_t size;
++
++	size = backtrace(array, 64);
++	backtrace_symbols_fd(array, size, 1);
++
++	return 0;
++}
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/stringify.h b/tools/lib/lockdep/uinclude/linux/stringify.h
+new file mode 100644
+index 0000000..05dfcd1
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/stringify.h
+@@ -0,0 +1,7 @@
++#ifndef _LIBLOCKDEP_LINUX_STRINGIFY_H_
++#define _LIBLOCKDEP_LINUX_STRINGIFY_H_
++
++#define __stringify_1(x...)	#x
++#define __stringify(x...)	__stringify_1(x)
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/system.h b/tools/lib/lockdep/uinclude/linux/system.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/linux/types.h b/tools/lib/lockdep/uinclude/linux/types.h
+new file mode 100644
+index 0000000..929938f
+--- /dev/null
++++ b/tools/lib/lockdep/uinclude/linux/types.h
+@@ -0,0 +1,58 @@
++#ifndef _LIBLOCKDEP_LINUX_TYPES_H_
++#define _LIBLOCKDEP_LINUX_TYPES_H_
++
++#include <stdbool.h>
++#include <stddef.h>
++
++#define __SANE_USERSPACE_TYPES__	/* For PPC64, to get LL64 types */
++#include <asm/types.h>
++
++struct page;
++struct kmem_cache;
++
++typedef unsigned gfp_t;
++
++typedef __u64 u64;
++typedef __s64 s64;
++
++typedef __u32 u32;
++typedef __s32 s32;
++
++typedef __u16 u16;
++typedef __s16 s16;
++
++typedef __u8  u8;
++typedef __s8  s8;
++
++#ifdef __CHECKER__
++#define __bitwise__ __attribute__((bitwise))
++#else
++#define __bitwise__
++#endif
++#ifdef __CHECK_ENDIAN__
++#define __bitwise __bitwise__
++#else
++#define __bitwise
++#endif
++
++
++typedef __u16 __bitwise __le16;
++typedef __u16 __bitwise __be16;
++typedef __u32 __bitwise __le32;
++typedef __u32 __bitwise __be32;
++typedef __u64 __bitwise __le64;
++typedef __u64 __bitwise __be64;
++
++struct list_head {
++	struct list_head *next, *prev;
++};
++
++struct hlist_head {
++	struct hlist_node *first;
++};
++
++struct hlist_node {
++	struct hlist_node *next, **pprev;
++};
++
++#endif
+diff --git a/tools/lib/lockdep/uinclude/linux/util.h b/tools/lib/lockdep/uinclude/linux/util.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tools/lib/lockdep/uinclude/trace/events/lock.h b/tools/lib/lockdep/uinclude/trace/events/lock.h
+new file mode 100644
+index 0000000..e69de29
 -- 
 1.8.2.1
 
