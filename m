@@ -1,83 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab3EPLSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:18:09 -0400
-Received: from sauhun.de ([89.238.76.85]:56265 "EHLO pokefinder.org"
+	id S1753299Ab3EPLSU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:18:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab3EPLPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:15:35 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
+	id S1752786Ab3EPLSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:18:15 -0400
+Date: Thu, 16 May 2013 14:15:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Subject: [PATCH 28/33] drivers/watchdog: don't check resource with devm_ioremap_resource
-Date: Thu, 16 May 2013 13:15:56 +0200
-Message-Id: <1368702961-4325-29-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: [PATCH v2 07/10] powerpc: uaccess s/might_sleep/might_fault/
+Message-ID: <2aa6c3da21a28120126732b5e0b4ecd6cba8ca3b.1368702323.git.mst@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1368702323.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+The only reason uaccess routines might sleep
+is if they fault. Make this explicit.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/watchdog/ath79_wdt.c   |    5 -----
- drivers/watchdog/davinci_wdt.c |    5 -----
- drivers/watchdog/imx2_wdt.c    |    5 -----
- 3 files changed, 15 deletions(-)
+ arch/powerpc/include/asm/uaccess.h | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
-index d184c48..37cb09b 100644
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -248,11 +248,6 @@ static int ath79_wdt_probe(struct platform_device *pdev)
- 		return -EBUSY;
+diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
+index 4db4959..9485b43 100644
+--- a/arch/powerpc/include/asm/uaccess.h
++++ b/arch/powerpc/include/asm/uaccess.h
+@@ -178,7 +178,7 @@ do {								\
+ 	long __pu_err;						\
+ 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);		\
+ 	if (!is_kernel_addr((unsigned long)__pu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__chk_user_ptr(ptr);					\
+ 	__put_user_size((x), __pu_addr, (size), __pu_err);	\
+ 	__pu_err;						\
+@@ -188,7 +188,7 @@ do {								\
+ ({									\
+ 	long __pu_err = -EFAULT;					\
+ 	__typeof__(*(ptr)) __user *__pu_addr = (ptr);			\
+-	might_sleep();							\
++	might_fault();							\
+ 	if (access_ok(VERIFY_WRITE, __pu_addr, size))			\
+ 		__put_user_size((x), __pu_addr, (size), __pu_err);	\
+ 	__pu_err;							\
+@@ -268,7 +268,7 @@ do {								\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+ 	__chk_user_ptr(ptr);					\
+ 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;			\
+ 	__gu_err;						\
+@@ -282,7 +282,7 @@ do {								\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+ 	__chk_user_ptr(ptr);					\
+ 	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+-		might_sleep();					\
++		might_fault();					\
+ 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;			\
+ 	__gu_err;						\
+@@ -294,7 +294,7 @@ do {								\
+ 	long __gu_err = -EFAULT;					\
+ 	unsigned long  __gu_val = 0;					\
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
+-	might_sleep();							\
++	might_fault();							\
+ 	if (access_ok(VERIFY_READ, __gu_addr, (size)))			\
+ 		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+ 	(x) = (__typeof__(*(ptr)))__gu_val;				\
+@@ -419,14 +419,14 @@ static inline unsigned long __copy_to_user_inatomic(void __user *to,
+ static inline unsigned long __copy_from_user(void *to,
+ 		const void __user *from, unsigned long size)
+ {
+-	might_sleep();
++	might_fault();
+ 	return __copy_from_user_inatomic(to, from, size);
+ }
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "no memory resource found\n");
--		return -EINVAL;
--	}
--
- 	wdt_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(wdt_base))
- 		return PTR_ERR(wdt_base);
-diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-index 100d4fb..bead774 100644
---- a/drivers/watchdog/davinci_wdt.c
-+++ b/drivers/watchdog/davinci_wdt.c
-@@ -217,11 +217,6 @@ static int davinci_wdt_probe(struct platform_device *pdev)
- 	dev_info(dev, "heartbeat %d sec\n", heartbeat);
+ static inline unsigned long __copy_to_user(void __user *to,
+ 		const void *from, unsigned long size)
+ {
+-	might_sleep();
++	might_fault();
+ 	return __copy_to_user_inatomic(to, from, size);
+ }
  
- 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (wdt_mem == NULL) {
--		dev_err(dev, "failed to get memory region resource\n");
--		return -ENOENT;
--	}
--
- 	wdt_base = devm_ioremap_resource(dev, wdt_mem);
- 	if (IS_ERR(wdt_base))
- 		return PTR_ERR(wdt_base);
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index ff90882..62946c2 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -257,11 +257,6 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
- 	struct resource *res;
+@@ -434,7 +434,7 @@ extern unsigned long __clear_user(void __user *addr, unsigned long size);
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "can't get device resources\n");
--		return -ENODEV;
--	}
--
- 	imx2_wdt.base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(imx2_wdt.base))
- 		return PTR_ERR(imx2_wdt.base);
+ static inline unsigned long clear_user(void __user *addr, unsigned long size)
+ {
+-	might_sleep();
++	might_fault();
+ 	if (likely(access_ok(VERIFY_WRITE, addr, size)))
+ 		return __clear_user(addr, size);
+ 	if ((unsigned long)addr < TASK_SIZE) {
 -- 
-1.7.10.4
+MST
 
