@@ -1,68 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3EPPrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:47:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab3EPPre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:47:34 -0400
-Date: Thu, 16 May 2013 17:43:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Colin Walters <walters@verbum.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, security@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] usermodehelper: check subprocess_info->path != NULL
-Message-ID: <20130516154355.GB19060@redhat.com>
-References: <20130515201158.GA14606@redhat.com> <20130516154323.GA19060@redhat.com>
+	id S1754449Ab3EPPta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:49:30 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:46978 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335Ab3EPPt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 11:49:28 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, Yuchung Cheng <ycheng@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Eric Dumazet <edumazet@google.com>, Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: [RFC] assign some address families for local use
+Date: Thu, 16 May 2013 17:49:46 +0200
+Message-ID: <1483365.AWhs4mCphi@harkonnen>
+User-Agent: KMail/4.10.2 (Linux/3.8.11-200.fc18.x86_64; KDE/4.10.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516154323.GA19060@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/mixed; boundary="nextPart3729943.S8xGMTGp2U"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-argv_split(empty_or_all_spaces) happily succeeds, it simply returns
-argc == 0 and argv[0] == NULL. Change call_usermodehelper_exec() to
-check sub_info->path != NULL to avoid the crash.
+This is a multi-part message in MIME format.
 
-This is the minimal fix, todo:
+--nextPart3729943.S8xGMTGp2U
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-	- perhaps we should change argv_split() to return NULL or
-	  change the callers.
+Hello,
 
-	- kill or justify ->path[0] check
+We are working on new protocols and we think that is useful to have some 
+address protocol families index assigned for local use. So we will not have 
+conflict every time a new protocol is included within the Linux kernel.
+Doubt: index 27 and 28 are not assigned to any address family, can be 
+explicitly assigned for local use?
 
-	- narrow the scope of helper_lock()
+We also thought to increase AF_MAX to 64 to avoid to modify it every time.
+Doubt: array like af_family_key_strings (net/core/sock.c) will have some NULL 
+pointer. I see that a string is specified also for index 27 and 28 even if 
+there is not a protocol assigned for these. Is a NULL string a problem for 
+these vectors? Typically is used in this way:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@vger.kernel.org
----
- kernel/kmod.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+    af_family_clock_key_strings[newsk->sk_family]
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 1296e72..8241906 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -569,6 +569,11 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	int retval = 0;
- 
- 	helper_lock();
-+	if (!sub_info->path) {
-+		retval = -EINVAL;
-+		goto out;
-+	}
-+
- 	if (sub_info->path[0] == '\0')
- 		goto out;
- 
+So, if I set sk_family with an unassigned index I will have a NULL pointer and 
+a DEBUG_LOCK_WARN_ON() from lockdep_init_map() (kernel/lockdep.c)
+
+
+I attached to this email the patch that do these stuff.
+
 -- 
-1.5.5.1
+Federico Vaga
+--nextPart3729943.S8xGMTGp2U
+Content-Disposition: attachment; filename="0001-include-linux-socket.h-assign-address-families-for-l.patch"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/x-patch; charset="UTF-8"; name="0001-include-linux-socket.h-assign-address-families-for-l.patch"
 
+>From 8ce4f2576aa8e95ea22921c31bdffd049460951d Mon Sep 17 00:00:00 2001
+From: Federico Vaga <federico.vaga@gmail.com>
+Date: Wed, 15 May 2013 12:32:03 +0200
+Subject: [PATCH] include/linux/socket.h: assign address families for local use
+
+The patch assigns 4 address families for local use only. This is
+useful because it allows to maintain an address family outside kernel
+source without conflict. It is also useful during development until a
+number is officially assigned.
+
+This is the same kind of policy applied for major number
+(Documentation/devices.text)
+
+This patch also increases the number of maximum address (protocol)
+families to 64. In this way for a while nobody need to increase this
+value. The cost, in terms of memory, is tiny. I made an (very)
+approximate calculation about the cost of an unused address family by
+following NPROTO, AF_MAX and PF_MAX usage. If I did not big errors it
+should be about 70Byte on 32bit systems and 130Byte on 64bit systems for
+each new address family.
+
+I also compiled a kernel on a x86_64 machine:
+Without patch
+   text	   data	    bss	    dec	    hex		filename
+10935491 1398904 1175552 13509947  ce253b	vmlinux
+
+With patch
+   text	   data	    bss	    dec	    hex		filename
+10935427 1399544 1175552 13510523  ce277b	vmlinux
+
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ include/linux/socket.h | 12 +++++++++++-
+ net/core/sock.c        | 12 +++++++++---
+ 2 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 428c37a..4775d69 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -179,7 +179,12 @@ struct ucred {
+ #define AF_ALG		38	/* Algorithm sockets		*/
+ #define AF_NFC		39	/* NFC sockets			*/
+ #define AF_VSOCK	40	/* vSockets			*/
+-#define AF_MAX		41	/* For now.. */
++#define AF_LOCAL1	41	/* Local use sockets		*/
++#define AF_LOCAL2	42	/* Local use sockets		*/
++#define AF_LOCAL3	43	/* Local use sockets		*/
++#define AF_LOCAL4	44	/* Local use sockets		*/
++/* new address families here */
++#define AF_MAX		64
+ 
+ /* Protocol families, same as address families. */
+ #define PF_UNSPEC	AF_UNSPEC
+@@ -223,6 +228,11 @@ struct ucred {
+ #define PF_ALG		AF_ALG
+ #define PF_NFC		AF_NFC
+ #define PF_VSOCK	AF_VSOCK
++#define PF_LOCAL1	AF_LOCAL1
++#define PF_LOCAL2	AF_LOCAL2
++#define PF_LOCAL3	AF_LOCAL3
++#define PF_LOCAL4	AF_LOCAL4
++/* new protocol families here */
+ #define PF_MAX		AF_MAX
+ 
+ /* Maximum queue length specifiable by listen.  */
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 6ba327d..9bf66ab 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -210,7 +210,9 @@ static const char *const af_family_key_strings[AF_MAX+1] = {
+   "sk_lock-AF_TIPC"  , "sk_lock-AF_BLUETOOTH", "sk_lock-IUCV"        ,
+   "sk_lock-AF_RXRPC" , "sk_lock-AF_ISDN"     , "sk_lock-AF_PHONET"   ,
+   "sk_lock-AF_IEEE802154", "sk_lock-AF_CAIF" , "sk_lock-AF_ALG"      ,
+-  "sk_lock-AF_NFC"   , "sk_lock-AF_MAX"
++  "sk_lock-AF_NFC"   , "sk_lock-AF_LOCAL1"   , "sk_lock-AF_LOCAL2"   ,
++  "sk_lock-AF_LOCAL3", "sk_lock-AF_LOCAL4"   ,
++  [AF_MAX] = "sk_lock-AF_MAX"
+ };
+ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
+   "slock-AF_UNSPEC", "slock-AF_UNIX"     , "slock-AF_INET"     ,
+@@ -226,7 +228,9 @@ static const char *const af_family_slock_key_strings[AF_MAX+1] = {
+   "slock-AF_TIPC"  , "slock-AF_BLUETOOTH", "slock-AF_IUCV"     ,
+   "slock-AF_RXRPC" , "slock-AF_ISDN"     , "slock-AF_PHONET"   ,
+   "slock-AF_IEEE802154", "slock-AF_CAIF" , "slock-AF_ALG"      ,
+-  "slock-AF_NFC"   , "slock-AF_MAX"
++  "slock-AF_NFC"   , "slock-AF_LOCAL1"   , "slock-AF_LOCAL2"   ,
++  "slock-AF_LOCAL3", "slock-AF_LOCAL4"   ,
++  [AF_MAX] = "slock-AF_MAX"
+ };
+ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
+   "clock-AF_UNSPEC", "clock-AF_UNIX"     , "clock-AF_INET"     ,
+@@ -242,7 +246,9 @@ static const char *const af_family_clock_key_strings[AF_MAX+1] = {
+   "clock-AF_TIPC"  , "clock-AF_BLUETOOTH", "clock-AF_IUCV"     ,
+   "clock-AF_RXRPC" , "clock-AF_ISDN"     , "clock-AF_PHONET"   ,
+   "clock-AF_IEEE802154", "clock-AF_CAIF" , "clock-AF_ALG"      ,
+-  "clock-AF_NFC"   , "clock-AF_MAX"
++  "clock-AF_NFC"   , "clock-AF_LOCAL1"   , "clock-AF_LOCAL2"   ,
++  "clock-AF_LOCAL3", "clock-AF_LOCAL4"   ,
++  [AF_MAX] = "clock-AF_MAX"
+ };
+ 
+ /*
+-- 
+1.8.1.4
+
+
+--nextPart3729943.S8xGMTGp2U--
 
