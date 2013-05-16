@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3EPHQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 03:16:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62970 "EHLO mga03.intel.com"
+	id S1755388Ab3EPHRv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:17:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62782 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754903Ab3EPHQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 03:16:48 -0400
+	id S1754310Ab3EPHRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 03:17:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="242319709"
-Date: Thu, 16 May 2013 12:11:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH 08/39] dmaengine: ste_dma40: Remove redundant address
- fetching function
-Message-ID: <20130516064109.GG14863@intel.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-9-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368611522-9984-9-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="303235155"
+Message-ID: <1368688777.15764.175.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2 0/4] Export the ecc step size to user applications
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <shijie8@gmail.com>
+Cc: Huang Shijie <b32955@freescale.com>, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 16 May 2013 10:19:37 +0300
+In-Reply-To: <CAMiH66GygmwvfZrwys7RoeoY4Q_fFkfbiZF_pJN4RxQBPaz0fw@mail.gmail.com>
+References: <1368607606-4344-1-git-send-email-b32955@freescale.com>
+	 <1368619642.15764.96.camel@sauron.fi.intel.com>
+	 <CAMiH66GygmwvfZrwys7RoeoY4Q_fFkfbiZF_pJN4RxQBPaz0fw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 10:51:31AM +0100, Lee Jones wrote:
-> Addresses are now stored in local data structures and are easy to
-> obtain, thus a specialist function used to fetch them is now surplus
-> to requirement.
+On Wed, 2013-05-15 at 22:19 +0800, Huang Shijie wrote:
+> ok.   can i send a separate patch to fix it?
+> or a new version patch set？
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+Just a follow-up patch. I would like to let this patch-set sit in the
+mailing list for some time before I pick it, in case someone wants to
+comment.
 
---
-~Vinod
->  drivers/dma/ste_dma40.c |   18 ------------------
->  1 file changed, 18 deletions(-)
-> 
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 57a127e..6ed7757 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -2267,24 +2267,6 @@ err:
->  	return NULL;
->  }
->  
-> -static dma_addr_t
-> -d40_get_dev_addr(struct d40_chan *chan, enum dma_transfer_direction direction)
-> -{
-> -	struct stedma40_platform_data *plat = chan->base->plat_data;
-> -	struct stedma40_chan_cfg *cfg = &chan->dma_cfg;
-> -	dma_addr_t addr = 0;
-> -
-> -	if (chan->runtime_addr)
-> -		return chan->runtime_addr;
-> -
-> -	if (direction == DMA_DEV_TO_MEM)
-> -		addr = plat->dev_rx[cfg->dev_type];
-> -	else if (direction == DMA_MEM_TO_DEV)
-> -		addr = plat->dev_tx[cfg->dev_type];
-> -
-> -	return addr;
-> -}
-> -
->  static struct dma_async_tx_descriptor *
->  d40_prep_sg(struct dma_chan *dchan, struct scatterlist *sg_src,
->  	    struct scatterlist *sg_dst, unsigned int sg_len,
-> -- 
-> 1.7.10.4
-> 
+Also, surely the things you expose are the real ECC step and ECC
+strength? I think the datasheet ones in your other patch-set should be
+named differently to make sure the reader of the code understands that
+they are only the recommended datasheet values, not necessarily the
+values which are actually in use.
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
