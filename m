@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab3EPM75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 08:59:57 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:38940 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab3EPM7x (ORCPT
+	id S1754106Ab3EPNAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:00:08 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:36057 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab3EPNAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 08:59:53 -0400
+	Thu, 16 May 2013 09:00:02 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LMML <linux-media@vger.kernel.org>
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Hans Verkuil <hans.verkuil@cisco.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 4/7] media: davinci: vpif_capture: remove unwanted header inclusion and sort them alphabetically
-Date: Thu, 16 May 2013 18:28:19 +0530
-Message-Id: <1368709102-2854-5-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 5/7] media: davinci: vpif_capture: Convert to devm_* api
+Date: Thu, 16 May 2013 18:28:20 +0530
+Message-Id: <1368709102-2854-6-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368709102-2854-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368709102-2854-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -27,70 +27,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-This patch removes unwanted header inclusion and sorts them alphabetically
+use devm_request_irq() instead of request_irq().
+This ensures more consistent error values and simplifies error paths.
+
+use module_platform_driver to simplify the code.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpif_capture.c |   21 +++++----------------
- drivers/media/platform/davinci/vpif_capture.h |    6 ++----
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ drivers/media/platform/davinci/vpif_capture.c |   75 +++++--------------------
+ 1 files changed, 14 insertions(+), 61 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 5f98df1..c26b6e4 100644
+index c26b6e4..3e48c9c 100644
 --- a/drivers/media/platform/davinci/vpif_capture.c
 +++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -18,28 +18,17 @@
-  * TODO : add support for VBI & HBI data service
-  *	  add static buffer allocation
+@@ -2082,14 +2082,13 @@ static __init int vpif_probe(struct platform_device *pdev)
+ 
+ 	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, res_idx))) {
+ 		for (i = res->start; i <= res->end; i++) {
+-			if (request_irq(i, vpif_channel_isr, IRQF_SHARED,
+-					"VPIF_Capture", (void *)
+-					(&vpif_obj.dev[res_idx]->channel_id))) {
+-				err = -EBUSY;
+-				for (j = 0; j < i; j++)
+-					free_irq(j, (void *)
+-					(&vpif_obj.dev[res_idx]->channel_id));
+-				goto vpif_int_err;
++			err = devm_request_irq(&pdev->dev, i, vpif_channel_isr,
++					     IRQF_SHARED, "VPIF_Capture",
++					     (void *)(&vpif_obj.dev[res_idx]->
++					     channel_id));
++			if (err) {
++				err = -EINVAL;
++				goto vpif_unregister;
+ 			}
+ 		}
+ 		res_idx++;
+@@ -2106,7 +2105,7 @@ static __init int vpif_probe(struct platform_device *pdev)
+ 				video_device_release(ch->video_dev);
+ 			}
+ 			err = -ENOMEM;
+-			goto vpif_int_err;
++			goto vpif_unregister;
+ 		}
+ 
+ 		/* Initialize field of video device */
+@@ -2206,13 +2205,8 @@ vpif_sd_error:
+ 		/* Note: does nothing if ch->video_dev == NULL */
+ 		video_device_release(ch->video_dev);
+ 	}
+-vpif_int_err:
++vpif_unregister:
+ 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+-	for (i = 0; i < res_idx; i++) {
+-		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+-		for (j = res->start; j <= res->end; j++)
+-			free_irq(j, (void *)(&vpif_obj.dev[i]->channel_id));
+-	}
+ 	return err;
+ }
+ 
+@@ -2224,18 +2218,20 @@ vpif_int_err:
   */
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/errno.h>
--#include <linux/fs.h>
--#include <linux/mm.h>
+ static int vpif_remove(struct platform_device *device)
+ {
+-	int i;
+ 	struct channel_obj *ch;
++	int i;
+ 
+ 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
+-
++	kfree(vpif_obj.sd);
+ 	/* un-register device */
+ 	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++) {
+ 		/* Get the pointer to the channel object */
+ 		ch = vpif_obj.dev[i];
+ 		/* Unregister video device */
+ 		video_unregister_device(ch->video_dev);
++		kfree(vpif_obj.dev[i]);
+ 	}
 +
- #include <linux/interrupt.h>
--#include <linux/workqueue.h>
--#include <linux/string.h>
--#include <linux/videodev2.h>
--#include <linux/wait.h>
--#include <linux/time.h>
--#include <linux/i2c.h>
-+#include <linux/module.h>
- #include <linux/platform_device.h>
--#include <linux/io.h>
- #include <linux/slab.h>
--#include <media/v4l2-device.h>
--#include <media/v4l2-ioctl.h>
-+
- #include <media/v4l2-chip-ident.h>
-+#include <media/v4l2-ioctl.h>
+ 	return 0;
+ }
  
--#include "vpif_capture.h"
- #include "vpif.h"
-+#include "vpif_capture.h"
+@@ -2325,47 +2321,4 @@ static __refdata struct platform_driver vpif_driver = {
+ 	.remove = vpif_remove,
+ };
  
- MODULE_DESCRIPTION("TI DaVinci VPIF Capture driver");
- MODULE_LICENSE("GPL");
-diff --git a/drivers/media/platform/davinci/vpif_capture.h b/drivers/media/platform/davinci/vpif_capture.h
-index 3d3c1e5..517e7d1 100644
---- a/drivers/media/platform/davinci/vpif_capture.h
-+++ b/drivers/media/platform/davinci/vpif_capture.h
-@@ -22,11 +22,9 @@
- #ifdef __KERNEL__
- 
- /* Header files */
--#include <linux/videodev2.h>
--#include <media/v4l2-common.h>
--#include <media/v4l2-device.h>
--#include <media/videobuf2-dma-contig.h>
- #include <media/davinci/vpif_types.h>
-+#include <media/videobuf2-dma-contig.h>
-+#include <media/v4l2-device.h>
- 
- #include "vpif.h"
- 
+-/**
+- * vpif_init: initialize the vpif driver
+- *
+- * This function registers device and driver to the kernel, requests irq
+- * handler and allocates memory
+- * for channel objects
+- */
+-static __init int vpif_init(void)
+-{
+-	return platform_driver_register(&vpif_driver);
+-}
+-
+-/**
+- * vpif_cleanup : This function clean up the vpif capture resources
+- *
+- * This will un-registers device and driver to the kernel, frees
+- * requested irq handler and de-allocates memory allocated for channel
+- * objects.
+- */
+-static void vpif_cleanup(void)
+-{
+-	struct platform_device *pdev;
+-	struct resource *res;
+-	int irq_num;
+-	int i = 0;
+-
+-	pdev = container_of(vpif_dev, struct platform_device, dev);
+-	while ((res = platform_get_resource(pdev, IORESOURCE_IRQ, i))) {
+-		for (irq_num = res->start; irq_num <= res->end; irq_num++)
+-			free_irq(irq_num,
+-				 (void *)(&vpif_obj.dev[i]->channel_id));
+-		i++;
+-	}
+-
+-	platform_driver_unregister(&vpif_driver);
+-
+-	kfree(vpif_obj.sd);
+-	for (i = 0; i < VPIF_CAPTURE_MAX_DEVICES; i++)
+-		kfree(vpif_obj.dev[i]);
+-}
+-
+-/* Function for module initialization and cleanup */
+-module_init(vpif_init);
+-module_exit(vpif_cleanup);
++module_platform_driver(vpif_driver);
 -- 
 1.7.4.1
 
