@@ -1,115 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab3EPBaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:30:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8894 "EHLO mga01.intel.com"
+	id S1754964Ab3EPBtj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 21:49:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1990 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab3EPBah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:30:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="338342363"
-Message-ID: <519436B7.2050101@linux.intel.com>
-Date: Wed, 15 May 2013 18:30:31 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751521Ab3EPBtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 21:49:35 -0400
+Date: Thu, 16 May 2013 09:48:44 +0800
+From: Asias He <asias@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+Message-ID: <20130516014844.GA23441@hj.localdomain>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
+ <1368579583-13097-1-git-send-email-asias@redhat.com>
+ <8761yk254u.fsf@rustcorp.com.au>
+ <1368657450.6899.29.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-To: zhang.yi20@zte.com.cn
-CC: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        "'Ingo Molnar'" <mingo@kernel.org>,
-        "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>, Zhang Yi <wetpzy@gmail.com>
-Subject: Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
-References: <000101ce5174$1962bac0$4c283040$@com> <20130515142035.GD11497@suse.de> <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>
-In-Reply-To: <OF1450163D.E6FBE6A2-ON48257B6D.00048ADD-48257B6D.00070A58@zte.com.cn>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368657450.6899.29.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 15, 2013 at 03:37:30PM -0700, Nicholas A. Bellinger wrote:
+> On Wed, 2013-05-15 at 14:47 +0930, Rusty Russell wrote:
+> > Asias He <asias@redhat.com> writes:
+> > > scsi.c includes vhost.c which uses memcpy_fromiovec.
+> > >
+> > > This patch fixes this build failure.
+> > >
+> > >    From Randy Dunlap:
+> > >    '''
+> > >    on x86_64:
+> > >
+> > >    ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
+> > >
+> > >    It needs to depend on NET since net/core/ provides that function.
+> > >    '''
+> > 
+> > Proper fix please.
+> > 
+> > Though I can't see why you thought this was a good idea.  Nonetheless, I
+> > shan't highlight why: I have far too much respect for your intellects
+> > and abilities.
+> > 
+> > No, don't thank me!
+> 
+> Hi Rusty & Asias,
+> 
+> I assume you mean something like the following patch to allow kbuild to
+> work when VHOST_NET + VHOST_SCSI are both enabled and sharing vhost.o,
+> yes..?
+> 
+> Also included is dropping the now unnecessary vhost.c include, and
+> allowing vhost_work_flush() to be accessed externally as scsi.c
+> currently requires.
+> 
+> MST, care to pick this up..?
+> 
+> --nab
 
 
-On 05/15/2013 06:16 PM, zhang.yi20@zte.com.cn wrote:
-> 
-> 
-> Mel Gorman <mgorman@suse.de> wrote on 2013/05/15 22:20:35:
-> 
-> 
->> Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
->>
->> On Wed, May 15, 2013 at 09:57:03PM +0800, Zhang Yi wrote:
->>> The futex-keys of processes share futex determined by page-offset,
->>> mapping-host, and mapping-index of the user space address. User
->>> appications using hugepage for futex may lead to futex-key conflict.
->>>
->>> Assume there are two or more futexes in diffrent normal pages of the
->>> hugepage, and each futex has the same offset in its normal page,
->>> causing all the futexes have the same futex-key.
->>>
->>> This patch adds the normal page index in the compound page into
->>> the pgoff of futex-key.
->>>
->>> Steps to reproduce the bug:
->>> 1. The 1st thread map a file of hugetlbfs, and use the return address
->>> as the 1st mutex's address, and use the return address with PAGE_SIZE
->>> added as the 2nd mutex's address.
->>> 2. The 1st thread initialize the two mutexes with pshared attribute,
->>> and lock the two mutexes.
->>> 3. The 1st thread create the 2nd thread, and the 2nd thread block on
->>> the 1st mutex.
->>> 4. The 1st thread create the 3rd thread, and the 3rd thread block on
->>> the 2nd mutex.
->>> 5. The 1st thread unlock the 2nd mutex, the 3rd thread cannot take
->>> the 2nd mutex, and may block forever.
->>>
->>>
->>> Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
->>> Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
->>> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
->>> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
->>> Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
->>> Reviewed-by: Mel Gorman <mgorman@suse.de>
->>> Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
->>> Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
->>> Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
->>> Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
->>>
->>
->> Did all these people really review it? I just whinged about the last
-> patch
->> and didn't put a Reviewed-by on it. That said, I don't actually have a
->> problem with this patch and I assumed it passed your testing so
->>
-> I mistakenly think that I should list all the people here. : )
-> Shall I cleanup the name list and send the patch again?
-> 
->> Reviewed-by: Mel Gorman <mgorman@suse.de>
->>
->> The others might not agree though.
->>
->> I note the conversion from int offset to long offset in futex_key appears
->> to have gotten lost. Is that in a separate cleanup patch now?
+Couple of days ago, I have separated the vhost.ko. 
 
-In general, you should not add someone's signature unless they gave it
-first or explicitly gave you permission to do so. If you want to
-indicate they were contacted, you can use the "Cc:" tag instead of
-"Reviewed-by".
+'vhost: Make vhost a separate module'
+
+http://www.spinics.net/lists/kvm/msg90825.html
+
+MST wanted to queue it up for 3.11. 
 
 > 
-> In old patch, I add the compound index into offset, so I make the offset
-> from int to long. It is unnecessary for this patch. 
-
-pgoff_t is an unsigned long, and page_to_pfn() returns an unsigned long.
-Since compound_idx can be assigned from page_to_pfn() and it is added
-with index in the return value, unsigned long seems like a better choice
-to me. Is there a specific reason you prefer an int? It might be "fine"
-but it is likely to raise eyebrows whenever someone read through it.
-
-Thanks,
+> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
+> index 8b9226d..016387f 100644
+> --- a/drivers/vhost/Kconfig
+> +++ b/drivers/vhost/Kconfig
+> @@ -1,3 +1,6 @@
+> +config VHOST
+> +       tristate
+> +
+>  config VHOST_NET
+>         tristate "Host kernel accelerator for virtio net"
+>         depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP)
+> @@ -12,7 +15,7 @@ config VHOST_NET
+>  
+>  config VHOST_SCSI
+>         tristate "VHOST_SCSI TCM fabric driver"
+> -       depends on TARGET_CORE && EVENTFD && m
+> +       depends on NET && EVENTFD && TARGET_CORE
+>         select VHOST_RING
+>         default n
+>         ---help---
+> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
+> index 654e9afb..e5b5f0b 100644
+> --- a/drivers/vhost/Makefile
+> +++ b/drivers/vhost/Makefile
+> @@ -1,7 +1,9 @@
+> +obj-$(CONFIG_VHOST) += vhost.o
+> +
+>  obj-$(CONFIG_VHOST_NET) += vhost_net.o
+> -vhost_net-y := vhost.o net.o
+> +vhost_net-objs := net.o
+>  
+>  obj-$(CONFIG_VHOST_SCSI) += vhost_scsi.o
+> -vhost_scsi-y := scsi.o
+> +vhost_scsi-objs := scsi.o
+>  
+>  obj-$(CONFIG_VHOST_RING) += vringh.o
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index 7014202..b5836a2 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -49,7 +49,6 @@
+>  #include <linux/llist.h>
+>  #include <linux/bitmap.h>
+>  
+> -#include "vhost.c"
+>  #include "vhost.h"
+>  
+>  #define TCM_VHOST_VERSION  "v0.1"
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index beee7f5..8cd1562 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -123,7 +123,7 @@ static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+>         return left <= 0;
+>  }
+>  
+> -static void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
+> +void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
+>  {
+>         unsigned seq;
+>         int flushing;
+> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+> index a7ad635..50ee396 100644
+> --- a/drivers/vhost/vhost.h
+> +++ b/drivers/vhost/vhost.h
+> @@ -44,6 +44,7 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>                      unsigned long mask, struct vhost_dev *dev);
+>  int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>  void vhost_poll_stop(struct vhost_poll *poll);
+> +void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work);
+>  void vhost_poll_flush(struct vhost_poll *poll);
+>  void vhost_poll_queue(struct vhost_poll *poll);
+> 
+> 
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+Asias
