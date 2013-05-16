@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab3EPHbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 03:31:20 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:43658 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750Ab3EPHbQ (ORCPT
+	id S1755875Ab3EPHbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:31:31 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:53471 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab3EPHb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 03:31:16 -0400
+	Thu, 16 May 2013 03:31:27 -0400
 From: Lad Prabhakar <prabhakar.csengg@gmail.com>
 To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         "David S. Miller" <davem@davemloft.net>,
@@ -14,9 +14,9 @@ To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Mugunthan V N <mugunthanvnm@ti.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 3/5] net: davinci: emac: Convert to devm_* api
-Date: Thu, 16 May 2013 13:00:36 +0530
-Message-Id: <1368689438-23889-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 4/5] net: davinci_emac: simplify the OF parser code
+Date: Thu, 16 May 2013 13:00:37 +0530
+Message-Id: <1368689438-23889-5-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -26,120 +26,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Use devm_ioremap_resource instead of devm_request_mem_region()/devm_ioremap()
-and devm_request_irq() instead of request_irq().
-
-This ensures more consistent error values and simplifies error paths.
+This patch cleans up the OF parser code, removes unnecessary checks
+on of_property_read_*() and guards davinci_emac_of_match table with
+CONFIG_OF.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/net/ethernet/ti/davinci_emac.c |   50 ++++++--------------------------
- 1 files changed, 9 insertions(+), 41 deletions(-)
+ drivers/net/ethernet/ti/davinci_emac.c |   67 +++++++++++---------------------
+ 1 files changed, 23 insertions(+), 44 deletions(-)
 
 diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
-index 609f6d1..a8b5c6b 100644
+index a8b5c6b..17783a9 100644
 --- a/drivers/net/ethernet/ti/davinci_emac.c
 +++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1508,7 +1508,7 @@ static int emac_dev_open(struct net_device *ndev)
- 	struct device *emac_dev = &ndev->dev;
- 	u32 cnt;
- 	struct resource *res;
--	int q, m, ret;
-+	int ret;
- 	int i = 0;
- 	int k = 0;
- 	struct emac_priv *priv = netdev_priv(ndev);
-@@ -1543,8 +1543,9 @@ static int emac_dev_open(struct net_device *ndev)
+@@ -1730,29 +1730,22 @@ static const struct net_device_ops emac_netdev_ops = {
+ #endif
+ };
  
- 	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k))) {
- 		for (i = res->start; i <= res->end; i++) {
--			if (request_irq(i, emac_irq, IRQF_DISABLED,
--					ndev->name, ndev))
-+			if (devm_request_irq(&priv->pdev->dev, i, emac_irq,
-+					     IRQF_DISABLED,
-+					     ndev->name, ndev))
- 				goto rollback;
- 		}
- 		k++;
-@@ -1617,15 +1618,7 @@ static int emac_dev_open(struct net_device *ndev)
- 
- rollback:
- 
--	dev_err(emac_dev, "DaVinci EMAC: request_irq() failed");
--
--	for (q = k; k >= 0; k--) {
--		for (m = i; m >= res->start; m--)
--			free_irq(m, ndev);
--		res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k-1);
--		m = res->end;
--	}
--
-+	dev_err(emac_dev, "DaVinci EMAC: devm_request_irq() failed");
- 	ret = -EBUSY;
- err:
- 	pm_runtime_put(&priv->pdev->dev);
-@@ -1643,9 +1636,6 @@ err:
-  */
- static int emac_dev_stop(struct net_device *ndev)
+-#ifdef CONFIG_OF
+-static struct emac_platform_data
+-	*davinci_emac_of_get_pdata(struct platform_device *pdev,
+-	struct emac_priv *priv)
++static struct emac_platform_data *
++davinci_emac_of_get_pdata(struct platform_device *pdev, struct emac_priv *priv)
  {
--	struct resource *res;
--	int i = 0;
--	int irq_num;
- 	struct emac_priv *priv = netdev_priv(ndev);
- 	struct device *emac_dev = &ndev->dev;
+ 	struct device_node *np;
+ 	struct emac_platform_data *pdata = NULL;
+ 	const u8 *mac_addr;
+-	u32 data;
+-	int ret;
  
-@@ -1661,13 +1651,6 @@ static int emac_dev_stop(struct net_device *ndev)
- 	if (priv->phydev)
- 		phy_disconnect(priv->phydev);
+-	pdata = pdev->dev.platform_data;
+-	if (!pdata) {
+-		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+-		if (!pdata)
+-			goto nodata;
+-	}
++	if (!IS_ENABLED(CONFIG_OF) || !pdev->dev.of_node)
++		return pdev->dev.platform_data;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
  
--	/* Free IRQ */
--	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, i))) {
--		for (irq_num = res->start; irq_num <= res->end; irq_num++)
--			free_irq(irq_num, priv->ndev);
--		i++;
--	}
--
- 	if (netif_msg_drv(priv))
- 		dev_notice(emac_dev, "DaVinci EMAC: %s stopped\n", ndev->name);
+ 	np = pdev->dev.of_node;
+-	if (!np)
+-		goto nodata;
+-	else
+-		pdata->version = EMAC_VERSION_2;
++	pdata->version = EMAC_VERSION_2;
  
-@@ -1832,7 +1815,7 @@ static int davinci_emac_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct net_device *ndev;
- 	struct emac_priv *priv;
--	unsigned long size, hw_ram_addr;
-+	unsigned long hw_ram_addr;
- 	struct emac_platform_data *pdata;
- 	struct device *emac_dev;
- 	struct cpdma_params dma_params;
-@@ -1883,25 +1866,10 @@ static int davinci_emac_probe(struct platform_device *pdev)
- 	emac_dev = &ndev->dev;
- 	/* Get EMAC platform data */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev,"error getting res\n");
--		rc = -ENOENT;
--		goto no_pdata;
--	}
--
--	priv->emac_base_phys = res->start + pdata->ctrl_reg_offset;
--	size = resource_size(res);
--	if (!devm_request_mem_region(&pdev->dev, res->start,
--				     size, ndev->name)) {
--		dev_err(&pdev->dev, "failed request_mem_region() for regs\n");
--		rc = -ENXIO;
--		goto no_pdata;
--	}
--
--	priv->remap_addr = devm_ioremap(&pdev->dev, res->start, size);
--	if (!priv->remap_addr) {
-+	priv->remap_addr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->remap_addr)) {
- 		dev_err(&pdev->dev, "unable to map IO\n");
--		rc = -ENOMEM;
-+		rc = PTR_ERR(priv->remap_addr);
- 		goto no_pdata;
+ 	if (!is_valid_ether_addr(pdata->mac_addr)) {
+ 		mac_addr = of_get_mac_address(np);
+@@ -1760,47 +1753,31 @@ static struct emac_platform_data
+ 			memcpy(pdata->mac_addr, mac_addr, ETH_ALEN);
  	}
- 	priv->emac_base = priv->remap_addr + pdata->ctrl_reg_offset;
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-ctrl-reg-offset", &data);
+-	if (!ret)
+-		pdata->ctrl_reg_offset = data;
++	of_property_read_u32(np, "ti,davinci-ctrl-reg-offset",
++			     &pdata->ctrl_reg_offset);
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-ctrl-mod-reg-offset",
+-		&data);
+-	if (!ret)
+-		pdata->ctrl_mod_reg_offset = data;
++	of_property_read_u32(np, "ti,davinci-ctrl-mod-reg-offset",
++			     &pdata->ctrl_mod_reg_offset);
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-ctrl-ram-offset", &data);
+-	if (!ret)
+-		pdata->ctrl_ram_offset = data;
++	of_property_read_u32(np, "ti,davinci-ctrl-ram-offset",
++			     &pdata->ctrl_ram_offset);
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-ctrl-ram-size", &data);
+-	if (!ret)
+-		pdata->ctrl_ram_size = data;
++	of_property_read_u32(np, "ti,davinci-ctrl-ram-size",
++			     &pdata->ctrl_ram_size);
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-rmii-en", &data);
+-	if (!ret)
+-		pdata->rmii_en = data;
++	of_property_read_u8(np, "ti,davinci-rmii-en", &pdata->rmii_en);
+ 
+-	ret = of_property_read_u32(np, "ti,davinci-no-bd-ram", &data);
+-	if (!ret)
+-		pdata->no_bd_ram = data;
++	pdata->no_bd_ram = of_property_read_bool(np, "ti,davinci-no-bd-ram");
+ 
+ 	priv->phy_node = of_parse_phandle(np, "phy-handle", 0);
+ 	if (!priv->phy_node)
+ 		pdata->phy_id = "";
+ 
+ 	pdev->dev.platform_data = pdata;
+-nodata:
++
+ 	return  pdata;
+ }
+-#else
+-static struct emac_platform_data
+-	*davinci_emac_of_get_pdata(struct platform_device *pdev,
+-	struct emac_priv *priv)
+-{
+-	return  pdev->dev.platform_data;
+-}
+-#endif
++
+ /**
+  * davinci_emac_probe - EMAC device probe
+  * @pdev: The DaVinci EMAC device that we are removing
+@@ -2022,11 +1999,13 @@ static const struct dev_pm_ops davinci_emac_pm_ops = {
+ 	.resume		= davinci_emac_resume,
+ };
+ 
++#if IS_ENABLED(CONFIG_OF)
+ static const struct of_device_id davinci_emac_of_match[] = {
+ 	{.compatible = "ti,davinci-dm6467-emac", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, davinci_emac_of_match);
++#endif
+ 
+ /* davinci_emac_driver: EMAC platform driver structure */
+ static struct platform_driver davinci_emac_driver = {
 -- 
 1.7.4.1
 
