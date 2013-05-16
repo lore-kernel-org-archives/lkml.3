@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab3EPOwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:52:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57303 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab3EPOwK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:52:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Jonas Jensen <jonas.jensen@gmail.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: mach-moxart: platform port for MOXA ART SoC
-Date: Thu, 16 May 2013 16:52:55 +0200
-Message-ID: <4406410.DRdDEViWVK@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CACmBeS3JZ8bm6jJbmrKTfmZqshezN6QKdmyPCKdQ2HUwzY7ggA@mail.gmail.com>
-References: <CACmBeS1NLFUYHBOVL28aCCzRrgXYGPZF9t3qj6AdcgaMkrPGoQ@mail.gmail.com> <201305151516.52389.arnd@arndb.de> <CACmBeS3JZ8bm6jJbmrKTfmZqshezN6QKdmyPCKdQ2HUwzY7ggA@mail.gmail.com>
+	id S1754583Ab3EPOxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:53:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51423 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab3EPOxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 10:53:02 -0400
+Message-ID: <5194F2B7.6080204@ti.com>
+Date: Thu, 16 May 2013 10:52:39 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:S7CHGptcuLWv7lF3IX5c19EGI+JipafWS8WNVo/Tkzz
- 46UkWW8Jt+H112ZfgHcdFUwjIJzOBeoyI2UwGVrg3Qw2Te9czJ
- l2pD31BwlaE6/8bFCG71dv7amuO/QiaFt2iTwYPiEzXLgwytzZ
- m2JuvW41z/K7vQKt8zMuywdyf3/w0Qdnu6PQN3MrC+3TZ+npdY
- XanPOKakjOEGHpPL2rVoXjog8p3SW1K0ccavdLufpwFTtsSUfP
- o9AXggHSJzbtSZPW+0d5pvby3rgAUEdbedlSG6rtorreoVe7Oa
- yIv14wJILXCsRPEM0Ha1nG7FiaF4hPvN7tT3LIqtoYtog5fNvl
- 4MxGvjgabpYGyF3i81/g=
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Rob Landley <rob@landley.net>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [patch] Documentation: allow multiple return statements per function
+References: <20130515172021.GA304@elgon.mountain>
+In-Reply-To: <20130515172021.GA304@elgon.mountain>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2NMVSOMWVQWOQPRKRSNHI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 May 2013 15:37:16 Jonas Jensen wrote:
-> On 15 May 2013 15:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> > The part that I don't understand at all is the "timer0" part. Is that a string
-> > from the data sheet?
-> 
-> I have next to no data sheets or documentation on the SoC itself. What
-> I know is from looking at old sources, which suggest there are more
-> than one timer (the rest were never implemented).
-> 
-> It only needs one for timer_tick? Does it make sense to just call it "timer"?
+------enig2NMVSOMWVQWOQPRKRSNHI
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I think just "moxa,moxart-timer" is fine. Chances are that if you have
-more of them, they are actually compatible with one another. If they are not
-and you need more than one, you can always pick a different name
-if you need another one.
+On 15-05-2013 13:20, Dan Carpenter wrote:
+> A surprising number of newbies interpret this section to mean that only=
 
-> > Can you provide some more detail why what PMU registers are used here? Is that
-> > a "Performance Measurement Unit", "Power Management Unit" or something else?
-> > Are you sure that those registers are only ever needed for GPIO?
-> 
-> It's "Power Management Unit". The MMC driver uses it to read system
-> clock and write it to clock control, but I suspect it can be removed.
-> It's code under #ifdef MSD_SUPPORT_GET_CLOCK but I think the else is
-> perfectly acceptable.
-> GPIO uses it only to enable or disable pins.
+> one return statement is allowed per function.  Part of the problem is
+> that the "one return statement per function" rule is an actual style
+> guideline that people are used to from other projects.
+>=20
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>=20
+> diff --git a/Documentation/CodingStyle b/Documentation/CodingStyle
+> index e00b8f0..7fe0546 100644
+> --- a/Documentation/CodingStyle
+> +++ b/Documentation/CodingStyle
+> @@ -389,7 +389,8 @@ Albeit deprecated by some people, the equivalent of=
+ the goto statement is
+>  used frequently by compilers in form of the unconditional jump instruc=
+tion.
+> =20
+>  The goto statement comes in handy when a function exits from multiple
+> -locations and some common work such as cleanup has to be done.
+> +locations and some common work such as cleanup has to be done.  If the=
+re is no
+> +cleanup needed then just return directly.
 
-It sounds like this is used for what should be separate drivers/clk and
-drivers/pinctrl drivers:
+Agreed with this rephrasing.
 
-A pinctrl driver is often the superset of a gpio driver and can control
-more aspects of a pin than the gpio interface can.
+> =20
+>  The rationale is:
+> =20
+>=20
 
-The clk driver is supposed to give an abstraction of the clock tree
-to be used with interfaces like clk_get() and clk_set_rate(). It
-can probably be really simple in case of moxart. Is the mmc driver
-the only one that needs access to clocks?
 
-Are the pinctrl and clk registers in different parts of the PMU, or are
-they intermixed? In the former case, you can just turn it into separate
-devices that have their own distinct "reg" properties, in the second
-case, the best solution is likely to mark the pmu 'compatible="syscon"'
-and use the drivers/mfd/syscon.c driver to get a regmap that is used
-by the clock and pinctrl drivers, respectively.
 
-	Arnd
+------enig2NMVSOMWVQWOQPRKRSNHI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGU8rcACgkQCXcVR3XQvP2MJgEAmV6bA22/4MPPrGI8qWgq1x3A
+G+6p2fxl8Sd8xu0dGiUBAMCS33hsHuy8hN4Sd15kPH6XLlcV1IP8py7gaptvZ+8i
+=qEZW
+-----END PGP SIGNATURE-----
+
+------enig2NMVSOMWVQWOQPRKRSNHI--
