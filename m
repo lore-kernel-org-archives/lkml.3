@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab3EPXKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 19:10:32 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:35074 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab3EPXKa (ORCPT
+	id S1755261Ab3EPXMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 19:12:47 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:52827 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3EPXMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 19:10:30 -0400
+	Thu, 16 May 2013 19:12:45 -0400
+Date: Thu, 16 May 2013 16:12:38 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [patch v3 -mm 3/3] vmscan, memcg: Do softlimit reclaim also for
+ targeted reclaim
+Message-ID: <20130516231238.GA15025@mtj.dyndns.org>
+References: <1368431172-6844-1-git-send-email-mhocko@suse.cz>
+ <1368431172-6844-4-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1475116.qtX3b3bLWZ@flatron>
-References: <1368724352-10849-1-git-send-email-dianders@chromium.org>
-	<2099430.Q29j0K3hPy@flatron>
-	<201305170030.39266.heiko@sntech.de>
-	<1475116.qtX3b3bLWZ@flatron>
-Date: Thu, 16 May 2013 16:10:28 -0700
-X-Google-Sender-Auth: AcLU3YupP2E6HCw2vGrelPY9SOY
-Message-ID: <CAD=FV=WVx4E0xLpyqwe7LhzFvw4=fOY67Kkiux7Dat8qo7V_Wg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: samsung: fix suspend/resume functionality
-From: Doug Anderson <dianders@chromium.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Prathyush K <prathyush.k@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368431172-6844-4-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
+On Mon, May 13, 2013 at 09:46:12AM +0200, Michal Hocko wrote:
+> Soft reclaim has been done only for the global reclaim (both background
+> and direct). Since "memcg: integrate soft reclaim tighter with zone
+> shrinking code" there is no reason for this limitation anymore as the
+> soft limit reclaim doesn't use any special code paths and it is a
+> part of the zone shrinking code which is used by both global and
+> targeted reclaims.
+...
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-On Thu, May 16, 2013 at 3:56 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> Seems like I need some sleep, as I'm already starting to overlook large
-> blobs of code.
->
-> Originally, GPIO suspend/resume handlers have been configured in
-> drivers/gpio/gpio-samsung.c, by setting pm field of samsung_gpio_chip
-> struct to point to appropriate samsung_gpio_pm struct, which contains
-> pointers to save and resume callbacks.
->
-> In result, samsung_gpio_pm_2bit_* or samsung_gpio_pm_4bit_* have been
-> used, depending on bank type, on all SoCs.
->
-> Now since the documentation states that wake-up reset doesn't reset GPIO
-> registers (at least on S3C2440 and S3C2416), I wonder what is the correct
-> way of handling them.
+ Reviewed-by: Tejun Heo <tj@kernel.org>
 
-If state of these registers isn't lost on those SoCs then running the
-save/restore shouldn't _hurt_ though, right?  If you can run the old
-GPIO code on one of those systems and do a suspend/resume you could
-check...
+Some nitpicks follow.
 
--Doug
+>  /*
+> - * A group is eligible for the soft limit reclaim if it is
+> - * 	a) is over its soft limit
+> + * A group is eligible for the soft limit reclaim under the given root
+> + * hierarchy if
+> + * 	a) it is over its soft limit
+>   * 	b) any parent up the hierarchy is over its soft limit
+
+This was added before but in general I think the use of parent for
+ancestor is a bit confusing.  Not a big deal but no reason to continue
+it.
+
+>  	/*
+> -	 * If any parent up the hierarchy is over its soft limit then we
+> -	 * have to obey and reclaim from this group as well.
+> +	 * If any parent up to the root in the hierarchy is over its soft limit
+> +	 * then we have to obey and reclaim from this group as well.
+
+Prolly using terms ancestors and subtree would make the explanation
+clearer?
+
+>  static bool mem_cgroup_should_soft_reclaim(struct scan_control *sc)
+>  {
+> -	return global_reclaim(sc);
+> +	return true;
+
+Kinda silly after this change, maybe just modify shrink_zone() like
+the following?
+
+        if (IS_ENABLED(CONFIG_MEMCG)) {
+		__shrink_zone(zone, sc, true);
+		if (sc->nr_scanned == nr_scanned)
+			__shrink_zone(zone, sc, false);
+	} else {
+		__shrink_zone(zone, sc, false);
+        }
+
+> @@ -1974,7 +1974,7 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
+>  			struct lruvec *lruvec;
+>  
+>  			if (soft_reclaim &&
+> -					!mem_cgroup_soft_reclaim_eligible(memcg)) {
+> +					!mem_cgroup_soft_reclaim_eligible(memcg, root)) {
+
+Weird indentation which breaks line and goes over 80 col, why not do
+the following?
+
+		if (soft_reclaim &&
+		    !mem_cgroup_soft_reclaim_eligible(memcg, root)) {
+			memcg = mem_cgroup_iter(root, memcg, &reclaim);
+			continue;
+		}
+
+Thanks.
+
+-- 
+tejun
