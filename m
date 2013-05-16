@@ -1,138 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab3EPTvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 15:51:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:52144 "EHLO hydra.sisk.pl"
+	id S1753869Ab3EPT5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 15:57:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51132 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab3EPTu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 15:50:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        Feng Tang <feng.tang@intel.com>, linux-acpi@vger.kernel.org
-Subject: Re: [RFC PATCH v2, part3 11/11] PCI, ACPI, pci_root: use PCI bus lock to protect PCI device hotplug
-Date: Thu, 16 May 2013 21:59:27 +0200
-Message-ID: <10972097.JVdfQZJ2zI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1368719459-24800-12-git-send-email-jiang.liu@huawei.com>
-References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com> <1368719459-24800-12-git-send-email-jiang.liu@huawei.com>
+	id S1753110Ab3EPT5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 15:57:39 -0400
+Date: Thu, 16 May 2013 22:57:35 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v5 3/8] KVM: MMU: fast invalidate all pages
+Message-ID: <20130516195735.GJ14597@redhat.com>
+References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130516124349.GC14597@redhat.com>
+ <5194DE48.3050208@linux.vnet.ibm.com>
+ <20130516134321.GE14597@redhat.com>
+ <20130516155728.GF14597@redhat.com>
+ <519527CB.6080608@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519527CB.6080608@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 16, 2013 11:50:59 PM Jiang Liu wrote:
-> Use PCI bus lock to protect concurrent PCI device hotplug operations.
+On Fri, May 17, 2013 at 02:39:07AM +0800, Xiao Guangrong wrote:
+> On 05/16/2013 11:57 PM, Gleb Natapov wrote:
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Feng Tang <feng.tang@intel.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-acpi@vger.kernel.org
+> > One more thought. With current patch if zap_invalid_page() will be
+> > called second time while another zap_invalid_page() is still running
+> > (can that happen?) they will both run concurrently fighting for the
+> 
+> Currently, it can not happen since zap_invalid_page is needed when slot
+> is being deleted which protected by slot-lock.
+> 
+> But we allow it to be concurrent as you commented: we can use it in
+> ->release() instead of calling kvm_mmu_zap_all(), in that case, multiple
+> call zap_invalid_page() can happen.
+> 
+That's only during VM destruction, no need to optimize for. 
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > mmu_lock. Is this a problem?
+> 
+> Are you worry about that it can not progress due to lock contention when
+> walking active_list? Zapping at least 10 pages before releasing the lock
+> should ensure that it can progress.
+Yes, it will progress, but will bounce between two threads after each 10
+pages. This is less efficient that letting one thread to finish zapping.
+Theoretically we can make one thread wait for the other.
 
-> ---
->  arch/ia64/pci/pci.c     |  2 +-
->  arch/x86/pci/acpi.c     |  3 ++-
->  drivers/acpi/pci_root.c | 14 ++++++++------
->  drivers/pci/Kconfig     |  2 +-
->  4 files changed, 12 insertions(+), 9 deletions(-)
 > 
-> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-> index de1474f..6e91e87 100644
-> --- a/arch/ia64/pci/pci.c
-> +++ b/arch/ia64/pci/pci.c
-> @@ -384,7 +384,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->  	}
->  
->  	pci_scan_child_bus(pbus);
-> -	return pbus;
-> +	return pci_bus_get(pbus);
->  
->  out3:
->  	kfree(controller->window);
-> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> index b972f04..6dddc06 100644
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -534,7 +534,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->  		 */
->  		memcpy(bus->sysdata, sd, sizeof(*sd));
->  		kfree(info);
-> -		pci_bus_put(bus);
-> +		BUG_ON(pci_bus_lock(bus, PCI_BUS_STATE_REMOVED - 1, true) < 0);
->  	} else {
->  		probe_pci_root_info(info, device, busnum, domain);
->  
-> @@ -561,6 +561,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->  			pci_set_host_bridge_release(
->  				to_pci_host_bridge(bus->bridge),
->  				release_pci_root_info, info);
-> +			pci_bus_get(bus);
->  		} else {
->  			pci_free_resource_list(&resources);
->  			__release_pci_root_info(info);
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 21dda5a..eb01cc7 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -535,6 +535,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	}
->  
->  	pci_bus_add_devices(root->bus);
-> +	pci_bus_unlock(root->bus, true);
->  	return 1;
->  
->  end:
-> @@ -546,13 +547,14 @@ static void acpi_pci_root_remove(struct acpi_device *device)
->  {
->  	struct acpi_pci_root *root = acpi_driver_data(device);
->  
-> -	pci_stop_root_bus(root->bus);
-> -
-> -	device_set_run_wake(root->bus->bridge, false);
-> -	pci_acpi_remove_bus_pm_notifier(device);
-> -
-> -	pci_remove_root_bus(root->bus);
-> +	if (pci_bus_lock(root->bus, PCI_BUS_STATE_REMOVED - 1, true) == 0) {
-> +		pci_stop_root_bus(root->bus);
-> +		device_set_run_wake(root->bus->bridge, false);
-> +		pci_acpi_remove_bus_pm_notifier(device);
-> +		pci_remove_root_bus(root->bus);
-> +	}
->  
-> +	pci_bus_put(root->bus);
->  	kfree(root);
->  }
->  
-> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-> index 92e69bd..5ae3504 100644
-> --- a/drivers/pci/Kconfig
-> +++ b/drivers/pci/Kconfig
-> @@ -121,4 +121,4 @@ config PCI_LABEL
->  	select NLS
->  
->  config PCI_BUS_LOCK
-> -	def_bool n
-> +	def_bool y if (X86 || IA64)
+> Do you see any potential issue?
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Just thinking out loud :). If this cannot happen during normal
+operation, no reason to optimize for it.
+
+--
+			Gleb.
