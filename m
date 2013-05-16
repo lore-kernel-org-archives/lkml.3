@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab3EPSMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 14:12:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59708 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab3EPSMD (ORCPT
+	id S1753716Ab3EPSSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 14:18:15 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:64488 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3EPSSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 14:12:03 -0400
-Date: Thu, 16 May 2013 20:10:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com,
-        Robert Richter <rric@kernel.org>
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130516181018.GO19669@dyad.programming.kicks-ass.net>
-References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
- <20130516175117.GK19669@dyad.programming.kicks-ass.net>
- <20130516175557.GC18325@hansolo.jdub.homelinux.org>
+	Thu, 16 May 2013 14:18:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516175557.GC18325@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <5194FCDD.8080209@ti.com>
+References: <1368636386-17138-1-git-send-email-dmurphy@ti.com>
+	<20130515170516.GA6135@kahuna>
+	<5194FCDD.8080209@ti.com>
+Date: Thu, 16 May 2013 13:18:10 -0500
+X-Google-Sender-Auth: E8pPQ7L9Sul-GraqKX3eyHpIh4s
+Message-ID: <CAGo_u6pX+DdVNWqdPXDChzMr27YAXL_Zvt7DxWBijOCW0rXpkA@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM:dts:omap4-panda: Update the LED support for the
+ panda DTS
+From: Nishanth Menon <nm@ti.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 01:55:57PM -0400, Josh Boyer wrote:
-> Maybe.  But do you really need to dump a stack trace here?  What is a
-> user supposed to do with that information?  Can they fix the kernel?
-> Can the fix the CPU?  As far as I can tell, they can't do either.
+On Thu, May 16, 2013 at 10:35 AM, Dan Murphy <dmurphy@ti.com> wrote:
+> I am not sure you really want to do this.
+> If I make the pinctrl part of the led structure then the only way the gpio_wk7 on a1-a3 to be configured is when
+> the CONFIG_LEDS_GPIO flag is set.
+>
+> Do you really want that dependency?  You did say it was a key fix
+> At least this way the pins are configured regardless of that flag.
 
-Send their CPU back to AMD is I suppose the best they can do ;-)
- 
-> Is using pr_err with the same message really somehow worse than using
-> WARN?
+That is better as the system will be left in the pinmux configuration
+handed over from bootloader.
 
-I would make it a FW_BUG as well. But yeah, I suppose that is a better option
-than the WARN_ON. Unless Robert had a different reason...
+The point being, muxing up pins even when not needed(config switched
+off) has no real benefit - in this case albeit, the default mux was
+causing a bug.
+pinctrl IMHO should be considered as any other resource, if it is not
+mandatory for boot, and needed only for a device functionality when
+probed, it should done there only.
 
+just my 2 cents.
