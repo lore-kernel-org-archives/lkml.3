@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab3EPUXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 16:23:17 -0400
-Received: from mout.gmx.net ([212.227.15.18]:56278 "EHLO mout.gmx.net"
+	id S1752047Ab3EPUXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 16:23:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41348 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab3EPUXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 16:23:14 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18dQLQzz8kdSCURg+J6sqhTt2LrUXORZVK9yud3Zg
-	R17ExXHXDyOTWp
-Message-ID: <5195402A.20100@gmx.de>
-Date: Thu, 16 May 2013 22:23:06 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
+	id S1751884Ab3EPUXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 16:23:33 -0400
+Message-ID: <5195401B.5070209@ti.com>
+Date: Thu, 16 May 2013 15:22:51 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Eric Sandeen <sandeen@redhat.com>
-CC: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: v3.10: unmount won't work
-References: <51928CB5.2050406@gmx.de> <5192A8CE.30809@redhat.com>
-In-Reply-To: <5192A8CE.30809@redhat.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+To: Nishanth Menon <nm@ti.com>
+CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] ARM:dts:omap4-panda: Update the LED support for the
+ panda DTS
+References: <1368636386-17138-1-git-send-email-dmurphy@ti.com> <20130515170516.GA6135@kahuna> <5194FCDD.8080209@ti.com> <CAGo_u6pX+DdVNWqdPXDChzMr27YAXL_Zvt7DxWBijOCW0rXpkA@mail.gmail.com>
+In-Reply-To: <CAGo_u6pX+DdVNWqdPXDChzMr27YAXL_Zvt7DxWBijOCW0rXpkA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 11:12 PM, Eric Sandeen wrote:
-> Is your "mount" looking at /etc/mtab ot at /proc/mounts?
-I dunno, it is package sys-apps/util-linux-2.22.2 - maybe the Gentoo devs know more (it is a stable 32bit Gentoo).
+On 05/16/2013 01:18 PM, Nishanth Menon wrote:
+> On Thu, May 16, 2013 at 10:35 AM, Dan Murphy <dmurphy@ti.com> wrote:
+>> I am not sure you really want to do this.
+>> If I make the pinctrl part of the led structure then the only way the gpio_wk7 on a1-a3 to be configured is when
+>> the CONFIG_LEDS_GPIO flag is set.
+>>
+>> Do you really want that dependency?  You did say it was a key fix
+>> At least this way the pins are configured regardless of that flag.
+> That is better as the system will be left in the pinmux configuration
+> handed over from bootloader.
+So you want to depend on a boot loader to configure pins correctly for the kernel?
+Hmmm seems risky to me.
+> The point being, muxing up pins even when not needed(config switched
+> off) has no real benefit - in this case albeit, the default mux was
+> causing a bug.
+> pinctrl IMHO should be considered as any other resource, if it is not
+> mandatory for boot, and needed only for a device functionality when
+> probed, it should done there only.
+>
+> just my 2 cents.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-FWIW today I got after another test run (kernel 3.10.-rc1+) :
-
-
-2013-05-16T22:17:20.984+02:00 n22 kernel: EXT4-fs (loop0): sb orphan head is 32017
-2013-05-16T22:17:20.984+02:00 n22 kernel: sb_info orphan list:
-2013-05-16T22:17:20.984+02:00 n22 kernel: inode loop0:32017 at d9ed5a50: mode 103777, nlink 0, next 32003
-2013-05-16T22:17:20.984+02:00 n22 kernel: inode loop0:32003 at dfde6d10: mode 102777, nlink 0, next 32021
-2013-05-16T22:17:20.984+02:00 n22 kernel: inode loop0:32021 at d9ed6158: mode 103777, nlink 0, next 32013
-2013-05-16T22:17:20.984+02:00 n22 kernel: inode loop0:32013 at d9ed55a0: mode 103777, nlink 0, next 0
-2013-05-16T22:17:20.984+02:00 n22 kernel: ------------[ cut here ]------------
-2013-05-16T22:17:20.984+02:00 n22 kernel: kernel BUG at fs/ext4/super.c:804!
-2013-05-16T22:17:20.984+02:00 n22 kernel: invalid opcode: 0000 [#1] SMP
-2013-05-16T22:17:20.984+02:00 n22 kernel: Modules linked in: dm_crypt cpufreq_stats loop nfsd auth_rpcgss oid_registry lockd sunrpc ipt_MASQUERADE xt_owner xt_multiport ipt_REJECT xt_tcpudp xt_recent xt_conntrack nf_conntrack_ftp xt_limit xt_LOG iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables af_packet pppoe pppox ppp_generic slhc bridge stp llc tun fuse dm_mod coretemp kvm_intel kvm hid_cherry aesni_intel uvcvideo xts aes_i586 videobuf2_vmalloc lrw videobuf2_memops gf128mul ablk_helper hid_generic arc4 usbhid videobuf2_core cryptd iwldvm mac80211 usblp videodev hid i915 snd_hda_codec_conexant snd_hda_intel iwlwifi cfg80211 cfbfillrect cfbimgblt i2c_algo_bit cfbcopyarea intel_agp intel_gtt snd_hda_codec snd_pcm fbcon snd_page_alloc bitblit softcursor font drm_kms_helper drm snd_timer psmouse tpm_tis 8250_pci thinkpad_acpi agpgart nvram sr_mod evdev snd tpm wmi 8250 serial_core i2c_i801 i2c_core cdrom sdhci_pci sdhci mmc_co
-re soundcore acpi_cpufreq thermal mperf battery ac tpm_bios e1000e rfkill ptp video fb button fbdev pps_core processor thermal_sys hwmon [last unloaded: microcode]
-2013-05-16T22:17:20.984+02:00 n22 kernel: CPU: 1 PID: 9391 Comm: umount Not tainted 3.10.0-rc1+ #1
-2013-05-16T22:17:20.984+02:00 n22 kernel: Hardware name: LENOVO 4180F65/4180F65, BIOS 83ET73WW (1.43 ) 11/30/2012
-2013-05-16T22:17:20.984+02:00 n22 kernel: task: eab54290 ti: d6cfc000 task.ti: d6cfc000
-2013-05-16T22:17:20.984+02:00 n22 kernel: EIP: 0060:[<c11bcb8c>] EFLAGS: 00010283 CPU: 1
-2013-05-16T22:17:20.984+02:00 n22 kernel: EIP is at ext4_put_super+0x2dc/0x2e0
-2013-05-16T22:17:20.984+02:00 n22 kernel: EAX: 0000003d EBX: e7adbc00 ECX: e7adbd50 EDX: e7adbd50
-2013-05-16T22:17:20.984+02:00 n22 kernel: ESI: e7addc00 EDI: e7adbd14 EBP: d6cfdefc ESP: d6cfdecc
-2013-05-16T22:17:20.984+02:00 n22 kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-2013-05-16T22:17:20.984+02:00 n22 kernel: CR0: 80050033 CR2: b76bd0c0 CR3: 2f41e000 CR4: 000407f0
-2013-05-16T22:17:20.984+02:00 n22 kernel: DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-2013-05-16T22:17:20.984+02:00 n22 kernel: DR6: ffff0ff0 DR7: 00000400
-2013-05-16T22:17:20.984+02:00 n22 kernel: Stack:
-2013-05-16T22:17:20.984+02:00 n22 kernel: c155c130 e7adddbc 00007d0d d9ed55a0 000087ff 00000000 00000000 d9ed5580
-2013-05-16T22:17:20.984+02:00 n22 kernel: e7adbd50 e7addc00 e7addc58 c14957a0 d6cfdf18 c111f441 d6cfdf28 d6cfdf18
-2013-05-16T22:17:20.984+02:00 n22 kernel: f1fd4200 00000083 e7addc00 d6cfdf28 c111f4e9 e7addc00 c15f1e28 d6cfdf38
-2013-05-16T22:17:20.984+02:00 n22 kernel: Call Trace:
-2013-05-16T22:17:20.984+02:00 n22 kernel: [<c111f441>] generic_shutdown_super+0x51/0xd0
-2013-05-16T22:17:20.984+02:00 n22 kernel: [<c111f4e9>] kill_block_super+0x29/0x70
-2013-05-16T22:17:20.984+02:00 n22 kernel: [<c111f734>] deactivate_locked_super+0x44/0x70
-2013-05-16T22:17:20.984+02:00 n22 kernel: [<c1120107>] deactivate_super+0x47/0x60
-2013-05-16T22:17:20.985+02:00 n22 kernel: [<c1136e8d>] mntput_no_expire+0xcd/0x120
-2013-05-16T22:17:20.985+02:00 n22 kernel: [<c1137d4e>] SyS_umount+0xae/0x330
-2013-05-16T22:17:20.985+02:00 n22 kernel: [<c1137fee>] SyS_oldumount+0x1e/0x20
-2013-05-16T22:17:20.985+02:00 n22 kernel: [<c1477601>] sysenter_do_call+0x12/0x22
-2013-05-16T22:17:20.985+02:00 n22 kernel: Code: 24 30 c1 55 c1 05 bc 01 00 00 89 44 24 04 e8 4d 22 2b 00 8b 4d ec 8b 55 f0 8b 09 39 ca 75 b2 39 93 50 01 00 00 0f 84 9a fe ff ff <0f> 0b 66 90 55 89 e5 83 ec 20 66 66 66 66 90 8d 45 18 c7 04 24
-2013-05-16T22:17:20.985+02:00 n22 kernel: EIP: [<c11bcb8c>] ext4_put_super+0x2dc/0x2e0 SS:ESP 0068:d6cfdecc
-2013-05-16T22:17:20.985+02:00 n22 kernel: ---[ end trace 0970735cee52720b ]---
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+------------------
+Dan Murphy
+
