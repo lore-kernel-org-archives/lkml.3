@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab3EPIjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 04:39:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50726 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755783Ab3EPIjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 04:39:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michel Lespinasse <walken@google.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-acpi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ACPI fan driver: uninitialized variable when CONFIG_PM is not set
-Date: Thu, 16 May 2013 10:47:42 +0200
-Message-ID: <1874883.vU1DFNWl3r@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CANN689EHkK3xzN1bN5tUar=VLQxEanUEvopDH+0qAYkopHJibw@mail.gmail.com>
-References: <CANN689GoQm8dGEN6L1xuuc_aZ_65G3N7tBPbEXHjAfebB7xrLw@mail.gmail.com> <1368666443.2063.22.camel@rzhang1-mobl4> <CANN689EHkK3xzN1bN5tUar=VLQxEanUEvopDH+0qAYkopHJibw@mail.gmail.com>
+	id S1756087Ab3EPIju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 04:39:50 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:58390 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755558Ab3EPIjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 04:39:46 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <6691801.RqjZrI7EgH@vostro.rjw.lan>
+References: <cover.1368679353.git.viresh.kumar@linaro.org>
+	<6691801.RqjZrI7EgH@vostro.rjw.lan>
+Date: Thu, 16 May 2013 14:09:46 +0530
+Message-ID: <CAKohpom=_i8MgWy7eoa+wBtaRZ288CMfcYsGBi-4qzu4ZqR3uw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] CPUFreq Fixes for 3.10-rc2
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 16, 2013 12:56:37 AM Michel Lespinasse wrote:
-> On Wed, May 15, 2013 at 6:07 PM, Zhang Rui <rui.zhang@intel.com> wrote:
-> > Hi, Michel,
-> >
-> > thanks for your report.
-> > please check if the following patch helps or not.
-> > https://patchwork.kernel.org/patch/2574691/
-> 
-> Yes, this solves the issue.
-> 
-> Is there a chance that this will make it into 3.10 ?
+On 16 May 2013 14:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, May 16, 2013 10:39:55 AM Viresh Kumar wrote:
+>> Hi Rafael,
+>
+> Hi,
+>
+>> Here are few more fixes for 3.10-rc2.
+>
+> I'm actually going to sent the for-rc2 request today, so these are for -rc3.
 
-Yes, there is.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Okay. No issues.
