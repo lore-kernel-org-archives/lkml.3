@@ -1,134 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab3EPBNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:13:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18549 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3EPBM5 (ORCPT
+	id S1754964Ab3EPBQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 21:16:54 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46879 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3EPBQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:12:57 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=gZNcz0yrxDgA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=o0DOYjv4zn4A:10 a=PtDNVHqPAAAA:8 a=fxJcL_dCAAAA:8 a=20KFwNOVAAAA:8 a=MWcZG0o9MaQV7CYNOzcA:9 a=CjuIK1q_8ugA:10 a=wYE_KDyynt4A:10 a=2eKvNQJKnqYA:10 a=jEp0ucaQiEUA:10 a=tLUlnkoJZcZI9ocdGARlSQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 70.114.148.7
-Date: Wed, 15 May 2013 20:14:01 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Aristeu Rozanski <aris@redhat.com>,
-        linux-kernel@vger.kernel.org, amorgan@redhat.com,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
-Message-ID: <20130516011401.GA17462@austin.hallyn.com>
-References: <20121022134536.172969567@napanee.usersys.redhat.com>
- <20130514150539.GA26090@sergelap>
- <20130514155111.GJ680@redhat.com>
- <20130514162238.GA9056@sergelap>
- <87y5bhwa0h.fsf@xmission.com>
+	Wed, 15 May 2013 21:16:53 -0400
+Message-ID: <5194337D.1080503@gmail.com>
+Date: Thu, 16 May 2013 09:16:45 +0800
+From: majianpeng <majianpeng@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5bhwa0h.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jaegeuk Kim <jaegeuk.kim@samsung.com>, mingo@redhat.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-f2fs <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [RFC][PATCH] f2fs: Avoid print false deadlock messages.
+References: <5193322D.1080009@gmail.com> <20130515082834.GB10510@laptop.programming.kicks-ass.net>
+In-Reply-To: <20130515082834.GB10510@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> Serge Hallyn <serge.hallyn@ubuntu.com> writes:
-> 
-> > Quoting Aristeu Rozanski (aris@redhat.com):
-> >> On Tue, May 14, 2013 at 10:05:39AM -0500, Serge Hallyn wrote:
-> >> > so now that the device cgroup properly respects hierarchy, not allowing
-> >> > a cgroup to be given greater permission than its parent, should we consider
-> >> > relaxing the capability checks?
-> >> > 
-> >> > There are two capable(CAP_SYS_ADMIN) checks in deice_cgroup.c: one in
-> >> > devcgroup_can_attach() to protect changing another task's cgroup, and
-> >> > one in devcgroup_update_access() to protect writes to the devices.allow
-> >> > and devices.deny files.
-> >> > 
-> >> > I think the first should be changed to a check for ns_capable() to
-> >> > the victim's user_ns.  Something like 
-> >> > 
-> >> > --- a/security/device_cgroup.c
-> >> > +++ b/security/device_cgroup.c
-> >> > @@ -70,10 +70,16 @@ static int devcgroup_can_attach(struct cgroup *new_cgrp,
-> >> >                                 struct cgroup_taskset *set)
-> >> >  {
-> >> >         struct task_struct *task = cgroup_taskset_first(set);
-> >> > +       struct user_namespace *ns;
-> >> > +       int ret = -EPERM;
-> >> > 
-> >> > -       if (current != task && !capable(CAP_SYS_ADMIN))
-> >> > -               return -EPERM;
-> >> > -       return 0;
-> >> > +       if (current == task)
-> >> > +               return 0;
-> >> > +
-> >> > +       ns = userns_get(task);;
-> >> > +       ret = ns_capable(ns, CAP_SYS_ADMIN) ? 0 : -EPERM;
-> >> > +       put_user_ns(ns);
-> >> > +       return ret;
-> >> >  }
-> >> 
-> >> wouldn't this allow a userns root to move a task in the same userns into
-> >> a parent cgroup? I believe than anything but moving down the hierarchy
-> >> would be very complicated to verify (how far up can you go).
-> >
-> > But only if they are able to open the tasks file for writing, which
-> > they shouldn't be able to do, right?
-> 
-> That should be looked at very closely.  There are some funny exploits of
-> setuid root applications writing to files that have required some
-> additional permission checks on /proc/<pid>/uid_map.  I think the
-> cgroups files may be vulnerable to some of the same kind of exploits.
-> 
-> Certainly we should be verifying that the opener of the file had the
-> capabilities we are trying to use to avoid being open to those kinds of
-> problems.
-> 
-> I am trying to see the utilitity of the proposed patch.  It doesn't
-> allow mknod.  So what is the benefit of having the user namespace bits?
+On 05/15/2013 04:28 PM, Peter Zijlstra wrote:
+> On Wed, May 15, 2013 at 02:58:53PM +0800, majianpeng wrote:
+>> When mounted the f2fs, kernel will print the following messages:
+>>
+>> [  105.533038] =============================================
+>> [  105.533065] [ INFO: possible recursive locking detected ]
+>> [  105.533088] 3.10.0-rc1+ #101 Not tainted
+>> [  105.533105] ---------------------------------------------
+>> [  105.533127] mount/5833 is trying to acquire lock:
+>> [  105.533147]  (&sbi->fs_lock[i]){+.+...}, at: [<ffffffffa02017a6>] write_checkpoint+0xb6/0xaf0 [f2fs]
+>> [  105.533204]
+>> [  105.533204] but task is already holding lock:
+>> [  105.533228]  (&sbi->fs_lock[i]){+.+...}, at: [<ffffffffa02017a6>] write_checkpoint+0xb6/0xaf0 [f2fs]
+>> [  105.533278]
+>> [  105.533278] other info that might help us debug this:
+>> [  105.533305]  Possible unsafe locking scenario:
+>> [  105.533305]
+>> [  105.533329]        CPU0
+>> [  105.533341]        ----
+>> [  105.533353]   lock(&sbi->fs_lock[i]);
+>> [  105.533373]   lock(&sbi->fs_lock[i]);
+>> [  105.533394]
+>> [  105.533394]  *** DEADLOCK ***
+>> [  105.533394]
+>> By adding some messages, i found this problem because the gcc
+>> optimizing. For those codes:
+>>>        for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+>>>                mutex_init(&sbi->fs_lock[i]);
+>> The defination of mutex_init is:
+>>> #define mutex_init(mutex)
+>>> do {
+>>>
+>>>        static struct lock_class_key __key;
+>>>
+>>>                                                                      
+>>>        __mutex_init((mutex), #mutex, &__key);
+>>>
+>>> } while (0)
+>> Because the optimizing of gcc, there are only one __key rather than
+>> NR_GLOBAL_LOCKS times.
+> Its not a gcc specific optimization, any C compiler would. Its also very
+> much on purpose.
+>
+>> Add there is other problems about lockname.Using 'for()' the lockname is
+>> the same which is '&sbi->fs_lock[i]'.If it met problem about
+>> mutex-operation, it can't find which one.
+>>
+>> Although my patch can work,i think it's not best.Because if
+>> NR_GLOBAL_LOCKS changed, we may leak to change this.
+>>
+>> BTY, if who know how to avoid optimize, please tell me. Thanks!
+Thanks your answer! Your patch looks good.
+> There isn't. What you typically want to do is annotate the lock site.
+> In particular it looks like mutex_lock_all() is the offensive piece of
+> code (horrible function name though; the only redeeming thing being that
+> f2fs.h isn't likely to be included elsewhere).
+>
+> One thing you can do here is modify it to look like:
+>
+> static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
+> {
+> 	int i;
+>
+> 	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
+> 		/*
+> 		 * This is the only time we take multiple fs_lock[]
+> 		 * instances; the order is immaterial since we
+> 		 * always hold cp_mutex, which serializes multiple
+> 		 * such operations.
+> 		 */
+> 		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
+> 	}
+> }
+>
+> That tells the lock validator that it is ok to lock multiple instances
+> of the fs_lock[i] class because the lock order is guarded by cp_mutex.
+> While your patch also works, it has multiple down-sides; its easy to get
+> out of sync when you modify NR_GLOBAL_LOCKS; also it consumes more
+> static lockdep resources (lockdep has to allocate all its resources
+> from static arrays since allocating memory also uses locks -- recursive
+> problem).
+>
+Yes, but there is a problem if fs_block[] met deadlock. How to find which one?
+Because the lock->name is the same.
 
-I'm still thinking through it, which is why I haven't sent a real
-patch.  What I'm working on is the unprivileged startup of a container.
-Right now most things are not allowed in a private user ns, so device
-cgroup is not as useful.  But it should be possible eventually to use
-block devices, which the original unprivileged user owned, by chowning
-the blockdev to a user mapped into the target userns.
+Thanks!
+Jianpeng Ma
 
-The unprivileged user may want to use devices cgroup so he can chown
-the loop file into the container, but only allow read-only mounts, for
-instance.
-
-> Is the point to allow the userns root to remove access to selected
-> devices from it's children even if the DAC permissions would allow the
-> access?
-
-Yes I think that's it - except userns root before forking the container
-init (and venturing into the really untrusted category).
-
-...
-
-> That said I haven't looked at open or mknod, and usually we are talking
-> about calls that aren't made by suid apps so I think there is a fair
-> chance that dropping some of those permissions could cause issues.
-> The first danger that crosses my mind is what happens if you remove
-> access to /dev/tty from a normal application that would trying and log
-> strange goings on to a user if they could.
-
-If they were going to do that over tty, that would be to the malicious
-user anyway, so that should just either be ignored, or result in the
-program exiting early.
-
-> Shrug mostly I don't see the advantage of this change.
-
-It's also possible that this will end up being worked around by the new
-(not-yet-designed) interface/library which Tejun wants people to use,
-sitting above the cgroupfs.  At least at a first layer.
-
-Anyway this isn't urgent, as it's not in the way for general unprivileged
-container creation.  But in general if we don't need the check to be
-capable(), it would be better to introduce the right check.
-
--serge
