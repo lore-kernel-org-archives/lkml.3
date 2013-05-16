@@ -1,135 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab3EPVrm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:47:42 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:22585 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab3EPVrk (ORCPT
+	id S1754369Ab3EPVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:51:56 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:46479 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab3EPVvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:47:40 -0400
-Message-ID: <1368740855.2655.57.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution
- statistics through ethtool
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Sriram Narasimhan <sriram.narasimhan@hp.com>
-CC: <mst@redhat.com>, <rusty@rustcorp.com.au>,
-        <virtualization@lists.linux-foundation.org>, <kvm@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 16 May 2013 22:47:35 +0100
-In-Reply-To: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com>
-References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Thu, 16 May 2013 17:51:54 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19868.005
-X-TM-AS-Result: No--8.138700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <2469545.4zh8j9i5RI@flatron>
+References: <1368724352-10849-1-git-send-email-dianders@chromium.org>
+	<1944811.006SLH6aYj@flatron>
+	<CAD=FV=Wk4sib4RvgVqonSj_wANmUh6vftTqveFNn6X4ceFc6Gw@mail.gmail.com>
+	<2469545.4zh8j9i5RI@flatron>
+Date: Thu, 16 May 2013 14:51:53 -0700
+X-Google-Sender-Auth: Qy1P3PNa-evwoCk9uUJyMWimRDc
+Message-ID: <CAD=FV=Uqhw4GXjfQrnxzJ4U95wudF1whBcRxK8y3LZMWHTurNw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: samsung: fix suspend/resume functionality
+From: Doug Anderson <dianders@chromium.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 13:24 -0700, Sriram Narasimhan wrote:
-> This patch allows virtio-net driver to report traffic distribution
-> to inbound/outbound queues through ethtool -S.  The per_cpu
-> virtnet_stats is split into receive and transmit stats and are
-> maintained on a per receive_queue and send_queue basis.
-> virtnet_stats() is modified to aggregate interface level statistics
-> from per-queue statistics.  Sample output below:
-> 
-> NIC statistics:
->      rxq0: rx_packets: 4357802
->      rxq0: rx_bytes: 292642052
->      txq0: tx_packets: 824540
->      txq0: tx_bytes: 55256404
->      rxq1: rx_packets: 0
->      rxq1: rx_bytes: 0
->      txq1: tx_packets: 1094268
->      txq1: tx_bytes: 73328316
->      rxq2: rx_packets: 0
->      rxq2: rx_bytes: 0
->      txq2: tx_packets: 1091466
->      txq2: tx_bytes: 73140566
->      rxq3: rx_packets: 0
->      rxq3: rx_bytes: 0
->      txq3: tx_packets: 1093043
->      txq3: tx_bytes: 73246142
-> 
-> Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
-[...]
+Tomasz,
 
-That ordering is totally unreadable.  I want to see patches for ethtool
-to let the user order and aggregate the queue statistics in a sensible
-way:
+On Thu, May 16, 2013 at 2:27 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> OK. I will be fine to go with your patches, after addressing the comments.
+> In the end it's good that you posted them, as reviewing them allowed me to
+> find even better ways of doing some things than I had in mine ;) .
 
-$ ethtool -S eth0                   # default would show aggregated statistics
-NIC statistics:
-	rx_packets: 4357802
-	rx_bytes: 292642052
-	tx_packets: 4103317
-	tx_bytes: 274971428
+Yes.  I often find that the best way to review code is to think about
+how I would implement it myself.  Certainly I think we've ended up
+with something better / less buggy this way.  ;)
 
-$ ethtool -S eth0 full group queue  # full statistics, grouped by queue name
-NIC statistics:
-rxq0:
-	rx_packets: 4357802
-	rx_bytes: 292642052
-rxq1:
-	rx_packets: 0
-	rx_bytes: 0
-[...]
-txq0:
-	tx_packets: 824540
-	tx_bytes: 55256404
-txq1:
-	tx_packets: 1094268
-	tx_bytes: 73328316
-[...]
 
-$ ethtool -S eth0 full group statistic  # full statistics, grouped by statistic name
-NIC statistics:
-rx_packets:
-	rxq0: 4357802
-	rxq1: 0
-	rxq2: 0
-	rxq3: 0
-rx_bytes:
-	rxq0: 292642052
-	rxq1: 0
-	rxq2: 0
-	rxq3: 0
-[...]
+> How all of this works is basically a good question. I couldn't find any
+> mention about pins switching from power down to normal mode in the
+> documentation, but maybe there is a small side note somewhere, which I
+> could miss.
+>
+> On S3C6410, for example, there are two modes. State is switched to power
+> down mode automatically, but can be switched out either automatically on
+> wake-up (exact timing is unknown to me) or by clearing a special bit,
+> depending on value of other special bit.
+>
+> IMHO this is rather important, so we should find out how it work on other
+> SoCs and make the code account for it.
 
-Maybe even:
+Agreed that it's important.  ...but it's also good not to have tons of
+complexity when it's not needed.  It sounds like S3C6410 could be
+handled OK by just using the special bits and waiting to take things
+out of power down mode.
 
-$ ethtool -S eth0 full table
-NIC statistics:
-	rx_packets   rx_bytes
-rxq0:      4357802  292642052
-rxq1:            0          0
-rxq2:            0          0
-rxq3:            0          0
-	tx_packets   tx_bytes
-txq0:       824540   55256404
-txq1:      1094268   73328316
-txq2:      1091466   73140566
-txq3:      1093043   73246142
+...thinking about it, all SoCs that have power down modes (which you
+_must_ have if your pinctrl state is lost across a low power) would be
+slightly broken if they didn't have a bit to switch out of power down
+mode.  Otherwise you're asking for at least some type of glitch
+because you'll end up in the default state of pins for a little while
+during resume.
 
-(Difficult to do, but probably very useful!)
+That's not to say that there aren't broken SoCs out there and it's
+entirely possible that people even designed systems around them
+(knowing that the default state of each pin after wakeup is not
+harmful to whatever is connected to that pin).  If there are any cases
+like this then they would need the special code like my V1 patch had.
+Do you know of any SoCs like this that we need to support on kernel
+3.10 and higher?
 
-The queue names should be rx-<index> and tx-<index> like in sysfs.
 
-We'll need to reach a consensus on the naming scheme for per-queue and
-otherwise disaggregated statistics (see previous discussions in
-<http://thread.gmane.org/gmane.linux.kernel.virtualization/15572/focus=15608>).  I don't much care what they look like as long as there's an implementation for the ethtool side and they don't look too awful in older versions of ethtool.
+I'm planning on going back to the "simpler" code for my next patchset
+unless I can find a problem with it.
 
-Ben.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+-Doug
