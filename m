@@ -1,40 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3EPTXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 15:23:23 -0400
-Received: from canardo.mork.no ([148.122.252.1]:48667 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab3EPTXS convert rfc822-to-8bit (ORCPT
+	id S1753328Ab3EPT0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 15:26:24 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63793 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823Ab3EPT0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 15:23:18 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: net: cdc_ncm, cdc_mbim: allow user to prefer NCM for backwards compatibility
-Organization: m
-References: <20130516182510.GA4728@redhat.com> <87mwrueo9k.fsf@nemi.mork.no>
-	<20130516191701.GC5805@redhat.com>
-Date: Thu, 16 May 2013 21:23:08 +0200
-In-Reply-To: <20130516191701.GC5805@redhat.com> (Dave Jones's message of "Thu,
-	16 May 2013 15:17:01 -0400")
-Message-ID: <87ip2ienkz.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Thu, 16 May 2013 15:26:20 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] pinctrl: exynos: fix eint wakeup by using irq_set_wake()
+Date: Thu, 16 May 2013 21:26:16 +0200
+Message-ID: <1483058.pKLP2TAAG6@flatron>
+User-Agent: KMail/4.10.3 (Linux/3.9.2-gentoo; KDE/4.10.3; x86_64; ; )
+In-Reply-To: <1368724352-10849-3-git-send-email-dianders@chromium.org>
+References: <1368724352-10849-1-git-send-email-dianders@chromium.org> <1368724352-10849-3-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
+On Thursday 16 of May 2013 10:12:32 Doug Anderson wrote:
+> From: Prathyush K <prathyush.k@samsung.com>
+> 
+> Add the irq_set_wake function for exynos pinctrl to configure the
+> external interrupt wakeup mask register.
+> 
+> [dianders: minor nit fixes; port to ToT]
+> 
+> Signed-off-by: Prathyush K <prathyush.k@samsung.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/pinctrl/pinctrl-exynos.c  | 45
+> ++++++++++++++++++++++++++++-----------
+> drivers/pinctrl/pinctrl-exynos.h  |  3 ++-
+>  drivers/pinctrl/pinctrl-samsung.h |  2 ++
+>  3 files changed, 37 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-exynos.c
+> b/drivers/pinctrl/pinctrl-exynos.c index ac74281..3ebb2ff 100644
+> --- a/drivers/pinctrl/pinctrl-exynos.c
+> +++ b/drivers/pinctrl/pinctrl-exynos.c
+> @@ -30,6 +30,8 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/err.h>
+> 
+> +#include <plat/pm.h>
+> +
 
-> Ben, does debian have a commits mailing list for kernel changes ?
+This is not going to work with CONFIG_MULTIPLATFORM.
 
-I'm not Ben, but I believe this is what you're looking for:
-http://lists.alioth.debian.org/mailman/listinfo/kernel-svn-changes
+Now this raises a question what is the preferred way to pass some data 
+from generic driver to platform code.
 
+I would suggest adding a function called exynos_pinctrl_get_eintmask() (or 
+whatever) that would return the wake-up mask configured in the driver and 
+then modify platform code to use it.
 
-Bjørn
+>  #include "pinctrl-samsung.h"
+>  #include "pinctrl-exynos.h"
+> 
+> @@ -326,6 +328,24 @@ static int exynos_wkup_irq_set_type(struct irq_data
+> *irqd, unsigned int type) return 0;
+>  }
+> 
+> +static int exynos_wkup_irq_set_wake(struct irq_data *irqd, unsigned int
+> state) +{
+> +	struct samsung_pin_bank *bank = irq_data_get_irq_chip_data(irqd);
+> +	const int eint_num = bank->eint_base + irqd->hwirq;
+> +	unsigned long bit = 1L << eint_num;
+> +
+> +	pr_info("wake %s for eint %d / %s[%ld]\n",
+> +		state ? "enabled" : "disabled",
+> +		eint_num, bank->name, irqd->hwirq);
+> +
+> +	if (!state)
+> +		s3c_irqwake_eintmask |= bit;
+> +	else
+> +		s3c_irqwake_eintmask &= ~bit;
+> +
+> +	return 0;
+> +}
+> +
+>  /*
+>   * irq_chip for wakeup interrupts
+>   */
+> @@ -335,6 +355,7 @@ static struct irq_chip exynos_wkup_irq_chip = {
+>  	.irq_mask	= exynos_wkup_irq_mask,
+>  	.irq_ack	= exynos_wkup_irq_ack,
+>  	.irq_set_type	= exynos_wkup_irq_set_type,
+> +	.irq_set_wake	= exynos_wkup_irq_set_wake,
+>  };
+> 
+>  /* interrupt handler for wakeup interrupts 0..15 */
+> @@ -543,10 +564,10 @@ static struct samsung_pin_bank
+> exynos4210_pin_banks1[] = { EXYNOS_PIN_BANK_EINTN(8, 0x1A0, "gpy4"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x1C0, "gpy5"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x1E0, "gpy6"),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
+>  };
+> 
+>  /* pin banks of exynos4210 pin-controller 2 */
+> @@ -629,10 +650,10 @@ static struct samsung_pin_bank
+> exynos4x12_pin_banks1[] = { EXYNOS_PIN_BANK_EINTN(8, 0x1A0, "gpy4"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x1C0, "gpy5"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x1E0, "gpy6"),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
+>  };
+> 
+>  /* pin banks of exynos4x12 pin-controller 2 */
+> @@ -724,10 +745,10 @@ static struct samsung_pin_bank
+> exynos5250_pin_banks0[] = { EXYNOS_PIN_BANK_EINTN(8, 0x220, "gpy4"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x240, "gpy5"),
+>  	EXYNOS_PIN_BANK_EINTN(8, 0x260, "gpy6"),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08),
+> -	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC00, "gpx0", 0x00, 0),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC20, "gpx1", 0x04, 8),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC40, "gpx2", 0x08, 16),
+> +	EXYNOS_PIN_BANK_EINTW(8, 0xC60, "gpx3", 0x0c, 24),
+>  };
+> 
+>  /* pin banks of exynos5250 pin-controller 1 */
+> diff --git a/drivers/pinctrl/pinctrl-exynos.h
+> b/drivers/pinctrl/pinctrl-exynos.h index 9b1f77a..d98e9ff 100644
+> --- a/drivers/pinctrl/pinctrl-exynos.h
+> +++ b/drivers/pinctrl/pinctrl-exynos.h
+> @@ -65,13 +65,14 @@
+>  		.name		= id			\
+>  	}
+> 
+> -#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs)	\
+> +#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs, base)\
+>  	{						\
+>  		.type		= &bank_type_alive,	\
+>  		.pctl_offset	= reg,			\
+>  		.nr_pins	= pins,			\
+>  		.eint_type	= EINT_TYPE_WKUP,	\
+>  		.eint_offset	= offs,			\
+> +		.eint_base	= base,			\
+
+I can't look at my patch at the moment, but I think I have managed to get 
+EINT index without adding this extra field.
+
+Best regards,
+Tomasz
+
