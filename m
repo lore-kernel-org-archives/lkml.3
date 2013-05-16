@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab3EPGoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 02:44:23 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5682 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab3EPGoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 02:44:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,681,1363158000"; 
-   d="scan'208";a="242307020"
-Date: Thu, 16 May 2013 11:38:50 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, herbert@gondor.hengli.com.au, arnd@arndb.de,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 39/39] dmaengine: ste_dma40: Fetch disabled channels
- from DT
-Message-ID: <20130516060850.GI27639@intel.com>
-References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
- <1368611522-9984-40-git-send-email-lee.jones@linaro.org>
+	id S1755428Ab3EPGqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 02:46:24 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:37817 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab3EPGqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 02:46:21 -0400
+Message-ID: <519480A1.6030909@ahsoftware.de>
+Date: Thu, 16 May 2013 08:45:53 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368611522-9984-40-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+CC: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: BUG: tty: memory corruption through tty_release/tty_ldisc_release
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 10:52:02AM +0100, Lee Jones wrote:
-> Some platforms have channels which are not available for normal use.
-> This information is currently passed though platform data in internal
-> BSP kernels. Once those platforms land, they'll need to configure them
-> appropriately, so we may as well add the infrastructure.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
+Hello,
 
-> ---
->  Documentation/devicetree/bindings/dma/ste-dma40.txt |    2 ++
->  drivers/dma/ste_dma40.c                             |   17 ++++++++++++++++-
->  2 files changed, 18 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-> index aa272d8..bea5b73 100644
-> --- a/Documentation/devicetree/bindings/dma/ste-dma40.txt
-> +++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-> @@ -11,6 +11,7 @@ Required properties:
->  Optional properties:
->  - dma-channels: Number of channels supported by hardware - if not present
->  		the driver will attempt to obtain the information from H/W
-> +- disabled-channels: Channels which can not be used
->  
->  Example:
->  
-> @@ -23,6 +24,7 @@ Example:
->  
->  		#dma-cells = <2>;
->  		memcpy-channels  = <56 57 58 59 60>;
-> +		disabled-channels  = <12>;
->  		dma-channels = <8>;
->  	};
->  
-> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-> index 4e528dd..ffac822 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -3482,7 +3482,7 @@ static int __init d40_of_probe(struct platform_device *pdev,
->  			       struct device_node *np)
->  {
->  	struct stedma40_platform_data *pdata;
-> -	int num_phy = 0, num_memcpy = 0;
-> +	int num_phy = 0, num_memcpy = 0, num_disabled = 0;
->  	const const __be32 *list;
->  
->  	pdata = devm_kzalloc(&pdev->dev,
-> @@ -3511,6 +3511,21 @@ static int __init d40_of_probe(struct platform_device *pdev,
->  				   dma40_memcpy_channels,
->  				   num_memcpy);
->  
-> +	list = of_get_property(np, "disabled-channels", &num_disabled);
-> +	num_disabled /= sizeof(*list);
-> +
-> +	if (num_disabled > STEDMA40_MAX_PHYS || num_disabled < 0) {
-> +		d40_err(&pdev->dev,
-> +			"Invalid number of disabled channels specified (%d)\n",
-> +			num_disabled);
-> +		return -EINVAL;
-> +	}
-> +
-> +	of_property_read_u32_array(np, "disabled-channels",
-> +				   pdata->disabled_channels,
-> +				   num_disabled);
-> +	pdata->disabled_channels[num_disabled] = -1;
-> +
->  	pdev->dev.platform_data = pdata;
->  
->  	return 0;
-> -- 
-> 1.7.10.4
-> 
+after some pain because the "big step" (ecbbfd4) happened while the 
+support for my AMD CPU was broken and thus git bisect hit a series of 
+kernels which didn't boot, I've finally found the cause for a memory 
+corruption: tty_ldisc_release().
+
+What happens is the following:
+
+tty_port is self-destructing, that means it destroys itself in 
+tty_port.c:tty_port_destructor() when the last reference is gone. E.g. 
+in case of rfcomm this happens with the call to tty->ops->close() in 
+tty_io.c:tty_release().
+
+The problem here is that tty_io.c:tty_release() calls 
+tty_ldisc.c:tty_ldisc_release() which uses the tty_port to flush the 
+ldisc work queues.
+
+In the best case this hits a BUG() in cancel_work_sync() but often it 
+just causes a memory corruption without a BUG() got hit before.
+
+My quick fix (the diff below) is to remove the call to 
+tty_ldisc_release() but I'm very doubtful that this is the correct 
+approach, as I'm not very familiar with the tty subsystem and therefor 
+I'm not sure if it is necessary to flush the ldisc queues. Another 
+solution could be to move the call to tty_ldisc_release() to 
+tty_port.c:tty_port_destructor().
+
+If the patch finds friends, it could be enhanced to remove
+tty_ldisc.c:tty_ldisc_release() too, tty_release() is the only user of 
+that function.
+
+I've added the bluetooth people to cc, because rfcomm is one user of 
+tty_release() which gets hit by this bug whenever a connected (rfcomm) 
+remote device disappears.
+
+Regards,
+
+Alexander Holler
+
+
+(The format of the patch below is likely broken, but I don't care, as it 
+is just a RFC.)
+
+ From 4a1d24e5334668f6cd82937d574cd75b5e372a75 Mon Sep 17 00:00:00 2001
+From: Alexander Holler <holler@ahsoftware.de>
+Date: Thu, 16 May 2013 08:21:22 +0200
+Subject: [PATCH] tty: don't call tty_ldisc_release() because tty_port likely
+  disappeared before
+
+tty_port destroys itself when the last reference is gone, therefor
+tty_ldisc_release() can't be called afterwards.
+
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+  drivers/tty/tty_io.c | 4 ----
+  1 file changed, 4 deletions(-)
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 6464029..9c9ad04 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1850,10 +1850,6 @@ int tty_release(struct inode *inode, struct file 
+*filp)
+  #ifdef TTY_DEBUG_HANGUP
+  	printk(KERN_DEBUG "%s: %s: final close\n", __func__, tty_name(tty, buf));
+  #endif
+-	/*
+-	 * Ask the line discipline code to release its structures
+-	 */
+-	tty_ldisc_release(tty, o_tty);
+
+  	/* Wait for pending work before tty destruction commmences */
+  	tty_flush_works(tty);
+-- 
+1.8.1.4
+
