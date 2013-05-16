@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3EPOWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 10:22:25 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2052 "EHLO
+	id S1754647Ab3EPOWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 10:22:34 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2060 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab3EPOWV (ORCPT
+	with ESMTP id S1751762Ab3EPOWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 10:22:21 -0400
+	Thu, 16 May 2013 10:22:30 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 16 May 2013 07:18:34 -0700
+	by hqnvupgp08.nvidia.com on Thu, 16 May 2013 07:22:29 -0700
 From: Venu Byravarasu <vbyravarasu@nvidia.com>
 To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <balbi@ti.com>,
         <swarren@wwwdotorg.org>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>,
         Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v4 5/8] usb: phy: tegra: Get PHY mode using DT
-Date: Thu, 16 May 2013 19:42:59 +0530
-Message-ID: <1368713582-29038-6-git-send-email-vbyravarasu@nvidia.com>
+Subject: [PATCH v4 7/8] usb: phy: tegra: Add error handling & clean up.
+Date: Thu, 16 May 2013 19:43:01 +0530
+Message-ID: <1368713582-29038-8-git-send-email-vbyravarasu@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com>
 References: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com>
@@ -28,94 +28,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new PHY mode to support OTG.
-Obtained Tegra USB PHY mode using DT property.
+Check return values from all GPIO APIs and handle errors accordingly.
+
+Remove the call to clk_disable_unprepare(); this function does not
+prepare or enable the clock, so the error path should not disable or
+unprepare it.
 
 Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
-delta from v3 & v2:
-No change
+delta from v3:
+Modified comment section to indicate 'otg_ulpi_create returned NULL'.
+
+delta from v2:
+Fixed checkpatch warnings.
 
 delta from v1:
-replaced gadget with peripheral.
+no changes.
 
+ drivers/usb/phy/phy-tegra-usb.c |   50 ++++++++++++++++++++++++++++++--------
+ 1 files changed, 39 insertions(+), 11 deletions(-)
 
- 
-drivers/usb/host/ehci-tegra.c     |    1 -
- drivers/usb/phy/phy-tegra-usb.c   |   13 +++++++++++--
- include/linux/usb/tegra_usb_phy.h |    3 ++-
- 3 files changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index e3eddc3..568a6fa 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -736,7 +736,6 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 
- 	tegra->phy = tegra_usb_phy_open(&pdev->dev, instance, hcd->regs,
- 					pdata->phy_config,
--					TEGRA_USB_PHY_MODE_HOST,
- 					tegra_ehci_set_pts,
- 					tegra_ehci_set_phcd);
- 	if (IS_ERR(tegra->phy)) {
 diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 8bcc12f..0ff1f3e 100644
+index b8c688a..f423ae8 100644
 --- a/drivers/usb/phy/phy-tegra-usb.c
 +++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -687,7 +687,7 @@ static int	tegra_usb_phy_suspend(struct usb_phy *x, int suspend)
- }
+@@ -542,9 +542,17 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 	unsigned long val;
+ 	void __iomem *base = phy->regs;
  
- struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
--	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode,
-+	void __iomem *regs, void *config,
- 	void (*set_pts)(struct usb_phy *x, u8 pts_val),
- 	void (*set_phcd)(struct usb_phy *x, bool enable))
+-	gpio_direction_output(phy->reset_gpio, 0);
++	ret = gpio_direction_output(phy->reset_gpio, 0);
++	if (ret < 0) {
++		dev_err(phy->dev, "gpio %d not set to 0\n", phy->reset_gpio);
++		return ret;
++	}
+ 	msleep(5);
+-	gpio_direction_output(phy->reset_gpio, 1);
++	ret = gpio_direction_output(phy->reset_gpio, 1);
++	if (ret < 0) {
++		dev_err(phy->dev, "gpio %d not set to 1\n", phy->reset_gpio);
++		return ret;
++	}
  
-@@ -705,7 +705,6 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 	phy->instance = instance;
- 	phy->regs = regs;
- 	phy->config = config;
--	phy->mode = phy_mode;
- 	phy->dev = dev;
- 	phy->is_legacy_phy =
- 		of_property_read_bool(np, "nvidia,has-legacy-mode");
-@@ -717,6 +716,16 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 	else
- 		phy->is_ulpi_phy = true;
- 
-+	err = of_property_match_string(np, "dr_mode", "otg");
-+	if (err < 0) {
-+		err = of_property_match_string(np, "dr_mode", "peripheral");
-+		if (err < 0)
-+			phy->mode = TEGRA_USB_PHY_MODE_HOST;
-+		else
-+			phy->mode = TEGRA_USB_PHY_MODE_DEVICE;
-+	} else
-+		phy->mode = TEGRA_USB_PHY_MODE_OTG;
+ 	clk_prepare_enable(phy->clk);
+ 	msleep(1);
+@@ -624,24 +632,44 @@ static int	tegra_phy_init(struct usb_phy *x)
+ 			of_get_named_gpio(phy->dev->of_node,
+ 					  "nvidia,phy-reset-gpio", 0);
+ 		if (!gpio_is_valid(phy->reset_gpio)) {
+-			pr_err("%s: invalid reset gpio: %d\n", __func__,
++			dev_err(phy->dev, "invalid gpio: %d\n",
++				phy->reset_gpio);
++			err = phy->reset_gpio;
++			goto cleanup_clk_get;
++		}
 +
- 	if (!phy->config) {
- 		if (phy->is_ulpi_phy) {
- 			pr_err("%s: ulpi phy configuration missing", __func__);
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index 1b7519a..ff2d959 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -42,6 +42,7 @@ enum tegra_usb_phy_port_speed {
- enum tegra_usb_phy_mode {
- 	TEGRA_USB_PHY_MODE_DEVICE,
- 	TEGRA_USB_PHY_MODE_HOST,
-+	TEGRA_USB_PHY_MODE_OTG,
- };
- 
- struct tegra_xtal_freq;
-@@ -66,7 +67,7 @@ struct tegra_usb_phy {
- };
- 
- struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
--	void __iomem *regs, void *config, enum tegra_usb_phy_mode phy_mode,
-+	void __iomem *regs, void *config,
- 	void (*set_pts)(struct usb_phy *x, u8 pts_val),
- 	void (*set_phcd)(struct usb_phy *x, bool enable));
++		err = gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
++		if (err < 0) {
++			dev_err(phy->dev, "request failed for gpio: %d\n",
+ 			       phy->reset_gpio);
+-			err = -EINVAL;
+-			goto err1;
++			goto cleanup_clk_get;
++		}
++
++		err = gpio_direction_output(phy->reset_gpio, 0);
++		if (err < 0) {
++			dev_err(phy->dev, "gpio %d direction not set to output\n",
++			       phy->reset_gpio);
++			goto cleanup_gpio_req;
+ 		}
+-		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
+-		gpio_direction_output(phy->reset_gpio, 0);
++
+ 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
++		if (!phy->ulpi) {
++			dev_err(phy->dev, "otg_ulpi_create returned NULL\n");
++			err = -ENOMEM;
++			goto cleanup_gpio_req;
++		}
++
+ 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
+ 	} else {
+ 		err = utmip_pad_open(phy);
+ 		if (err < 0)
+-			goto err1;
++			return err;
+ 	}
+ 	return 0;
+-err1:
+-	clk_disable_unprepare(phy->pll_u);
+-	clk_put(phy->pll_u);
++cleanup_gpio_req:
++	gpio_free(phy->reset_gpio);
++cleanup_clk_get:
++	clk_put(phy->clk);
+ 	return err;
+ }
  
 -- 
 1.7.0.4
