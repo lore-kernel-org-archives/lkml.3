@@ -1,47 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3EPVea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:34:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48836 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab3EPVe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:34:28 -0400
-Date: Thu, 16 May 2013 23:34:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130516213420.GB31393@pd.tnic>
-References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
- <20130516175117.GK19669@dyad.programming.kicks-ass.net>
- <20130516175557.GC18325@hansolo.jdub.homelinux.org>
- <20130516181018.GO19669@dyad.programming.kicks-ass.net>
- <20130516205558.GE8356@rric.localhost>
+	id S1754613Ab3EPVrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:47:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:22585 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab3EPVrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 17:47:40 -0400
+Message-ID: <1368740855.2655.57.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution
+ statistics through ethtool
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Sriram Narasimhan <sriram.narasimhan@hp.com>
+CC: <mst@redhat.com>, <rusty@rustcorp.com.au>,
+        <virtualization@lists.linux-foundation.org>, <kvm@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Thu, 16 May 2013 22:47:35 +0100
+In-Reply-To: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com>
+References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130516205558.GE8356@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19868.005
+X-TM-AS-Result: No--8.138700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 10:55:58PM +0200, Robert Richter wrote:
-> iirc the reason was the different msr range that is switched on fam15h
-> with a different counter to counter msr offset of 2 instead of 1. The
-> code relies on the assumption that the msrs exist on that cpu. Thus
-> the warning if not. Also note that code may have changed in 3.10 in
-> that area.
+On Thu, 2013-05-16 at 13:24 -0700, Sriram Narasimhan wrote:
+> This patch allows virtio-net driver to report traffic distribution
+> to inbound/outbound queues through ethtool -S.  The per_cpu
+> virtnet_stats is split into receive and transmit stats and are
+> maintained on a per receive_queue and send_queue basis.
+> virtnet_stats() is modified to aggregate interface level statistics
+> from per-queue statistics.  Sample output below:
+> 
+> NIC statistics:
+>      rxq0: rx_packets: 4357802
+>      rxq0: rx_bytes: 292642052
+>      txq0: tx_packets: 824540
+>      txq0: tx_bytes: 55256404
+>      rxq1: rx_packets: 0
+>      rxq1: rx_bytes: 0
+>      txq1: tx_packets: 1094268
+>      txq1: tx_bytes: 73328316
+>      rxq2: rx_packets: 0
+>      rxq2: rx_bytes: 0
+>      txq2: tx_packets: 1091466
+>      txq2: tx_bytes: 73140566
+>      rxq3: rx_packets: 0
+>      rxq3: rx_bytes: 0
+>      txq3: tx_packets: 1093043
+>      txq3: tx_bytes: 73246142
+> 
+> Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
+[...]
 
-Stupid question: why is check_hw_exists() *after* the vendor-specific
-counter detection code in init_hw_perf_events() even though it is
-supposed to check whether hardware is emulated?
+That ordering is totally unreadable.  I want to see patches for ethtool
+to let the user order and aggregate the queue statistics in a sensible
+way:
+
+$ ethtool -S eth0                   # default would show aggregated statistics
+NIC statistics:
+	rx_packets: 4357802
+	rx_bytes: 292642052
+	tx_packets: 4103317
+	tx_bytes: 274971428
+
+$ ethtool -S eth0 full group queue  # full statistics, grouped by queue name
+NIC statistics:
+rxq0:
+	rx_packets: 4357802
+	rx_bytes: 292642052
+rxq1:
+	rx_packets: 0
+	rx_bytes: 0
+[...]
+txq0:
+	tx_packets: 824540
+	tx_bytes: 55256404
+txq1:
+	tx_packets: 1094268
+	tx_bytes: 73328316
+[...]
+
+$ ethtool -S eth0 full group statistic  # full statistics, grouped by statistic name
+NIC statistics:
+rx_packets:
+	rxq0: 4357802
+	rxq1: 0
+	rxq2: 0
+	rxq3: 0
+rx_bytes:
+	rxq0: 292642052
+	rxq1: 0
+	rxq2: 0
+	rxq3: 0
+[...]
+
+Maybe even:
+
+$ ethtool -S eth0 full table
+NIC statistics:
+	rx_packets   rx_bytes
+rxq0:      4357802  292642052
+rxq1:            0          0
+rxq2:            0          0
+rxq3:            0          0
+	tx_packets   tx_bytes
+txq0:       824540   55256404
+txq1:      1094268   73328316
+txq2:      1091466   73140566
+txq3:      1093043   73246142
+
+(Difficult to do, but probably very useful!)
+
+The queue names should be rx-<index> and tx-<index> like in sysfs.
+
+We'll need to reach a consensus on the naming scheme for per-queue and
+otherwise disaggregated statistics (see previous discussions in
+<http://thread.gmane.org/gmane.linux.kernel.virtualization/15572/focus=15608>).  I don't much care what they look like as long as there's an implementation for the ethtool side and they don't look too awful in older versions of ethtool.
+
+Ben.
 
 -- 
-Regards/Gruss,
-    Boris.
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
