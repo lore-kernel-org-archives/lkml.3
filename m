@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab3EPDLD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 23:11:03 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40761 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab3EPDK7 (ORCPT
+	id S1753661Ab3EPDQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 23:16:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28871 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab3EPDQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 23:10:59 -0400
-Date: Wed, 15 May 2013 20:10:55 -0700 (PDT)
-Message-Id: <20130515.201055.1401062016041347476.davem@davemloft.net>
-To: rusty@rustcorp.com.au
-Cc: nab@linux-iscsi.org, asias@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        target-devel@vger.kernel.org, sfr@canb.auug.org.au,
-        rdunlap@infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <871u9724vp.fsf@rustcorp.com.au>
-References: <8761yk254u.fsf@rustcorp.com.au>
-	<1368657450.6899.29.camel@haakon3.risingtidesystems.com>
-	<871u9724vp.fsf@rustcorp.com.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 15 May 2013 20:10:58 -0700 (PDT)
+	Wed, 15 May 2013 23:16:33 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>, penberg@kernel.org
+Subject: [PATCH v4 1/9] lockdep: Be nice about building from userspace
+Date: Wed, 15 May 2013 23:15:33 -0400
+Message-Id: <1368674141-10796-2-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
+References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
-Date: Thu, 16 May 2013 09:05:38 +0930
+Lockdep is an awesome piece of code which detects locking issues
+which are relevant both to userspace and kernelspace. We can
+easily make lockdep work in userspace since there is really no
+kernel spacific magic going on in the code.
 
-> memcpy_fromiovec() has nothing to do with networking: that was just the
-> first user.  Note that crypto/algif_skcipher.c also uses it.  The
-> obvious answer is to move it into lib/.
+All we need is to wrap two functions which are used by lockdep
+and are very kernel specific.
 
-+1
+Doing that will allow tools located in tools/ to easily utilize
+lockdep's code for their own use.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: penberg@kernel.org
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/lockdep.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 1f3186b..edb7f7e 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -590,6 +590,7 @@ static int very_verbose(struct lock_class *class)
+ /*
+  * Is this the address of a static object:
+  */
++#ifdef __KERNEL__
+ static int static_obj(void *obj)
+ {
+ 	unsigned long start = (unsigned long) &_stext,
+@@ -616,6 +617,7 @@ static int static_obj(void *obj)
+ 	 */
+ 	return is_module_address(addr) || is_module_percpu_address(addr);
+ }
++#endif
+ 
+ /*
+  * To make lock name printouts unique, we calculate a unique
+@@ -4116,6 +4118,7 @@ void debug_check_no_locks_held(struct task_struct *task)
+ 		print_held_locks_bug(task);
+ }
+ 
++#ifdef __KERNEL__
+ void debug_show_all_locks(void)
+ {
+ 	struct task_struct *g, *p;
+@@ -4173,6 +4176,7 @@ retry:
+ 		read_unlock(&tasklist_lock);
+ }
+ EXPORT_SYMBOL_GPL(debug_show_all_locks);
++#endif
+ 
+ /*
+  * Careful: only use this function if you are sure that
+-- 
+1.8.2.1
+
