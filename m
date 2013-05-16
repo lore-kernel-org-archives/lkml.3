@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3EPJjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 05:39:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49233 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab3EPJjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 05:39:51 -0400
-Date: Thu, 16 May 2013 11:37:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130516093740.GI19669@dyad.programming.kicks-ass.net>
-References: <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
- <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130514145119.GC19669@dyad.programming.kicks-ass.net>
- <20130514154728.GC4442@linux.vnet.ibm.com>
- <20130515085639.GD10510@laptop.programming.kicks-ass.net>
- <20130515163700.GK4442@linux.vnet.ibm.com>
+	id S1751540Ab3EPJnY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 05:43:24 -0400
+Received: from [213.199.154.184] ([213.199.154.184]:58379 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750713Ab3EPJnV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 05:43:21 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371Ic89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+X-WSS-ID: 0MMVXLF-01-4CM-02
+X-M-MSG: 
+Message-ID: <5194A9CF.3080509@amd.com>
+Date: Thu, 16 May 2013 11:41:35 +0200
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515163700.GK4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.9 breaks EFI boot on E350
+References: <51935981.3010808@amd.com> <CAE9FiQXN9fG7RYM_mh17kEkSZT=Qm5fgG=8_YmBR+H6kLyokUg@mail.gmail.com> <5193A7C3.4010503@amd.com> <CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com>
+In-Reply-To: <CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 09:37:00AM -0700, Paul E. McKenney wrote:
-> The need is to detect that an idle CPU is idle without making it do
-> anything.  To do otherwise would kill battery lifetime and introduce
-> OS jitter.
+Am 15.05.2013 22:57, schrieb Yinghai Lu:
+> On Wed, May 15, 2013 at 8:20 AM, Christian König
+> <christian.koenig@amd.com> wrote:
+>> Am 15.05.2013 16:46, schrieb Yinghai Lu:
+>>
+>>> On Wed, May 15, 2013 at 2:46 AM, Christian König
+>>> <christian.koenig@amd.com> wrote:
+>>>> Hi guys,
+>>>>
+>>>> the following commit breaks booting my E350 based test system in EFI
+>>>> mode:
+>>>>
+>>>>> commit 8d57470d8f859635deffe3919d7d4867b488b85a
+>>>>> Author: Yinghai Lu <yinghai@kernel.org>
+>>>>> Date:   Fri Nov 16 19:38:58 2012 -0800
+>>>>>
+>>>>>       x86, mm: setup page table in top-down
+>>>>
+>>>> This commit was supposed to fix it but obviously there still seem to be
+>>>> some
+>>>> bugs left in 3.9
+>>>>
+>>>>> commit 98e7a989979b185f49e86ddaed2ad6890299d9f0
+>>>>> Author: Yinghai Lu <yinghai@kernel.org>
+>>>>> Date:   Wed Mar 6 20:18:21 2013 -0800
+>>>>>
+>>>>>       x86, mm: Make sure to find a 2M free block for the first mapped
+>>>>> area
+>>>>>
+>>>>>       Henrik reported that his MacAir 3.1 would not boot with
+>>>>>
+>>>>>       | commit 8d57470d8f859635deffe3919d7d4867b488b85a
+>>>>>       | Date:   Fri Nov 16 19:38:58 2012 -0800
+>>>>>       |
+>>>>>       |    x86, mm: setup page table in top-down
+>>>>>
+>>> can you send out working boot log with memory map?
+>>>
+>>> you need to boot system with "debug ignore_loglevel"
+>>
+>> Sure, dmesg output it attached. Let me know if you need anything else.
+>>
+> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] usable
+> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000006ea07fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000006ea08000-0x000000006ea55fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000006ea56000-0x000000006f47efff] ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x000000006f47f000-0x000000006f87bfff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000006f87c000-0x000000006f87cfff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000006f87d000-0x000000006f883fff] ACPI NVS
+> [    0.000000] BIOS-e820: [mem 0x000000006f884000-0x000000006fc97fff] usable
+> [    0.000000] BIOS-e820: [mem 0x000000006fc98000-0x000000006fef2fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x000000006fef3000-0x000000006fefffff] usable
+> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed61000-0x00000000fed70fff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff] reserved
+> [    0.000000] BIOS-e820: [mem 0x00000000fef00000-0x00000000ffffffff] reserved
+>
+> the kernel code should handle the memmap properly. and I use user
+> memmap to simulate the
+> that memmap, kernel could boot well.
+>
+> so your system does not have serial port?
 
-Not anything isn't leaving us much room to wriggle, we could maybe try and do a
-wee bit without people shooting us :-) In fact, looking at rcu_idle_enter()
-its very much not an empty function.
+Unfortunately not, this board doesn't even have an PCI slot otherwise I 
+could install a card there.
 
-> This other CPU must be able to correctly detect idle CPUs regardless of
-> how long they have been idle.  In particular, it is necessary to detect
-> CPUs that were idle at the start of the current grace period and have
-> remained idle throughout the entirety of the current grace period.
+Anything else I could do?
 
-OK, so continuing this hypothetical merry go round :-) 
+Christian.
 
-Since RCU is a global endeavour, I'm assuming there is a global GP sequence
-number. Could we not stamp the CPU with the current GP# in rcu_idle_enter().
+>
+> Can you boot failed kernel on your system with "earlyprintk=ttyS0,115200
+> memblock=debug" to see
+> where is crash or hang?
+>
 
-> A CPU might transition between idle and non-idle states at any time.
-> Therefore, if RCU collects a given CPU's idleness state during a given
-> grace period, it must be very careful to avoid relying on that state
-> during some other grace period.
 
-However, if we know during which GP it became idle, we know we can ignore it
-for all GPs thereafter, right?
-
-> Therefore, from what I can see, unless all CPUs explicitly report a
-> quiescent state in a timely fashion during a given grace period (in
-> which case each CPU was non-idle at some point during that grace period),
-> there is no alternative to polling RCU's per-CPU rcu_dynticks structures
-> during that grace period.  In particular, if at least one CPU remained
-> idle throughout that grace period, it will be necessary to poll.
-
-Agreed.. 
-
-> Of course, during boot time, there are often long time periods during
-> which at least one CPU remains idle.  Therefore, we can expect many
-> boot-time grace periods to delay for at least one FQS time period.
-> 
-> OK, so how much delay does this cause? 
-
-Oh, I'm so way past that, it is a neat puzzle by now ;-)
