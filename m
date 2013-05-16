@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab3EPIm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 04:42:27 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18862 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753416Ab3EPImX (ORCPT
+	id S1756845Ab3EPInd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 04:43:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48353 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab3EPIn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 04:42:23 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-CC: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>,
-        Glauber Costa <glommer@openvz.org>, Dave Chinner <dchinner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] mm: vmscan: handle any negative return value from scan_objects
-Date: Thu, 16 May 2013 10:42:16 +0200
-Message-ID: <1368693736-15486-1-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
+	Thu, 16 May 2013 04:43:28 -0400
+Date: Thu, 16 May 2013 10:41:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: majianpeng <majianpeng@gmail.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, mingo@redhat.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-f2fs <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [RFC][PATCH] f2fs: Avoid print false deadlock messages.
+Message-ID: <20130516084143.GE19669@dyad.programming.kicks-ass.net>
+References: <5193322D.1080009@gmail.com>
+ <20130515082834.GB10510@laptop.programming.kicks-ass.net>
+ <5194337D.1080503@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5194337D.1080503@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shrinkers must return -1 to indicate that it is busy. Instead, treat
-any negative value as busy.
-This fixes a potential bug if scan_objects returns a negative other than -1.
+On Thu, May 16, 2013 at 09:16:45AM +0800, majianpeng wrote:
 
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- include/linux/shrinker.h | 7 ++++---
- mm/vmscan.c              | 2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+> > There isn't. What you typically want to do is annotate the lock site.
+> > In particular it looks like mutex_lock_all() is the offensive piece of
+> > code (horrible function name though; the only redeeming thing being that
+> > f2fs.h isn't likely to be included elsewhere).
+> >
+> > One thing you can do here is modify it to look like:
+> >
+> > static inline void mutex_lock_all(struct f2fs_sb_info *sbi)
+> > {
+> > 	int i;
+> >
+> > 	for (i = 0; i < NR_GLOBAL_LOCKS; i++) {
+> > 		/*
+> > 		 * This is the only time we take multiple fs_lock[]
+> > 		 * instances; the order is immaterial since we
+> > 		 * always hold cp_mutex, which serializes multiple
+> > 		 * such operations.
+> > 		 */
+> > 		mutex_lock_nest_lock(&sbi->fs_lock[i], &sbi->cp_mutex);
+> > 	}
+> > }
+> >
+> > That tells the lock validator that it is ok to lock multiple instances
+> > of the fs_lock[i] class because the lock order is guarded by cp_mutex.
+> > While your patch also works, it has multiple down-sides; its easy to get
+> > out of sync when you modify NR_GLOBAL_LOCKS; also it consumes more
+> > static lockdep resources (lockdep has to allocate all its resources
+> > from static arrays since allocating memory also uses locks -- recursive
+> > problem).
+> >
+> Yes, but there is a problem if fs_block[] met deadlock. How to find which one?
+> Because the lock->name is the same.
 
-diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-index 3b08869..ced0e91 100644
---- a/include/linux/shrinker.h
-+++ b/include/linux/shrinker.h
-@@ -38,9 +38,10 @@ struct shrink_control {
-  * @scan_objects will only be called if @count_objects returned a positive
-  * value for the number of freeable objects. The callout should scan the cache
-  * and attempt to free items from the cache. It should then return the number of
-- * objects freed during the scan, or -1 if progress cannot be made due to
-- * potential deadlocks. If -1 is returned, then no further attempts to call the
-- * @scan_objects will be made from the current reclaim context.
-+ * objects freed during the scan, or a negative value if progress cannot be made
-+ * due to potential deadlocks. If a negative value is returned, then no further
-+ * attempts to call the @scan_objects will be made from the current reclaim
-+ * context.
-  */
- struct shrinker {
- 	long (*count_objects)(struct shrinker *, struct shrink_control *sc);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6bac41e..acb4aef 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -291,7 +291,7 @@ shrink_slab_one(struct shrinker *shrinker, struct shrink_control *shrinkctl,
- 
- 		shrinkctl->nr_to_scan = nr_to_scan;
- 		ret = shrinker->scan_objects(shrinker, shrinkctl);
--		if (ret == -1)
-+		if (ret < 0)
- 			break;
- 		freed += ret;
- 
--- 
-1.8.1.5
+The most useful part of the lockdep report are the call traces that tell you
+where locks where acquired; the names are secondary. That is, while they are at
+times helpful in finding the right lock site, they're rarely _that_ important.
+
+Remember, your code will very likely not have the exact number hardcoded either.
+It'll be a variable. So having the number in the lockdep output will not help
+you find the offending code any sooner.
+
+Suppose there's another site that acquires two fs_block[] locks; currently this
+would generate another such warning as this thread started with -- lockdep
+doesn't look at lock instances but at classes; and it cannot differentiate
+between two locks of the same class and thus reports the possible deadlock.
+
+The way to find the offending code is to look at the "locks held" section of
+the lockdep report along with the call traces.
+
+Once you find the way in which the two locks nest the specific numbers are
+irrelevant. Your aim then is to prove your locking scheme is indeed deadlock
+free and then tell lockdep about it.
+
 
