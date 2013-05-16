@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab3EPRlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 13:41:50 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:41524 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3EPRlt (ORCPT
+	id S1752935Ab3EPRoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 13:44:03 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56158 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751619Ab3EPRoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 13:41:49 -0400
-Date: Thu, 16 May 2013 19:41:42 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1139404719.20130516194142@eikelenboom.it>
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [media] cx25821 regression from 3.9: BUG: bad unlock balance detected!
+	Thu, 16 May 2013 13:44:00 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+2MWH2qsLp5OZVwkrRNVV4
+Date: Thu, 16 May 2013 10:43:56 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH V5 1/6] clk: OMAP: introduce device tree binding to
+ kernel clock data
+Message-ID: <20130516174355.GB5600@atomide.com>
+References: <1368039976-29648-1-git-send-email-nm@ti.com>
+ <1368039976-29648-2-git-send-email-nm@ti.com>
+ <20130513235119.10068.47040@quantum>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20130513235119.10068.47040@quantum>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans / Mauro,
+* Mike Turquette <mturquette@linaro.org> [130513 16:56]:
+> Quoting Nishanth Menon (2013-05-08 12:06:11)
+> <snip>
+> > Overall strategy introduced here is simple: a clock node described in
+> > device tree blob is used to identify the exact clock provided in the
+> > SoC specific data. This is then linked back using of_clk_add_provider
+> > to the device node to be accessible by of_clk_get.
+> > 
+> 
+> FYI, I'm working on moving the OMAP clocks over to DT which is a better
+> alternative than this patch.  I'll share what I have on the list,
+> hopefully next week.
 
-With 3.10.0-rc1 (including the cx25821 changes from Hans), I get the bug below which wasn't present with 3.9.
+That's good news! What's your plan on using the indexing the clocks?
 
---
-Sander
+I'd rather avoid indexing as that's basically same as the old IRQ
+numbering and GPIO numbering schemes that don't work well in the long
+term.
 
+We already have quite a few sets of clocks for omaps, so the indexing
+is already an issue. My thinking is that indexing should only be used
+if the same physical clock has multiple outputs.
 
-[   53.004968] =====================================
-[   53.004968] [ BUG: bad unlock balance detected! ]
-[   53.004968] 3.10.0-rc1-20130516-jens+ #1 Not tainted
-[   53.004968] -------------------------------------
-[   53.004968] motion/3328 is trying to release lock (&dev->lock) at:
-[   53.004968] [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
-[   53.004968] but there are no more locks to release!
-[   53.004968]
-[   53.004968] other info that might help us debug this:
-[   53.004968] 1 lock held by motion/3328:
-[   53.004968]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81156cae>] vm_munmap+0x3e/0x70
-[   53.004968]
-[   53.004968] stack backtrace:
-[   53.004968] CPU: 1 PID: 3328 Comm: motion Not tainted 3.10.0-rc1-20130516-jens+ #1
-[   53.004968] Hardware name: Xen HVM domU, BIOS 4.3-unstable 05/16/2013
-[   53.004968]  ffffffff819be5f9 ffff88002ac35c58 ffffffff819b9029 ffff88002ac35c88
-[   53.004968]  ffffffff810e615e ffff88002ac35cb8 ffff88002b7c18a8 ffffffff819be5f9
-[   53.004968]  00000000ffffffff ffff88002ac35d28 ffffffff810eb17e ffffffff810e7ba5
-[   53.004968] Call Trace:
-[   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-[   53.004968]  [<ffffffff819b9029>] dump_stack+0x19/0x1b
-[   53.004968]  [<ffffffff810e615e>] print_unlock_imbalance_bug+0xfe/0x110
-[   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-[   53.004968]  [<ffffffff810eb17e>] lock_release_non_nested+0x1ce/0x320
-[   53.004968]  [<ffffffff810e7ba5>] ? debug_check_no_locks_freed+0x105/0x1b0
-[   53.353529]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-[   53.353529]  [<ffffffff810eb3cc>] lock_release+0xfc/0x250
-[   53.353529]  [<ffffffff819be4b2>] __mutex_unlock_slowpath+0xb2/0x1f0
-[   53.353529]  [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
-[   53.353529]  [<ffffffff81711105>] videobuf_waiton+0x55/0x230
-[   53.353529]  [<ffffffff8114d052>] ? tlb_finish_mmu+0x32/0x50
-[   53.353529]  [<ffffffff81154a46>] ? unmap_region+0xc6/0x100
-[   53.353529]  [<ffffffff81172e05>] ? kmem_cache_free+0x195/0x230
-[   53.353529]  [<ffffffff8172d3d9>] cx25821_free_buffer+0x49/0xa0
-[   53.353529]  [<ffffffff8172f939>] cx25821_buffer_release+0x9/0x10
-[   53.353529]  [<ffffffff81712c35>] videobuf_vm_close+0xc5/0x160
-[   53.353529]  [<ffffffff81154aa5>] remove_vma+0x25/0x60
-[   53.353529]  [<ffffffff81156b67>] do_munmap+0x307/0x410
-[   53.353529]  [<ffffffff81156cbc>] vm_munmap+0x4c/0x70
-[   53.353529]  [<ffffffff81157c09>] SyS_munmap+0x9/0x10
-[   53.353529]  [<ffffffff819c20a9>] system_call_fastpath+0x16/0x1b
+Regards,
 
+Tony
