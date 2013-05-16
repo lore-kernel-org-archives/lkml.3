@@ -1,143 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab3EPGmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 02:42:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7110 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752757Ab3EPGma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 02:42:30 -0400
-Date: Thu, 16 May 2013 09:42:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
-Message-ID: <20130516064213.GA26995@redhat.com>
-References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
- <1368579583-13097-1-git-send-email-asias@redhat.com>
- <8761yk254u.fsf@rustcorp.com.au>
- <1368657450.6899.29.camel@haakon3.risingtidesystems.com>
+	id S1755363Ab3EPGnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 02:43:10 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:40883 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3EPGnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 02:43:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368657450.6899.29.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <9F78FA13B8C7A749B307D9AECB279EB713E7B327F3@ITSVLEX06.it.maxim-ic.internal>
+References: <1368640112-1417-1-git-send-email-abrestic@chromium.org>
+	<A453F1AE3B5DC14DB19666C506CE75A710ABEB1EFF@ITSVLEX06.it.maxim-ic.internal>
+	<9F78FA13B8C7A749B307D9AECB279EB713E7B327F3@ITSVLEX06.it.maxim-ic.internal>
+Date: Wed, 15 May 2013 23:43:03 -0700
+X-Google-Sender-Auth: q0VtT75XZs7HNKYHh4JcA6r5wXU
+Message-ID: <CAL1qeaEFsZmR5Cpe3GE8djBhEib585ni7hxs=FtjddRXKYENxg@mail.gmail.com>
+Subject: Re: [PATCH] ASoC: max98090: add digital mic mux to record path
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Matthew Mowdy <Matthew.Mowdy@maximintegrated.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Dylan Reid <dgreid@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ralph Birt <Ralph.Birt@maximintegrated.com>,
+        Evan Ragsdale <Evan.Ragsdale@maximintegrated.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 03:37:30PM -0700, Nicholas A. Bellinger wrote:
-> On Wed, 2013-05-15 at 14:47 +0930, Rusty Russell wrote:
-> > Asias He <asias@redhat.com> writes:
-> > > scsi.c includes vhost.c which uses memcpy_fromiovec.
-> > >
-> > > This patch fixes this build failure.
-> > >
-> > >    From Randy Dunlap:
-> > >    '''
-> > >    on x86_64:
-> > >
-> > >    ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
-> > >
-> > >    It needs to depend on NET since net/core/ provides that function.
-> > >    '''
-> > 
-> > Proper fix please.
-> > 
-> > Though I can't see why you thought this was a good idea.  Nonetheless, I
-> > shan't highlight why: I have far too much respect for your intellects
-> > and abilities.
-> > 
-> > No, don't thank me!
-> 
-> Hi Rusty & Asias,
-> 
-> I assume you mean something like the following patch to allow kbuild to
-> work when VHOST_NET + VHOST_SCSI are both enabled and sharing vhost.o,
-> yes..?
-> 
-> Also included is dropping the now unnecessary vhost.c include, and
-> allowing vhost_work_flush() to be accessed externally as scsi.c
-> currently requires.
-> 
-> MST, care to pick this up..?
-> 
-> --nab
+Hi Matthew,
 
-We'll do this for 3.11, 3.10 is bugfixes only now.
+> Default Routing:
+>
+> Of note (software can confirm) I believe the default DAPM routing for the
+> driver was intentional setup such that :
+>
+> Record:
+>
+> o   If a headset MIC is present, record from it.
+>
+> o   If not, digital MIC is the default record input.
 
-> diff --git a/drivers/vhost/Kconfig b/drivers/vhost/Kconfig
-> index 8b9226d..016387f 100644
-> --- a/drivers/vhost/Kconfig
-> +++ b/drivers/vhost/Kconfig
-> @@ -1,3 +1,6 @@
-> +config VHOST
-> +       tristate
-> +
->  config VHOST_NET
->         tristate "Host kernel accelerator for virtio net"
->         depends on NET && EVENTFD && (TUN || !TUN) && (MACVTAP || !MACVTAP)
-> @@ -12,7 +15,7 @@ config VHOST_NET
->  
->  config VHOST_SCSI
->         tristate "VHOST_SCSI TCM fabric driver"
-> -       depends on TARGET_CORE && EVENTFD && m
-> +       depends on NET && EVENTFD && TARGET_CORE
->         select VHOST_RING
->         default n
->         ---help---
-> diff --git a/drivers/vhost/Makefile b/drivers/vhost/Makefile
-> index 654e9afb..e5b5f0b 100644
-> --- a/drivers/vhost/Makefile
-> +++ b/drivers/vhost/Makefile
-> @@ -1,7 +1,9 @@
-> +obj-$(CONFIG_VHOST) += vhost.o
-> +
->  obj-$(CONFIG_VHOST_NET) += vhost_net.o
-> -vhost_net-y := vhost.o net.o
-> +vhost_net-objs := net.o
->  
->  obj-$(CONFIG_VHOST_SCSI) += vhost_scsi.o
-> -vhost_scsi-y := scsi.o
-> +vhost_scsi-objs := scsi.o
->  
->  obj-$(CONFIG_VHOST_RING) += vringh.o
-> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-> index 7014202..b5836a2 100644
-> --- a/drivers/vhost/scsi.c
-> +++ b/drivers/vhost/scsi.c
-> @@ -49,7 +49,6 @@
->  #include <linux/llist.h>
->  #include <linux/bitmap.h>
->  
-> -#include "vhost.c"
->  #include "vhost.h"
->  
->  #define TCM_VHOST_VERSION  "v0.1"
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index beee7f5..8cd1562 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -123,7 +123,7 @@ static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
->         return left <= 0;
->  }
->  
-> -static void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
-> +void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work)
->  {
->         unsigned seq;
->         int flushing;
-> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-> index a7ad635..50ee396 100644
-> --- a/drivers/vhost/vhost.h
-> +++ b/drivers/vhost/vhost.h
-> @@ -44,6 +44,7 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
->                      unsigned long mask, struct vhost_dev *dev);
->  int vhost_poll_start(struct vhost_poll *poll, struct file *file);
->  void vhost_poll_stop(struct vhost_poll *poll);
-> +void vhost_work_flush(struct vhost_dev *dev, struct vhost_work *work);
->  void vhost_poll_flush(struct vhost_poll *poll);
->  void vhost_poll_queue(struct vhost_poll *poll);
-> 
+While this may have been the intention, that's not what the driver is
+currently doing.  This is how the capture route looks before this
+patch:
+
+HiFi Capture -> AIFOUT{L,R} -> LBEN{L,R}_MUX[0] -> DMIC{L,R}_ENA
+
+So, since DMIC{L,R}_ENA are configured as supplies, they will always
+be turned on during record when the loopback mux is set to 0 (i.e. no
+loopback)  That's obviously wrong, so this patch changes the
+DMIC{L,R}_ENA to muxes.
+
+> The defaults can be modified by each end user as needed (for analog
+> microphones, line inputs, etc.). Please insure any patch to the baseline
+> driver reflects the correct operation of the digital microphone enable bits,
+> and preserves the intended default operation.
+
+Ok, I'll change it so that the DMIC{L,R} muxes aren't individually controllable.
+
+Thanks,
+Andrew
