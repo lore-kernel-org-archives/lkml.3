@@ -1,116 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab3EPNWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:22:39 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55427 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507Ab3EPNWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:22:38 -0400
-Date: Thu, 16 May 2013 06:22:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130516132210.GV4442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130413195336.GA14799@leaf>
- <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130514145119.GC19669@dyad.programming.kicks-ass.net>
- <20130514154728.GC4442@linux.vnet.ibm.com>
- <20130515085639.GD10510@laptop.programming.kicks-ass.net>
- <20130515090234.GE10510@laptop.programming.kicks-ass.net>
- <20130515173142.GL4442@linux.vnet.ibm.com>
- <20130516094519.GJ19669@dyad.programming.kicks-ass.net>
+	id S1754079Ab3EPNZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:25:39 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54091 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab3EPNZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 09:25:37 -0400
+Message-ID: <5194DE48.3050208@linux.vnet.ibm.com>
+Date: Thu, 16 May 2013 21:25:28 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516094519.GJ19669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v5 3/8] KVM: MMU: fast invalidate all pages
+References: <1368706673-8530-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1368706673-8530-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130516124349.GC14597@redhat.com>
+In-Reply-To: <20130516124349.GC14597@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051613-7182-0000-0000-000006BE6F62
+x-cbid: 13051613-5816-0000-0000-0000080218EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 11:45:19AM +0200, Peter Zijlstra wrote:
-> On Wed, May 15, 2013 at 10:31:42AM -0700, Paul E. McKenney wrote:
-> > On Wed, May 15, 2013 at 11:02:34AM +0200, Peter Zijlstra wrote:
-> 
-> > > Earlier you said that improving EQS behaviour was expensive in that it
-> > > would require taking (global) locks or somesuch.
-> > > 
-> > > Would it not be possible to have the cpu performing a FQS finish this
-> > > work; that way the first FQS would be a little slow, but after that no
-> > > FQS would be needed anymore, right? Since we'd no longer require the
-> > > other CPUs to end a grace period.
-> > 
-> > It is not just the first FQS that would be slow, it would also be slow
-> > the next time that this CPU transitioned from idle to non-idle, which
-> > is when this work would need to be undone.
-> 
-> Hurm, yes I suppose that is true. If you've saved more on FQS cost it might be
-> worth it for the throughput people though.
+On 05/16/2013 08:43 PM, Gleb Natapov wrote:
+> On Thu, May 16, 2013 at 08:17:48PM +0800, Xiao Guangrong wrote:
+>> The current kvm_mmu_zap_all is really slow - it is holding mmu-lock to
+>> walk and zap all shadow pages one by one, also it need to zap all guest
+>> page's rmap and all shadow page's parent spte list. Particularly, things
+>> become worse if guest uses more memory or vcpus. It is not good for
+>> scalability
+>>
+>> In this patch, we introduce a faster way to invalidate all shadow pages.
+>> KVM maintains a global mmu invalid generation-number which is stored in
+>> kvm->arch.mmu_valid_gen and every shadow page stores the current global
+>> generation-number into sp->mmu_valid_gen when it is created
+>>
+>> When KVM need zap all shadow pages sptes, it just simply increase the
+>> global generation-number then reload root shadow pages on all vcpus.
+>> Vcpu will create a new shadow page table according to current kvm's
+>> generation-number. It ensures the old pages are not used any more.
+>> Then the invalid-gen pages (sp->mmu_valid_gen != kvm->arch.mmu_valid_gen)
+>> are zapped by using lock-break technique
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/include/asm/kvm_host.h |    2 +
+>>  arch/x86/kvm/mmu.c              |   98 +++++++++++++++++++++++++++++++++++++++
+>>  arch/x86/kvm/mmu.h              |    2 +
+>>  3 files changed, 102 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 3741c65..bff7d46 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -222,6 +222,7 @@ struct kvm_mmu_page {
+>>  	int root_count;          /* Currently serving as active root */
+>>  	unsigned int unsync_children;
+>>  	unsigned long parent_ptes;	/* Reverse mapping for parent_pte */
+>> +	unsigned long mmu_valid_gen;
+>>  	DECLARE_BITMAP(unsync_child_bitmap, 512);
+>>  
+>>  #ifdef CONFIG_X86_32
+>> @@ -529,6 +530,7 @@ struct kvm_arch {
+>>  	unsigned int n_requested_mmu_pages;
+>>  	unsigned int n_max_mmu_pages;
+>>  	unsigned int indirect_shadow_pages;
+>> +	unsigned long mmu_valid_gen;
+>>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>>  	/*
+>>  	 * Hash table of struct kvm_mmu_page.
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 682ecb4..d9343fe 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1839,6 +1839,11 @@ static void clear_sp_write_flooding_count(u64 *spte)
+>>  	__clear_sp_write_flooding_count(sp);
+>>  }
+>>  
+>> +static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+>> +{
+>> +	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+>> +}
+>> +
+>>  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>>  					     gfn_t gfn,
+>>  					     gva_t gaddr,
+>> @@ -1865,6 +1870,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>>  		role.quadrant = quadrant;
+>>  	}
+>>  	for_each_gfn_sp(vcpu->kvm, sp, gfn) {
+>> +		if (is_obsolete_sp(vcpu->kvm, sp))
+>> +			continue;
+>> +
+>>  		if (!need_sync && sp->unsync)
+>>  			need_sync = true;
+>>  
+>> @@ -1901,6 +1909,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>>  
+>>  		account_shadowed(vcpu->kvm, gfn);
+>>  	}
+>> +	sp->mmu_valid_gen = vcpu->kvm->arch.mmu_valid_gen;
+>>  	init_shadow_page_table(sp);
+>>  	trace_kvm_mmu_get_page(sp, true);
+>>  	return sp;
+>> @@ -2071,8 +2080,10 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>>  	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+>>  	kvm_mmu_page_unlink_children(kvm, sp);
+>>  	kvm_mmu_unlink_parents(kvm, sp);
+>> +
+>>  	if (!sp->role.invalid && !sp->role.direct)
+>>  		unaccount_shadowed(kvm, sp->gfn);
+>> +
+>>  	if (sp->unsync)
+>>  		kvm_unlink_unsync_page(kvm, sp);
+>>  
+>> @@ -4196,6 +4207,93 @@ restart:
+>>  	spin_unlock(&kvm->mmu_lock);
+>>  }
+>>  
+>> +static void zap_invalid_pages(struct kvm *kvm)
+>> +{
+>> +	struct kvm_mmu_page *sp, *node;
+>> +	LIST_HEAD(invalid_list);
+>> +
+>> +restart:
+>> +	list_for_each_entry_safe(sp, node, &kvm->arch.active_mmu_pages, link) {
+>> +		if (!is_obsolete_sp(kvm, sp))
+>> +			continue;
+> What if we save kvm->arch.active_mmu_pages on the stack and init
+> kvm->arch.active_mmu_pages to be empty at the entrance to
+> zap_invalid_pages(). This loop will iterate over saved list. This will
+> allow us to drop the is_obsolete_sp() check and will save time since we
+> will not be iterating over newly created sps.
 
-But the NO_HZ_PERIODIC and NO_HZ_IDLE throughput people will have their
-CPUs non-idle, which means that they are reporting their quiescent states
-and the FQS scan just isn't happening.  The NO_HZ_FULL throughput people
-will have their RCU GP kthreads pinned to the timekeeping CPU, and therefore
-won't care much about the overhead of the FQS scan.
+This idea is really smart.
 
-> But somehow I imagined making a CPU part of the GP would be easier than taking
-> it out. After all, taking it out is dangerous and careful work, one is not to
-> accidentally execute a callback or otherwise end a GP before time.
-> 
-> When entering the GP cycle there is no such concern, the CPU state is clean
-> after all.
+It also seems tricky, vcpu can see the page in its page table and hash table but
+it has already been deleted from kvm->active_list, but i do not see any issue.
 
-But that would increase the overhead of GP initialization.  Right now,
-GP initialization touches only the leaf rcu_node structures, of which
-there are by default one per 16 CPUs (and can be configured up to one per
-64 CPUs, which it is on really big systems).  So on busy mixed-workload
-systems, this approach increases GP initialization overhead for no
-good reason -- and on systems running these sorts of workloads, there
-usually aren't "sacrificial lamb" timekeeping CPUs whose utilization
-doesn't matter.
+Hmm, can we walk kvm->ative_mmu_pages from tail to head then break the walking
+if we meet the sp->valid_gen == kvm->valid_gen? This way also can skip walking
+new created sps and more straight.
 
-> > Furthermore, in this approach, RCU would still need to scan all the CPUs
-> > to see if any did the first part of the transition to idle.  And if we
-> > have to scan either way, why not keep the idle-nonidle transitions cheap
-> > and continue to rely on the scan?  Here are the rationales I can think
-> > of and what I am thinking in terms of doing instead:
-> > 
-> > 1.	The scan could become a scalability bottleneck.  There is one
-> > 	way to handle this today, and one possible future change.  The way
-> > 	to handle this today is to increas rcutree.jiffies_till_first_fqs,
-> > 	for example, the SGI guys set it to 20 or thereabouts.  If this
-> > 	becomes problematic, I could easily create multiple kthreads to
-> > 	carry out the FQS scan in parallel for large systems.
-> 
-> *groan* whoever thought all this SMP nonsense was worth it again? :-)
-
-NR_CPUS=0!!!  It is the only way!  ;-)
-
-> > 2.	Someone could demonstrate that RCU's grace periods were significantly
-> > 	delaying boot.  There are several ways of dealing with this:
-> 
-> Surely there's also non-boot cases where most of the machine is 'idle' and
-> we're running into FQS? Esp. now with that userspace NO_HZ stuff from Frederic.
-
-Yep, but as noted above, the NO_HZ_FULL case will be running the RCU
-GP kthreads on the timekeeping CPUs, where they aren't running worker
-threads.  In the general-purpose workload case, the CPUs are busy and
-doing a wide variety of things, so that with high probability each
-CPU checks in before the three-jiffies FQS scan has a chance to get
-kicked off.
-
-							Thanx, Paul
 
