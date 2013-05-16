@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3EPVAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 17:00:53 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:48439 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab3EPVAu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 17:00:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH3drwY0vVGnf05v-coSmS4OQyHuufycLojEn9que6iL_r3AUw@mail.gmail.com>
-References: <cover.1368485053.git.luto@amacapital.net> <bf7788cfd4695d05f2b414735744105906650e42.1368485053.git.luto@amacapital.net>
- <CADnq5_O6tZeRVq=gmJfn3JWQGgECSE1JuonpSKgFCYSD8RCqHQ@mail.gmail.com>
- <CAH3drwbSLdjd4Y8x8YfzhM5WK+A-L7mnYeS0kdqu7MwEB5kbCQ@mail.gmail.com>
- <CALCETrVo-6cnKZsDJnBJcwGjpPbW9QAYriyjAZavaZ8O2OkjnQ@mail.gmail.com>
- <CAH3drwb743_q5ZrNDNsnOUUNVDMcefaq9NH3+t863OGc98-D-Q@mail.gmail.com>
- <CALCETrXA-nbdDEv1TyU9e4mcGZzAoCTTDX33M1o31rZkgHHTFg@mail.gmail.com> <CAH3drwY0vVGnf05v-coSmS4OQyHuufycLojEn9que6iL_r3AUw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 16 May 2013 14:00:28 -0700
-Message-ID: <CALCETrUMeZSvPfV0m+S7nXDiOJrzATMzvoi48Yv116tJw1fPzA@mail.gmail.com>
-Subject: Re: [PATCH v3 6/9] radeon: Switch to arch_phys_wc_add and add a
- missing ..._del
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-fbdev@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754088Ab3EPVEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 17:04:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab3EPVEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 17:04:48 -0400
+Date: Thu, 16 May 2013 17:04:43 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        riel@redhat.com, aquini@redhat.com, mst@redhat.com,
+        amit.shah@redhat.com, anton@enomsg.org
+Subject: Re: [RFC v2 0/2] virtio_balloon: auto-ballooning support
+Message-ID: <20130516170443.4612ec32@redhat.com>
+In-Reply-To: <51954802.1040309@oracle.com>
+References: <1368111229-29847-1-git-send-email-lcapitulino@redhat.com>
+	<51954802.1040309@oracle.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 6:50 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> On Wed, May 15, 2013 at 2:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, May 15, 2013 at 7:49 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>> On Tue, May 14, 2013 at 5:35 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Tue, May 14, 2013 at 6:37 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
->>>>> On Tue, May 14, 2013 at 8:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>>>> On Mon, May 13, 2013 at 7:58 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->>>>>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>>>>>
->>>>>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
->>>>>
->>>>> I believe it will break something but we could deal with the fallout
->>>>> once it happens.
->>>>
->>>> FWIW, I'm running with this code on my machine right now using the
->>>> radeon driver.  Everything seems fine.  If I build without MTRRs and
->>>> without PAT, though, graphics are slow (as expected).  So I think
->>>> everything's okay.
->>>>
->>>> --Andy
->>>
->>> I am worried on p4 where i last see issue with that notably with agp.
->>
->> Do you remember any details?  It looks like PAT is enabled on Pentium
->> 4 (i.e. famliy 0xF).
->>
->> --Andy
->
-> No i don't, i think it was some pat errata on those about non real ram
-> address and with agp. Memory is fuzzy. I might have time in couple of
-> week to plug back my p4 and see how it behave.
+On Thu, 16 May 2013 16:56:34 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-Hmm.  I couldn't find any PAT errata related to AGP.
+> On 05/09/2013 10:53 AM, Luiz Capitulino wrote:
+> > Hi,
+> > 
+> > This series is a respin of automatic ballooning support I started
+> > working on last year. Patch 2/2 contains all relevant technical
+> > details and performance measurements results.
+> > 
+> > This is in RFC state because it's a work in progress.
+> 
+> Hi Luiz,
+> 
+> Is there a virtio spec patch I could use to get it implemented on
+> kvmtool?
 
-Is it possible that the issue was that, if there was no MTRR covering
-the AGP aperture, that the mapping ended up as writeback?  If so, I
-fixed that in this series.
-
-In any case, if you see any problems, please let me know.
-
---Andy
+Not yet, this will come with v1. But I got some homework to do before
+posting it (more perf tests).
