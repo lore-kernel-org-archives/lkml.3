@@ -1,146 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab3EPMt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 08:49:58 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:18123
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753647Ab3EPMty convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 08:49:54 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371Ic89bh1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MMW6AX-02-0Y7-02
-X-M-MSG: 
-Message-ID: <5194D5E6.2070605@amd.com>
-Date: Thu, 16 May 2013 14:49:42 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753933Ab3EPMxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 08:53:48 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62510 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702Ab3EPMxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 08:53:45 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, Wolfram Gloger <wg@malloc.de>
-Subject: Re: 3.9 breaks EFI boot on E350
-References: <51935981.3010808@amd.com> <CAE9FiQXN9fG7RYM_mh17kEkSZT=Qm5fgG=8_YmBR+H6kLyokUg@mail.gmail.com> <5193A7C3.4010503@amd.com> <CAE9FiQV8x5NPBJVyiv0wE3jyqTvSMNWxgkDQRXf5LxifgCXbtw@mail.gmail.com> <5194A9CF.3080509@amd.com>
-In-Reply-To: <5194A9CF.3080509@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+In-Reply-To: <2750806.COjXX3GeT0@avalon>
+References: <1368529236-18199-1-git-send-email-prabhakar.csengg@gmail.com>
+ <11504129.E8jKKy4N2e@avalon> <CA+V-a8ti58gdPR-fUEqgBvUQ=1GkoTUyLj9UK4D5aVwHv2R6mA@mail.gmail.com>
+ <2750806.COjXX3GeT0@avalon>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 16 May 2013 18:23:24 +0530
+Message-ID: <CA+V-a8vQhJs5KNTAOzbPcxfv4AjQCTzSdXCYJTAvf0cFTykrwQ@mail.gmail.com>
+Subject: Re: [PATCH v3] media: i2c: tvp514x: add OF support
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.05.2013 11:41, schrieb Christian König:
-> Am 15.05.2013 22:57, schrieb Yinghai Lu:
->> On Wed, May 15, 2013 at 8:20 AM, Christian König
->> <christian.koenig@amd.com> wrote:
->>> Am 15.05.2013 16:46, schrieb Yinghai Lu:
->>>
->>>> On Wed, May 15, 2013 at 2:46 AM, Christian König
->>>> <christian.koenig@amd.com> wrote:
->>>>> Hi guys,
->>>>>
->>>>> the following commit breaks booting my E350 based test system in EFI
->>>>> mode:
->>>>>
->>>>>> commit 8d57470d8f859635deffe3919d7d4867b488b85a
->>>>>> Author: Yinghai Lu <yinghai@kernel.org>
->>>>>> Date:   Fri Nov 16 19:38:58 2012 -0800
->>>>>>
->>>>>>       x86, mm: setup page table in top-down
->>>>>
->>>>> This commit was supposed to fix it but obviously there still seem 
->>>>> to be
->>>>> some
->>>>> bugs left in 3.9
->>>>>
->>>>>> commit 98e7a989979b185f49e86ddaed2ad6890299d9f0
->>>>>> Author: Yinghai Lu <yinghai@kernel.org>
->>>>>> Date:   Wed Mar 6 20:18:21 2013 -0800
->>>>>>
->>>>>>       x86, mm: Make sure to find a 2M free block for the first 
->>>>>> mapped
->>>>>> area
->>>>>>
->>>>>>       Henrik reported that his MacAir 3.1 would not boot with
->>>>>>
->>>>>>       | commit 8d57470d8f859635deffe3919d7d4867b488b85a
->>>>>>       | Date:   Fri Nov 16 19:38:58 2012 -0800
->>>>>>       |
->>>>>>       |    x86, mm: setup page table in top-down
->>>>>>
->>>> can you send out working boot log with memory map?
->>>>
->>>> you need to boot system with "debug ignore_loglevel"
->>>
->>> Sure, dmesg output it attached. Let me know if you need anything else.
->>>
->> [    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] 
->> usable
->> [    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000006ea07fff] 
->> usable
->> [    0.000000] BIOS-e820: [mem 0x000000006ea08000-0x000000006ea55fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x000000006ea56000-0x000000006f47efff] 
->> ACPI NVS
->> [    0.000000] BIOS-e820: [mem 0x000000006f47f000-0x000000006f87bfff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x000000006f87c000-0x000000006f87cfff] 
->> usable
->> [    0.000000] BIOS-e820: [mem 0x000000006f87d000-0x000000006f883fff] 
->> ACPI NVS
->> [    0.000000] BIOS-e820: [mem 0x000000006f884000-0x000000006fc97fff] 
->> usable
->> [    0.000000] BIOS-e820: [mem 0x000000006fc98000-0x000000006fef2fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x000000006fef3000-0x000000006fefffff] 
->> usable
->> [    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x00000000fed61000-0x00000000fed70fff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff] 
->> reserved
->> [    0.000000] BIOS-e820: [mem 0x00000000fef00000-0x00000000ffffffff] 
->> reserved
+Hi Laurent,
+
+On Thu, May 16, 2013 at 6:20 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Prabhakar,
+>
+> On Thursday 16 May 2013 18:13:38 Prabhakar Lad wrote:
+>> On Thu, May 16, 2013 at 5:40 PM, Laurent Pinchart wrote:
+>> > Hi Prabhakar,
 >>
->> the kernel code should handle the memmap properly. and I use user
->> memmap to simulate the
->> that memmap, kernel could boot well.
+>> [Snip]
 >>
->> so your system does not have serial port?
->
-> Unfortunately not, this board doesn't even have an PCI slot otherwise 
-> I could install a card there.
->
-> Anything else I could do?
->
-
-Ups, the board DOES have a serial port, and I've got a log now that 
-shows the mentioned patch above isn't the root cause.
-
-After commit 8d57470d8f859635deffe3919d7d4867b488b85a it indeed crashes 
-very early in the boot sequence, but commit 
-98e7a989979b185f49e86ddaed2ad6890299d9f0 fixes that and now it crashes 
-while trying to unpack the initrd with a completely different backtrace.
-
-Sorry for the noise, one black screen while bisecting is as good as 
-another, but obviously not the same root cause.
-
-Cheers,
-Christian.
-
-> Christian.
->
+>> >> +
+>> >> +     pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+>> >> +     if (!pdata)
+>> >
+>> > I've started playing with the V4L2 OF bindings, and realized that should
+>> > should call of_node_put() here.
 >>
->> Can you boot failed kernel on your system with "earlyprintk=ttyS0,115200
->> memblock=debug" to see
->> where is crash or hang?
->>
+>> you were referring  of_node_get() here rite ?
 >
+> No, I'm referring to of_node_put(). The v4l2_of_get_next_endpoint() function
+> mentions
+>
+>  * Return: An 'endpoint' node pointer with refcount incremented. Refcount
+>  * of the passed @prev node is not decremented, the caller have to use
+>  * of_node_put() on it when done.
+>
+Ahh I see thanks for clarifying, I'll fix it  for v3.
 
-
+Regards,
+--Prabhakar Lad
