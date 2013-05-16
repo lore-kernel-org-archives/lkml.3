@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab3EPHbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 03:31:37 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53376 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab3EPHbd (ORCPT
+	id S1755987Ab3EPHc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 03:32:59 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:44787 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab3EPHcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 03:31:33 -0400
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Kosina <trivial@kernel.org>, <netdev@vger.kernel.org>,
-        Mugunthan V N <mugunthanvnm@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 5/5] net: davinci_mdio: trivial cleanup
-Date: Thu, 16 May 2013 13:00:38 +0530
-Message-Id: <1368689438-23889-6-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com>
+	Thu, 16 May 2013 03:32:54 -0400
+Message-ID: <51948BA2.4030700@kernel.org>
+Date: Thu, 16 May 2013 10:32:50 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: torvalds@linux-foundation.org, mingo@kernel.org, peterz@infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/9] lockdep: Be nice about building from userspace
+References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com> <1368674141-10796-2-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1368674141-10796-2-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 05/16/2013 06:15 AM, Sasha Levin wrote:
+> Lockdep is an awesome piece of code which detects locking issues
+> which are relevant both to userspace and kernelspace. We can
+> easily make lockdep work in userspace since there is really no
+> kernel spacific magic going on in the code.
+>
+> All we need is to wrap two functions which are used by lockdep
+> and are very kernel specific.
+>
+> Doing that will allow tools located in tools/ to easily utilize
+> lockdep's code for their own use.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> Cc: penberg@kernel.org
+> Cc: peterz@infradead.org
+> Link: http://lkml.kernel.org/r/1352753446-24109-1-git-send-email-sasha.levin@oracle.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-remove unwanted header inclusion and sort the alphabetically
-also guard the davinci_mdio_of_mtable table and davinci_mdio_probe_dt()
-with CONFIG_OF.
+FWIW:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/net/ethernet/ti/davinci_mdio.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+Acked-by: Pekka Enberg <penberg@kernel.org>
 
-diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
-index 12aec17..bc6cfec 100644
---- a/drivers/net/ethernet/ti/davinci_mdio.c
-+++ b/drivers/net/ethernet/ti/davinci_mdio.c
-@@ -24,20 +24,16 @@
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  * ---------------------------------------------------------------------------
-  */
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/platform_device.h>
--#include <linux/delay.h>
--#include <linux/sched.h>
--#include <linux/slab.h>
--#include <linux/phy.h>
-+
- #include <linux/clk.h>
--#include <linux/err.h>
--#include <linux/io.h>
--#include <linux/pm_runtime.h>
- #include <linux/davinci_emac.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
- #include <linux/of.h>
--#include <linux/of_device.h>
-+#include <linux/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
- 
- /*
-  * This timeout definition is a worst-case ultra defensive measure against
-@@ -291,6 +287,7 @@ static int davinci_mdio_write(struct mii_bus *bus, int phy_id,
- 	return 0;
- }
- 
-+#if IS_ENABLED(CONFIG_OF)
- static int davinci_mdio_probe_dt(struct mdio_platform_data *data,
- 			 struct platform_device *pdev)
- {
-@@ -308,7 +305,7 @@ static int davinci_mdio_probe_dt(struct mdio_platform_data *data,
- 
- 	return 0;
- }
--
-+#endif
- 
- static int davinci_mdio_probe(struct platform_device *pdev)
- {
-@@ -481,11 +478,13 @@ static const struct dev_pm_ops davinci_mdio_pm_ops = {
- 	.resume		= davinci_mdio_resume,
- };
- 
-+#if IS_ENABLED(CONFIG_OF)
- static const struct of_device_id davinci_mdio_of_mtable[] = {
- 	{ .compatible = "ti,davinci_mdio", },
- 	{ /* sentinel */ },
- };
- MODULE_DEVICE_TABLE(of, davinci_mdio_of_mtable);
-+#endif
- 
- static struct platform_driver davinci_mdio_driver = {
- 	.driver = {
--- 
-1.7.4.1
+to the whole series.
+
+			Pekka
 
