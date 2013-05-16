@@ -1,369 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3EPLra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:47:30 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:52382
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab3EPLr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:47:26 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org, apw@canonical.com, jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V1 1/7] Drivers: hv: vmbus: Implement multi-channel support
-Date: Thu, 16 May 2013 05:21:13 -0700
-Message-Id: <1368706879-32321-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1368706784-32276-1-git-send-email-kys@microsoft.com>
-References: <1368706784-32276-1-git-send-email-kys@microsoft.com>
+	id S1753263Ab3EPLrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:47:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32714 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753068Ab3EPLrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:47:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,683,1363104000"; 
+   d="scan'208";a="7286064"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: yinghai@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        penberg@kernel.org, jacob.shin@amd.com, akpm@linux-foundation.org,
+        isimatu.yasuaki@jp.fujitsu.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] numa, mm, memory-hotplug: Do not allocate pagetable to local node with MEMORY_HOTREMOVE enabled.
+Date: Thu, 16 May 2013 19:50:21 +0800
+Message-Id: <1368705021-24396-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 19:46:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/16 19:46:17,
+	Serialize complete at 2013/05/16 19:46:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with Win8, the host supports multiple sub-channels for a given
-device. As in the past, the initial channel offer specifies the device and
-is associated with both the type and the instance GUIDs. For performance
-critical devices, the host may support multiple sub-channels. The sub-channels
-share the same type and instance GUID as the primary channel. The number of
-sub-channels offerrred to the guest depends on the number of virtual CPUs
-assigned to the guest. The guest can request the creation of these sub-channels
-and once created and opened, the guest can distribute the traffic across all
-the channels (the primary and the sub-channels). A request sent on a sub-channel
-will have the response delivered on the same sub-channel.
+The following patch-set allocated pagetables to local node.
+https://lkml.org/lkml/2013/4/11/829
 
-At channel (sub-channel) creation we bind the channel interrupt to a CPU and
-with this sub-channel support we will be able to spread the interrupt load
-of a given device across all available CPUs.
+Doing this will break memory hot-remove.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Before removing memory, the kernel offlines memory. If offlining
+memory fails, the memory cannot be removed. The pagetables are
+used by the kernel, so they cannot be offlined. Furthermore, they
+cannot be removed.
+
+Of course, we can free pagetable pages because the pagetables of
+the to be removed memory are useless. But offlining memory doesn't
+mean removing memory. If users only want to offline memory, the
+pagetables should not be freed.
+
+The minimum unit of memory online/offline is block. And by default,
+one block contains one section, which by default is 128MB. There is
+possiblity that half of the block is pagetable, and the other half
+is movable memory.
+
+When we offline this kind of block, the status of the block is
+uncertain. We cannot simply free the pagetables in this block because
+they may be used by other online blocks. But when doing memory
+hot-remove, the failure of offlining blocks will break the memory
+hot-remove logic.
+
+
+In order to fix it, we have three solutions:
+
+1. Reserve the whole block (128MB), making no user can use the rest
+   parts of the block. And skip them when offlining memory.
+   When all the other blocks are offlined, free the pagetable, and remove
+   all the memory.
+
+   But we may lose some memory for this purpose. 128MB is a little big
+   to waste.
+
+
+2. Keep this block online. Although the offline operation fails, it is
+   OK to remove memory.
+
+   But the offline operation will always fail. And generally speaking,
+   there are a lot of reasons of offline failing, it is difficult to
+   detect if it is OK to remove memory. So we don't suggest this way.
+
+
+3. Migrate user pages and make this block offline. Offlining memory won't
+   stop the kernel using the pagetables stored in them, so it will be OK.
+
+   But this will change the semantics of "offline". I'm not sure if we
+   can do it in this way.
+
+
+So before we fix this problem, I think we should not allocate pagetables
+to local node when CONFIG_MEMORY_HOTREMOVE is enabled. And recover it when
+we confirm the direction and fix the problem.
+
+This patch is based on
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+
+Any other solution for this problem is welcome.
+
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/hv/channel.c      |   41 ++++++++++++++--
- drivers/hv/channel_mgmt.c |  116 +++++++++++++++++++++++++++++++++++++++++++--
- include/linux/hyperv.h    |   62 +++++++++++++++++++++++-
- 3 files changed, 210 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c |   27 ++++++++++++++++-----------
+ 1 files changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index 0b122f8..c219e9f 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -216,6 +216,9 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 	list_del(&open_info->msglistentry);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 8d0007a..8cd8a2d 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -55,18 +55,23 @@ __ref void *alloc_low_pages(unsigned int num)
  
-+	if (err == 0)
-+		newchannel->state = CHANNEL_OPENED_STATE;
-+
- 	kfree(open_info);
- 	return err;
- 
-@@ -500,15 +503,14 @@ int vmbus_teardown_gpadl(struct vmbus_channel *channel, u32 gpadl_handle)
- }
- EXPORT_SYMBOL_GPL(vmbus_teardown_gpadl);
- 
--/*
-- * vmbus_close - Close the specified channel
-- */
--void vmbus_close(struct vmbus_channel *channel)
-+static void vmbus_close_internal(struct vmbus_channel *channel)
- {
- 	struct vmbus_channel_close_channel *msg;
- 	int ret;
- 	unsigned long flags;
- 
-+	channel->state = CHANNEL_OPEN_STATE;
-+	channel->sc_creation_callback = NULL;
- 	/* Stop callback and cancel the timer asap */
- 	spin_lock_irqsave(&channel->inbound_lock, flags);
- 	channel->onchannel_callback = NULL;
-@@ -538,6 +540,37 @@ void vmbus_close(struct vmbus_channel *channel)
- 
- 
- }
-+
-+/*
-+ * vmbus_close - Close the specified channel
-+ */
-+void vmbus_close(struct vmbus_channel *channel)
-+{
-+	struct list_head *cur, *tmp;
-+	struct vmbus_channel *cur_channel;
-+
-+	if (channel->primary_channel != NULL) {
-+		/*
-+		 * We will only close sub-channels when
-+		 * the primary is closed.
-+		 */
-+		return;
-+	}
-+	/*
-+	 * Close all the sub-channels first and then close the
-+	 * primary channel.
-+	 */
-+	list_for_each_safe(cur, tmp, &channel->sc_list) {
-+		cur_channel = list_entry(cur, struct vmbus_channel, sc_list);
-+		if (cur_channel->state != CHANNEL_OPENED_STATE)
-+			continue;
-+		vmbus_close_internal(cur_channel);
-+	}
-+	/*
-+	 * Now close the primary.
-+	 */
-+	vmbus_close_internal(channel);
-+}
- EXPORT_SYMBOL_GPL(vmbus_close);
- 
- /**
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 21ef689..8a8b624 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -115,6 +115,9 @@ static struct vmbus_channel *alloc_channel(void)
- 		return NULL;
- 
- 	spin_lock_init(&channel->inbound_lock);
-+	spin_lock_init(&channel->sc_lock);
-+
-+	INIT_LIST_HEAD(&channel->sc_list);
- 
- 	channel->controlwq = create_workqueue("hv_vmbus_ctl");
- 	if (!channel->controlwq) {
-@@ -166,6 +169,7 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
- 						     struct vmbus_channel,
- 						     work);
- 	unsigned long flags;
-+	struct vmbus_channel *primary_channel;
- 	struct vmbus_channel_relid_released msg;
- 
- 	vmbus_device_unregister(channel->device_obj);
-@@ -174,9 +178,16 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
- 	vmbus_post_msg(&msg, sizeof(struct vmbus_channel_relid_released));
- 
--	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
--	list_del(&channel->listentry);
--	spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
-+	if (channel->primary_channel == NULL) {
-+		spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
-+		list_del(&channel->listentry);
-+		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
-+	} else {
-+		primary_channel = channel->primary_channel;
-+		spin_lock_irqsave(&primary_channel->sc_lock, flags);
-+		list_del(&channel->listentry);
-+		spin_unlock_irqrestore(&primary_channel->sc_lock, flags);
-+	}
- 	free_channel(channel);
- }
- 
-@@ -228,6 +239,21 @@ static void vmbus_process_offer(struct work_struct *work)
- 	spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
- 
- 	if (!fnew) {
-+		/*
-+		 * Check to see if this is a sub-channel.
-+		 */
-+		if (newchannel->offermsg.offer.sub_channel_index != 0) {
-+			/*
-+			 * Process the sub-channel.
-+			 */
-+			newchannel->primary_channel = channel;
-+			spin_lock_irqsave(&channel->sc_lock, flags);
-+			list_add_tail(&newchannel->sc_list, &channel->sc_list);
-+			spin_unlock_irqrestore(&channel->sc_lock, flags);
-+			newchannel->state = CHANNEL_OPEN_STATE;
-+			return;
+ 	if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
+ 		unsigned long ret;
+-		if (local_min_pfn_mapped >= local_max_pfn_mapped) {
++#ifndef CONFIG_MEMORY_HOTPLUG
++		if (local_max_pfn_mapped > local_min_pfn_mapped) {
++			ret = memblock_find_in_range(
++					local_min_pfn_mapped << PAGE_SHIFT,
++					local_max_pfn_mapped << PAGE_SHIFT,
++					PAGE_SIZE * num , PAGE_SIZE);
++		} else
++#endif
++		{
+ 			if (low_min_pfn_mapped >= low_max_pfn_mapped)
+ 				panic("alloc_low_page: ran out of memory");
+ 			ret = memblock_find_in_range(
+ 					low_min_pfn_mapped << PAGE_SHIFT,
+ 					low_max_pfn_mapped << PAGE_SHIFT,
+ 					PAGE_SIZE * num , PAGE_SIZE);
+-		} else
+-			ret = memblock_find_in_range(
+-					local_min_pfn_mapped << PAGE_SHIFT,
+-					local_max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE * num , PAGE_SIZE);
 +		}
 +
- 		free_channel(newchannel);
- 		return;
+ 		if (!ret)
+ 			panic("alloc_low_page: can not alloc memory");
+ 		memblock_reserve(ret, PAGE_SIZE * num);
+@@ -443,6 +448,11 @@ void __init init_mem_mapping(unsigned long begin, unsigned long end)
+ 		if (new_mapped_ram_size > mapped_ram_size)
+ 			step_size <<= STEP_SIZE_SHIFT;
+ 		mapped_ram_size += new_mapped_ram_size;
++
++		if (is_low) {
++			low_min_pfn_mapped = local_min_pfn_mapped;
++			low_max_pfn_mapped = local_max_pfn_mapped;
++		}
  	}
-@@ -685,4 +711,86 @@ cleanup:
- 	return ret;
+ 
+ 	if (real_end < end) {
+@@ -450,11 +460,6 @@ void __init init_mem_mapping(unsigned long begin, unsigned long end)
+ 		if ((end >> PAGE_SHIFT) > local_max_pfn_mapped)
+ 			local_max_pfn_mapped = end >> PAGE_SHIFT;
+ 	}
+-
+-	if (is_low) {
+-		low_min_pfn_mapped = local_min_pfn_mapped;
+-		low_max_pfn_mapped = local_max_pfn_mapped;
+-	}
  }
  
--/* eof */
-+/*
-+ * Retrieve the (sub) channel on which to send an outgoing request.
-+ * When a primary channel has multiple sub-channels, we choose a
-+ * channel whose VCPU binding is closest to the VCPU on which
-+ * this call is being made.
-+ */
-+struct vmbus_channel *vmbus_get_outgoing_channel(struct vmbus_channel *primary)
-+{
-+	struct list_head *cur, *tmp;
-+	int cur_cpu = hv_context.vp_index[smp_processor_id()];
-+	struct vmbus_channel *cur_channel;
-+	struct vmbus_channel *outgoing_channel = primary;
-+	int cpu_distance, new_cpu_distance;
-+
-+	if (list_empty(&primary->sc_list))
-+		return outgoing_channel;
-+
-+	list_for_each_safe(cur, tmp, &primary->sc_list) {
-+		cur_channel = list_entry(cur, struct vmbus_channel, sc_list);
-+		if (cur_channel->state != CHANNEL_OPENED_STATE)
-+			continue;
-+
-+		if (cur_channel->target_vp == cur_cpu)
-+			return cur_channel;
-+
-+		cpu_distance = ((outgoing_channel->target_vp > cur_cpu) ?
-+				(outgoing_channel->target_vp - cur_cpu) :
-+				(cur_cpu - outgoing_channel->target_vp));
-+
-+		new_cpu_distance = ((cur_channel->target_vp > cur_cpu) ?
-+				(cur_channel->target_vp - cur_cpu) :
-+				(cur_cpu - cur_channel->target_vp));
-+
-+		if (cpu_distance < new_cpu_distance)
-+			continue;
-+
-+		outgoing_channel = cur_channel;
-+	}
-+
-+	return outgoing_channel;
-+}
-+EXPORT_SYMBOL_GPL(vmbus_get_outgoing_channel);
-+
-+static void invoke_sc_cb(struct vmbus_channel *primary_channel)
-+{
-+	struct list_head *cur, *tmp;
-+	struct vmbus_channel *cur_channel;
-+
-+	if (primary_channel->sc_creation_callback == NULL)
-+		return;
-+
-+	list_for_each_safe(cur, tmp, &primary_channel->sc_list) {
-+		cur_channel = list_entry(cur, struct vmbus_channel, sc_list);
-+
-+		primary_channel->sc_creation_callback(cur_channel);
-+	}
-+}
-+
-+void vmbus_set_sc_create_callback(struct vmbus_channel *primary_channel,
-+				void (*sc_cr_cb)(struct vmbus_channel *new_sc))
-+{
-+	primary_channel->sc_creation_callback = sc_cr_cb;
-+}
-+EXPORT_SYMBOL_GPL(vmbus_set_sc_create_callback);
-+
-+bool vmbus_are_subchannels_present(struct vmbus_channel *primary)
-+{
-+	bool ret;
-+
-+	ret = !list_empty(&primary->sc_list);
-+
-+	if (ret) {
-+		/*
-+		 * Invoke the callback on sub-channel creation.
-+		 * This will present a uniform interface to the
-+		 * clients.
-+		 */
-+		invoke_sc_cb(primary);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(vmbus_are_subchannels_present);
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index c255984..405e05a 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -909,6 +909,7 @@ enum vmbus_channel_state {
- 	CHANNEL_OFFER_STATE,
- 	CHANNEL_OPENING_STATE,
- 	CHANNEL_OPEN_STATE,
-+	CHANNEL_OPENED_STATE,
- };
- 
- struct vmbus_channel_debug_info {
-@@ -1046,6 +1047,38 @@ struct vmbus_channel {
- 	 * preserve the earlier behavior.
- 	 */
- 	u32 target_vp;
-+	/*
-+	 * Support for sub-channels. For high performance devices,
-+	 * it will be useful to have multiple sub-channels to support
-+	 * a scalable communication infrastructure with the host.
-+	 * The support for sub-channels is implemented as an extention
-+	 * to the current infrastructure.
-+	 * The initial offer is considered the primary channel and this
-+	 * offer message will indicate if the host supports sub-channels.
-+	 * The guest is free to ask for sub-channels to be offerred and can
-+	 * open these sub-channels as a normal "primary" channel. However,
-+	 * all sub-channels will have the same type and instance guids as the
-+	 * primary channel. Requests sent on a given channel will result in a
-+	 * response on the same channel.
-+	 */
-+
-+	/*
-+	 * Sub-channel creation callback. This callback will be called in
-+	 * process context when a sub-channel offer is received from the host.
-+	 * The guest can open the sub-channel in the context of this callback.
-+	 */
-+	void (*sc_creation_callback)(struct vmbus_channel *new_sc);
-+
-+	spinlock_t sc_lock;
-+	/*
-+	 * All Sub-channels of a primary channel are linked here.
-+	 */
-+	struct list_head sc_list;
-+	/*
-+	 * The primary channel this sub-channel belongs to.
-+	 * This will be NULL for the primary channel.
-+	 */
-+	struct vmbus_channel *primary_channel;
- };
- 
- static inline void set_channel_read_state(struct vmbus_channel *c, bool state)
-@@ -1057,6 +1090,34 @@ void vmbus_onmessage(void *context);
- 
- int vmbus_request_offers(void);
- 
-+/*
-+ * APIs for managing sub-channels.
-+ */
-+
-+void vmbus_set_sc_create_callback(struct vmbus_channel *primary_channel,
-+			void (*sc_cr_cb)(struct vmbus_channel *new_sc));
-+
-+/*
-+ * Retrieve the (sub) channel on which to send an outgoing request.
-+ * When a primary channel has multiple sub-channels, we choose a
-+ * channel whose VCPU binding is closest to the VCPU on which
-+ * this call is being made.
-+ */
-+struct vmbus_channel *vmbus_get_outgoing_channel(struct vmbus_channel *primary);
-+
-+/*
-+ * Check if sub-channels have already been offerred. This API will be useful
-+ * when the driver is unloaded after establishing sub-channels. In this case,
-+ * when the driver is re-loaded, the driver would have to check if the
-+ * subchannels have already been established before attempting to request
-+ * the creation of sub-channels.
-+ * This function returns TRUE to indicate that subchannels have already been
-+ * created.
-+ * This function should be invoked after setting the callback function for
-+ * sub-channel creation.
-+ */
-+bool vmbus_are_subchannels_present(struct vmbus_channel *primary);
-+
- /* The format must be the same as struct vmdata_gpa_direct */
- struct vmbus_channel_packet_page_buffer {
- 	u16 type;
-@@ -1327,7 +1388,6 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
- 			0x8e, 0x77, 0x05, 0x58, 0xeb, 0x10, 0x73, 0xf8 \
- 		}
- 
--
- /*
-  * Common header for Hyper-V ICs
-  */
+ #ifndef CONFIG_NUMA
 -- 
-1.7.4.1
+1.7.1
 
