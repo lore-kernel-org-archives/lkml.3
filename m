@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab3EPNJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 09:09:40 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:48946 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab3EPNJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 09:09:39 -0400
-Date: Thu, 16 May 2013 15:09:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [RFC/PATCH 1/2] perf script: Add --time-filter option
-Message-ID: <20130516130934.GA9058@gmail.com>
-References: <1368609839-19899-1-git-send-email-namhyung@kernel.org>
- <20130515135608.GF17814@two.firstfloor.org>
+	id S1753906Ab3EPNKj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 09:10:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34707 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074Ab3EPNKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 09:10:38 -0400
+Message-ID: <5194DAC5.9080203@ti.com>
+Date: Thu, 16 May 2013 15:10:29 +0200
+From: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <v-stehle@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130515135608.GF17814@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: =?UTF-8?B?VmluY2VudCBTdGVobMOp?= <vincent.stehle@laposte.net>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP5: select SCU
+References: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net> <51938169.4060109@ti.com>
+In-Reply-To: <51938169.4060109@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/15/2013 02:36 PM, Santosh Shilimkar wrote:
+> OMAP5 doesn't need the SCU. So Nak for the patch.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Hi,
 
-> On Wed, May 15, 2013 at 06:23:58PM +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > The --time-filter option is for limiting samples within a range of
-> > time.  A time range looks like <time1>-<time2> and at most one of them
-> > can be omitted.  For instance:
-> 
-> It would be more useful for report or inject than for script.
+I agree that it is a pure link issue.
 
-The 2/2 patch does it for report ...
+> I haven't noticed
+> this earlier. Do you know which commit broke this ?
 
-> After all with a script it's trivial to do an own filter.
+After some bisecting I arrived at this merge commit:
 
-Utility features/shortcuts are almost always useful, especially if they 
-span multiple tools.
+  5497e7b Merge branch 'late/fixes' into fixes
 
-Thanks,
+Indeed, if I revert it (-m 1) the result does link properly. I'll try to
+isolate it further.
 
-	Ingo
+Best regards,
+
+V.
+
