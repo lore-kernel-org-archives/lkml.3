@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3EPPEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 11:04:00 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:57288 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3EPPD4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 11:03:56 -0400
-From: "Mehaffey, John" <John_Mehaffey@mentor.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-CC: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        Jeremiah Foster <jeremiah.foster@pelagicore.com>,
-        "systemd-devel@lists.freedesktop.org" 
-	<systemd-devel@lists.freedesktop.org>,
-        "wd@denx.de" <wd@denx.de>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        "Kay.Sievers@vrfy.org" <Kay.Sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "u-boot@lists.denx.de" <u-boot@lists.denx.de>,
-        "tim.bird@am.sony.com" <tim.bird@am.sony.com>,
-        "genivi-dev@mail.genivi.org" <genivi-dev@mail.genivi.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>,
-        "Pomerantz, Brian" <Brian_Pomerantz@mentor.com>,
-        "yoush@cs.msu.su" <yoush@cs.msu.su>
-Subject: RE: [systemd-devel] 2013 Plumber's CFP: Fastboot
-Thread-Topic: [systemd-devel] 2013 Plumber's CFP: Fastboot
-Thread-Index: Ac5QL8BaNyuX4Q42TyivWIVMiXMwVABW5x4AAAaIggAAApDXAP//l9iggAHg/oD//7MFnw==
-Date: Thu, 16 May 2013 15:03:44 +0000
-Message-ID: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D4CC4@NA-MBX-03.mgc.mentorg.com>
-References: <371E240E6FC1D44DA5E51EE9DCDCB7845E3D0BF9@NA-MBX-03.mgc.mentorg.com>
- <CADVDRBjOX2Jy5t36jwZt9i9OGt3Ca_rBx_FbptYJ34CK2EP+AA@mail.gmail.com>
- <20130515125048.GC2206@tango.0pointer.de>
- <CAKi4VA+ru8_h=NW_X49GNL06XinsboM_ZicD8Js73Mw7x-xphA@mail.gmail.com>
- <371E240E6FC1D44DA5E51EE9DCDCB7845E3D32D3@NA-MBX-03.mgc.mentorg.com>,<20130516123301.GA20195@tango.0pointer.de>
-In-Reply-To: <20130516123301.GA20195@tango.0pointer.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [147.34.91.1]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751874Ab3EPPHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 11:07:17 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42222 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751527Ab3EPPHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 11:07:15 -0400
+Date: Thu, 16 May 2013 08:07:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
+ enabled
+Message-ID: <20130516150706.GY4442@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
+ <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
+ <20130515083729.GC10510@laptop.programming.kicks-ass.net>
+ <20130515150652.GP23604@redhat.com>
+ <1368631622.6828.69.camel@gandalf.local.home>
+ <20130515165915.GE13916@laptop.home>
+ <1368637441.6828.70.camel@gandalf.local.home>
+ <20130516081027.GD19669@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 16 May 2013 15:03:45.0240 (UTC) FILETIME=[8FB33D80:01CE5246]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516081027.GD19669@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051615-9360-0000-0000-000012387726
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Lennart Poettering [mzxreary@0pointer.de]
-> Sent: Thursday, May 16, 2013 5:33 AM
-> On Wed, 15.05.13 15:01, Mehaffey, John (John_Mehaffey@mentor.com) wrote:
+On Thu, May 16, 2013 at 10:10:27AM +0200, Peter Zijlstra wrote:
+> On Wed, May 15, 2013 at 01:04:01PM -0400, Steven Rostedt wrote:
+> > On Wed, 2013-05-15 at 18:59 +0200, Peter Zijlstra wrote:
+> > 
+> > > At which point we could run the watchdog without perf_event_task_tick().
+> > 
+> > At which point we can drop the disable LOCKUP_DETECTOR when NO_HZ_FULL
+> > is enabled ;-)
+> > 
 > 
-> > > What if we merge the proposals?
-> > >
-> > > John, are you ok with proposing (some of) these topics in the "Boot
-> > > and Core OS" track? I could help with the module-related part, too.
-> > >
-> > >
-> > > Lucas De Marchi
-> >
-> > Hi Lucas, Lennart,
-> > I am fine with merging the two boot related sessions.  I did not want to have it be a topic in the automotive microconf, as I believe there is enough material for a couple of hours on fastboot alone.
-> >
-> > It was not clear to me what topics might be in the boot and core os microconf, so I proposed fastboot as separate.
+> Can we? The thing I'm worried about is RCU (of course!). ISTR we rely on RCU
+> working in NMI context. AFAIR for RCU to work, we need to come out of out magic
+> NO_HZ state since that would've put RCU into EQS.
 > 
-> Let's merge this then (the LPC guys want this to).
-> 
-> We could copy the stuff from the fastboot MC wiki page into the
-> boot/core OS wiki page, or the other way round. And preference? I'd
-> still call this "Boot and Core OS MC" as this has the slightler broader
-> topic, I guess...
-> 
-> Lennart
-> 
-> --
-> Lennart Poettering - Red Hat, Inc.
+> Frederic, PaulMck?
 
-Hi Lennart,
-I have merged the topics from the fastboot proposal to the Boot and Core OS proposal.
+Not sure I understand the question, but hopefully the verbiage below helps.
 
-Please take a look and make any improvements.
+Only RCU read-side critical sections need to work in NMI context,
+and RCU hooks into nmi_enter() and nmi_exit() to handle this, and this
+will work in NO_HZ_FULL in the same way that it works for NO_HZ_IDLE.
 
-I am keeping the fastboot proposal on the wiki as reference material for now, but I have linked it to the Boot and Core OS page.
+But if there are no NMIs, RCU doesn't care.  In other words, RCU needs
+to know about NMIs so that it can deal with any RCU read-side critical
+sections in the NMI handlers, but RCU doesn't rely on NMIs happening at
+any particular time or frequency.
 
--mehaf
+							Thanx, Paul
 
