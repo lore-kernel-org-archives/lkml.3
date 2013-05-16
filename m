@@ -1,163 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab3EPG6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 02:58:40 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:40015 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab3EPG6j (ORCPT
+	id S1755340Ab3EPG6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 02:58:45 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:37379
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755268Ab3EPG6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 02:58:39 -0400
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] ARM: davinci: dma: Convert to devm_* api
-Date: Thu, 16 May 2013 12:28:22 +0530
-Message-Id: <1368687502-15551-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 16 May 2013 02:58:41 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 14
+X-BigFish: VS14(zzc8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh11f642sz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Jingchang Lu <b35083@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <john.stultz@linaro.org>,
+        <tglx@linutronix.de>, <shawn.guo@linaro.org>, <s.hauer@pengutronix.de>,
+        Jingchang Lu <b35083@freescale.com>
+Subject: [PATCH v3] clocksource: add MVF600 pit timer support
+Date: Thu, 16 May 2013 14:15:24 +0800
+Message-ID: <1368684924-1560-1-git-send-email-b35083@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Add Freescale Vybrid MVF600 period interrupt timer support.
 
-Use devm_ioremap_resource instead of reques_mem_region()/ioremap() and
-devm_request_irq() instead of request_irq().
-
-This ensures more consistent error values and simplifies error paths.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Jingchang Lu <b35083@freescale.com>
 ---
- NOte:- Boot tested on Logic-PD OMAP-L138 EVM
+v3:
+  move the pit driver to drivers/clocksource.
 
- arch/arm/mach-davinci/dma.c |   63 ++++++++++++++++--------------------------
- 1 files changed, 24 insertions(+), 39 deletions(-)
+ drivers/clocksource/Kconfig            |   5 +
+ drivers/clocksource/Makefile           |   1 +
+ drivers/clocksource/mvf600_pit_timer.c | 224 +++++++++++++++++++++++++++++++++
+ 3 files changed, 230 insertions(+)
+ create mode 100644 drivers/clocksource/mvf600_pit_timer.c
 
-diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
-index 45b7c71..aeda496 100644
---- a/arch/arm/mach-davinci/dma.c
-+++ b/arch/arm/mach-davinci/dma.c
-@@ -1402,7 +1402,6 @@ static int __init edma_probe(struct platform_device *pdev)
- 	int			irq[EDMA_MAX_CC] = {0, 0};
- 	int			err_irq[EDMA_MAX_CC] = {0, 0};
- 	struct resource		*r[EDMA_MAX_CC] = {NULL};
--	resource_size_t		len[EDMA_MAX_CC];
- 	char			res_name[10];
- 	char			irq_name[10];
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index f151c6c..2808a76 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -85,3 +85,8 @@ config CLKSRC_SAMSUNG_PWM
+ 	  Samsung S3C, S5P and Exynos SoCs, replacing an earlier driver
+ 	  for all devicetree enabled platforms. This driver will be
+ 	  needed only on systems that do not have the Exynos MCT available.
++
++config MVF600_PIT_TIMER
++	bool
++	help
++	  Support for Period Interrupt Timer on Freescale Vybrid MVF600 SoC.
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8d979c7..f471ca3 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+ obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
+ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
++obj-$(CONFIG_MVF600_PIT_TIMER)	+= mvf600_pit_timer.o
  
-@@ -1422,25 +1421,16 @@ static int __init edma_probe(struct platform_device *pdev)
- 			found = 1;
- 		}
- 
--		len[j] = resource_size(r[j]);
--
--		r[j] = request_mem_region(r[j]->start, len[j],
--			dev_name(&pdev->dev));
--		if (!r[j]) {
--			status = -EBUSY;
--			goto fail1;
--		}
--
--		edmacc_regs_base[j] = ioremap(r[j]->start, len[j]);
--		if (!edmacc_regs_base[j]) {
-+		edmacc_regs_base[j] = devm_ioremap_resource(&pdev->dev, r[j]);
-+		if (IS_ERR(edmacc_regs_base[j])) {
- 			status = -EBUSY;
--			goto fail1;
-+			goto fail;
- 		}
- 
- 		edma_cc[j] = kzalloc(sizeof(struct edma), GFP_KERNEL);
- 		if (!edma_cc[j]) {
- 			status = -ENOMEM;
--			goto fail1;
-+			goto fail;
- 		}
- 
- 		edma_cc[j]->num_channels = min_t(unsigned, info[j]->n_channel,
-@@ -1491,10 +1481,12 @@ static int __init edma_probe(struct platform_device *pdev)
- 		sprintf(irq_name, "edma%d", j);
- 		irq[j] = platform_get_irq_byname(pdev, irq_name);
- 		edma_cc[j]->irq_res_start = irq[j];
--		status = request_irq(irq[j], dma_irq_handler, 0, "edma",
--					&pdev->dev);
-+		status = devm_request_irq(&pdev->dev, irq[j],
-+					  dma_irq_handler, 0, "edma",
-+					  &pdev->dev);
- 		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
-+			dev_dbg(&pdev->dev,
-+				"devm_request_irq %d failed --> %d\n",
- 				irq[j], status);
- 			goto fail;
- 		}
-@@ -1502,10 +1494,12 @@ static int __init edma_probe(struct platform_device *pdev)
- 		sprintf(irq_name, "edma%d_err", j);
- 		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
- 		edma_cc[j]->irq_res_end = err_irq[j];
--		status = request_irq(err_irq[j], dma_ccerr_handler, 0,
--					"edma_error", &pdev->dev);
-+		status = devm_request_irq(&pdev->dev, err_irq[j],
-+					  dma_ccerr_handler, 0,
-+					  "edma_error", &pdev->dev);
- 		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
-+			dev_dbg(&pdev->dev,
-+				"devm_request_irq %d failed --> %d\n",
- 				err_irq[j], status);
- 			goto fail;
- 		}
-@@ -1542,17 +1536,20 @@ static int __init edma_probe(struct platform_device *pdev)
- 	}
- 
- 	if (tc_errs_handled) {
--		status = request_irq(IRQ_TCERRINT0, dma_tc0err_handler, 0,
--					"edma_tc0", &pdev->dev);
-+		status = devm_request_irq(&pdev->dev, IRQ_TCERRINT0,
-+					  dma_tc0err_handler, 0,
-+					  "edma_tc0", &pdev->dev);
- 		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
-+			dev_dbg(&pdev->dev,
-+				"devm_request_irq %d failed --> %d\n",
- 				IRQ_TCERRINT0, status);
- 			return status;
- 		}
--		status = request_irq(IRQ_TCERRINT, dma_tc1err_handler, 0,
--					"edma_tc1", &pdev->dev);
-+		status = devm_request_irq(&pdev->dev, IRQ_TCERRINT,
-+					  dma_tc1err_handler, 0,
-+					  "edma_tc1", &pdev->dev);
- 		if (status < 0) {
--			dev_dbg(&pdev->dev, "request_irq %d --> %d\n",
-+			dev_dbg(&pdev->dev, "devm_request_irq %d --> %d\n",
- 				IRQ_TCERRINT, status);
- 			return status;
- 		}
-@@ -1561,20 +1558,8 @@ static int __init edma_probe(struct platform_device *pdev)
- 	return 0;
- 
- fail:
--	for (i = 0; i < EDMA_MAX_CC; i++) {
--		if (err_irq[i])
--			free_irq(err_irq[i], &pdev->dev);
--		if (irq[i])
--			free_irq(irq[i], &pdev->dev);
--	}
--fail1:
--	for (i = 0; i < EDMA_MAX_CC; i++) {
--		if (r[i])
--			release_mem_region(r[i]->start, len[i]);
--		if (edmacc_regs_base[i])
--			iounmap(edmacc_regs_base[i]);
-+	for (i = 0; i < EDMA_MAX_CC; i++)
- 		kfree(edma_cc[i]);
--	}
- 	return status;
- }
- 
+ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+ obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+diff --git a/drivers/clocksource/mvf600_pit_timer.c b/drivers/clocksource/mvf600_pit_timer.c
+new file mode 100644
+index 0000000..74f7963
+--- /dev/null
++++ b/drivers/clocksource/mvf600_pit_timer.c
+@@ -0,0 +1,224 @@
++/*
++ *  Copyright 2012-2013 Freescale Semiconductor, Inc.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ */
++
++#include <linux/interrupt.h>
++#include <linux/clockchips.h>
++#include <linux/clk.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <asm/sched_clock.h>
++
++/*
++ * 8 timers: pit0 - pit7,
++ * Each takes 0x10 Bytes register sapce
++ */
++#define PITMCR		0x00
++#define PIT0_OFFSET	0x100
++#define PITn_OFFSET(n)	(PIT0_OFFSET + 0x10 * (n))
++#define PITLDVAL	0x00
++#define PITCVAL		0x04
++#define PITTCTRL	0x08
++#define PITTFLG		0x0c
++
++#define PITTCTRL_TEN		(0x1 << 0)
++#define PITTCTRL_TIE		(0x1 << 1)
++#define	PITCTRL_CHN		(0x1 << 2)
++
++#define PITTFLG_TIF		0x1
++
++static struct clock_event_device clockevent_pit;
++static enum clock_event_mode clockevent_mode = CLOCK_EVT_MODE_UNUSED;
++
++static void __iomem *clksrc_base;
++static void __iomem *clkevt_base;
++static void __iomem *sched_clock_reg;
++static unsigned long pit_cycle_per_jiffy;
++
++static inline void pit_timer_enable(void)
++{
++	__raw_writel(PITTCTRL_TEN | PITTCTRL_TIE, clkevt_base + PITTCTRL);
++}
++
++static inline void pit_timer_disable(void)
++{
++	__raw_writel(0, clkevt_base + PITTCTRL);
++}
++
++static inline void pit_irq_disable(void)
++{
++	unsigned long val;
++
++	val = __raw_readl(clkevt_base + PITTCTRL);
++	val &= ~PITTCTRL_TIE;
++	__raw_writel(val, clkevt_base + PITTCTRL);
++}
++
++static inline void pit_irq_enable(void)
++{
++	unsigned long val;
++
++	val = __raw_readl(clkevt_base + PITTCTRL);
++	val |= PITTCTRL_TIE;
++	__raw_writel(val, clkevt_base + PITTCTRL);
++}
++
++static void pit_irq_acknowledge(void)
++{
++	__raw_writel(PITTFLG_TIF, clkevt_base + PITTFLG);
++}
++
++static unsigned int pit_read_sched_clock(void)
++{
++	return __raw_readl(sched_clock_reg);
++}
++
++
++static int __init pit_clocksource_init(struct clk *pit_clk)
++{
++	unsigned int c = clk_get_rate(pit_clk);
++
++	sched_clock_reg = clksrc_base + PITCVAL;
++
++	setup_sched_clock(pit_read_sched_clock, 32, c);
++	return clocksource_mmio_init(clksrc_base + PITCVAL, "mvf600-pit", c,
++			300, 32, clocksource_mmio_readl_down);
++}
++
++/* set clock event */
++static int pit_set_next_event(unsigned long delta,
++				struct clock_event_device *unused)
++{
++	pit_timer_disable();
++	__raw_writel(delta - 1, clkevt_base + PITLDVAL);
++	pit_irq_acknowledge();
++	pit_timer_enable();
++
++	return 0;
++}
++
++static void pit_set_mode(enum clock_event_mode mode,
++				struct clock_event_device *evt)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	pit_timer_disable();
++	pit_irq_acknowledge();
++
++	/* Remember timer mode */
++	clockevent_mode = mode;
++	local_irq_restore(flags);
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++
++		__raw_writel(pit_cycle_per_jiffy - 1, clkevt_base + PITLDVAL);
++		pit_timer_enable();
++
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++
++		break;
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_RESUME:
++
++		break;
++	default:
++		WARN(1, "%s: unhandled event mode %d\n", __func__, mode);
++		break;
++	}
++}
++
++static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = &clockevent_pit;
++
++	pit_irq_acknowledge();
++
++	if (clockevent_mode == CLOCK_EVT_MODE_ONESHOT)
++		pit_timer_disable();
++
++	evt->event_handler(evt);
++
++	return IRQ_HANDLED;
++}
++
++static struct irqaction pit_timer_irq = {
++	.name		= "MVF600 pit timer",
++	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.handler	= pit_timer_interrupt,
++};
++
++static struct clock_event_device clockevent_pit = {
++	.name		= "MVF600 pit timer",
++	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.set_mode	= pit_set_mode,
++	.set_next_event	= pit_set_next_event,
++	.rating		= 300,
++};
++
++static int __init pit_clockevent_init(struct clk *pit_clk)
++{
++	unsigned int c = clk_get_rate(pit_clk);
++
++	clockevent_pit.cpumask = cpumask_of(0);
++	clockevents_config_and_register(&clockevent_pit, c, 0x100, 0xffffff00);
++
++	return 0;
++}
++
++static void __init pit_timer_init(struct device_node *np)
++{
++	struct clk *pit_clk;
++	void __iomem *timer_base;
++	int irq;
++
++	if (!np) {
++		pr_err("Failed to find MVF600 pit DT node\n");
++		BUG();
++	}
++
++	timer_base = of_iomap(np, 0);
++	WARN_ON(!timer_base);
++
++	/* choose PIT2 as clocksource, PIT3 as clockevent dev */
++	clksrc_base = timer_base + PITn_OFFSET(2);
++	clkevt_base = timer_base + PITn_OFFSET(3);
++
++	irq = irq_of_parse_and_map(np, 0);
++
++	pit_clk = of_clk_get(np, 0);
++	if (IS_ERR(pit_clk)) {
++		pr_err("Vybrid MVF600 pit timer: unable to get clk\n");
++		return;
++	}
++
++	clk_prepare_enable(pit_clk);
++
++	pit_cycle_per_jiffy = clk_get_rate(pit_clk)/(HZ);
++
++	__raw_writel(0x0, timer_base + PITMCR);
++
++	__raw_writel(0, clkevt_base + PITTCTRL);
++	__raw_writel(0xffffffff, clkevt_base + PITLDVAL);
++
++	__raw_writel(0, clksrc_base + PITTCTRL);
++	__raw_writel(0xffffffff, clksrc_base + PITLDVAL);
++	__raw_writel(PITTCTRL_TEN, clksrc_base + PITTCTRL);
++
++	pit_clocksource_init(pit_clk);
++
++	setup_irq(irq, &pit_timer_irq);
++
++	pit_clockevent_init(pit_clk);
++}
++
++CLOCKSOURCE_OF_DECLARE(mvf600, "fsl,mvf600-pit", pit_timer_init);
 -- 
-1.7.4.1
+1.8.0
+
 
