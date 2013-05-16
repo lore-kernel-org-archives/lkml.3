@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3EPL1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 07:27:42 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52604 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab3EPL1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 07:27:39 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/6] ARM: ux500: Add Device Tree nodes for the ux500 Hash device
-Date: Thu, 16 May 2013 12:27:22 +0100
-Message-Id: <1368703646-26418-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368703646-26418-1-git-send-email-lee.jones@linaro.org>
-References: <1368703646-26418-1-git-send-email-lee.jones@linaro.org>
+	id S1752610Ab3EPL3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 07:29:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38201 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752224Ab3EPL3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 07:29:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,683,1363158000"; 
+   d="scan'208";a="303337501"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 21/33] drivers/usb/chipidea: don't check resource with devm_ioremap_resource
+In-Reply-To: <1368702961-4325-22-git-send-email-wsa@the-dreams.de>
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de> <1368702961-4325-22-git-send-email-wsa@the-dreams.de>
+User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 16 May 2013 14:29:19 +0300
+Message-ID: <87wqqzjh80.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides information required to setup ux500-hash when
-booting with DT on the Snowball low-cost development platform.
+Wolfram Sang <wsa@the-dreams.de> writes:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/dbx5x0.dtsi  |    8 ++++++++
- arch/arm/boot/dts/snowball.dts |    4 ++++
- 2 files changed, 12 insertions(+)
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-index 92fd4b74..6c25fbe 100644
---- a/arch/arm/boot/dts/dbx5x0.dtsi
-+++ b/arch/arm/boot/dts/dbx5x0.dtsi
-@@ -764,5 +764,13 @@
- 			v-ape-supply = <&db8500_vape_reg>;
- 			status = "disabled";
- 		};
-+
-+		hash@a03c2000 {
-+			compatible = "stericsson,ux500-hash";
-+			reg = <0xa03c2000 0x1000>;
-+
-+			v-ape-supply = <&db8500_vape_reg>;
-+			status = "disabled";
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index de585fd..3cadb5b 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -354,5 +354,9 @@
- 		cryp@a03cb000 {
- 			status = "okay";
- 		};
-+
-+		hash@a03c2000 {
-+			status = "okay";
-+		};
- 	};
- };
--- 
-1.7.10.4
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 
+> ---
+>  drivers/usb/chipidea/core.c |    5 -----
+>  1 file changed, 5 deletions(-)
+>
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index 450107e..49b098b 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -370,11 +370,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res) {
+> -		dev_err(dev, "missing resource\n");
+> -		return -ENODEV;
+> -	}
+> -
+>  	base = devm_ioremap_resource(dev, res);
+>  	if (IS_ERR(base))
+>  		return PTR_ERR(base);
+> -- 
+> 1.7.10.4
