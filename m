@@ -1,206 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3EPBHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 May 2013 21:07:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:49074 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab3EPBGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 May 2013 21:06:46 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org
-Cc: akpm@linux-foundation.org, Kent Overstreet <koverstreet@google.com>,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 04/21] Generic percpu refcounting
-In-Reply-To: <1368494338-7069-5-git-send-email-koverstreet@google.com>
-References: <1368494338-7069-1-git-send-email-koverstreet@google.com> <1368494338-7069-5-git-send-email-koverstreet@google.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 16 May 2013 09:56:19 +0930
-Message-ID: <87y5bfzs5w.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754751Ab3EPBI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 May 2013 21:08:27 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:9558 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab3EPBIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 May 2013 21:08:17 -0400
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: akpm@linux-foundation.org
+Cc: torvalds@linux-foundation.org, riel@redhat.com,
+        linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
+Subject: [PATCH 11/11] ipc: remove unused functions
+Date: Wed, 15 May 2013 18:08:10 -0700
+Message-Id: <1368666490-29055-12-git-send-email-davidlohr.bueso@hp.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
+References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
-> This implements a refcount with similar semantics to
-> atomic_get()/atomic_dec_and_test() - but percpu.
+We can now drop the msg_lock and msg_lock_check functions along
+with a bogus comment introduced previously in semctl_down.
 
-Ah!  This is why I was CC'd... Now I understand.  Thanks :)
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ ipc/msg.c | 25 -------------------------
+ ipc/sem.c |  1 -
+ 2 files changed, 26 deletions(-)
 
-Delighted to see someone chasing this.  I had an implementation of such
-a thing last decade, but the slowmode pattern didn't make for trivial
-kref conversions, so I dropped it.
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 1654be4..3b7b4b5 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -141,31 +141,6 @@ void __init msg_init(void)
+ 				IPC_MSG_IDS, sysvipc_msg_proc_show);
+ }
+ 
+-/*
+- * msg_lock_(check_) routines are called in the paths where the rw_mutex
+- * is not held.
+- */
+-static inline struct msg_queue *msg_lock(struct ipc_namespace *ns, int id)
+-{
+-	struct kern_ipc_perm *ipcp = ipc_lock(&msg_ids(ns), id);
+-
+-	if (IS_ERR(ipcp))
+-		return (struct msg_queue *)ipcp;
+-
+-	return container_of(ipcp, struct msg_queue, q_perm);
+-}
+-
+-static inline struct msg_queue *msg_lock_check(struct ipc_namespace *ns,
+-						int id)
+-{
+-	struct kern_ipc_perm *ipcp = ipc_lock_check(&msg_ids(ns), id);
+-
+-	if (IS_ERR(ipcp))
+-		return (struct msg_queue *)ipcp;
+-
+-	return container_of(ipcp, struct msg_queue, q_perm);
+-}
+-
+ static inline struct msg_queue *msq_obtain_object(struct ipc_namespace *ns, int id)
+ {
+ 	struct kern_ipc_perm *ipcp = ipc_obtain_object(&msg_ids(ns), id);
+diff --git a/ipc/sem.c b/ipc/sem.c
+index f7d99f9..8223f17 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -1281,7 +1281,6 @@ static int semctl_down(struct ipc_namespace *ns, int semid,
+ 				      &semid64.sem_perm, 0);
+ 	if (IS_ERR(ipcp)) {
+ 		err = PTR_ERR(ipcp);
+-		/* the ipc lock is not held upon failure */
+ 		goto out_unlock1;
+ 	}
+ 
+-- 
+1.7.11.7
 
-Note: I haven't read the other feedback yet, so ignore if dups.
-
-> +int percpu_ref_init(struct percpu_ref *ref);
-
-Why not just run is slow mode when allocation fails?  Things which can't
-fail make for simpler use.
-
-> +int percpu_ref_tryget(struct percpu_ref *ref);
-> +int percpu_ref_put_initial_ref(struct percpu_ref *ref);
-
-This is part of a slightly different pattern: the owned refcount.
-
-In fact, I think that's the most sane pattern to use (but I could be
-wrong; does the AIO stuff fit?). If so, promote this to the first class
-citizen, and if necessary expose kill as __percpu_ref_kill()?
-
-(I might suggest percpu_ref_owner_put() as a name, in fact).
-
-> +/**
-> + * percpu_ref_get - increment a dynamic percpu refcount
-> + *
-> + * Analagous to atomic_inc().
-> +  */
-> +static inline void percpu_ref_get(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +
-> +	preempt_disable();
-> +
-> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> +
-> +	if (pcpu_count)
-> +		__this_cpu_inc(*pcpu_count);
-> +	else
-> +		atomic_inc(&ref->count);
-> +
-> +	preempt_enable();
-> +}
-
-s/preempt_disable()/rcu_read_lock()/ ?
-
-> +/**
-> + * percpu_ref_put - decrement a dynamic percpu refcount
-> + *
-> + * Returns true if the result is 0, otherwise false; only checks for the ref
-> + * hitting 0 after percpu_ref_kill() has been called. Analagous to
-> + * atomic_dec_and_test().
-> + */
-> +static inline int percpu_ref_put(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +	int ret = 0;
-> +
-> +	preempt_disable();
-> +
-> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> +
-> +	if (pcpu_count)
-> +		__this_cpu_dec(*pcpu_count);
-> +	else
-> +		ret = atomic_dec_and_test(&ref->count);
-> +
-> +	preempt_enable();
-> +
-> +	return ret;
-> +}
-
-Here too.  And if you don't put unlikely() in this code, you lose kernel
-hacker points :)
-
-And int/true/false is for old-timers.
-
-> +
-> +unsigned percpu_ref_count(struct percpu_ref *ref);
-> +int percpu_ref_kill(struct percpu_ref *ref);
-> +
-> +/**
-> + * percpu_ref_dead - check if a dynamic percpu refcount is shutting down
-> + *
-> + * Returns true if percpu_ref_kill() has been called on @ref, false otherwise.
-> + */
-> +static inline int percpu_ref_dead(struct percpu_ref *ref)
-> +{
-> +	return ref->pcpu_count == NULL;
-> +}
-
-Can you unexpose these?  I think percpu_ref_init(), ...get(), ...put()
-and ...put_initial() are a nicer API.
-
-> +int percpu_ref_kill(struct percpu_ref *ref)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +	unsigned __percpu *old;
-> +	unsigned count = 0;
-> +	int cpu;
-> +
-> +	pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-> +
-> +	do {
-> +		if (!pcpu_count)
-> +			return 0;
-> +
-> +		old = pcpu_count;
-> +		pcpu_count = cmpxchg(&ref->pcpu_count, old, NULL);
-> +	} while (pcpu_count != old);
-
-This is more complex than it needs to be, no?
-
-
-        pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-        if (!pcpu_count)
-                return 0;
-        if (cmpxchg(&ref->pcpu_count, pcpu_count, NULL) == NULL)
-                return 0;
-
-Of course, if all callers use the owner pattern, this is simply:
-
-        pcpu_count = ACCESS_ONCE(ref->pcpu_count);
-        BUG_ON(!pcpu_count);
-
-> +	synchronize_sched();
-
-synchronize_rcu() ?
-
-> +	for_each_possible_cpu(cpu)
-> +		count += *per_cpu_ptr(pcpu_count, cpu);
-> +
-> +	free_percpu(pcpu_count);
-> +
-> +	pr_debug("global %lli pcpu %i",
-> +		 (int64_t) atomic_read(&ref->count), (int) count);
-> +
-> +	atomic_add((int) count - PCPU_COUNT_BIAS, &ref->count);
-> +
-> +	return 1;
-> +}
-> +
-> +/**
-> + * percpu_ref_put_initial_ref - safely drop the initial ref
-> + *
-> + * A percpu refcount needs a shutdown sequence before dropping the initial ref,
-> + * to put it back into single atomic_t mode with the appropriate barriers so
-> + * that percpu_ref_put() can safely check for it hitting 0 - this does so.
-> + *
-> + * Returns true if @ref hit 0.
-> + */
-> +int percpu_ref_put_initial_ref(struct percpu_ref *ref)
-> +{
-> +	if (percpu_ref_kill(ref)) {
-> +		return percpu_ref_put(ref);
-> +	} else {
-> +		WARN_ON(1);
-> +		return 0;
-> +	}
-> +}
-
-Note that percpu_ref_restore_initial_ref() is also possible, and may be
-useful for the module code... (or percpu_ref_owner_get).
-
-Great stuff!
-Rusty.
