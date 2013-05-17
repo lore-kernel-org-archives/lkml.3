@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757654Ab3EQVra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54455 "EHLO
+	id S1758085Ab3EQWKt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:10:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757632Ab3EQVr2 (ORCPT
+	with ESMTP id S1757640Ab3EQVr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:28 -0400
+	Fri, 17 May 2013 17:47:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Papan <tomas.papan@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [ 01/50] KVM: VMX: fix halt emulation while emulating invalid guest sate
-Date: Fri, 17 May 2013 14:46:36 -0700
-Message-Id: <20130517213842.651884978@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 03/50] ASoC: wm8994: missing break in wm8994_aif3_hw_params()
+Date: Fri, 17 May 2013 14:46:38 -0700
+Message-Id: <20130517213842.906990811@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,41 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8d76c49e9ffeee839bc0b7a3278a23f99101263e upstream.
+commit 4495e46fe18f198366961bb2b324a694ef8a9b44 upstream.
 
-The invalid guest state emulation loop does not check halt_request
-which causes 100% cpu loop while guest is in halt and in invalid
-state, but more serious issue is that this leaves halt_request set, so
-random instruction emulated by vm86 #GP exit can be interpreted
-as halt which causes guest hang. Fix both problems by handling
-halt_request in emulation loop.
+The missing break here means that we always return early and the
+function is a no-op.
 
-Reported-by: Tomas Papan <tomas.papan@gmail.com>
-Tested-by: Tomas Papan <tomas.papan@gmail.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/vmx.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ sound/soc/codecs/wm8994.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4889,6 +4889,12 @@ static int handle_invalid_guest_state(st
- 		if (err != EMULATE_DONE)
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2824,6 +2824,7 @@ static int wm8994_aif3_hw_params(struct
+ 		default:
  			return 0;
- 
-+		if (vcpu->arch.halt_request) {
-+			vcpu->arch.halt_request = 0;
-+			ret = kvm_emulate_halt(vcpu);
-+			goto out;
-+		}
-+
- 		if (signal_pending(current))
- 			goto out;
- 		if (need_resched())
+ 		}
++		break;
+ 	default:
+ 		return 0;
+ 	}
 
 
