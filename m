@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3EQVnD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:43:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54358 "EHLO
+	id S932186Ab3EQVnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:43:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab3EQVh7 (ORCPT
+	with ESMTP id S1757266Ab3EQVh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:59 -0400
+	Fri, 17 May 2013 17:37:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shlomo Pongratz <shlomop@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 086/102] iscsi-target: Fix processing of OOO commands
-Date: Fri, 17 May 2013 14:36:41 -0700
-Message-Id: <20130517213253.327465408@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 085/102] cpufreq / intel_pstate: fix ffmpeg regression
+Date: Fri, 17 May 2013 14:36:40 -0700
+Message-Id: <20130517213253.223861866@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,50 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shlomo Pongratz <shlomop@mellanox.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
+commit ca182aee389f8026401510f4c63841cb02c820e8 upstream.
 
-Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
+The ffmpeg benchmark in the phoronix test suite has threads on
+multiple cores that rely on the progress on of threads on other cores
+and ping pong back and forth fast enough to make the core appear less
+busy than it "should" be.  If the core has been at minimum p-state for
+a while bump the pstate up to kick the core to see if it is in this
+ping pong state.  If the core is truly idle the p-state will be
+reduced at the next sample time.  If the core makes more progress it
+will send more work to the thread bringing both threads out of the
+ping pong scenario and the p-state will be selected normally.
 
-Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
+This fixes a performance regression of approximately 30%
 
-The routine iterates until it finds an entry whose serial number is greater than the serial number of
-the new one, thus the new entry should be inserted before that entry and not after.
-
-Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/cpufreq/intel_pstate.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_erl1.c
-+++ b/drivers/target/iscsi/iscsi_target_erl1.c
-@@ -819,7 +819,7 @@ static int iscsit_attach_ooo_cmdsn(
- 		/*
- 		 * CmdSN is greater than the tail of the list.
- 		 */
--		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
-+		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
- 			list_add_tail(&ooo_cmdsn->ooo_list,
- 					&sess->sess_ooo_cmdsn_list);
- 		else {
-@@ -829,11 +829,12 @@ static int iscsit_attach_ooo_cmdsn(
- 			 */
- 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
- 						ooo_list) {
--				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
-+				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
- 					continue;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -551,22 +551,16 @@ static void intel_pstate_timer_func(unsi
+ 	struct cpudata *cpu = (struct cpudata *) __data;
  
-+				/* Insert before this entry */
- 				list_add(&ooo_cmdsn->ooo_list,
--					&ooo_tmp->ooo_list);
-+					ooo_tmp->ooo_list.prev);
- 				break;
- 			}
+ 	intel_pstate_sample(cpu);
++	intel_pstate_adjust_busy_pstate(cpu);
+ 
+-	if (!cpu->idle_mode)
+-		intel_pstate_adjust_busy_pstate(cpu);
+-	else
+-		intel_pstate_adjust_idle_pstate(cpu);
+-
+-#if defined(XPERF_FIX)
+ 	if (cpu->pstate.current_pstate == cpu->pstate.min_pstate) {
+ 		cpu->min_pstate_count++;
+ 		if (!(cpu->min_pstate_count % 5)) {
+ 			intel_pstate_set_pstate(cpu, cpu->pstate.max_pstate);
+-			intel_pstate_idle_mode(cpu);
  		}
+ 	} else
+ 		cpu->min_pstate_count = 0;
+-#endif
++
+ 	intel_pstate_set_sample_time(cpu);
+ }
+ 
 
 
