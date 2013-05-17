@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab3EQWFH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:05:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54546 "EHLO
+	id S1757688Ab3EQWFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:05:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789Ab3EQVrq (ORCPT
+	with ESMTP id S1757785Ab3EQVrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:46 -0400
+	Fri, 17 May 2013 17:47:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Galbraith <bitbucket@online.de>,
-        Eric Dumazet <edumazet@google.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/50] tcp: force a dst refcount when prequeue packet
-Date: Fri, 17 May 2013 14:47:00 -0700
-Message-Id: <20130517213845.356641637@linuxfoundation.org>
+Subject: [ 24/50] net: qmi_wwan: prevent duplicate mac address on link (firmware bug workaround)
+Date: Fri, 17 May 2013 14:46:59 -0700
+Message-Id: <20130517213845.257880684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,30 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-[ Upstream commit 093162553c33e9479283e107b4431378271c735d ]
+[ Upstream commit cc6ba5fdaabea7a7b28de3ba1e0fe54d92232fe5 ]
 
-Before escaping RCU protected section and adding packet into
-prequeue, make sure the dst is refcounted.
+We normally trust and use the CDC functional descriptors provided by a
+number of devices.  But some of these will erroneously list the address
+reserved for the device end of the link.  Attempting to use this on
+both the device and host side will naturally not work.
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Work around this bug by ignoring the functional descriptor and assign a
+random address instead in this case.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/tcp.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/usb/qmi_wwan.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -948,6 +948,7 @@ static inline int tcp_prequeue(struct so
- 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
- 		return 0;
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -175,6 +175,9 @@ err:
+ 	return status;
+ }
  
-+	skb_dst_force(skb);
- 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
- 	tp->ucopy.memory += skb->truesize;
- 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
++/* default ethernet address used by the modem */
++static const u8 default_modem_addr[ETH_ALEN] = {0x02, 0x50, 0xf3};
++
+ /* Make up an ethernet header if the packet doesn't have one.
+  *
+  * A firmware bug common among several devices cause them to send raw
+@@ -342,6 +345,12 @@ static int qmi_wwan_bind_shared(struct u
+ 	/* save subdriver struct for suspend/resume wrappers */
+ 	dev->data[0] = (unsigned long)subdriver;
+ 
++	/* Never use the same address on both ends of the link, even
++	 * if the buggy firmware told us to.
++	 */
++	if (!compare_ether_addr(dev->net->dev_addr, default_modem_addr))
++		eth_hw_addr_random(dev->net);
++
+ 	/* make MAC addr easily distinguishable from an IP header */
+ 	if (possibly_iphdr(dev->net->dev_addr)) {
+ 		dev->net->dev_addr[0] |= 0x02;	/* set local assignment bit */
 
 
