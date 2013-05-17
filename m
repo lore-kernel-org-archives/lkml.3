@@ -1,145 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab3EQOhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 10:37:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51731 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab3EQOhi (ORCPT
+	id S1756235Ab3EQOiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 10:38:22 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:35155 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab3EQOiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 10:37:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: srinivas.kandagatla@st.com
-Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
-Date: Fri, 17 May 2013 16:36:49 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: dong.aisheng@linaro.org, sameo@linux.intel.com,
-        Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
+	Fri, 17 May 2013 10:38:20 -0400
+X-AuditID: cbfec7f5-b7f376d000001ec6-c3-519640d43970
+From: Tomasz Figa <t.figa@samsung.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
-References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <201305082148.10933.arnd@arndb.de> <518B77C1.70107@st.com>
-In-Reply-To: <518B77C1.70107@st.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305171636.49627.arnd@arndb.de>
-X-Provags-ID: V02:K0:evgwKotYjcdYmuKOhdQjZz+46OujDkgvR79iThsl8n1
- NNKOHE+5qJrcwyUjP1DA/S/jlKPiyyP7jtxDOYVreeqejeQ62O
- +1Bvr4k5eLMhKQfdWQiT8Sy70DfiNsKLmR01pPh2wJXdV9wPDo
- faC85B35unUDP7hV5HuUoTg5/NB8L/hXz/ptBzzXq3FHTdJevB
- Dyh69A9Gc2R/UgfjJXoj0WER8sJk/2HsIslI7qRdAuSyAvFq/Z
- 9piYnFWJohpiFKQGe+C0kZhmCdz2EVpxfl2MCys/sGH36tn1Xa
- hGeSDsNWm9lGJlvtceIIovpuxrgjwlmuRmtPoDjH5VQ3XBQc0o
- SzhO7umIaaaw3VWpCVTY=
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] pinctrl: samsung: fix suspend/resume functionality
+Date: Fri, 17 May 2013 16:38:10 +0200
+Message-id: <1787926.aULH9sGxck@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.10.2 (Linux/3.8.8-gentoo; KDE/4.10.2; x86_64; ; )
+In-reply-to: <1368765198-25550-1-git-send-email-dianders@chromium.org>
+References: <1368746388-20194-1-git-send-email-dianders@chromium.org>
+ <1368765198-25550-1-git-send-email-dianders@chromium.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/xK7pXHKYFGtx6omNxdtlBNov/j16z
+	WvQuuMpmMeXPciaLy7vmsFnMOL+PyeLU9c9sFhdWbGS3eHWwjcXi2IwljBardv1hdOD2mN1w
+	kcVj56y77B53ru1h87hyoonVo2/LKkaP7dfmMXt83iTnsXFuaABHFJdNSmpOZllqkb5dAlfG
+	2Q3TmQoeuFWsbX7C3MC4y6KLkZNDQsBE4sDtt+wQtpjEhXvr2boYuTiEBJYySjQues0CkhAS
+	6GKSOHOyCMRmE1CT+NzwiA3EFhHQlHjW8JIZpIFZYBKzxO1VM5lBEsICXhKXz90BK2IRUJU4
+	8PII2AZeoIYNZ9+D1fALqEu82/aUCcQWFXCV+LD/GVg9p4CbxOS5TxghrmhklNh95RwjRLOg
+	xI/J98AuYhaQl9i3fyorhK0lsX7ncaYJjIKzkJTNQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJ
+	ucWleel6yfm5mxghUfR1B+PSY1aHGAU4GJV4eBV/TgkUYk0sK67MPcQowcGsJMJ7/OPUQCHe
+	lMTKqtSi/Pii0pzU4kOMTBycUg2MGXKifxd8fcH5//bjOb4zVGZEOzhf6fGc+iEzRdUvx/yb
+	/cl5X+ZnRXnwHzt3fZXWvdUqL85+fMzueL79aMRFA1szF9dFy7d+PPz3xMLAjiJj1/nFrTtc
+	hZ3WTUp6vjKExSTn7JW9F6tPbptckbFtSmLD/7ipS3mcG56/Whs/cd3XN4s7gy/llimxFGck
+	GmoxFxUnAgCUl2mAgAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 May 2013, Srinivas KANDAGATLA wrote:
-> On 08/05/13 20:48, Arnd Bergmann wrote:
-> I agree, my initial approach was having a dedicated driver specific to
-> ST syscon, however syscon seems to do things very much similar to what
-> we want, so I have integrated those 3 functions in syscon.
-> Am happy to go back with my first approach of adding ST specific syscon
-> driver if no one is actually going to benefit with such a change to
-> syscon driver.
+Hi Doug,
 
-That would at least be less controversial.
-
-> > Can you describe how your syscon registers are laid out?
-> On STiH416 SOC we have 9 SYSCONF(aka System Configuration
-> Registers)named banks/groups, each bank has its own memory map.
-> Each sysconf bank has number of 32 bit registers which vary from bank to
-> bank, like sysconf bank "sbc" has range from SYSTEM_CONFIG0 to
-> SYSTEM_CONFIG999 where as  sysconf bank "front" has range of
-> SYSTEM_CONFIG1000 to SYSTEM_CONFIG1999 and so on.
+On Thursday 16 of May 2013 21:33:18 Doug Anderson wrote:
+> The GPIO states need to be restored after s2r and this is not currently
+> supported in the pinctrl driver. This patch saves the gpio states before
+> suspend and restores them after resume.
 > 
-> Each register is assigned with a unique SYCONF number, example:
-> SYSTEM_CONFIG100, SYSTEM_CONFIG101 , .. and so on.
-> Each sysconf contains bits of the IP configurations wired-up to the
-> sysconf register bits.
-
-Ok.
-
-> As example:
+> Saving and restoring is done very early using syscore_ops and must
+> happen before pins are released from their powerdown state.
 > 
-> - Each pinctrl entry for set of 8 pins uses around 8-10 sysconfig
-> register to control pinconf and pin functions.
-> - IPs like Ethernet have few bit like Ethernet-Mode selection external
-> or internal phyclk wired up to bits in sysconf registers,
-> - Few clocks are controlled by sysconf registers.
-> - Reset to IPs are wired up to bits of sysconf same registers.
-> - ARM core soft reset is wired up to the sysconf registers...
-> And most of the IPs have similar requirements ......
+> Patch originally from Prathyush K <prathyush.k@samsung.com> but
+> rewritten by Doug Anderson <dianders@chromium.org>.
 > 
-> Total layout of the sysconf changes per SOC, and the bit arrangements
-> aswell, however the core IP(pinctrl, etherenet ...) and logic to drive
-> those bits remains exactly same.
+> Signed-off-by: Prathyush K <prathyush.k@samsung.com>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v3:
+> - Skip save and restore for banks with no powerdown config.
+> 
+> Changes in v2:
+> - Now uses sycore_ops to make sure we're early enough.
+> - Try to handle two CON registers better.
+> - Should handle s3c24xx better as per Heiko.
+> - Simpler code; no longer tries to avoid glitching lines since
+>   we _think_ all current SoCs should have pins in power down state
+>   when the restore is called.
+> - Dropped eint patch for now; Tomasz will post his version.
+> 
+>  drivers/pinctrl/pinctrl-samsung.c | 148
+> ++++++++++++++++++++++++++++++++++++++ drivers/pinctrl/pinctrl-samsung.h | 
+>  5 ++
+>  2 files changed, 153 insertions(+)
 
-It sounds like you really need a driver with high-level interfaces
-for the bits that change by each core and are needed by otherwise
-identical drivers, like the Ethernet driver you mention.
+On Exynos4210-based Trats board:
 
-I would not go as far as you did describing the individual bits in
-the device node using these however. That driver can be layered on
-top of the existing syscon driver, but hardcode the bits for each
-SoC it knows of.
+Tested-by: Tomasz Figa <t.figa@samsung.com>
 
-For drivers that are essentially just wrappers around sysconf,
-I would make them one driver per SoC and use a low-level interface
-but still hardcode the offsets in the driver instead of using DT
-to find the registers.
+Acked-by: Tomasz Figa <t.figa@samsung.com>
 
-The pinctrl and reset drivers are examples of this.
+I will send several complementary patches in a while.
 
-> In general the requirements of the sysconf support to the SOC/driver
-> support is.
-> 1> It should be able to read/write a sysconf register bits without
-> having to "if" each SOC in the code. So that code is totally abstracted.
-> Which is currently achieved by passing the information from the device
-> trees and the driver just uses the property to get it.
+Best regards,
+-- 
+Tomasz Figa
+Linux Kernel Developer
+Samsung R&D Institute Poland
+Samsung Electronics
 
-The goal sounds fine, just the method is a bit more complex than necessary
-here I think.
-
-> 2> The infrastructure should protect the claimed registers from
-> over-writing by other drivers. We do this by claim-read/write-release
-> style API.
-
-I don't understand this part. Is it about atomicity of accesses to
-32-bit registers when you only want to change a bit? That is something
-the regmap interface handles already.
-
-If this is about drivers touching registers they should not touch
-in the first place, I think it should not be needed at all, because
-that would be a driver bug, and you can't really protect yourself
-from broken drivers anyway.
-
-> 3> The driver should be able to set a group of sysconf registers bits to
-> a particular values before initialises the IP. I was thinking of doing
-> this in a same way as pinctrl state.
-
-That does not fit well with the model we use for other subsystems. If possible,
-try to use the existing abstractions for clock, regulator, pinctrl, reset,
-etc. and call generic interfaces from the driver. When that does not work,
-create a high-level function call from your sysconf driver to do a particular
-thing (e.g. stih_sysconf_ethernet_set_phy_mode()) rather than set up random
-bits from the driver.
-
-	Arnd
+> diff --git a/drivers/pinctrl/pinctrl-samsung.c
+> b/drivers/pinctrl/pinctrl-samsung.c index 9763668..d45e36f 100644
+> --- a/drivers/pinctrl/pinctrl-samsung.c
+> +++ b/drivers/pinctrl/pinctrl-samsung.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/gpio.h>
+>  #include <linux/irqdomain.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/syscore_ops.h>
+> 
+>  #include "core.h"
+>  #include "pinctrl-samsung.h"
+> @@ -48,6 +49,9 @@ static struct pin_config {
+>  	{ "samsung,pin-pud-pdn", PINCFG_TYPE_PUD_PDN },
+>  };
+> 
+> +/* Global list of devices (struct samsung_pinctrl_drv_data) */
+> +LIST_HEAD(drvdata_list);
+> +
+>  static unsigned int pin_base;
+> 
+>  static inline struct samsung_pin_bank *gc_to_pin_bank(struct gpio_chip *gc)
+> @@ -961,9 +965,145 @@ static int samsung_pinctrl_probe(struct
+> platform_device *pdev) ctrl->eint_wkup_init(drvdata);
+> 
+>  	platform_set_drvdata(pdev, drvdata);
+> +
+> +	/* Add to the global list */
+> +	list_add_tail(&drvdata->node, &drvdata_list);
+> +
+>  	return 0;
+>  }
+> 
+> +#ifdef CONFIG_PM
+> +
+> +/**
+> + * samsung_pinctrl_suspend_dev - save pinctrl state for suspend for a
+> device + *
+> + * Save data for all banks handled by this device.
+> + */
+> +static void samsung_pinctrl_suspend_dev(
+> +	struct samsung_pinctrl_drv_data *drvdata)
+> +{
+> +	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+> +	void __iomem *virt_base = drvdata->virt_base;
+> +	int i;
+> +
+> +	for (i = 0; i < ctrl->nr_banks; i++) {
+> +		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+> +		void __iomem *reg = virt_base + bank->pctl_offset;
+> +
+> +		u8 *offs = bank->type->reg_offset;
+> +		u8 *widths = bank->type->fld_width;
+> +		enum pincfg_type type;
+> +
+> +		/* Registers without a powerdown config aren't lost */
+> +		if (!widths[PINCFG_TYPE_CON_PDN])
+> +			continue;
+> +
+> +		for (type = 0; type < PINCFG_TYPE_NUM; type++)
+> +			if (widths[type])
+> +				bank->pm_save[type] = readl(reg + offs[type]);
+> +
+> +		if (widths[PINCFG_TYPE_FUNC] * bank->nr_pins > 32) {
+> +			/* Some banks have two config registers */
+> +			bank->pm_save[PINCFG_TYPE_NUM] =
+> +				readl(reg + offs[PINCFG_TYPE_FUNC] + 4);
+> +			pr_debug("Save %s @ %p (con %#010x %08x)\n",
+> +				 bank->name, reg,
+> +				 bank->pm_save[PINCFG_TYPE_FUNC],
+> +				 bank->pm_save[PINCFG_TYPE_NUM]);
+> +		} else {
+> +			pr_debug("Save %s @ %p (con %#010x)\n", bank->name,
+> +				 reg, bank->pm_save[PINCFG_TYPE_FUNC]);
+> +		}
+> +	}
+> +}
+> +
+> +/**
+> + * samsung_pinctrl_resume_dev - restore pinctrl state from suspend for a
+> device + *
+> + * Restore one of the banks that was saved during suspend.
+> + *
+> + * We don't bother doing anything complicated to avoid glitching lines
+> since + * we're called before pad retention is turned off.
+> + */
+> +static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data
+> *drvdata) +{
+> +	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+> +	void __iomem *virt_base = drvdata->virt_base;
+> +	int i;
+> +
+> +	for (i = 0; i < ctrl->nr_banks; i++) {
+> +		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+> +		void __iomem *reg = virt_base + bank->pctl_offset;
+> +
+> +		u8 *offs = bank->type->reg_offset;
+> +		u8 *widths = bank->type->fld_width;
+> +		enum pincfg_type type;
+> +
+> +		/* Registers without a powerdown config aren't lost */
+> +		if (!widths[PINCFG_TYPE_CON_PDN])
+> +			continue;
+> +
+> +		if (widths[PINCFG_TYPE_FUNC] * bank->nr_pins > 32) {
+> +			/* Some banks have two config registers */
+> +			pr_debug("%s @ %p (con %#010x %08x => %#010x %08x)\n",
+> +				 bank->name, reg,
+> +				 readl(reg + offs[PINCFG_TYPE_FUNC]),
+> +				 readl(reg + offs[PINCFG_TYPE_FUNC] + 4),
+> +				 bank->pm_save[PINCFG_TYPE_FUNC],
+> +				 bank->pm_save[PINCFG_TYPE_NUM]);
+> +			writel(bank->pm_save[PINCFG_TYPE_NUM],
+> +			       reg + offs[PINCFG_TYPE_FUNC] + 4);
+> +		} else {
+> +			pr_debug("%s @ %p (con %#010x => %#010x)\n", bank->name,
+> +				 reg, readl(reg + offs[PINCFG_TYPE_FUNC]),
+> +				 bank->pm_save[PINCFG_TYPE_FUNC]);
+> +		}
+> +		for (type = 0; type < PINCFG_TYPE_NUM; type++)
+> +			if (widths[type])
+> +				writel(bank->pm_save[type], reg + offs[type]);
+> +	}
+> +}
+> +
+> +/**
+> + * samsung_pinctrl_suspend - save pinctrl state for suspend
+> + *
+> + * Save data for all banks across all devices.
+> + */
+> +static int samsung_pinctrl_suspend(void)
+> +{
+> +	struct samsung_pinctrl_drv_data *drvdata;
+> +
+> +	list_for_each_entry(drvdata, &drvdata_list, node) {
+> +		samsung_pinctrl_suspend_dev(drvdata);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * samsung_pinctrl_resume - restore pinctrl state for suspend
+> + *
+> + * Restore data for all banks across all devices.
+> + */
+> +static void samsung_pinctrl_resume(void)
+> +{
+> +	struct samsung_pinctrl_drv_data *drvdata;
+> +
+> +	list_for_each_entry_reverse(drvdata, &drvdata_list, node) {
+> +		samsung_pinctrl_resume_dev(drvdata);
+> +	}
+> +}
+> +
+> +#else
+> +#define samsung_pinctrl_suspend		NULL
+> +#define samsung_pinctrl_resume		NULL
+> +#endif
+> +
+> +static struct syscore_ops samsung_pinctrl_syscore_ops = {
+> +	.suspend	= samsung_pinctrl_suspend,
+> +	.resume		= samsung_pinctrl_resume,
+> +};
+> +
+>  static const struct of_device_id samsung_pinctrl_dt_match[] = {
+>  #ifdef CONFIG_PINCTRL_EXYNOS
+>  	{ .compatible = "samsung,exynos4210-pinctrl",
+> @@ -992,6 +1132,14 @@ static struct platform_driver samsung_pinctrl_driver =
+> {
+> 
+>  static int __init samsung_pinctrl_drv_register(void)
+>  {
+> +	/*
+> +	 * Register syscore ops for save/restore of registers across suspend.
+> +	 * It's important to ensure that this driver is running at an earlier
+> +	 * initcall level than any arch-specific init calls that install syscore
+> +	 * ops that turn off pad retention (like exynos_pm_resume).
+> +	 */
+> +	register_syscore_ops(&samsung_pinctrl_syscore_ops);
+> +
+>  	return platform_driver_register(&samsung_pinctrl_driver);
+>  }
+>  postcore_initcall(samsung_pinctrl_drv_register);
+> diff --git a/drivers/pinctrl/pinctrl-samsung.h
+> b/drivers/pinctrl/pinctrl-samsung.h index 7c7f9eb..9f5cc81 100644
+> --- a/drivers/pinctrl/pinctrl-samsung.h
+> +++ b/drivers/pinctrl/pinctrl-samsung.h
+> @@ -127,6 +127,7 @@ struct samsung_pin_bank_type {
+>   * @gpio_chip: GPIO chip of the bank.
+>   * @grange: linux gpio pin range supported by this bank.
+>   * @slock: spinlock protecting bank registers
+> + * @pm_save: saved register values during suspend
+>   */
+>  struct samsung_pin_bank {
+>  	struct samsung_pin_bank_type *type;
+> @@ -144,6 +145,8 @@ struct samsung_pin_bank {
+>  	struct gpio_chip gpio_chip;
+>  	struct pinctrl_gpio_range grange;
+>  	spinlock_t slock;
+> +
+> +	u32 pm_save[PINCFG_TYPE_NUM + 1]; /* +1 to handle double CON registers*/
+>  };
+> 
+>  /**
+> @@ -189,6 +192,7 @@ struct samsung_pin_ctrl {
+> 
+>  /**
+>   * struct samsung_pinctrl_drv_data: wrapper for holding driver data
+> together. + * @node: global list node
+>   * @virt_base: register base address of the controller.
+>   * @dev: device instance representing the controller.
+>   * @irq: interrpt number used by the controller to notify gpio interrupts.
+> @@ -201,6 +205,7 @@ struct samsung_pin_ctrl {
+>   * @nr_function: number of such pin functions.
+>   */
+>  struct samsung_pinctrl_drv_data {
+> +	struct list_head		node;
+>  	void __iomem			*virt_base;
+>  	struct device			*dev;
+>  	int				irq;
