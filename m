@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab3EQVhe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54182 "EHLO
+	id S1758208Ab3EQWQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:16:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab3EQVhb (ORCPT
+	with ESMTP id S1757050Ab3EQVhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:31 -0400
+	Fri, 17 May 2013 17:37:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 045/102] mwifiex: fix setting of multicast filter
-Date: Fri, 17 May 2013 14:36:00 -0700
-Message-Id: <20130517213249.060828061@linuxfoundation.org>
+Subject: [ 048/102] iwl4965: workaround connection regression on passive channel
+Date: Fri, 17 May 2013 14:36:03 -0700
+Message-Id: <20130517213249.379831589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,66 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 upstream.
+commit dd9c46408fdc07098333655ff27edf8cac8d9fcf upstream.
 
-A small bug in this code was causing the ALLMULTI filter to be set
-when in fact we were just wanting to program a selective multicast list
-to the hardware.
+Jake reported that since commit 1672c0e31917f49d31d30d79067103432bc20cc7
+"mac80211: start auth/assoc timeout on frame status", he is unable to
+connect to his AP, which is configured to use passive channel.
 
-Fix that bug and remove a redundant if condition in the code that
-follows.
+After switch to passive channel 4965 firmware drops any TX packet until
+it receives beacon. Before commit 1672c0e3 we waited on channel and
+retransmit packet after 200ms, that makes we receive beacon on the
+meantime and association process succeed. New mac80211 behaviour cause
+that any ASSOC frame fail immediately on iwl4965 and we can not
+associate.
 
-This fixes wakeup behaviour when multicast WOL is enabled. Previously,
-all multicast packets would wake up the system. Now, only those that the
-host intended to receive trigger wakeups.
+This patch restore old mac80211 behaviour for iwl4965, by removing
+IEEE80211_HW_REPORTS_TX_ACK_STATUS feature. This feature will be
+added again to iwl4965 driver, when different, more complex
+workaround for this firmware issue, will be added to the driver.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Bing Zhao <bzhao@marvell.com>
+Bisected-by: Jake Edge <jake@lwn.net>
+Reported-and-tested-by: Jake Edge <jake@lwn.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
+ drivers/net/wireless/iwlegacy/4965-mac.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -99,7 +99,7 @@ int mwifiex_request_set_multicast_list(s
- 	} else {
- 		/* Multicast */
- 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
--		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
-+		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
- 			dev_dbg(priv->adapter->dev,
- 				"info: Enabling All Multicast!\n");
- 			priv->curr_pkt_filter |=
-@@ -111,20 +111,11 @@ int mwifiex_request_set_multicast_list(s
- 				dev_dbg(priv->adapter->dev,
- 					"info: Set multicast list=%d\n",
- 				       mcast_list->num_multicast_addr);
--				/* Set multicast addresses to firmware */
--				if (old_pkt_filter == priv->curr_pkt_filter) {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				} else {
--					/* Send request to firmware */
--					ret = mwifiex_send_cmd_async(priv,
--						HostCmd_CMD_MAC_MULTICAST_ADR,
--						HostCmd_ACT_GEN_SET, 0,
--						mcast_list);
--				}
-+				/* Send multicast addresses to firmware */
-+				ret = mwifiex_send_cmd_async(priv,
-+					HostCmd_CMD_MAC_MULTICAST_ADR,
-+					HostCmd_ACT_GEN_SET, 0,
-+					mcast_list);
- 			}
- 		}
- 	}
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -5740,8 +5740,7 @@ il4965_mac_setup_register(struct il_priv
+ 	hw->flags =
+ 	    IEEE80211_HW_SIGNAL_DBM | IEEE80211_HW_AMPDU_AGGREGATION |
+ 	    IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC | IEEE80211_HW_SPECTRUM_MGMT |
+-	    IEEE80211_HW_REPORTS_TX_ACK_STATUS | IEEE80211_HW_SUPPORTS_PS |
+-	    IEEE80211_HW_SUPPORTS_DYNAMIC_PS;
++	    IEEE80211_HW_SUPPORTS_PS | IEEE80211_HW_SUPPORTS_DYNAMIC_PS;
+ 	if (il->cfg->sku & IL_SKU_N)
+ 		hw->flags |=
+ 		    IEEE80211_HW_SUPPORTS_DYNAMIC_SMPS |
 
 
