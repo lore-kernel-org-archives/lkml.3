@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab3EQVqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:46:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54281 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab3EQVhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:47 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 069/102] 3c59x: fix PCI resource management
-Date: Fri, 17 May 2013 14:36:24 -0700
-Message-Id: <20130517213251.609476610@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
-References: <20130517213244.277411019@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1757605Ab3EQVrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:04 -0400
+Received: from mout.gmx.net ([212.227.15.15]:53671 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757591Ab3EQVrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:47:03 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/0CcVnQ7z0sfsFz20aRXqlpjkpvahkqhrD9YIQq2
+	xuQ6h3PGay/YDZ
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Cho Yu-Chen <acho@suse.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] staging/btmtk_usb: use module_usb_driver to register driver
+Date: Fri, 17 May 2013 23:51:57 +0200
+Message-Id: <1368827518-13364-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+Removing some boilerplate by using module_usb_driver instead of calling
+register and unregister in the otherwise empty init/exit functions
 
-------------------
-
-
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-
-[ Upstream commit 4b264a1676e70dc656ba53a8cac690f2d4b65f4e ]
-
-The driver wrongly claimed I/O ports at an address returned by pci_iomap() --
-even if it was passed an MMIO address.  Fix this by claiming/releasing all PCI
-resources in the PCI driver's probe()/remove() methods instead and get rid of
-'must_free_region' flag weirdness (why would Cardbus claim anything for us?).
-
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/net/ethernet/3com/3c59x.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/staging/btmtk_usb/btmtk_usb.c | 15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -632,7 +632,6 @@ struct vortex_private {
- 		pm_state_valid:1,				/* pci_dev->saved_config_space has sane contents */
- 		open:1,
- 		medialock:1,
--		must_free_region:1,				/* Flag: if zero, Cardbus owns the I/O region */
- 		large_frames:1,			/* accept large frames */
- 		handling_irq:1;			/* private in_irq indicator */
- 	/* {get|set}_wol operations are already serialized by rtnl.
-@@ -1012,6 +1011,12 @@ static int vortex_init_one(struct pci_de
- 	if (rc < 0)
- 		goto out;
+diff --git a/drivers/staging/btmtk_usb/btmtk_usb.c b/drivers/staging/btmtk_usb/btmtk_usb.c
+index 6b01f61..772c49e 100644
+--- a/drivers/staging/btmtk_usb/btmtk_usb.c
++++ b/drivers/staging/btmtk_usb/btmtk_usb.c
+@@ -1771,20 +1771,7 @@ static struct usb_driver btmtk_usb_driver = {
+ 	.disable_hub_initiated_lpm = 1,
+ };
  
-+	rc = pci_request_regions(pdev, DRV_NAME);
-+	if (rc < 0) {
-+		pci_disable_device(pdev);
-+		goto out;
-+	}
-+
- 	unit = vortex_cards_found;
- 
- 	if (global_use_mmio < 0 && (unit >= MAX_UNITS || use_mmio[unit] < 0)) {
-@@ -1027,6 +1032,7 @@ static int vortex_init_one(struct pci_de
- 	if (!ioaddr) /* If mapping fails, fall-back to BAR 0... */
- 		ioaddr = pci_iomap(pdev, 0, 0);
- 	if (!ioaddr) {
-+		pci_release_regions(pdev);
- 		pci_disable_device(pdev);
- 		rc = -ENOMEM;
- 		goto out;
-@@ -1036,6 +1042,7 @@ static int vortex_init_one(struct pci_de
- 			   ent->driver_data, unit);
- 	if (rc < 0) {
- 		pci_iounmap(pdev, ioaddr);
-+		pci_release_regions(pdev);
- 		pci_disable_device(pdev);
- 		goto out;
- 	}
-@@ -1178,11 +1185,6 @@ static int vortex_probe1(struct device *
- 
- 	/* PCI-only startup logic */
- 	if (pdev) {
--		/* EISA resources already marked, so only PCI needs to do this here */
--		/* Ignore return value, because Cardbus drivers already allocate for us */
--		if (request_region(dev->base_addr, vci->io_size, print_name) != NULL)
--			vp->must_free_region = 1;
+-static int __init btmtk_usb_init(void)
+-{
+-	BT_INFO("btmtk usb driver ver %s", VERSION);
 -
- 		/* enable bus-mastering if necessary */
- 		if (vci->flags & PCI_USES_MASTER)
- 			pci_set_master(pdev);
-@@ -1220,7 +1222,7 @@ static int vortex_probe1(struct device *
- 					   &vp->rx_ring_dma);
- 	retval = -ENOMEM;
- 	if (!vp->rx_ring)
--		goto free_region;
-+		goto free_device;
+-	return usb_register(&btmtk_usb_driver);
+-}
+-
+-static void __exit btmtk_usb_exit(void)
+-{
+-	usb_deregister(&btmtk_usb_driver);
+-}
+-
+-module_init(btmtk_usb_init);
+-module_exit(btmtk_usb_exit);
++module_usb_driver(btmtk_usb_driver);
  
- 	vp->tx_ring = (struct boom_tx_desc *)(vp->rx_ring + RX_RING_SIZE);
- 	vp->tx_ring_dma = vp->rx_ring_dma + sizeof(struct boom_rx_desc) * RX_RING_SIZE;
-@@ -1484,9 +1486,7 @@ free_ring:
- 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
- 						vp->rx_ring,
- 						vp->rx_ring_dma);
--free_region:
--	if (vp->must_free_region)
--		release_region(dev->base_addr, vci->io_size);
-+free_device:
- 	free_netdev(dev);
- 	pr_err(PFX "vortex_probe1 fails.  Returns %d\n", retval);
- out:
-@@ -3254,8 +3254,9 @@ static void vortex_remove_one(struct pci
- 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
- 						vp->rx_ring,
- 						vp->rx_ring_dma);
--	if (vp->must_free_region)
--		release_region(dev->base_addr, vp->io_size);
-+
-+	pci_release_regions(pdev);
-+
- 	free_netdev(dev);
- }
- 
-
+ MODULE_DESCRIPTION("Mediatek Bluetooth USB driver ver " VERSION);
+ MODULE_VERSION(VERSION);
+-- 
+1.8.1.5
 
