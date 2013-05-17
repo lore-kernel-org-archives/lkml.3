@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab3EQWKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:10:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54468 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757632Ab3EQVra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757654Ab3EQVra (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 May 2013 17:47:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54455 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757632Ab3EQVr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:47:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wang YanQing <udknight@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 05/50] ALSA: HDA: Fix Oops caused by dereference NULL pointer
-Date: Fri, 17 May 2013 14:46:40 -0700
-Message-Id: <20130517213843.158033406@linuxfoundation.org>
+        Tomas Papan <tomas.papan@gmail.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [ 01/50] KVM: VMX: fix halt emulation while emulating invalid guest sate
+Date: Fri, 17 May 2013 14:46:36 -0700
+Message-Id: <20130517213842.651884978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -26,42 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang YanQing <udknight@gmail.com>
+From: Gleb Natapov <gleb@redhat.com>
 
-commit 2195b063f6609e4c6268f291683902f25eaf9aa6 upstream.
+commit 8d76c49e9ffeee839bc0b7a3278a23f99101263e upstream.
 
-The interrupt handler azx_interrupt will call azx_update_rirb,
-which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
-will dereference chip->bus pointer.
+The invalid guest state emulation loop does not check halt_request
+which causes 100% cpu loop while guest is in halt and in invalid
+state, but more serious issue is that this leaves halt_request set, so
+random instruction emulated by vm86 #GP exit can be interpreted
+as halt which causes guest hang. Fix both problems by handling
+halt_request in emulation loop.
 
-The problem is we alloc chip->bus in azx_codec_create
-which will be called after we enable IRQ and enable unsolicited
-event in azx_probe.
-
-This will cause Oops due dereference NULL pointer. I meet it, good luck:)
-
-[Rearranged the NULL check before the tracepoint and added another
- NULL check of bus->workq -- tiwai]
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Tomas Papan <tomas.papan@gmail.com>
+Tested-by: Tomas Papan <tomas.papan@gmail.com>
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kvm/vmx.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -617,6 +617,9 @@ int snd_hda_queue_unsol_event(struct hda
- 	struct hda_bus_unsolicited *unsol;
- 	unsigned int wp;
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -4889,6 +4889,12 @@ static int handle_invalid_guest_state(st
+ 		if (err != EMULATE_DONE)
+ 			return 0;
  
-+	if (!bus || !bus->workq)
-+		return 0;
++		if (vcpu->arch.halt_request) {
++			vcpu->arch.halt_request = 0;
++			ret = kvm_emulate_halt(vcpu);
++			goto out;
++		}
 +
- 	trace_hda_unsol_event(bus, res, res_ex);
- 	unsol = bus->unsol;
- 	if (!unsol)
+ 		if (signal_pending(current))
+ 			goto out;
+ 		if (need_resched())
 
 
