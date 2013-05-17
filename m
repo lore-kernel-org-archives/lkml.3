@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab3EQWKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:10:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54464 "EHLO
+	id S1757739Ab3EQWLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54460 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab3EQVr3 (ORCPT
+	with ESMTP id S1757635Ab3EQVr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:47:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 03/50] ASoC: wm8994: missing break in wm8994_aif3_hw_params()
-Date: Fri, 17 May 2013 14:46:38 -0700
-Message-Id: <20130517213842.906990811@linuxfoundation.org>
+        Sebastian Reichel <sre@debian.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 02/50] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
+Date: Fri, 17 May 2013 14:46:37 -0700
+Message-Id: <20130517213842.749488872@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,30 +34,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 4495e46fe18f198366961bb2b324a694ef8a9b44 upstream.
+commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
 
-The missing break here means that we always return early and the
-function is a no-op.
+Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
+broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
+not fully understood, but it seems to be related to the probe order. SPI
+communication to the panel driver (spi1.2) fails unless the touchscreen
+(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
+was converted to a platform driver, it resulted in that the devices are
+probed immediately after the board registers them in the order they are
+listed in the board file.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Fix the issue by moving the touchscreen before the panel in the SPI
+device list.
+
+The patch fixes the following failure:
+
+[    1.260955] acx565akm spi1.2: invalid display ID
+[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
+[    1.273071] omapdss CORE error: driver probe failed: -19
+
+Tested-by: Sebastian Reichel <sre@debian.org>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Pali Rohár <pali.rohar@gmail.com>
+Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8994.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2824,6 +2824,7 @@ static int wm8994_aif3_hw_params(struct
- 		default:
- 			return 0;
- 		}
-+		break;
- 	default:
- 		return 0;
- 	}
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -63,11 +63,11 @@
+ #define RX51_TSC2005_RESET_GPIO         104
+ #define RX51_TSC2005_IRQ_GPIO           100
+ 
+-/* list all spi devices here */
++/* List all SPI devices here. Note that the list/probe order seems to matter! */
+ enum {
+ 	RX51_SPI_WL1251,
+-	RX51_SPI_MIPID,		/* LCD panel */
+ 	RX51_SPI_TSC2005,	/* Touch Controller */
++	RX51_SPI_MIPID,		/* LCD panel */
+ };
+ 
+ static struct wl12xx_platform_data wl1251_pdata;
 
 
