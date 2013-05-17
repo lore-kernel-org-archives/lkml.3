@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab3EQTsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 15:48:52 -0400
-Received: from [207.46.163.28] ([207.46.163.28]:22187 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1756631Ab3EQTsu (ORCPT
+	id S1756634Ab3EQTuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 15:50:32 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58535 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743Ab3EQTub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 15:48:50 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MMYK8M-01-D2V-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <joro@8bytes.org>
-CC: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-Date: Fri, 17 May 2013 14:43:30 -0500
-Message-ID: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 May 2013 15:50:31 -0400
+Message-ID: <51968A01.7070105@gmail.com>
+Date: Sat, 18 May 2013 01:20:25 +0530
+From: govind <govindarajulu90@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, xiyou.wangcong@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] net: netdev_pick_tx: use get_xps_q if xps map
+ is set
+References: <1368780528-15209-1-git-send-email-govindarajulu90@gmail.com> <1368797733.3301.84.camel@edumazet-glaptop>
+In-Reply-To: <1368797733.3301.84.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+On 05/17/2013 07:05 PM, Eric Dumazet wrote:
+> On Fri, 2013-05-17 at 14:18 +0530, govindarajulu.v wrote:
+>> From: "govindarajulu.v" <govindarajulu90@gmail.com>
+>>
+>> netdev_pick_tx ignores the xps map configuration if netdev->ndo_select_queue
+>> is defined. Most of the drivers define ndo_select_queue. The problem with this
+>> is, if admin wants kernel to pick tx queue based on xps map (instead of driver
+>> defined ndo_select_queue), he has to netdev->ndo_select_queue = NULL, compile
+>> and reload.
+>>
+>> This patch fixes it by checking if dev->xps_maps is defined. If yes it
+>> proceeds with get_xps_queue. If not it proceeds with netdev->ndo_select_queue
+>> (if defined).
+>>
+>> Compile test only.
+>
+> I do not think its right, take a look at
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c , around line 6467
 
-These patches implement the AMD IOMMU Performance Counter functionality
-via custom perf PMU and implement static counting for various IOMMU
-translations.
+I see. In ixgbe_select_queue we use __netdev_pick_tx only if packet is not
+FCOE & FIP.
 
-    1) Extend the AMD IOMMU initialization to include performance
-       counter enablement.
+If you see
+bnx2x_select_queue in drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c, line 1832
+and mlx4_en_select_queue in drivers/net/ethernet/mellanox/mlx4/en_tx.c, line 547.
+we cannot have xps working with these drivers.
 
-    2) The perf AMD IOMMU PMU to manage performance counters, which
-       interface with the AMD IOMMU core driver.
+This needs to be fixed by replacing __skb_tx_hash with __netdev_pick_tx. Am i 
+correct?
 
-Steven L Kinney (1):
-  perf/x86/amd: Adding IOMMU PC resource management
-
-Suravee Suthikulpanit (1):
-  perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
-
- arch/x86/kernel/cpu/Makefile               |    2 +-
- arch/x86/kernel/cpu/perf_event_amd_iommu.c |  500 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
- drivers/iommu/amd_iommu_init.c             |  121 ++++++-
- drivers/iommu/amd_iommu_proto.h            |    7 +
- drivers/iommu/amd_iommu_types.h            |   12 +-
- 6 files changed, 675 insertions(+), 7 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
-
--- 
-1.7.10.4
-
-
+thanks
+//govind
