@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab3EQWVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:21:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54050 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756913Ab3EQVhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756910Ab3EQVhS (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 May 2013 17:37:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54006 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756755Ab3EQVhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:37:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Li Zefan <lizfan@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 028/102] shm: fix null pointer deref when userspace specifies invalid hugepage size
-Date: Fri, 17 May 2013 14:35:43 -0700
-Message-Id: <20130517213247.320521488@linuxfoundation.org>
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 008/102] ACPICA: Fix possible buffer overflow during a field unit read operation
+Date: Fri, 17 May 2013 14:35:23 -0700
+Message-Id: <20130517213245.205822460@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -29,72 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Bob Moore <robert.moore@intel.com>
 
-commit 091d0d55b286c9340201b4ed4470be87fc568228 upstream.
+commit 61388f9e5d93053cf399a356414f31f9b4814c6d upstream.
 
-Dave reported an oops triggered by trinity:
+Can only happen under these conditions: 1) The DSDT version is 1,
+meaning integers are 32-bits.  2) The field is between 33 and 64
+bits long.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: newseg+0x10d/0x390
-  PGD cf8c1067 PUD cf8c2067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  CPU: 2 PID: 7636 Comm: trinity-child2 Not tainted 3.9.0+#67
-  ...
-  Call Trace:
-    ipcget+0x182/0x380
-    SyS_shmget+0x5a/0x60
-    tracesys+0xdd/0xe2
+It applies cleanly back to ACPICA 20100806+ (Linux v2.6.37+).
 
-This bug was introduced by commit af73e4d9506d ("hugetlbfs: fix mmap
-failure in unaligned size request").
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Li Zefan <lizfan@huawei.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/shm.c |    8 +++++++-
- mm/mmap.c |    8 ++++++--
- 2 files changed, 13 insertions(+), 3 deletions(-)
+ drivers/acpi/acpica/exfldio.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -493,7 +493,13 @@ static int newseg(struct ipc_namespace *
- 	if (shmflg & SHM_HUGETLB) {
- 		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
- 						& SHM_HUGE_MASK);
--		size_t hugesize = ALIGN(size, huge_page_size(hs));
-+		size_t hugesize;
+--- a/drivers/acpi/acpica/exfldio.c
++++ b/drivers/acpi/acpica/exfldio.c
+@@ -720,7 +720,19 @@ acpi_ex_extract_from_field(union acpi_op
+ 
+ 	if ((obj_desc->common_field.start_field_bit_offset == 0) &&
+ 	    (obj_desc->common_field.bit_length == access_bit_width)) {
+-		status = acpi_ex_field_datum_io(obj_desc, 0, buffer, ACPI_READ);
++		if (buffer_length >= sizeof(u64)) {
++			status =
++			    acpi_ex_field_datum_io(obj_desc, 0, buffer,
++						   ACPI_READ);
++		} else {
++			/* Use raw_datum (u64) to handle buffers < 64 bits */
 +
-+		if (!hs) {
-+			error = -EINVAL;
-+			goto no_file;
++			status =
++			    acpi_ex_field_datum_io(obj_desc, 0, &raw_datum,
++						   ACPI_READ);
++			ACPI_MEMCPY(buffer, &raw_datum, buffer_length);
 +		}
-+		hugesize = ALIGN(size, huge_page_size(hs));
- 
- 		/* hugetlb_file_setup applies strict accounting */
- 		if (shmflg & SHM_NORESERVE)
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1331,9 +1331,13 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned lon
- 			len = ALIGN(len, huge_page_size(hstate_file(file)));
- 	} else if (flags & MAP_HUGETLB) {
- 		struct user_struct *user = NULL;
-+		struct hstate *hs = hstate_sizelog((flags >> MAP_HUGE_SHIFT) &
-+						   SHM_HUGE_MASK);
- 
--		len = ALIGN(len, huge_page_size(hstate_sizelog(
--			(flags >> MAP_HUGE_SHIFT) & MAP_HUGE_MASK)));
-+		if (!hs)
-+			return -EINVAL;
 +
-+		len = ALIGN(len, huge_page_size(hs));
- 		/*
- 		 * VM_NORESERVE is used because the reservations will be
- 		 * taken when vm_ops->mmap() is called
+ 		return_ACPI_STATUS(status);
+ 	}
+ 
 
 
