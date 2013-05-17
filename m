@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3EQViA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:38:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54290 "EHLO
+	id S1757448Ab3EQVmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:42:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757189Ab3EQVhs (ORCPT
+	with ESMTP id S1757276Ab3EQViA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:48 -0400
+	Fri, 17 May 2013 17:38:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 071/102] macvlan: fix passthru mode race between dev removal and rx path
-Date: Fri, 17 May 2013 14:36:26 -0700
-Message-Id: <20130517213251.811627079@linuxfoundation.org>
+        Joern Engel <joern@logfs.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 087/102] target: close target_put_sess_cmd() vs. core_tmr_abort_task() race
+Date: Fri, 17 May 2013 14:36:42 -0700
+Message-Id: <20130517213253.422491092@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,79 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Joern Engel <joern@logfs.org>
 
-From: Jiri Pirko <jiri@resnulli.us>
+commit ccf5ae83a6cf3d9cfe9a7038bfe7cd38ab03d5e1 upstream.
 
-[ Upstream commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c ]
+It is possible for one thread to to take se_sess->sess_cmd_lock in
+core_tmr_abort_task() before taking a reference count on
+se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
+se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
 
-Currently, if macvlan in passthru mode is created and data are rxed and
-you remove this device, following panic happens:
+This introduces kref_put_spinlock_irqsave() and uses it in
+target_put_sess_cmd() to close the race window.
 
-NULL pointer dereference at 0000000000000198
-IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
-
-I'm using following script to trigger this:
-<script>
-while [ 1 ]
-do
-	ip link add link e1 name macvtap0 type macvtap mode passthru
-	ip link set e1 up
-	ip link set macvtap0 up
-	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
-	cat /dev/tap$IFINDEX  >/dev/null &
-	ip link del dev macvtap0
-done
-</script>
-
-I run this script while "ping -f" is running on another machine to send
-packets to e1 rx.
-
-Reason of the panic is that list_first_entry() is blindly called in
-macvlan_handle_frame() even if the list was empty. vlan is set to
-incorrect pointer which leads to the crash.
-
-I'm fixing this by protecting port->vlans list by rcu and by preventing
-from getting incorrect pointer in case the list is empty.
-
-Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Joern Engel <joern@logfs.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvlan.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -222,7 +222,8 @@ static rx_handler_result_t macvlan_handl
- 	}
- 
- 	if (port->passthru)
--		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
-+		vlan = list_first_or_null_rcu(&port->vlans,
-+					      struct macvlan_dev, list);
- 	else
- 		vlan = macvlan_hash_lookup(port, eth->h_dest);
- 	if (vlan == NULL)
-@@ -807,7 +808,7 @@ int macvlan_common_newlink(struct net *s
- 	if (err < 0)
- 		goto upper_dev_unlink;
- 
--	list_add_tail(&vlan->list, &port->vlans);
-+	list_add_tail_rcu(&vlan->list, &port->vlans);
- 	netif_stacked_transfer_operstate(lowerdev, dev);
- 
- 	return 0;
-@@ -835,7 +836,7 @@ void macvlan_dellink(struct net_device *
+---
+ drivers/target/target_core_transport.c |   11 +++++------
+ include/linux/kref.h                   |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 6 deletions(-)
+
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2213,21 +2213,19 @@ static void target_release_cmd_kref(stru
  {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
+ 	struct se_session *se_sess = se_cmd->se_sess;
+-	unsigned long flags;
  
--	list_del(&vlan->list);
-+	list_del_rcu(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
- 	netdev_upper_dev_unlink(vlan->lowerdev, dev);
+-	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+ 	if (list_empty(&se_cmd->se_cmd_list)) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		se_cmd->se_tfo->release_cmd(se_cmd);
+ 		return;
+ 	}
+ 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
+-		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		spin_unlock(&se_sess->sess_cmd_lock);
+ 		complete(&se_cmd->cmd_wait_comp);
+ 		return;
+ 	}
+ 	list_del(&se_cmd->se_cmd_list);
+-	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++	spin_unlock(&se_sess->sess_cmd_lock);
+ 
+ 	se_cmd->se_tfo->release_cmd(se_cmd);
  }
+@@ -2238,7 +2236,8 @@ static void target_release_cmd_kref(stru
+  */
+ int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
+ {
+-	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
++	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
++			&se_sess->sess_cmd_lock);
+ }
+ EXPORT_SYMBOL(target_put_sess_cmd);
+ 
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -19,6 +19,7 @@
+ #include <linux/atomic.h>
+ #include <linux/kernel.h>
+ #include <linux/mutex.h>
++#include <linux/spinlock.h>
+ 
+ struct kref {
+ 	atomic_t refcount;
+@@ -95,6 +96,38 @@ static inline int kref_put(struct kref *
+ 	return kref_sub(kref, 1, release);
+ }
+ 
++/**
++ * kref_put_spinlock_irqsave - decrement refcount for object.
++ * @kref: object.
++ * @release: pointer to the function that will clean up the object when the
++ *	     last reference to the object is released.
++ *	     This pointer is required, and it is not acceptable to pass kfree
++ *	     in as this function.
++ * @lock: lock to take in release case
++ *
++ * Behaves identical to kref_put with one exception.  If the reference count
++ * drops to zero, the lock will be taken atomically wrt dropping the reference
++ * count.  The release function has to call spin_unlock() without _irqrestore.
++ */
++static inline int kref_put_spinlock_irqsave(struct kref *kref,
++		void (*release)(struct kref *kref),
++		spinlock_t *lock)
++{
++	unsigned long flags;
++
++	WARN_ON(release == NULL);
++	if (atomic_add_unless(&kref->refcount, -1, 1))
++		return 0;
++	spin_lock_irqsave(lock, flags);
++	if (atomic_dec_and_test(&kref->refcount)) {
++		release(kref);
++		local_irq_restore(flags);
++		return 1;
++	}
++	spin_unlock_irqrestore(lock, flags);
++	return 0;
++}
++
+ static inline int kref_put_mutex(struct kref *kref,
+ 				 void (*release)(struct kref *kref),
+ 				 struct mutex *lock)
 
 
