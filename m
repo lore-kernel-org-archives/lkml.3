@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab3EQDmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 23:42:32 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:65007 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab3EQDm3 (ORCPT
+	id S1754174Ab3EQDsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 23:48:08 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:54183 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900Ab3EQDsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 23:42:29 -0400
-Date: Thu, 16 May 2013 17:45:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yuan-Hsin Chen <yuanlmm@gmail.com>
-Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com, balbi@ti.com,
-        Julia.Lawall@lip6.fr, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: Re: [PATCH v4] usb host: Faraday USB2.0 FUSBH200-HCD driver
-Message-ID: <20130517004511.GA10492@kroah.com>
-References: <1360149841-2392-1-git-send-email-yuanlmm@gmail.com>
- <1366969040-28892-1-git-send-email-yhchen@faraday-tech.com>
+	Thu, 16 May 2013 23:48:06 -0400
+Message-ID: <5195A836.3010002@mvista.com>
+Date: Thu, 16 May 2013 22:47:02 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1366969040-28892-1-git-send-email-yhchen@faraday-tech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 3/4] ipmi: Improve error messages on failed irq enable
+References: <1368731067-31404-1-git-send-email-cminyard@mvista.com> <1368731067-31404-4-git-send-email-cminyard@mvista.com> <CALCETrXu2At7pRWReYpdFa6OgY79M4KiEKXR=beH+5FcTOL6zg@mail.gmail.com>
+In-Reply-To: <CALCETrXu2At7pRWReYpdFa6OgY79M4KiEKXR=beH+5FcTOL6zg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 09:37:20AM +0000, Yuan-Hsin Chen wrote:
-> FUSBH200-HCD is an USB2.0 hcd for Faraday FUSBH200.
-> FUSBH200 is an ehci-like controller with some differences.
-> First, register layout of FUSBH200 is incompatible with EHCI.
-> Furthermore, FUSBH200 is lack of siTDs which means iTDs
-> are used for both HS and FS ISO transfer.
-> 
-> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+On 05/16/2013 05:23 PM, Andy Lutomirski wrote:
+>
+>                  /* We got the flags from the SMI, now handle them. */
+>                  smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
+> -               if (msg[2] != 0)
+> -                       dev_warn(smi_info->dev, "Could not enable interrupts"
+> -                                ", failed set, using polled mode.\n");
+> -               else
+> +               if (msg[2] != 0) {
+> +                       dev_warn(smi_info->dev,
+> +                                "Couldn't set irq info: %x.\n", msg[2]);
+> +                       dev_warn(smi_info->dev,
+> +                                "Maybe ok, but ipmi might run very slowly.\n");
+> +               } else
+> Minor nit: it would be nice if these warnings were collapsed into a
+> single printk -- that would save me a whitelist entry of acceptable
+> KERN_WARNING messages :)
 
-This patch breaks the build on my machine, so I can't accept it:
-  CC [M]  drivers/usb/host/fusbh200-hcd.o
-drivers/usb/host/fusbh200-hcd.c: In function ‘dbg_hcc_params’:
-drivers/usb/host/fusbh200-hcd.c:149:2: error: implicit declaration of function ‘HCC_HW_PREFETCH’ [-Werror=implicit-function-declaration]
-drivers/usb/host/fusbh200-hcd.c:149:2: error: implicit declaration of function ‘HCC_32FRAME_PERIODIC_LIST’ [-Werror=implicit-function-declaration]
-drivers/usb/host/fusbh200-hcd.c:149:2: warning: format ‘%d’ expects argument of type ‘int’, but argument 6 has type ‘char *’ [-Wformat]
-drivers/usb/host/fusbh200-hcd.c: At top level:
-drivers/usb/host/fusbh200-hcd.c:906:12: warning: ‘debug_lpm_close’ defined but not used [-Wunused-function]
-cc1: some warnings being treated as errors
+Yeah, the trouble is that checkpatch will give a warning if you split a 
+string
+between two lines or if a line is longer than 80 characters.  I'm not 
+creative
+enough to fit it into a single line.  Maybe I'm trying to be too literal 
+here,
+but I split it into two prints to avoid the warning.
 
-Please be more careful.  Can you fix this up and resend it?
+>
+> My Dell 12g server says:
+>
+> [97627.407724] ipmi_si ipmi_si.0: Using irq 10
+> [97627.421369] ipmi_si ipmi_si.0: Couldn't set irq info: cc.
+> [97627.427389] ipmi_si ipmi_si.0: Maybe ok, but ipmi might run very slowly.
+>
+> Tested-by: Andy Lutomirski <luto@amacapital.net>
 
-thanks,
+Thanks a bunch.
 
-greg k-h
+-corey
+
+> --Andy
+
