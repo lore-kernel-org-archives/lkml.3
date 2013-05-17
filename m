@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab3EQIlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:41:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27779 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab3EQIlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:41:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,690,1363158000"; 
-   d="scan'208";a="338824716"
-Date: Fri, 17 May 2013 11:44:37 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH v7] i2c-designware: make SDA hold time configurable
-Message-ID: <20130517084437.GD11878@intel.com>
-References: <20130327084158.GB11010@ab42.lan>
- <1364373760-12469-1-git-send-email-christian.ruppert@abilis.com>
- <20130514110745.GA10906@intel.com>
- <20130517082925.GB17056@katana>
+	id S1755052Ab3EQInV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:43:21 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38381 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab3EQInR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 04:43:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517082925.GB17056@katana>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 17 May 2013 16:43:15 +0800
+Message-ID: <CAPgLHd9nrgGuozisTZnQrQZFDi9vwBss=n8-U57OYf8RsQ5LHQ@mail.gmail.com>
+Subject: [PATCH -next] staging: wlags49_h2: fix error return code in wl_adapter_insert()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: pe1dnn@amsat.org, gregkh@linuxfoundation.org, khoroshilov@ispras.ru
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 10:29:28AM +0200, Wolfram Sang wrote:
-> On Tue, May 14, 2013 at 02:07:45PM +0300, Mika Westerberg wrote:
-> > On Tue, Apr 09, 2013 at 12:59:54PM +0200, Christian Ruppert wrote:
-> > > This patch makes the SDA hold time configurable through device tree.
-> > > 
-> > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> > 
-> > Hi Wolfram,
-> > 
-> > What happened to this patch? I don't see it merged for 3.10.
-> > 
-> > The reason I'm asking is that I would like to add ACPI support for the SDA
-> > hold time parameter analogous to the DT version.
-> 
-> New bindings are complicated. I need to check if there is an
-> existing/similar one, check if it is generic enough for drivers still to
-> come, etc. I didn't have the time to do this for 3.10, so it is
-> 3.11 material.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-OK, thanks. I just wanted to be sure this patch wasn't forgotten as it is
-useful for Haswell/Lynxpoint as well.
+When return from wl_adapter_insert() in the register_netdev() error
+handling case, 'ret' which is 0 is returned, but we should return a
+negative error code instead, so fix to return the return value of
+register_netdev().
+
+Introduce by commit 657d4c86d4cd85a4696445f6fb2fe0941a5724ff
+(staging: wlags49_h2: fix error handling in pcmcia probe function)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/staging/wlags49_h2/wl_cs.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/wlags49_h2/wl_cs.c b/drivers/staging/wlags49_h2/wl_cs.c
+index f9e5fd3..b55dc43 100644
+--- a/drivers/staging/wlags49_h2/wl_cs.c
++++ b/drivers/staging/wlags49_h2/wl_cs.c
+@@ -259,7 +259,8 @@ int wl_adapter_insert(struct pcmcia_device *link)
+ 	dev->base_addr  = link->resource[0]->start;
+ 
+ 	SET_NETDEV_DEV(dev, &link->dev);
+-	if (register_netdev(dev) != 0) {
++	ret = register_netdev(dev);
++	if (ret != 0) {
+ 		printk("%s: register_netdev() failed\n", MODULE_NAME);
+ 		goto failed;
+ 	}
+
