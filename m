@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab3EQVsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:48:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54645 "EHLO
+	id S932466Ab3EQVsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab3EQVr7 (ORCPT
+	with ESMTP id S932403Ab3EQVsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:59 -0400
+	Fri, 17 May 2013 17:48:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shlomo Pongratz <shlomop@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 45/50] iscsi-target: Fix processing of OOO commands
-Date: Fri, 17 May 2013 14:47:20 -0700
-Message-Id: <20130517213847.403881854@linuxfoundation.org>
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Hayes Wang <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 42/50] r8169: fix vlan tag read ordering.
+Date: Fri, 17 May 2013 14:47:17 -0700
+Message-Id: <20130517213847.091375166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,50 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shlomo Pongratz <shlomop@mellanox.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
+commit ce11ff5e5963e441feb591e76278528f876c332d upstream.
 
-Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
+Control of receive descriptor must not be returned to ethernet chipset
+before vlan tag processing is done.
 
-Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
+VLAN tag receive word is now reset both in normal and error path.
 
-The routine iterates until it finds an entry whose serial number is greater than the serial number of
-the new one, thus the new entry should be inserted before that entry and not after.
-
-Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Spotted-by: Timo Teras <timo.teras@iki.fi>
+Cc: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_erl1.c
-+++ b/drivers/target/iscsi/iscsi_target_erl1.c
-@@ -824,7 +824,7 @@ static int iscsit_attach_ooo_cmdsn(
- 		/*
- 		 * CmdSN is greater than the tail of the list.
- 		 */
--		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
-+		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
- 			list_add_tail(&ooo_cmdsn->ooo_list,
- 					&sess->sess_ooo_cmdsn_list);
- 		else {
-@@ -834,11 +834,12 @@ static int iscsit_attach_ooo_cmdsn(
- 			 */
- 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
- 						ooo_list) {
--				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
-+				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
- 					continue;
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1690,8 +1690,6 @@ static void rtl8169_rx_vlan_tag(struct R
  
-+				/* Insert before this entry */
- 				list_add(&ooo_cmdsn->ooo_list,
--					&ooo_tmp->ooo_list);
-+					ooo_tmp->ooo_list.prev);
- 				break;
+ 	if (opts2 & RxVlanTag)
+ 		__vlan_hwaccel_put_tag(skb, swab16(opts2 & 0xffff));
+-
+-	desc->opts2 = 0;
+ }
+ 
+ static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
+@@ -5434,8 +5432,6 @@ static int rtl_rx(struct net_device *dev
+ 			    !(status & (RxRWT | RxFOVF)) &&
+ 			    (dev->features & NETIF_F_RXALL))
+ 				goto process_pkt;
+-
+-			rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 		} else {
+ 			struct sk_buff *skb;
+ 			dma_addr_t addr;
+@@ -5456,16 +5452,14 @@ process_pkt:
+ 			if (unlikely(rtl8169_fragmented_frame(status))) {
+ 				dev->stats.rx_dropped++;
+ 				dev->stats.rx_length_errors++;
+-				rtl8169_mark_to_asic(desc, rx_buf_sz);
+-				continue;
++				goto release_descriptor;
  			}
+ 
+ 			skb = rtl8169_try_rx_copy(tp->Rx_databuff[entry],
+ 						  tp, pkt_size, addr);
+-			rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 			if (!skb) {
+ 				dev->stats.rx_dropped++;
+-				continue;
++				goto release_descriptor;
+ 			}
+ 
+ 			rtl8169_rx_csum(skb, status);
+@@ -5481,6 +5475,10 @@ process_pkt:
+ 			tp->rx_stats.bytes += pkt_size;
+ 			u64_stats_update_end(&tp->rx_stats.syncp);
  		}
++release_descriptor:
++		desc->opts2 = 0;
++		wmb();
++		rtl8169_mark_to_asic(desc, rx_buf_sz);
+ 	}
+ 
+ 	count = cur_rx - tp->cur_rx;
 
 
