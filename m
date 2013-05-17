@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab3EQIs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:48:58 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:46045 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab3EQIs4 (ORCPT
+	id S1755158Ab3EQItj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:49:39 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7637 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab3EQItg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:48:56 -0400
-From: "govindarajulu.v" <govindarajulu90@gmail.com>
-To: davem@davemloft.net
-Cc: xiyou.wangcong@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "govindarajulu.v" <govindarajulu90@gmail.com>
-Subject: [PATCH net-next] net: netdev_pick_tx: use get_xps_q if xps map is set
-Date: Fri, 17 May 2013 14:18:48 +0530
-Message-Id: <1368780528-15209-1-git-send-email-govindarajulu90@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	Fri, 17 May 2013 04:49:36 -0400
+Date: Fri, 17 May 2013 10:49:28 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Robert Norris <robn@opera.com>
+Cc: linux-kernel@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
+Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
+Message-ID: <20130517104928.5b135a4f@endymion.delvare>
+In-Reply-To: <20130516034455.GA19452@pyro.melbourne.osa>
+References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
+	<20130514231626.GA12961@pyro.melbourne.osa>
+	<20130515112044.753bb7bb@endymion.delvare>
+	<20130515112741.GA23766@pyro.melbourne.osa>
+	<20130515214923.036dabdb@endymion.delvare>
+	<20130516034455.GA19452@pyro.melbourne.osa>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "govindarajulu.v" <govindarajulu90@gmail.com>
+On Thu, 16 May 2013 13:44:55 +1000, Robert Norris wrote:
+> > Then do a simple read from a random address
+> >   with:
+> >   # i2cget 4 0x50 0x00
+> >   (Adjust the bus number as needed.)
+> >   I am curious if this will hang as well or only when accessing the
+> >   clock chip at address 0x69.
+> 
+> Yep, that one hangs. The hung task handler picked it up after a few
+> minutes.
 
-netdev_pick_tx ignores the xps map configuration if netdev->ndo_select_queue
-is defined. Most of the drivers define ndo_select_queue. The problem with this
-is, if admin wants kernel to pick tx queue based on xps map (instead of driver
-defined ndo_select_queue), he has to netdev->ndo_select_queue = NULL, compile
-and reload.
+Hmm, can you please dump the PCI configuration space of the SMBus
+controller?
 
-This patch fixes it by checking if dev->xps_maps is defined. If yes it
-proceeds with get_xps_queue. If not it proceeds with netdev->ndo_select_queue
-(if defined).
+# /sbin/lspci -s 00:1f.3 -xxx
 
-Compile test only.
+It might be that you have interrupts routed to SMI# instead of the
+regular IRQ line. The driver is supposed to disable interrupt support
+in that case, but I have never tested it.
 
-Signed-off-by: govindarajulu.v <govindarajulu90@gmail.com>
----
- net/core/flow_dissector.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/net/core/flow_dissector.c b/net/core/flow_dissector.c
-index 00ee068..b2e3c81 100644
---- a/net/core/flow_dissector.c
-+++ b/net/core/flow_dissector.c
-@@ -368,10 +368,11 @@ struct netdev_queue *netdev_pick_tx(struct net_device *dev,
- 
- 	if (dev->real_num_tx_queues != 1) {
- 		const struct net_device_ops *ops = dev->netdev_ops;
--		if (ops->ndo_select_queue)
--			queue_index = ops->ndo_select_queue(dev, skb);
--		else
-+		if (rcu_access_pointer(dev->xps_maps) ||
-+		    !ops->ndo_select_queue)
- 			queue_index = __netdev_pick_tx(dev, skb);
-+		else
-+			queue_index = ops->ndo_select_queue(dev, skb);
- 		queue_index = dev_cap_txqueue(dev, queue_index);
- 	}
- 
+Thanks,
 -- 
-1.8.2.3
-
+Jean Delvare
