@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab3EQVhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54109 "EHLO
+	id S1758319Ab3EQWTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:19:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab3EQVhU (ORCPT
+	with ESMTP id S1756966Ab3EQVhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:20 -0400
+	Fri, 17 May 2013 17:37:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>, Eric Paris <eparis@redhat.com>
-Subject: [ 031/102] audit: Syscall rules are not applied to existing processes on non-x86
-Date: Fri, 17 May 2013 14:35:46 -0700
-Message-Id: <20130517213247.606470798@linuxfoundation.org>
+        Lachlan McIlroy <lmcilroy@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 037/102] ext4: limit group search loop for non-extent files
+Date: Fri, 17 May 2013 14:35:52 -0700
+Message-Id: <20130517213248.232530307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -26,48 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Lachlan McIlroy <lmcilroy@redhat.com>
 
-commit cdee3904b4ce7c03d1013ed6dd704b43ae7fc2e9 upstream.
+commit e6155736ad76b2070652745f9e54cdea3f0d8567 upstream.
 
-Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
-burden on archs) changed audit_syscall_entry to check for a dummy
-context before calling __audit_syscall_entry. Unfortunately the dummy
-context state is maintained in __audit_syscall_entry so once set it
-never gets cleared, even if the audit rules change.
+In the case where we are allocating for a non-extent file,
+we must limit the groups we allocate from to those below
+2^32 blocks, and ext4_mb_regular_allocator() attempts to
+do this initially by putting a cap on ngroups for the
+subsequent search loop.
 
-As a result, if there are no auditing rules when a process starts
-then it will never be subject to any rules added later. x86 doesn't
-see this because it has an assembly fast path that calls directly into
-__audit_syscall_entry.
+However, the initial target group comes in from the
+allocation context (ac), and it may already be beyond
+the artificially limited ngroups.  In this case,
+the limit
 
-I noticed this issue when working on audit performance optimisations.
-I wrote a set of simple test cases available at:
+	if (group == ngroups)
+		group = 0;
 
-http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
+at the top of the loop is never true, and the loop will
+run away.
 
-02_new_rule.py fails without the patch and passes with it. The
-test case clears all rules, starts a process, adds a rule then
-verifies the process produces a syscall audit record.
+Catch this case inside the loop and reset the search to
+start at group 0.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+[sandeen@redhat.com: add commit msg & comments]
+
+Signed-off-by: Lachlan McIlroy <lmcilroy@redhat.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/mballoc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -120,7 +120,7 @@ static inline void audit_syscall_entry(i
- 				       unsigned long a1, unsigned long a2,
- 				       unsigned long a3)
- {
--	if (unlikely(!audit_dummy_context()))
-+	if (unlikely(current->audit_context))
- 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
- }
- static inline void audit_syscall_exit(void *pt_regs)
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1994,7 +1994,11 @@ repeat:
+ 		group = ac->ac_g_ex.fe_group;
+ 
+ 		for (i = 0; i < ngroups; group++, i++) {
+-			if (group == ngroups)
++			/*
++			 * Artificially restricted ngroups for non-extent
++			 * files makes group > ngroups possible on first loop.
++			 */
++			if (group >= ngroups)
+ 				group = 0;
+ 
+ 			/* This now checks without needing the buddy page */
 
 
