@@ -1,65 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3ESXRa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 19:17:30 -0400
-Received: from MAIL1.WPI.EDU ([130.215.36.91]:46605 "EHLO MAIL1.WPI.EDU"
+	id S1754866Ab3ESX1L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 19:27:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:53754 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab3ESXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 19:17:29 -0400
-X-Greylist: delayed 1375 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 May 2013 19:17:29 EDT
-From: Neal Murphy <neal.p.murphy@alum.wpi.edu>
-Reply-To: neal.p.murphy@alum.wpi.edu
-Organization: Self
-To: linux-kernel@vger.kernel.org
-Subject: pipe/fifo, set exception for select() when read end is not open
-Date: Sun, 19 May 2013 18:54:29 -0400
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+	id S1754640Ab3ESX1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 19:27:10 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Joe Perches <joe@perches.com>, Asias He <asias@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, George Zhang <georgezhang@vmware.com>,
+        Dmitry Torokhov <dtor@vmware.com>
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+In-Reply-To: <5195B539.7020705@infradead.org>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au> <1368579583-13097-1-git-send-email-asias@redhat.com> <8761yk254u.fsf@rustcorp.com.au> <20130516020848.GB23441@hj.localdomain> <87d2sra97h.fsf@rustcorp.com.au> <1368676505.2194.47.camel@joe-AO722> <878v3ea3v4.fsf@rustcorp.com.au> <5195B539.7020705@infradead.org>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 17 May 2013 16:25:49 +0930
+Message-ID: <87ppwq858q.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305191854.29462.neal.p.murphy@alum.wpi.edu>
-X-PerlMx-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
- SXL_IP_DYNAMIC 3, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1900_1999 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, DATE_TZ_NA 0, NO_URI_FOUND 0, RDNS_BROADBAND 0, RDNS_GENERIC_POOLED 0, RDNS_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, RDNS_SUSP_SPECIFIC 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __RDNS_BROADBAND_5 0, __RDNS_POOLED_11 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __USER_AGENT 0'
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been looking at the gule hacks I have to use to get inotifywait to work 
-in shell scripts. So I figgered I would hack inotifywait to look at exceptions 
-in its select() loop. No joy.
+Randy Dunlap <rdunlap@infradead.org> writes:
+> On 05/16/13 16:42, Rusty Russell wrote:
+>> Joe Perches <joe@perches.com> writes:
+>>> On Thu, 2013-05-16 at 13:04 +0930, Rusty Russell wrote:
+>>>> Asias He <asias@redhat.com> writes:
+>>>>> On Wed, May 15, 2013 at 02:47:53PM +0930, Rusty Russell wrote:
+>>> []
+>>>>> Other users are using memcpy_fromiovec and friends outside net. It seems
+>>>>> a good idea to put it in a util library. e.g.  crypto/algif_skcipher.c
+>>>>> which also depends on NET for it.
+>>>
+>>> []
+>>>> Subject: Hoist memcpy_fromiovec into lib/
+>>>
+>>> You'll need the "friends" memcpy_toiovec too.
+>>>
+>>> $ git grep -E \bmemcpy\w+iovec\w*"
+>>> crypto/algif_hash.c:    err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
+>>> crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg)) +
+>>> crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg + i)),
+>>> drivers/dma/iovlock.c:#include <net/tcp.h> /* for memcpy_toiovec */
+>>> drivers/dma/iovlock.c:          return memcpy_toiovec(iov, kdata, len);
+>>> drivers/dma/iovlock.c:          err = memcpy_toiovec(iov, vaddr + offset, len);
+>>> drivers/isdn/mISDN/socket.c:    if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
+>>> drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_fromiovec((u8 *)va + page_o
+>>> drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_toiovec(iov, (u8 *)va + pag
+>> 
+>> Fascinating.  These all indirectly depend on NET, so there's no problem
+>> at the moment.  But it is a bit weird...
+>> 
+>> crypto/algif_hash.c: depends on CRYPTO_USER_API_HASH -> NET
+>> crypto/algif_skcipher.c: depends on CRYPTO_USER_API_SKCIPHER -> NET
+>> drivers/dma/iovlock.c: depends on NET_DMA -> NET
+>> drivers/isdn/mISDN/socket.c: depends on MISDN -> ISDN -> NET
+>> drivers/misc/vmw_vmci/vmci_queue_pair.c: depends on VMCI -> NET
+>> 
+>> Patch welcome.
+>> 
+>> Meanwhile, to avoid more bikeshedding I've put the patch I posted with
+>> all acks in my fixes branch.  One cycle through linux-next, then
+>> straight to Linus.
+>> 
+>
+> I agree with whoever suggested that more be moved into /lib.
+> E.g., drivers/misc/vmw_vmci/Kconfig uses "depends on NET" because the
+> code there uses both memcpy_toiovec() and memcpy_fromiovec().
+> See commit ID 6d4f0139d642c45411a47879325891ce2a7c164a.
 
-inotifywait loops using select() to look for changes to at least one inotify 
-FD. Whenever it sees a change, it reads the event and sends it to stdout. 
-Cool. This works well and uses little CPU time. But there's a problem.
+(CC's trimmed).
 
-Suppose you have inotifywait monitoring a specific file for a change, such as 
-"wait for this file to be deleted." And you have piped inotifywait to "while 
-read a b c". The problem is that when the 'while' loop gets the DELETE event, 
-it does what is needed and exits. And it is expected that inotifywait will 
-exit.
+You Acked that commit :(
 
-But because the file it was watching has been deleted and can cause no more 
-events, inotifywait will never receive another event, never return from 
-select(), never write to the pipe, and never know that the pipe's reader 
-exitted. It will never know that it should exit. Then I got to wondering why 
-it is that writing to a pipe is the *only* way to know that the reader end is 
-or has been closed (other than via complicated signalling). And wondering why.
-
-Would it be possible to set an exception on a pipe's or fifo's writer FD when 
-the reader FD is not open (when there are no readers or when there are none 
-left)? Would it be reasonable to do this? I imagine a pipe should have a 'last 
-reader closed' exception, while fifos could benefit from that and/or a 'no 
-readers' exception.
-
-If this exception existed, inotifywait could watch for read and exception 
-changes using select(). An exception on stdout would almost certainly mean 
-that the pipe has been welded shut, so inotifywait should just exit. This 
-can't be the only example of a program that could benefit from knowing that 
-one of its output pipes is closed without needing to write to the pipe to find 
-out.
+At a glance, the only way to drive the vmw_vmci device is through
+net/vmw_vsock/vmci_transport.c, so without NET it's useless?  But let's
+keep it neat anyway.  This was compiletested with CONFIG_VMCI,
+CONFIG_DMA_ENGINE and !CONFIG_NET.
 
 Thanks,
-N
+Rusty.
 
-(Please CC me on replies.)
+From: Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] Hoist memcpy_fromiovec/memcpy_toiovec into lib/
+
+ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
+
+That function is only present with CONFIG_NET.  Turns out that
+crypto/algif_skcipher.c also uses that outside net, but it actually
+needs sockets anyway.
+
+In addition, commit 6d4f0139d642c45411a47879325891ce2a7c164a added
+CONFIG_NET dependency to CONFIG_VMCI for memcpy_toiovec, so hoist
+that function and revert that commit too.
+
+socket.h already include uio.h, so no callers *need* updating,
+though I update the obvious ones.
+
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
+index bb48a57..6943deb66 100644
+--- a/drivers/dma/iovlock.c
++++ b/drivers/dma/iovlock.c
+@@ -28,7 +28,7 @@
+ #include <linux/dmaengine.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+-#include <net/tcp.h> /* for memcpy_toiovec */
++#include <linux/uio.h> /* for memcpy_toiovec */
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ 
+diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
+index ea98f7e..39c2eca 100644
+--- a/drivers/misc/vmw_vmci/Kconfig
++++ b/drivers/misc/vmw_vmci/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ config VMWARE_VMCI
+ 	tristate "VMware VMCI Driver"
+-	depends on X86 && PCI && NET
++	depends on X86 && PCI
+ 	help
+ 	  This is VMware's Virtual Machine Communication Interface.  It enables
+ 	  high-speed communication between host and guest in a virtual
+diff --git a/drivers/misc/vmw_vmci/vmci_queue_pair.c b/drivers/misc/vmw_vmci/vmci_queue_pair.c
+index d94245d..8ff2e5e 100644
+--- a/drivers/misc/vmw_vmci/vmci_queue_pair.c
++++ b/drivers/misc/vmw_vmci/vmci_queue_pair.c
+@@ -23,7 +23,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+-#include <linux/socket.h>
++#include <linux/uio.h>
+ #include <linux/wait.h>
+ #include <linux/vmalloc.h>
+ 
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 428c37a..33bf2df 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -305,7 +305,6 @@ struct ucred {
+ 
+ extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
+ 
+-extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+ extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+ 			       int offset, int len);
+ extern int csum_partial_copy_fromiovecend(unsigned char *kdata, 
+@@ -314,7 +313,6 @@ extern int csum_partial_copy_fromiovecend(unsigned char *kdata,
+ 					  unsigned int len, __wsum *csump);
+ 
+ extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *address, int mode);
+-extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
+ extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+ 			     int offset, int len);
+ extern int move_addr_to_kernel(void __user *uaddr, int ulen, struct sockaddr_storage *kaddr);
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 629aaf5..c55ce24 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -35,4 +35,7 @@ static inline size_t iov_length(const struct iovec *iov, unsigned long nr_segs)
+ }
+ 
+ unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to);
++
++int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
++int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len);
+ #endif
+diff --git a/lib/Makefile b/lib/Makefile
+index e9c52e1..2377211 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -9,7 +9,7 @@ endif
+ 
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+-	 idr.o int_sqrt.o extable.o \
++	 idr.o int_sqrt.o extable.o iovec.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+diff --git a/lib/iovec.c b/lib/iovec.c
+new file mode 100644
+index 0000000..454baa8
+--- /dev/null
++++ b/lib/iovec.c
+@@ -0,0 +1,53 @@
++#include <linux/uaccess.h>
++#include <linux/export.h>
++#include <linux/uio.h>
++
++/*
++ *	Copy iovec to kernel. Returns -EFAULT on error.
++ *
++ *	Note: this modifies the original iovec.
++ */
++
++int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
++{
++	while (len > 0) {
++		if (iov->iov_len) {
++			int copy = min_t(unsigned int, len, iov->iov_len);
++			if (copy_from_user(kdata, iov->iov_base, copy))
++				return -EFAULT;
++			len -= copy;
++			kdata += copy;
++			iov->iov_base += copy;
++			iov->iov_len -= copy;
++		}
++		iov++;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(memcpy_fromiovec);
++
++/*
++ *	Copy kernel to iovec. Returns -EFAULT on error.
++ *
++ *	Note: this modifies the original iovec.
++ */
++
++int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len)
++{
++	while (len > 0) {
++		if (iov->iov_len) {
++			int copy = min_t(unsigned int, iov->iov_len, len);
++			if (copy_to_user(iov->iov_base, kdata, copy))
++				return -EFAULT;
++			kdata += copy;
++			len -= copy;
++			iov->iov_len -= copy;
++			iov->iov_base += copy;
++		}
++		iov++;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(memcpy_toiovec);
+diff --git a/net/core/iovec.c b/net/core/iovec.c
+index 7e7aeb0..de178e4 100644
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -75,31 +75,6 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
+ 
+ /*
+  *	Copy kernel to iovec. Returns -EFAULT on error.
+- *
+- *	Note: this modifies the original iovec.
+- */
+-
+-int memcpy_toiovec(struct iovec *iov, unsigned char *kdata, int len)
+-{
+-	while (len > 0) {
+-		if (iov->iov_len) {
+-			int copy = min_t(unsigned int, iov->iov_len, len);
+-			if (copy_to_user(iov->iov_base, kdata, copy))
+-				return -EFAULT;
+-			kdata += copy;
+-			len -= copy;
+-			iov->iov_len -= copy;
+-			iov->iov_base += copy;
+-		}
+-		iov++;
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(memcpy_toiovec);
+-
+-/*
+- *	Copy kernel to iovec. Returns -EFAULT on error.
+  */
+ 
+ int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+@@ -125,31 +100,6 @@ int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+ EXPORT_SYMBOL(memcpy_toiovecend);
+ 
+ /*
+- *	Copy iovec to kernel. Returns -EFAULT on error.
+- *
+- *	Note: this modifies the original iovec.
+- */
+-
+-int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
+-{
+-	while (len > 0) {
+-		if (iov->iov_len) {
+-			int copy = min_t(unsigned int, len, iov->iov_len);
+-			if (copy_from_user(kdata, iov->iov_base, copy))
+-				return -EFAULT;
+-			len -= copy;
+-			kdata += copy;
+-			iov->iov_base += copy;
+-			iov->iov_len -= copy;
+-		}
+-		iov++;
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(memcpy_fromiovec);
+-
+-/*
+  *	Copy iovec from kernel. Returns -EFAULT on error.
+  */
+ 
