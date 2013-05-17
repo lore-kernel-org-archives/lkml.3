@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3EQWN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:13:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54245 "EHLO
+	id S1758184Ab3EQWNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:13:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54241 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757121Ab3EQVhl (ORCPT
+	with ESMTP id S1757116Ab3EQVhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:41 -0400
+	Fri, 17 May 2013 17:37:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 061/102] net: use netdev_features_t in skb_needs_linearize()
-Date: Fri, 17 May 2013 14:36:16 -0700
-Message-Id: <20130517213250.795489575@linuxfoundation.org>
+Subject: [ 060/102] net_sched: act_ipt forward compat with xtables
+Date: Fri, 17 May 2013 14:36:15 -0700
+Message-Id: <20130517213250.699107251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -28,27 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Patrick McHardy <kaber@trash.net>
+From: Jamal Hadi Salim <jhs@mojatatu.com>
 
-[ Upstream commit 6708c9e5cc9bfc7c9a00ce9c0fdd0b1d4952b3d1 ]
+[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Deal with changes in newer xtables while maintaining backward
+compatibility. Thanks to Jan Engelhardt for suggestions.
+
+Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sched/act_ipt.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2458,7 +2458,7 @@ EXPORT_SYMBOL(netif_skb_features);
-  *	2. skb is fragmented and the device does not support SG.
+--- a/net/sched/act_ipt.c
++++ b/net/sched/act_ipt.c
+@@ -8,7 +8,7 @@
+  *		as published by the Free Software Foundation; either version
+  *		2 of the License, or (at your option) any later version.
+  *
+- * Copyright:	Jamal Hadi Salim (2002-4)
++ * Copyright:	Jamal Hadi Salim (2002-13)
   */
- static inline int skb_needs_linearize(struct sk_buff *skb,
--				      int features)
-+				      netdev_features_t features)
+ 
+ #include <linux/types.h>
+@@ -303,17 +303,44 @@ static struct tc_action_ops act_ipt_ops
+ 	.walk		=	tcf_generic_walker
+ };
+ 
+-MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
++static struct tc_action_ops act_xt_ops = {
++	.kind		=	"xt",
++	.hinfo		=	&ipt_hash_info,
++	.type		=	TCA_ACT_IPT,
++	.capab		=	TCA_CAP_NONE,
++	.owner		=	THIS_MODULE,
++	.act		=	tcf_ipt,
++	.dump		=	tcf_ipt_dump,
++	.cleanup	=	tcf_ipt_cleanup,
++	.lookup		=	tcf_hash_search,
++	.init		=	tcf_ipt_init,
++	.walk		=	tcf_generic_walker
++};
++
++MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
+ MODULE_DESCRIPTION("Iptables target actions");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("act_xt");
+ 
+ static int __init ipt_init_module(void)
  {
- 	return skb_is_nonlinear(skb) &&
- 			((skb_has_frag_list(skb) &&
+-	return tcf_register_action(&act_ipt_ops);
++	int ret1, ret2;
++	ret1 = tcf_register_action(&act_xt_ops);
++	if (ret1 < 0)
++		printk("Failed to load xt action\n");
++	ret2 = tcf_register_action(&act_ipt_ops);
++	if (ret2 < 0)
++		printk("Failed to load ipt action\n");
++
++	if (ret1 < 0 && ret2 < 0)
++		return ret1;
++	else
++		return 0;
+ }
+ 
+ static void __exit ipt_cleanup_module(void)
+ {
++	tcf_unregister_action(&act_xt_ops);
+ 	tcf_unregister_action(&act_ipt_ops);
+ }
+ 
 
 
