@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3EQHM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 03:12:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49613 "EHLO mx2.suse.de"
+	id S1755300Ab3EQHQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 03:16:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60769 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505Ab3EQHMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 03:12:45 -0400
-Date: Fri, 17 May 2013 09:12:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
- zone shrinking code
-Message-ID: <20130517071240.GC25158@dhcp22.suse.cz>
-References: <1368431172-6844-1-git-send-email-mhocko@suse.cz>
- <1368431172-6844-2-git-send-email-mhocko@suse.cz>
- <20130516221200.GF7171@mtj.dyndns.org>
+	id S1754466Ab3EQHQd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 03:16:33 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: "Stehle, Vincent" <v-stehle@ti.com>
+CC: =?iso-8859-1?Q?Vincent_Stehl=E9?= <vincent.stehle@laposte.net>,
+        "Tony Lindgren" <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ARM: OMAP5: select SCU
+Thread-Topic: [PATCH] ARM: OMAP5: select SCU
+Thread-Index: AQHOUMRJeb+OHGWzKEikdwH8wgrFopkGBlSAgAE/gICAABX5gIABnz9t
+Date: Fri, 17 May 2013 07:16:23 +0000
+Message-ID: <448912EABC71F84BBCADFD3C67C4BE527C6D42@DBDE04.ent.ti.com>
+References: <1368550638-2046-1-git-send-email-vincent.stehle@laposte.net>
+ <51938169.4060109@ti.com> <5194DAC5.9080203@ti.com>,<5194ED33.7050502@ti.com>
+In-Reply-To: <5194ED33.7050502@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.154]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516221200.GF7171@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-05-13 15:12:00, Tejun Heo wrote:
-> Sorry about the delay.  Just getting back to memcg.
-> 
-> On Mon, May 13, 2013 at 09:46:10AM +0200, Michal Hocko wrote:
-> ...
-> > during the first pass. Only groups which are over their soft limit or
-> > any of their parents up the hierarchy is over the limit are considered
-> 
-> ancestors?
+Sorry for top posting. Can you just add static inlines functions in header file and #ifdef it for OMAP5.
 
-Well, ancestors might or might not be part of the hierarchy, so while it
-is much shorter I consider the original more precise.
+Regards,
+Santosh
+________________________________________
+From: Stehle, Vincent
+Sent: Thursday, May 16, 2013 7:59 PM
+To: Shilimkar, Santosh
+Cc: Vincent Stehlé; Tony Lindgren; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: OMAP5: select SCU
 
-> > +static void shrink_zone(struct zone *zone, struct scan_control *sc)
-> > +{
-> > +	bool do_soft_reclaim = mem_cgroup_should_soft_reclaim(sc);
-> > +	unsigned long nr_scanned = sc->nr_scanned;
-> > +
-> > +	__shrink_zone(zone, sc, do_soft_reclaim);
-> > +
-> > +	/*
-> > +	 * No group is over the soft limit or those that are do not have
-> > +	 * pages in the zone we are reclaiming so we have to reclaim everybody
-> > +	 */
-> > +	if (do_soft_reclaim && (sc->nr_scanned == nr_scanned)) {
-> > +		__shrink_zone(zone, sc, false);
-> > +		return;
-> > +	}
-> > +}
-> 
-> Maybe the following is easier to follow?
-> 
-> 	if (mem_cgroup_should_soft_reclaim(sc)) {
-> 		__shrink_zone(zone, sc, true);
-> 		if (sc->nr_scanned == nr_scanned)
-> 			__shrink_zone(zone, sc, false);
-> 	} else {
-> 		__shrink_zone(zone, sc, false);
-> 	}
-> 
-> But it's a minor point, please feel free to ignore.
+So the exact commit breaking OMAP5 link for me is:
 
-I will stick with the original code as I have some plans to build on top
-of that.
+  883a106 ARM: default machine descriptor for multiplatform
 
->   Reviewed-by: Tejun Heo <tj@kernel.org>
+The breakage seems to be a side effect of not selecting ARCH_VEXPRESS
+any more, which causes HAVE_ARM_SCU to not be selected any more, too,
+when compiling only for OMAP5. IMHO this only reveals a deeper issue.
 
-Thank you!
+Probably the ideal fix would be to remove all references to the scu_
+functions for OMAP5, but those seem to exist in files and functions,
+common to OMAP4 and 5 (sleep44xx.S, omap-smp.c).
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+How would you deal with that, please?
 
--- 
-Michal Hocko
-SUSE Labs
+Best regards,
+
+V.
+
