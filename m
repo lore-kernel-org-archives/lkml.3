@@ -1,131 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3EQTx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 15:53:26 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59167 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330Ab3EQTxY (ORCPT
+	id S1756675Ab3EQULt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 16:11:49 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:36237 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab3EQULs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 15:53:24 -0400
-Message-ID: <519689F2.5070207@linux.vnet.ibm.com>
-Date: Sat, 18 May 2013 01:20:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 17 May 2013 16:11:48 -0400
 MIME-Version: 1.0
-To: Olivier Doucet <webmaster@ajeux.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: Performance issue since 3.2.6
-References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com> <18379918.sbmR7uiKVn@vostro.rjw.lan> <CAPPqfY2umN2Fab=APyt4=LM32x2av7nPruADX3dddTxdWG2Umg@mail.gmail.com> <2048745.M7CAe2g1gj@vostro.rjw.lan> <CAPPqfY2hrd54viFHKErWk_8uRLHP9WK54G0inJtyUFJKKunDOg@mail.gmail.com> <CAPPqfY3+e3tVQA_RKn0DhwModLienrgtFzsUrCCsUndbJfnHOg@mail.gmail.com> <CAPPqfY2ba5M27omZBwe0h26Eutyd+2KkLXht6uLN5VdjEKT_Ug@mail.gmail.com>
-In-Reply-To: <CAPPqfY2ba5M27omZBwe0h26Eutyd+2KkLXht6uLN5VdjEKT_Ug@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 17 May 2013 21:11:27 +0100
+X-Google-Sender-Auth: mJ0F8uX4PYZd0VolrYblfQi_5no
+Message-ID: <CACxGe6tVT9sDLgJwmKjjejYe2wnmYz4A5HaQThiOfyW3T8gU_Q@mail.gmail.com>
+Subject: [GIT PULL] DT changes for v3.10
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051719-0260-0000-0000-0000030478D1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 11:47 PM, Olivier Doucet wrote:
-> Hello,
-> 
-> This performance penalty is still present in kernel 3.9.2. And
-> CONFIG_PM cannot be deactivated anymore.
-> 
-> I was able to make a working 3.9.2 (meaning with no penalty)  with
-> following config and patch :
-> CONFIG_PM=y
-> CONFIG_PM_SLEEP=y
-> CONFIG_PM_SLEEP_SMP=y
-> CONFIG_CPU_IDLE=y
-> CONFIG_ACPI=y
-> CONFIG_ACPI_PROCESSOR=y
-> 
-> Patch : https://gist.github.com/odoucet/5600630
-> 
-> I know this patch is not perfect because it is just equivalent to
-> rollback commit f51d67a64f32cd81ea8b67ca964fb7cf7e783b2e ;
-> 
-> I really want this to be fixed in kernel, so I would be glad to test
-> any patch / config file you want.
->
+Hi Linus,
 
-I went through your previous mails and here is what I think:
-I think this is not a regression that needs to be fixed. Instead it
-occurs to me that you started depending on the _flaw_ introduced by
-commit e8db0be124 (PM QoS: Move and rename the implementation files).
+Here are a few DT bug fixes and documentation updates. Sorry this pull
+request came after -rc1. I hope it is still okay to pull in. All has
+been in linux-next well before the merge window.
 
-Your requirement is very simple: you don't want CPUs to go to deep
-idle states, since your benchmark is very performance critical.
+g.
 
-Commit e8db0be124 made the mistake of returning 0 in pm_qos_request()
-when CONFIG_PM was unset. And that has the effect of disabling deeper
-idle states, which is exactly what you wanted.
+The following changes since commit 31880c37c11e28cb81c70757e38392b42e695dc6:
 
-But, as noted by commit d020283d (PM / QoS: CPU C-state breakage with
-PM Qos change), this is quite a bit wrong, because it makes the system
-consume a *lot* of CPU power, because the CPUs never go to idle states
-and instead keep polling.
+  Linux 3.9-rc6 (2013-04-07 20:49:54 -0700)
 
-Now, you might ask why is it wrong to set the default value to 0
-(IOW, disable deep idle states) when CONFIG_PM is unset? Again, commit
-d020283d answers that indirectly - not every power-management
-configuration falls under CONFIG_PM, like CONFIG_CPU_IDLE,
-CONFIG_INTEL_IDLE etc. So we need a sane default for pm_qos_request()
-when CONFIG_PM is unset, to prevent the power usage from shooting
-through the roof and surprising the user.
+are available in the git repository at:
 
-You started your comparisons with 3.2.0 which had commit e8db0be124
-included. If you had tried any previous kernel, I'm pretty sure that
-you would have found "performance penalties" too.
+  git://git.secretlab.ca/git/linux tags/devicetree-for-linus
 
-So, to summarize my thoughts:
- - IMHO there is no regression here, you just depended on a bug included
-   in 3.2.0 (which made it behave like idle=poll with CONFIG_PM=n) and
-   started your comparisons from there. The later kernels (3.2.6+) got
-   that bug fixed which is why you saw "performance drops".
+for you to fetch changes up to 3132f623386e9ac87077bd839e726f7b940fbc94:
 
- - As much as we would like to do it, we can't set the value of
-   PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE to 0 when CONFIG_PM=n, because
-   CONFIG_PM doesn't encompass all power-management features (which is
-   a pity). Doing that would need a big overhaul of all the relevant
-   Kconfigs, which might or might not be worth the effort. (Because, who
-   says that CONFIG_PM=n kernels are supposed to eat power like crazy??)
+  Merge branch 'for-next' of git://sources.calxeda.com/kernel/linux
+into HEAD (2013-05-07 12:03:42 +0100)
 
-So here is my suggestion - use the interfaces provided by the kernel to
-fix your problem:
-   - you can give idle=poll in the kernel command line,
-   - OR you can echo 0 > /dev/cpu_dma_latency
+----------------------------------------------------------------
 
-Irrespective of your kernel configuration options (CONFIG_PM=y/n), the
-CPUs will not enter deep idle states, giving you the performance
-improvement that you are looking for.
+Device tree bug fixes and documentation updates for v3.10
 
-Regards,
-Srivatsa S. Bhat
+Nothing earth shattering here. A build failure fix, and fix for
+releasing nodes and some documenation updates.
 
-> 
-> 2013/2/12 Olivier Doucet <webmaster@ajeux.com>
->>
->> Hello,
->>
->> A quick update on my latest tests :
->> I was able to compile a working 3.7.1 kernel (by 'working', I mean
->> with no performance penalty). I'm sure 3.7.7 will be OK also (do you
->> want me to test latest RC of 3.8 ?)
->>
->> I had to disable CONFIG_ACPI_PROCESSOR to disable power management.
->> So now these two options are unset :
->> CONFIG_CPU_IDLE
->> CONFIG_ACPI_PROCESSOR
->>
->> I've posted the whole .config file here :
->> https://gist.github.com/odoucet/4773390
->>
->> I'll be glad to test any patch that may help reactivate PM on my
->> system (CPU Intel Xeon L5630)
->>
->> Olivier
+----------------------------------------------------------------
+Grant Likely (1):
+      Merge branch 'for-next' of
+git://sources.calxeda.com/kernel/linux into HEAD
 
+Rahul Sharma (1):
+      of/documentation: move video device bindings to a common place
+
+Rob Herring (1):
+      Merge tag 'tegra-for-3.10-dtc-cpp-chroot-std-headers' of
+git://git.kernel.org/.../swarren/linux-tegra into for-next
+
+Sergei Shtylyov (1):
+      <linux/of_platform.h>: fix compilation warnings with DT disabled
+
+Tang Yuantian (1):
+      of/base: release the node correctly in of_parse_phandle_with_args()
+
+Uwe Kleine-König (1):
+      Documentation/devicetree: make semantic of initrd-end more explicit
+
+ .../{drm/exynos/hdmi.txt => video/exynos_hdmi.txt} |  0
+ .../hdmiddc.txt => video/exynos_hdmiddc.txt}       |  0
+ .../hdmiphy.txt => video/exynos_hdmiphy.txt}       |  0
+ .../exynos/mixer.txt => video/exynos_mixer.txt}    |  0
+ Documentation/devicetree/usage-model.txt           |  8 +-
+ arch/arm/boot/dts/include/dt-bindings              |  1 +
+ drivers/of/base.c                                  |  4 +-
+ include/dt-bindings/gpio/gpio.h                    | 15 ++++
+ include/dt-bindings/interrupt-controller/arm-gic.h | 22 +++++
+ include/dt-bindings/interrupt-controller/irq.h     | 19 +++++
+ include/linux/of_platform.h                        |  5 +-
+ scripts/Makefile.lib                               | 17 ++--
+ scripts/basic/fixdep.c                             | 93 ++++++++++++++--------
+ 13 files changed, 135 insertions(+), 49 deletions(-)
+ rename Documentation/devicetree/bindings/{drm/exynos/hdmi.txt =>
+video/exynos_hdmi.txt} (100%)
+ rename Documentation/devicetree/bindings/{drm/exynos/hdmiddc.txt =>
+video/exynos_hdmiddc.txt} (100%)
+ rename Documentation/devicetree/bindings/{drm/exynos/hdmiphy.txt =>
+video/exynos_hdmiphy.txt} (100%)
+ rename Documentation/devicetree/bindings/{drm/exynos/mixer.txt =>
+video/exynos_mixer.txt} (100%)
+ create mode 120000 arch/arm/boot/dts/include/dt-bindings
+ create mode 100644 include/dt-bindings/gpio/gpio.h
+ create mode 100644 include/dt-bindings/interrupt-controller/arm-gic.h
+ create mode 100644 include/dt-bindings/interrupt-controller/irq.h
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
