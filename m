@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab3EQIbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:31:09 -0400
-Received: from sauhun.de ([89.238.76.85]:44123 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755110Ab3EQIbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:31:06 -0400
-Date: Fri, 17 May 2013 10:32:29 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Josef Ahmad <josef.ahmad@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
-        Stefan Roese <sr@denx.de>, Axel Lin <axel.lin@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
-Message-ID: <20130517083226.GE17056@katana>
-References: <53398.163.33.213.79.1366630241.squirrel@linux.intel.com>
- <20130422122808.GO1283@intel.com>
- <alpine.DEB.2.02.1304221508050.31571@localhost>
- <20130423163543.GB3228@the-dreams.de>
- <51465.163.33.213.85.1366739082.squirrel@linux.intel.com>
- <20130423182707.GA3649@the-dreams.de>
- <alpine.DEB.2.02.1304241110480.32505@localhost>
- <20130425174348.GA3612@the-dreams.de>
- <alpine.DEB.2.02.1305081433430.7163@localhost>
- <20130517082321.GA17056@katana>
+	id S1755239Ab3EQIcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:32:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46178 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab3EQIcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 04:32:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517082321.GA17056@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 17 May 2013 16:32:18 +0800
+Message-ID: <CAPgLHd8p=oOOvOsqSGFGp2DSjDg9g_manEpcNThK7Z7hirKztA@mail.gmail.com>
+Subject: [PATCH -next] UBI: fix error return code in ubi_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: dedekind1@gmail.com, dwmw2@infradead.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Applied to for-current, thanks!
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Added stable, too.
+Fix to return -ENOMEM in the kmem_cache_create() error handling
+case instead of 0, as done elsewhere in this function.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/mtd/ubi/build.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index 8ff08ec..a444d04 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -1243,8 +1243,10 @@ static int __init ubi_init(void)
+ 	ubi_wl_entry_slab = kmem_cache_create("ubi_wl_entry_slab",
+ 					      sizeof(struct ubi_wl_entry),
+ 					      0, 0, NULL);
+-	if (!ubi_wl_entry_slab)
++	if (!ubi_wl_entry_slab) {
++		err = -ENOMEM;
+ 		goto out_dev_unreg;
++	}
+ 
+ 	err = ubi_debugfs_init();
+ 	if (err)
+
