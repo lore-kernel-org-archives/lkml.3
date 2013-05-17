@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3EQWGd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:06:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46356 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757923Ab3EQWG1 (ORCPT
+	id S1757754Ab3EQVrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54508 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757706Ab3EQVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 18:06:27 -0400
-Message-ID: <5196A9DE.5080700@wwwdotorg.org>
-Date: Fri, 17 May 2013 16:06:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v4 3/8] ARM: tegra: update device trees for USB binding
- rework
-References: <1368713582-29038-1-git-send-email-vbyravarasu@nvidia.com> <1368713582-29038-4-git-send-email-vbyravarasu@nvidia.com> <51956574.5070206@wwwdotorg.org>
-In-Reply-To: <51956574.5070206@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 17 May 2013 17:47:39 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lachlan McIlroy <lmcilroy@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 15/50] ext4: limit group search loop for non-extent files
+Date: Fri, 17 May 2013 14:46:50 -0700
+Message-Id: <20130517213844.282187593@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
+References: <20130517213842.447809965@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 05:02 PM, Stephen Warren wrote:
-> On 05/16/2013 08:12 AM, Venu Byravarasu wrote:
->> This patch updates all Tegra board files so that they contain all the
->> properties required by the updated USB DT binding. Note that this patch
->> only adds the new properties and does not yet remove the old properties,
->> in order to maintain bisectability. The old properties will be removed
->> once the driver has been updated to assume the new bindings.
-> 
-> This series looks almost OK now. The one remaining issue is that in this
-> patch, the regulator-name properties don't match the schematics, and in
-> the Whistler patch below, both regulators you added have the same
-> regulator-name, which causes problems.
-> 
-> To fix this, when I apply this patch, I'm going to fold in the patch
-> I'll paste below.
-> 
-> Right now, I can't get Whistler to see the SD card. This is true even
-> without your patches. Once I've resolved that and tested Whistler,
-> assuming no more problems, I'll apply patches 1-3 to the Tegra tree, and
-> set up a branch that can be pulled into the USB tree so the rest of the
-> series can be applied there.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I've made Whistler boot by reverting a few commits entirely unrelated to
-USB or your patch series. I'll investigate those later, but for not your
-patches test out fine on Whistler. So, I'll apply patches 1-3 in the
-series and set up the pull request for the USB tree. Thanks.
+------------------
+
+From: Lachlan McIlroy <lmcilroy@redhat.com>
+
+commit e6155736ad76b2070652745f9e54cdea3f0d8567 upstream.
+
+In the case where we are allocating for a non-extent file,
+we must limit the groups we allocate from to those below
+2^32 blocks, and ext4_mb_regular_allocator() attempts to
+do this initially by putting a cap on ngroups for the
+subsequent search loop.
+
+However, the initial target group comes in from the
+allocation context (ac), and it may already be beyond
+the artificially limited ngroups.  In this case,
+the limit
+
+	if (group == ngroups)
+		group = 0;
+
+at the top of the loop is never true, and the loop will
+run away.
+
+Catch this case inside the loop and reset the search to
+start at group 0.
+
+[sandeen@redhat.com: add commit msg & comments]
+
+Signed-off-by: Lachlan McIlroy <lmcilroy@redhat.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/mballoc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1980,7 +1980,11 @@ repeat:
+ 		group = ac->ac_g_ex.fe_group;
+ 
+ 		for (i = 0; i < ngroups; group++, i++) {
+-			if (group == ngroups)
++			/*
++			 * Artificially restricted ngroups for non-extent
++			 * files makes group > ngroups possible on first loop.
++			 */
++			if (group >= ngroups)
+ 				group = 0;
+ 
+ 			/* This now checks without needing the buddy page */
+
+
