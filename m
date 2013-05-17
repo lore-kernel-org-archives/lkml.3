@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab3EQWWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:22:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54050 "EHLO
+	id S1758443Ab3EQWXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:23:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54059 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab3EQVhQ (ORCPT
+	with ESMTP id S1756885Ab3EQVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:16 -0400
+	Fri, 17 May 2013 17:37:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Jeff Layton <jlayton@redhat.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
         "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 025/102] nfsd: fix oops when legacy_recdir_name_error is passed a -ENOENT error
-Date: Fri, 17 May 2013 14:35:40 -0700
-Message-Id: <20130517213247.032426143@linuxfoundation.org>
+Subject: [ 024/102] nfsd4: dont allow owner override on 4.1 CLAIM_FH opens
+Date: Fri, 17 May 2013 14:35:39 -0700
+Message-Id: <20130517213246.933001307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,125 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 7255e716b1757dc10fa5e3a4d2eaab303ff9f7b6 upstream.
+commit 9f415eb25574db4b73a9a712a4438e41dc284922 upstream.
 
-Toralf reported the following oops to the linux-nfs mailing list:
+The Linux client is using CLAIM_FH to implement regular opens, not just
+recovery cases, so it depends on the server to check permissions
+correctly.
 
-    -----------------[snip]------------------
-    NFSD: unable to generate recoverydir name (-2).
-    NFSD: disabling legacy clientid tracking. Reboot recovery will not function correctly!
-    BUG: unable to handle kernel NULL pointer dereference at 000003c8
-    IP: [<f90a3d91>] nfsd4_client_tracking_exit+0x11/0x50 [nfsd]
-    *pdpt = 000000002ba33001 *pde = 0000000000000000
-    Oops: 0000 [#1] SMP
-    Modules linked in: loop nfsd auth_rpcgss ipt_MASQUERADE xt_owner xt_multiport ipt_REJECT xt_tcpudp xt_recent xt_conntrack nf_conntrack_ftp xt_limit xt_LOG iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack iptable_filter ip_tables x_tables af_packet pppoe pppox ppp_generic slhc bridge stp llc tun arc4 iwldvm mac80211 coretemp kvm_intel uvcvideo sdhci_pci sdhci mmc_core videobuf2_vmalloc videobuf2_memops usblp videobuf2_core i915 iwlwifi psmouse videodev cfg80211 kvm fbcon bitblit cfbfillrect acpi_cpufreq mperf evdev softcursor font cfbimgblt i2c_algo_bit cfbcopyarea intel_agp intel_gtt drm_kms_helper snd_hda_codec_conexant drm agpgart fb fbdev tpm_tis thinkpad_acpi tpm nvram e1000e rfkill thermal ptp wmi pps_core tpm_bios 8250_pci processor 8250 ac snd_hda_intel snd_hda_codec snd_pcm battery video i2c_i801 snd_page_alloc snd_timer button serial_core i2c_core snd soundcore thermal_sys hwmon aesni_intel ablk_helper cryp
-td lrw aes_i586 xts gf128mul cbc fuse nfs lockd sunrpc dm_crypt dm_mod hid_monterey hid_microsoft hid_logitech hid_ezkey hid_cypress hid_chicony hid_cherry hid_belkin hid_apple hid_a4tech hid_generic usbhid hid sr_mod cdrom sg [last unloaded: microcode]
-    Pid: 6374, comm: nfsd Not tainted 3.9.1 #6 LENOVO 4180F65/4180F65
-    EIP: 0060:[<f90a3d91>] EFLAGS: 00010202 CPU: 0
-    EIP is at nfsd4_client_tracking_exit+0x11/0x50 [nfsd]
-    EAX: 00000000 EBX: fffffffe ECX: 00000007 EDX: 00000007
-    ESI: eb9dcb00 EDI: eb2991c0 EBP: eb2bde38 ESP: eb2bde34
-    DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-    CR0: 80050033 CR2: 000003c8 CR3: 2ba80000 CR4: 000407f0
-    DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-    DR6: ffff0ff0 DR7: 00000400
-    Process nfsd (pid: 6374, ti=eb2bc000 task=eb2711c0 task.ti=eb2bc000)
-    Stack:
-    fffffffe eb2bde4c f90a3e0c f90a7754 fffffffe eb0a9c00 eb2bdea0 f90a41ed
-    eb2991c0 1b270000 eb2991c0 eb2bde7c f9099ce9 eb2bde98 0129a020 eb29a020
-    eb2bdecc eb2991c0 eb2bdea8 f9099da5 00000000 eb9dcb00 00000001 67822f08
-    Call Trace:
-    [<f90a3e0c>] legacy_recdir_name_error+0x3c/0x40 [nfsd]
-    [<f90a41ed>] nfsd4_create_clid_dir+0x15d/0x1c0 [nfsd]
-    [<f9099ce9>] ? nfsd4_lookup_stateid+0x99/0xd0 [nfsd]
-    [<f9099da5>] ? nfs4_preprocess_seqid_op+0x85/0x100 [nfsd]
-    [<f90a4287>] nfsd4_client_record_create+0x37/0x50 [nfsd]
-    [<f909d6ce>] nfsd4_open_confirm+0xfe/0x130 [nfsd]
-    [<f90980b1>] ? nfsd4_encode_operation+0x61/0x90 [nfsd]
-    [<f909d5d0>] ? nfsd4_free_stateid+0xc0/0xc0 [nfsd]
-    [<f908fd0b>] nfsd4_proc_compound+0x41b/0x530 [nfsd]
-    [<f9081b7b>] nfsd_dispatch+0x8b/0x1a0 [nfsd]
-    [<f857b85d>] svc_process+0x3dd/0x640 [sunrpc]
-    [<f908165d>] nfsd+0xad/0x110 [nfsd]
-    [<f90815b0>] ? nfsd_destroy+0x70/0x70 [nfsd]
-    [<c1054824>] kthread+0x94/0xa0
-    [<c1486937>] ret_from_kernel_thread+0x1b/0x28
-    [<c1054790>] ? flush_kthread_work+0xd0/0xd0
-    Code: 86 b0 00 00 00 90 c5 0a f9 c7 04 24 70 76 0a f9 e8 74 a9 3d c8 eb ba 8d 76 00 55 89 e5 53 66 66 66 66 90 8b 15 68 c7 0a f9 85 d2 <8b> 88 c8 03 00 00 74 2c 3b 11 77 28 8b 5c 91 08 85 db 74 22 8b
-    EIP: [<f90a3d91>] nfsd4_client_tracking_exit+0x11/0x50 [nfsd] SS:ESP 0068:eb2bde34
-    CR2: 00000000000003c8
-    ---[ end trace 09e54015d145c9c6 ]---
+Therefore the owner override, which may make sense in the delegation
+recovery case, isn't right in the CLAIM_FH case.
 
-The problem appears to be a regression that was introduced in commit
-9a9c6478 "nfsd: make NFSv4 recovery client tracking options per net".
-Prior to that commit, it was safe to pass a NULL net pointer to
-nfsd4_client_tracking_exit in the legacy recdir case, and
-legacy_recdir_name_error did so. After that comit, the net pointer must
-be valid.
+Symptoms: on a client with 49f9a0fafd844c32f2abada047c0b9a5ba0d6255
+"NFSv4.1: Enable open-by-filehandle", Bryan noticed this:
 
-This patch just fixes legacy_recdir_name_error to pass in a valid net
-pointer to that function.
+	touch test.txt
+	chmod 000 test.txt
+	echo test > test.txt
 
-Reported-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+succeeding.
+
+Reported-by: Bryan Schumaker <bjschuma@netapp.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4recover.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ fs/nfsd/nfs4proc.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -146,7 +146,7 @@ out_no_tfm:
-  * then disable recovery tracking.
-  */
- static void
--legacy_recdir_name_error(int error)
-+legacy_recdir_name_error(struct nfs4_client *clp, int error)
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -271,6 +271,7 @@ static __be32
+ do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
  {
- 	printk(KERN_ERR "NFSD: unable to generate recoverydir "
- 			"name (%d).\n", error);
-@@ -159,9 +159,7 @@ legacy_recdir_name_error(int error)
- 	if (error == -ENOENT) {
- 		printk(KERN_ERR "NFSD: disabling legacy clientid tracking. "
- 			"Reboot recovery will not function correctly!\n");
--
--		/* the argument is ignored by the legacy exit function */
--		nfsd4_client_tracking_exit(NULL);
-+		nfsd4_client_tracking_exit(clp->net);
- 	}
+ 	__be32 status;
++	int accmode = 0;
+ 
+ 	/* We don't know the target directory, and therefore can not
+ 	* set the change info
+@@ -284,9 +285,19 @@ do_open_fhandle(struct svc_rqst *rqstp,
+ 
+ 	open->op_truncate = (open->op_iattr.ia_valid & ATTR_SIZE) &&
+ 		(open->op_iattr.ia_size == 0);
++	/*
++	 * In the delegation case, the client is telling us about an
++	 * open that it *already* performed locally, some time ago.  We
++	 * should let it succeed now if possible.
++	 *
++	 * In the case of a CLAIM_FH open, on the other hand, the client
++	 * may be counting on us to enforce permissions (the Linux 4.1
++	 * client uses this for normal opens, for example).
++	 */
++	if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEG_CUR_FH)
++		accmode = NFSD_MAY_OWNER_OVERRIDE;
+ 
+-	status = do_open_permission(rqstp, current_fh, open,
+-				    NFSD_MAY_OWNER_OVERRIDE);
++	status = do_open_permission(rqstp, current_fh, open, accmode);
+ 
+ 	return status;
  }
- 
-@@ -184,7 +182,7 @@ nfsd4_create_clid_dir(struct nfs4_client
- 
- 	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
- 	if (status)
--		return legacy_recdir_name_error(status);
-+		return legacy_recdir_name_error(clp, status);
- 
- 	status = nfs4_save_creds(&original_cred);
- 	if (status < 0)
-@@ -341,7 +339,7 @@ nfsd4_remove_clid_dir(struct nfs4_client
- 
- 	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
- 	if (status)
--		return legacy_recdir_name_error(status);
-+		return legacy_recdir_name_error(clp, status);
- 
- 	status = mnt_want_write_file(nn->rec_file);
- 	if (status)
-@@ -601,7 +599,7 @@ nfsd4_check_legacy_client(struct nfs4_cl
- 
- 	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
- 	if (status) {
--		legacy_recdir_name_error(status);
-+		legacy_recdir_name_error(clp, status);
- 		return status;
- 	}
- 
 
 
