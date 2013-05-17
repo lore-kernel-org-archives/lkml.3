@@ -1,58 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3EQVxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:53:05 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:35539 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817Ab3EQVwu (ORCPT
+	id S1757345Ab3EQVxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:53:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54788 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932527Ab3EQVug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:52:50 -0400
-Date: Fri, 17 May 2013 14:52:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Regmap and register ranges
-Message-ID: <20130517215246.GA24730@core.coreip.homeip.net>
-References: <1657392.sx3qBqNYrh@dtor-d630.eng.vmware.com>
- <20130517205025.GQ1627@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517205025.GQ1627@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 May 2013 17:50:36 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/33] macvlan: fix passthru mode race between dev removal and rx path
+Date: Fri, 17 May 2013 14:50:06 -0700
+Message-Id: <20130517214919.202128404@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
+References: <20130517214916.821259930@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 09:50:25PM +0100, Mark Brown wrote:
-> On Fri, May 17, 2013 at 09:24:30AM -0700, Dmitry Torokhov wrote:
-> 
-> > I am looking at regmap and I wonder if I am missing something with the
-> > way it checks if a window crosses another range boundary or if a
-> > selector is in some other window as it seem to be always tripping on
-> > itself. Should we skip the current range as we iterate through them
-> > and do sanity checks? 
-> 
-> > The setup: a device with 0x0000 - 0xffff potential register range, paged
-> > in chunks of 256 registers with page selector register repeated at 0xff.
-> 
-> The general idea is that the pages should be mapped in to virtual
-> addresses rather than real ones so in your example you might add a
-> prefix so all the registers are numbered 0x10000 to 0x1ffff.  The
-> physical registers and the ones inside the paged range aren't supposed
-> to overlap.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-The issue I have with doing an arbitrary offset is that then data
-exposed in debugfs does not match the data from device's specification.
+------------------
 
-> 
-> We should probably either do sanity checks for this at init time or come
-> up with a sensible way to support this in case someone does decide to do
-> it, though this is the first time anyone noticed.
 
-Does this mean you'll be open to patches allowing this scenario?
+From: Jiri Pirko <jiri@resnulli.us>
 
-Thanks.
+[ Upstream commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c, note
+  that I had to add list_first_or_null_rcu to rculist.h in order
+  to accomodate this fix. ]
 
--- 
-Dmitry
+Currently, if macvlan in passthru mode is created and data are rxed and
+you remove this device, following panic happens:
+
+NULL pointer dereference at 0000000000000198
+IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
+
+I'm using following script to trigger this:
+<script>
+while [ 1 ]
+do
+	ip link add link e1 name macvtap0 type macvtap mode passthru
+	ip link set e1 up
+	ip link set macvtap0 up
+	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
+	cat /dev/tap$IFINDEX  >/dev/null &
+	ip link del dev macvtap0
+done
+</script>
+
+I run this script while "ping -f" is running on another machine to send
+packets to e1 rx.
+
+Reason of the panic is that list_first_entry() is blindly called in
+macvlan_handle_frame() even if the list was empty. vlan is set to
+incorrect pointer which leads to the crash.
+
+I'm fixing this by protecting port->vlans list by rcu and by preventing
+from getting incorrect pointer in case the list is empty.
+
+Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/macvlan.c   |    7 ++++---
+ include/linux/rculist.h |   17 +++++++++++++++++
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -193,7 +193,8 @@ static rx_handler_result_t macvlan_handl
+ 	}
+ 
+ 	if (port->passthru)
+-		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
++		vlan = list_first_or_null_rcu(&port->vlans,
++					      struct macvlan_dev, list);
+ 	else
+ 		vlan = macvlan_hash_lookup(port, eth->h_dest);
+ 	if (vlan == NULL)
+@@ -687,7 +688,7 @@ int macvlan_common_newlink(struct net *s
+ 	if (err < 0)
+ 		goto destroy_port;
+ 
+-	list_add_tail(&vlan->list, &port->vlans);
++	list_add_tail_rcu(&vlan->list, &port->vlans);
+ 	netif_stacked_transfer_operstate(lowerdev, dev);
+ 
+ 	return 0;
+@@ -713,7 +714,7 @@ void macvlan_dellink(struct net_device *
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+ 
+-	list_del(&vlan->list);
++	list_del_rcu(&vlan->list);
+ 	unregister_netdevice_queue(dev, head);
+ }
+ EXPORT_SYMBOL_GPL(macvlan_dellink);
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -242,6 +242,23 @@ static inline void list_splice_init_rcu(
+ 	list_entry_rcu((ptr)->next, type, member)
+ 
+ /**
++ * list_first_or_null_rcu - get the first element from a list
++ * @ptr:        the list head to take the element from.
++ * @type:       the type of the struct this is embedded in.
++ * @member:     the name of the list_struct within the struct.
++ *
++ * Note that if the list is empty, it returns NULL.
++ *
++ * This primitive may safely run concurrently with the _rcu list-mutation
++ * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
++ */
++#define list_first_or_null_rcu(ptr, type, member) \
++	({struct list_head *__ptr = (ptr); \
++	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
++	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
++	})
++
++/**
+  * list_for_each_entry_rcu	-	iterate over rcu list of given type
+  * @pos:	the type * to use as a loop cursor.
+  * @head:	the head for your list.
+
+
