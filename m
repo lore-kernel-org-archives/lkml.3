@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab3EQWBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:01:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54600 "EHLO
+	id S1758215Ab3EQWBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:01:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3EQVrx (ORCPT
+	with ESMTP id S932344Ab3EQVry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:53 -0400
+	Fri, 17 May 2013 17:47:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 36/50] macvlan: fix passthru mode race between dev removal and rx path
-Date: Fri, 17 May 2013 14:47:11 -0700
-Message-Id: <20130517213846.502463989@linuxfoundation.org>
+Subject: [ 37/50] ipv6: do not clear pinet6 field
+Date: Fri, 17 May 2013 14:47:12 -0700
+Message-Id: <20130517213846.608975695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -28,107 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c, note
-  that I had to add list_first_or_null_rcu to rculist.h in order
-  to accomodate this fix. ]
+[ Upstream commit f77d602124d865c38705df7fa25c03de9c284ad2 ]
 
-Currently, if macvlan in passthru mode is created and data are rxed and
-you remove this device, following panic happens:
+We have seen multiple NULL dereferences in __inet6_lookup_established()
 
-NULL pointer dereference at 0000000000000198
-IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
+After analysis, I found that inet6_sk() could be NULL while the
+check for sk_family == AF_INET6 was true.
 
-I'm using following script to trigger this:
-<script>
-while [ 1 ]
-do
-	ip link add link e1 name macvtap0 type macvtap mode passthru
-	ip link set e1 up
-	ip link set macvtap0 up
-	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
-	cat /dev/tap$IFINDEX  >/dev/null &
-	ip link del dev macvtap0
-done
-</script>
+Bug was added in linux-2.6.29 when RCU lookups were introduced in UDP
+and TCP stacks.
 
-I run this script while "ping -f" is running on another machine to send
-packets to e1 rx.
+Once an IPv6 socket, using SLAB_DESTROY_BY_RCU is inserted in a hash
+table, we no longer can clear pinet6 field.
 
-Reason of the panic is that list_first_entry() is blindly called in
-macvlan_handle_frame() even if the list was empty. vlan is set to
-incorrect pointer which leads to the crash.
+This patch extends logic used in commit fcbdf09d9652c891
+("net: fix nulls list corruptions in sk_prot_alloc")
 
-I'm fixing this by protecting port->vlans list by rcu and by preventing
-from getting incorrect pointer in case the list is empty.
+TCP/UDP/UDPLite IPv6 protocols provide their own .clear_sk() method
+to make sure we do not clear pinet6 field.
 
-Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
+At socket clone phase, we do not really care, as cloning the parent (non
+NULL) pinet6 is not adding a fatal race.
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c   |    7 ++++---
- include/linux/rculist.h |   17 +++++++++++++++++
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ include/net/sock.h  |   12 ++++++++++++
+ net/core/sock.c     |   12 ------------
+ net/ipv6/tcp_ipv6.c |   12 ++++++++++++
+ net/ipv6/udp.c      |   13 ++++++++++++-
+ net/ipv6/udp_impl.h |    2 ++
+ net/ipv6/udplite.c  |    2 +-
+ 6 files changed, 39 insertions(+), 14 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -205,7 +205,8 @@ static rx_handler_result_t macvlan_handl
- 	}
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -793,6 +793,18 @@ struct inet_hashinfo;
+ struct raw_hashinfo;
+ struct module;
  
- 	if (port->passthru)
--		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
-+		vlan = list_first_or_null_rcu(&port->vlans,
-+					      struct macvlan_dev, list);
- 	else
- 		vlan = macvlan_hash_lookup(port, eth->h_dest);
- 	if (vlan == NULL)
-@@ -724,7 +725,7 @@ int macvlan_common_newlink(struct net *s
- 	if (err < 0)
- 		goto destroy_port;
- 
--	list_add_tail(&vlan->list, &port->vlans);
-+	list_add_tail_rcu(&vlan->list, &port->vlans);
- 	netif_stacked_transfer_operstate(lowerdev, dev);
- 
- 	return 0;
-@@ -750,7 +751,7 @@ void macvlan_dellink(struct net_device *
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 
--	list_del(&vlan->list);
-+	list_del_rcu(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
- }
- EXPORT_SYMBOL_GPL(macvlan_dellink);
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -242,6 +242,23 @@ static inline void list_splice_init_rcu(
- 	list_entry_rcu((ptr)->next, type, member)
- 
- /**
-+ * list_first_or_null_rcu - get the first element from a list
-+ * @ptr:        the list head to take the element from.
-+ * @type:       the type of the struct this is embedded in.
-+ * @member:     the name of the list_struct within the struct.
-+ *
-+ * Note that if the list is empty, it returns NULL.
-+ *
-+ * This primitive may safely run concurrently with the _rcu list-mutation
-+ * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
++/*
++ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
++ * un-modified. Special care is taken when initializing object to zero.
 + */
-+#define list_first_or_null_rcu(ptr, type, member) \
-+	({struct list_head *__ptr = (ptr); \
-+	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
-+	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	})
++static inline void sk_prot_clear_nulls(struct sock *sk, int size)
++{
++	if (offsetof(struct sock, sk_node.next) != 0)
++		memset(sk, 0, offsetof(struct sock, sk_node.next));
++	memset(&sk->sk_node.pprev, 0,
++	       size - offsetof(struct sock, sk_node.pprev));
++}
 +
-+/**
-  * list_for_each_entry_rcu	-	iterate over rcu list of given type
-  * @pos:	the type * to use as a loop cursor.
-  * @head:	the head for your list.
+ /* Networking protocol blocks we attach to sockets.
+  * socket layer -> transport layer interface
+  * transport -> network interface is defined by struct inet_proto
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1093,18 +1093,6 @@ static void sock_copy(struct sock *nsk,
+ #endif
+ }
+ 
+-/*
+- * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
+- * un-modified. Special care is taken when initializing object to zero.
+- */
+-static inline void sk_prot_clear_nulls(struct sock *sk, int size)
+-{
+-	if (offsetof(struct sock, sk_node.next) != 0)
+-		memset(sk, 0, offsetof(struct sock, sk_node.next));
+-	memset(&sk->sk_node.pprev, 0,
+-	       size - offsetof(struct sock, sk_node.pprev));
+-}
+-
+ void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
+ {
+ 	unsigned long nulls1, nulls2;
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -2079,6 +2079,17 @@ void tcp6_proc_exit(struct net *net)
+ }
+ #endif
+ 
++static void tcp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ struct proto tcpv6_prot = {
+ 	.name			= "TCPv6",
+ 	.owner			= THIS_MODULE,
+@@ -2120,6 +2131,7 @@ struct proto tcpv6_prot = {
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ 	.proto_cgroup		= tcp_proto_cgroup,
+ #endif
++	.clear_sk		= tcp_v6_clear_sk,
+ };
+ 
+ static const struct inet6_protocol tcpv6_protocol = {
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -1457,6 +1457,17 @@ void udp6_proc_exit(struct net *net) {
+ }
+ #endif /* CONFIG_PROC_FS */
+ 
++void udp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_portaddr_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ /* ------------------------------------------------------------------------ */
+ 
+ struct proto udpv6_prot = {
+@@ -1487,7 +1498,7 @@ struct proto udpv6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udpv6_protosw = {
+--- a/net/ipv6/udp_impl.h
++++ b/net/ipv6/udp_impl.h
+@@ -31,6 +31,8 @@ extern int	udpv6_recvmsg(struct kiocb *i
+ extern int	udpv6_queue_rcv_skb(struct sock * sk, struct sk_buff *skb);
+ extern void	udpv6_destroy_sock(struct sock *sk);
+ 
++extern void udp_v6_clear_sk(struct sock *sk, int size);
++
+ #ifdef CONFIG_PROC_FS
+ extern int	udp6_seq_show(struct seq_file *seq, void *v);
+ #endif
+--- a/net/ipv6/udplite.c
++++ b/net/ipv6/udplite.c
+@@ -56,7 +56,7 @@ struct proto udplitev6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udplite6_protosw = {
 
 
