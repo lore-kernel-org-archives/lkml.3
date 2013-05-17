@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab3EQI2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:28:12 -0400
-Received: from sauhun.de ([89.238.76.85]:59206 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab3EQI2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:28:10 -0400
-Date: Fri, 17 May 2013 10:29:28 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH v7] i2c-designware: make SDA hold time configurable
-Message-ID: <20130517082925.GB17056@katana>
-References: <20130327084158.GB11010@ab42.lan>
- <1364373760-12469-1-git-send-email-christian.ruppert@abilis.com>
- <20130514110745.GA10906@intel.com>
+	id S1754754Ab3EQI2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:28:40 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:50338 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab3EQI2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 04:28:38 -0400
+Message-ID: <5195EA34.7000409@prisktech.co.nz>
+Date: Fri, 17 May 2013 20:28:36 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130514110745.GA10906@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bergmann, Arnd" <arnd@arndb.de>, "Johansson, Olof" <olof@lixom.net>
+Subject: Re: [PATCH] ARM: vt8500: Add missing NULL terminator in dt_compat
+References: <1368776657-23035-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1368776657-23035-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 02:07:45PM +0300, Mika Westerberg wrote:
-> On Tue, Apr 09, 2013 at 12:59:54PM +0200, Christian Ruppert wrote:
-> > This patch makes the SDA hold time configurable through device tree.
-> > 
-> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> 
-> Hi Wolfram,
-> 
-> What happened to this patch? I don't see it merged for 3.10.
-> 
-> The reason I'm asking is that I would like to add ACPI support for the SDA
-> hold time parameter analogous to the DT version.
+On 17/05/13 19:44, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> When I tried booting a stih415 Dual core A9 with multi_v7_defconfig, it
+> failed to boot. The issues seems to be changing by enabling or disabling
+> VT8550 platform. Having a quick look at dt_compat list, it seems to miss
+> a NULL terminator, which means of_flat_dt_match will compat check will
+> cross the boundary of dt_compat and fault at some point , which is what
+> was happening in my case.
+>
+> Without this patch if we try to boot multi_v7_defconfig you might notice
+> that some of the platforms might fault if they fall after vt8500 in
+> machine-desc list. Other platforms which fall before vt8500 in mdesc list
+> will not fault.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>   arch/arm/mach-vt8500/vt8500.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+> index 1dd281e..f5c33df 100644
+> --- a/arch/arm/mach-vt8500/vt8500.c
+> +++ b/arch/arm/mach-vt8500/vt8500.c
+> @@ -173,6 +173,7 @@ static const char * const vt8500_dt_compat[] = {
+>   	"wm,wm8505",
+>   	"wm,wm8750",
+>   	"wm,wm8850",
+> +	NULL
+>   };
+>   
+>   DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
+My bad. Thanks for the fix.
 
-New bindings are complicated. I need to check if there is an
-existing/similar one, check if it is generic enough for drivers still to
-come, etc. I didn't have the time to do this for 3.10, so it is
-3.11 material.
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
+
+Arnd, Olof: Can you apply this directly please.
+
+Regards
+Tony Prisk
