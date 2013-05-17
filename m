@@ -1,47 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab3EQLR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 07:17:56 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:46380 "EHLO
+	id S1755635Ab3EQLTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 07:19:10 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:48876 "EHLO
 	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab3EQLRz (ORCPT
+	with ESMTP id S1753735Ab3EQLTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 07:17:55 -0400
+	Fri, 17 May 2013 07:19:08 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/4] console: Disable VGA text console support on cris
-Date: Fri, 17 May 2013 13:17:43 +0200
-Message-Id: <1368789465-3761-2-git-send-email-geert@linux-m68k.org>
+To: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/3] h8300: Switch h8300 to drivers/Kconfig
+Date: Fri, 17 May 2013 13:19:00 +0200
+Message-Id: <1368789541-3869-2-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1368789465-3761-1-git-send-email-geert@linux-m68k.org>
-References: <1368789465-3761-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1368789541-3869-1-git-send-email-geert@linux-m68k.org>
+References: <1368789541-3869-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Convert the last remaining architecture to drivers/Kconfig.
+
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/video/console/Kconfig |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ arch/h8300/Kconfig |  118 +---------------------------------------------------
+ 1 files changed, 1 insertions(+), 117 deletions(-)
 
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index baf27dc..8af6ad3 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -6,7 +6,9 @@ menu "Console display driver support"
+diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
+index 303e4f9..3d6759e 100644
+--- a/arch/h8300/Kconfig
++++ b/arch/h8300/Kconfig
+@@ -94,126 +94,10 @@ endmenu
  
- config VGA_CONSOLE
- 	bool "VGA text console" if EXPERT || !X86
--	depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
-+	depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && \
-+		!SUPERH && !BLACKFIN && !AVR32 && !MN10300 && !CRIS && \
-+		(!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
- 	default y
- 	help
- 	  Saying Y here will allow you to use Linux in text mode through a
+ source "net/Kconfig"
+ 
+-source "drivers/base/Kconfig"
+-
+-source "drivers/mtd/Kconfig"
+-
+-source "drivers/block/Kconfig"
+-
+-source "drivers/ide/Kconfig"
++source "drivers/Kconfig"
+ 
+ source "arch/h8300/Kconfig.ide"
+ 
+-source "drivers/net/Kconfig"
+-
+-#
+-# input - input/joystick depends on it. As does USB.
+-#
+-source "drivers/input/Kconfig"
+-
+-menu "Character devices"
+-
+-config VT
+-	bool "Virtual terminal"
+-	---help---
+-	  If you say Y here, you will get support for terminal devices with
+-	  display and keyboard devices. These are called "virtual" because you
+-	  can run several virtual terminals (also called virtual consoles) on
+-	  one physical terminal. This is rather useful, for example one
+-	  virtual terminal can collect system messages and warnings, another
+-	  one can be used for a text-mode user session, and a third could run
+-	  an X session, all in parallel. Switching between virtual terminals
+-	  is done with certain key combinations, usually Alt-<function key>.
+-
+-	  The setterm command ("man setterm") can be used to change the
+-	  properties (such as colors or beeping) of a virtual terminal. The
+-	  man page console_codes(4) ("man console_codes") contains the special
+-	  character sequences that can be used to change those properties
+-	  directly. The fonts used on virtual terminals can be changed with
+-	  the setfont ("man setfont") command and the key bindings are defined
+-	  with the loadkeys ("man loadkeys") command.
+-
+-	  You need at least one virtual terminal device in order to make use
+-	  of your keyboard and monitor. Therefore, only people configuring an
+-	  embedded system would want to say N here in order to save some
+-	  memory; the only way to log into such a system is then via a serial
+-	  or network connection.
+-
+-	  If unsure, say Y, or else you won't be able to do much with your new
+-	  shiny Linux system :-)
+-
+-config VT_CONSOLE
+-	bool "Support for console on virtual terminal"
+-	depends on VT
+-	---help---
+-	  The system console is the device which receives all kernel messages
+-	  and warnings and which allows logins in single user mode. If you
+-	  answer Y here, a virtual terminal (the device used to interact with
+-	  a physical terminal) can be used as system console. This is the most
+-	  common mode of operations, so you should say Y here unless you want
+-	  the kernel messages be output only to a serial port (in which case
+-	  you should say Y to "Console on serial port", below).
+-
+-	  If you do say Y here, by default the currently visible virtual
+-	  terminal (/dev/tty0) will be used as system console. You can change
+-	  that with a kernel command line option such as "console=tty3" which
+-	  would use the third virtual terminal as system console. (Try "man
+-	  bootparam" or see the documentation of your boot loader (lilo or
+-	  loadlin) about how to pass options to the kernel at boot time.)
+-
+-	  If unsure, say Y.
+-
+-config HW_CONSOLE
+-	bool
+-	depends on VT
+-	default y
+-
+-comment "Unix98 PTY support"
+-
+-config UNIX98_PTYS
+-	bool "Unix98 PTY support"
+-	---help---
+-	  A pseudo terminal (PTY) is a software device consisting of two
+-	  halves: a master and a slave. The slave device behaves identical to
+-	  a physical terminal; the master device is used by a process to
+-	  read data from and write data to the slave, thereby emulating a
+-	  terminal. Typical programs for the master side are telnet servers
+-	  and xterms.
+-
+-	  Linux has traditionally used the BSD-like names /dev/ptyxx for
+-	  masters and /dev/ttyxx for slaves of pseudo terminals. This scheme
+-	  has a number of problems. The GNU C library glibc 2.1 and later,
+-	  however, supports the Unix98 naming standard: in order to acquire a
+-	  pseudo terminal, a process opens /dev/ptmx; the number of the pseudo
+-	  terminal is then made available to the process and the pseudo
+-	  terminal slave can be accessed as /dev/pts/<number>. What was
+-	  traditionally /dev/ttyp2 will then be /dev/pts/2, for example.
+-
+-	  The entries in /dev/pts/ are created on the fly by a virtual
+-	  file system; therefore, if you say Y here you should say Y to
+-	  "/dev/pts file system for Unix98 PTYs" as well.
+-
+-	  If you want to say Y here, you need to have the C library glibc 2.1
+-	  or later (equal to libc-6.1, check with "ls -l /lib/libc.so.*").
+-	  Read the instructions in <file:Documentation/Changes> pertaining to
+-	  pseudo terminals. It's safe to say N.
+-
+-source "drivers/char/pcmcia/Kconfig"
+-
+-source "drivers/tty/serial/Kconfig"
+-
+-source "drivers/i2c/Kconfig"
+-
+-source "drivers/hwmon/Kconfig"
+-
+-source "drivers/usb/Kconfig"
+-
+-source "drivers/uwb/Kconfig"
+-
+-endmenu
+-
+-source "drivers/staging/Kconfig"
+-
+ source "fs/Kconfig"
+ 
+ source "arch/h8300/Kconfig.debug"
 -- 
 1.7.0.4
 
