@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab3EQWDY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:03:24 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:49008 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757906Ab3EQWDT (ORCPT
+	id S1757424Ab3EQWEA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:04:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54573 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293Ab3EQVrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 18:03:19 -0400
-Message-ID: <1368828197.3301.112.camel@edumazet-glaptop>
-Subject: Re: [PATCH net-next] net: netdev_pick_tx: use get_xps_q if xps map
- is set
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: govind <govindarajulu90@gmail.com>
-Cc: davem@davemloft.net, xiyou.wangcong@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 17 May 2013 15:03:17 -0700
-In-Reply-To: <51968A01.7070105@gmail.com>
-References: <1368780528-15209-1-git-send-email-govindarajulu90@gmail.com>
-	 <1368797733.3301.84.camel@edumazet-glaptop> <51968A01.7070105@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 17 May 2013 17:47:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 30/50] net: vlan,ethtool: netdev_features_t is more than 32 bit
+Date: Fri, 17 May 2013 14:47:05 -0700
+Message-Id: <20130517213845.864163043@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
+References: <20130517213842.447809965@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-05-18 at 01:20 +0530, govind wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> I see. In ixgbe_select_queue we use __netdev_pick_tx only if packet is not
-> FCOE & FIP.
-> 
-> If you see
-> bnx2x_select_queue in drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c, line 1832
-> and mlx4_en_select_queue in drivers/net/ethernet/mellanox/mlx4/en_tx.c, line 547.
-> we cannot have xps working with these drivers.
-> 
-> This needs to be fixed by replacing __skb_tx_hash with __netdev_pick_tx. Am i 
-> correct?
+------------------
 
-Yes, this seems better.
+
+From: Bjørn Mork <bjorn@mork.no>
+
+[ Upstream commit b29d3145183da4e07d4b570fa8acdd3ac4a5c572 ]
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/8021q/vlan_dev.c |    2 +-
+ net/core/ethtool.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -598,7 +598,7 @@ static netdev_features_t vlan_dev_fix_fe
+ 	netdev_features_t features)
+ {
+ 	struct net_device *real_dev = vlan_dev_priv(dev)->real_dev;
+-	u32 old_features = features;
++	netdev_features_t old_features = features;
+ 
+ 	features &= real_dev->vlan_features;
+ 	features |= NETIF_F_RXCSUM;
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1286,7 +1286,7 @@ int dev_ethtool(struct net *net, struct
+ 	void __user *useraddr = ifr->ifr_data;
+ 	u32 ethcmd;
+ 	int rc;
+-	u32 old_features;
++	netdev_features_t old_features;
+ 
+ 	if (!dev || !netif_device_present(dev))
+ 		return -ENODEV;
 
 
