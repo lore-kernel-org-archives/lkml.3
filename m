@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab3EQQDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 12:03:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43492 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755647Ab3EQQDG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 12:03:06 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v6] ARM:dts:omap4-panda: Update the LED support for the panda DTS
-Date: Fri, 17 May 2013 11:02:32 -0500
-Message-ID: <1368806552-8851-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1755869Ab3EQQEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 12:04:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41060 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601Ab3EQQEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 12:04:39 -0400
+Date: Fri, 17 May 2013 17:04:31 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 4/4] zswap: add documentation
+Message-ID: <20130517160431.GO11497@suse.de>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-5-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1368448803-2089-5-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-are different.
+On Mon, May 13, 2013 at 07:40:03AM -0500, Seth Jennings wrote:
+> This patch adds the documentation file for the zswap functionality
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>  Documentation/vm/zswap.txt |   72 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 72 insertions(+)
+>  create mode 100644 Documentation/vm/zswap.txt
+> 
+> diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
+> new file mode 100644
+> index 0000000..88384b3
+> --- /dev/null
+> +++ b/Documentation/vm/zswap.txt
+> @@ -0,0 +1,72 @@
+> +Overview:
+> +
+> +Zswap is a lightweight compressed cache for swap pages. It takes pages that are
+> +in the process of being swapped out and attempts to compress them into a
+> +dynamically allocated RAM-based memory pool.  If this process is successful,
+> +the writeback to the swap device is deferred and, in many cases, avoided
+> +completely.  This results in a significant I/O reduction and performance gains
+> +for systems that are swapping.
+> +
 
-A1-A3 = gpio_wk7
-ES = gpio_110
+*Potentially* reduces IO and *potentially* shows performance gains. If the
+system is swap trashing, this may make things worse as you're generating
+the same amount of IO but having to compress/decompress as well. If there
+is less physical memory available because zswap pool is fragmented then an
+application may be pushed to swap prematurely and again, the performance
+is worse. Don't oversell this and the comment applies throughout the
+documentation.
 
-There is no change to LED D2
+I also think it should be marked with a bit fat warning that it's a WIP
+and an additional warning that the performance characteristics are very
+heavily workload dependant.
 
-Abstract away the pinmux and the LED definitions for the two boards into
-the respective DTS files.
-
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
-Changes in this version:
-	- review comments incorporated.
-Previous version of this patch was discussed in:
-	https://patchwork.kernel.org/patch/2582771/
-
- arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
- arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 03bd60d..5fd59b3 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -16,8 +16,13 @@
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
- 
--	leds {
-+	leds: leds {
- 		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <
-+			&led_wkgpio_pins
-+		>;
-+
- 		heartbeat {
- 			label = "pandaboard::status1";
- 			gpios = <&gpio1 7 0>;
-@@ -137,6 +142,15 @@
- 	};
- };
- 
-+&omap4_pmx_wkup {
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
-+			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index f1d8c21..c968a3b 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -34,3 +34,31 @@
- 		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
- 		>;
- };
-+
-+&omap4_pmx_core {
-+	led_gpio_pins: gpio_led_pmx {
-+		pinctrl-single,pins = <
-+			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
-+&led_wkgpio_pins {
-+	pinctrl-single,pins = <
-+		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+	>;
-+};
-+
-+&leds {
-+	pinctrl-0 = <
-+		&led_gpio_pins
-+		&led_wkgpio_pins
-+	>;
-+
-+	heartbeat {
-+		gpios = <&gpio4 14 0>;
-+	};
-+	mmc {
-+		gpios = <&gpio1 8 0>;
-+	};
-+};
 -- 
-1.7.5.4
-
+Mel Gorman
+SUSE Labs
