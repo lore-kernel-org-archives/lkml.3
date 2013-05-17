@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3EQVhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53985 "EHLO
+	id S1756880Ab3EQVhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:37:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53997 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab3EQVhB (ORCPT
+	with ESMTP id S1756749Ab3EQVhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:01 -0400
+	Fri, 17 May 2013 17:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junichi Nomura <j-nomura@ce.jp.nec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [ 002/102] KVM: emulator: emulate AAM
-Date: Fri, 17 May 2013 14:35:17 -0700
-Message-Id: <20130517213244.571808824@linuxfoundation.org>
+        Sebastian Reichel <sre@debian.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 006/102] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
+Date: Fri, 17 May 2013 14:35:21 -0700
+Message-Id: <20130517213244.994849760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,64 +34,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit a035d5c64d08a8ac12d81b596e7fa6d95a73c347 upstream.
+commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
 
-This is used by SGABIOS, KVM breaks with emulate_invalid_guest_state=1.
+Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
+broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
+not fully understood, but it seems to be related to the probe order. SPI
+communication to the panel driver (spi1.2) fails unless the touchscreen
+(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
+was converted to a platform driver, it resulted in that the devices are
+probed immediately after the board registers them in the order they are
+listed in the board file.
 
-AAM needs the source operand to be unsigned; do the same in AAD as well
-for consistency, even though it does not affect the result.
+Fix the issue by moving the touchscreen before the panel in the SPI
+device list.
 
-Reported-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+The patch fixes the following failure:
+
+[    1.260955] acx565akm spi1.2: invalid display ID
+[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
+[    1.273071] omapdss CORE error: driver probe failed: -19
+
+Tested-by: Sebastian Reichel <sre@debian.org>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Pali Rohár <pali.rohar@gmail.com>
+Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -2986,6 +2986,28 @@ static int em_das(struct x86_emulate_ctx
- 	return X86EMUL_CONTINUE;
- }
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -73,11 +73,11 @@
+ #define LIS302_IRQ1_GPIO 181
+ #define LIS302_IRQ2_GPIO 180  /* Not yet in use */
  
-+static int em_aam(struct x86_emulate_ctxt *ctxt)
-+{
-+	u8 al, ah;
-+
-+	if (ctxt->src.val == 0)
-+		return emulate_de(ctxt);
-+
-+	al = ctxt->dst.val & 0xff;
-+	ah = al / ctxt->src.val;
-+	al %= ctxt->src.val;
-+
-+	ctxt->dst.val = (ctxt->dst.val & 0xffff0000) | al | (ah << 8);
-+
-+	/* Set PF, ZF, SF */
-+	ctxt->src.type = OP_IMM;
-+	ctxt->src.val = 0;
-+	ctxt->src.bytes = 1;
-+	fastop(ctxt, em_or);
-+
-+	return X86EMUL_CONTINUE;
-+}
-+
- static int em_aad(struct x86_emulate_ctxt *ctxt)
- {
- 	u8 al = ctxt->dst.val & 0xff;
-@@ -3926,7 +3948,8 @@ static const struct opcode opcode_table[
- 	/* 0xD0 - 0xD7 */
- 	G(Src2One | ByteOp, group2), G(Src2One, group2),
- 	G(Src2CL | ByteOp, group2), G(Src2CL, group2),
--	N, I(DstAcc | SrcImmByte | No64, em_aad), N, N,
-+	I(DstAcc | SrcImmUByte | No64, em_aam),
-+	I(DstAcc | SrcImmUByte | No64, em_aad), N, N,
- 	/* 0xD8 - 0xDF */
- 	N, E(0, &escape_d9), N, E(0, &escape_db), N, E(0, &escape_dd), N, N,
- 	/* 0xE0 - 0xE7 */
+-/* list all spi devices here */
++/* List all SPI devices here. Note that the list/probe order seems to matter! */
+ enum {
+ 	RX51_SPI_WL1251,
+-	RX51_SPI_MIPID,		/* LCD panel */
+ 	RX51_SPI_TSC2005,	/* Touch Controller */
++	RX51_SPI_MIPID,		/* LCD panel */
+ };
+ 
+ static struct wl12xx_platform_data wl1251_pdata;
 
 
