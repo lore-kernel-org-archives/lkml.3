@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3EQKST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 06:18:19 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:38417 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab3EQKSS (ORCPT
+	id S1755442Ab3EQKUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 06:20:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59778 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab3EQKUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 06:18:18 -0400
-Date: Fri, 17 May 2013 11:18:13 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20130517101813.GB14575@console-pimps.org>
+	Fri, 17 May 2013 06:20:09 -0400
+Date: Fri, 17 May 2013 12:18:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] locking: Fix copy/paste errors
+ "ARCH_INLINE_*_UNLOCK_BH"
+Message-ID: <20130517101824.GA5162@dyad.programming.kicks-ass.net>
+References: <1365428154.1830.99.camel@x61.thuisdomein>
+ <20130408151609.GA13640@gmail.com>
+ <1365435015.1830.113.camel@x61.thuisdomein>
+ <20130408153614.GB17500@gmail.com>
+ <1368780693.1350.228.camel@x61.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368780693.1350.228.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Fri, May 17, 2013 at 10:51:33AM +0200, Paul Bolle wrote:
+> The Kconfig symbols ARCH_INLINE_READ_UNLOCK_IRQ,
+> ARCH_INLINE_SPIN_UNLOCK_IRQ, and ARCH_INLINE_WRITE_UNLOCK_IRQ were added
+> in v2.6.33, but have never actually been used. Ingo Molnar spotted that
+> this is caused by three identical copy/paste erros. Eg, the Kconfig
+> entry for
+>          INLINE_READ_UNLOCK_IRQ
+> 
+> has an (optional) dependency on
+>     ARCH_INLINE_READ_UNLOCK_BH
+> 
+> were it apparently should depend on
+>     ARCH_INLINE_READ_UNLOCK_IRQ
+> 
+> instead. Likewise for the Kconfig entries for INLINE_SPIN_UNLOCK_IRQ and
+> INLINE_WRITE_UNLOCK_IRQ. Fix these three errors.
+> 
+> Reported-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-I've queued up some fixes for bugs that were introduced in the merge
-window. Please consider pulling, thanks.
-
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
-
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-
-for you to fetch changes up to eccaf52fee8305d5207ff110950a82c100e459bc:
-
-  x86, efi: initial the local variable of DataSize to zero (2013-05-14 08:13:05 +0100)
-
-----------------------------------------------------------------
- * Avoid confusing the user by returning -EIO instead of -ENOENT in
-   efivarfs if an EFI variable gets deleted from under us and return EOF
-   when reading from a zero-length file - Lingzhu Xiang
-
- * Fix an oops in efivar_update_sysfs_entries() caused by reusing (and
-   therefore corrupting) a kzalloc() allocation - Seiji Aguchi
-
- * Initialise the DataSize argument to GetVariable() otherwise it will
-   not be updated with the actual size of the variable on return.
-   Discovered on a Acer Aspire V3 BIOS - Lee, Chun-Yi
-
-----------------------------------------------------------------
-Lee, Chun-Yi (1):
-      x86, efi: initial the local variable of DataSize to zero
-
-Lingzhu Xiang (1):
-      efivarfs: Never return ENOENT from firmware again
-
-Seiji Aguchi (1):
-      efivar: fix oops in efivar_update_sysfs_entries() caused by memory reuse
-
- arch/x86/platform/efi/efi.c    |  2 +-
- drivers/firmware/efi/efivars.c |  8 +++-----
- fs/efivarfs/file.c             | 14 ++++++++++++--
- 3 files changed, 16 insertions(+), 8 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks!
