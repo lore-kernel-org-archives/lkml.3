@@ -1,64 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3EQPrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 11:47:12 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:63296 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab3EQPrF (ORCPT
+	id S1756399Ab3EQPrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 11:47:04 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51159 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab3EQPrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 11:47:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
-References: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
-Date: Fri, 17 May 2013 08:47:04 -0700
-X-Google-Sender-Auth: wgOXgnuYT25LJU2-_Uhjn1BAbpU
-Message-ID: <CA+55aFwH08aEe3nJRFobofA9C_J5RnRmBWgMMJZyXTMuhP3j4w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq/intel_pstate: Add additional supported CPU ID's
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: dirk.brandewie@gmail.com
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 17 May 2013 11:47:00 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: [PATCH v7, part3 13/16] mm: correctly update zone->mamaged_pages
+Date: Fri, 17 May 2013 23:45:15 +0800
+Message-Id: <1368805518-2634-14-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
+References: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 7:38 AM,  <dirk.brandewie@gmail.com> wrote:
->
-> Add CPU ID's for supported Sandybridge and Ivybrigde processors.
+Enhance adjust_managed_page_count() to adjust totalhigh_pages for
+highmem pages. And change code which directly adjusts totalram_pages
+to use adjust_managed_page_count() because it adjusts totalram_pages,
+totalhigh_pages and zone->managed_pages altogether in a safe way.
 
-Hmm. Isn't 0x25 "Westmere"?
+Remove inc_totalhigh_pages() and dec_totalhigh_pages() from xen/balloon
+driver bacause adjust_managed_page_count() has already adjusted
+totalhigh_pages.
 
-Are the model numbers listed in some doc? I hate this "add random
-numbers (not even in order) without any logic to it".
+This patch also fixes two bugs:
+1) enhances virtio_balloon driver to adjust totalhigh_pages when
+   reserve/unreserve pages.
+2) enhance memory_hotplug.c to adjust totalhigh_pages when hot-removing
+   memory.
 
-Here's the list we have of family six numbers from
-arch/x86/kernel/cpu/intel.c (used for tlb-flushall crap):
+We still need to deal with modifications of totalram_pages in file
+arch/powerpc/platforms/pseries/cmm.c, but need help from PPC experts.
 
-        case 0x60f: /* original 65 nm celeron/pentium/core2/xeon,
-"Merom"/"Conroe" */
-        case 0x616: /* single-core 65 nm celeron/core2solo
-"Merom-L"/"Conroe-L" */
-        case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
-        case 0x61d: /* six-core 45 nm xeon "Dunnington" */
-        case 0x61a: /* 45 nm nehalem, "Bloomfield" */
-        case 0x61e: /* 45 nm nehalem, "Lynnfield" */
-        case 0x625: /* 32 nm nehalem, "Clarkdale" */
-        case 0x62c: /* 32 nm nehalem, "Gulftown" */
-        case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
-        case 0x62f: /* 32 nm Xeon E7 */
-        case 0x62a: /* SandyBridge */
-        case 0x62d: /* SandyBridge, "Romely-EP" */
-        case 0x63a: /* Ivybridge */
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: virtualization@lists.linux-foundation.org
+Cc: xen-devel@lists.xensource.com
+Cc: linux-mm@kvack.org
+---
+ drivers/virtio/virtio_balloon.c |  8 +++++---
+ drivers/xen/balloon.c           | 23 +++++------------------
+ mm/hugetlb.c                    |  2 +-
+ mm/memory_hotplug.c             | 15 +++------------
+ mm/page_alloc.c                 | 10 +++++-----
+ 5 files changed, 19 insertions(+), 39 deletions(-)
 
-so it has 0x25 as "Clarkdale" (what's Westmere vs Clarkdale? - Intel
-codenames always seem like a f*cking exercise in trying to confuse
-you). But not SB in any case.
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index bd3ae32..6649968 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -148,7 +148,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ 		}
+ 		set_page_pfns(vb->pfns + vb->num_pfns, page);
+ 		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
+-		totalram_pages--;
++		adjust_managed_page_count(page, -1);
+ 	}
+ 
+ 	/* Did we get any? */
+@@ -160,11 +160,13 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
+ static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
+ {
+ 	unsigned int i;
++	struct page *page;
+ 
+ 	/* Find pfns pointing at start of each page, get pages and free them. */
+ 	for (i = 0; i < num; i += VIRTIO_BALLOON_PAGES_PER_PAGE) {
+-		balloon_page_free(balloon_pfn_to_page(pfns[i]));
+-		totalram_pages++;
++		page = balloon_pfn_to_page(pfns[i]);
++		balloon_page_free(page);
++		adjust_managed_page_count(page, 1);
+ 	}
+ }
+ 
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index d42da3b..a453c05 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -89,14 +89,6 @@ EXPORT_SYMBOL_GPL(balloon_stats);
+ /* We increase/decrease in batches which fit in a page */
+ static xen_pfn_t frame_list[PAGE_SIZE / sizeof(unsigned long)];
+ 
+-#ifdef CONFIG_HIGHMEM
+-#define inc_totalhigh_pages() (totalhigh_pages++)
+-#define dec_totalhigh_pages() (totalhigh_pages--)
+-#else
+-#define inc_totalhigh_pages() do {} while (0)
+-#define dec_totalhigh_pages() do {} while (0)
+-#endif
+-
+ /* List of ballooned pages, threaded through the mem_map array. */
+ static LIST_HEAD(ballooned_pages);
+ 
+@@ -132,9 +124,7 @@ static void __balloon_append(struct page *page)
+ static void balloon_append(struct page *page)
+ {
+ 	__balloon_append(page);
+-	if (PageHighMem(page))
+-		dec_totalhigh_pages();
+-	totalram_pages--;
++	adjust_managed_page_count(page, -1);
+ }
+ 
+ /* balloon_retrieve: rescue a page from the balloon, if it is not empty. */
+@@ -151,13 +141,12 @@ static struct page *balloon_retrieve(bool prefer_highmem)
+ 		page = list_entry(ballooned_pages.next, struct page, lru);
+ 	list_del(&page->lru);
+ 
+-	if (PageHighMem(page)) {
++	if (PageHighMem(page))
+ 		balloon_stats.balloon_high--;
+-		inc_totalhigh_pages();
+-	} else
++	else
+ 		balloon_stats.balloon_low--;
+ 
+-	totalram_pages++;
++	adjust_managed_page_count(page, 1);
+ 
+ 	return page;
+ }
+@@ -374,9 +363,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ #endif
+ 
+ 		/* Relinquish the page back to the allocator. */
+-		ClearPageReserved(page);
+-		init_page_count(page);
+-		__free_page(page);
++		__free_reserved_page(page);
+ 	}
+ 
+ 	balloon_stats.current_pages += rc;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f8feeec..95c5a6b 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1246,7 +1246,7 @@ static void __init gather_bootmem_prealloc(void)
+ 		 * side-effects, like CommitLimit going negative.
+ 		 */
+ 		if (h->order > (MAX_ORDER - 1))
+-			totalram_pages += 1 << h->order;
++			adjust_managed_page_count(page, 1 << h->order);
+ 	}
+ }
+ 
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index c291295..304ada7 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -769,20 +769,13 @@ EXPORT_SYMBOL_GPL(__online_page_set_limits);
+ 
+ void __online_page_increment_counters(struct page *page)
+ {
+-	totalram_pages++;
+-
+-#ifdef CONFIG_HIGHMEM
+-	if (PageHighMem(page))
+-		totalhigh_pages++;
+-#endif
++	adjust_managed_page_count(page, 1);
+ }
+ EXPORT_SYMBOL_GPL(__online_page_increment_counters);
+ 
+ void __online_page_free(struct page *page)
+ {
+-	ClearPageReserved(page);
+-	init_page_count(page);
+-	__free_page(page);
++	__free_reserved_page(page);
+ }
+ EXPORT_SYMBOL_GPL(__online_page_free);
+ 
+@@ -979,7 +972,6 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+ 		return ret;
+ 	}
+ 
+-	zone->managed_pages += onlined_pages;
+ 	zone->present_pages += onlined_pages;
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+ 	if (onlined_pages) {
+@@ -1563,10 +1555,9 @@ repeat:
+ 	/* reset pagetype flags and makes migrate type to be MOVABLE */
+ 	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
+ 	/* removal success */
+-	zone->managed_pages -= offlined_pages;
++	adjust_managed_page_count(pfn_to_page(start_pfn), -offlined_pages);
+ 	zone->present_pages -= offlined_pages;
+ 	zone->zone_pgdat->node_present_pages -= offlined_pages;
+-	totalram_pages -= offlined_pages;
+ 
+ 	init_per_zone_wmark_min();
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a07e70a..56b0097 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -780,11 +780,7 @@ void __init init_cma_reserved_pageblock(struct page *page)
+ 	set_page_refcounted(page);
+ 	set_pageblock_migratetype(page, MIGRATE_CMA);
+ 	__free_pages(page, pageblock_order);
+-	totalram_pages += pageblock_nr_pages;
+-#ifdef CONFIG_HIGHMEM
+-	if (PageHighMem(page))
+-		totalhigh_pages += pageblock_nr_pages;
+-#endif
++	adjust_managed_page_count(page, pageblock_nr_pages);
+ }
+ #endif
+ 
+@@ -5189,6 +5185,10 @@ void adjust_managed_page_count(struct page *page, long count)
+ 	spin_lock(&managed_page_count_lock);
+ 	page_zone(page)->managed_pages += count;
+ 	totalram_pages += count;
++#ifdef	CONFIG_HIGHMEM
++	if (PageHighMem(page))
++		totalhigh_pages += count;
++#endif
+ 	spin_unlock(&managed_page_count_lock);
+ }
+ EXPORT_SYMBOL(adjust_managed_page_count);
+-- 
+1.8.1.2
 
-So we used to have the two SB cases listed (2a/2d). Your patch adds
-Clarkdale/Ivybridge (but not in the right order). What about the other
-ones?
-
-               Linus
