@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3EQN1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 09:27:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34240 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177Ab3EQN1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 09:27:20 -0400
-Date: Fri, 17 May 2013 14:27:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
-Subject: Re: [RFCv2][PATCH 2/5] make 'struct page' and swp_entry_t variants
- of swapcache_free().
-Message-ID: <20130517132711.GL11497@suse.de>
-References: <20130516203427.E3386936@viggo.jf.intel.com>
- <20130516203429.5293EA57@viggo.jf.intel.com>
+	id S1755918Ab3EQNbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 09:31:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63044 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab3EQNbs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 09:31:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 0/4] ARM: Remove boilerplate debug_ll_io_init code
+Date: Fri, 17 May 2013 15:31:16 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1368440169-29088-1-git-send-email-maxime.ripard@free-electrons.com> <201305160040.54399.arnd@arndb.de> <5194F944.2040803@free-electrons.com>
+In-Reply-To: <5194F944.2040803@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130516203429.5293EA57@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305171531.16240.arnd@arndb.de>
+X-Provags-ID: V02:K0:1kyGBEJT78y8+ks41GqaRj+lGdAtyePFwwC3L8wVtuq
+ wYv3cHDyCk51N/P7VXzRXhZemKdLpsITAPjhpSrWbt49xufn84
+ Dx64oMhjKgEBZw/5fzqGgp8nOXT1IpFQFZEz3NAy2GUpTF+mID
+ va3judKj1AN20DyOitDQRI1gTavOo/q/DETded08kffElz6FRo
+ VOnWguv9u+2cXBhmyBpZogUUoGHC0mhu81FKIwoUwubUUSk9f1
+ UB/yVpQ4w/XpmNe3xTxAAR9U0/okjFw8PqlTgYU8aSU41kpH0R
+ tu2mhn+0QhWLJnBmWnhpAUzA37xmLp67e1OJCUphNIl+FTs9Xx
+ YdV4QPR+YU0nipDPehl4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 01:34:29PM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> swapcache_free() takes two arguments:
-> 
-> 	void swapcache_free(swp_entry_t entry, struct page *page)
-> 
-> Most of its callers (5/7) are from error handling paths haven't even
-> instantiated a page, so they pass page=NULL.  Both of the callers
-> that call in with a 'struct page' create and pass in a temporary
-> swp_entry_t.
-> 
-> Now that we are deferring clearing page_private() until after
-> swapcache_free() has been called, we can just create a variant
-> that takes a 'struct page' and does the temporary variable in
-> the helper.
-> 
-> That leaves all the other callers doing
-> 
-> 	swapcache_free(entry, NULL)
-> 
-> so create another helper for them that makes it clear that they
-> need only pass in a swp_entry_t.
-> 
-> One downside here is that delete_from_swap_cache() now does
-> an extra swap_address_space() call.  But, those are pretty
-> cheap (just some array index arithmetic).
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+On Thursday 16 May 2013, Maxime Ripard wrote:
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+> 
+> How will we merge this? The first patch would be merged by Russel and
+> the 3 others by their respective maintainers?
 
--- 
-Mel Gorman
-SUSE Labs
+I think since it's mostly platform code and all trivial, we can merge
+it into the next/cleanup branch in arm-soc directly.
+
+	Arnd
