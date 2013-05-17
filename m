@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3EQIv0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:51:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34468 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab3EQIvZ (ORCPT
+	id S1755450Ab3EQIvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:51:39 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:51139 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755433Ab3EQIvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:51:25 -0400
-Message-ID: <5195EF74.8070005@pengutronix.de>
-Date: Fri, 17 May 2013 10:51:00 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        U Bhaskar-B22300 <B22300@freescale.com>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] can: flexcan: allow compilation on arm and powerpc
-References: <1368711756-22324-1-git-send-email-mkl@pengutronix.de> <20130517020351.GE3893@S2101-09.ap.freescale.net>
-In-Reply-To: <20130517020351.GE3893@S2101-09.ap.freescale.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2BTQAAMIKHERLPINUMOQI"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 17 May 2013 04:51:36 -0400
+Message-ID: <1368780693.1350.228.camel@x61.thuisdomein>
+Subject: [PATCH v2] locking: Fix copy/paste errors "ARCH_INLINE_*_UNLOCK_BH"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 17 May 2013 10:51:33 +0200
+In-Reply-To: <20130408153614.GB17500@gmail.com>
+References: <1365428154.1830.99.camel@x61.thuisdomein>
+	 <20130408151609.GA13640@gmail.com>
+	 <1365435015.1830.113.camel@x61.thuisdomein>
+	 <20130408153614.GB17500@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 May 2013 08:51:34.0032 (UTC) FILETIME=[BBAD1100:01CE52DB]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2BTQAAMIKHERLPINUMOQI
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+The Kconfig symbols ARCH_INLINE_READ_UNLOCK_IRQ,
+ARCH_INLINE_SPIN_UNLOCK_IRQ, and ARCH_INLINE_WRITE_UNLOCK_IRQ were added
+in v2.6.33, but have never actually been used. Ingo Molnar spotted that
+this is caused by three identical copy/paste erros. Eg, the Kconfig
+entry for
+         INLINE_READ_UNLOCK_IRQ
 
-On 05/17/2013 04:03 AM, Shawn Guo wrote:
-> Hi Marc,
->=20
-> On Thu, May 16, 2013 at 03:42:36PM +0200, Marc Kleine-Budde wrote:
->> This patch removes the Kconfig symbols HAVE_CAN_FLEXCAN and
->> IMX_HAVE_PLATFORM_FLEXCAN from arch/{arm,powerpc} and allowing compila=
-tion on
->> all arm and powerpc platforms.
->=20
-> I'm generally fine with the approach.  But with Kconfig symbol
-> IMX_HAVE_PLATFORM_FLEXCAN removed, how does the build of
-> platform-flexcan.o work?
->=20
-> arch/arm/mach-imx/devices/Makefile:obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXC=
-AN) +=3D platform-flexcan.o
+has an (optional) dependency on
+    ARCH_INLINE_READ_UNLOCK_BH
 
-Doh! - I've removed too much, will change.
+were it apparently should depend on
+    ARCH_INLINE_READ_UNLOCK_IRQ
 
-Tnx,
-Marc
+instead. Likewise for the Kconfig entries for INLINE_SPIN_UNLOCK_IRQ and
+INLINE_WRITE_UNLOCK_IRQ. Fix these three errors.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v1 was titled "locking: remove three unused Kconfig symbols".
 
+1) Still untested.
 
-------enig2BTQAAMIKHERLPINUMOQI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ kernel/Kconfig.locks | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 44511d1..d2b32ac 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -138,7 +138,7 @@ config INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_IRQ
+ 
+ config INLINE_SPIN_UNLOCK_IRQRESTORE
+ 	def_bool y
+@@ -175,7 +175,7 @@ config INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_IRQ
+ 
+ config INLINE_READ_UNLOCK_IRQRESTORE
+ 	def_bool y
+@@ -212,7 +212,7 @@ config INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_IRQ
+ 
+ config INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	def_bool y
+-- 
+1.7.11.7
 
-iEYEARECAAYFAlGV73gACgkQjTAFq1RaXHOhLACfXhnZQvq8oFaR1qHQyBycdj4z
-or4AnRO8KuSrpX8kUrwFu2rESmefa4Av
-=5VdO
------END PGP SIGNATURE-----
-
-------enig2BTQAAMIKHERLPINUMOQI--
