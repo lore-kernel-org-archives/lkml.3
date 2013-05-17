@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab3EQVhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54300 "EHLO
+	id S932223Ab3EQVof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:44:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757192Ab3EQVhu (ORCPT
+	with ESMTP id S1757236Ab3EQVhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:50 -0400
+	Fri, 17 May 2013 17:37:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>
-Subject: [ 073/102] ipv6,gre: do not leak info to user-space
-Date: Fri, 17 May 2013 14:36:28 -0700
-Message-Id: <20130517213252.012016913@linuxfoundation.org>
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 081/102] ARM: EXYNOS5: Fix kernel dump in AFTR idle mode
+Date: Fri, 17 May 2013 14:36:36 -0700
+Message-Id: <20130517213252.840765999@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -26,39 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Inderpal Singh <inderpal.singh@linaro.org>
 
-From: Amerigo Wang <amwang@redhat.com>
+commit 088584618836b159947bc4ab5011a5cf1f081a62 upstream.
 
-[ Upstream commit 5dbd5068430b8bd1c19387d46d6c1a88b261257f ]
+The kernel crashes while resuming from AFTR idle mode. It happens
+because L2 cache was not going into retention state.
 
-There is a hole in struct ip6_tnl_parm2, so we have to
-zero the struct on stack before copying it to user-space.
+This patch configures the USE_RETENTION bit of ARM_L2_OPTION register
+so that it does not depend on MANUAL_L2RSTDISABLE_CONTROL of
+ARM_COMMON_OPTION register for L2RSTDISABLE signal.
 
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+Tested-by: Chander Kashyap <chander.kashyap@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_gre.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -1135,6 +1135,7 @@ static int ip6gre_tunnel_ioctl(struct ne
- 		}
- 		if (t == NULL)
- 			t = netdev_priv(dev);
-+		memset(&p, 0, sizeof(p));
- 		ip6gre_tnl_parm_to_user(&p, &t->parms);
- 		if (copy_to_user(ifr->ifr_ifru.ifru_data, &p, sizeof(p)))
- 			err = -EFAULT;
-@@ -1182,6 +1183,7 @@ static int ip6gre_tunnel_ioctl(struct ne
- 		if (t) {
- 			err = 0;
+---
+ arch/arm/mach-exynos/include/mach/regs-pmu.h |    1 +
+ arch/arm/mach-exynos/pmu.c                   |    5 ++---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
++++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
+@@ -344,6 +344,7 @@
+ #define EXYNOS5_FSYS_ARM_OPTION					S5P_PMUREG(0x2208)
+ #define EXYNOS5_ISP_ARM_OPTION					S5P_PMUREG(0x2288)
+ #define EXYNOS5_ARM_COMMON_OPTION				S5P_PMUREG(0x2408)
++#define EXYNOS5_ARM_L2_OPTION					S5P_PMUREG(0x2608)
+ #define EXYNOS5_TOP_PWR_OPTION					S5P_PMUREG(0x2C48)
+ #define EXYNOS5_TOP_PWR_SYSMEM_OPTION				S5P_PMUREG(0x2CC8)
+ #define EXYNOS5_JPEG_MEM_OPTION					S5P_PMUREG(0x2F48)
+--- a/arch/arm/mach-exynos/pmu.c
++++ b/arch/arm/mach-exynos/pmu.c
+@@ -228,6 +228,7 @@ static struct exynos_pmu_conf exynos5250
+ 	{ EXYNOS5_DIS_IRQ_ISP_ARM_CENTRAL_SYS_PWR_REG,	{ 0x0, 0x0, 0x0} },
+ 	{ EXYNOS5_ARM_COMMON_SYS_PWR_REG,		{ 0x0, 0x0, 0x2} },
+ 	{ EXYNOS5_ARM_L2_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
++	{ EXYNOS5_ARM_L2_OPTION,			{ 0x10, 0x10, 0x0 } },
+ 	{ EXYNOS5_CMU_ACLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_SCLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+ 	{ EXYNOS5_CMU_RESET_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
+@@ -353,11 +354,9 @@ static void exynos5_init_pmu(void)
  
-+			memset(&p, 0, sizeof(p));
- 			ip6gre_tnl_parm_to_user(&p, &t->parms);
- 			if (copy_to_user(ifr->ifr_ifru.ifru_data, &p, sizeof(p)))
- 				err = -EFAULT;
+ 	/*
+ 	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
+-	 * MANUAL_L2RSTDISABLE_CONTROL_BITFIELD Enable
+ 	 */
+ 	tmp = __raw_readl(EXYNOS5_ARM_COMMON_OPTION);
+-	tmp |= (EXYNOS5_MANUAL_L2RSTDISABLE_CONTROL |
+-		EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN);
++	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
+ 	__raw_writel(tmp, EXYNOS5_ARM_COMMON_OPTION);
+ 
+ 	/*
 
 
