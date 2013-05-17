@@ -1,79 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab3EQVjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:39:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59284 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757351Ab3EQVjr (ORCPT
+	id S1757385Ab3EQVkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:40:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54404 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339Ab3EQViH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:39:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130517113922.GF5162@dyad.programming.kicks-ass.net>
-References: <20130503121122.931661809@chello.nl>
-	<20130503121256.230745028@chello.nl>
-	<CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
-	<20130516090916.GF19669@dyad.programming.kicks-ass.net>
-	<8578.1368699317@ale.ozlabs.ibm.com>
-	<20130516111634.GA15314@twins.programming.kicks-ass.net>
-	<CABPqkBSCXJN7gLK_e_Q3YVVVFVGS78fo4j2z0+MmriqoXszH+w@mail.gmail.com>
-	<20130517111232.GE5162@dyad.programming.kicks-ass.net>
-	<29969.1368790328@ale.ozlabs.ibm.com>
-	<20130517113922.GF5162@dyad.programming.kicks-ass.net>
-Date: Fri, 17 May 2013 23:39:46 +0200
-Message-ID: <CABPqkBSSg8Sfpa5xG-DCpX-qY22qeRVtwzVPTPD4K=3DmS5dUA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 17 May 2013 17:38:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [ 097/102] parisc: fix SMP races when updating PTE and TLB entries in entry.S
+Date: Fri, 17 May 2013 14:36:52 -0700
+Message-Id: <20130517213254.444535451@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
+References: <20130517213244.277411019@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 1:39 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, May 17, 2013 at 09:32:08PM +1000, Michael Neuling wrote:
->> Peter Zijlstra <peterz@infradead.org> wrote:
->
->> > Wouldn't it be mostly conditional branches that are the primary control flow
->> > and can get predicted wrong? I mean, I'm sure someone will miss-predict an
->> > unconditional branch but its not like we care about people with such
->> > afflictions do we?
->>
->> You could mispredict the target address of a computed goto.  You'd know
->> it was taken but not know target address until later in the pipeline.
->
-> Oh right, computed targets could indeed be mis predicted. I was more thinking
-> about jumps with immediate values.
->
->> On this, the POWER8 branch history buffer tells us two things about the
->> prediction status.
->>   1) if the branch was predicted taken/not taken correctly
->>   2) if the target address was predicted correctly or not (for computed
->>      gotos only)
->> So we'd actually like more prediction bits too :-D
->
-> So if I understand this right, 1) maps to the predicted flags we have; 2)
-> would be new stuff?
->
-> We don't really have anything like that on x86, but I suppose if you make the
-> thing optional and present a 'useful' use-case implemented in userspace code
-> we could take it :-)
->
->> > Anyway, since PPC people thought it worth baking into hardware,
->> > presumably they have a compelling use case. Mikey could you see if you
->> > can retrieve that from someone in the know? It might be interesting.
->>
->> I don't think we can mispredict a non-conditional non-computed but I'll
->> have to check with the HW folks.
->
-> I was mostly wondering about the use-case for the conditional filter. Stephane
-> didn't think it useful, clearly your hardware guys thought different :-)
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
->From my experience talking with compiler people, they care about ALL
-the branches
-and not the conditional so much. They use LBR to do basic block profiling.
+------------------
+
+From: John David Anglin <dave.anglin@bell.net>
+
+commit f0a18819e261afc5fdbd8c5c6f9943123c5461ba upstream.
+
+Currently, race conditions exist in the handling of TLB interruptions in
+entry.S.  In particular, dirty bit updates can be lost if an accessed
+interruption occurs just after the dirty bit interruption on a different
+cpu.  Lost dirty bit updates result in user pages not being flushed and
+general system instability.  This change adds lock and unlock macros to
+synchronize all PTE and TLB updates done in entry.S.  As a result,
+userspace stability is significantly improved.
+
+Signed-off-by: John David Anglin  <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/parisc/kernel/entry.S |  155 ++++++++++++++++++++++++---------------------
+ 1 file changed, 83 insertions(+), 72 deletions(-)
+
+--- a/arch/parisc/kernel/entry.S
++++ b/arch/parisc/kernel/entry.S
+@@ -444,9 +444,41 @@
+ 	L2_ptep		\pgd,\pte,\index,\va,\fault
+ 	.endm
+ 
++	/* Acquire pa_dbit_lock lock. */
++	.macro		dbit_lock	spc,tmp,tmp1
++#ifdef CONFIG_SMP
++	cmpib,COND(=),n	0,\spc,2f
++	load32		PA(pa_dbit_lock),\tmp
++1:	LDCW		0(\tmp),\tmp1
++	cmpib,COND(=)	0,\tmp1,1b
++	nop
++2:
++#endif
++	.endm
++
++	/* Release pa_dbit_lock lock without reloading lock address. */
++	.macro		dbit_unlock0	spc,tmp
++#ifdef CONFIG_SMP
++	or,COND(=)	%r0,\spc,%r0
++	stw             \spc,0(\tmp)
++#endif
++	.endm
++
++	/* Release pa_dbit_lock lock. */
++	.macro		dbit_unlock1	spc,tmp
++#ifdef CONFIG_SMP
++	load32		PA(pa_dbit_lock),\tmp
++	dbit_unlock0	\spc,\tmp
++#endif
++	.endm
++
+ 	/* Set the _PAGE_ACCESSED bit of the PTE.  Be clever and
+ 	 * don't needlessly dirty the cache line if it was already set */
+-	.macro		update_ptep	ptep,pte,tmp,tmp1
++	.macro		update_ptep	spc,ptep,pte,tmp,tmp1
++#ifdef CONFIG_SMP
++	or,COND(=)	%r0,\spc,%r0
++	LDREG		0(\ptep),\pte
++#endif
+ 	ldi		_PAGE_ACCESSED,\tmp1
+ 	or		\tmp1,\pte,\tmp
+ 	and,COND(<>)	\tmp1,\pte,%r0
+@@ -455,7 +487,11 @@
+ 
+ 	/* Set the dirty bit (and accessed bit).  No need to be
+ 	 * clever, this is only used from the dirty fault */
+-	.macro		update_dirty	ptep,pte,tmp
++	.macro		update_dirty	spc,ptep,pte,tmp
++#ifdef CONFIG_SMP
++	or,COND(=)	%r0,\spc,%r0
++	LDREG		0(\ptep),\pte
++#endif
+ 	ldi		_PAGE_ACCESSED|_PAGE_DIRTY,\tmp
+ 	or		\tmp,\pte,\pte
+ 	STREG		\pte,0(\ptep)
+@@ -1103,11 +1139,13 @@ dtlb_miss_20w:
+ 
+ 	L3_ptep		ptp,pte,t0,va,dtlb_check_alias_20w
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 	
+ 	idtlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1127,11 +1165,13 @@ nadtlb_miss_20w:
+ 
+ 	L3_ptep		ptp,pte,t0,va,nadtlb_check_alias_20w
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	idtlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1153,7 +1193,8 @@ dtlb_miss_11:
+ 
+ 	L2_ptep		ptp,pte,t0,va,dtlb_check_alias_11
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb_11	spc,pte,prot
+ 
+@@ -1164,6 +1205,7 @@ dtlb_miss_11:
+ 	idtlbp		prot,(%sr1,va)
+ 
+ 	mtsp		t0, %sr1	/* Restore sr1 */
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1184,7 +1226,8 @@ nadtlb_miss_11:
+ 
+ 	L2_ptep		ptp,pte,t0,va,nadtlb_check_alias_11
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb_11	spc,pte,prot
+ 
+@@ -1196,6 +1239,7 @@ nadtlb_miss_11:
+ 	idtlbp		prot,(%sr1,va)
+ 
+ 	mtsp		t0, %sr1	/* Restore sr1 */
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1216,13 +1260,15 @@ dtlb_miss_20:
+ 
+ 	L2_ptep		ptp,pte,t0,va,dtlb_check_alias_20
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	f_extend	pte,t0
+ 
+ 	idtlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1242,13 +1288,15 @@ nadtlb_miss_20:
+ 
+ 	L2_ptep		ptp,pte,t0,va,nadtlb_check_alias_20
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	f_extend	pte,t0
+ 	
+         idtlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1349,11 +1397,13 @@ itlb_miss_20w:
+ 
+ 	L3_ptep		ptp,pte,t0,va,itlb_fault
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 	
+ 	iitlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1371,11 +1421,13 @@ naitlb_miss_20w:
+ 
+ 	L3_ptep		ptp,pte,t0,va,naitlb_check_alias_20w
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	iitlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1397,7 +1449,8 @@ itlb_miss_11:
+ 
+ 	L2_ptep		ptp,pte,t0,va,itlb_fault
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb_11	spc,pte,prot
+ 
+@@ -1408,6 +1461,7 @@ itlb_miss_11:
+ 	iitlbp		prot,(%sr1,va)
+ 
+ 	mtsp		t0, %sr1	/* Restore sr1 */
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1419,7 +1473,8 @@ naitlb_miss_11:
+ 
+ 	L2_ptep		ptp,pte,t0,va,naitlb_check_alias_11
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb_11	spc,pte,prot
+ 
+@@ -1430,6 +1485,7 @@ naitlb_miss_11:
+ 	iitlbp		prot,(%sr1,va)
+ 
+ 	mtsp		t0, %sr1	/* Restore sr1 */
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1451,13 +1507,15 @@ itlb_miss_20:
+ 
+ 	L2_ptep		ptp,pte,t0,va,itlb_fault
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	f_extend	pte,t0	
+ 
+ 	iitlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1469,13 +1527,15 @@ naitlb_miss_20:
+ 
+ 	L2_ptep		ptp,pte,t0,va,naitlb_check_alias_20
+ 
+-	update_ptep	ptp,pte,t0,t1
++	dbit_lock	spc,t0,t1
++	update_ptep	spc,ptp,pte,t0,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	f_extend	pte,t0
+ 
+ 	iitlbt          pte,prot
++	dbit_unlock1	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1499,29 +1559,13 @@ dbit_trap_20w:
+ 
+ 	L3_ptep		ptp,pte,t0,va,dbit_fault
+ 
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nolock_20w
+-	load32		PA(pa_dbit_lock),t0
+-
+-dbit_spin_20w:
+-	LDCW		0(t0),t1
+-	cmpib,COND(=)         0,t1,dbit_spin_20w
+-	nop
+-
+-dbit_nolock_20w:
+-#endif
+-	update_dirty	ptp,pte,t1
++	dbit_lock	spc,t0,t1
++	update_dirty	spc,ptp,pte,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 		
+ 	idtlbt          pte,prot
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nounlock_20w
+-	ldi             1,t1
+-	stw             t1,0(t0)
+-
+-dbit_nounlock_20w:
+-#endif
++	dbit_unlock0	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1535,18 +1579,8 @@ dbit_trap_11:
+ 
+ 	L2_ptep		ptp,pte,t0,va,dbit_fault
+ 
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nolock_11
+-	load32		PA(pa_dbit_lock),t0
+-
+-dbit_spin_11:
+-	LDCW		0(t0),t1
+-	cmpib,=         0,t1,dbit_spin_11
+-	nop
+-
+-dbit_nolock_11:
+-#endif
+-	update_dirty	ptp,pte,t1
++	dbit_lock	spc,t0,t1
++	update_dirty	spc,ptp,pte,t1
+ 
+ 	make_insert_tlb_11	spc,pte,prot
+ 
+@@ -1557,13 +1591,7 @@ dbit_nolock_11:
+ 	idtlbp		prot,(%sr1,va)
+ 
+ 	mtsp            t1, %sr1     /* Restore sr1 */
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nounlock_11
+-	ldi             1,t1
+-	stw             t1,0(t0)
+-
+-dbit_nounlock_11:
+-#endif
++	dbit_unlock0	spc,t0
+ 
+ 	rfir
+ 	nop
+@@ -1575,32 +1603,15 @@ dbit_trap_20:
+ 
+ 	L2_ptep		ptp,pte,t0,va,dbit_fault
+ 
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nolock_20
+-	load32		PA(pa_dbit_lock),t0
+-
+-dbit_spin_20:
+-	LDCW		0(t0),t1
+-	cmpib,=         0,t1,dbit_spin_20
+-	nop
+-
+-dbit_nolock_20:
+-#endif
+-	update_dirty	ptp,pte,t1
++	dbit_lock	spc,t0,t1
++	update_dirty	spc,ptp,pte,t1
+ 
+ 	make_insert_tlb	spc,pte,prot
+ 
+ 	f_extend	pte,t1
+ 	
+         idtlbt          pte,prot
+-
+-#ifdef CONFIG_SMP
+-	cmpib,COND(=),n        0,spc,dbit_nounlock_20
+-	ldi             1,t1
+-	stw             t1,0(t0)
+-
+-dbit_nounlock_20:
+-#endif
++	dbit_unlock0	spc,t0
+ 
+ 	rfir
+ 	nop
+
+
