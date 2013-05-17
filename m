@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab3EQVu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54680 "EHLO
+	id S1758039Ab3EQV4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:56:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757269Ab3EQVuT (ORCPT
+	with ESMTP id S932479Ab3EQVu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:19 -0400
+	Fri, 17 May 2013 17:50:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Papan <tomas.papan@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [ 01/33] KVM: VMX: fix halt emulation while emulating invalid guest sate
-Date: Fri, 17 May 2013 14:49:45 -0700
-Message-Id: <20130517214917.002275716@linuxfoundation.org>
+        Christopher Harvey <charvey@matrox.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 14/33] drm/mm: fix dump table BUG
+Date: Fri, 17 May 2013 14:49:58 -0700
+Message-Id: <20130517214918.345117878@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -27,41 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 8d76c49e9ffeee839bc0b7a3278a23f99101263e upstream.
+commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
 
-The invalid guest state emulation loop does not check halt_request
-which causes 100% cpu loop while guest is in halt and in invalid
-state, but more serious issue is that this leaves halt_request set, so
-random instruction emulated by vm86 #GP exit can be interpreted
-as halt which causes guest hang. Fix both problems by handling
-halt_request in emulation loop.
+In
 
-Reported-by: Tomas Papan <tomas.papan@gmail.com>
-Tested-by: Tomas Papan <tomas.papan@gmail.com>
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+commit 9e8944ab564f2e3dde90a518cd32048c58918608
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Nov 15 11:32:17 2012 +0000
+
+    drm: Introduce an iterator over holes in the drm_mm range manager
+
+helpers and iterators for hole handling have been introduced with some
+debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
+which unconditionally tried to compute the size of the very first
+hole.
+
+While at it unify the code a bit with the hole dumping in the loop.
+
+v2: Extract a hole dump helper.
+
+Reported-by: Christopher Harvey <charvey@matrox.com>
+Cc: Christopher Harvey <charvey@matrox.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Acked-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/vmx.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/gpu/drm/drm_mm.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3836,6 +3836,12 @@ static int handle_invalid_guest_state(st
- 		if (err != EMULATE_DONE)
- 			return 0;
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -679,33 +679,35 @@ void drm_mm_debug_table(struct drm_mm *m
+ EXPORT_SYMBOL(drm_mm_debug_table);
  
-+		if (vcpu->arch.halt_request) {
-+			vcpu->arch.halt_request = 0;
-+			ret = kvm_emulate_halt(vcpu);
-+			goto out;
-+		}
+ #if defined(CONFIG_DEBUG_FS)
+-int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
+ {
+-	struct drm_mm_node *entry;
+-	unsigned long total_used = 0, total_free = 0, total = 0;
+ 	unsigned long hole_start, hole_end, hole_size;
+ 
+-	hole_start = drm_mm_hole_node_start(&mm->head_node);
+-	hole_end = drm_mm_hole_node_end(&mm->head_node);
+-	hole_size = hole_end - hole_start;
+-	if (hole_size)
++	if (entry->hole_follows) {
++		hole_start = drm_mm_hole_node_start(entry);
++		hole_end = drm_mm_hole_node_end(entry);
++		hole_size = hole_end - hole_start;
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+ 				hole_start, hole_end, hole_size);
+-	total_free += hole_size;
++		return hole_size;
++	}
 +
- 		if (signal_pending(current))
- 			goto out;
- 		if (need_resched())
++	return 0;
++}
++
++int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++{
++	struct drm_mm_node *entry;
++	unsigned long total_used = 0, total_free = 0, total = 0;
++
++	total_free += drm_mm_dump_hole(m, &mm->head_node);
+ 
+ 	drm_mm_for_each_node(entry, mm) {
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
+ 				entry->start, entry->start + entry->size,
+ 				entry->size);
+ 		total_used += entry->size;
+-		if (entry->hole_follows) {
+-			hole_start = drm_mm_hole_node_start(entry);
+-			hole_end = drm_mm_hole_node_end(entry);
+-			hole_size = hole_end - hole_start;
+-			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+-					hole_start, hole_end, hole_size);
+-			total_free += hole_size;
+-		}
++		total_free += drm_mm_dump_hole(m, entry);
+ 	}
+ 	total = total_free + total_used;
+ 
 
 
