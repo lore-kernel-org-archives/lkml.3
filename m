@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab3EQWL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:11:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54276 "EHLO
+	id S1758136Ab3EQWL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:11:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54271 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757166Ab3EQVhq (ORCPT
+	with ESMTP id S1757028Ab3EQVhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:46 -0400
+	Fri, 17 May 2013 17:37:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 068/102] 3c59x: fix freeing nonexistent resource on driver unload
-Date: Fri, 17 May 2013 14:36:23 -0700
-Message-Id: <20130517213251.514644043@linuxfoundation.org>
+Subject: [ 067/102] net: frag, fix race conditions in LRU list maintenance
+Date: Fri, 17 May 2013 14:36:22 -0700
+Message-Id: <20130517213251.417289642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -29,39 +30,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
+[ Upstream commit b56141ab34e2c3e2d7960cea12c20c99530c0c76 ]
 
-When unloading the driver that drives an EISA board, a message similar to the
-following one is displayed:
+This patch fixes race between inet_frag_lru_move() and inet_frag_lru_add()
+which was introduced in commit 3ef0eb0db4bf92c6d2510fe5c4dc51852746f206
+("net: frag, move LRU list maintenance outside of rwlock")
 
-Trying to free nonexistent resource <0000000000013000-000000000001301f>
+One cpu already added new fragment queue into hash but not into LRU.
+Other cpu found it in hash and tries to move it to the end of LRU.
+This leads to NULL pointer dereference inside of list_move_tail().
 
-Then an user is unable to reload the driver because the resource it requested in
-the previous load hasn't been freed. This happens most probably due to a typo in
-vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
-of 'edev->base_addr'...
+Another possible race condition is between inet_frag_lru_move() and
+inet_frag_lru_del(): move can happens after deletion.
 
-Reported-by: Matthew Whitehead <tedheadster@gmail.com>
-Tested-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+This patch initializes LRU list head before adding fragment into hash and
+inet_frag_lru_move() doesn't touches it if it's empty.
+
+I saw this kernel oops two times in a couple of days.
+
+[119482.128853] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[119482.132693] IP: [<ffffffff812ede89>] __list_del_entry+0x29/0xd0
+[119482.136456] PGD 2148f6067 PUD 215ab9067 PMD 0
+[119482.140221] Oops: 0000 [#1] SMP
+[119482.144008] Modules linked in: vfat msdos fat 8021q fuse nfsd auth_rpcgss nfs_acl nfs lockd sunrpc ppp_async ppp_generic bridge slhc stp llc w83627ehf hwmon_vid snd_hda_codec_hdmi snd_hda_codec_realtek kvm_amd k10temp kvm snd_hda_intel snd_hda_codec edac_core radeon snd_hwdep ath9k snd_pcm ath9k_common snd_page_alloc ath9k_hw snd_timer snd soundcore drm_kms_helper ath ttm r8169 mii
+[119482.152692] CPU 3
+[119482.152721] Pid: 20, comm: ksoftirqd/3 Not tainted 3.9.0-zurg-00001-g9f95269 #132 To Be Filled By O.E.M. To Be Filled By O.E.M./RS880D
+[119482.161478] RIP: 0010:[<ffffffff812ede89>]  [<ffffffff812ede89>] __list_del_entry+0x29/0xd0
+[119482.166004] RSP: 0018:ffff880216d5db58  EFLAGS: 00010207
+[119482.170568] RAX: 0000000000000000 RBX: ffff88020882b9c0 RCX: dead000000200200
+[119482.175189] RDX: 0000000000000000 RSI: 0000000000000880 RDI: ffff88020882ba00
+[119482.179860] RBP: ffff880216d5db58 R08: ffffffff8155c7f0 R09: 0000000000000014
+[119482.184570] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88020882ba00
+[119482.189337] R13: ffffffff81c8d780 R14: ffff880204357f00 R15: 00000000000005a0
+[119482.194140] FS:  00007f58124dc700(0000) GS:ffff88021fcc0000(0000) knlGS:0000000000000000
+[119482.198928] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[119482.203711] CR2: 0000000000000000 CR3: 00000002155f0000 CR4: 00000000000007e0
+[119482.208533] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[119482.213371] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[119482.218221] Process ksoftirqd/3 (pid: 20, threadinfo ffff880216d5c000, task ffff880216d3a9a0)
+[119482.223113] Stack:
+[119482.228004]  ffff880216d5dbd8 ffffffff8155dcda 0000000000000000 ffff000200000001
+[119482.233038]  ffff8802153c1f00 ffff880000289440 ffff880200000014 ffff88007bc72000
+[119482.238083]  00000000000079d5 ffff88007bc72f44 ffffffff00000002 ffff880204357f00
+[119482.243090] Call Trace:
+[119482.248009]  [<ffffffff8155dcda>] ip_defrag+0x8fa/0xd10
+[119482.252921]  [<ffffffff815a8013>] ipv4_conntrack_defrag+0x83/0xe0
+[119482.257803]  [<ffffffff8154485b>] nf_iterate+0x8b/0xa0
+[119482.262658]  [<ffffffff8155c7f0>] ? inet_del_offload+0x40/0x40
+[119482.267527]  [<ffffffff815448e4>] nf_hook_slow+0x74/0x130
+[119482.272412]  [<ffffffff8155c7f0>] ? inet_del_offload+0x40/0x40
+[119482.277302]  [<ffffffff8155d068>] ip_rcv+0x268/0x320
+[119482.282147]  [<ffffffff81519992>] __netif_receive_skb_core+0x612/0x7e0
+[119482.286998]  [<ffffffff81519b78>] __netif_receive_skb+0x18/0x60
+[119482.291826]  [<ffffffff8151a650>] process_backlog+0xa0/0x160
+[119482.296648]  [<ffffffff81519f29>] net_rx_action+0x139/0x220
+[119482.301403]  [<ffffffff81053707>] __do_softirq+0xe7/0x220
+[119482.306103]  [<ffffffff81053868>] run_ksoftirqd+0x28/0x40
+[119482.310809]  [<ffffffff81074f5f>] smpboot_thread_fn+0xff/0x1a0
+[119482.315515]  [<ffffffff81074e60>] ? lg_local_lock_cpu+0x40/0x40
+[119482.320219]  [<ffffffff8106d870>] kthread+0xc0/0xd0
+[119482.324858]  [<ffffffff8106d7b0>] ? insert_kthread_work+0x40/0x40
+[119482.329460]  [<ffffffff816c32dc>] ret_from_fork+0x7c/0xb0
+[119482.334057]  [<ffffffff8106d7b0>] ? insert_kthread_work+0x40/0x40
+[119482.338661] Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00 ad de 48 39 c8 74 7a <4c> 8b 00 4c 39 c7 75 53 4c 8b 42 08 4c 39 c7 75 2b 48 89 42 08
+[119482.343787] RIP  [<ffffffff812ede89>] __list_del_entry+0x29/0xd0
+[119482.348675]  RSP <ffff880216d5db58>
+[119482.353493] CR2: 0000000000000000
+
+Oops happened on this path:
+ip_defrag() -> ip_frag_queue() -> inet_frag_lru_move() -> list_move_tail() -> __list_del_entry()
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Jesper Dangaard Brouer <brouer@redhat.com>
+Cc: Florian Westphal <fw@strlen.de>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: David S. Miller <davem@davemloft.net>
+Acked-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/3com/3c59x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/inet_frag.h  |    5 +++--
+ net/ipv4/inet_fragment.c |    1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -951,7 +951,7 @@ static int vortex_eisa_remove(struct dev
+--- a/include/net/inet_frag.h
++++ b/include/net/inet_frag.h
+@@ -135,14 +135,15 @@ static inline int sum_frag_mem_limit(str
+ static inline void inet_frag_lru_move(struct inet_frag_queue *q)
+ {
+ 	spin_lock(&q->net->lru_lock);
+-	list_move_tail(&q->lru_list, &q->net->lru_list);
++	if (!list_empty(&q->lru_list))
++		list_move_tail(&q->lru_list, &q->net->lru_list);
+ 	spin_unlock(&q->net->lru_lock);
+ }
  
- 	unregister_netdev(dev);
- 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
--	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
-+	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ static inline void inet_frag_lru_del(struct inet_frag_queue *q)
+ {
+ 	spin_lock(&q->net->lru_lock);
+-	list_del(&q->lru_list);
++	list_del_init(&q->lru_list);
+ 	spin_unlock(&q->net->lru_lock);
+ }
  
- 	free_netdev(dev);
- 	return 0;
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -257,6 +257,7 @@ static struct inet_frag_queue *inet_frag
+ 	setup_timer(&q->timer, f->frag_expire, (unsigned long)q);
+ 	spin_lock_init(&q->lock);
+ 	atomic_set(&q->refcnt, 1);
++	INIT_LIST_HEAD(&q->lru_list);
+ 
+ 	return q;
+ }
 
 
