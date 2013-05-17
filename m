@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab3EQCb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 22:31:56 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:62962 "EHLO
+	id S1752999Ab3EQCcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 22:32:05 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:63032 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab3EQCbz (ORCPT
+	with ESMTP id S1752700Ab3EQCcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 22:31:55 -0400
-Message-ID: <51959687.9090305@huawei.com>
-Date: Fri, 17 May 2013 10:31:35 +0800
+	Thu, 16 May 2013 22:32:02 -0400
+Message-ID: <51959668.9040106@huawei.com>
+Date: Fri, 17 May 2013 10:31:04 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
 To: Ingo Molnar <mingo@kernel.org>
 CC: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] watchdog: Remove softlockup_thresh from Documentation
-References: <51959668.9040106@huawei.com>
-In-Reply-To: <51959668.9040106@huawei.com>
+Subject: [PATCH 1/3] watchdog: Disallow setting watchdog_thresh to -1
 Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.135.68.215]
@@ -25,41 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old softlockup detector has been replaced with new lockup
-detector long ago.
+In old kernels, it's allowed to set softlockup_thresh to -1 or 0
+to disable softlockup detection. However watchdog_thresh only
+uses 0 to disable detection, and setting it to -1 just froze my
+box and nothing I can do but reboot.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- Documentation/sysctl/kernel.txt | 10 ----------
- 1 file changed, 10 deletions(-)
+ kernel/sysctl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index e8fabd6..bcff3f9 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -70,7 +70,6 @@ show up in /proc/sys/kernel:
- - shmall
- - shmmax                      [ sysv ipc ]
- - shmmni
--- softlockup_thresh
- - stop-a                      [ SPARC only ]
- - sysrq                       ==> Documentation/sysrq.txt
- - tainted
-@@ -605,15 +604,6 @@ without users and with a dead originative process will be destroyed.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 9edcf45..b0a1f99 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -120,7 +120,6 @@ extern int blk_iopoll_enabled;
+ /* Constants used for minimum and  maximum */
+ #ifdef CONFIG_LOCKUP_DETECTOR
+ static int sixty = 60;
+-static int neg_one = -1;
+ #endif
  
- ==============================================================
- 
--softlockup_thresh:
--
--This value can be used to lower the softlockup tolerance threshold.  The
--default threshold is 60 seconds.  If a cpu is locked up for 60 seconds,
--the kernel complains.  Valid values are 1-60 seconds.  Setting this
--tunable to zero will disable the softlockup detection altogether.
--
--==============================================================
--
- tainted:
- 
- Non-zero if the kernel has been tainted.  Numeric values, which
+ static int zero;
+@@ -814,7 +813,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dowatchdog,
+-		.extra1		= &neg_one,
++		.extra1		= &zero,
+ 		.extra2		= &sixty,
+ 	},
+ 	{
 -- 
 1.8.0.2
