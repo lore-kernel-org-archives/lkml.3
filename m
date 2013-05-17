@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab3EQGZk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 02:25:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46204 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753225Ab3EQGZi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 02:25:38 -0400
-Message-ID: <1368771935.1924.42.camel@dabdike>
-Subject: Re: [PATCH] parisc: avoid WARNING: at kernel/cpu/idle.c:96
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Helge Deller <deller@gmx.de>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-parisc@vger.kernel.org, John David Anglin <dave.anglin@bell.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 16 May 2013 23:25:35 -0700
-In-Reply-To: <1368047134.8623.5.camel@dabdike>
-References: <20130508204242.GA16254@p100.box>
-	 <1368047134.8623.5.camel@dabdike>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754822Ab3EQGdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 02:33:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752834Ab3EQGdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 02:33:53 -0400
+Date: Fri, 17 May 2013 16:33:40 +1000
+From: Dave Chinner <dchinner@redhat.com>
+To: Oskar Andero <oskar.andero@sonymobile.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] mm: vmscan: handle any negative return value from
+ scan_objects
+Message-ID: <20130517063340.GE11167@devil.localdomain>
+References: <1368693736-15486-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130516115212.GC11167@devil.localdomain>
+ <20130516122752.GG24072@caracas.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516122752.GG24072@caracas.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-08 at 14:05 -0700, James Bottomley wrote:
-> On Wed, 2013-05-08 at 22:42 +0200, Helge Deller wrote:
-> > We need to enable local irqs to avoid this runtime warning.
+On Thu, May 16, 2013 at 02:27:52PM +0200, Oskar Andero wrote:
+> On 13:52 Thu 16 May     , Dave Chinner wrote:
+> > On Thu, May 16, 2013 at 10:42:16AM +0200, Oskar Andero wrote:
+> > > The shrinkers must return -1 to indicate that it is busy. Instead, treat
+> > > any negative value as busy.
 > > 
-> > Signed-off-by: Helge Deller <deller@gmx.de>
-> > 
-> > diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
-> > index 55f92b6..2840d43 100644
-> > --- a/arch/parisc/kernel/process.c
-> > +++ b/arch/parisc/kernel/process.c
-> > @@ -286,3 +286,8 @@ void *dereference_function_descriptor(void *ptr)
-> >  	return ptr;
-> >  }
-> >  #endif
-> > +
-> > +void arch_cpu_idle(void)
-> > +{
-> > +	local_irq_enable();
+> > Why? The API defines return condition for aborting a scan and gives
+> > a specific value for doing that. i.e. explain why should change the
+> > API to over-specify the 'abort scan" return value like this.
 > 
-> This is definitely wrong.  we'd need at least a cpu_relax() in there.
-> Without that the cpu will bounce around in the idle loop.  I'd advise
-> that we simply keep the default cpu_idle_poll().
+> As I pointed out earlier, looking in to the code (from master):
+> 	if (shrink_ret == -1)
+> 		break;
+> 	if (shrink_ret < nr_before)
+> 		ret += nr_before - shrink_ret;
 > 
-> However, this looks like a kernel bug to me in cpu_idle_loop()?  not
-> something we should be working around in the arch code.
+> This piece of code lacks a sanity check and will only function if shrink_ret
+> is either greater than zero or exactly -1. If shrink_ret is e.g. -2 this will
+> lead to undefined behaviour.
+
+If a shrinker is returning -2 then the shrinker is broken and needs
+fixing.
+
+> > FWIW, using "any" negative number for "abort scan" is a bad API
+> > design decision. It means that in future we can't introduce
+> > different negative return values in the API if we have a new to.
+> > i.e. each specific negative return value needs to have the potential
+> > for defining a different behaviour. 
 > 
-> Thomas, what's going on here?  It looks like you can never avoid the
-> WARN_ON_ONCE if you don't provide any arch specific idle functions.  If
-> you wish to allow this case then the correct patch (keeping the WARN_ON)
-> would appear to be this one.
+> An alternative to my patch would be to add:
+> if (shrink_ret < -1)
+>    /* handle illegal return code in some way */
 
-Ping on this, please, Thomas ... the patch looks fairly obviously
-correct, do you just want us to take it through the parisc tree?
+How? We have one valid negative return code. WTF are we supposed to
+do if a shrinker is passing undefined return values? IOWs, the only
+sane thing to do is:
 
-James
+	BUG_ON(shrink_ret < -1);
 
-
-> James
+> > So if any change needs to be made, it is to change the -1 return
+> > value to an enum and have the shrinkers return that enum when they
+> > want an abort.
 > 
-> ----
-> diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-> index 8b86c0c..829e41f 100644
-> --- a/kernel/cpu/idle.c
-> +++ b/kernel/cpu/idle.c
-> @@ -56,6 +56,7 @@ void __weak arch_cpu_idle_dead(void) { }
->  void __weak arch_cpu_idle(void)
->  {
->  	cpu_idle_force_poll = 1;
-> +	local_irq_enable();
->  }
->  
->  /*
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I am all for an enum, but I still believe we should handle the case where
+> the shrinkers return something wicked.
 
+Which bit of "broken shrinkers need to be fixed" don't you
+understand? A BUG_ON() will make sure they get fixed - anything else
+that allows broken shrinkers to continue functioning is a completely
+unacceptible solution.
 
-
+-Dave.
+-- 
+Dave Chinner
+dchinner@redhat.com
