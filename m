@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511Ab3EQVuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54753 "EHLO
+	id S1757337Ab3EQVyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:54:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757956Ab3EQVub (ORCPT
+	with ESMTP id S932502Ab3EQVue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:31 -0400
+	Fri, 17 May 2013 17:50:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 27/33] drbd: fix for deadlock when using automatic split-brain-recovery
-Date: Fri, 17 May 2013 14:50:11 -0700
-Message-Id: <20130517214919.789039630@linuxfoundation.org>
+        Matthew Whitehead <tedheadster@gmail.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 19/33] 3c59x: fix freeing nonexistent resource on driver unload
+Date: Fri, 17 May 2013 14:50:03 -0700
+Message-Id: <20130517214918.886750662@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -28,41 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream.
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-With an automatic after split-brain recovery policy of
-"after-sb-1pri call-pri-lost-after-sb",
-when trying to drbd_set_role() to R_SECONDARY,
-we run into a deadlock.
+[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
 
-This was first recognized and supposedly fixed by
-2009-06-10 "Fixed a deadlock when using automatic split brain recovery when both nodes are"
-replacing drbd_set_role() with drbd_change_state() in that code-path,
-but the first hunk of that patch forgets to remove the drbd_set_role().
+When unloading the driver that drives an EISA board, a message similar to the
+following one is displayed:
 
-We apparently only ever tested the "two primaries" case.
+Trying to free nonexistent resource <0000000000013000-000000000001301f>
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Then an user is unable to reload the driver because the resource it requested in
+the previous load hasn't been freed. This happens most probably due to a typo in
+vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
+of 'edev->base_addr'...
+
+Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+Tested-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/drbd/drbd_receiver.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2225,7 +2225,6 @@ static int drbd_asb_recover_1p(struct dr
- 		if (hg == -1 && mdev->state.role == R_PRIMARY) {
- 			enum drbd_state_rv rv2;
+--- a/drivers/net/3c59x.c
++++ b/drivers/net/3c59x.c
+@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(
  
--			drbd_set_role(mdev, R_SECONDARY, 0);
- 			 /* drbd_change_state() does not sleep while in SS_IN_TRANSIENT_STATE,
- 			  * we might be here in C_WF_REPORT_PARAMS which is transient.
- 			  * we do not need to wait for the after state change work either. */
+ 	unregister_netdev(dev);
+ 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
+-	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
++	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ 
+ 	free_netdev(dev);
+ 	return 0;
 
 
