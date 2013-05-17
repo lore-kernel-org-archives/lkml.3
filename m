@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3EQSGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:06:13 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38337 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756567Ab3EQSGM (ORCPT
+	id S1754881Ab3EQSHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:07:36 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:64057 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab3EQSHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:06:12 -0400
-Message-ID: <5196718D.30904@hurleysoftware.com>
-Date: Fri, 17 May 2013 14:06:05 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 17 May 2013 14:07:35 -0400
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] tty: make sure a BUG is hit if tty_port will be destroyed
- before tty
-References: <5195B561.3090503@ahsoftware.de> <1368774728-4817-1-git-send-email-holler@ahsoftware.de> <20130517153136.GC19541@kroah.com> <51965DC0.7030901@ahsoftware.de>
-In-Reply-To: <51965DC0.7030901@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-Originating-IP: [84.109.219.89]
+In-Reply-To: <1368609586-20905-1-git-send-email-leon@leon.nu>
+References: <1368609586-20905-1-git-send-email-leon@leon.nu>
+From: Leon Romanovsky <leon@leon.nu>
+Date: Fri, 17 May 2013 21:07:14 +0300
+Message-ID: <CALq1K=KP4pADX89QJ3MJzaC+uTeEVOy7FUNikEnYddb0u-rihw@mail.gmail.com>
+Subject: Re: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
+To: sameo@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, Leon Romanovsky <leon@leon.nu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 12:41 PM, Alexander Holler wrote:
-> Am 17.05.2013 17:31, schrieb Greg Kroah-Hartman:
->> On Fri, May 17, 2013 at 09:12:08AM +0200, Alexander Holler wrote:
->>> tty depends on tty_port until tty_release() was called. Make sure a BUG
->>> will be hit, if tty_port will be destroyed before tty.
->>
->> So you want to ensure that we crash a machine?  No, please never add
+Hi Samuel,
+
+On Wed, May 15, 2013 at 12:19 PM, Leon Romanovsky <leon@leon.nu> wrote:
+> There is no need to call kfree while using devm_kzalloc,
+> remove it from *_device_init function.
 >
-> Exactly. Let me quote myself:
->
->  >> As described before, it ends up with memory corruption because freed
->  >> memory is used, so if a BUG() happens, it doesn't help much. E.g. with
->  >> kernel 3.9.2 I never have seen a bug, just a rebooting machine
->  >> (sometimes minutes after the real bug happened).
->
->> BUG() statements to the kernel, unless something _really_ bad is going
->> to happen if we don't call it.  I never want to stop a machine from
->> running, do you?
->
-> Yes. I'm not sure how you define _really_ bad, but a memory corruption with undefined result is exactly how I would define such.
+> Signed-off-by: Leon Romanovsky <leon@leon.nu>
+> ---
+>  drivers/mfd/tps65912-core.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
 
-First, I like the idea of a diagnostic here. But I'm with Greg on
-this; BUG() is overkill. Just because the specific path which you found
-only kills the process doesn't mean that other callers might not
-prompt machine halt.
+To be honest the whole tps65912 looks strange to me.
+For example,  kfree(tps65912) calls all over the code.
 
-The memory corruption happens as a result of the tty_port being freed
-by tty_port_destructor(). So a suitable diagnostic is to detect the
-condition, WARN, and return without actually performing the destroy, yes?
-
-> And in the case of rfcomm, the box doesn't stop, at least not here. Just the process is killed together with an easy to identfiy oops. And the BUG_ON() prevents that memory will become corrupted and the machine is still usable afterwards. If that isn't a use case for BUG_ON(), I really don't know what else would be a use case for it.
->
->> I can't take this as-is, why not just fix the root problem?
->
-> First I'm still not sure about the root problem and awaiting some response to my mail before that patch. As noted in the mail with the patch, 3.10-rc1 looks different, so the it might already be fixed there, even if rfcomm doesn't handle the tty as it (now in 3.8 and 3.9) should be (I haven't tested 3.10-rc1 up to now).
-
-This problem exists from the commit identified up through current
-mainline. It has not been fixed yet. I'll specifically respond to what
-I believe is the correct solution in that thread.
-
-> Second, if I would fix the bug in rfcomm, as Peter suggested, I still would not know if the same problem doesn't appear in any other user of ttys too, so even if I would fix rfcomm, I still would want that BUG_ON() to make sure I don't get a memory corruption whenever another similiar bug is hit.
-
-Only a handful of tty drivers use the ref-counted destroy method of
-tty_port cleanup (the other method being calling tty_port_destroy()
-directly). They are:
-
-   drivers/tty/pty.c
-   drivers/mmc/card/sdio_uart.c
-   drivers/idsn/capi/capi.c
-   drivers/usb/class/cdc-acm.c
-   drivers/tty/n_gsm.c
-   drivers/tty/hvc/hvc_console.c
-   drivers/tty/hvc/hvcs.c
-   net/bluetooth/rfcomm/tty.c
-
-Of these, I know and have reviewed the first two drivers; their
-usage is correct.
-
-While reviewing these additional drivers, maybe we should review
-whether it makes sense to
-   * require and document the tty_port to live at least
-     to ops->cleanup() (currently the default)
-   * allow tty_port lifetime to be completely independent of
-     a tty's lifetime
-   * remove ref-counting from tty_port
-
-Regards,
-Peter Hurley
+tps65912_i2c_probe allocates tps65912 struct, but tps65912_device_exit
+releases it.
 
 
-
+--
+Leon Romanovsky | Independent Linux Consultant
+        www.leon.nu | leon@leon.nu
