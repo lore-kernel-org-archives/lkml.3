@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab3EQToO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 15:44:14 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:54960 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3EQToN (ORCPT
+	id S1756411Ab3EQToY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 15:44:24 -0400
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:35244 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab3EQToW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 15:44:13 -0400
-Message-ID: <5196887A.2010906@ahsoftware.de>
-Date: Fri, 17 May 2013 21:43:54 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130421 Thunderbird/17.0.5
+	Fri, 17 May 2013 15:44:22 -0400
+Date: Fri, 17 May 2013 21:44:19 +0200
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux source tree size difference issue
+Message-ID: <20130517194419.GA4002@mobil.systemanalysen.net>
+Mail-Followup-To: Chris Jones <chrisjones@spin.net.au>,
+	linux-kernel@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <519577DD.3040204@spin.net.au>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] tty: make sure a BUG is hit if tty_port will be destroyed
- before tty
-References: <5195B561.3090503@ahsoftware.de> <1368774728-4817-1-git-send-email-holler@ahsoftware.de> <20130517153136.GC19541@kroah.com> <51965DC0.7030901@ahsoftware.de> <5196718D.30904@hurleysoftware.com> <5196835B.4060100@ahsoftware.de>
-In-Reply-To: <5196835B.4060100@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <519577DD.3040204@spin.net.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.05.2013 21:22, schrieb Alexander Holler:
 
-> The case that the machine didn't die, but just the process, only happens
-> when my proposed patch is applied, which prevents the memory corruption.
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In short, the proposed BUG_ON() prevents the memory corruption because
-it is hit before something bad can happen. The result is that just the
-process in question will be killed (and a tty is not released), but only
-that BUG_ON() prevents that something _really_ bad happens.
+On 2013-05-17 Friday at 10:20 +1000 Chris Jones wrote:
+> I have cloned the Linux kernel source tree locally. It comes in at
+> approx. ~500MB. I have then created another git repository to push the
+> source to for my own work. I rsynced the tree locally to another
+> directory and now I am currently pushing it in to the new repository and
+> it's at 58% and is already at 525MB.
+>=20
+> I can not understand the stark difference in source and directory size.
+> Running diff tells me both local source tree directories are exactly the
+> same.
+>=20
+> Can anyone explain this in layman's terms?
 
-I hope I could describe it now clearly. ;)
+$  LC_ALL=3DC du --help  | grep -E -e 'apparent|sparse|fragmentation'
+-------------------------------------------------------------------
+      --apparent-size   print apparent sizes, rather than disk usage; altho=
+ugh
+                          the apparent size is usually smaller, it may be
+                          larger due to holes in ('sparse') files, internal
+                          fragmentation, indirect blocks, and the like
+  -b, --bytes           equivalent to '--apparent-size --block-size=3D1'
 
-Regards,
+--=20
+Regards
+Roland Eggner
 
-Alexander
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEARECAAYFAlGWiJMACgkQdN/hKfT7G/ISyACfbKQZnj7RdADy3IDurK4G99Hb
+kmYAoJsvRI1H08AJ26SiVUYnC01Y6sKz
+=jqSb
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
