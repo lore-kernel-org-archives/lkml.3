@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3EQLIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 07:08:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52750 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab3EQLIP (ORCPT
+	id S1755405Ab3EQLO2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 07:14:28 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58626
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752506Ab3EQLO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 07:08:15 -0400
-Date: Fri, 17 May 2013 12:07:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Ralph Birt <ralph.birt@maximintegrated.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Jerry Wong <jerry.wong@maximintegrated.com>,
-        Evan Ragsdale <evan.ragsdale@maximintegrated.com>,
-        Dylan Reid <dgreid@chromium.org>, linux-kernel@vger.kernel.org,
-        Matthew Mowdy <Matthew.Mowdy@maximintegrated.com>
-Message-ID: <20130517110733.GK1627@sirena.org.uk>
-References: <20130516175241.GF1627@sirena.org.uk>
- <1368731034-30135-1-git-send-email-abrestic@chromium.org>
+	Fri, 17 May 2013 07:14:27 -0400
+Date: Fri, 17 May 2013 13:12:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Michael Neuling <mikey@neuling.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>
+Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for
+ PERF_SAMPLE_BRANCH_KERNEL
+Message-ID: <20130517111232.GE5162@dyad.programming.kicks-ass.net>
+References: <20130503121122.931661809@chello.nl>
+ <20130503121256.230745028@chello.nl>
+ <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
+ <20130516090916.GF19669@dyad.programming.kicks-ass.net>
+ <8578.1368699317@ale.ozlabs.ibm.com>
+ <20130516111634.GA15314@twins.programming.kicks-ass.net>
+ <CABPqkBSCXJN7gLK_e_Q3YVVVFVGS78fo4j2z0+MmriqoXszH+w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j/HO4hzKTNbM1mOX"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368731034-30135-1-git-send-email-abrestic@chromium.org>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 212.183.132.60
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] ASoC: max98090: add digital mic mux to record path
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <CABPqkBSCXJN7gLK_e_Q3YVVVFVGS78fo4j2z0+MmriqoXszH+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 16, 2013 at 05:36:11PM +0200, Stephane Eranian wrote:
+> On Thu, May 16, 2013 at 1:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Thu, May 16, 2013 at 08:15:17PM +1000, Michael Neuling wrote:
+> >> Peter,
+> >>
+> >> BTW PowerPC also has the ability to filter on conditional branches.  Any
+> >> chance we could add something like the follow to perf also?
+> >>
+> >
+> > I don't see an immediate problem with that except that we on x86 need to
+> > implement that in the software filter. Stephane do you see any
+> > fundamental issue with that?
+> >
+> On X86, the LBR cannot filter on conditional in HW. Thus as Peter said, it would
+> have to be done in SW. I did not add that because I think those branches are
+> not necessarily useful for tools.
 
---j/HO4hzKTNbM1mOX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Wouldn't it be mostly conditional branches that are the primary control flow
+and can get predicted wrong? I mean, I'm sure someone will miss-predict an
+unconditional branch but its not like we care about people with such
+afflictions do we?
 
-On Thu, May 16, 2013 at 12:03:54PM -0700, Andrew Bresticker wrote:
-> The max98090 driver currently treats the digital mic enable as a supply
-> on the record path, causing the digital mic enable to always be turned on
-> when attempting to record.  This is incorrect, however, since the digital
+Anyway, since PPC people thought it worth baking into hardware, presumably they
+have a compelling use case. Mikey could you see if you can retrieve that from
+someone in the know? It might be interesting.
 
-Applied, thanks.
+Also, it looks like its trivial to add to x86, you seem to have already done
+all the hard work by having X86_BR_JCC.
 
---j/HO4hzKTNbM1mOX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The only missing piece would be:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRlg9yAAoJELSic+t+oim9yUMP/0wVoSZeTeV284+q1Mx+92iq
-khkdszgBpjuyHhZcdxOcsIK11A6SYkfR4gcHJee4MD8q1i6XRAnfrhdDt4EKfc9D
-O3TioJb2HW1xfSY7f6OxDYzpmWYULksg7FJvJL4CVdjz3NhmohleLvCYlwJgfF5Z
-NusRkc2HMVprfa7+7ixTuM1ntndVNSMu1soWPaPypqsLkGCKku2jD9d5mdtDI63p
-c3ugz2dd4sLDxkzp9BVyfXwE+CQJrvhJ2CFiSInt6P4YMM30OHpdQ8Hsb97QdBhO
-k2LbgFI+oC72Z8KXmppEzYmjhJMDBfrQsvu+CMV8+LYY9a1lW6NysCuzsr1geprA
-LriVRVzTX6fB0R0HbNnq6i5TzT/euBH/1LrqpT14EVobQfsu4Z59PbZhjPFtTyOC
-4GkQZqqLe8R2T1nMC38NeJpOxwCQW0XETq0pvQcYm81cYLyQ9/wrDO+DTRBh6chA
-MxqOTCW1LzaNNA+xTCMPcds/2mb4vuDO2bvPUQUAO/fuTbiClVy0cRHI7j5aKzrX
-uKivlObwunuCVrWBkm00ts07/TqaqDWNumCbvnJZ89JgVJxkB6w5I8I89uaiY5yO
-0jixnItwjkvj7MJ4mEvKgWn1GZnq+cOI4SaACOSRTnOd+gILAtQAgJWtyuxYAeC6
-2L/SHPp1p3qt8rsn1y5j
-=kkJU
------END PGP SIGNATURE-----
-
---j/HO4hzKTNbM1mOX--
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -337,6 +337,10 @@ static int intel_pmu_setup_sw_lbr_filter
+ 
+ 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
+ 		mask |= X86_BR_IND_CALL;
++
++	if (br_type & PERF_SAMPLE_BRANCH_CONDITIONAL)
++		mask |= X86_BR_JCC;
++
+ 	/*
+ 	 * stash actual user request into reg, it may
+ 	 * be used by fixup code for some CPU
