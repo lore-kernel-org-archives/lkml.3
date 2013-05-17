@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3EQU17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 16:27:59 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:40252 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab3EQU15 (ORCPT
+	id S1755963Ab3EQUbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 16:31:53 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:50024 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab3EQUbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 16:27:57 -0400
-From: Rabin Vincent <rabin@rab.in>
-To: acme@redhat.com, mingo@kernel.org
-Cc: bp@suse.de, linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH] tools lib lk: respect CROSS_COMPILE
-Date: Fri, 17 May 2013 22:27:44 +0200
-Message-Id: <1368822464-4887-1-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 17 May 2013 16:31:52 -0400
+Message-ID: <519693B8.10600@gmail.com>
+Date: Fri, 17 May 2013 16:31:52 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
+References: <20130508143411.GD30955@pd.tnic> <1368029552-dzvitovl-mutt-n-horiguchi@ah.jp.nec.com> <20130508184524.GF30955@pd.tnic> <1368046093-mpzcumyb-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1368046093-mpzcumyb-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make lk use CROSS_COMPILE, in order to be able to cross compile perf
-again.
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Wed, 8 May 2013 11:48:01 -0400
+> Subject: [PATCH] ipc/shm.c: don't use auto variable hs in newseg()
+> 
+> This patch fixes "warning: unused variable 'hs'" when !CONFIG_HUGETLB_PAGE
+> introduced by commit af73e4d9506d "hugetlbfs: fix mmap failure in unaligned
+> size request".
+> 
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  ipc/shm.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index e316cb9..9ff741a 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -491,9 +491,8 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>  
+>  	sprintf (name, "SYSV%08x", key);
+>  	if (shmflg & SHM_HUGETLB) {
+> -		struct hstate *hs = hstate_sizelog((shmflg >> SHM_HUGE_SHIFT)
+> -						& SHM_HUGE_MASK);
+> -		size_t hugesize = ALIGN(size, huge_page_size(hs));
+> +		size_t hugesize = ALIGN(size, huge_page_size(hstate_sizelog(
+> +				(shmflg >> SHM_HUGE_SHIFT) & SHM_HUGE_MASK)));
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- tools/lib/lk/Makefile | 3 +++
- 1 file changed, 3 insertions(+)
+NAK. This is uglier than before.
+You should change !CONFIG_HUGETLB_PAGE specific code instead.
 
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 926cbf3..2c5a197 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -1,5 +1,8 @@
- include ../../scripts/Makefile.include
- 
-+CC = $(CROSS_COMPILE)gcc
-+AR = $(CROSS_COMPILE)ar
-+
- # guard against environment variables
- LIB_H=
- LIB_OBJS=
--- 
-1.8.1.2
+
+
+
+
 
