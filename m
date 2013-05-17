@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab3EQQKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 12:10:37 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:53982 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab3EQQKf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 12:10:35 -0400
-From: dirk.brandewie@gmail.com
-To: linux-pm@vger.kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, torvalds@linux-foundation.org
-Subject: [PATCH] cpufreq/intel_pstate: Add additional supported CPU ID
-Date: Fri, 17 May 2013 09:10:24 -0700
-Message-Id: <1368807024-15251-1-git-send-email-dirk.j.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
-References: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
+	id S1755949Ab3EQQLt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 12:11:49 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1581 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753800Ab3EQQLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 12:11:48 -0400
+Message-ID: <5196567B.4080905@parallels.com>
+Date: Fri, 17 May 2013 20:10:35 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Pavel Tikhomirov <snorcht@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Matthew Helsley <matt.helsley@gmail.com>, linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] posix-timers: Show clock ID in proc file
+References: <1368742323-46949-1-git-send-email-snorcht@gmail.com> <1368742323-46949-2-git-send-email-snorcht@gmail.com>
+In-Reply-To: <1368742323-46949-2-git-send-email-snorcht@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+On 05/17/2013 02:12 AM, Pavel Tikhomirov wrote:
+> Expand information about posix-timers in /proc/<pid>/timers by adding
+> info about clock, with which the timer was created. I.e. in the forth
+> line of timer info after "notify:" line go "ClockID: <clock_id>".
+> 
+> Signed-off-by: Pavel Tikhomirov <snorcht@gmail.com>
 
-Add CPU ID for Ivybrigde processor.
 
-Cc: torvalds@linux-foundation.org
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- drivers/cpufreq/intel_pstate.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 1813311..d1e36fe 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -521,6 +521,7 @@ static void intel_pstate_timer_func(unsigned long __data)
- static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- 	ICPU(0x2a, default_policy),
- 	ICPU(0x2d, default_policy),
-+	ICPU(0x3a, default_policy),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
--- 
-1.7.7.6
+> ---
+>  fs/proc/base.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 2dad4a9..8a38eef 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -2079,6 +2079,7 @@ static int show_timer(struct seq_file *m, void *v)
+>  		nstr[notify & ~SIGEV_THREAD_ID],
+>  		(notify & SIGEV_THREAD_ID) ? "tid" : "pid",
+>  		pid_nr_ns(timer->it_pid, tp->ns));
+> +	seq_printf(m, "ClockID: %d\n", timer->it_clock);
+>  
+>  	return 0;
+>  }
+> 
+
 
