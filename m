@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab3EQUpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 16:45:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45198 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753170Ab3EQUpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 16:45:05 -0400
-Date: Fri, 17 May 2013 16:44:52 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/5] mm: Remove lru parameter from __pagevec_lru_add and
- remove parts of pagevec API
-Message-ID: <20130517204452.GC15721@cmpxchg.org>
-References: <1368784087-956-1-git-send-email-mgorman@suse.de>
- <1368784087-956-5-git-send-email-mgorman@suse.de>
+	id S1756141Ab3EQUpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 16:45:52 -0400
+Received: from zetta.elopez.com.ar ([199.30.59.35]:36621 "EHLO
+	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3EQUpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 16:45:51 -0400
+From: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>
+Subject: [PATCH v2 1/4] net: ethernet: sun: initialize variables directly
+Date: Fri, 17 May 2013 17:42:53 -0300
+Message-Id: <1368823376-13104-1-git-send-email-emilio@elopez.com.ar>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1368803268-27698-1-git-send-email-emilio@elopez.com.ar>
+References: <1368803268-27698-1-git-send-email-emilio@elopez.com.ar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368784087-956-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 10:48:06AM +0100, Mel Gorman wrote:
-> Now that the LRU to add a page to is decided at LRU-add time, remove the
-> misleading lru parameter from __pagevec_lru_add. A consequence of this is
-> that the pagevec_lru_add_file, pagevec_lru_add_anon and similar helpers
-> are misleading as the caller no longer has direct control over what LRU
-> the page is added to. Unused helpers are removed by this patch and existing
-> users of pagevec_lru_add_file() are converted to use lru_cache_add_file()
-> directly and use the per-cpu pagevecs instead of creating their own pagevec.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Jan Kara <jack@suse.cz>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+Clean up the code a bit to initialize the variables directly when
+defining them.
 
-> @@ -452,8 +448,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
->  	if (block) {
->  		/* submit the apparently valid page to the backing fs to be
->  		 * read from disk */
-> -		ret = cachefiles_read_backing_file_one(object, op, page,
-> -						       &pagevec);
-> +		ret = cachefiles_read_backing_file_one(object, op, page);
+Signed-off-by: Emilio López <emilio@elopez.com.ar>
+---
 
-Also remove the declaration and pagevec_init a few lines up?  Minor
-detail, though.
+Please note that this patch is untested.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Changes from v1:
+  - {0} -> { 0 } as suggested by David Miller
+
+ drivers/net/ethernet/sun/sunbmac.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/sun/sunbmac.c b/drivers/net/ethernet/sun/sunbmac.c
+index 0549759..aabb40a 100644
+--- a/drivers/net/ethernet/sun/sunbmac.c
++++ b/drivers/net/ethernet/sun/sunbmac.c
+@@ -1017,10 +1017,7 @@ static void bigmac_set_multicast(struct net_device *dev)
+ 		tmp |= BIGMAC_RXCFG_PMISC;
+ 		sbus_writel(tmp, bregs + BMAC_RXCFG);
+ 	} else {
+-		u16 hash_table[4];
+-
+-		for (i = 0; i < 4; i++)
+-			hash_table[i] = 0;
++		u16 hash_table[4] = { 0 };
+ 
+ 		netdev_for_each_mc_addr(ha, dev) {
+ 			crc = ether_crc_le(6, ha->addr);
+-- 
+1.8.2.3
+
