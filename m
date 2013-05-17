@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab3EQGMK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 02:12:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48184 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab3EQGMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 02:12:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,690,1363158000"; 
-   d="scan'208";a="242860590"
-Subject: Re: [PATCH] tty_buffer: avoid race due to tty_buffer_free_all()
- being misused
-From: channing <chao.bi@intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-In-Reply-To: <5194D6F9.5000505@hurleysoftware.com>
-References: <1368694762.2911.16.camel@bichao>
-	 <5194D6F9.5000505@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 17 May 2013 14:29:38 +0800
-Message-ID: <1368772178.1876.31.camel@bichao>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754250Ab3EQGQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 02:16:18 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:63028 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3EQGQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 02:16:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130516095237.GE22822@zurbaran>
+References: <CA+G9fYvxf4tiU+SoTOdHOazCzd-iRWVAmaCyWtKgZebS_4KNoQ@mail.gmail.com>
+	<20130516095237.GE22822@zurbaran>
+Date: Fri, 17 May 2013 09:16:15 +0300
+Message-ID: <CAGNsrLCMAXnA2B6WRGBOxMV_G0gKz=KWaQCXceKeFG7LE9doGw@mail.gmail.com>
+Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
+From: Fathi Boudra <fathi.boudra@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Naresh Kamboju <naresh.kamboju@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <kevin.hilman@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-16 at 08:54 -0400, Peter Hurley wrote:
-> On 05/16/2013 04:59 AM, channing wrote:
-> >
-> > In tty_buffer.c, function tty_buffer_free_all() is used to remove
-> > all buffers for a tty, although it's declared that it mustn't be called
-> > when the tty is in use, it cannot guarantee that. we can observe some
-> > device driver make use it by mistake, for example, while tty device is
-> > releasing, the tty data forwarding is not stopped, then it might hit
-> > the case that tty buffer is being used while tty_buffer_free_all()
-> > free this tty buffer, and finally lead to random error at any places,
-> > and it's not clear to debug.
-> 
-> What kernel version?
-3.4
-> 
-> > Although device driver could do better, it's simpler and safer to
-> > strengthen protection in the view of tty buffer, by adding a tty->buf.lock
-> > in tty_buffer_free_all() to avoid it racing with ongoing tty buffer
-> > operations.
-> 
-> Sorry, but this isn't correct.
-> 
-> The driver cannot continue to perform i/o concurrently with
-> tty_port_destroy().
-> 
-Thanks for remind, 3.4 haven't tty_port_destroy(), the mainline has
-changed the way to call tty_buffer_free_all().
+Hi Samuel,
 
-> If the concurrent use you're observing is with flush_to_ldisc(),
-> that should be fixed in current mainline.
-> 
-Yes, when calling flush_to_ldisc() in Kernel 3.4, we could observe the
-tty buffer is corrupted, and dummped stack shows that
-tty_buffer_free_all() was called before. Is it a known issue fixed in
-old version? would you please tell me related patch to solve this
-flush_to_ldisc() issue? Thanks very much.
+On 16 May 2013 12:52, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Maresh,
+>
+> On Wed, May 01, 2013 at 03:15:26PM +0530, Naresh Kamboju wrote:
+>> Ping.
+>>
+>> On 17 April 2013 21:16, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> > On Tue, Apr 16, 2013 at 3:48 PM, Naresh Kamboju
+>> > <naresh.kamboju@linaro.org> wrote:
+>> >> On 12 April 2013 04:07, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> >>> Hey it works. Didn't see this before I fixed it tho :-)
+>> >>> http://marc.info/?l=linux-kernel&m=136567139910888&w=2
+> marc.info seems to be down for me at the moment. Could you please re-send me
+> this patch ?
 
-Chao
+marc.info is back. Just in case:
+https://lkml.org/lkml/2013/4/11/101
+https://patchwork.kernel.org/patch/2426831/
 
+Cheers,
+Fathi
