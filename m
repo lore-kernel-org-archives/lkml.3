@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab3EQVuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54762 "EHLO
+	id S932629Ab3EQVva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:51:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54818 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757959Ab3EQVuc (ORCPT
+	with ESMTP id S932560Ab3EQVuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:32 -0400
+	Fri, 17 May 2013 17:50:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/33] 3c509.c: call SET_NETDEV_DEV for all device types (ISA/ISAPnP/EISA)
-Date: Fri, 17 May 2013 14:50:00 -0700
-Message-Id: <20130517214918.537043773@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Dave Airlie <airlied@redhat.com>
+Subject: [ 32/33] drm/radeon: check incoming cliprects pointer
+Date: Fri, 17 May 2013 14:50:16 -0700
+Message-Id: <20130517214920.334338181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -27,49 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Kees Cook <keescook@chromium.org>
 
-From: Matthew Whitehead <tedheadster@gmail.com>
+commit fefaedcfb82d2e57c2320acf60604ab03b750cc0 upstream.
 
-[ Upstream commit 3b54912f9cd167641b91d4a697bd742f70e534fe ]
+The "boxes" parameter points into userspace memory. It should be verified
+like any other operation against user memory.
 
-The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
-It does this with the SET_NETDEV_DEV function. It should register with the device
-hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
-
-- Currently they appear here:
-/sys/devices/virtual/net/eth0 (standard ISA)
-/sys/devices/virtual/net/eth1 (EISA)
-
-- Rather, they should instead be here:
-/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
-/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
-
-Tested on ISA and EISA boards.
-
-Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/3c509.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/net/3c509.c
-+++ b/drivers/net/3c509.c
-@@ -309,6 +309,7 @@ static int __devinit el3_isa_match(struc
- 	if (!dev)
- 		return -ENOMEM;
+---
+ drivers/gpu/drm/radeon/r300_cmdbuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -74,7 +74,7 @@ static int r300_emit_cliprects(drm_radeo
+ 		OUT_RING(CP_PACKET0(R300_RE_CLIPRECT_TL_0, nr * 2 - 1));
  
-+	SET_NETDEV_DEV(dev, pdev);
- 	netdev_boot_setup_check(dev);
- 
- 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
-@@ -704,6 +705,7 @@ static int __init el3_eisa_probe (struct
- 		return -ENOMEM;
- 	}
- 
-+	SET_NETDEV_DEV(dev, device);
- 	netdev_boot_setup_check(dev);
- 
- 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
+ 		for (i = 0; i < nr; ++i) {
+-			if (DRM_COPY_FROM_USER_UNCHECKED
++			if (DRM_COPY_FROM_USER
+ 			    (&box, &cmdbuf->boxes[n + i], sizeof(box))) {
+ 				DRM_ERROR("copy cliprect faulted\n");
+ 				return -EFAULT;
 
 
