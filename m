@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab3EQVrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:04 -0400
-Received: from mout.gmx.net ([212.227.15.15]:53671 "EHLO mout.gmx.net"
+	id S1757697Ab3EQVrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:33 -0400
+Received: from mout.gmx.net ([212.227.17.21]:56061 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757591Ab3EQVrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757167Ab3EQVrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:47:03 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/0CcVnQ7z0sfsFz20aRXqlpjkpvahkqhrD9YIQq2
-	xuQ6h3PGay/YDZ
+X-Provags-ID: V01U2FsdGVkX1/wHoogrTXwsknaf5RvDy/E8n776i7XwU8zH6dmbw
+	Ziio8zoEJS9I7R
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Peter Huewe <peterhuewe@gmx.de>, Cho Yu-Chen <acho@suse.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] staging/btmtk_usb: use module_usb_driver to register driver
-Date: Fri, 17 May 2013 23:51:57 +0200
-Message-Id: <1368827518-13364-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 2/2] staging/btmtk_usb: Mark local functions as static
+Date: Fri, 17 May 2013 23:51:58 +0200
+Message-Id: <1368827518-13364-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1368827518-13364-1-git-send-email-peterhuewe@gmx.de>
+References: <1368827518-13364-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing some boilerplate by using module_usb_driver instead of calling
-register and unregister in the otherwise empty init/exit functions
+sparse complains about some local functions not being static:
+drivers/staging/btmtk_usb/btmtk_usb.c:50:6:
+warning: symbol 'hex_dump' was not declared. Should it be static?
+drivers/staging/btmtk_usb/btmtk_usb.c:227:5:
+warning: symbol 'checksume16' was not declared. Should it be static?
+
+-> add the static keyword
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/btmtk_usb/btmtk_usb.c | 15 +--------------
- 1 file changed, 1 insertion(+), 14 deletions(-)
+ drivers/staging/btmtk_usb/btmtk_usb.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/btmtk_usb/btmtk_usb.c b/drivers/staging/btmtk_usb/btmtk_usb.c
-index 6b01f61..772c49e 100644
+index 772c49e..a7539df 100644
 --- a/drivers/staging/btmtk_usb/btmtk_usb.c
 +++ b/drivers/staging/btmtk_usb/btmtk_usb.c
-@@ -1771,20 +1771,7 @@ static struct usb_driver btmtk_usb_driver = {
- 	.disable_hub_initiated_lpm = 1,
- };
+@@ -47,7 +47,7 @@ static struct usb_driver btmtk_usb_driver;
+ static int btmtk_usb_load_rom_patch(struct btmtk_usb_data *);
+ static int btmtk_usb_load_fw(struct btmtk_usb_data *);
  
--static int __init btmtk_usb_init(void)
--{
--	BT_INFO("btmtk usb driver ver %s", VERSION);
--
--	return usb_register(&btmtk_usb_driver);
--}
--
--static void __exit btmtk_usb_exit(void)
--{
--	usb_deregister(&btmtk_usb_driver);
--}
--
--module_init(btmtk_usb_init);
--module_exit(btmtk_usb_exit);
-+module_usb_driver(btmtk_usb_driver);
+-void hex_dump(char *str, u8 *src_buf, u32 src_buf_len)
++static void hex_dump(char *str, u8 *src_buf, u32 src_buf_len)
+ {
+ 	unsigned char *pt;
+ 	int x;
+@@ -224,7 +224,7 @@ static void btmtk_usb_cap_init(struct btmtk_usb_data *data)
+ 	}
+ }
  
- MODULE_DESCRIPTION("Mediatek Bluetooth USB driver ver " VERSION);
- MODULE_VERSION(VERSION);
+-u16 checksume16(u8 *pData, int len)
++static u16 checksume16(u8 *pData, int len)
+ {
+ 	int sum = 0;
+ 
 -- 
 1.8.1.5
 
