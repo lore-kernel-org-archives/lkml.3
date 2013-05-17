@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3EQSRe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754708Ab3EQSRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:17:32 -0400
-Date: Fri, 17 May 2013 11:17:08 -0700
-From: Zach Brown <zab@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, jmoyer@redhat.com,
-        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm:
- hotplug: implement non-movable version of get_user_pages() called
- get_user_pages_non_movable())
-Message-ID: <20130517181708.GG318@lenny.home.zabbo.net>
-References: <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
- <20130205120137.GG21389@suse.de>
- <20130206004234.GD11197@blaptop>
- <20130206095617.GN21389@suse.de>
- <5190AE4F.4000103@cn.fujitsu.com>
- <20130513091902.GP11497@suse.de>
- <5191B5B3.7080406@cn.fujitsu.com>
- <20130515132453.GB11497@suse.de>
- <5194748A.5070700@cn.fujitsu.com>
- <20130517002349.GI1008@kvack.org>
+	id S1755565Ab3EQSRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:17:42 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:64181 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab3EQSRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:17:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517002349.GI1008@kvack.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPPqfY3+e3tVQA_RKn0DhwModLienrgtFzsUrCCsUndbJfnHOg@mail.gmail.com>
+References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com>
+	<18379918.sbmR7uiKVn@vostro.rjw.lan>
+	<CAPPqfY2umN2Fab=APyt4=LM32x2av7nPruADX3dddTxdWG2Umg@mail.gmail.com>
+	<2048745.M7CAe2g1gj@vostro.rjw.lan>
+	<CAPPqfY2hrd54viFHKErWk_8uRLHP9WK54G0inJtyUFJKKunDOg@mail.gmail.com>
+	<CAPPqfY3+e3tVQA_RKn0DhwModLienrgtFzsUrCCsUndbJfnHOg@mail.gmail.com>
+Date: Fri, 17 May 2013 20:17:40 +0200
+Message-ID: <CAPPqfY2ba5M27omZBwe0h26Eutyd+2KkLXht6uLN5VdjEKT_Ug@mail.gmail.com>
+Subject: Re: Performance issue since 3.2.6
+From: Olivier Doucet <webmaster@ajeux.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I ended up working on this a bit today, and managed to cobble together 
-> something that somewhat works -- please see the patch below.
+Hello,
 
-Just some quick observations:
+This performance penalty is still present in kernel 3.9.2. And
+CONFIG_PM cannot be deactivated anymore.
 
-> +	ctx->ctx_file = anon_inode_getfile("[aio]", &aio_ctx_fops, ctx, O_RDWR);
-> +	if (IS_ERR(ctx->ctx_file)) {
-> +		ctx->ctx_file = NULL;
-> +		return -EAGAIN;
-> +	}
+I was able to make a working 3.9.2 (meaning with no penalty)  with
+following config and patch :
+CONFIG_PM=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_SLEEP_SMP=y
+CONFIG_CPU_IDLE=y
+CONFIG_ACPI=y
+CONFIG_ACPI_PROCESSOR=y
 
-It's too bad that aio contexts will now be accounted against the filp
-limits (get_empty_filp -> files_stat.max_files, etc). 
+Patch : https://gist.github.com/odoucet/5600630
 
-> +	for (i=0; i<nr_pages; i++) {
-> +		struct page *page;
-> +		void *ptr;
-> +		page = find_or_create_page(ctx->ctx_file->f_inode->i_mapping,
-> +					   i, GFP_KERNEL);
-> +		if (!page) {
-> +			break;
-> +		}
-> +		ptr = kmap(page);
-> +		clear_page(ptr);
-> +		kunmap(page);
-> +		SetPageUptodate(page);
-> +		SetPageDirty(page);
-> +		unlock_page(page);
-> +	}
+I know this patch is not perfect because it is just equivalent to
+rollback commit f51d67a64f32cd81ea8b67ca964fb7cf7e783b2e ;
 
-If they're GFP_KERNEL then you don't need to kmap them.  But we probably
-want to allocate with GFP_HIGHUSER and then use clear_user_highpage() to
-zero them?
+I really want this to be fixed in kernel, so I would be glad to test
+any patch / config file you want.
 
-- z
+
+2013/2/12 Olivier Doucet <webmaster@ajeux.com>
+>
+> Hello,
+>
+> A quick update on my latest tests :
+> I was able to compile a working 3.7.1 kernel (by 'working', I mean
+> with no performance penalty). I'm sure 3.7.7 will be OK also (do you
+> want me to test latest RC of 3.8 ?)
+>
+> I had to disable CONFIG_ACPI_PROCESSOR to disable power management.
+> So now these two options are unset :
+> CONFIG_CPU_IDLE
+> CONFIG_ACPI_PROCESSOR
+>
+> I've posted the whole .config file here :
+> https://gist.github.com/odoucet/4773390
+>
+> I'll be glad to test any patch that may help reactivate PM on my
+> system (CPU Intel Xeon L5630)
+>
+> Olivier
