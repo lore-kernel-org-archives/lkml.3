@@ -1,145 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab3EQJw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 05:52:29 -0400
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1094 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3EQJw2 (ORCPT
+	id S1755639Ab3EQJy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 05:54:56 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:52222 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab3EQJyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 05:52:28 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Subject: Re: [media] cx25821 regression from 3.9: BUG: bad unlock balance detected!
-Date: Fri, 17 May 2013 11:52:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc5-tschai; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-References: <1139404719.20130516194142@eikelenboom.it> <201305171025.24166.hverkuil@xs4all.nl> <1756541549.20130517110450@eikelenboom.it>
-In-Reply-To: <1756541549.20130517110450@eikelenboom.it>
+	Fri, 17 May 2013 05:54:53 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305171152.17746.hverkuil@xs4all.nl>
+In-Reply-To: <20130517103622.5000d277@endymion.delvare>
+References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
+ <20130514231626.GA12961@pyro.melbourne.osa> <20130515112044.753bb7bb@endymion.delvare>
+ <20130515112741.GA23766@pyro.melbourne.osa> <20130515214923.036dabdb@endymion.delvare>
+ <20130516034455.GA19452@pyro.melbourne.osa> <20130517103622.5000d277@endymion.delvare>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Fri, 17 May 2013 17:54:33 +0800
+X-Google-Sender-Auth: IV5HNccYqjqDPzc4wjduFmY1Wlw
+Message-ID: <CAGS+omA84dm8QxJS0vdrYkvD0YXshRh4EkQfqVpbwvNVH+HxQg@mail.gmail.com>
+Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Robert Norris <robn@opera.com>, linux-kernel@vger.kernel.org,
+        Linux I2C <linux-i2c@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri May 17 2013 11:04:50 Sander Eikelenboom wrote:
-> 
-> Friday, May 17, 2013, 10:25:24 AM, you wrote:
-> 
-> > On Thu May 16 2013 19:41:42 Sander Eikelenboom wrote:
-> >> Hi Hans / Mauro,
-> >> 
-> >> With 3.10.0-rc1 (including the cx25821 changes from Hans), I get the bug below which wasn't present with 3.9.
-> 
-> > How do I reproduce this? I've tried to, but I can't make this happen.
-> 
-> > Looking at the code I can't see how it could hit this bug anyway.
-> 
-> I'm using "motion" to grab and process 6 from the video streams of the card i have (card with 8 inputs).
-> It seems the cx25821 underwent quite some changes between 3.9 and 3.10.
+On Fri, May 17, 2013 at 4:36 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> Hi Robert,
+>
+> On Thu, 16 May 2013 13:44:55 +1000, Robert Norris wrote:
+>> On Wed, May 15, 2013 at 09:49:23PM +0200, Jean Delvare wrote:
+>> > >     Interrupt: pin B routed to IRQ 0
+>> >
+>> > Hmm, this "IRQ 0" is quite odd. I'm wondering if this could be the
+>> > reason for this hang. Was it with the i2c-i801 driver loaded, or
+>> > blacklisted? Please check if it makes a difference.
+>>
+>> That was without the driver loaded (blacklisted). After loading (with
+>> interrupts enabled) we get:
+>>
+>>     Interrupt: pin B routed to IRQ 20
+>
+> For the record, I also see the IRQ value change after loading the
+> i2c-i801 driver on my system (with an ICH10 south bridge.) From 14 to
+> 22 in my case. So it's a bit different (no IRQ 0) but not still
+> somewhat similar, so I'm still not sure if this has anything to do with
+> your issue.
+>
+>>
+>> > Do you see the same (and more generally, this issue) on one, some or
+>> > all of your x3550 servers?
+>>
+>> The issue has occured on at least three x3550s (we have 11). I haven't
+>> tested more, because knowingly crashing production machines sucks.
+>
+> Yes of course, I understand, I did not expect you to do that ;)
+>
+>> This appears to be the case on other machines. With the module
+>> blacklisted (never loaded), lspci shows IRQ 0. After load, IRQ 20.
+>> (tested on 3.4 and 3.9).
+>
+> OK.
+>
+>> > Are you using IPMI on these machines?
+>>
+>> Yes, but only for monitoring/sensors, if that makes a difference.
+>
+> IPMI is still likely to access the SMBus controller. If there's a BMC
+> in the machine, it can also access the SMBus slave with its own
+> controller. It would be good to rule this out by disabling IPMI
+> completely, removing the BMC from the machine if it has one, and
+> checking if it makes the issue go away or not.
+>
+>> > I would appreciate if you could test the following:
+>> > * Blacklist i2c-i801 and ics932s401 so that none of them get
+>> >   auto-loaded.
+>>
+>> Done.
+>>
+>> > * Manually load i2c-i801 with interrupts enabled, and see what
+>> >   happens.
+>>
+>> Returned immediately:
+>>
+>> [   60.527140] i801_smbus 0000:00:1f.3: SMBus using PCI Interrupt
+>
+> This confirms that the i2c-i801 driver loading itself isn't the problem.
+>
+>> > * If no hang happens, load i2c-dev, find the i801 bus number with
+>> >   i2cdetect -l (from the i2c-tools package - it should be 4 according
+>> >   to what you reported so far but there is no guarantee that it won't
+>> >   change across reboots.)
+>>
+>> $ i2cdetect -l
+>> i2c-0   i2c         Radeon i2c bit bus DVI_DDC          I2C adapter
+>> i2c-1   i2c         Radeon i2c bit bus VGA_DDC          I2C adapter
+>> i2c-2   i2c         Radeon i2c bit bus MONID            I2C adapter
+>> i2c-3   i2c         Radeon i2c bit bus CRT2_DDC         I2C adapter
+>> i2c-4   smbus       SMBus I801 adapter at 0440          SMBus adapter
+>>
+>> > Then do a simple read from a random address
+>> >   with:
+>> >   # i2cget 4 0x50 0x00
+>> >   (Adjust the bus number as needed.)
+>> >   I am curious if this will hang as well or only when accessing the
+>> >   clock chip at address 0x69.
+>>
+>> Yep, that one hangs. The hung task handler picked it up after a few
+>> minutes.
+>
+> OK, this means that any transaction request to the SMBus controller
+> causes the hang.
+>
+> The i2c-i801 driver is optimistically using wait_event() when waiting
+> for an interrupt to arrive. I suppose that the interrupt is never
+> delivered in your case (all 0 in /proc/interrupts.)
+>
+> Daniel, shouldn't we use wait_event_timeout() instead to catch issues
+> like this and fail cleanly? Maybe even fallback to polling
+> automatically?
 
-It did.
+We could try to do something like that, I guess.  The only question is
+how long to wait, b/c SMBus can pretty slow.
+But that kind of hack sounds more like something you'd do if irqs were
+getting sporadically lost on an otherwise correctly configured system.
 
-> And in the past there have been some more locking issues around mmap and media devices, although they seem to appear as circular locking dependencies and with different devices.
->    - http://www.mail-archive.com/linux-media@vger.kernel.org/msg46217.html
->    - Under kvm: http://www.spinics.net/lists/linux-media/msg63322.html
+In this case, it sounds like there are never interrupts, but we are
+expecting some due to an incorrectly assuming that irqs are supported.
+ What is different about his configuration where there would be no
+IRQs?
 
-Neither of those are related to this issue.
+Was Robert able to get the system working without hangs by disabling
+the IRQ feature of i2c-i801 module when it was builtin?
 
-> 
-> - Perhaps that running in a VM could have to do with it ?
->    - The driver on 3.9 occasionaly gives this, probably latency related (but continues to work):
->      cx25821: cx25821_video_wakeup: 2 buffers handled (should be 1)
-> 
->      Could it be something double unlocking in that path ?
-> 
-> - Is there any extra debugging i could enable that could pinpoint the issue ?
-
-Try this patch:
-
-diff --git a/drivers/media/pci/cx25821/cx25821-core.c b/drivers/media/pci/cx25821/cx25821-core.c
-index b762c5b..8f8d0e0 100644
---- a/drivers/media/pci/cx25821/cx25821-core.c
-+++ b/drivers/media/pci/cx25821/cx25821-core.c
-@@ -1208,7 +1208,6 @@ void cx25821_free_buffer(struct videobuf_queue *q, struct cx25821_buffer *buf)
- 	struct videobuf_dmabuf *dma = videobuf_to_dma(&buf->vb);
- 
- 	BUG_ON(in_interrupt());
--	videobuf_waiton(q, &buf->vb, 0, 0);
- 	videobuf_dma_unmap(q->dev, dma);
- 	videobuf_dma_free(dma);
- 	btcx_riscmem_free(to_pci_dev(q->dev), &buf->risc);
-
-I don't think the waiton is really needed for this driver.
-
-What really should happen is that videobuf is replaced by videobuf2 in this
-driver, but that's a fair amount of work.
-
-Regards,
-
-	Hans
-
-> 
-> 
+>
 > --
-> 
-> Sander
-> 
-> 
-> 
-> > Regards,
-> 
-> >         Hans
-> 
-> >> 
-> >> --
-> >> Sander
-> >> 
-> >> 
-> >> [   53.004968] =====================================
-> >> [   53.004968] [ BUG: bad unlock balance detected! ]
-> >> [   53.004968] 3.10.0-rc1-20130516-jens+ #1 Not tainted
-> >> [   53.004968] -------------------------------------
-> >> [   53.004968] motion/3328 is trying to release lock (&dev->lock) at:
-> >> [   53.004968] [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
-> >> [   53.004968] but there are no more locks to release!
-> >> [   53.004968]
-> >> [   53.004968] other info that might help us debug this:
-> >> [   53.004968] 1 lock held by motion/3328:
-> >> [   53.004968]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81156cae>] vm_munmap+0x3e/0x70
-> >> [   53.004968]
-> >> [   53.004968] stack backtrace:
-> >> [   53.004968] CPU: 1 PID: 3328 Comm: motion Not tainted 3.10.0-rc1-20130516-jens+ #1
-> >> [   53.004968] Hardware name: Xen HVM domU, BIOS 4.3-unstable 05/16/2013
-> >> [   53.004968]  ffffffff819be5f9 ffff88002ac35c58 ffffffff819b9029 ffff88002ac35c88
-> >> [   53.004968]  ffffffff810e615e ffff88002ac35cb8 ffff88002b7c18a8 ffffffff819be5f9
-> >> [   53.004968]  00000000ffffffff ffff88002ac35d28 ffffffff810eb17e ffffffff810e7ba5
-> >> [   53.004968] Call Trace:
-> >> [   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-> >> [   53.004968]  [<ffffffff819b9029>] dump_stack+0x19/0x1b
-> >> [   53.004968]  [<ffffffff810e615e>] print_unlock_imbalance_bug+0xfe/0x110
-> >> [   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-> >> [   53.004968]  [<ffffffff810eb17e>] lock_release_non_nested+0x1ce/0x320
-> >> [   53.004968]  [<ffffffff810e7ba5>] ? debug_check_no_locks_freed+0x105/0x1b0
-> >> [   53.353529]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
-> >> [   53.353529]  [<ffffffff810eb3cc>] lock_release+0xfc/0x250
-> >> [   53.353529]  [<ffffffff819be4b2>] __mutex_unlock_slowpath+0xb2/0x1f0
-> >> [   53.353529]  [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
-> >> [   53.353529]  [<ffffffff81711105>] videobuf_waiton+0x55/0x230
-> >> [   53.353529]  [<ffffffff8114d052>] ? tlb_finish_mmu+0x32/0x50
-> >> [   53.353529]  [<ffffffff81154a46>] ? unmap_region+0xc6/0x100
-> >> [   53.353529]  [<ffffffff81172e05>] ? kmem_cache_free+0x195/0x230
-> >> [   53.353529]  [<ffffffff8172d3d9>] cx25821_free_buffer+0x49/0xa0
-> >> [   53.353529]  [<ffffffff8172f939>] cx25821_buffer_release+0x9/0x10
-> >> [   53.353529]  [<ffffffff81712c35>] videobuf_vm_close+0xc5/0x160
-> >> [   53.353529]  [<ffffffff81154aa5>] remove_vma+0x25/0x60
-> >> [   53.353529]  [<ffffffff81156b67>] do_munmap+0x307/0x410
-> >> [   53.353529]  [<ffffffff81156cbc>] vm_munmap+0x4c/0x70
-> >> [   53.353529]  [<ffffffff81157c09>] SyS_munmap+0x9/0x10
-> >> [   53.353529]  [<ffffffff819c20a9>] system_call_fastpath+0x16/0x1b
-> >> 
-> 
-> 
+> Jean Delvare
