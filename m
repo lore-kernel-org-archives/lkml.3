@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3EQSYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:24:21 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24403 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab3EQSYT (ORCPT
+	id S1756052Ab3EQSYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:24:40 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45073 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab3EQSYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:24:19 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: koverstreet@google.com, akpm@linux-foundation.org
-Cc: tytso@mit.edu, viro@zeniv.linux.org.uk, bcrl@kvack.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] fs: aio: use correct integer overflow checks when creation aio ctx
-Date: Fri, 17 May 2013 14:23:54 -0400
-Message-Id: <1368815034-844-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.2.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 17 May 2013 14:24:37 -0400
+From: Zoran Markovic <zoran.markovic@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: zoran.markovic@linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Feng Tang <feng.tang@intel.com>,
+        stable@vger.kernel.org
+Subject: [RFC PATCH] timekeeping: Correct run-time detection of real-time clock.
+Date: Fri, 17 May 2013 11:24:05 -0700
+Message-Id: <1368815045-21209-1-git-send-email-zoran.markovic@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "aio: percpu reqs_available" added some math to the nr_requests
-calculation, but didn't correct the overflow calculations to handle that.
+Since commit <31ade30692dc9680bfc95700d794818fa3f754ac>, timekeeping_init()
+checks for presence of persistent clock by attempting to read a non-zero
+time value from real-time clock. This is an issue on platforms where
+persistent_clock (instead of a RTC) is implemented as a free-running counter
+starting from zero on each boot and running during suspend. Examples are some
+ARM platforms (e.g. PandaBoard). An attempt to read such a clock during
+timekeeping_init() may return zero value and falsely declare persistent clock
+as missing. Additionally, in the above case suspend times may be accounted
+twice (once from timekeeping_resume() and once from rtc_resume()), resulting
+in a gradual drift of system time.
 
-This means that this:
+This patch does a run-time correction of the issue by doing the same check
+during timekeeping_suspend().
 
-	#include <linux/aio_abi.h>
-	void main(void)
-	{
-	        aio_context_t ctx_idp;
-	        io_setup(0x80000001, &ctx_idp);
-	}
+A better long-term solution would have to return error when trying to read
+non-existing clock and zero when trying to read an uninitialized clock, but
+that would require changing all persistent_clock implementations.
 
-Would trigger the newly added BUG() couple of lines after the overflow
-checks.
+This patch addresses the immediate breakage, for now.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Feng Tang <feng.tang@intel.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Zoran Markovic <zoran.markovic@linaro.org>
 ---
- fs/aio.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/time/timekeeping.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 5b7ed78..0ae450a 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -411,7 +411,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 98cd470..baeeb5c 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -975,6 +975,14 @@ static int timekeeping_suspend(void)
  
- 	/* Prevent overflows */
- 	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
--	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
-+	    (nr_events > (0x10000000U / sizeof(struct kiocb))) ||
-+	    (nr_events < num_possible_cpus() * 4)) {
- 		pr_debug("ENOMEM: nr_events too high\n");
- 		return ERR_PTR(-EINVAL);
- 	}
+ 	read_persistent_clock(&timekeeping_suspend_time);
+ 
++	/*
++	 * On some systems the persistent_clock can not be detected at
++	 * timekeeping_init by its return value, so if we see a valid
++	 * value returned, update the persistent_clock_exists flag.
++	 */
++	if (timekeeping_suspend_time.tv_sec || timekeeping_suspend_time.tv_nsec)
++		persistent_clock_exist = true;
++
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+ 	write_seqcount_begin(&timekeeper_seq);
+ 	timekeeping_forward_now(tk);
 -- 
-1.8.2.1
+1.7.9.5
 
