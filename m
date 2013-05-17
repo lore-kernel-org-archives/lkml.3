@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab3EQQoN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 12:44:13 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65304 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755117Ab3EQQoM (ORCPT
+	id S1755950Ab3EQQuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 12:50:06 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:42376 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492Ab3EQQuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 12:44:12 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: catalin.marinas@arm.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        david.daney@cavium.com, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH] arm64: extable: sort the exception table at build time
-Date: Fri, 17 May 2013 17:43:41 +0100
-Message-Id: <1368809021-25130-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
+	Fri, 17 May 2013 12:50:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL_JsqLkshrBDDKtdf+KYufg=83Yn7zAFmHKUpoA848JzbQKmw@mail.gmail.com>
+References: <201302190258.25726.sergei.shtylyov@cogentembedded.com>
+ <20130301070925.GA24369@verge.net.au> <5130B12F.20409@gmail.com>
+ <5130B1A7.9060001@gmail.com> <5130B34F.2090700@cogentembedded.com>
+ <5130B506.5020908@gmail.com> <5195486F.1040603@cogentembedded.com> <CAL_JsqLkshrBDDKtdf+KYufg=83Yn7zAFmHKUpoA848JzbQKmw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 17 May 2013 17:49:43 +0100
+X-Google-Sender-Auth: f3f7_CQLTSiraaC7kHhQeOHPbrk
+Message-ID: <CACxGe6vWH1mvnd6nEO2tpGGDHOZROdCw4cYwk7x4GVEDxoNayA@mail.gmail.com>
+Subject: Re: [PATCH] <linux/of_platform.h>: fix compilation warnings with DT disabled
+To: Rob Herring <robherring2@gmail.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Simon Horman <horms@verge.net.au>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        vladimir.barinov@cogentembedded.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As is done for other architectures, sort the exception table at
-build-time rather than during boot.
+On Thu, May 16, 2013 at 11:44 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>     I hoped to see this fix in 3.10-rc1. Is there any hope to see it in
+>> 3.10-rc's?
+>> The code it fixes the warnings in is already in Linus tree.
+>
+> So I had this queued up, but Grant did not send DT update to Linus for
+> 3.10. The main thing we had was the preprocessor support and that went
+> thru arm-soc tree. I plan to send this and other fixes to Linus for
+> 3.10.
 
-Since sortextable appears to be a standalone C program relying on the
-host elf.h to provide EM_AARCH64, I've had to add a conditional check in
-order to allow cross-compilation on machines that aren't running a
-bleeding-edge libc-dev.
+I got gun shy from the gpio stuff and fixated on better testing of my
+tree. Everything in my tree is bug fixes so I'll be sending the pull
+request today
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/arm64/Kconfig              |  1 +
- arch/arm64/kernel/vmlinux.lds.S | 15 +++++++--------
- scripts/sortextable.c           |  5 +++++
- 3 files changed, 13 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 48347dc..fb8fd90 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -7,6 +7,7 @@ config ARM64
- 	select ARM_AMBA
- 	select ARM_ARCH_TIMER
- 	select ARM_GIC
-+	select BUILDTIME_EXTABLE_SORT
- 	select CLONE_BACKWARDS
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
-diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
-index 3fae2be..3d527726 100644
---- a/arch/arm64/kernel/vmlinux.lds.S
-+++ b/arch/arm64/kernel/vmlinux.lds.S
-@@ -57,6 +57,13 @@ SECTIONS
- 
- 	RO_DATA(PAGE_SIZE)
- 
-+	. = ALIGN(8);
-+	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
-+		__start___ex_table = .;
-+		*(__ex_table)
-+		__stop___ex_table = .;
-+	}
-+
- 	_etext = .;			/* End of text and rodata section */
- 
- 	. = ALIGN(PAGE_SIZE);
-@@ -99,14 +106,6 @@ SECTIONS
- 		READ_MOSTLY_DATA(64)
- 
- 		/*
--		 * The exception fixup table (might need resorting at runtime)
--		 */
--		. = ALIGN(32);
--		__start___ex_table = .;
--		*(__ex_table)
--		__stop___ex_table = .;
--
--		/*
- 		 * and the usual data section
- 		 */
- 		DATA_DATA
-diff --git a/scripts/sortextable.c b/scripts/sortextable.c
-index 1f10e89..f9ce116 100644
---- a/scripts/sortextable.c
-+++ b/scripts/sortextable.c
-@@ -31,6 +31,10 @@
- #include <tools/be_byteshift.h>
- #include <tools/le_byteshift.h>
- 
-+#ifndef EM_AARCH64
-+#define EM_AARCH64	183
-+#endif
-+
- static int fd_map;	/* File descriptor for file being modified. */
- static int mmap_failed; /* Boolean flag. */
- static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
-@@ -249,6 +253,7 @@ do_file(char const *const fname)
- 		custom_sort = sort_relative_table;
- 		break;
- 	case EM_ARM:
-+	case EM_AARCH64:
- 	case EM_MIPS:
- 		break;
- 	}  /* end switch */
--- 
-1.8.2.2
-
+g.
