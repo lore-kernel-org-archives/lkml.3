@@ -1,123 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3EQNWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 09:22:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33419 "EHLO comal.ext.ti.com"
+	id S1756016Ab3EQNXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 09:23:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33511 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3EQNWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 09:22:01 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v5] ARM:dts:omap4-panda: Update the LED support for the panda DTS
-Date: Fri, 17 May 2013 08:21:23 -0500
-Message-ID: <1368796883-5501-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1750753Ab3EQNXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 09:23:42 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <tony@atomide.com>, <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <tomi.valkeinen@ti.com>
+CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [RFC PATCH 4/4] arm: omap: remove using usb_bind_phy for binding musb and phy
+Date: Fri, 17 May 2013 18:52:34 +0530
+Message-ID: <1368796954-3499-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1368796954-3499-1-git-send-email-kishon@ti.com>
+References: <1368796954-3499-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-are different.
+Now that MUSB for OMAP started using devm_usb_get_phy_by_name
+which does not require PHY library to already have the binding
+information, removed usb_bind_phy calls that binds the MUSB controller
+with the PHY from the board files.
 
-A1-A3 = gpio_wk7
-ES = gpio_110
-
-There is no change to LED D2
-
-Abstract away the pinmux and the LED definitions for the two boards into
-the respective DTS files.
-
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
+ arch/arm/mach-omap2/board-2430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-3430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-4430sdp.c          |    1 -
+ arch/arm/mach-omap2/board-cm-t35.c           |    1 -
+ arch/arm/mach-omap2/board-devkit8000.c       |    1 -
+ arch/arm/mach-omap2/board-igep0020.c         |    1 -
+ arch/arm/mach-omap2/board-ldp.c              |    1 -
+ arch/arm/mach-omap2/board-omap3beagle.c      |    1 -
+ arch/arm/mach-omap2/board-omap3evm.c         |    1 -
+ arch/arm/mach-omap2/board-omap3logic.c       |    1 -
+ arch/arm/mach-omap2/board-omap3pandora.c     |    1 -
+ arch/arm/mach-omap2/board-omap3stalker.c     |    1 -
+ arch/arm/mach-omap2/board-omap3touchbook.c   |    1 -
+ arch/arm/mach-omap2/board-omap4panda.c       |    1 -
+ arch/arm/mach-omap2/board-overo.c            |    1 -
+ arch/arm/mach-omap2/board-rm680.c            |    1 -
+ arch/arm/mach-omap2/board-rx51.c             |    1 -
+ arch/arm/mach-omap2/board-zoom-peripherals.c |    1 -
+ 18 files changed, 18 deletions(-)
 
-v5 - Provide pincrtl phandle to the gpio-led driver
-
- arch/arm/boot/dts/omap4-panda-common.dtsi |   16 ++++++++++++-
- arch/arm/boot/dts/omap4-panda-es.dts      |   34 +++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 03bd60d..5fd59b3 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -16,8 +16,13 @@
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
+diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
+index 244d8a5..30d81f2 100644
+--- a/arch/arm/mach-omap2/board-2430sdp.c
++++ b/arch/arm/mach-omap2/board-2430sdp.c
+@@ -233,7 +233,6 @@ static void __init omap_2430sdp_init(void)
+ 	omap_hsmmc_init(mmc);
  
--	leds {
-+	leds: leds {
- 		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <
-+			&led_wkgpio_pins
-+		>;
-+
- 		heartbeat {
- 			label = "pandaboard::status1";
- 			gpios = <&gpio1 7 0>;
-@@ -137,6 +142,15 @@
- 	};
- };
+ 	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
  
-+&omap4_pmx_wkup {
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
-+			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
- &i2c1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index f1d8c21..08d2e38 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -34,3 +34,37 @@
- 		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
- 		>;
- };
-+
-+&omap4_pmx_core {
-+	led_gpio_pins: gpio_led_pmx {
-+		pinctrl-single,pins = <
-+			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-+
-+&led_wkgpio_pins {
-+	pinctrl-single,pins = <
-+		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+	>;
-+};
-+
-+&leds {
-+	compatible = "gpio-leds";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&led_gpio_pins
-+		&led_wkgpio_pins
-+	>;
-+
-+	heartbeat {
-+		label = "pandaboard::status1";
-+		gpios = <&gpio4 14 0>;
-+		linux,default-trigger = "heartbeat";
-+	};
-+	mmc {
-+		label = "pandaboard::status2";
-+		gpios = <&gpio1 8 0>;
-+		linux,default-trigger = "mmc0";
-+	};
-+};
+ 	board_smc91x_init();
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 23b004a..7f431b4 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -590,7 +590,6 @@ static void __init omap_3430sdp_init(void)
+ 	omap_ads7846_init(1, gpio_pendown, 310, NULL);
+ 	omap_serial_init();
+ 	omap_sdrc_init(hyb18m512160af6_sdrc_params, NULL);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	board_smc91x_init();
+ 	board_flash_init(sdp_flash_partitions, chip_sel_3430, 0);
+diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
+index 56a9a4f..5a05b5a 100644
+--- a/arch/arm/mach-omap2/board-4430sdp.c
++++ b/arch/arm/mach-omap2/board-4430sdp.c
+@@ -730,7 +730,6 @@ static void __init omap_4430sdp_init(void)
+ 	omap4_sdp4430_wifi_init();
+ 	omap4_twl6030_hsmmc_init(mmc);
+ 
+-	usb_bind_phy("musb-hdrc.2.auto", 0, "omap-usb2.3.auto");
+ 	usb_musb_init(&musb_board_data);
+ 
+ 	status = omap_ethernet_init();
+diff --git a/arch/arm/mach-omap2/board-cm-t35.c b/arch/arm/mach-omap2/board-cm-t35.c
+index ee6218c..f9b4241 100644
+--- a/arch/arm/mach-omap2/board-cm-t35.c
++++ b/arch/arm/mach-omap2/board-cm-t35.c
+@@ -690,7 +690,6 @@ static void __init cm_t3x_common_init(void)
+ 	cm_t35_init_display();
+ 	omap_twl4030_audio_init("cm-t3x", NULL);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	cm_t35_init_usbh();
+ 	cm_t35_init_camera();
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 5764205..8d24aab 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -593,7 +593,6 @@ static void __init devkit8000_init(void)
+ 
+ 	omap_ads7846_init(2, OMAP3_DEVKIT_TS_GPIO, 0, NULL);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	usbhs_init(&usbhs_bdata);
+ 	board_nand_init(devkit8000_nand_partitions,
+diff --git a/arch/arm/mach-omap2/board-igep0020.c b/arch/arm/mach-omap2/board-igep0020.c
+index b54562d..5451c9c 100644
+--- a/arch/arm/mach-omap2/board-igep0020.c
++++ b/arch/arm/mach-omap2/board-igep0020.c
+@@ -628,7 +628,6 @@ static void __init igep_init(void)
+ 	omap_serial_init();
+ 	omap_sdrc_init(m65kxxxxam_sdrc_params,
+ 				  m65kxxxxam_sdrc_params);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	igep_flash_init();
+diff --git a/arch/arm/mach-omap2/board-ldp.c b/arch/arm/mach-omap2/board-ldp.c
+index d0d17bc..07423f2 100644
+--- a/arch/arm/mach-omap2/board-ldp.c
++++ b/arch/arm/mach-omap2/board-ldp.c
+@@ -376,7 +376,6 @@ static void __init omap_ldp_init(void)
+ 	omap_ads7846_init(1, 54, 310, NULL);
+ 	omap_serial_init();
+ 	omap_sdrc_init(NULL, NULL);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	board_nand_init(ldp_nand_partitions, ARRAY_SIZE(ldp_nand_partitions),
+ 			ZOOM_NAND_CS, 0, nand_default_timings);
+diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+index 04c1165..47d7dd7 100644
+--- a/arch/arm/mach-omap2/board-omap3beagle.c
++++ b/arch/arm/mach-omap2/board-omap3beagle.c
+@@ -551,7 +551,6 @@ static void __init omap3_beagle_init(void)
+ 	omap_sdrc_init(mt46h32m32lf6_sdrc_params,
+ 				  mt46h32m32lf6_sdrc_params);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	usbhs_init(&usbhs_bdata);
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index f76d0de..87ec1bf 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -704,7 +704,6 @@ static void __init omap3_evm_init(void)
+ 		omap_mux_init_gpio(135, OMAP_PIN_OUTPUT);
+ 		phy_data[0].reset_gpio = 135;
+ 	}
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(&musb_board_data);
+ 
+ 	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+index bab51e6..16e4e2a 100644
+--- a/arch/arm/mach-omap2/board-omap3logic.c
++++ b/arch/arm/mach-omap2/board-omap3logic.c
+@@ -216,7 +216,6 @@ static void __init omap3logic_init(void)
+ 	board_mmc_init();
+ 	board_smsc911x_init();
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	/* Ensure SDRC pins are mux'd for self-refresh */
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index 28133d5..6f730df 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -610,7 +610,6 @@ static void __init omap3pandora_init(void)
+ 	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+ 	usbhs_init(&usbhs_bdata);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	gpmc_nand_init(&pandora_nand_data, NULL);
+ 
+diff --git a/arch/arm/mach-omap2/board-omap3stalker.c b/arch/arm/mach-omap2/board-omap3stalker.c
+index d37e6b1..6f6fc92 100644
+--- a/arch/arm/mach-omap2/board-omap3stalker.c
++++ b/arch/arm/mach-omap2/board-omap3stalker.c
+@@ -394,7 +394,6 @@ static void __init omap3_stalker_init(void)
+ 
+ 	omap_serial_init();
+ 	omap_sdrc_init(mt46h32m32lf6_sdrc_params, NULL);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+diff --git a/arch/arm/mach-omap2/board-omap3touchbook.c b/arch/arm/mach-omap2/board-omap3touchbook.c
+index 7da48bc..bbff6de 100644
+--- a/arch/arm/mach-omap2/board-omap3touchbook.c
++++ b/arch/arm/mach-omap2/board-omap3touchbook.c
+@@ -367,7 +367,6 @@ static void __init omap3_touchbook_init(void)
+ 
+ 	/* Touchscreen and accelerometer */
+ 	omap_ads7846_init(4, OMAP3_TS_GPIO, 310, &ads7846_pdata);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
+index 1e2c75e..7eca390 100644
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -435,7 +435,6 @@ static void __init omap4_panda_init(void)
+ 	omap_sdrc_init(NULL, NULL);
+ 	omap4_twl6030_hsmmc_init(mmc);
+ 	omap4_ehci_init();
+-	usb_bind_phy("musb-hdrc.2.auto", 0, "omap-usb2.3.auto");
+ 	usb_musb_init(&musb_board_data);
+ 	omap4_panda_display_init();
+ }
+diff --git a/arch/arm/mach-omap2/board-overo.c b/arch/arm/mach-omap2/board-overo.c
+index 4ca6b68..d67ad70 100644
+--- a/arch/arm/mach-omap2/board-overo.c
++++ b/arch/arm/mach-omap2/board-overo.c
+@@ -472,7 +472,6 @@ static void __init overo_init(void)
+ 				  mt46h32m32lf6_sdrc_params);
+ 	board_nand_init(overo_nand_partitions,
+ 			ARRAY_SIZE(overo_nand_partitions), NAND_CS, 0, NULL);
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 
+ 	usbhs_init_phys(phy_data, ARRAY_SIZE(phy_data));
+diff --git a/arch/arm/mach-omap2/board-rm680.c b/arch/arm/mach-omap2/board-rm680.c
+index 345e8c4..cadeb5c 100644
+--- a/arch/arm/mach-omap2/board-rm680.c
++++ b/arch/arm/mach-omap2/board-rm680.c
+@@ -135,7 +135,6 @@ static void __init rm680_init(void)
+ 	sdrc_params = nokia_get_sdram_timings();
+ 	omap_sdrc_init(sdrc_params, sdrc_params);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	rm680_peripherals_init();
+ }
+diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
+index d2ea68e..0d16d37 100644
+--- a/arch/arm/mach-omap2/board-rx51.c
++++ b/arch/arm/mach-omap2/board-rx51.c
+@@ -99,7 +99,6 @@ static void __init rx51_init(void)
+ 	sdrc_params = nokia_get_sdram_timings();
+ 	omap_sdrc_init(sdrc_params, sdrc_params);
+ 
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(&musb_board_data);
+ 	rx51_peripherals_init();
+ 
+diff --git a/arch/arm/mach-omap2/board-zoom-peripherals.c b/arch/arm/mach-omap2/board-zoom-peripherals.c
+index a90375d..d05db2d 100644
+--- a/arch/arm/mach-omap2/board-zoom-peripherals.c
++++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
+@@ -353,7 +353,6 @@ void __init zoom_peripherals_init(void)
+ 	omap_i2c_init();
+ 	pwm_add_table(zoom_pwm_lookup, ARRAY_SIZE(zoom_pwm_lookup));
+ 	platform_add_devices(zoom_devices, ARRAY_SIZE(zoom_devices));
+-	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+ 	usb_musb_init(NULL);
+ 	enable_board_wakeup_source();
+ 	omap_serial_init();
 -- 
-1.7.5.4
+1.7.10.4
 
