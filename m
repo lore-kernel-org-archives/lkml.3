@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab3EQVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:39:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54411 "EHLO
+	id S1757355Ab3EQViH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:38:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab3EQViI (ORCPT
+	with ESMTP id S1757107Ab3EQViD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:08 -0400
+	Fri, 17 May 2013 17:38:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>, Helge Deller <deller@gmx.de>
-Subject: [ 099/102] parisc: fix NATIVE set up in build
-Date: Fri, 17 May 2013 14:36:54 -0700
-Message-Id: <20130517213254.683340701@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Dave Airlie <airlied@redhat.com>
+Subject: [ 093/102] drm/radeon: check incoming cliprects pointer
+Date: Fri, 17 May 2013 14:36:48 -0700
+Message-Id: <20130517213254.012272642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -26,34 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit 93782eba49e23c3f311a6b05a19ba15927ec4e8b upstream.
+commit fefaedcfb82d2e57c2320acf60604ab03b750cc0 upstream.
 
-The ifeq operator does not accept globs, so this little bit of code will
-never match (unless uname literally prints out "parsic*").  Rewrite to
-use a pattern matching operator so that NATIVE is set to 1 on parisc.
+The "boxes" parameter points into userspace memory. It should be verified
+like any other operation against user memory.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/Makefile |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/r300_cmdbuf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -24,9 +24,7 @@ CHECKFLAGS	+= -D__hppa__=1
- LIBGCC		= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
+--- a/drivers/gpu/drm/radeon/r300_cmdbuf.c
++++ b/drivers/gpu/drm/radeon/r300_cmdbuf.c
+@@ -75,7 +75,7 @@ static int r300_emit_cliprects(drm_radeo
+ 		OUT_RING(CP_PACKET0(R300_RE_CLIPRECT_TL_0, nr * 2 - 1));
  
- MACHINE		:= $(shell uname -m)
--ifeq ($(MACHINE),parisc*)
--NATIVE		:= 1
--endif
-+NATIVE		:= $(if $(filter parisc%,$(MACHINE)),1,0)
- 
- ifdef CONFIG_64BIT
- UTS_MACHINE	:= parisc64
+ 		for (i = 0; i < nr; ++i) {
+-			if (DRM_COPY_FROM_USER_UNCHECKED
++			if (DRM_COPY_FROM_USER
+ 			    (&box, &cmdbuf->boxes[n + i], sizeof(box))) {
+ 				DRM_ERROR("copy cliprect faulted\n");
+ 				return -EFAULT;
 
 
