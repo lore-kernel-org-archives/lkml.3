@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab3EQVsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:48:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54652 "EHLO
+	id S932430Ab3EQVsH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:48:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54648 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab3EQVsB (ORCPT
+	with ESMTP id S932334Ab3EQVsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:48:01 -0400
+	Fri, 17 May 2013 17:48:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 47/50] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid memory overflow
-Date: Fri, 17 May 2013 14:47:22 -0700
-Message-Id: <20130517213847.598628403@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 46/50] ACPI / EC: Restart transaction even when the IBF flag set
+Date: Fri, 17 May 2013 14:47:21 -0700
+Message-Id: <20130517213847.495386523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,42 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
+commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
 
-When calling memcpy, read_data and write_data need additional 2 bytes.
+The EC driver works abnormally with IBF flag always set.
+IBF means "The host has written a byte of data to the command
+or data port, but the embedded controller has not yet read it".
+If IBF is set in the EC status and not cleared, this will cause
+all subsequent EC requests to fail with a timeout error.
 
-  write_data:
-    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+Change the EC driver so that it doesn't refuse to restart a
+transaction if IBF is set in the status.  Also increase the
+number of transaction restarts to 5, as it turns out that 2
+is not sufficient in some cases.
 
-  read_data:
-    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
+This bug happens on several different machines (Asus V1S,
+Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
+Sony Vaio SR19VN and others).
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/ec.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -95,9 +95,9 @@ struct si_sm_data {
- 	enum bt_states	state;
- 	unsigned char	seq;		/* BT sequence number */
- 	struct si_sm_io	*io;
--	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		write_count;
--	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		read_count;
- 	int		truncated;
- 	long		timeout;	/* microseconds countdown */
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -217,7 +217,7 @@ static int ec_check_sci_sync(struct acpi
+ static int ec_poll(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+-	int repeat = 2; /* number of command restarts */
++	int repeat = 5; /* number of command restarts */
+ 	while (repeat--) {
+ 		unsigned long delay = jiffies +
+ 			msecs_to_jiffies(ec_delay);
+@@ -235,8 +235,6 @@ static int ec_poll(struct acpi_ec *ec)
+ 			}
+ 			advance_transaction(ec, acpi_ec_read_status(ec));
+ 		} while (time_before(jiffies, delay));
+-		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+-			break;
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->curr_lock, flags);
+ 		start_transaction(ec);
 
 
