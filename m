@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3EQMSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 08:18:46 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:52122 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469Ab3EQMSo (ORCPT
+	id S1755829Ab3EQMUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 08:20:51 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:33539 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab3EQMUt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 08:18:44 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>, Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] scripts/mod: Spelling s/DEVICEVTABLE/DEVICETABLE/
-Date: Fri, 17 May 2013 14:18:35 +0200
-Message-Id: <1368793115-7175-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 17 May 2013 08:20:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <201305152231.52423.heiko@sntech.de>
+References: <201305111330.05046.heiko@sntech.de>
+	<201305111331.25405.heiko@sntech.de>
+	<CACRpkdaT195McX9NeccJYpmWbuYK-AZUTHr9AXKHnJdkf+Qzuw@mail.gmail.com>
+	<201305152231.52423.heiko@sntech.de>
+Date: Fri, 17 May 2013 14:20:49 +0200
+Message-ID: <CACRpkdaGBjUfhfT2zCEeNmMh3KhouOMjKSB7H6_cu_uDM6cm=w@mail.gmail.com>
+Subject: Re: [RFC 2/4] dma: add dmaengine driver for Samsung s3c24xx SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- scripts/mod/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, May 15, 2013 at 10:31 PM, Heiko Stübner <heiko@sntech.de> wrote:
 
-diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
-index 75d59fc..ae21b89 100644
---- a/scripts/mod/Makefile
-+++ b/scripts/mod/Makefile
-@@ -15,8 +15,8 @@ endef
- quiet_cmd_offsets = GEN     $@
- define cmd_offsets
- 	(set -e; \
--	 echo "#ifndef __DEVICEVTABLE_OFFSETS_H__"; \
--	 echo "#define __DEVICEVTABLE_OFFSETS_H__"; \
-+	 echo "#ifndef __DEVICETABLE_OFFSETS_H__"; \
-+	 echo "#define __DEVICETABLE_OFFSETS_H__"; \
- 	 echo "/*"; \
- 	 echo " * DO NOT MODIFY."; \
- 	 echo " *"; \
--- 
-1.7.0.4
+> If I understand the writel semantics and the thread from you from 2011 [0]
+> correctly, only the writel to DMASKTRIG mustn't be relaxed to make sure the
+> settings registers are written to before, so like:
+>
+>        writel_relaxed(txd->src_addr, phy->base + DISRC);
+>        writel_relaxed(txd->disrcc, phy->base + DISRCC);
+>        writel_relaxed(txd->dst_addr, phy->base + DIDST);
+>        writel_relaxed(txd->didstc, phy->base + DIDSTC);
+>        writel_relaxed(dcon, phy->base + DCON);
+>
+>        val = readl_relaxed(phy->base + DMASKTRIG);
+>        val &= ~DMASKTRIG_STOP;
+>        val |= DMASKTRIG_ON;
+>        writel(val, phy->base + DMASKTRIG);
 
+Yep. That will drain write buffers etc and make sure all outstanding writes hit
+the hardware.
+
+Yours,
+Linus Walleij
