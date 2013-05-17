@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3EQK7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 06:59:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38267 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755212Ab3EQK7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 06:59:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,691,1363158000"; 
-   d="scan'208";a="315220611"
-Message-ID: <64479.163.33.228.216.1368788345.squirrel@linux.intel.com>
-In-Reply-To: <20130517083226.GE17056@katana>
-References: <53398.163.33.213.79.1366630241.squirrel@linux.intel.com>
-    <20130422122808.GO1283@intel.com>
-    <alpine.DEB.2.02.1304221508050.31571@localhost>
-    <20130423163543.GB3228@the-dreams.de>
-    <51465.163.33.213.85.1366739082.squirrel@linux.intel.com>
-    <20130423182707.GA3649@the-dreams.de>
-    <alpine.DEB.2.02.1304241110480.32505@localhost>
-    <20130425174348.GA3612@the-dreams.de>
-    <alpine.DEB.2.02.1305081433430.7163@localhost>
-    <20130517082321.GA17056@katana> <20130517083226.GE17056@katana>
-Date: Fri, 17 May 2013 11:59:05 +0100 (IST)
-Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
-From: "Josef Ahmad" <josef.ahmad@linux.intel.com>
-To: "Wolfram Sang" <wsa@the-dreams.de>
-Cc: "Josef Ahmad" <josef.ahmad@linux.intel.com>,
-        "Mika Westerberg" <mika.westerberg@linux.intel.com>,
-        "Ben Dooks" <ben-linux@fluff.org>, "Jean Delvare" <khali@linux-fr.org>,
-        "Stefan Roese" <sr@denx.de>, "Axel Lin" <axel.lin@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Dirk Brandewie" <dirk.brandewie@gmail.com>
-User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
+	id S1755628Ab3EQK7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 06:59:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60297 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755053Ab3EQK7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 06:59:20 -0400
+Date: Fri, 17 May 2013 12:57:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <rric@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Josh Boyer <jwboyer@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, gleb@redhat.com
+Subject: Re: Drop WARN on AMD lack of perfctrs
+Message-ID: <20130517105730.GD5162@dyad.programming.kicks-ass.net>
+References: <20130516175117.GK19669@dyad.programming.kicks-ass.net>
+ <20130516175557.GC18325@hansolo.jdub.homelinux.org>
+ <20130516181018.GO19669@dyad.programming.kicks-ass.net>
+ <20130516205558.GE8356@rric.localhost>
+ <20130516213420.GB31393@pd.tnic>
+ <20130517090451.GQ19669@dyad.programming.kicks-ass.net>
+ <20130517091651.GB23035@pd.tnic>
+ <20130517092741.GR19669@dyad.programming.kicks-ass.net>
+ <20130517094551.GE23035@pd.tnic>
+ <20130517103600.GG8356@rric.localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130517103600.GG8356@rric.localhost>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Applied to for-current, thanks!
->
-> Added stable, too.
->
 
-Thanks Wolfram.
+So what about something like the below?
+
+---
+ arch/x86/kernel/cpu/perf_event_amd.c | 26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 7e28d94..87e8a7e 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -648,24 +648,19 @@ static __initconst const struct x86_pmu amd_pmu = {
+ 	.cpu_dead		= amd_pmu_cpu_dead,
+ };
+ 
+-static int setup_event_constraints(void)
++__init int amd_core_pmu_init(void)
+ {
+-	if (boot_cpu_data.x86 == 0x15)
++	switch (boot_cpu_data.x86) {
++	case 0x15:
++		pr_cont("Fam15h ");
+ 		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
+-	return 0;
+-}
++		break;
+ 
+-static int setup_perfctr_core(void)
+-{
+-	if (!cpu_has_perfctr_core) {
+-		WARN(x86_pmu.get_event_constraints == amd_get_event_constraints_f15h,
+-		     KERN_ERR "Odd, counter constraints enabled but no core perfctrs detected!");
++	default:
++		pr_err("core perfctr but no constraints; unknown hardware!\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	WARN(x86_pmu.get_event_constraints == amd_get_event_constraints,
+-	     KERN_ERR "hw perf events core counters need constraints handler!");
+-
+ 	/*
+ 	 * If core performance counter extensions exists, we must use
+ 	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
+@@ -675,8 +670,7 @@ static int setup_perfctr_core(void)
+ 	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
+ 	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
+ 
+-	printk(KERN_INFO "perf: AMD core performance counters detected\n");
+-
++	pr_cont("core perfctr, ");
+ 	return 0;
+ }
+ 
+@@ -688,8 +682,8 @@ __init int amd_pmu_init(void)
+ 
+ 	x86_pmu = amd_pmu;
+ 
+-	setup_event_constraints();
+-	setup_perfctr_core();
++	if (cpu_has_perfctr_core && amd_core_pmu_init())
++		return -ENODEV;
+ 
+ 	/* Events are common for all AMDs */
+ 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
+
