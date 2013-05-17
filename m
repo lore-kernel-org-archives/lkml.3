@@ -1,37 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab3EQWIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:08:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54954 "EHLO
+	id S1757758Ab3EQWIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:08:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab3EQWIU (ORCPT
+	with ESMTP id S1757704Ab3EQVrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 18:08:20 -0400
-Date: Fri, 17 May 2013 15:08:19 -0700
+	Fri, 17 May 2013 17:47:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Severin Gsponer <svgsponer@gmail.com>
-Cc: Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Staging: bcm: Fix of various code style issues.
-Message-ID: <20130517220819.GA11038@kroah.com>
-References: <1368801862-24405-1-git-send-email-svgsponer@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368801862-24405-1-git-send-email-svgsponer@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ric Wheeler <rwheeler@redhat.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 10/50] SCSI: sd: fix array cache flushing bug causing performance problems
+Date: Fri, 17 May 2013 14:46:45 -0700
+Message-Id: <20130517213843.760956875@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
+References: <20130517213842.447809965@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 04:44:22PM +0200, Severin Gsponer wrote:
-> Changed comment style to C89 in Version.h
-> Fixed some whitespace issues in Typedefs.h
-> Changed comment style to C89 in vendorspecificextn.c
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-You are doing 3 different things, so this should be at least 3 different
-patches, right?
+------------------
 
-Please split them up and resend them, thanks.
+From: James Bottomley <JBottomley@Parallels.com>
 
-greg k-h
+commit 39c60a0948cc06139e2fbfe084f83cb7e7deae3b upstream.
+
+Some arrays synchronize their full non volatile cache when the sd driver sends
+a SYNCHRONIZE CACHE command.  Unfortunately, they can have Terrabytes of this
+and we send a SYNCHRONIZE CACHE for every barrier if an array reports it has a
+writeback cache.  This leads to massive slowdowns on journalled filesystems.
+
+The fix is to allow userspace to turn off the writeback cache setting as a
+temporary measure (i.e. without doing the MODE SELECT to write it back to the
+device), so even though the device reported it has a writeback cache, the
+user, knowing that the cache is non volatile and all they care about is
+filesystem correctness, can turn that bit off in the kernel and avoid the
+performance ruinous (and safety irrelevant) SYNCHRONIZE CACHE commands.
+
+The way you do this is add a 'temporary' prefix when performing the usual
+cache setting operations, so
+
+echo temporary write through > /sys/class/scsi_disk/<disk>/cache_type
+
+Reported-by: Ric Wheeler <rwheeler@redhat.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/sd.c |   20 ++++++++++++++++++++
+ drivers/scsi/sd.h |    1 +
+ 2 files changed, 21 insertions(+)
+
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -140,6 +140,7 @@ sd_store_cache_type(struct device *dev,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
++	const char *temp = "temporary ";
+ 	int len;
+ 
+ 	if (sdp->type != TYPE_DISK)
+@@ -148,6 +149,13 @@ sd_store_cache_type(struct device *dev,
+ 		 * it's not worth the risk */
+ 		return -EINVAL;
+ 
++	if (strncmp(buf, temp, sizeof(temp) - 1) == 0) {
++		buf += sizeof(temp) - 1;
++		sdkp->cache_override = 1;
++	} else {
++		sdkp->cache_override = 0;
++	}
++
+ 	for (i = 0; i < ARRAY_SIZE(sd_cache_types); i++) {
+ 		len = strlen(sd_cache_types[i]);
+ 		if (strncmp(sd_cache_types[i], buf, len) == 0 &&
+@@ -160,6 +168,13 @@ sd_store_cache_type(struct device *dev,
+ 		return -EINVAL;
+ 	rcd = ct & 0x01 ? 1 : 0;
+ 	wce = ct & 0x02 ? 1 : 0;
++
++	if (sdkp->cache_override) {
++		sdkp->WCE = wce;
++		sdkp->RCD = rcd;
++		return count;
++	}
++
+ 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
+ 			    SD_MAX_RETRIES, &data, NULL))
+ 		return -EINVAL;
+@@ -2126,6 +2141,10 @@ sd_read_cache_type(struct scsi_disk *sdk
+ 	int old_rcd = sdkp->RCD;
+ 	int old_dpofua = sdkp->DPOFUA;
+ 
++
++	if (sdkp->cache_override)
++		return;
++
+ 	first_len = 4;
+ 	if (sdp->skip_ms_page_8) {
+ 		if (sdp->type == TYPE_RBC)
+@@ -2607,6 +2626,7 @@ static void sd_probe_async(void *data, a
+ 	sdkp->capacity = 0;
+ 	sdkp->media_present = 1;
+ 	sdkp->write_prot = 0;
++	sdkp->cache_override = 0;
+ 	sdkp->WCE = 0;
+ 	sdkp->RCD = 0;
+ 	sdkp->ATO = 0;
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -67,6 +67,7 @@ struct scsi_disk {
+ 	u8		protection_type;/* Data Integrity Field */
+ 	u8		provisioning_mode;
+ 	unsigned	ATO : 1;	/* state of disk ATO bit */
++	unsigned	cache_override : 1; /* temp override of WCE,RCD */
+ 	unsigned	WCE : 1;	/* state of disk WCE bit */
+ 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+ 	unsigned	DPOFUA : 1;	/* state of disk DPOFUA bit */
+
+
