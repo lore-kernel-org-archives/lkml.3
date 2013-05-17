@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab3EQVh6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54295 "EHLO
+	id S1757482Ab3EQVnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:43:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab3EQVht (ORCPT
+	with ESMTP id S1757254Ab3EQVh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:49 -0400
+	Fri, 17 May 2013 17:37:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 072/102] ipv6: do not clear pinet6 field
-Date: Fri, 17 May 2013 14:36:27 -0700
-Message-Id: <20130517213251.913091371@linuxfoundation.org>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [ 075/102] pch_dma: Use GFP_ATOMIC because called from interrupt context
+Date: Fri, 17 May 2013 14:36:30 -0700
+Message-Id: <20130517213252.207026924@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,163 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 5c1ef59168c485318e40ba485c1eba57d81d0faa upstream.
 
-[ Upstream commit f77d602124d865c38705df7fa25c03de9c284ad2 ]
+pdc_desc_get() is called from pd_prep_slave_sg, and the function is
+called from interrupt context(e.g. Uart driver "pch_uart.c").
+In fact, I saw kernel error message.
+So, GFP_ATOMIC must be used not GFP_NOIO.
 
-We have seen multiple NULL dereferences in __inet6_lookup_established()
-
-After analysis, I found that inet6_sk() could be NULL while the
-check for sk_family == AF_INET6 was true.
-
-Bug was added in linux-2.6.29 when RCU lookups were introduced in UDP
-and TCP stacks.
-
-Once an IPv6 socket, using SLAB_DESTROY_BY_RCU is inserted in a hash
-table, we no longer can clear pinet6 field.
-
-This patch extends logic used in commit fcbdf09d9652c891
-("net: fix nulls list corruptions in sk_prot_alloc")
-
-TCP/UDP/UDPLite IPv6 protocols provide their own .clear_sk() method
-to make sure we do not clear pinet6 field.
-
-At socket clone phase, we do not really care, as cloning the parent (non
-NULL) pinet6 is not adding a fatal race.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h  |   12 ++++++++++++
- net/core/sock.c     |   12 ------------
- net/ipv6/tcp_ipv6.c |   12 ++++++++++++
- net/ipv6/udp.c      |   13 ++++++++++++-
- net/ipv6/udp_impl.h |    2 ++
- net/ipv6/udplite.c  |    2 +-
- 6 files changed, 39 insertions(+), 14 deletions(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -865,6 +865,18 @@ struct inet_hashinfo;
- struct raw_hashinfo;
- struct module;
+---
+ drivers/dma/pch_dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get
+ 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
  
-+/*
-+ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
-+ * un-modified. Special care is taken when initializing object to zero.
-+ */
-+static inline void sk_prot_clear_nulls(struct sock *sk, int size)
-+{
-+	if (offsetof(struct sock, sk_node.next) != 0)
-+		memset(sk, 0, offsetof(struct sock, sk_node.next));
-+	memset(&sk->sk_node.pprev, 0,
-+	       size - offsetof(struct sock, sk_node.pprev));
-+}
-+
- /* Networking protocol blocks we attach to sockets.
-  * socket layer -> transport layer interface
-  * transport -> network interface is defined by struct inet_proto
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1209,18 +1209,6 @@ static void sock_copy(struct sock *nsk,
- #endif
- }
- 
--/*
-- * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
-- * un-modified. Special care is taken when initializing object to zero.
-- */
--static inline void sk_prot_clear_nulls(struct sock *sk, int size)
--{
--	if (offsetof(struct sock, sk_node.next) != 0)
--		memset(sk, 0, offsetof(struct sock, sk_node.next));
--	memset(&sk->sk_node.pprev, 0,
--	       size - offsetof(struct sock, sk_node.pprev));
--}
--
- void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
- {
- 	unsigned long nulls1, nulls2;
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1937,6 +1937,17 @@ void tcp6_proc_exit(struct net *net)
- }
- #endif
- 
-+static void tcp_v6_clear_sk(struct sock *sk, int size)
-+{
-+	struct inet_sock *inet = inet_sk(sk);
-+
-+	/* we do not want to clear pinet6 field, because of RCU lookups */
-+	sk_prot_clear_nulls(sk, offsetof(struct inet_sock, pinet6));
-+
-+	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
-+	memset(&inet->pinet6 + 1, 0, size);
-+}
-+
- struct proto tcpv6_prot = {
- 	.name			= "TCPv6",
- 	.owner			= THIS_MODULE,
-@@ -1980,6 +1991,7 @@ struct proto tcpv6_prot = {
- #ifdef CONFIG_MEMCG_KMEM
- 	.proto_cgroup		= tcp_proto_cgroup,
- #endif
-+	.clear_sk		= tcp_v6_clear_sk,
- };
- 
- static const struct inet6_protocol tcpv6_protocol = {
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1422,6 +1422,17 @@ void udp6_proc_exit(struct net *net) {
- }
- #endif /* CONFIG_PROC_FS */
- 
-+void udp_v6_clear_sk(struct sock *sk, int size)
-+{
-+	struct inet_sock *inet = inet_sk(sk);
-+
-+	/* we do not want to clear pinet6 field, because of RCU lookups */
-+	sk_prot_clear_portaddr_nulls(sk, offsetof(struct inet_sock, pinet6));
-+
-+	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
-+	memset(&inet->pinet6 + 1, 0, size);
-+}
-+
- /* ------------------------------------------------------------------------ */
- 
- struct proto udpv6_prot = {
-@@ -1452,7 +1463,7 @@ struct proto udpv6_prot = {
- 	.compat_setsockopt = compat_udpv6_setsockopt,
- 	.compat_getsockopt = compat_udpv6_getsockopt,
- #endif
--	.clear_sk	   = sk_prot_clear_portaddr_nulls,
-+	.clear_sk	   = udp_v6_clear_sk,
- };
- 
- static struct inet_protosw udpv6_protosw = {
---- a/net/ipv6/udp_impl.h
-+++ b/net/ipv6/udp_impl.h
-@@ -31,6 +31,8 @@ extern int	udpv6_recvmsg(struct kiocb *i
- extern int	udpv6_queue_rcv_skb(struct sock * sk, struct sk_buff *skb);
- extern void	udpv6_destroy_sock(struct sock *sk);
- 
-+extern void udp_v6_clear_sk(struct sock *sk, int size);
-+
- #ifdef CONFIG_PROC_FS
- extern int	udp6_seq_show(struct seq_file *seq, void *v);
- #endif
---- a/net/ipv6/udplite.c
-+++ b/net/ipv6/udplite.c
-@@ -56,7 +56,7 @@ struct proto udplitev6_prot = {
- 	.compat_setsockopt = compat_udpv6_setsockopt,
- 	.compat_getsockopt = compat_udpv6_getsockopt,
- #endif
--	.clear_sk	   = sk_prot_clear_portaddr_nulls,
-+	.clear_sk	   = udp_v6_clear_sk,
- };
- 
- static struct inet_protosw udplite6_protosw = {
+ 	if (!ret) {
+-		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
++		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
+ 		if (ret) {
+ 			spin_lock(&pd_chan->lock);
+ 			pd_chan->descs_allocated++;
 
 
