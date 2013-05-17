@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab3EQHFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 03:05:06 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47481 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab3EQHFE (ORCPT
+	id S1755322Ab3EQHHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 03:07:05 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:26606 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab3EQHHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 03:05:04 -0400
-Message-ID: <5195D679.5080100@huawei.com>
-Date: Fri, 17 May 2013 15:04:25 +0800
+	Fri, 17 May 2013 03:07:01 -0400
+Message-ID: <5195D6BF.3020907@huawei.com>
+Date: Fri, 17 May 2013 15:05:35 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -18,7 +18,7 @@ CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH 6/9] memcg: use css_get/put for swap memcg
+Subject: [PATCH 9/9] memcg: don't need to free memcg via RCU or workqueue
 References: <5195D5F8.7000609@huawei.com>
 In-Reply-To: <5195D5F8.7000609@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -29,106 +29,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use css_get/put instead of mem_cgroup_get/put. A simple replacement
-will do.
+Now memcg has the same life cycle with its corresponding cgroup, and
+a cgroup is freed via RCU and then mem_cgroup_css_free() will be
+called in a work function, so we can simply call __mem_cgroup_free()
+in mem_cgroup_css_free().
 
-The historical reason that memcg has its own refcnt instead of always
-using css_get/put, is that cgroup couldn't be removed if there're still
-css refs, so css refs can't be used as long-lived reference. The
-situation has changed so that rmdir a cgroup will succeed regardless
-css refs, but won't be freed until css refs goes down to 0.
+This actually reverts 59927fb984de1703c67bc640c3e522d8b5276c73
+("memcg: free mem_cgroup by RCU to fix oops").
 
+Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ mm/memcontrol.c | 51 +++++----------------------------------------------
+ 1 file changed, 5 insertions(+), 46 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2f0d117..b11ea88 100644
+index 348126a..eb27b58 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -4185,12 +4185,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
- 	unlock_page_cgroup(pc);
- 	/*
- 	 * even after unlock, we have memcg->res.usage here and this memcg
--	 * will never be freed.
-+	 * will never be freed, so it's safe to call css_get().
- 	 */
- 	memcg_check_events(memcg, page);
- 	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
- 		mem_cgroup_swap_statistics(memcg, true);
--		mem_cgroup_get(memcg);
-+		css_get(&memcg->css);
- 	}
- 	/*
- 	 * Migration does not charge the res_counter for the
-@@ -4290,7 +4290,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+@@ -267,28 +267,10 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
+ 
+-	union {
+-		/*
+-		 * the counter to account for mem+swap usage.
+-		 */
+-		struct res_counter memsw;
+-
+-		/*
+-		 * rcu_freeing is used only when freeing struct mem_cgroup,
+-		 * so put it into a union to avoid wasting more memory.
+-		 * It must be disjoint from the css field.  It could be
+-		 * in a union with the res field, but res plays a much
+-		 * larger part in mem_cgroup life than memsw, and might
+-		 * be of interest, even at time of free, when debugging.
+-		 * So share rcu_head with the less interesting memsw.
+-		 */
+-		struct rcu_head rcu_freeing;
+-		/*
+-		 * We also need some space for a worker in deferred freeing.
+-		 * By the time we call it, rcu_freeing is no longer in use.
+-		 */
+-		struct work_struct work_freeing;
+-	};
++	/*
++	 * the counter to account for mem+swap usage.
++	 */
++	struct res_counter memsw;
  
  	/*
- 	 * record memcg information,  if swapout && memcg != NULL,
--	 * mem_cgroup_get() was called in uncharge().
-+	 * css_get() was called in uncharge().
- 	 */
- 	if (do_swap_account && swapout && memcg)
- 		swap_cgroup_record(ent, css_id(&memcg->css));
-@@ -4321,7 +4321,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
- 		if (!mem_cgroup_is_root(memcg))
- 			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
- 		mem_cgroup_swap_statistics(memcg, false);
--		mem_cgroup_put(memcg);
-+		css_put(&memcg->css);
- 	}
- 	rcu_read_unlock();
+ 	 * the counter to account for kernel memory usage.
+@@ -6143,29 +6125,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+ 		vfree(memcg);
  }
-@@ -4355,11 +4355,14 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
- 		 * This function is only called from task migration context now.
- 		 * It postpones res_counter and refcount handling till the end
- 		 * of task migration(mem_cgroup_clear_mc()) for performance
--		 * improvement. But we cannot postpone mem_cgroup_get(to)
--		 * because if the process that has been moved to @to does
--		 * swap-in, the refcount of @to might be decreased to 0.
-+		 * improvement. But we cannot postpone css_get(to)  because if
-+		 * the process that has been moved to @to does swap-in, the
-+		 * refcount of @to might be decreased to 0.
-+		 *
-+		 * We are in attach() phase, so the cgroup is guaranteed to be
-+		 * alive, so we can just call css_get().
- 		 */
--		mem_cgroup_get(to);
-+		css_get(&to->css);
- 		return 0;
- 	}
- 	return -EINVAL;
-@@ -6651,6 +6654,7 @@ static void __mem_cgroup_clear_mc(void)
- {
- 	struct mem_cgroup *from = mc.from;
- 	struct mem_cgroup *to = mc.to;
-+	int i;
  
- 	/* we must uncharge all the leftover precharges from mc.to */
- 	if (mc.precharge) {
-@@ -6671,7 +6675,9 @@ static void __mem_cgroup_clear_mc(void)
- 		if (!mem_cgroup_is_root(mc.from))
- 			res_counter_uncharge(&mc.from->memsw,
- 						PAGE_SIZE * mc.moved_swap);
--		__mem_cgroup_put(mc.from, mc.moved_swap);
-+
-+		for (i = 0; i < mc.moved_swap; i++)
-+			css_put(&mc.from->css);
+-
+-/*
+- * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+- * but in process context.  The work_freeing structure is overlaid
+- * on the rcu_freeing structure, which itself is overlaid on memsw.
+- */
+-static void free_work(struct work_struct *work)
+-{
+-	struct mem_cgroup *memcg;
+-
+-	memcg = container_of(work, struct mem_cgroup, work_freeing);
+-	__mem_cgroup_free(memcg);
+-}
+-
+-static void free_rcu(struct rcu_head *rcu_head)
+-{
+-	struct mem_cgroup *memcg;
+-
+-	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+-	INIT_WORK(&memcg->work_freeing, free_work);
+-	schedule_work(&memcg->work_freeing);
+-}
+-
+ /*
+  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
+  */
+@@ -6316,7 +6275,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
  
- 		if (!mem_cgroup_is_root(mc.to)) {
- 			/*
-@@ -6681,7 +6687,7 @@ static void __mem_cgroup_clear_mc(void)
- 			res_counter_uncharge(&mc.to->res,
- 						PAGE_SIZE * mc.moved_swap);
- 		}
--		/* we've already done mem_cgroup_get(mc.to) */
-+		/* we've already done css_get(mc.to) */
- 		mc.moved_swap = 0;
- 	}
- 	memcg_oom_recover(from);
+ 	mem_cgroup_sockets_destroy(memcg);
+ 
+-	call_rcu(&memcg->rcu_freeing, free_rcu);
++	__mem_cgroup_free(memcg);
+ }
+ 
+ #ifdef CONFIG_MMU
 -- 
 1.8.0.2
-
