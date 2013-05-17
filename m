@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3EQVyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:54:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54775 "EHLO
+	id S1757976Ab3EQVyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:54:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932502Ab3EQVue (ORCPT
+	with ESMTP id S932491Ab3EQVud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:34 -0400
+	Fri, 17 May 2013 17:50:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        JerryKang <jerry.kang@samsung.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/33] 3c59x: fix freeing nonexistent resource on driver unload
-Date: Fri, 17 May 2013 14:50:03 -0700
-Message-Id: <20130517214918.886750662@linuxfoundation.org>
+Subject: [ 18/33] bridge: fix race with topology change timer
+Date: Fri, 17 May 2013 14:50:02 -0700
+Message-Id: <20130517214918.772718992@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -29,39 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
+[ Upstream commit 83401eb4990ff6af55aeed8f49681558544192e6 ]
 
-When unloading the driver that drives an EISA board, a message similar to the
-following one is displayed:
+A bridge should only send topology change notice if it is not
+the root bridge. It is possible for message age timer to elect itself
+as a new root bridge, and still have a topology change timer running
+but waiting for bridge lock on other CPU.
 
-Trying to free nonexistent resource <0000000000013000-000000000001301f>
+Solve the race by checking if we are root bridge before continuing.
+This was the root cause of the cases where br_send_tcn_bpdu would OOPS.
 
-Then an user is unable to reload the driver because the resource it requested in
-the previous load hasn't been freed. This happens most probably due to a typo in
-vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
-of 'edev->base_addr'...
-
-Reported-by: Matthew Whitehead <tedheadster@gmail.com>
-Tested-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Reported-by: JerryKang <jerry.kang@samsung.com>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/3c59x.c |    2 +-
+ net/bridge/br_stp_timer.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/3c59x.c
-+++ b/drivers/net/3c59x.c
-@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(
+--- a/net/bridge/br_stp_timer.c
++++ b/net/bridge/br_stp_timer.c
+@@ -106,7 +106,7 @@ static void br_tcn_timer_expired(unsigne
  
- 	unregister_netdev(dev);
- 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
--	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
-+	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+ 	br_debug(br, "tcn timer expired\n");
+ 	spin_lock(&br->lock);
+-	if (br->dev->flags & IFF_UP) {
++	if (!br_is_root_bridge(br) && (br->dev->flags & IFF_UP)) {
+ 		br_transmit_tcn(br);
  
- 	free_netdev(dev);
- 	return 0;
+ 		mod_timer(&br->tcn_timer,jiffies + br->bridge_hello_time);
 
 
