@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757937Ab3EQVu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54688 "EHLO
+	id S1758019Ab3EQVzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:55:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab3EQVuU (ORCPT
+	with ESMTP id S1757927Ab3EQVu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:20 -0400
+	Fri, 17 May 2013 17:50:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 02/33] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
-Date: Fri, 17 May 2013 14:49:46 -0700
-Message-Id: <20130517214917.124499710@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 12/33] mwifiex: clear is_suspended flag when interrupt is received early
+Date: Fri, 17 May 2013 14:49:56 -0700
+Message-Id: <20130517214918.163514105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,56 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
+commit 48795424acff7215d5eac0b52793a2c1eb3a6283 upstream.
 
-Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
-broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
-not fully understood, but it seems to be related to the probe order. SPI
-communication to the panel driver (spi1.2) fails unless the touchscreen
-(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
-was converted to a platform driver, it resulted in that the devices are
-probed immediately after the board registers them in the order they are
-listed in the board file.
+When the XO-4 with 8787 wireless is woken up due to wake-on-WLAN
+mwifiex is often flooded with "not allowed while suspended" messages
+and the interface is unusable.
 
-Fix the issue by moving the touchscreen before the panel in the SPI
-device list.
+[  202.171609] int: sdio_ireg = 0x1
+[  202.180700] info: mwifiex_process_hs_config: auto cancelling host
+               sleep since there is interrupt from the firmware
+[  202.201880] event: wakeup device...
+[  202.211452] event: hs_deactivated
+[  202.514638] info: --- Rx: Data packet ---
+[  202.514753] data: 4294957544 BSS(0-0): Data <= kernel
+[  202.514825] PREP_CMD: device in suspended state
+[  202.514839] data: dequeuing the packet ec7248c0 ec4869c0
+[  202.514886] mwifiex_write_data_sync: not allowed while suspended
+[  202.514886] host_to_card, write iomem (1) failed: -1
+[  202.514917] mwifiex_write_data_sync: not allowed while suspended
+[  202.514936] host_to_card, write iomem (2) failed: -1
+[  202.514949] mwifiex_write_data_sync: not allowed while suspended
+[  202.514965] host_to_card, write iomem (3) failed: -1
+[  202.514976] mwifiex_write_data_async failed: 0xFFFFFFFF
 
-The patch fixes the following failure:
+This can be readily reproduced when putting the XO-4 in a loop where
+it goes to sleep due to inactivity, but then wakes up due to an
+incoming ping. The error is hit within an hour or two.
 
-[    1.260955] acx565akm spi1.2: invalid display ID
-[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
-[    1.273071] omapdss CORE error: driver probe failed: -19
+This issue happens when an interrupt comes in early while host sleep
+is still activated. Driver handles this case by auto cancelling host
+sleep. However is_suspended flag is still set which prevents any cmd
+or data from being sent to firmware. Fix it by clearing is_suspended
+flag in this path.
 
-Tested-by: Sebastian Reichel <sre@debian.org>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Pali Rohár <pali.rohar@gmail.com>
-Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Daniel Drake <dsd@laptop.org>
+Tested-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/cmdevt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -56,11 +56,11 @@
- 
- #define RX51_USB_TRANSCEIVER_RST_GPIO	67
- 
--/* list all spi devices here */
-+/* List all SPI devices here. Note that the list/probe order seems to matter! */
- enum {
- 	RX51_SPI_WL1251,
--	RX51_SPI_MIPID,		/* LCD panel */
- 	RX51_SPI_TSC2005,	/* Touch Controller */
-+	RX51_SPI_MIPID,		/* LCD panel */
- };
- 
- static struct wl12xx_platform_data wl1251_pdata;
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -1081,6 +1081,7 @@ mwifiex_process_hs_config(struct mwifiex
+ 	adapter->if_ops.wakeup(adapter);
+ 	adapter->hs_activated = false;
+ 	adapter->is_hs_configured = false;
++	adapter->is_suspended = false;
+ 	mwifiex_hs_activated_event(mwifiex_get_priv(adapter,
+ 				   MWIFIEX_BSS_ROLE_ANY), false);
+ }
 
 
