@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3EQExi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 00:53:38 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:57593 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3EQExh (ORCPT
+	id S1754005Ab3EQE5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 00:57:01 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:42388 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab3EQE47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 00:53:37 -0400
+	Fri, 17 May 2013 00:56:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <51952BA2.9040900@cogentembedded.com>
-References: <1368689438-23889-1-git-send-email-prabhakar.csengg@gmail.com>
- <1368689438-23889-3-git-send-email-prabhakar.csengg@gmail.com> <51952BA2.9040900@cogentembedded.com>
+In-Reply-To: <20130516223739.GB2077@valkosipuli.retiisi.org.uk>
+References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1368619042-28252-2-git-send-email-prabhakar.csengg@gmail.com> <20130516223739.GB2077@valkosipuli.retiisi.org.uk>
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 17 May 2013 10:23:16 +0530
-Message-ID: <CA+V-a8vWLWXL7WP3dzKXM0yFAkoU4UxfaqJ4E1t0gQhRp8zj-w@mail.gmail.com>
-Subject: Re: [PATCH 2/5] net: davinci_emac: remove unwanted header inclusion
- and sort the alphabetically
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jiri Kosina <trivial@kernel.org>, netdev@vger.kernel.org,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 17 May 2013 10:26:38 +0530
+Message-ID: <CA+V-a8uzz=P9LzVeuzUhX5PTzi_VpFvVfKuGFHkcYaX02w1JrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] media: i2c: ths7303: remove init_enable option from pdata
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+Hi Sakari,
 
 Thanks for the review.
 
-On Fri, May 17, 2013 at 12:25 AM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> On 16-05-2013 11:30, Lad Prabhakar wrote:
+On Fri, May 17, 2013 at 4:07 AM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
+> Hi Prabhakar,
 >
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Thanks for the patch!
 >
+> On Wed, May 15, 2013 at 05:27:17PM +0530, Lad Prabhakar wrote:
+>> diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
+>> index 65853ee..8cddcd0 100644
+>> --- a/drivers/media/i2c/ths7303.c
+>> +++ b/drivers/media/i2c/ths7303.c
+>> @@ -356,9 +356,7 @@ static int ths7303_setup(struct v4l2_subdev *sd)
+>>       int ret;
+>>       u8 mask;
+>>
+>> -     state->stream_on = pdata->init_enable;
+>> -
+>> -     mask = state->stream_on ? 0xff : 0xf8;
+>> +     mask = 0xf8;
 >
->> This patch removes unwanted header inclusion
+> You can assign mask in declaration. It'd be nice to have a human-readable
+> name for the mask, too.
 >
->
->    Why are they unwanted?
->
-The driver builds without this includes.
-
-This is arguable, if I would have added a new driver with the only
-#includes which were required to build thats accepted. But when I remove
-unnecessary #includes from the existing drivers that's not acceptable ?
-
-This applies to rest of the similar patches in the series.
-
->> and sorts them alphabetically
->
->
->    In the subject you typed "the" instead of "them".
->
-Hmm carry forwarded this copy paste error every where will fix it in V2.
+This function gets removed in the preceding patch of this series.
 
 Regards,
 --Prabhakar Lad
