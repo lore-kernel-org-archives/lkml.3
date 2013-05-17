@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab3EQWCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:02:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54587 "EHLO
+	id S932311Ab3EQVru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54544 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932317Ab3EQVrv (ORCPT
+	with ESMTP id S1757779Ab3EQVro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:51 -0400
+	Fri, 17 May 2013 17:47:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/50] 3c59x: fix freeing nonexistent resource on driver unload
-Date: Fri, 17 May 2013 14:47:08 -0700
-Message-Id: <20130517213846.175743026@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 13/50] tick: Cleanup NOHZ per cpu data on cpu down
+Date: Fri, 17 May 2013 14:46:48 -0700
+Message-Id: <20130517213844.081389377@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -28,40 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Thomas Gleixner <tglx@linutronix.de>
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+commit 4b0c0f294f60abcdd20994a8341a95c8ac5eeb96 upstream.
 
-[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
+Prarit reported a crash on CPU offline/online. The reason is that on
+CPU down the NOHZ related per cpu data of the dead cpu is not cleaned
+up. If at cpu online an interrupt happens before the per cpu tick
+device is registered the irq_enter() check potentially sees stale data
+and dereferences a NULL pointer.
 
-When unloading the driver that drives an EISA board, a message similar to the
-following one is displayed:
+Cleanup the data after the cpu is dead.
 
-Trying to free nonexistent resource <0000000000013000-000000000001301f>
-
-Then an user is unable to reload the driver because the resource it requested in
-the previous load hasn't been freed. This happens most probably due to a typo in
-vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
-of 'edev->base_addr'...
-
-Reported-by: Matthew Whitehead <tedheadster@gmail.com>
-Tested-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1305031451561.2886@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/net/ethernet/3com/3c59x.c |    2 +-
+ kernel/time/tick-sched.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -866,7 +866,7 @@ void tick_cancel_sched_timer(int cpu)
+ 		hrtimer_cancel(&ts->sched_timer);
+ # endif
  
- 	unregister_netdev(dev);
- 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
--	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
-+	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
+-	ts->nohz_mode = NOHZ_MODE_INACTIVE;
++	memset(ts, 0, sizeof(*ts));
+ }
+ #endif
  
- 	free_netdev(dev);
- 	return 0;
 
 
