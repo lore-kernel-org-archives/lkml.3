@@ -1,109 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3EQA42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 20:56:28 -0400
-Received: from hop-nat-141.emc.com ([168.159.213.141]:30306 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755225Ab3EQA41 (ORCPT
+	id S1755268Ab3EQBEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 21:04:50 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:61023 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab3EQBEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 20:56:27 -0400
-From: "Peng, Tao" <tao.peng@emc.com>
-To: Cyril Roelandt <tipecaml@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] staging: lustre: fix return type of lo_release.
-Thread-Topic: [PATCH] staging: lustre: fix return type of lo_release.
-Thread-Index: AQHOUlHYocvJB+cfUkGriSdAkRTs9JkIjAgg
-Date: Fri, 17 May 2013 00:56:01 +0000
-Message-ID: <1882637210201641A747464075FFC64904175907@MX101CL02.corp.emc.com>
-References: <1368720380-20974-1-git-send-email-tipecaml@gmail.com>
-In-Reply-To: <1368720380-20974-1-git-send-email-tipecaml@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.32.218.60]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 16 May 2013 21:04:48 -0400
+Date: Fri, 17 May 2013 03:04:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Gleb Natapov <gleb@redhat.com>, Scott Wood <scottwood@freescale.com>,
+        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        "open list:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: allow host header to be included even for
+ !CONFIG_KVM
+Message-ID: <20130517010442.GB12928@somewhere>
+References: <20130321072955.GO3889@redhat.com>
+ <87ppyshlq5.fsf@linaro.org>
+ <1363891354.31522.17@snotra>
+ <20130321191600.GG9382@redhat.com>
+ <1363894393.31522.20@snotra>
+ <20130321211736.GI9382@redhat.com>
+ <CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
+ <20130324140114.GV3889@redhat.com>
+ <87txnz9o7n.fsf@linaro.org>
+ <20130515225201.GA2341@somewhere>
 MIME-Version: 1.0
-X-EMM-MHVC: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515225201.GA2341@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4H0uuFM026077
 
+On Thu, May 16, 2013 at 12:52:03AM +0200, Frederic Weisbecker wrote:
+> On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
+> > Gleb Natapov <gleb@redhat.com> writes:
+> > 
+> > > On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
+> > >> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
+> > >> > Isn't is simpler for kernel/context_tracking.c to define empty
+> > >> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
+> > >> 
+> > >> That doesn't look right. Off-cases are usually handled from the
+> > >> headers, right? So that we avoid iffdeffery ugliness in core code.
+> > > Lets put it in linux/context_tracking.h header then.
+> > 
+> > Here's a version to do that.
+> > 
+> > Kevin
+> > 
+> > From d9d909394479dd7ff90b7bddb95a564945406719 Mon Sep 17 00:00:00 2001
+> > From: Kevin Hilman <khilman@linaro.org>
+> > Date: Mon, 25 Mar 2013 14:12:41 -0700
+> > Subject: [PATCH v2] ontext_tracking: fix !CONFIG_KVM compile: add stub guest
+> >  enter/exit
+> 
+> Sorry for my very delayed response...
+> 
+> > 
+> > When KVM is not enabled, or not available on a platform, the KVM
+> > headers should not be included.  Instead, just define stub
+> > __guest_[enter|exit] functions.
+> 
+> May be it would be cleaner to move guest_enter/exit definitions altogether
+> in linux/context_tracking.h
+> 
+> After all that's where the implementation mostly belong to.
+> 
+> Let me see if I can get that in shape.
 
+Does the following work for you?
 
-> -----Original Message-----
-> From: Cyril Roelandt [mailto:tipecaml@gmail.com]
-> Sent: Friday, May 17, 2013 12:06 AM
-> To: kernel-janitors@vger.kernel.org; gregkh@linuxfoundation.org; andreas.dilger@intel.com; Peng, Tao;
-> devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-> Cc: Cyril Roelandt
-> Subject: [PATCH] staging: lustre: fix return type of lo_release.
-> 
-> The return type of block_device_operations.release() changed to void in commit
-> db2a144b.
-> 
-> Found with the following Coccinelle patch:
-> <smpl>
-> @has_release_func@
-> identifier i;
-> identifier release_func;
-> @@
-> struct block_device_operations i = {
->  .release = release_func
-> };
-> 
-> @depends on has_release_func@
-> identifier has_release_func.release_func;
-> @@
-> - int
-> + void
-> release_func(...) {
-> ...
-> - return ...;
-> }
-> </smpl>
-> 
-Yeah, thanks for the patch. I have one same patch but am still working on procfs change so didn't send it out. I'd be glad to take yours instead.
+---
+commit b1633c075527653a99df6fd54d2611cf8c8047f5
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Thu May 16 01:21:38 2013 +0200
 
-Greg, will you take it directly or do you want Andreas and me to queue it first? The patch is absolutely right btw.
+    kvm: Move guest entry/exit APIs to context_tracking
+    
+    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-Thanks,
-Tao
-
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/llite/lloop.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-> index b72f257..9d4c17e 100644
-> --- a/drivers/staging/lustre/lustre/llite/lloop.c
-> +++ b/drivers/staging/lustre/lustre/llite/lloop.c
-> @@ -596,15 +596,13 @@ static int lo_open(struct block_device *bdev, fmode_t mode)
->  	return 0;
->  }
-> 
-> -static int lo_release(struct gendisk *disk, fmode_t mode)
-> +static void lo_release(struct gendisk *disk, fmode_t mode)
->  {
->  	struct lloop_device *lo = disk->private_data;
-> 
->  	mutex_lock(&lo->lo_ctl_mutex);
->  	--lo->lo_refcnt;
->  	mutex_unlock(&lo->lo_ctl_mutex);
-> -
-> -	return 0;
->  }
-> 
->  /* lloop device node's ioctl function. */
-> --
-> 1.7.10.4
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+index 365f4a6..fc09d7b 100644
+--- a/include/linux/context_tracking.h
++++ b/include/linux/context_tracking.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/percpu.h>
++#include <linux/vtime.h>
+ #include <asm/ptrace.h>
+ 
+ struct context_tracking {
+@@ -19,6 +20,26 @@ struct context_tracking {
+ 	} state;
+ };
+ 
++static inline void __guest_enter(void)
++{
++	/*
++	 * This is running in ioctl context so we can avoid
++	 * the call to vtime_account() with its unnecessary idle check.
++	 */
++	vtime_account_system(current);
++	current->flags |= PF_VCPU;
++}
++
++static inline void __guest_exit(void)
++{
++	/*
++	 * This is running in ioctl context so we can avoid
++	 * the call to vtime_account() with its unnecessary idle check.
++	 */
++	vtime_account_system(current);
++	current->flags &= ~PF_VCPU;
++}
++
+ #ifdef CONFIG_CONTEXT_TRACKING
+ DECLARE_PER_CPU(struct context_tracking, context_tracking);
+ 
+@@ -35,6 +56,9 @@ static inline bool context_tracking_active(void)
+ extern void user_enter(void);
+ extern void user_exit(void);
+ 
++extern void guest_enter(void);
++extern void guest_exit(void);
++
+ static inline enum ctx_state exception_enter(void)
+ {
+ 	enum ctx_state prev_ctx;
+@@ -57,6 +81,17 @@ extern void context_tracking_task_switch(struct task_struct *prev,
+ static inline bool context_tracking_in_user(void) { return false; }
+ static inline void user_enter(void) { }
+ static inline void user_exit(void) { }
++
++static inline void guest_enter(void)
++{
++	__guest_enter();
++}
++
++static inline void guest_exit(void)
++{
++	__guest_exit();
++}
++
+ static inline enum ctx_state exception_enter(void) { return 0; }
+ static inline void exception_exit(enum ctx_state prev_ctx) { }
+ static inline void context_tracking_task_switch(struct task_struct *prev,
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index f0eea07..8db53cf 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -23,6 +23,7 @@
+ #include <linux/ratelimit.h>
+ #include <linux/err.h>
+ #include <linux/irqflags.h>
++#include <linux/context_tracking.h>
+ #include <asm/signal.h>
+ 
+ #include <linux/kvm.h>
+@@ -760,42 +761,6 @@ static inline int kvm_iommu_unmap_guest(struct kvm *kvm)
+ }
+ #endif
+ 
+-static inline void __guest_enter(void)
+-{
+-	/*
+-	 * This is running in ioctl context so we can avoid
+-	 * the call to vtime_account() with its unnecessary idle check.
+-	 */
+-	vtime_account_system(current);
+-	current->flags |= PF_VCPU;
+-}
+-
+-static inline void __guest_exit(void)
+-{
+-	/*
+-	 * This is running in ioctl context so we can avoid
+-	 * the call to vtime_account() with its unnecessary idle check.
+-	 */
+-	vtime_account_system(current);
+-	current->flags &= ~PF_VCPU;
+-}
+-
+-#ifdef CONFIG_CONTEXT_TRACKING
+-extern void guest_enter(void);
+-extern void guest_exit(void);
+-
+-#else /* !CONFIG_CONTEXT_TRACKING */
+-static inline void guest_enter(void)
+-{
+-	__guest_enter();
+-}
+-
+-static inline void guest_exit(void)
+-{
+-	__guest_exit();
+-}
+-#endif /* !CONFIG_CONTEXT_TRACKING */
+-
+ static inline void kvm_guest_enter(void)
+ {
+ 	unsigned long flags;
