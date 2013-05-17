@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3EQWRU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:17:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54186 "EHLO
+	id S1758267Ab3EQWRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:17:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab3EQVhc (ORCPT
+	with ESMTP id S1757010Ab3EQVh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:32 -0400
+	Fri, 17 May 2013 17:37:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 046/102] tile: support new Tilera hypervisor
-Date: Fri, 17 May 2013 14:36:01 -0700
-Message-Id: <20130517213249.170527597@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 053/102] drm/i915: clear the stolen fb before resuming
+Date: Fri, 17 May 2013 14:36:08 -0700
+Message-Id: <20130517213249.942458747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -26,159 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit c539914dcd9a68c63305e055b14115a6a19578a8 upstream.
+commit 1ffc5289bfcf7f4c4e4213240bb4be68c48ce603 upstream.
 
-The Tilera hypervisor shipped in releases up through MDE 4.1 launches
-the client operating system (i.e. Linux) at privilege level 1 (PL1).
-Starting with MDE 4.2, as part of the work to enable KVM, the
-Tilera hypervisor launches Linux at PL2 instead.
+Similar to
+commit 88afe715dd5469bc24ca7a19ac62dd3c241cab48
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Sun Dec 16 12:15:41 2012 +0000
 
-This commit makes the KERNEL_PL option default to 2 for tilegx, while
-still saying at 1 for tilepro, which doesn't have an updated hypervisor.
-It also explains how and when you might want to choose another value.
-In addition, we change a small buglet in the on-chip Ethernet driver,
-where we were failing to use the KERNEL_PL constant in an API call.
+    drm/i915: Clear the stolen fb before enabling
 
-To make the transition cleaner, this change also provides the updated
-hv_init() API for the new hypervisor that supports announcing Linux's
-compiled-in PL, so the hypervisor can generate a suitable error in the
-case of a mismatched hypervisor and Linux binary.
+but on the resume path.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=57191
+Reported-and-tested-by: Nikolay Amiantov <nikoamia@gmail.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/Kconfig                  |   14 ++++++++++----
- arch/tile/include/hv/hypervisor.h  |   27 ++++++++++++++++++++++++---
- arch/tile/kernel/head_32.S         |    2 +-
- arch/tile/kernel/head_64.S         |   12 +++++++++---
- drivers/net/ethernet/tile/tilegx.c |    2 +-
- 5 files changed, 45 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/i915/intel_fb.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -368,11 +368,17 @@ config HARDWALL
- config KERNEL_PL
- 	int "Processor protection level for kernel"
- 	range 1 2
--	default "1"
-+	default 2 if TILEGX
-+	default 1 if !TILEGX
- 	---help---
--	  This setting determines the processor protection level the
--	  kernel will be built to run at.  Generally you should use
--	  the default value here.
-+	  Since MDE 4.2, the Tilera hypervisor runs the kernel
-+	  at PL2 by default.  If running under an older hypervisor,
-+	  or as a KVM guest, you must run at PL1.  (The current
-+	  hypervisor may also be recompiled with "make HV_PL=2" to
-+	  allow it to run a kernel at PL1, but clients running at PL1
-+	  are not expected to be supported indefinitely.)
+--- a/drivers/gpu/drm/i915/intel_fb.c
++++ b/drivers/gpu/drm/i915/intel_fb.c
+@@ -261,10 +261,22 @@ void intel_fbdev_fini(struct drm_device
+ void intel_fbdev_set_suspend(struct drm_device *dev, int state)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	if (!dev_priv->fbdev)
++	struct intel_fbdev *ifbdev = dev_priv->fbdev;
++	struct fb_info *info;
 +
-+	  If you're not sure, don't change the default.
++	if (!ifbdev)
+ 		return;
  
- source "arch/tile/gxio/Kconfig"
- 
---- a/arch/tile/include/hv/hypervisor.h
-+++ b/arch/tile/include/hv/hypervisor.h
-@@ -107,7 +107,22 @@
- #define HV_DISPATCH_ENTRY_SIZE 32
- 
- /** Version of the hypervisor interface defined by this file */
--#define _HV_VERSION 11
-+#define _HV_VERSION 13
+-	fb_set_suspend(dev_priv->fbdev->helper.fbdev, state);
++	info = ifbdev->helper.fbdev;
 +
-+/** Last version of the hypervisor interface with old hv_init() ABI.
-+ *
-+ * The change from version 12 to version 13 corresponds to launching
-+ * the client by default at PL2 instead of PL1 (corresponding to the
-+ * hv itself running at PL3 instead of PL2).  To make this explicit,
-+ * the hv_init() API was also extended so the client can report its
-+ * desired PL, resulting in a more helpful failure diagnostic.  If you
-+ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
-+ * argument, the hypervisor will assume client_pl = 1.
-+ *
-+ * Note that this is a deprecated solution and we do not expect to
-+ * support clients of the Tilera hypervisor running at PL1 indefinitely.
-+ */
-+#define _HV_VERSION_OLD_HV_INIT 12
- 
- /* Index into hypervisor interface dispatch code blocks.
-  *
-@@ -377,7 +392,11 @@ typedef int HV_Errno;
- #ifndef __ASSEMBLER__
- 
- /** Pass HV_VERSION to hv_init to request this version of the interface. */
--typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-+typedef enum {
-+  HV_VERSION = _HV_VERSION,
-+  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
++	/* On resume from hibernation: If the object is shmemfs backed, it has
++	 * been restored from swap. If the object is stolen however, it will be
++	 * full of whatever garbage was left in there.
++	 */
++	if (!state && ifbdev->ifb.obj->stolen)
++		memset_io(info->screen_base, 0, info->screen_size);
 +
-+} HV_VersionNumber;
++	fb_set_suspend(info, state);
+ }
  
- /** Initializes the hypervisor.
-  *
-@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION
-  * that this program expects, typically HV_VERSION.
-  * @param chip_num Architecture number of the chip the client was built for.
-  * @param chip_rev_num Revision number of the chip the client was built for.
-+ * @param client_pl Privilege level the client is built for
-+ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
-  */
- void hv_init(HV_VersionNumber interface_version_number,
--             int chip_num, int chip_rev_num);
-+             int chip_num, int chip_rev_num, int client_pl);
- 
- 
- /** Queries we can make for hv_sysconf().
---- a/arch/tile/kernel/head_32.S
-+++ b/arch/tile/kernel/head_32.S
-@@ -38,7 +38,7 @@ ENTRY(_start)
- 	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
-+	  moveli r0, _HV_VERSION_OLD_HV_INIT
- 	  jal hv_init
- 	}
- 	/* Get a reasonable default ASID in r0 */
---- a/arch/tile/kernel/head_64.S
-+++ b/arch/tile/kernel/head_64.S
-@@ -34,13 +34,19 @@
- ENTRY(_start)
- 	/* Notify the hypervisor of what version of the API we want */
- 	{
-+#if KERNEL_PL == 1 && _HV_VERSION == 13
-+	  /* Support older hypervisors by asking for API version 12. */
-+	  movei r0, _HV_VERSION_OLD_HV_INIT
-+#else
-+	  movei r0, _HV_VERSION
-+#endif
- 	  movei r1, TILE_CHIP
--	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
--	  jal hv_init
-+	  movei r2, TILE_CHIP_REV
-+	  movei r3, KERNEL_PL
- 	}
-+	jal hv_init
- 	/* Get a reasonable default ASID in r0 */
- 	{
- 	  move r0, zero
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(str
- 		if (info->has_iqueue) {
- 			gxio_mpipe_request_notif_ring_interrupt(
- 				&context, cpu_x(cpu), cpu_y(cpu),
--				1, ingress_irq, info->iqueue.ring);
-+				KERNEL_PL, ingress_irq, info->iqueue.ring);
- 		}
- 	}
- 
+ MODULE_LICENSE("GPL and additional rights");
 
 
