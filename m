@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab3EQWAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:00:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54614 "EHLO
+	id S1758194Ab3EQWA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:00:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54612 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932351Ab3EQVrz (ORCPT
+	with ESMTP id S932347Ab3EQVrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:47:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, Libo Chen <libo.chen@huawei.com>
-Subject: [ 39/50] dm thin: do not set discard_zeroes_data
-Date: Fri, 17 May 2013 14:47:14 -0700
-Message-Id: <20130517213846.801853756@linuxfoundation.org>
+        Cong Wang <amwang@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 38/50] xfrm6: release dev before returning error
+Date: Fri, 17 May 2013 14:47:13 -0700
+Message-Id: <20130517213846.704943914@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,49 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
 
-commit 307615a26e95406c42c95916a66ba50434567e0f upstream.
+From: Cong Wang <amwang@redhat.com>
 
-The dm thin pool target claims to support the zeroing of discarded
-data areas.  This turns out to be incorrect when processing discards
-that do not exactly cover a complete number of blocks, so the target
-must always set discard_zeroes_data_unsupported.
+[ Upstream commit 84c4a9dfbf430861e7588d95ae3ff61535dca351 ]
 
-The thin pool target will zero blocks when they are allocated if the
-skip_block_zeroing feature is not specified.  The block layer
-may send a discard that only partly covers a block.  If a thin pool
-block is partially discarded then there is no guarantee that the
-discarded data will get zeroed before it is accessed again.
-Due to this, thin devices cannot claim discards will always zero data.
+We forget to call dev_put() on error path in xfrm6_fill_dst(),
+its caller doesn't handle this.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Cc: Libo Chen <libo.chen@huawei.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/md/dm-thin.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/xfrm6_policy.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2027,6 +2027,7 @@ static int pool_ctr(struct dm_target *ti
- 		 * thin devices' discard limits consistent).
- 		 */
- 		ti->discards_supported = 1;
-+		ti->discard_zeroes_data_unsupported = 1;
- 	}
- 	ti->private = pt;
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -96,8 +96,10 @@ static int xfrm6_fill_dst(struct xfrm_ds
+ 	dev_hold(dev);
  
-@@ -2443,7 +2444,6 @@ static void set_discard_limits(struct po
- 	 * bios that overlap 2 blocks.
- 	 */
- 	limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
--	limits->discard_zeroes_data = pool->pf.zero_new_blocks;
- }
+ 	xdst->u.rt6.rt6i_idev = in6_dev_get(dev);
+-	if (!xdst->u.rt6.rt6i_idev)
++	if (!xdst->u.rt6.rt6i_idev) {
++		dev_put(dev);
+ 		return -ENODEV;
++	}
  
- static void pool_io_hints(struct dm_target *ti, struct queue_limits *limits)
+ 	xdst->u.rt6.rt6i_peer = rt->rt6i_peer;
+ 	if (rt->rt6i_peer)
 
 
