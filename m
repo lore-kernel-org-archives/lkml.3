@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932674Ab3EQVwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:52:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54804 "EHLO
+	id S932703Ab3EQVwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:52:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932545Ab3EQVui (ORCPT
+	with ESMTP id S932536Ab3EQVuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:38 -0400
+	Fri, 17 May 2013 17:50:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Galbraith <bitbucket@online.de>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/33] tcp: force a dst refcount when prequeue packet
-Date: Fri, 17 May 2013 14:49:59 -0700
-Message-Id: <20130517214918.443301013@linuxfoundation.org>
+Subject: [ 23/33] ipv6: do not clear pinet6 field
+Date: Fri, 17 May 2013 14:50:07 -0700
+Message-Id: <20130517214919.327128847@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -31,28 +30,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 093162553c33e9479283e107b4431378271c735d ]
+[ Upstream commit f77d602124d865c38705df7fa25c03de9c284ad2 ]
 
-Before escaping RCU protected section and adding packet into
-prequeue, make sure the dst is refcounted.
+We have seen multiple NULL dereferences in __inet6_lookup_established()
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
+After analysis, I found that inet6_sk() could be NULL while the
+check for sk_family == AF_INET6 was true.
+
+Bug was added in linux-2.6.29 when RCU lookups were introduced in UDP
+and TCP stacks.
+
+Once an IPv6 socket, using SLAB_DESTROY_BY_RCU is inserted in a hash
+table, we no longer can clear pinet6 field.
+
+This patch extends logic used in commit fcbdf09d9652c891
+("net: fix nulls list corruptions in sk_prot_alloc")
+
+TCP/UDP/UDPLite IPv6 protocols provide their own .clear_sk() method
+to make sure we do not clear pinet6 field.
+
+At socket clone phase, we do not really care, as cloning the parent (non
+NULL) pinet6 is not adding a fatal race.
+
 Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/tcp.h |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/sock.h  |   12 ++++++++++++
+ net/core/sock.c     |   12 ------------
+ net/ipv6/tcp_ipv6.c |   12 ++++++++++++
+ net/ipv6/udp.c      |   13 ++++++++++++-
+ net/ipv6/udp_impl.h |    2 ++
+ net/ipv6/udplite.c  |    2 +-
+ 6 files changed, 39 insertions(+), 14 deletions(-)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -902,6 +902,7 @@ static inline int tcp_prequeue(struct so
- 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
- 		return 0;
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -721,6 +721,18 @@ struct timewait_sock_ops;
+ struct inet_hashinfo;
+ struct raw_hashinfo;
  
-+	skb_dst_force(skb);
- 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
- 	tp->ucopy.memory += skb->truesize;
- 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
++/*
++ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
++ * un-modified. Special care is taken when initializing object to zero.
++ */
++static inline void sk_prot_clear_nulls(struct sock *sk, int size)
++{
++	if (offsetof(struct sock, sk_node.next) != 0)
++		memset(sk, 0, offsetof(struct sock, sk_node.next));
++	memset(&sk->sk_node.pprev, 0,
++	       size - offsetof(struct sock, sk_node.pprev));
++}
++
+ /* Networking protocol blocks we attach to sockets.
+  * socket layer -> transport layer interface
+  * transport -> network interface is defined by struct inet_proto
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1017,18 +1017,6 @@ static void sock_copy(struct sock *nsk,
+ #endif
+ }
+ 
+-/*
+- * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
+- * un-modified. Special care is taken when initializing object to zero.
+- */
+-static inline void sk_prot_clear_nulls(struct sock *sk, int size)
+-{
+-	if (offsetof(struct sock, sk_node.next) != 0)
+-		memset(sk, 0, offsetof(struct sock, sk_node.next));
+-	memset(&sk->sk_node.pprev, 0,
+-	       size - offsetof(struct sock, sk_node.pprev));
+-}
+-
+ void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
+ {
+ 	unsigned long nulls1, nulls2;
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -2205,6 +2205,17 @@ void tcp6_proc_exit(struct net *net)
+ }
+ #endif
+ 
++static void tcp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ struct proto tcpv6_prot = {
+ 	.name			= "TCPv6",
+ 	.owner			= THIS_MODULE,
+@@ -2244,6 +2255,7 @@ struct proto tcpv6_prot = {
+ 	.compat_setsockopt	= compat_tcp_setsockopt,
+ 	.compat_getsockopt	= compat_tcp_getsockopt,
+ #endif
++	.clear_sk		= tcp_v6_clear_sk,
+ };
+ 
+ static const struct inet6_protocol tcpv6_protocol = {
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -1448,6 +1448,17 @@ void udp6_proc_exit(struct net *net) {
+ }
+ #endif /* CONFIG_PROC_FS */
+ 
++void udp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_portaddr_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ /* ------------------------------------------------------------------------ */
+ 
+ struct proto udpv6_prot = {
+@@ -1478,7 +1489,7 @@ struct proto udpv6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udpv6_protosw = {
+--- a/net/ipv6/udp_impl.h
++++ b/net/ipv6/udp_impl.h
+@@ -31,6 +31,8 @@ extern int	udpv6_recvmsg(struct kiocb *i
+ extern int	udpv6_queue_rcv_skb(struct sock * sk, struct sk_buff *skb);
+ extern void	udpv6_destroy_sock(struct sock *sk);
+ 
++extern void udp_v6_clear_sk(struct sock *sk, int size);
++
+ #ifdef CONFIG_PROC_FS
+ extern int	udp6_seq_show(struct seq_file *seq, void *v);
+ #endif
+--- a/net/ipv6/udplite.c
++++ b/net/ipv6/udplite.c
+@@ -55,7 +55,7 @@ struct proto udplitev6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udplite6_protosw = {
 
 
