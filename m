@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3EQVrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54499 "EHLO
+	id S932337Ab3EQVrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54538 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab3EQVri (ORCPT
+	with ESMTP id S1757778Ab3EQVrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:38 -0400
+	Fri, 17 May 2013 17:47:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [ 14/50] tracing: Fix leaks of filter preds
-Date: Fri, 17 May 2013 14:46:49 -0700
-Message-Id: <20130517213844.178770933@linuxfoundation.org>
+        Christopher Harvey <charvey@matrox.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 21/50] drm/mm: fix dump table BUG
+Date: Fri, 17 May 2013 14:46:56 -0700
+Message-Id: <20130517213844.906259572@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -26,59 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
+commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
 
-Special preds are created when folding a series of preds that
-can be done in serial. These are allocated in an ops field of
-the pred structure. But they were never freed, causing memory
-leaks.
+In
 
-This was discovered using the kmemleak checker:
+commit 9e8944ab564f2e3dde90a518cd32048c58918608
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Nov 15 11:32:17 2012 +0000
 
-unreferenced object 0xffff8800797fd5e0 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
-  hex dump (first 32 bytes):
-    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
-    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
-    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
-    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
-    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
-    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
-    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
-    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
-    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
-    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
-    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
-    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
-    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
+    drm: Introduce an iterator over holes in the drm_mm range manager
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
+helpers and iterators for hole handling have been introduced with some
+debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
+which unconditionally tried to compute the size of the very first
+hole.
+
+While at it unify the code a bit with the hole dumping in the loop.
+
+v2: Extract a hole dump helper.
+
+Reported-by: Christopher Harvey <charvey@matrox.com>
+Cc: Christopher Harvey <charvey@matrox.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Acked-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_events_filter.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/drm_mm.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -777,7 +777,11 @@ static int filter_set_pred(struct event_
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -680,33 +680,35 @@ void drm_mm_debug_table(struct drm_mm *m
+ EXPORT_SYMBOL(drm_mm_debug_table);
  
- static void __free_preds(struct event_filter *filter)
+ #if defined(CONFIG_DEBUG_FS)
+-int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
  {
-+	int i;
+-	struct drm_mm_node *entry;
+-	unsigned long total_used = 0, total_free = 0, total = 0;
+ 	unsigned long hole_start, hole_end, hole_size;
+ 
+-	hole_start = drm_mm_hole_node_start(&mm->head_node);
+-	hole_end = drm_mm_hole_node_end(&mm->head_node);
+-	hole_size = hole_end - hole_start;
+-	if (hole_size)
++	if (entry->hole_follows) {
++		hole_start = drm_mm_hole_node_start(entry);
++		hole_end = drm_mm_hole_node_end(entry);
++		hole_size = hole_end - hole_start;
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+ 				hole_start, hole_end, hole_size);
+-	total_free += hole_size;
++		return hole_size;
++	}
 +
- 	if (filter->preds) {
-+		for (i = 0; i < filter->n_preds; i++)
-+			kfree(filter->preds[i].ops);
- 		kfree(filter->preds);
- 		filter->preds = NULL;
++	return 0;
++}
++
++int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++{
++	struct drm_mm_node *entry;
++	unsigned long total_used = 0, total_free = 0, total = 0;
++
++	total_free += drm_mm_dump_hole(m, &mm->head_node);
+ 
+ 	drm_mm_for_each_node(entry, mm) {
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
+ 				entry->start, entry->start + entry->size,
+ 				entry->size);
+ 		total_used += entry->size;
+-		if (entry->hole_follows) {
+-			hole_start = drm_mm_hole_node_start(entry);
+-			hole_end = drm_mm_hole_node_end(entry);
+-			hole_size = hole_end - hole_start;
+-			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+-					hole_start, hole_end, hole_size);
+-			total_free += hole_size;
+-		}
++		total_free += drm_mm_dump_hole(m, entry);
  	}
+ 	total = total_free + total_used;
+ 
 
 
