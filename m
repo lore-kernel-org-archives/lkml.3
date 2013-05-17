@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3EQNXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 09:23:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34753 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab3EQNXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 09:23:48 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <tomi.valkeinen@ti.com>
-CC: <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <gregkh@linuxfoundation.org>, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [RFC PATCH 3/4] usb: musb: omap: use the new API to get PHY reference by label
-Date: Fri, 17 May 2013 18:52:33 +0530
-Message-ID: <1368796954-3499-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1368796954-3499-1-git-send-email-kishon@ti.com>
-References: <1368796954-3499-1-git-send-email-kishon@ti.com>
+	id S1755893Ab3EQN1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 09:27:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34240 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab3EQN1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 09:27:20 -0400
+Date: Fri, 17 May 2013 14:27:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
+Subject: Re: [RFCv2][PATCH 2/5] make 'struct page' and swp_entry_t variants
+ of swapcache_free().
+Message-ID: <20130517132711.GL11497@suse.de>
+References: <20130516203427.E3386936@viggo.jf.intel.com>
+ <20130516203429.5293EA57@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130516203429.5293EA57@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the devices are created using PLATFORM_DEVID_AUTO,
-devm_usb_get_phy_dev and usb_get_phy_dev can't be used reliably
-as it relies on the device_names passed in usb_bind_phy. So used the
-new API devm_usb_get_phy_by_name to get the PHY reference.
+On Thu, May 16, 2013 at 01:34:29PM -0700, Dave Hansen wrote:
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> swapcache_free() takes two arguments:
+> 
+> 	void swapcache_free(swp_entry_t entry, struct page *page)
+> 
+> Most of its callers (5/7) are from error handling paths haven't even
+> instantiated a page, so they pass page=NULL.  Both of the callers
+> that call in with a 'struct page' create and pass in a temporary
+> swp_entry_t.
+> 
+> Now that we are deferring clearing page_private() until after
+> swapcache_free() has been called, we can just create a variant
+> that takes a 'struct page' and does the temporary variable in
+> the helper.
+> 
+> That leaves all the other callers doing
+> 
+> 	swapcache_free(entry, NULL)
+> 
+> so create another helper for them that makes it clear that they
+> need only pass in a swp_entry_t.
+> 
+> One downside here is that delete_from_swap_cache() now does
+> an extra swap_address_space() call.  But, those are pretty
+> cheap (just some array index arithmetic).
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/musb/musb_core.c |    1 +
- drivers/usb/musb/musb_core.h |    1 +
- drivers/usb/musb/omap2430.c  |    2 +-
- 3 files changed, 3 insertions(+), 1 deletion(-)
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 37a261a..00fbaf4 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1864,6 +1864,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	musb->board_set_power = plat->set_power;
- 	musb->min_power = plat->min_power;
- 	musb->ops = plat->platform_ops;
-+	musb->phy_name = plat->phy_name;
- 
- 	/* The musb_platform_init() call:
- 	 *   - adjusts musb->mregs
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7fb4819..e9a9339 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -434,6 +434,7 @@ struct musb {
- 	unsigned                double_buffer_not_ok:1;
- 
- 	struct musb_hdrc_config	*config;
-+	const char		*phy_name;
- 
- #ifdef MUSB_CONFIG_PROC_FS
- 	struct proc_dir_entry *proc_entry;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 3551f1a..be29aa7 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -352,7 +352,7 @@ static int omap2430_musb_init(struct musb *musb)
- 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
- 		    "usb-phy", 0);
- 	else
--		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+		musb->xceiv = devm_usb_get_phy_by_name(dev, musb->phy_name);
- 
- 	if (IS_ERR(musb->xceiv)) {
- 		status = PTR_ERR(musb->xceiv);
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
