@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab3EQWYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:24:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54042 "EHLO
+	id S1758526Ab3EQWZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:25:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab3EQVhL (ORCPT
+	with ESMTP id S1755801Ab3EQVhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:11 -0400
+	Fri, 17 May 2013 17:37:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 017/102] dm cache: fix error return code in cache_create
-Date: Fri, 17 May 2013 14:35:32 -0700
-Message-Id: <20130517213246.162265402@linuxfoundation.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Robert Richter <robert.richter@calxeda.com>
+Subject: [ 012/102] DMA: OF: Check properties value before running be32_to_cpup() on it
+Date: Fri, 17 May 2013 14:35:27 -0700
+Message-Id: <20130517213245.613466537@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,30 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit fa4d683af3693863bec761e2761a07e4c1351f86 upstream.
+commit 9a188eb126aa7bf27077ee46fcb914898d6fc281 upstream.
 
-Return -ENOMEM if memory allocation fails in cache_create
-instead of 0 (to avoid NULL pointer dereference).
+In of_dma_controller_register() routine we are calling of_get_property() as an
+parameter to be32_to_cpup(). In case the property doesn't exist we will get a
+crash.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+This patch changes this code to check if we got a valid property first and then
+runs be32_to_cpup() on it.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Robert Richter <robert.richter@calxeda.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/of-dma.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -1971,6 +1971,7 @@ static int cache_create(struct cache_arg
- 	atomic_set(&cache->nr_migrations, 0);
- 	init_waitqueue_head(&cache->migration_wait);
+--- a/drivers/dma/of-dma.c
++++ b/drivers/dma/of-dma.c
+@@ -93,6 +93,7 @@ int of_dma_controller_register(struct de
+ {
+ 	struct of_dma	*ofdma;
+ 	int		nbcells;
++	const __be32	*prop;
  
-+	r = -ENOMEM;
- 	cache->nr_dirty = 0;
- 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
- 	if (!cache->dirty_bitset) {
+ 	if (!np || !of_dma_xlate) {
+ 		pr_err("%s: not enough information provided\n", __func__);
+@@ -103,8 +104,11 @@ int of_dma_controller_register(struct de
+ 	if (!ofdma)
+ 		return -ENOMEM;
+ 
+-	nbcells = be32_to_cpup(of_get_property(np, "#dma-cells", NULL));
+-	if (!nbcells) {
++	prop = of_get_property(np, "#dma-cells", NULL);
++	if (prop)
++		nbcells = be32_to_cpup(prop);
++
++	if (!prop || !nbcells) {
+ 		pr_err("%s: #dma-cells property is missing or invalid\n",
+ 		       __func__);
+ 		kfree(ofdma);
 
 
