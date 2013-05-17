@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab3EQWMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:12:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54252 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab3EQVhm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757138Ab3EQVhm (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 May 2013 17:37:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54229 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab3EQVhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:37:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        JerryKang <jerry.kang@samsung.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Chen Gang <gang.chen@asianux.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 063/102] bridge: fix race with topology change timer
-Date: Fri, 17 May 2013 14:36:18 -0700
-Message-Id: <20130517213251.013411988@linuxfoundation.org>
+Subject: [ 057/102] net: mac802154: comparision issue of type cast, finding by EXTRA_CFLAGS=-W
+Date: Fri, 17 May 2013 14:36:12 -0700
+Message-Id: <20130517213250.367511804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -29,36 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Chen Gang <gang.chen@asianux.com>
 
-[ Upstream commit 83401eb4990ff6af55aeed8f49681558544192e6 ]
+[ Upstream commit 2c1bbbffa0b644fab4f91878cde0c2e8f52e2dcc ]
 
-A bridge should only send topology change notice if it is not
-the root bridge. It is possible for message age timer to elect itself
-as a new root bridge, and still have a topology change timer running
-but waiting for bridge lock on other CPU.
+Change MAC802154_CHAN_NONE from ~(u8)0 to 0xff, or the comparison in
+mac802154_wpan_xmit() for ``chan == MAC802154_CHAN_NONE'' will not
+succeed.
 
-Solve the race by checking if we are root bridge before continuing.
-This was the root cause of the cases where br_send_tcn_bpdu would OOPS.
+This bug can be boiled down to ``u8 foo = 0xff; if (foo == ~(u8)0)
+[...] else [...]'' where the condition will always take the else
+branch.
 
-Reported-by: JerryKang <jerry.kang@samsung.com>
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_stp_timer.c |    2 +-
+ net/mac802154/mac802154.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_stp_timer.c
-+++ b/net/bridge/br_stp_timer.c
-@@ -107,7 +107,7 @@ static void br_tcn_timer_expired(unsigne
+--- a/net/mac802154/mac802154.h
++++ b/net/mac802154/mac802154.h
+@@ -90,7 +90,7 @@ struct mac802154_sub_if_data {
  
- 	br_debug(br, "tcn timer expired\n");
- 	spin_lock(&br->lock);
--	if (br->dev->flags & IFF_UP) {
-+	if (!br_is_root_bridge(br) && (br->dev->flags & IFF_UP)) {
- 		br_transmit_tcn(br);
+ #define MAC802154_MAX_XMIT_ATTEMPTS	3
  
- 		mod_timer(&br->tcn_timer,jiffies + br->bridge_hello_time);
+-#define MAC802154_CHAN_NONE		(~(u8)0) /* No channel is assigned */
++#define MAC802154_CHAN_NONE		0xff /* No channel is assigned */
+ 
+ extern struct ieee802154_reduced_mlme_ops mac802154_mlme_reduced;
+ extern struct ieee802154_mlme_ops mac802154_mlme_wpan;
 
 
