@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab3EQWQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:16:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54190 "EHLO
+	id S1758164Ab3EQWRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:17:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757038Ab3EQVhd (ORCPT
+	with ESMTP id S1757033Ab3EQVhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:33 -0400
+	Fri, 17 May 2013 17:37:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Buesch <m@bues.ch>, Thommy Jakobsson <thommyj@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 047/102] B43: Handle DMA RX descriptor underrun
-Date: Fri, 17 May 2013 14:36:02 -0700
-Message-Id: <20130517213249.276497465@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 046/102] tile: support new Tilera hypervisor
+Date: Fri, 17 May 2013 14:36:01 -0700
+Message-Id: <20130517213249.170527597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,149 +26,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thommy Jakobsson <thommyj@gmail.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 upstream.
+commit c539914dcd9a68c63305e055b14115a6a19578a8 upstream.
 
-Add handling of rx descriptor underflow. This fixes a fault that could
-happen on slow machines, where data is received faster than the CPU can
-handle. In such a case the device will use up all rx descriptors and
-refuse to send any more data before confirming that it is ok. This
-patch enables necessary interrupt to discover such a situation and will
-handle them by dropping everything in the ring buffer.
+The Tilera hypervisor shipped in releases up through MDE 4.1 launches
+the client operating system (i.e. Linux) at privilege level 1 (PL1).
+Starting with MDE 4.2, as part of the work to enable KVM, the
+Tilera hypervisor launches Linux at PL2 instead.
 
-Reviewed-by: Michael Buesch <m@bues.ch>
-Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This commit makes the KERNEL_PL option default to 2 for tilegx, while
+still saying at 1 for tilepro, which doesn't have an updated hypervisor.
+It also explains how and when you might want to choose another value.
+In addition, we change a small buglet in the on-chip Ethernet driver,
+where we were failing to use the KERNEL_PL constant in an API call.
+
+To make the transition cleaner, this change also provides the updated
+hv_init() API for the new hypervisor that supports announcing Linux's
+compiled-in PL, so the hypervisor can generate a suitable error in the
+case of a mismatched hypervisor and Linux binary.
+
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/dma.c  |   19 +++++++++++++++++
- drivers/net/wireless/b43/dma.h  |    4 ++-
- drivers/net/wireless/b43/main.c |   43 ++++++++++++++++------------------------
- 3 files changed, 40 insertions(+), 26 deletions(-)
+ arch/tile/Kconfig                  |   14 ++++++++++----
+ arch/tile/include/hv/hypervisor.h  |   27 ++++++++++++++++++++++++---
+ arch/tile/kernel/head_32.S         |    2 +-
+ arch/tile/kernel/head_64.S         |   12 +++++++++---
+ drivers/net/ethernet/tile/tilegx.c |    2 +-
+ 5 files changed, 45 insertions(+), 12 deletions(-)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1733,6 +1733,25 @@ drop_recycle_buffer:
- 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
- }
- 
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
-+{
-+	int current_slot, previous_slot;
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -368,11 +368,17 @@ config HARDWALL
+ config KERNEL_PL
+ 	int "Processor protection level for kernel"
+ 	range 1 2
+-	default "1"
++	default 2 if TILEGX
++	default 1 if !TILEGX
+ 	---help---
+-	  This setting determines the processor protection level the
+-	  kernel will be built to run at.  Generally you should use
+-	  the default value here.
++	  Since MDE 4.2, the Tilera hypervisor runs the kernel
++	  at PL2 by default.  If running under an older hypervisor,
++	  or as a KVM guest, you must run at PL1.  (The current
++	  hypervisor may also be recompiled with "make HV_PL=2" to
++	  allow it to run a kernel at PL1, but clients running at PL1
++	  are not expected to be supported indefinitely.)
 +
-+	B43_WARN_ON(ring->tx);
-+
-+	/* Device has filled all buffers, drop all packets and let TCP
-+	 * decrease speed.
-+	 * Decrement RX index by one will let the device to see all slots
-+	 * as free again
-+	 */
-+	/*
-+	*TODO: How to increase rx_drop in mac80211?
-+	*/
-+	current_slot = ring->ops->get_current_rxslot(ring);
-+	previous_slot = prev_slot(ring, current_slot);
-+	ring->ops->set_current_rxslot(ring, previous_slot);
-+}
-+
- void b43_dma_rx(struct b43_dmaring *ring)
- {
- 	const struct b43_dma_ops *ops = ring->ops;
---- a/drivers/net/wireless/b43/dma.h
-+++ b/drivers/net/wireless/b43/dma.h
-@@ -9,7 +9,7 @@
- /* DMA-Interrupt reasons. */
- #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
- 					 | (1 << 14) | (1 << 15))
--#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
-+#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
- #define B43_DMAIRQ_RX_DONE		(1 << 16)
++	  If you're not sure, don't change the default.
  
- /*** 32-bit DMA Engine. ***/
-@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
- void b43_dma_handle_txstatus(struct b43_wldev *dev,
- 			     const struct b43_txstatus *status);
+ source "arch/tile/gxio/Kconfig"
  
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
+--- a/arch/tile/include/hv/hypervisor.h
++++ b/arch/tile/include/hv/hypervisor.h
+@@ -107,7 +107,22 @@
+ #define HV_DISPATCH_ENTRY_SIZE 32
+ 
+ /** Version of the hypervisor interface defined by this file */
+-#define _HV_VERSION 11
++#define _HV_VERSION 13
 +
- void b43_dma_rx(struct b43_dmaring *ring);
++/** Last version of the hypervisor interface with old hv_init() ABI.
++ *
++ * The change from version 12 to version 13 corresponds to launching
++ * the client by default at PL2 instead of PL1 (corresponding to the
++ * hv itself running at PL3 instead of PL2).  To make this explicit,
++ * the hv_init() API was also extended so the client can report its
++ * desired PL, resulting in a more helpful failure diagnostic.  If you
++ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
++ * argument, the hypervisor will assume client_pl = 1.
++ *
++ * Note that this is a deprecated solution and we do not expect to
++ * support clients of the Tilera hypervisor running at PL1 indefinitely.
++ */
++#define _HV_VERSION_OLD_HV_INIT 12
  
- void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -1895,30 +1895,18 @@ static void b43_do_interrupt_thread(stru
+ /* Index into hypervisor interface dispatch code blocks.
+  *
+@@ -377,7 +392,11 @@ typedef int HV_Errno;
+ #ifndef __ASSEMBLER__
+ 
+ /** Pass HV_VERSION to hv_init to request this version of the interface. */
+-typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
++typedef enum {
++  HV_VERSION = _HV_VERSION,
++  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
++
++} HV_VersionNumber;
+ 
+ /** Initializes the hypervisor.
+  *
+@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION
+  * that this program expects, typically HV_VERSION.
+  * @param chip_num Architecture number of the chip the client was built for.
+  * @param chip_rev_num Revision number of the chip the client was built for.
++ * @param client_pl Privilege level the client is built for
++ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
+  */
+ void hv_init(HV_VersionNumber interface_version_number,
+-             int chip_num, int chip_rev_num);
++             int chip_num, int chip_rev_num, int client_pl);
+ 
+ 
+ /** Queries we can make for hv_sysconf().
+--- a/arch/tile/kernel/head_32.S
++++ b/arch/tile/kernel/head_32.S
+@@ -38,7 +38,7 @@ ENTRY(_start)
+ 	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
++	  moveli r0, _HV_VERSION_OLD_HV_INIT
+ 	  jal hv_init
+ 	}
+ 	/* Get a reasonable default ASID in r0 */
+--- a/arch/tile/kernel/head_64.S
++++ b/arch/tile/kernel/head_64.S
+@@ -34,13 +34,19 @@
+ ENTRY(_start)
+ 	/* Notify the hypervisor of what version of the API we want */
+ 	{
++#if KERNEL_PL == 1 && _HV_VERSION == 13
++	  /* Support older hypervisors by asking for API version 12. */
++	  movei r0, _HV_VERSION_OLD_HV_INIT
++#else
++	  movei r0, _HV_VERSION
++#endif
+ 	  movei r1, TILE_CHIP
+-	  movei r2, TILE_CHIP_REV
+ 	}
+ 	{
+-	  moveli r0, _HV_VERSION
+-	  jal hv_init
++	  movei r2, TILE_CHIP_REV
++	  movei r3, KERNEL_PL
+ 	}
++	jal hv_init
+ 	/* Get a reasonable default ASID in r0 */
+ 	{
+ 	  move r0, zero
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -930,7 +930,7 @@ static int tile_net_setup_interrupts(str
+ 		if (info->has_iqueue) {
+ 			gxio_mpipe_request_notif_ring_interrupt(
+ 				&context, cpu_x(cpu), cpu_y(cpu),
+-				1, ingress_irq, info->iqueue.ring);
++				KERNEL_PL, ingress_irq, info->iqueue.ring);
  		}
  	}
  
--	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
--					  B43_DMAIRQ_NONFATALMASK))) {
--		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
--			b43err(dev->wl, "Fatal DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--			b43err(dev->wl, "This device does not support DMA "
-+	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
-+		b43err(dev->wl,
-+			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
-+			dma_reason[0], dma_reason[1],
-+			dma_reason[2], dma_reason[3],
-+			dma_reason[4], dma_reason[5]);
-+		b43err(dev->wl, "This device does not support DMA "
- 			       "on your system. It will now be switched to PIO.\n");
--			/* Fall back to PIO transfers if we get fatal DMA errors! */
--			dev->use_pio = true;
--			b43_controller_restart(dev, "DMA error");
--			return;
--		}
--		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
--			b43err(dev->wl, "DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--		}
-+		/* Fall back to PIO transfers if we get fatal DMA errors! */
-+		dev->use_pio = true;
-+		b43_controller_restart(dev, "DMA error");
-+		return;
- 	}
- 
- 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
-@@ -1937,6 +1925,11 @@ static void b43_do_interrupt_thread(stru
- 		handle_irq_noise(dev);
- 
- 	/* Check the DMA reason registers for received data. */
-+	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
-+		if (B43_DEBUG)
-+			b43warn(dev->wl, "RX descriptor underrun\n");
-+		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
-+	}
- 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
- 		if (b43_using_pio_transfers(dev))
- 			b43_pio_rx(dev->pio.rx_queue);
-@@ -1994,7 +1987,7 @@ static irqreturn_t b43_do_interrupt(stru
- 		return IRQ_NONE;
- 
- 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
--	    & 0x0001DC00;
-+	    & 0x0001FC00;
- 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
- 	    & 0x0000DC00;
- 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
-@@ -3126,7 +3119,7 @@ static int b43_chip_init(struct b43_wlde
- 		b43_write32(dev, 0x018C, 0x02000000);
- 	}
- 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
--	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
-+	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
- 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
 
 
