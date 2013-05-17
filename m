@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3EQViN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:38:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54426 "EHLO
+	id S1757109Ab3EQViJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:38:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54378 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310Ab3EQViK (ORCPT
+	with ESMTP id S1757310Ab3EQViC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:10 -0400
+	Fri, 17 May 2013 17:38:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Harney <eharney@redhat.com>, Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 102/102] target: Use FD_MAX_SECTORS/FD_BLOCKSIZE for blockdevs using fileio
-Date: Fri, 17 May 2013 14:36:57 -0700
-Message-Id: <20130517213254.984959330@linuxfoundation.org>
+        Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 091/102] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
+Date: Fri, 17 May 2013 14:36:46 -0700
+Message-Id: <20130517213253.824204876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,61 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit e3e84cda321703b123f36488f50700f371bc7230 upstream.
+commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
 
-We can still see the error reported in
+When a 32 bit version of ipmitool is used on a 64 bit kernel, the
+ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
+incomplete data being retrieved in some cases, or other possible failures.
+Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
 
-https://patchwork.kernel.org/patch/2338981/
-
-when using fileio backed by a block device.
-
-I'm assuming this will get us past that error (from sbc_parse_cdb),
-and also assuming it's OK to have our max_sectors be larger than
-the block's queue max hw sectors?
-
-Reported-by: Eric Harney <eharney@redhat.com>
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/target/target_core_file.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ drivers/char/ipmi/ipmi_devintf.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -148,13 +148,8 @@ static int fd_configure_device(struct se
- 	 */
- 	inode = file->f_mapping->host;
- 	if (S_ISBLK(inode->i_mode)) {
--		struct request_queue *q = bdev_get_queue(inode->i_bdev);
- 		unsigned long long dev_size;
- 
--		dev->dev_attrib.hw_block_size =
--			bdev_logical_block_size(inode->i_bdev);
--		dev->dev_attrib.hw_max_sectors = queue_max_hw_sectors(q);
--
- 		/*
- 		 * Determine the number of bytes from i_size_read() minus
- 		 * one (1) logical sector from underlying struct block_device
-@@ -173,13 +168,12 @@ static int fd_configure_device(struct se
- 				" block_device\n");
- 			goto fail;
- 		}
--
--		dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
--		dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
+--- a/drivers/char/ipmi/ipmi_devintf.c
++++ b/drivers/char/ipmi/ipmi_devintf.c
+@@ -837,13 +837,25 @@ static long compat_ipmi_ioctl(struct fil
+ 		return ipmi_ioctl(filep, cmd, arg);
  	}
+ }
++
++static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
++				       unsigned long arg)
++{
++	int ret;
++
++	mutex_lock(&ipmi_mutex);
++	ret = compat_ipmi_ioctl(filep, cmd, arg);
++	mutex_unlock(&ipmi_mutex);
++
++	return ret;
++}
+ #endif
  
- 	fd_dev->fd_block_size = dev->dev_attrib.hw_block_size;
- 
-+	dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
-+	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
- 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
+ static const struct file_operations ipmi_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+-	.compat_ioctl   = compat_ipmi_ioctl,
++	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
+ #endif
+ 	.open		= ipmi_open,
+ 	.release	= ipmi_release,
 
 
