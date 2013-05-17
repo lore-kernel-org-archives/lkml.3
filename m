@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab3EQW0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:26:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54028 "EHLO
+	id S1756812Ab3EQVhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:37:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818Ab3EQVhJ (ORCPT
+	with ESMTP id S1755542Ab3EQVhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:09 -0400
+	Fri, 17 May 2013 17:37:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 014/102] dm stripe: fix regression in stripe_width calculation
-Date: Fri, 17 May 2013 14:35:29 -0700
-Message-Id: <20130517213245.821266131@linuxfoundation.org>
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 005/102] HID: reintroduce fix-up for certain Sony RF receivers
+Date: Fri, 17 May 2013 14:35:20 -0700
+Message-Id: <20130517213244.893111848@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -26,74 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 
-commit d793e684277124d55c5d2444007e224635821346 upstream.
+commit c1e0ac192b48b37f31801c17534ab3d2a9282d84 upstream.
 
-Fix a regression in the calculation of the stripe_width in the
-dm stripe target which led to incorrect processing of device limits.
+It looks like the manual merge 0d69a3c731e120b05b7da9fb976830475a3fbc01 ("Merge
+branches 'for-3.9/sony' and 'for-3.9/steelseries' into for-linus") accidentally
+removed Sony RF receiver with USB product id 0x0374 from the "have special
+driver" list, effectively nullifying a464918419f94a0043d2f549d6defb4c3f69f68a
+("HID: add support for Sony RF receiver with USB product id 0x0374"). Add the
+device back to the list.
 
-The stripe_width is the stripe device length divided by the number of
-stripes.  The group of commits in the range f14fa69 ("dm stripe: fix
-size test") to eb850de ("dm stripe: support for non power of 2
-chunksize") interfered with each other (a merging error) and led to the
-stripe_width being set incorrectly to the stripe device length divided by
-chunk_size * stripe_count.
-
-For example, a stripe device's table with: 0 33553920 striped 3 512 ...
-should result in a stripe_width of 11184640 (33553920 / 3), but due to
-the bug it was getting set to 21845 (33553920 / (512 * 3)).
-
-The impact of this bug is that device topologies that previously worked
-fine with the stripe target are no longer considered valid.  In
-particular, there is a higher risk of seeing this issue if one of the
-stripe devices has a 4K logical block size.  Resulting in an error
-message like this:
-"device-mapper: table: 253:4: len=21845 not aligned to h/w logical block size 4096 of dm-1"
-
-The fix is to swap the order of the divisions and to use a temporary
-variable for the second one, so that width retains the intended
-value.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-stripe.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/hid/hid-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/md/dm-stripe.c
-+++ b/drivers/md/dm-stripe.c
-@@ -94,7 +94,7 @@ static int get_stripe(struct dm_target *
- static int stripe_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- {
- 	struct stripe_c *sc;
--	sector_t width;
-+	sector_t width, tmp_len;
- 	uint32_t stripes;
- 	uint32_t chunk_size;
- 	int r;
-@@ -116,15 +116,16 @@ static int stripe_ctr(struct dm_target *
- 	}
- 
- 	width = ti->len;
--	if (sector_div(width, chunk_size)) {
-+	if (sector_div(width, stripes)) {
- 		ti->error = "Target length not divisible by "
--		    "chunk size";
-+		    "number of stripes";
- 		return -EINVAL;
- 	}
- 
--	if (sector_div(width, stripes)) {
-+	tmp_len = width;
-+	if (sector_div(tmp_len, chunk_size)) {
- 		ti->error = "Target length not divisible by "
--		    "number of stripes";
-+		    "chunk size";
- 		return -EINVAL;
- 	}
- 
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1702,6 +1702,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_NAVIGATION_CONTROLLER) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGP_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_STEELSERIES, USB_DEVICE_ID_STEELSERIES_SRWS1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SUNPLUS, USB_DEVICE_ID_SUNPLUS_WDESKTOP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_THINGM, USB_DEVICE_ID_BLINK1) },
 
 
