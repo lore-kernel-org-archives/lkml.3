@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3EQRgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 13:36:52 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:40477 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3EQRgv (ORCPT
+	id S1756525Ab3EQRjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 13:39:05 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:45152 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756478Ab3EQRjD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 13:36:51 -0400
-Message-ID: <51966AA7.7050007@gmail.com>
-Date: Fri, 17 May 2013 23:06:39 +0530
-From: Vikram Narayanan <vikram186@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Fri, 17 May 2013 13:39:03 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130517165712.GB12632@mtj.dyndns.org>
+References: <1368431172-6844-1-git-send-email-mhocko@suse.cz> <1368431172-6844-2-git-send-email-mhocko@suse.cz> <20130517160247.GA10023@cmpxchg.org> <20130517165712.GB12632@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Huang Shijie <b32955@freescale.com>
-CC: dwmw2@infradead.org, dedekind1@gmail.com, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 05/10] mtd: get the ECC info from the Extended Parameter
- Page
-References: <1368760654-28754-1-git-send-email-b32955@freescale.com> <1368760654-28754-6-git-send-email-b32955@freescale.com>
-In-Reply-To: <1368760654-28754-6-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with zone shrinking code
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Fri, 17 May 2013 13:27:09 -0400
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
+Message-ID: <b4e0e499-b922-4e9c-a0f8-02318ddf3b9b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Huang,
 
-On 5/17/2013 8:47 AM, Huang Shijie wrote:
-> Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-> to store the ECC info.
+
+Tejun Heo <tj@kernel.org> wrote:
+
+>Hello, Johannes.
 >
-<snip>
-> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> index b63b731..0b1162a 100644
-> --- a/drivers/mtd/nand/nand_base.c
-> +++ b/drivers/mtd/nand/nand_base.c
-> @@ -2835,6 +2835,71 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
->   	return crc;
->   }
+>On Fri, May 17, 2013 at 12:02:47PM -0400, Johannes Weiner wrote:
+>> There are setups with thousands of groups that do not even use soft
+>> limits.  Having them pointlessly iterate over all of them for every
+>> couple of pages reclaimed is just not acceptable.
 >
-> +/* Parse the Extended Parameter Page. */
-> +static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-> +		struct nand_chip *chip, struct nand_onfi_params *p)
-> +{
-<snip>
-> +
-> +	/* Read out the Extended Parameter Page. */
-> +	chip->read_buf(mtd, (uint8_t *)ep, len);
-> +	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-> +		!= le16_to_cpu(ep->crc)) || strncmp(ep->sig, "EPPS", 4)) {
+>Hmmm... if the iteration is the problem, it shouldn't be difficult to
+>build list of children which should be iterated.  Would that make it
+>acceptable?
 
- From section 5.7.2.2.
-///Byte 2-5: Extended parameter page signature
-This field contains the extended parameter page signature. When two or 
-more bytes of the signature are valid, then it denotes that a valid copy 
-of the extended parameter page is present///
+You mean, a separate structure that tracks which groups are in excess of the limit?  Like the current tree? :)
 
-But here you are doing a strict check. What if the first two bytes are 
-valid? Or did I misunderstood something?
-If not, I'd prefer to take the strncmp to a separate 'if' so, that you 
-can do the comparison in the way specified in the ONFI spec.
+Kidding aside, yes, that would be better, and an unsorted list would probably be enough for the global case.
 
-> +		pr_debug("fail in the CRC.\n");
+To support target reclaim soft limits later on, we could maybe propagate tags upwards the cgroup tree when a group is in excess so that reclaim can be smarter about which subtrees to test for soft limits and which to skip during the soft limit pass.  The no-softlimit-set-anywhere case is then only a single tag test in the root cgroup.
 
-Also, this is the error for Signature failure as well. Please move the 
-signature comparison to a new if to give better error messages.
-
-> +		ret = -EINVAL;
-> +		goto ext_out;
-> +	}
-
-Regards,
-Vikram
+But starting with the list would be simple enough, delete a bunch of code, come with the same performance improvements etc.
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
