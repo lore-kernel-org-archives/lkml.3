@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3EQJ5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 05:57:53 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54261 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab3EQJ5v (ORCPT
+	id S1755474Ab3EQKDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 06:03:33 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:46493 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753532Ab3EQKDb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 05:57:51 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH 1/7] media: davinci: vpif: remove unwanted header includes
-Date: Fri, 17 May 2013 11:58:08 +0200
-Message-ID: <14563937.EKN96hEmBk@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo-r1; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <CA+V-a8sCk2STGuEJnyp99yA218UzZFXp0aXAdQOVkZzZmG8msg@mail.gmail.com>
-References: <1368709102-2854-1-git-send-email-prabhakar.csengg@gmail.com> <1561290.MnyCnpJz5W@avalon> <CA+V-a8sCk2STGuEJnyp99yA218UzZFXp0aXAdQOVkZzZmG8msg@mail.gmail.com>
+	Fri, 17 May 2013 06:03:31 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20130517004511.GA10492@kroah.com>
+References: <1360149841-2392-1-git-send-email-yuanlmm@gmail.com>
+	<1366969040-28892-1-git-send-email-yhchen@faraday-tech.com>
+	<20130517004511.GA10492@kroah.com>
+Date: Fri, 17 May 2013 18:03:31 +0800
+Message-ID: <CADB-GoKdtA9djmYXVwbeW_Yh_o5TQkS6PbXvRqqTCU-4Pk1EMw@mail.gmail.com>
+Subject: Re: [PATCH v4] usb host: Faraday USB2.0 FUSBH200-HCD driver
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>, sarah.a.sharp@linux.intel.com,
+        Felipe Balbi <balbi@ti.com>, Julia.Lawall@lip6.fr,
+        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+On Fri, May 17, 2013 at 8:45 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Apr 26, 2013 at 09:37:20AM +0000, Yuan-Hsin Chen wrote:
+>> FUSBH200-HCD is an USB2.0 hcd for Faraday FUSBH200.
+>> FUSBH200 is an ehci-like controller with some differences.
+>> First, register layout of FUSBH200 is incompatible with EHCI.
+>> Furthermore, FUSBH200 is lack of siTDs which means iTDs
+>> are used for both HS and FS ISO transfer.
+>>
+>> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+>
+> This patch breaks the build on my machine, so I can't accept it:
+>   CC [M]  drivers/usb/host/fusbh200-hcd.o
+> drivers/usb/host/fusbh200-hcd.c: In function ‘dbg_hcc_params’:
+> drivers/usb/host/fusbh200-hcd.c:149:2: error: implicit declaration of function ‘HCC_HW_PREFETCH’ [-Werror=implicit-function-declaration]
+> drivers/usb/host/fusbh200-hcd.c:149:2: error: implicit declaration of function ‘HCC_32FRAME_PERIODIC_LIST’ [-Werror=implicit-function-declaration]
+> drivers/usb/host/fusbh200-hcd.c:149:2: warning: format ‘%d’ expects argument of type ‘int’, but argument 6 has type ‘char *’ [-Wformat]
+> drivers/usb/host/fusbh200-hcd.c: At top level:
+> drivers/usb/host/fusbh200-hcd.c:906:12: warning: ‘debug_lpm_close’ defined but not used [-Wunused-function]
+> cc1: some warnings being treated as errors
+>
+> Please be more careful.  Can you fix this up and resend it?
 
-On Friday 17 May 2013 10:40:24 Prabhakar Lad wrote:
-> On Thu, May 16, 2013 at 6:32 PM, Laurent Pinchart wrote:
-> > On Thursday 16 May 2013 18:28:16 Lad Prabhakar wrote:
-> >> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> 
-> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> >> ---
-> >> 
-> >>  drivers/media/platform/davinci/vpif.c |    7 -------
-> >>  1 files changed, 0 insertions(+), 7 deletions(-)
-> >> 
-> >> diff --git a/drivers/media/platform/davinci/vpif.c
-> >> b/drivers/media/platform/davinci/vpif.c index ea82a8b..d354d50 100644
-> >> --- a/drivers/media/platform/davinci/vpif.c
-> >> +++ b/drivers/media/platform/davinci/vpif.c
-> >> @@ -17,18 +17,11 @@
-> >>   * GNU General Public License for more details.
-> >>   */
-> >> 
-> >> -#include <linux/init.h>
-> >>  #include <linux/module.h>
-> >>  #include <linux/platform_device.h>
-> >> -#include <linux/spinlock.h>
-> >> -#include <linux/kernel.h>
-> >> -#include <linux/io.h>
-> >> -#include <linux/err.h>
-> >>  #include <linux/pm_runtime.h>
-> >>  #include <linux/v4l2-dv-timings.h>
-> > 
-> > I think you should keep most of those includes. For instance this file
-> > uses spinlock functions, so linux/spinlock.h should be included. It might
-> > work fine now due to nested includes, but if someone reorganizes the
-> > kernel headers internal includes then the driver might break. As a general
-> > rule of good practice you should include headers for all the APIs you use.
-> 
-> OK, do you want me too drop the similar patches from this series ?
+I am so sorry about the mistake. The fixed patch will be submitted soon.
 
-Please at least go through them and make sure to keep the includes for APIs 
-used in the file. If there's unneeded includes you can of course remove them, 
-and if it turns out that all includes are useful please drop the patch.
+>
+> thanks,
+>
+> greg k-h
 
--- 
-Regards,
-
-Laurent Pinchart
-
+Yuan-Hsin Chen
