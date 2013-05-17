@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab3EQIeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:34:08 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:51815 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3EQIeF (ORCPT
+	id S1755288Ab3EQIe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:34:28 -0400
+Received: from relmlor1.renesas.com ([210.160.252.171]:58215 "EHLO
+	relmlor1.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab3EQIeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:34:05 -0400
-Date: Fri, 17 May 2013 10:33:54 +0200
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
-Message-ID: <20130517083354.GA32133@balto.lan>
-References: <20130514091956.GG3297@gmail.com>
- <20130515090449.GA3494@gmail.com>
- <20130516224337.GZ22822@zurbaran>
- <20130517075140.GA25077@balto.lan>
- <CACRpkdYpEreHKdUyfcANA9kTRAjVbLbpJkBJCq1Q_pAeOKcdxw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYpEreHKdUyfcANA9kTRAjVbLbpJkBJCq1Q_pAeOKcdxw@mail.gmail.com>
-X-Operating-System: Linux balto 3.9.0-10518-gd7ab730 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 17 May 2013 04:34:24 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 May 2013 04:34:24 EDT
+X-IronPort-AV: E=Sophos;i="4.87,690,1363100400";   d="scan'208";a="127670047"
+Message-id: <5195EA63.3050900@renesas.com>
+Date: Fri, 17 May 2013 17:29:23 +0900
+From: "Shimoda, Yoshihiro" <yoshihiro.shimoda.uh@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509
+ Thunderbird/17.0.6
+MIME-version: 1.0
+To: Laurent Navet <laurent.navet@gmail.com>
+Cc: djbw@fb.com, vinod.koul@intel.com, kuninori.morimoto.gx@renesas.com,
+        g.liakhovetski@gmx.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: dma: sh: sudmac: use devm_ioremap_resource()
+References: <1368531330-32193-1-git-send-email-laurent.navet@gmail.com>
+In-reply-to: <1368531330-32193-1-git-send-email-laurent.navet@gmail.com>
+Content-type: text/plain; charset=ISO-2022-JP
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 10:25:10AM +0200, Linus Walleij wrote:
-> On Fri, May 17, 2013 at 9:51 AM, Fabio Baltieri
-> <fabio.baltieri@linaro.org> wrote:
-> > Hello Samuel,
-> (...)
-> > The last two:
-> >
-> >   mfd: ab8500-sysctrl: Set sysctrl_dev during probe
-> >   mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-> >
-> > are actually fixes for bugs introduced in this merge window that
-> > inhibited the ab8500-sysctl driver as a consequence.  Would you
-> > reconsider pulling just those?
-> 
-> A good way to make sure that patches fixing regressions are applied
-> to the -rc series is to indicate in the commit message or even the
-> heading that it fixes a regression.
-> 
-> I usually try to begin such commits with the text:
-> 
->   this patch fixes a regression caused by change 018745435
->   "foo: fix bar"...
-> 
-> Then copying in some crash dump text never hurts :-)
-> 
-> It makes it very easy for us as subsystem maintainers to pick
-> regression fixes.
+Hi,
 
-Right, I actually pointed to the culprit commit (applied during the
-merge window) in the message, but I'll try to be more direct next time.
-I also agree on the crash dump, but unfortunately this one was failing
-silently. :-)
+(2013/05/14 20:35), Laurent Navet wrote:
+> Replace a call to deprecated devm_request_and_ioremap by devm_ioremap_resource.
+> Found with coccicheck and this semantic patch:
+>  scripts/coccinelle/api/devm_ioremap_resource.cocci
+> 
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> ---
+>  drivers/dma/sh/sudmac.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Thanks for the tip!
-Fabio
+Thank you for the patch.
 
--- 
-Fabio Baltieri
+Acked-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+
+Best regards,
+Yoshihiro Shimoda
