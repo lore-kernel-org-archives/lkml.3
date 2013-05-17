@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab3EQWFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:05:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54531 "EHLO
+	id S1758001Ab3EQWGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:06:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54526 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757769Ab3EQVrm (ORCPT
+	with ESMTP id S1757758Ab3EQVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:42 -0400
+	Fri, 17 May 2013 17:47:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Buesch <m@bues.ch>, Thommy Jakobsson <thommyj@gmail.com>,
+        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 20/50] B43: Handle DMA RX descriptor underrun
-Date: Fri, 17 May 2013 14:46:55 -0700
-Message-Id: <20130517213844.783871663@linuxfoundation.org>
+Subject: [ 19/50] mwifiex: fix setting of multicast filter
+Date: Fri, 17 May 2013 14:46:54 -0700
+Message-Id: <20130517213844.687341305@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,149 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thommy Jakobsson <thommyj@gmail.com>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 upstream.
+commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 upstream.
 
-Add handling of rx descriptor underflow. This fixes a fault that could
-happen on slow machines, where data is received faster than the CPU can
-handle. In such a case the device will use up all rx descriptors and
-refuse to send any more data before confirming that it is ok. This
-patch enables necessary interrupt to discover such a situation and will
-handle them by dropping everything in the ring buffer.
+A small bug in this code was causing the ALLMULTI filter to be set
+when in fact we were just wanting to program a selective multicast list
+to the hardware.
 
-Reviewed-by: Michael Buesch <m@bues.ch>
-Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
+Fix that bug and remove a redundant if condition in the code that
+follows.
+
+This fixes wakeup behaviour when multicast WOL is enabled. Previously,
+all multicast packets would wake up the system. Now, only those that the
+host intended to receive trigger wakeups.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/dma.c  |   19 +++++++++++++++++
- drivers/net/wireless/b43/dma.h  |    4 ++-
- drivers/net/wireless/b43/main.c |   43 ++++++++++++++++------------------------
- 3 files changed, 40 insertions(+), 26 deletions(-)
+ drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1733,6 +1733,25 @@ drop_recycle_buffer:
- 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
- }
- 
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
-+{
-+	int current_slot, previous_slot;
-+
-+	B43_WARN_ON(ring->tx);
-+
-+	/* Device has filled all buffers, drop all packets and let TCP
-+	 * decrease speed.
-+	 * Decrement RX index by one will let the device to see all slots
-+	 * as free again
-+	 */
-+	/*
-+	*TODO: How to increase rx_drop in mac80211?
-+	*/
-+	current_slot = ring->ops->get_current_rxslot(ring);
-+	previous_slot = prev_slot(ring, current_slot);
-+	ring->ops->set_current_rxslot(ring, previous_slot);
-+}
-+
- void b43_dma_rx(struct b43_dmaring *ring)
- {
- 	const struct b43_dma_ops *ops = ring->ops;
---- a/drivers/net/wireless/b43/dma.h
-+++ b/drivers/net/wireless/b43/dma.h
-@@ -9,7 +9,7 @@
- /* DMA-Interrupt reasons. */
- #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
- 					 | (1 << 14) | (1 << 15))
--#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
-+#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
- #define B43_DMAIRQ_RX_DONE		(1 << 16)
- 
- /*** 32-bit DMA Engine. ***/
-@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
- void b43_dma_handle_txstatus(struct b43_wldev *dev,
- 			     const struct b43_txstatus *status);
- 
-+void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
-+
- void b43_dma_rx(struct b43_dmaring *ring);
- 
- void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -1895,30 +1895,18 @@ static void b43_do_interrupt_thread(stru
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -105,7 +105,7 @@ int mwifiex_request_set_multicast_list(s
+ 	} else {
+ 		/* Multicast */
+ 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
+-		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
++		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
+ 			dev_dbg(priv->adapter->dev,
+ 				"info: Enabling All Multicast!\n");
+ 			priv->curr_pkt_filter |=
+@@ -117,20 +117,11 @@ int mwifiex_request_set_multicast_list(s
+ 				dev_dbg(priv->adapter->dev,
+ 					"info: Set multicast list=%d\n",
+ 				       mcast_list->num_multicast_addr);
+-				/* Set multicast addresses to firmware */
+-				if (old_pkt_filter == priv->curr_pkt_filter) {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				} else {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				}
++				/* Send multicast addresses to firmware */
++				ret = mwifiex_send_cmd_async(priv,
++					HostCmd_CMD_MAC_MULTICAST_ADR,
++					HostCmd_ACT_GEN_SET, 0,
++					mcast_list);
+ 			}
  		}
  	}
- 
--	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
--					  B43_DMAIRQ_NONFATALMASK))) {
--		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
--			b43err(dev->wl, "Fatal DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--			b43err(dev->wl, "This device does not support DMA "
-+	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
-+		b43err(dev->wl,
-+			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
-+			dma_reason[0], dma_reason[1],
-+			dma_reason[2], dma_reason[3],
-+			dma_reason[4], dma_reason[5]);
-+		b43err(dev->wl, "This device does not support DMA "
- 			       "on your system. It will now be switched to PIO.\n");
--			/* Fall back to PIO transfers if we get fatal DMA errors! */
--			dev->use_pio = true;
--			b43_controller_restart(dev, "DMA error");
--			return;
--		}
--		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
--			b43err(dev->wl, "DMA error: "
--			       "0x%08X, 0x%08X, 0x%08X, "
--			       "0x%08X, 0x%08X, 0x%08X\n",
--			       dma_reason[0], dma_reason[1],
--			       dma_reason[2], dma_reason[3],
--			       dma_reason[4], dma_reason[5]);
--		}
-+		/* Fall back to PIO transfers if we get fatal DMA errors! */
-+		dev->use_pio = true;
-+		b43_controller_restart(dev, "DMA error");
-+		return;
- 	}
- 
- 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
-@@ -1937,6 +1925,11 @@ static void b43_do_interrupt_thread(stru
- 		handle_irq_noise(dev);
- 
- 	/* Check the DMA reason registers for received data. */
-+	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
-+		if (B43_DEBUG)
-+			b43warn(dev->wl, "RX descriptor underrun\n");
-+		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
-+	}
- 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
- 		if (b43_using_pio_transfers(dev))
- 			b43_pio_rx(dev->pio.rx_queue);
-@@ -1994,7 +1987,7 @@ static irqreturn_t b43_do_interrupt(stru
- 		return IRQ_NONE;
- 
- 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
--	    & 0x0001DC00;
-+	    & 0x0001FC00;
- 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
- 	    & 0x0000DC00;
- 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
-@@ -3122,7 +3115,7 @@ static int b43_chip_init(struct b43_wlde
- 		b43_write32(dev, 0x018C, 0x02000000);
- 	}
- 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
--	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
-+	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
- 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
- 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
 
 
