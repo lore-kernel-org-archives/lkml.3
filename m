@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3EQGJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 02:09:31 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52777 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab3EQGJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 02:09:29 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, mturquette@linaro.org, thomas.abraham@linaro.org,
-        patches@linaro.org
-Subject: [PATCH 2/2] clk: exynos5250: Add sclk_mpll to the parent list of mout_cpu clock
-Date: Fri, 17 May 2013 11:25:53 +0530
-Message-Id: <1368770153-29041-3-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368770153-29041-1-git-send-email-tushar.behera@linaro.org>
-References: <1368770153-29041-1-git-send-email-tushar.behera@linaro.org>
+	id S1755145Ab3EQGMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 02:12:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48184 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644Ab3EQGMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 02:12:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,690,1363158000"; 
+   d="scan'208";a="242860590"
+Subject: Re: [PATCH] tty_buffer: avoid race due to tty_buffer_free_all()
+ being misused
+From: channing <chao.bi@intel.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+In-Reply-To: <5194D6F9.5000505@hurleysoftware.com>
+References: <1368694762.2911.16.camel@bichao>
+	 <5194D6F9.5000505@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 17 May 2013 14:29:38 +0800
+Message-ID: <1368772178.1876.31.camel@bichao>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'mout_mpll' is added the list of parent clocks for 'mout_cpu'.
-'mout_mpll' is an alias to the clock 'sclk_mpll'. Hence 'sclk_mpll'
-should be added to the list of parent clocks.
+On Thu, 2013-05-16 at 08:54 -0400, Peter Hurley wrote:
+> On 05/16/2013 04:59 AM, channing wrote:
+> >
+> > In tty_buffer.c, function tty_buffer_free_all() is used to remove
+> > all buffers for a tty, although it's declared that it mustn't be called
+> > when the tty is in use, it cannot guarantee that. we can observe some
+> > device driver make use it by mistake, for example, while tty device is
+> > releasing, the tty data forwarding is not stopped, then it might hit
+> > the case that tty buffer is being used while tty_buffer_free_all()
+> > free this tty buffer, and finally lead to random error at any places,
+> > and it's not clear to debug.
+> 
+> What kernel version?
+3.4
+> 
+> > Although device driver could do better, it's simpler and safer to
+> > strengthen protection in the view of tty buffer, by adding a tty->buf.lock
+> > in tty_buffer_free_all() to avoid it racing with ongoing tty buffer
+> > operations.
+> 
+> Sorry, but this isn't correct.
+> 
+> The driver cannot continue to perform i/o concurrently with
+> tty_port_destroy().
+> 
+Thanks for remind, 3.4 haven't tty_port_destroy(), the mainline has
+changed the way to call tty_buffer_free_all().
 
-This results in an error when cpufreq driver for EXYNOS5250 tries to
-set 'mout_mpll' as a parent for 'mout_cpu'.
+> If the concurrent use you're observing is with flush_to_ldisc(),
+> that should be fixed in current mainline.
+> 
+Yes, when calling flush_to_ldisc() in Kernel 3.4, we could observe the
+tty buffer is corrupted, and dummped stack shows that
+tty_buffer_free_all() was called before. Is it a known issue fixed in
+old version? would you please tell me related patch to solve this
+flush_to_ldisc() issue? Thanks very much.
 
-clk_set_parent: clk sclk_mpll can not be parent of clk mout_cpu
-
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
- drivers/clk/samsung/clk-exynos5250.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-index 05d099d..b6d79c0 100644
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -155,7 +155,7 @@ static __initdata unsigned long exynos5250_clk_regs[] = {
- 
- /* list of all parent clock list */
- PNAME(mout_apll_p)	= { "fin_pll", "fout_apll", };
--PNAME(mout_cpu_p)	= { "mout_apll", "mout_mpll", };
-+PNAME(mout_cpu_p)	= { "mout_apll", "sclk_mpll", };
- PNAME(mout_mpll_fout_p)	= { "fout_mplldiv2", "fout_mpll" };
- PNAME(mout_mpll_p)	= { "fin_pll", "mout_mpll_fout" };
- PNAME(mout_bpll_fout_p)	= { "fout_bplldiv2", "fout_bpll" };
--- 
-1.7.9.5
+Chao
 
