@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab3EQSHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:07:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37620 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab3EQSHh (ORCPT
+	id S1754333Ab3EQSIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:08:31 -0400
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:55368 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab3EQSI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:07:37 -0400
-Date: Fri, 17 May 2013 20:07:35 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "Wei, Gang" <gang.wei@intel.com>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v2 2/3] driver: provide sysfs interfaces to access TXT
- config space
-Message-ID: <20130517180735.GA11631@amd.pavel.ucw.cz>
-References: <1368465884-14779-1-git-send-email-qiaowei.ren@intel.com>
- <1368465884-14779-3-git-send-email-qiaowei.ren@intel.com>
- <20130516160311.GA12299@amd.pavel.ucw.cz>
- <9E0BE1322F2F2246BD820DA9FC397ADE0135DF81@SHSMSX102.ccr.corp.intel.com>
+	Fri, 17 May 2013 14:08:28 -0400
+Date: Fri, 17 May 2013 11:08:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 5/9] memcg: use css_get/put when charging/uncharging kmem
+Message-ID: <20130517180822.GC12632@mtj.dyndns.org>
+References: <5195D5F8.7000609@huawei.com>
+ <5195D666.6030408@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE0135DF81@SHSMSX102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5195D666.6030408@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2013-05-17 08:50:11, Ren, Qiaowei wrote:
-> On 2013-05-17, Pavel Machek wrote:
-> > On Tue 2013-05-14 01:24:43, Qiaowei Ren wrote:
-> >> +What:		/sys/devices/platform/intel_txt/config/STS_raw +Date:		May 2013
-> >> +KernelVersion:	3.9 +Contact:	"Qiaowei Ren" <qiaowei.ren@intel.com>
-> >> +Description:	TXT.STS is the general status register. This read-only
-> >> register +		is used by AC modules and the MLE to get the status of
-> >> various +		Intel TXT features.
-> > 
-> > This is not enough to allow people to understand what this does/should
-> > do, nor does it allow (for example) ARM people to implement something compatible.
-> 
-> Currently TXT is only a technology for safer computing provided by Intel. I am absolutely not sure whether similar technology will be provided on ARM or other platform in future. But I guess I don't have to consider those future possible implementation on ARM or other platform. :)
-> 
+Hey,
 
-You still have to properly design the interface and properly document
-it, so people can understand and test it, and develop compatible
-implementations.
-									Pavel
+On Fri, May 17, 2013 at 03:04:06PM +0800, Li Zefan wrote:
+> +	/*
+> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
+> +	 * this last uncharge is racing with the offlining code or it is
+> +	 * outliving the memcg existence.
+> +	 *
+> +	 * The memory barrier imposed by test&clear is paired with the
+> +	 * explicit one in kmem_cgroup_css_offline.
+
+Paired with the wmb to achieve what?
+
+> +	 */
+>  	if (memcg_kmem_test_and_clear_dead(memcg))
+> -		mem_cgroup_put(memcg);
+> +		css_put(&memcg->css);
+
+The other side is wmb, so there gotta be something which wants to read
+which were written before wmb here but the only thing after the
+barrier is css_put() which doesn't need such thing, so I'm lost on
+what the barrier pair is achieving here.
+
+In general, please be *very* explicit about what's going on whenever
+something is depending on barrier pairs.  It'll make it easier for
+both the author and reviewers to actually understand what's going on
+and why it's necessary.
+
+...
+> @@ -5858,23 +5856,39 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  	return mem_cgroup_sockets_init(memcg, ss);
+>  }
+>  
+> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>  {
+> -	mem_cgroup_sockets_destroy(memcg);
+> +	if (!memcg_kmem_is_active(memcg))
+> +		return;
+>  
+> +	/*
+> +	 * kmem charges can outlive the cgroup. In the case of slab
+> +	 * pages, for instance, a page contain objects from various
+> +	 * processes. As we prevent from taking a reference for every
+> +	 * such allocation we have to be careful when doing uncharge
+> +	 * (see memcg_uncharge_kmem) and here during offlining.
+> +	 *
+> +	 * The idea is that that only the _last_ uncharge which sees
+> +	 * the dead memcg will drop the last reference. An additional
+> +	 * reference is taken here before the group is marked dead
+> +	 * which is then paired with css_put during uncharge resp. here.
+> +	 *
+> +	 * Although this might sound strange as this path is called when
+> +	 * the reference has already dropped down to 0 and shouldn't be
+> +	 * incremented anymore (css_tryget would fail) we do not have
+
+Hmmm?  offline is called on cgroup destruction regardless of css
+refcnt.  The above comment seems a bit misleading.
+
+> +	 * other options because of the kmem allocations lifetime.
+> +	 */
+> +	css_get(&memcg->css);
+> +
+> +	/* see comment in memcg_uncharge_kmem() */
+> +	wmb();
+>  	memcg_kmem_mark_dead(memcg);
+
+Is the wmb() trying to prevent reordering between css_get() and
+memcg_kmem_mark_dead()?  If so, it isn't necessary - the compiler
+isn't allowed to reorder two atomic ops (they're all asm volatiles)
+and the visibility order is guaranteed by the nature of the two
+operations going on here - both perform modify-and-test on one end of
+the operations.
+
+It could be argued that having memory barriers is better for
+completeness of mark/test interface but then those barriers should
+really moved into memcg_kmem_mark_dead() and its clearing counterpart.
+
+While it's all clever and dandy, my recommendation would be just using
+a lock for synchronization.  It isn't a hot path.  Why be clever?
+
+Thanks.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+tejun
