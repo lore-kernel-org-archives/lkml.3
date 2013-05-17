@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab3EQRAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 13:00:52 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:36288 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795Ab3EQRAu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 13:00:50 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Scott Wood <scottwood@freescale.com>,
-        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "open list\:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: allow host header to be included even for !CONFIG_KVM
-References: <1363891354.31522.17@snotra> <20130321191600.GG9382@redhat.com>
-	<1363894393.31522.20@snotra> <20130321211736.GI9382@redhat.com>
-	<CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
-	<20130324140114.GV3889@redhat.com> <87txnz9o7n.fsf@linaro.org>
-	<20130515225201.GA2341@somewhere> <20130517010442.GB12928@somewhere>
-	<871u95u28p.fsf@linaro.org> <20130517143445.GA23086@somewhere>
-Date: Fri, 17 May 2013 10:00:47 -0700
-In-Reply-To: <20130517143445.GA23086@somewhere> (Frederic Weisbecker's message
-	of "Fri, 17 May 2013 16:34:54 +0200")
-Message-ID: <87fvxlsfr4.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756389Ab3EQRBC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 13:01:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42496 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756336Ab3EQRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 13:00:59 -0400
+Date: Fri, 17 May 2013 18:00:53 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 3/4] zswap: add to mm/
+Message-ID: <20130517170053.GQ11497@suse.de>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
+ <51920197.9070105@oracle.com>
+ <20130514160040.GB4024@medulla>
+ <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+On Tue, May 14, 2013 at 09:37:08AM -0700, Dan Magenheimer wrote:
+> > Can I get your ack on this pending the other changes?
+> 
+> I'd like to hear Mel's feedback about this, but perhaps
+> a compromise to allow for zswap merging would be to add
+> something like the following to zswap's Kconfig comment:
+> 
 
-> On Fri, May 17, 2013 at 07:09:42AM -0700, Kevin Hilman wrote:
->> Frederic Weisbecker <fweisbec@gmail.com> writes:
->> 
->> > On Thu, May 16, 2013 at 12:52:03AM +0200, Frederic Weisbecker wrote:
->> >> On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
->> >> > Gleb Natapov <gleb@redhat.com> writes:
->> >> > 
->> >> > > On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
->> >> > >> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
->> >> > >> > Isn't is simpler for kernel/context_tracking.c to define empty
->> >> > >> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
->> >> > >> 
->> >> > >> That doesn't look right. Off-cases are usually handled from the
->> >> > >> headers, right? So that we avoid iffdeffery ugliness in core code.
->> >> > > Lets put it in linux/context_tracking.h header then.
->> >> > 
->> >> > Here's a version to do that.
->> >> > 
->> >> > Kevin
->> >> > 
->> >> > From d9d909394479dd7ff90b7bddb95a564945406719 Mon Sep 17 00:00:00 2001
->> >> > From: Kevin Hilman <khilman@linaro.org>
->> >> > Date: Mon, 25 Mar 2013 14:12:41 -0700
->> >> > Subject: [PATCH v2] ontext_tracking: fix !CONFIG_KVM compile: add stub guest
->> >> >  enter/exit
->> >> 
->> >> Sorry for my very delayed response...
->> >> 
->> >> > 
->> >> > When KVM is not enabled, or not available on a platform, the KVM
->> >> > headers should not be included.  Instead, just define stub
->> >> > __guest_[enter|exit] functions.
->> >> 
->> >> May be it would be cleaner to move guest_enter/exit definitions altogether
->> >> in linux/context_tracking.h
->> >> 
->> >> After all that's where the implementation mostly belong to.
->> >> 
->> >> Let me see if I can get that in shape.
->> >
->> > Does the following work for you?
->> 
->> Nope. 
->> 
->> Since it still includs kvm_host.h on non-KVM builds, there is potential
->> for problems.  For example, on ARM (v3.10-rc1 + this patch) has this
->> build error:
->> 
->>   CC      kernel/context_tracking.o
->> In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
->>                  from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
->>                  from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
->> /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:38:6: warning: "CONFIG_KVM_ARM_MAX_VCPUS" is not defined [-Wundef]
->> In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
->>                  from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
->>                  from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
->> /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:59:11: error: 'CONFIG_KVM_ARM_MAX_VCPUS' undeclared here (not in a function)
->
-> Sorry I forgot to remove the include to kvm_host.h in context_tracking.c,
-> here's the fixed patch:
+I think there is a lot of ugly in there and potential for weird performance
+bugs. I ran out of beans complaining about different parts during the
+review but fixing it out of tree or in staging like it's been happening to
+date has clearly not worked out at all. As starting points go, it could be
+a hell of a lot worse. I do agree that it needs a big fat warning until
+some of the ugly is beaten out of it.  Requiring that it address all the
+issues such as automatic pool sizing, NUMA issues, proper allocation prior
+to merging will just end up with an unreviewable set of patches again so
+lets just bite the bullet because at least there is a chance reviewers
+can follow the incremental developments. Merging it to drivers will not
+address anything IMO.
 
-Yup, that one builds just fine.
-
-Reviewed-and-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-Kevin
+-- 
+Mel Gorman
+SUSE Labs
