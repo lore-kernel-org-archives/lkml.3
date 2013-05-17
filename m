@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab3EQVwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:52:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54808 "EHLO
+	id S932691Ab3EQVwW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:52:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab3EQVuj (ORCPT
+	with ESMTP id S932541Ab3EQVui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:39 -0400
+	Fri, 17 May 2013 17:50:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 30/33] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid memory overflow
-Date: Fri, 17 May 2013 14:50:14 -0700
-Message-Id: <20130517214920.122870960@linuxfoundation.org>
+        Cong Wang <amwang@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 24/33] xfrm6: release dev before returning error
+Date: Fri, 17 May 2013 14:50:08 -0700
+Message-Id: <20130517214919.438461938@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -27,42 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
 
-commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
+From: Cong Wang <amwang@redhat.com>
 
-When calling memcpy, read_data and write_data need additional 2 bytes.
+[ Upstream commit 84c4a9dfbf430861e7588d95ae3ff61535dca351 ]
 
-  write_data:
-    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
+We forget to call dev_put() on error path in xfrm6_fill_dst(),
+its caller doesn't handle this.
 
-  read_data:
-    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
-    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/xfrm6_policy.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -95,9 +95,9 @@ struct si_sm_data {
- 	enum bt_states	state;
- 	unsigned char	seq;		/* BT sequence number */
- 	struct si_sm_io	*io;
--	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		write_count;
--	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
-+	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
- 	int		read_count;
- 	int		truncated;
- 	long		timeout;	/* microseconds countdown */
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -96,8 +96,10 @@ static int xfrm6_fill_dst(struct xfrm_ds
+ 	dev_hold(dev);
+ 
+ 	xdst->u.rt6.rt6i_idev = in6_dev_get(dev);
+-	if (!xdst->u.rt6.rt6i_idev)
++	if (!xdst->u.rt6.rt6i_idev) {
++		dev_put(dev);
+ 		return -ENODEV;
++	}
+ 
+ 	xdst->u.rt6.rt6i_peer = rt->rt6i_peer;
+ 	if (rt->rt6i_peer)
 
 
