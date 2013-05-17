@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3EQVxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:53:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54788 "EHLO
+	id S932730Ab3EQVxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:53:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932527Ab3EQVug (ORCPT
+	with ESMTP id S932515Ab3EQVuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:36 -0400
+	Fri, 17 May 2013 17:50:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/33] macvlan: fix passthru mode race between dev removal and rx path
-Date: Fri, 17 May 2013 14:50:06 -0700
-Message-Id: <20130517214919.202128404@linuxfoundation.org>
+Subject: [ 20/33] 3c59x: fix PCI resource management
+Date: Fri, 17 May 2013 14:50:04 -0700
+Message-Id: <20130517214918.984856218@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -28,107 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-[ Upstream commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c, note
-  that I had to add list_first_or_null_rcu to rculist.h in order
-  to accomodate this fix. ]
+[ Upstream commit 4b264a1676e70dc656ba53a8cac690f2d4b65f4e ]
 
-Currently, if macvlan in passthru mode is created and data are rxed and
-you remove this device, following panic happens:
+The driver wrongly claimed I/O ports at an address returned by pci_iomap() --
+even if it was passed an MMIO address.  Fix this by claiming/releasing all PCI
+resources in the PCI driver's probe()/remove() methods instead and get rid of
+'must_free_region' flag weirdness (why would Cardbus claim anything for us?).
 
-NULL pointer dereference at 0000000000000198
-IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
-
-I'm using following script to trigger this:
-<script>
-while [ 1 ]
-do
-	ip link add link e1 name macvtap0 type macvtap mode passthru
-	ip link set e1 up
-	ip link set macvtap0 up
-	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
-	cat /dev/tap$IFINDEX  >/dev/null &
-	ip link del dev macvtap0
-done
-</script>
-
-I run this script while "ping -f" is running on another machine to send
-packets to e1 rx.
-
-Reason of the panic is that list_first_entry() is blindly called in
-macvlan_handle_frame() even if the list was empty. vlan is set to
-incorrect pointer which leads to the crash.
-
-I'm fixing this by protecting port->vlans list by rcu and by preventing
-from getting incorrect pointer in case the list is empty.
-
-Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c   |    7 ++++---
- include/linux/rculist.h |   17 +++++++++++++++++
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/net/3c59x.c |   25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -193,7 +193,8 @@ static rx_handler_result_t macvlan_handl
- 	}
+--- a/drivers/net/3c59x.c
++++ b/drivers/net/3c59x.c
+@@ -632,7 +632,6 @@ struct vortex_private {
+ 		pm_state_valid:1,				/* pci_dev->saved_config_space has sane contents */
+ 		open:1,
+ 		medialock:1,
+-		must_free_region:1,				/* Flag: if zero, Cardbus owns the I/O region */
+ 		large_frames:1,			/* accept large frames */
+ 		handling_irq:1;			/* private in_irq indicator */
+ 	/* {get|set}_wol operations are already serialized by rtnl.
+@@ -1012,6 +1011,12 @@ static int __devinit vortex_init_one(str
+ 	if (rc < 0)
+ 		goto out;
  
- 	if (port->passthru)
--		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
-+		vlan = list_first_or_null_rcu(&port->vlans,
-+					      struct macvlan_dev, list);
- 	else
- 		vlan = macvlan_hash_lookup(port, eth->h_dest);
- 	if (vlan == NULL)
-@@ -687,7 +688,7 @@ int macvlan_common_newlink(struct net *s
- 	if (err < 0)
- 		goto destroy_port;
- 
--	list_add_tail(&vlan->list, &port->vlans);
-+	list_add_tail_rcu(&vlan->list, &port->vlans);
- 	netif_stacked_transfer_operstate(lowerdev, dev);
- 
- 	return 0;
-@@ -713,7 +714,7 @@ void macvlan_dellink(struct net_device *
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 
--	list_del(&vlan->list);
-+	list_del_rcu(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
- }
- EXPORT_SYMBOL_GPL(macvlan_dellink);
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -242,6 +242,23 @@ static inline void list_splice_init_rcu(
- 	list_entry_rcu((ptr)->next, type, member)
- 
- /**
-+ * list_first_or_null_rcu - get the first element from a list
-+ * @ptr:        the list head to take the element from.
-+ * @type:       the type of the struct this is embedded in.
-+ * @member:     the name of the list_struct within the struct.
-+ *
-+ * Note that if the list is empty, it returns NULL.
-+ *
-+ * This primitive may safely run concurrently with the _rcu list-mutation
-+ * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
-+ */
-+#define list_first_or_null_rcu(ptr, type, member) \
-+	({struct list_head *__ptr = (ptr); \
-+	  struct list_head __rcu *__next = list_next_rcu(__ptr); \
-+	  likely(__ptr != __next) ? container_of(__next, type, member) : NULL; \
-+	})
++	rc = pci_request_regions(pdev, DRV_NAME);
++	if (rc < 0) {
++		pci_disable_device(pdev);
++		goto out;
++	}
 +
-+/**
-  * list_for_each_entry_rcu	-	iterate over rcu list of given type
-  * @pos:	the type * to use as a loop cursor.
-  * @head:	the head for your list.
+ 	unit = vortex_cards_found;
+ 
+ 	if (global_use_mmio < 0 && (unit >= MAX_UNITS || use_mmio[unit] < 0)) {
+@@ -1027,6 +1032,7 @@ static int __devinit vortex_init_one(str
+ 	if (!ioaddr) /* If mapping fails, fall-back to BAR 0... */
+ 		ioaddr = pci_iomap(pdev, 0, 0);
+ 	if (!ioaddr) {
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		rc = -ENOMEM;
+ 		goto out;
+@@ -1036,6 +1042,7 @@ static int __devinit vortex_init_one(str
+ 			   ent->driver_data, unit);
+ 	if (rc < 0) {
+ 		pci_iounmap(pdev, ioaddr);
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		goto out;
+ 	}
+@@ -1180,11 +1187,6 @@ static int __devinit vortex_probe1(struc
+ 
+ 	/* PCI-only startup logic */
+ 	if (pdev) {
+-		/* EISA resources already marked, so only PCI needs to do this here */
+-		/* Ignore return value, because Cardbus drivers already allocate for us */
+-		if (request_region(dev->base_addr, vci->io_size, print_name) != NULL)
+-			vp->must_free_region = 1;
+-
+ 		/* enable bus-mastering if necessary */
+ 		if (vci->flags & PCI_USES_MASTER)
+ 			pci_set_master(pdev);
+@@ -1222,7 +1224,7 @@ static int __devinit vortex_probe1(struc
+ 					   &vp->rx_ring_dma);
+ 	retval = -ENOMEM;
+ 	if (!vp->rx_ring)
+-		goto free_region;
++		goto free_device;
+ 
+ 	vp->tx_ring = (struct boom_tx_desc *)(vp->rx_ring + RX_RING_SIZE);
+ 	vp->tx_ring_dma = vp->rx_ring_dma + sizeof(struct boom_rx_desc) * RX_RING_SIZE;
+@@ -1487,9 +1489,7 @@ free_ring:
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-free_region:
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vci->io_size);
++free_device:
+ 	free_netdev(dev);
+ 	pr_err(PFX "vortex_probe1 fails.  Returns %d\n", retval);
+ out:
+@@ -3253,8 +3253,9 @@ static void __devexit vortex_remove_one(
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vp->io_size);
++
++	pci_release_regions(pdev);
++
+ 	free_netdev(dev);
+ }
+ 
 
 
