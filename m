@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3EQWHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:07:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54499 "EHLO
+	id S932076Ab3EQWHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54503 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab3EQVrh (ORCPT
+	with ESMTP id S1757714Ab3EQVrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:47:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>, Eric Paris <eparis@redhat.com>
-Subject: [ 11/50] audit: Syscall rules are not applied to existing processes on non-x86
-Date: Fri, 17 May 2013 14:46:46 -0700
-Message-Id: <20130517213843.860003205@linuxfoundation.org>
+        Tirupathi Reddy <tirupath@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 12/50] timer: Dont reinitialize the cpu base lock during CPU_UP_PREPARE
+Date: Fri, 17 May 2013 14:46:47 -0700
+Message-Id: <20130517213843.964162966@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -26,48 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Tirupathi Reddy <tirupath@codeaurora.org>
 
-commit cdee3904b4ce7c03d1013ed6dd704b43ae7fc2e9 upstream.
+commit 42a5cf46cd56f46267d2a9fcf2655f4078cd3042 upstream.
 
-Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
-burden on archs) changed audit_syscall_entry to check for a dummy
-context before calling __audit_syscall_entry. Unfortunately the dummy
-context state is maintained in __audit_syscall_entry so once set it
-never gets cleared, even if the audit rules change.
+An inactive timer's base can refer to a offline cpu's base.
 
-As a result, if there are no auditing rules when a process starts
-then it will never be subject to any rules added later. x86 doesn't
-see this because it has an assembly fast path that calls directly into
-__audit_syscall_entry.
+In the current code, cpu_base's lock is blindly reinitialized each
+time a CPU is brought up. If a CPU is brought online during the period
+that another thread is trying to modify an inactive timer on that CPU
+with holding its timer base lock, then the lock will be reinitialized
+under its feet. This leads to following SPIN_BUG().
 
-I noticed this issue when working on audit performance optimisations.
-I wrote a set of simple test cases available at:
+<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
+<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
+<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
+<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
+<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
+<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
+<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
+<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
+<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
+<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
+<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
+<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
+<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
+<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
+<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
 
-http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
+As an example, this particular crash occurred when CPU #3 is executing
+mod_timer() on an inactive timer whose base is refered to offlined CPU
+#2.  The code locked the timer_base corresponding to CPU #2. Before it
+could proceed, CPU #2 came online and reinitialized the spinlock
+corresponding to its base. Thus now CPU #3 held a lock which was
+reinitialized. When CPU #3 finally ended up unlocking the old cpu_base
+corresponding to CPU #2, we hit the above SPIN_BUG().
 
-02_new_rule.py fails without the patch and passes with it. The
-test case clears all rules, starts a process, adds a rule then
-verifies the process produces a syscall audit record.
+CPU #0		CPU #3				       CPU #2
+------		-------				       -------
+.....		 ......				      <Offline>
+		mod_timer()
+		 lock_timer_base
+		   spin_lock_irqsave(&base->lock)
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+cpu_up(2)	 .....				        ......
+							init_timers_cpu()
+....		 .....				    	spin_lock_init(&base->lock)
+.....		   spin_unlock_irqrestore(&base->lock)  ......
+		   <spin_bug>
+
+Allocation of per_cpu timer vector bases is done only once under
+"tvec_base_done[]" check. In the current code, spinlock_initialization
+of base->lock isn't under this check. When a CPU is up each time the
+base lock is reinitialized. Move base spinlock initialization under
+the check.
+
+Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
+Link: http://lkml.kernel.org/r/1368520142-4136-1-git-send-email-tirupath@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/audit.h |    2 +-
+ kernel/timer.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -480,7 +480,7 @@ static inline void audit_syscall_entry(i
- 				       unsigned long a1, unsigned long a2,
- 				       unsigned long a3)
- {
--	if (unlikely(!audit_dummy_context()))
-+	if (unlikely(current->audit_context))
- 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
- }
- static inline void audit_syscall_exit(void *pt_regs)
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1680,12 +1680,12 @@ static int __cpuinit init_timers_cpu(int
+ 			boot_done = 1;
+ 			base = &boot_tvec_bases;
+ 		}
++		spin_lock_init(&base->lock);
+ 		tvec_base_done[cpu] = 1;
+ 	} else {
+ 		base = per_cpu(tvec_bases, cpu);
+ 	}
+ 
+-	spin_lock_init(&base->lock);
+ 
+ 	for (j = 0; j < TVN_SIZE; j++) {
+ 		INIT_LIST_HEAD(base->tv5.vec + j);
 
 
