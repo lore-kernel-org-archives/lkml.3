@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab3EQLst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 07:48:49 -0400
-Received: from 8bytes.org ([85.214.48.195]:44049 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab3EQLss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 07:48:48 -0400
-Date: Fri, 17 May 2013 13:48:45 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
-Message-ID: <20130517114845.GA2602@8bytes.org>
-References: <20130515105656.GI24440@8bytes.org>
- <5193A3B5.7010400@suse.cz>
- <20130515154753.GJ24440@8bytes.org>
- <5193D7E0.5010803@hurleysoftware.com>
- <20130515194835.GK24440@8bytes.org>
- <519415F3.6060103@hurleysoftware.com>
+	id S1755763Ab3EQLwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 07:52:17 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18178 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab3EQLwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 07:52:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 17 May 2013 04:52:15 -0700
+From: Arto Merilainen <amerilainen@nvidia.com>
+To: <thierry.reding@avionic-design.de>, <airlied@linux.ie>,
+        <linux-tegra@vger.kernel.org>
+CC: <tbergstrom@nvidia.com>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: [PATCH 0/6] Miscellaneous fixes to host1x
+Date: Fri, 17 May 2013 14:49:42 +0300
+Message-ID: <1368791388-31441-1-git-send-email-amerilainen@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519415F3.6060103@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri May 17 13:48:46 2013
-X-DSPAM-Confidence: 0.9988
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5196191e23346577232795
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+This patch series fixes two issues in the host1x driver: First, the
+command buffer validation routine had vulnerabilities that were not
+detected in earlier testing. Second, the return codes of some
+functions were misleading or completely missing. This caused the
+driver to give wrong return codes also to the userspace.
 
-thanks for you explanations. They helped me to better understand what is
-happening now.
+The series is based on top of 3.10rc1. I have tested the patch series
+on cardhu by running host1x and gr2d test cases (available at [0]).
+I would appreciate any help in testing/reviewing these patches.
 
-On Wed, May 15, 2013 at 07:10:43PM -0400, Peter Hurley wrote:
-> On 05/15/2013 03:48 PM, Joerg Roedel wrote:
+[0] https://gitorious.org/linux-host1x/libdrm-host1x
 
-> Agreed. Those functions look written for single-producer/single-consumer
-> i/o model. (That's why I asked about CONFIG_CONSOLE_POLL=y as well because
-> that doesn't look thread-safe either).
+Arto Merilainen (5):
+  gpu: host1x: Fix syncpoint wait return value
+  gpu: host1x: Fix memory access in syncpt request
+  gpu: host1x: Fix client_managed type
+  gpu: host1x: Rework CPU syncpoint increment
+  drm/tegra: Fix syncpoint increment return code
 
-Ok, I checked that. CONFIG_CONSOLE_POLL is on in that kernel.
+Terje Bergstrom (1):
+  gpu: host1x: Fixes to host1x firewall
 
-> Just to be clear here: there's a difference between a console driver
-> and a tty driver.
-> 
-> The console driver's write() method is serialized with the global
-> console_lock() so parallel console writes are not possible.
-> 
-> No such guarantee exists for the tty driver write() method, although it
-> probably wouldn't be difficult to provide that guarantee (since the
-> line discipline write() is already serialized by tty->atomic_write_lock).
+ drivers/gpu/host1x/dev.h          |    8 +--
+ drivers/gpu/host1x/drm/drm.c      |    3 +-
+ drivers/gpu/host1x/drm/gr2d.c     |    2 +-
+ drivers/gpu/host1x/hw/cdma_hw.c   |    2 +-
+ drivers/gpu/host1x/hw/syncpt_hw.c |   12 ++--
+ drivers/gpu/host1x/job.c          |  120 ++++++++++++++++---------------------
+ drivers/gpu/host1x/syncpt.c       |   29 +++------
+ drivers/gpu/host1x/syncpt.h       |   13 ++--
+ 8 files changed, 79 insertions(+), 110 deletions(-)
 
-Okay, so it is safe to say that currently the drivers write() (and
-put_chars()) functions need to expect to be called concurrently and
-therefore they have to serialize themselves when they need it, right?
-
-
-	Joerg
-
+-- 
+1.7.9.5
 
