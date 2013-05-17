@@ -1,35 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab3EQDue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 23:50:34 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:37496 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754852Ab3EQDu2 (ORCPT
+	id S1755279Ab3EQDus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 23:50:48 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33251 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755246Ab3EQDup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 23:50:28 -0400
-X-Sasl-enc: I40Z0lUP+wztpDjJS1KcaHk8cVL07cqa0GZU5GdAU6YQ 1368762134
-Date: Thu, 16 May 2013 17:36:55 -0700
-From: Greg KH <greg@kroah.com>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: stern@rowland.harvard.edu, grant.likely@linaro.org,
-        rob.herring@calxeda.com, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lizefan@huawei.com >> Li Zefan" <lizefan@huawei.com>
-Subject: Re: [PATCH v2] usb: ohci: fix goto wrong tag in err case
-Message-ID: <20130517003655.GA19379@kroah.com>
-References: <518C9232.1000803@huawei.com>
+	Thu, 16 May 2013 23:50:45 -0400
+Date: Thu, 16 May 2013 17:58:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Pavel Machek <pavel@denx.de>
+Cc: dzu@denx.de, hjk@hansjkoch.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
+ using command line option
+Message-ID: <20130517005855.GA5873@kroah.com>
+References: <20130412184335.GA5510@amd.pavel.ucw.cz>
+ <20130506105352.GA23051@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <518C9232.1000803@huawei.com>
+In-Reply-To: <20130506105352.GA23051@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 10, 2013 at 02:22:42PM +0800, Libo Chen wrote:
-> fix goto wrong tag in usb_hcd_nxp_probe
+On Mon, May 06, 2013 at 12:53:52PM +0200, Pavel Machek wrote:
+> Hello!
 > 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> > This adds ability to bind uio driver to given open firmware device
+> > using command line option. Thus, userspace driver can be developed and
+> > used without modifying the kernel.
+> > 
+> > Signed-off-by: Pavel Machek <pavel@denx.de> 
+> 
+> I got no comments here, and patch is pretty simple. Greg, can you
+> merge it?
 
-Ah, you redid this, nevermind about the v1 of this patch, sorry...
+Hans is handling UIO patches, Hans?
