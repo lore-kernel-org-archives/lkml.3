@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab3EQVul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54748 "EHLO
+	id S932600Ab3EQVup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:50:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757945Ab3EQVua (ORCPT
+	with ESMTP id S932579Ab3EQVum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:30 -0400
+	Fri, 17 May 2013 17:50:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Hayes Wang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/33] r8169: fix vlan tag read ordering.
-Date: Fri, 17 May 2013 14:50:10 -0700
-Message-Id: <20130517214919.691362650@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 29/33] ACPI / EC: Restart transaction even when the IBF flag set
+Date: Fri, 17 May 2013 14:50:13 -0700
+Message-Id: <20130517214920.025232500@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -28,73 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit ce11ff5e5963e441feb591e76278528f876c332d upstream.
+commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
 
-Control of receive descriptor must not be returned to ethernet chipset
-before vlan tag processing is done.
+The EC driver works abnormally with IBF flag always set.
+IBF means "The host has written a byte of data to the command
+or data port, but the embedded controller has not yet read it".
+If IBF is set in the EC status and not cleared, this will cause
+all subsequent EC requests to fail with a timeout error.
 
-VLAN tag receive word is now reset both in normal and error path.
+Change the EC driver so that it doesn't refuse to restart a
+transaction if IBF is set in the status.  Also increase the
+number of transaction restarts to 5, as it turns out that 2
+is not sufficient in some cases.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Spotted-by: Timo Teras <timo.teras@iki.fi>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This bug happens on several different machines (Asus V1S,
+Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
+Sony Vaio SR19VN and others).
+
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/r8169.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/acpi/ec.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -1494,8 +1494,6 @@ static void rtl8169_rx_vlan_tag(struct R
- 
- 	if (opts2 & RxVlanTag)
- 		__vlan_hwaccel_put_tag(skb, swab16(opts2 & 0xffff));
--
--	desc->opts2 = 0;
- }
- 
- static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
-@@ -5188,7 +5186,6 @@ static int rtl8169_rx_interrupt(struct n
- 				rtl8169_schedule_work(dev, rtl8169_reset_task);
- 				dev->stats.rx_fifo_errors++;
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -217,7 +217,7 @@ static int ec_check_sci_sync(struct acpi
+ static int ec_poll(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+-	int repeat = 2; /* number of command restarts */
++	int repeat = 5; /* number of command restarts */
+ 	while (repeat--) {
+ 		unsigned long delay = jiffies +
+ 			msecs_to_jiffies(ec_delay);
+@@ -235,8 +235,6 @@ static int ec_poll(struct acpi_ec *ec)
  			}
--			rtl8169_mark_to_asic(desc, rx_buf_sz);
- 		} else {
- 			struct sk_buff *skb;
- 			dma_addr_t addr = le64_to_cpu(desc->addr);
-@@ -5202,16 +5199,14 @@ static int rtl8169_rx_interrupt(struct n
- 			if (unlikely(rtl8169_fragmented_frame(status))) {
- 				dev->stats.rx_dropped++;
- 				dev->stats.rx_length_errors++;
--				rtl8169_mark_to_asic(desc, rx_buf_sz);
--				continue;
-+				goto release_descriptor;
- 			}
- 
- 			skb = rtl8169_try_rx_copy(tp->Rx_databuff[entry],
- 						  tp, pkt_size, addr);
--			rtl8169_mark_to_asic(desc, rx_buf_sz);
- 			if (!skb) {
- 				dev->stats.rx_dropped++;
--				continue;
-+				goto release_descriptor;
- 			}
- 
- 			rtl8169_rx_csum(skb, status);
-@@ -5225,6 +5220,10 @@ static int rtl8169_rx_interrupt(struct n
- 			dev->stats.rx_bytes += pkt_size;
- 			dev->stats.rx_packets++;
- 		}
-+release_descriptor:
-+		desc->opts2 = 0;
-+		wmb();
-+		rtl8169_mark_to_asic(desc, rx_buf_sz);
- 	}
- 
- 	count = cur_rx - tp->cur_rx;
+ 			advance_transaction(ec, acpi_ec_read_status(ec));
+ 		} while (time_before(jiffies, delay));
+-		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+-			break;
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->curr_lock, flags);
+ 		start_transaction(ec);
 
 
