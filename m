@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab3EQWQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:16:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54195 "EHLO
+	id S1758236Ab3EQWQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:16:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab3EQVhd (ORCPT
+	with ESMTP id S1757038Ab3EQVhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:37:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Michael Buesch <m@bues.ch>, Thommy Jakobsson <thommyj@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 048/102] iwl4965: workaround connection regression on passive channel
-Date: Fri, 17 May 2013 14:36:03 -0700
-Message-Id: <20130517213249.379831589@linuxfoundation.org>
+Subject: [ 047/102] B43: Handle DMA RX descriptor underrun
+Date: Fri, 17 May 2013 14:36:02 -0700
+Message-Id: <20130517213249.276497465@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,47 +27,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Thommy Jakobsson <thommyj@gmail.com>
 
-commit dd9c46408fdc07098333655ff27edf8cac8d9fcf upstream.
+commit 73b82bf0bfbf58e6ff328d3726934370585f6e78 upstream.
 
-Jake reported that since commit 1672c0e31917f49d31d30d79067103432bc20cc7
-"mac80211: start auth/assoc timeout on frame status", he is unable to
-connect to his AP, which is configured to use passive channel.
+Add handling of rx descriptor underflow. This fixes a fault that could
+happen on slow machines, where data is received faster than the CPU can
+handle. In such a case the device will use up all rx descriptors and
+refuse to send any more data before confirming that it is ok. This
+patch enables necessary interrupt to discover such a situation and will
+handle them by dropping everything in the ring buffer.
 
-After switch to passive channel 4965 firmware drops any TX packet until
-it receives beacon. Before commit 1672c0e3 we waited on channel and
-retransmit packet after 200ms, that makes we receive beacon on the
-meantime and association process succeed. New mac80211 behaviour cause
-that any ASSOC frame fail immediately on iwl4965 and we can not
-associate.
-
-This patch restore old mac80211 behaviour for iwl4965, by removing
-IEEE80211_HW_REPORTS_TX_ACK_STATUS feature. This feature will be
-added again to iwl4965 driver, when different, more complex
-workaround for this firmware issue, will be added to the driver.
-
-Bisected-by: Jake Edge <jake@lwn.net>
-Reported-and-tested-by: Jake Edge <jake@lwn.net>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Michael Buesch <m@bues.ch>
+Signed-off-by: Thommy Jakobsson <thommyj@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlegacy/4965-mac.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/b43/dma.c  |   19 +++++++++++++++++
+ drivers/net/wireless/b43/dma.h  |    4 ++-
+ drivers/net/wireless/b43/main.c |   43 ++++++++++++++++------------------------
+ 3 files changed, 40 insertions(+), 26 deletions(-)
 
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -5740,8 +5740,7 @@ il4965_mac_setup_register(struct il_priv
- 	hw->flags =
- 	    IEEE80211_HW_SIGNAL_DBM | IEEE80211_HW_AMPDU_AGGREGATION |
- 	    IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC | IEEE80211_HW_SPECTRUM_MGMT |
--	    IEEE80211_HW_REPORTS_TX_ACK_STATUS | IEEE80211_HW_SUPPORTS_PS |
--	    IEEE80211_HW_SUPPORTS_DYNAMIC_PS;
-+	    IEEE80211_HW_SUPPORTS_PS | IEEE80211_HW_SUPPORTS_DYNAMIC_PS;
- 	if (il->cfg->sku & IL_SKU_N)
- 		hw->flags |=
- 		    IEEE80211_HW_SUPPORTS_DYNAMIC_SMPS |
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1733,6 +1733,25 @@ drop_recycle_buffer:
+ 	sync_descbuffer_for_device(ring, dmaaddr, ring->rx_buffersize);
+ }
+ 
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring)
++{
++	int current_slot, previous_slot;
++
++	B43_WARN_ON(ring->tx);
++
++	/* Device has filled all buffers, drop all packets and let TCP
++	 * decrease speed.
++	 * Decrement RX index by one will let the device to see all slots
++	 * as free again
++	 */
++	/*
++	*TODO: How to increase rx_drop in mac80211?
++	*/
++	current_slot = ring->ops->get_current_rxslot(ring);
++	previous_slot = prev_slot(ring, current_slot);
++	ring->ops->set_current_rxslot(ring, previous_slot);
++}
++
+ void b43_dma_rx(struct b43_dmaring *ring)
+ {
+ 	const struct b43_dma_ops *ops = ring->ops;
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -9,7 +9,7 @@
+ /* DMA-Interrupt reasons. */
+ #define B43_DMAIRQ_FATALMASK	((1 << 10) | (1 << 11) | (1 << 12) \
+ 					 | (1 << 14) | (1 << 15))
+-#define B43_DMAIRQ_NONFATALMASK	(1 << 13)
++#define B43_DMAIRQ_RDESC_UFLOW		(1 << 13)
+ #define B43_DMAIRQ_RX_DONE		(1 << 16)
+ 
+ /*** 32-bit DMA Engine. ***/
+@@ -295,6 +295,8 @@ int b43_dma_tx(struct b43_wldev *dev,
+ void b43_dma_handle_txstatus(struct b43_wldev *dev,
+ 			     const struct b43_txstatus *status);
+ 
++void b43_dma_handle_rx_overflow(struct b43_dmaring *ring);
++
+ void b43_dma_rx(struct b43_dmaring *ring);
+ 
+ void b43_dma_direct_fifo_rx(struct b43_wldev *dev,
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -1895,30 +1895,18 @@ static void b43_do_interrupt_thread(stru
+ 		}
+ 	}
+ 
+-	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK |
+-					  B43_DMAIRQ_NONFATALMASK))) {
+-		if (merged_dma_reason & B43_DMAIRQ_FATALMASK) {
+-			b43err(dev->wl, "Fatal DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-			b43err(dev->wl, "This device does not support DMA "
++	if (unlikely(merged_dma_reason & (B43_DMAIRQ_FATALMASK))) {
++		b43err(dev->wl,
++			"Fatal DMA error: 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
++			dma_reason[0], dma_reason[1],
++			dma_reason[2], dma_reason[3],
++			dma_reason[4], dma_reason[5]);
++		b43err(dev->wl, "This device does not support DMA "
+ 			       "on your system. It will now be switched to PIO.\n");
+-			/* Fall back to PIO transfers if we get fatal DMA errors! */
+-			dev->use_pio = true;
+-			b43_controller_restart(dev, "DMA error");
+-			return;
+-		}
+-		if (merged_dma_reason & B43_DMAIRQ_NONFATALMASK) {
+-			b43err(dev->wl, "DMA error: "
+-			       "0x%08X, 0x%08X, 0x%08X, "
+-			       "0x%08X, 0x%08X, 0x%08X\n",
+-			       dma_reason[0], dma_reason[1],
+-			       dma_reason[2], dma_reason[3],
+-			       dma_reason[4], dma_reason[5]);
+-		}
++		/* Fall back to PIO transfers if we get fatal DMA errors! */
++		dev->use_pio = true;
++		b43_controller_restart(dev, "DMA error");
++		return;
+ 	}
+ 
+ 	if (unlikely(reason & B43_IRQ_UCODE_DEBUG))
+@@ -1937,6 +1925,11 @@ static void b43_do_interrupt_thread(stru
+ 		handle_irq_noise(dev);
+ 
+ 	/* Check the DMA reason registers for received data. */
++	if (dma_reason[0] & B43_DMAIRQ_RDESC_UFLOW) {
++		if (B43_DEBUG)
++			b43warn(dev->wl, "RX descriptor underrun\n");
++		b43_dma_handle_rx_overflow(dev->dma.rx_ring);
++	}
+ 	if (dma_reason[0] & B43_DMAIRQ_RX_DONE) {
+ 		if (b43_using_pio_transfers(dev))
+ 			b43_pio_rx(dev->pio.rx_queue);
+@@ -1994,7 +1987,7 @@ static irqreturn_t b43_do_interrupt(stru
+ 		return IRQ_NONE;
+ 
+ 	dev->dma_reason[0] = b43_read32(dev, B43_MMIO_DMA0_REASON)
+-	    & 0x0001DC00;
++	    & 0x0001FC00;
+ 	dev->dma_reason[1] = b43_read32(dev, B43_MMIO_DMA1_REASON)
+ 	    & 0x0000DC00;
+ 	dev->dma_reason[2] = b43_read32(dev, B43_MMIO_DMA2_REASON)
+@@ -3126,7 +3119,7 @@ static int b43_chip_init(struct b43_wlde
+ 		b43_write32(dev, 0x018C, 0x02000000);
+ 	}
+ 	b43_write32(dev, B43_MMIO_GEN_IRQ_REASON, 0x00004000);
+-	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001DC00);
++	b43_write32(dev, B43_MMIO_DMA0_IRQ_MASK, 0x0001FC00);
+ 	b43_write32(dev, B43_MMIO_DMA1_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA2_IRQ_MASK, 0x0000DC00);
+ 	b43_write32(dev, B43_MMIO_DMA3_IRQ_MASK, 0x0001DC00);
 
 
