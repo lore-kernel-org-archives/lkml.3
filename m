@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3EQSxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:53:19 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:58280 "EHLO kanga.kvack.org"
+	id S1756576Ab3EQSyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:54:51 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:42688 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753976Ab3EQSxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:53:18 -0400
-Date: Fri, 17 May 2013 14:53:17 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: koverstreet@google.com, akpm@linux-foundation.org, tytso@mit.edu,
-        viro@zeniv.linux.org.uk, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: aio: use correct integer overflow checks when creation aio ctx
-Message-ID: <20130517185317.GM1008@kvack.org>
-References: <1368815034-844-1-git-send-email-sasha.levin@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368815034-844-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1755255Ab3EQSyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:54:50 -0400
+Message-ID: <51967CF5.7060806@schinagl.nl>
+Date: Fri, 17 May 2013 20:54:45 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130322 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, maxime.ripard@free-electrons.com,
+        arnd@ardb.de, gregkh@linuxfoundation.org,
+        Oliver Schinagl <oliver@schinagl.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl> <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl> <4144514.S8gIuIKLrJ@wuerfel>
+In-Reply-To: <4144514.S8gIuIKLrJ@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 02:23:54PM -0400, Sasha Levin wrote:
-> Commit "aio: percpu reqs_available" added some math to the nr_requests
-> calculation, but didn't correct the overflow calculations to handle that.
-> 
-> This means that this:
-> 
-> 	#include <linux/aio_abi.h>
-> 	void main(void)
-> 	{
-> 	        aio_context_t ctx_idp;
-> 	        io_setup(0x80000001, &ctx_idp);
-> 	}
-> 
-> Would trigger the newly added BUG() couple of lines after the overflow
-> checks.
+On 05/17/13 15:45, Arnd Bergmann wrote:
+> On Friday 17 May 2013 15:35:43 Oliver Schinagl wrote:
+>> +static struct bin_attribute sid_bin_attr = {
+>> +       .attr = {
+>> +               .name = "key",
+>> +               .mode = S_IRUGO,
+>> +       },
+>> +       .size = SUNXI_SID_SIZE,
+>> +       .read = sid_read,
+>> +};
+>
+> I believe all the other drivers in drivers/misc/eeprom use "eeprom"
+> as the name for the attribute, so using "key" here is a bit inconsistent.
+>
+> Can you change that?
+Changed, will wait for more feedback and then use that in the final version.
 
-This BUG() isn't in Linus' tree, and probably should be removed before 
-it gets there.
+Should there also be a symlink elsewhere in /sys? Just curious is all.
+>
+> 	Arnd
+>
 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  fs/aio.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 5b7ed78..0ae450a 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -411,7 +411,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
->  
->  	/* Prevent overflows */
->  	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
-> -	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
-> +	    (nr_events > (0x10000000U / sizeof(struct kiocb))) ||
-> +	    (nr_events < num_possible_cpus() * 4)) {
->  		pr_debug("ENOMEM: nr_events too high\n");
->  		return ERR_PTR(-EINVAL);
-
-This is completely wrong.  Enforcing a minimum needs to be done in a way 
-that doesn't fail for existing users that potentially use a minimum 
-smaller than what is newly required.  That is: an existing userland program 
-that only requests 16 events must not fail because of changes to the kernel 
-that increase the minimum number of requests.  So I have to NACK this patch 
-as it stands.
-
-		-ben
-
->  	}
-> -- 
-> 1.8.2.1
-
--- 
-"Thought is the essence of where you are now."
