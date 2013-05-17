@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3EQHEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 03:04:34 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47041 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab3EQHEc (ORCPT
+	id S1755307Ab3EQHET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 03:04:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:33452 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589Ab3EQHES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 03:04:32 -0400
-Message-ID: <5195D658.5000301@huawei.com>
-Date: Fri, 17 May 2013 15:03:52 +0800
+	Fri, 17 May 2013 03:04:18 -0400
+Message-ID: <5195D63B.4010202@huawei.com>
+Date: Fri, 17 May 2013 15:03:23 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -18,8 +18,8 @@ CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH 4/9] memcg: don't use mem_cgroup_get() when creating a kmemcg
- cache
+Subject: [PATCH 2/9] memcg, kmem: fix reference count handling on the error
+ path
 References: <5195D5F8.7000609@huawei.com>
 In-Reply-To: <5195D5F8.7000609@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -30,76 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
+mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem
+fails. This is not correct because only memcg_propagate_kmem takes an
+additional reference while mem_cgroup_sockets_init is allowed to fail as
+well (although no current implementation fails) but it doesn't take any
+reference. This all suggests that it should be memcg_propagate_kmem that
+should clean up after itself so this patch moves mem_cgroup_put over
+there.
 
-There are two things being done in the current code:
+Unfortunately this is not that easy (as pointed out by Li Zefan) because
+memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it
+is marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
+memcg_propagate_kmem fails so the additional reference is dropped in
+that case in kmem_cgroup_destroy which means that the reference would be
+dropped two times.
 
-First, we acquired a css_ref to make sure that the underlying cgroup
-would not go away. That is a short lived reference, and it is put as
-soon as the cache is created.
+The easiest way then would be to simply remove mem_cgrroup_put from
+mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
+thing.
 
-At this point, we acquire a long-lived per-cache memcg reference count
-to guarantee that the memcg will still be alive.
-
-so it is:
-
-enqueue: css_get
-create : memcg_get, css_put
-destroy: memcg_put
-
-So we only need to get rid of the memcg_get, change the memcg_put to
-css_put, and get rid of the now extra css_put.
-
-(This changelog is mostly written by Glauber)
-
+Cc: <stable@vger.kernel.org> # 3.8+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ mm/memcontrol.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f1320d3..63526f9 100644
+index 5918e90..4d0458d 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3227,7 +3227,7 @@ void memcg_release_cache(struct kmem_cache *s)
- 	list_del(&s->memcg_params->list);
- 	mutex_unlock(&memcg->slab_caches_mutex);
+@@ -6290,14 +6290,6 @@ mem_cgroup_css_online(struct cgroup *cont)
  
--	mem_cgroup_put(memcg);
-+	css_put(&memcg->css);
- out:
- 	kfree(s->memcg_params);
- }
-@@ -3387,16 +3387,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 
- 	mutex_lock(&memcg_cache_mutex);
- 	new_cachep = cachep->memcg_params->memcg_caches[idx];
--	if (new_cachep)
-+	if (new_cachep) {
-+		css_put(&memcg->css);
- 		goto out;
-+	}
- 
- 	new_cachep = kmem_cache_dup(memcg, cachep);
- 	if (new_cachep == NULL) {
- 		new_cachep = cachep;
-+		css_put(&memcg->css);
- 		goto out;
- 	}
- 
--	mem_cgroup_get(memcg);
- 	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
- 
- 	cachep->memcg_params->memcg_caches[idx] = new_cachep;
-@@ -3484,8 +3486,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
- 
- 	cw = container_of(w, struct create_work, work);
- 	memcg_create_kmem_cache(cw->memcg, cw->cachep);
--	/* Drop the reference gotten when we enqueued. */
--	css_put(&cw->memcg->css);
- 	kfree(cw);
+ 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
+ 	mutex_unlock(&memcg_create_mutex);
+-	if (error) {
+-		/*
+-		 * We call put now because our (and parent's) refcnts
+-		 * are already in place. mem_cgroup_put() will internally
+-		 * call __mem_cgroup_free, so return directly
+-		 */
+-		mem_cgroup_put(memcg);
+-	}
+ 	return error;
  }
  
 -- 
