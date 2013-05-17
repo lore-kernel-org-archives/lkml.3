@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab3EQVug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:50:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54760 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232Ab3EQVuc (ORCPT
+	id S1757230Ab3EQVxF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:53:05 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:35539 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab3EQVwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 28/33] drivers/rtc/rtc-pcf2123.c: fix error return code in pcf2123_probe()
-Date: Fri, 17 May 2013 14:50:12 -0700
-Message-Id: <20130517214919.910329124@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
-References: <20130517214916.821259930@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 17 May 2013 17:52:50 -0400
+Date: Fri, 17 May 2013 14:52:46 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Regmap and register ranges
+Message-ID: <20130517215246.GA24730@core.coreip.homeip.net>
+References: <1657392.sx3qBqNYrh@dtor-d630.eng.vmware.com>
+ <20130517205025.GQ1627@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130517205025.GQ1627@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 17, 2013 at 09:50:25PM +0100, Mark Brown wrote:
+> On Fri, May 17, 2013 at 09:24:30AM -0700, Dmitry Torokhov wrote:
+> 
+> > I am looking at regmap and I wonder if I am missing something with the
+> > way it checks if a window crosses another range boundary or if a
+> > selector is in some other window as it seem to be always tripping on
+> > itself. Should we skip the current range as we iterate through them
+> > and do sanity checks? 
+> 
+> > The setup: a device with 0x0000 - 0xffff potential register range, paged
+> > in chunks of 256 registers with page selector register repeated at 0xff.
+> 
+> The general idea is that the pages should be mapped in to virtual
+> addresses rather than real ones so in your example you might add a
+> prefix so all the registers are numbered 0x10000 to 0x1ffff.  The
+> physical registers and the ones inside the paged range aren't supposed
+> to overlap.
 
-------------------
+The issue I have with doing an arbitrary offset is that then data
+exposed in debugfs does not match the data from device's specification.
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> We should probably either do sanity checks for this at init time or come
+> up with a sensible way to support this in case someone does decide to do
+> it, though this is the first time anyone noticed.
 
-commit 35623715818dfa720cccf99cd280dcbb4b78da23 upstream.
+Does this mean you'll be open to patches allowing this scenario?
 
-Fix to return -ENODEV in the chip not found error handling
-case instead of 0, as done elsewhere in this function.
+Thanks.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/rtc/rtc-pcf2123.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/rtc/rtc-pcf2123.c
-+++ b/drivers/rtc/rtc-pcf2123.c
-@@ -263,6 +263,7 @@ static int __devinit pcf2123_probe(struc
- 
- 	if (!(rxbuf[0] & 0x20)) {
- 		dev_err(&spi->dev, "chip not found\n");
-+		ret = -ENODEV;
- 		goto kfree_exit;
- 	}
- 
-
-
+-- 
+Dmitry
