@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab3EQIZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 04:25:14 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38564 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab3EQIZM (ORCPT
+	id S1754079Ab3EQIZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 04:25:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46223 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab3EQIZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 04:25:12 -0400
+	Fri, 17 May 2013 04:25:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130517075140.GA25077@balto.lan>
-References: <20130514091956.GG3297@gmail.com>
-	<20130515090449.GA3494@gmail.com>
-	<20130516224337.GZ22822@zurbaran>
-	<20130517075140.GA25077@balto.lan>
-Date: Fri, 17 May 2013 10:25:10 +0200
-Message-ID: <CACRpkdYpEreHKdUyfcANA9kTRAjVbLbpJkBJCq1Q_pAeOKcdxw@mail.gmail.com>
-Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Ulf Hansson <ulf.hansson@linaro.org>
+Date: Fri, 17 May 2013 16:25:17 +0800
+Message-ID: <CAPgLHd-L6gbKfv+5O0iJ+6vkS_o6QguxWj+7yPp-h9ZQDhb+1A@mail.gmail.com>
+Subject: [PATCH] ipmi: add missing platform_device_put() on error in try_smi_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: minyard@acm.org, grant.likely@linaro.org, rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, openipmi-developer@lists.sourceforge.net,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 9:51 AM, Fabio Baltieri
-<fabio.baltieri@linaro.org> wrote:
-> Hello Samuel,
-(...)
-> The last two:
->
->   mfd: ab8500-sysctrl: Set sysctrl_dev during probe
->   mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
->
-> are actually fixes for bugs introduced in this merge window that
-> inhibited the ab8500-sysctl driver as a consequence.  Would you
-> reconsider pulling just those?
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-A good way to make sure that patches fixing regressions are applied
-to the -rc series is to indicate in the commit message or even the
-heading that it fixes a regression.
+Add the missing platform_device_put() before return from
+try_smi_init() in the platform_device_add() fail case.
 
-I usually try to begin such commits with the text:
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/char/ipmi/ipmi_si_intf.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-  this patch fixes a regression caused by change 018745435
-  "foo: fix bar"...
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index af4b23f..3f6c390 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -3299,6 +3299,7 @@ static int try_smi_init(struct smi_info *new_smi)
+ 			       "Unable to register system interface device:"
+ 			       " %d\n",
+ 			       rv);
++			platform_device_put(new_smi->pdev);
+ 			goto out_err;
+ 		}
+ 		new_smi->dev_registered = 1;
 
-Then copying in some crash dump text never hurts :-)
-
-It makes it very easy for us as subsystem maintainers to pick
-regression fixes.
-
-Yours,
-Linus Walleij
