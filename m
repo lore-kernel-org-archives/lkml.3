@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab3EQVrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54508 "EHLO
+	id S1758037Ab3EQWHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:07:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757706Ab3EQVrj (ORCPT
+	with ESMTP id S1757741Ab3EQVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:39 -0400
+	Fri, 17 May 2013 17:47:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lachlan McIlroy <lmcilroy@redhat.com>,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 15/50] ext4: limit group search loop for non-extent files
-Date: Fri, 17 May 2013 14:46:50 -0700
-Message-Id: <20130517213844.282187593@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 17/50] ath9k: fix key allocation error handling for powersave keys
+Date: Fri, 17 May 2013 14:46:52 -0700
+Message-Id: <20130517213844.499995223@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,55 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lachlan McIlroy <lmcilroy@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e6155736ad76b2070652745f9e54cdea3f0d8567 upstream.
+commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 upstream.
 
-In the case where we are allocating for a non-extent file,
-we must limit the groups we allocate from to those below
-2^32 blocks, and ext4_mb_regular_allocator() attempts to
-do this initially by putting a cap on ngroups for the
-subsequent search loop.
+If no keycache slots are available, ath_key_config can return -ENOSPC.
+If the key index is not checked for errors, it can lead to logspam that
+looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
+This can cause follow-up errors if the invalid keycache index gets
+used for tx.
 
-However, the initial target group comes in from the
-allocation context (ac), and it may already be beyond
-the artificially limited ngroups.  In this case,
-the limit
-
-	if (group == ngroups)
-		group = 0;
-
-at the top of the loop is never true, and the loop will
-run away.
-
-Catch this case inside the loop and reset the search to
-start at group 0.
-
-[sandeen@redhat.com: add commit msg & comments]
-
-Signed-off-by: Lachlan McIlroy <lmcilroy@redhat.com>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    6 +++++-
+ drivers/net/wireless/ath/ath9k/main.c |    6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -1980,7 +1980,11 @@ repeat:
- 		group = ac->ac_g_ex.fe_group;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1711,6 +1711,7 @@ static int ath9k_sta_add(struct ieee8021
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
+ 	struct ieee80211_key_conf ps_key = { };
++	int key;
  
- 		for (i = 0; i < ngroups; group++, i++) {
--			if (group == ngroups)
-+			/*
-+			 * Artificially restricted ngroups for non-extent
-+			 * files makes group > ngroups possible on first loop.
-+			 */
-+			if (group >= ngroups)
- 				group = 0;
+ 	ath_node_attach(sc, sta, vif);
  
- 			/* This now checks without needing the buddy page */
+@@ -1718,7 +1719,9 @@ static int ath9k_sta_add(struct ieee8021
+ 	    vif->type != NL80211_IFTYPE_AP_VLAN)
+ 		return 0;
+ 
+-	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
++	key = ath_key_config(common, vif, sta, &ps_key);
++	if (key > 0)
++		an->ps_key = key;
+ 
+ 	return 0;
+ }
+@@ -1735,6 +1738,7 @@ static void ath9k_del_ps_key(struct ath_
+ 	    return;
+ 
+ 	ath_key_delete(common, &ps_key);
++	an->ps_key = 0;
+ }
+ 
+ static int ath9k_sta_remove(struct ieee80211_hw *hw,
 
 
