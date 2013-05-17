@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3EQWP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:15:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54201 "EHLO
+	id S1758240Ab3EQWQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:16:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757069Ab3EQVhf (ORCPT
+	with ESMTP id S1757060Ab3EQVhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:35 -0400
+	Fri, 17 May 2013 17:37:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Christopher Harvey <charvey@matrox.com>,
+        Julia Lemire <jlemire@matrox.com>,
         Mathieu Larouche <mathieu.larouche@matrox.com>,
-        Julia Lemire <jlemire@matrox.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 050/102] drm/mgag200: Fix framebuffer base address programming
-Date: Fri, 17 May 2013 14:36:05 -0700
-Message-Id: <20130517213249.612589115@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 049/102] drm/mgag200: Fix writes into MGA1064_PIX_CLK_CTL register
+Date: Fri, 17 May 2013 14:36:04 -0700
+Message-Id: <20130517213249.503520569@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -30,72 +31,204 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christopher Harvey <charvey@matrox.com>
 
-commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e upstream.
+commit fb70a6690875315a3a1454e52fa339441ee7612b upstream.
 
-Higher bits of the base address of framebuffers weren't being
-programmed properly. This caused framebuffers that didn't happen to be
-allocated at a low enough address to not be displayed properly.
+The original line,
+  WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
+wrote tmp into MGA1064_PIX_CLK_CTL_CLK_DIS, where
+MGA1064_PIX_CLK_CTL_CLK_DIS is an offset into
+MGA1064_PIX_CLK_CTL. Change the line to write properly into
+MGA1064_PIX_CLK_CTL. There were other chunks of code nearby that use
+the same pattern (but work correctly), so this patch updates them all
+to use this new (slightly more efficient) write pattern. The WREG_DAC
+macro was causing the DAC_INDEX register to be set to the same value
+twice. WREG8(DAC_DATA, foo) takes advantage of the fact that DAC_INDEX
+is already at the value we want.
 
 Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Mathieu Larouche <mathieu.larouche@matrox.com>
 Acked-by: Julia Lemire <jlemire@matrox.com>
 Tested-by: Julia Lemire <jlemire@matrox.com>
+Acked-by: Mathieu Larouche <mathieu.larouche@matrox.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c |   42 ++++++++++++++++-----------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
 --- a/drivers/gpu/drm/mgag200/mgag200_mode.c
 +++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -657,12 +657,26 @@ static void mga_g200wb_commit(struct drm
- 	WREG_DAC(MGA1064_GEN_IO_DATA, tmp);
+@@ -189,12 +189,12 @@ static int mga_g200wb_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_REMHEADCTL_CLKDIS;
+-		WREG_DAC(MGA1064_REMHEADCTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		/* select PLL Set C */
+ 		tmp = RREG8(MGAREG_MEM_MISC_READ);
+@@ -204,7 +204,7 @@ static int mga_g200wb_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN | 0x80;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		udelay(500);
+ 
+@@ -212,7 +212,7 @@ static int mga_g200wb_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_VREF_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~0x04;
+-		WREG_DAC(MGA1064_VREF_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		udelay(50);
+ 
+@@ -236,13 +236,13 @@ static int mga_g200wb_set_plls(struct mg
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_REMHEADCTL_CLKSL_MSK;
+ 		tmp |= MGA1064_REMHEADCTL_CLKSL_PLL;
+-		WREG_DAC(MGA1064_REMHEADCTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		/* reset dotclock rate bit */
+ 		WREG8(MGAREG_SEQ_INDEX, 1);
+@@ -253,7 +253,7 @@ static int mga_g200wb_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		vcount = RREG8(MGAREG_VCOUNT);
+ 
+@@ -318,7 +318,7 @@ static int mga_g200ev_set_plls(struct mg
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= 0x3 << 2;
+@@ -326,12 +326,12 @@ static int mga_g200ev_set_plls(struct mg
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
+ 	tmp = RREG8(DAC_DATA);
+-	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp & ~0x40);
++	WREG8(DAC_DATA, tmp & ~0x40);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG_DAC(MGA1064_EV_PIX_PLLC_M, m);
+ 	WREG_DAC(MGA1064_EV_PIX_PLLC_N, n);
+@@ -342,7 +342,7 @@ static int mga_g200ev_set_plls(struct mg
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	udelay(500);
+ 
+@@ -350,11 +350,11 @@ static int mga_g200ev_set_plls(struct mg
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 	tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_PIX_PLL_STAT);
+ 	tmp = RREG8(DAC_DATA);
+-	WREG_DAC(MGA1064_PIX_PLL_STAT, tmp | 0x40);
++	WREG8(DAC_DATA, tmp | 0x40);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= (0x3 << 2);
+@@ -363,7 +363,7 @@ static int mga_g200ev_set_plls(struct mg
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	return 0;
  }
+@@ -416,7 +416,7 @@ static int mga_g200eh_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++		WREG8(DAC_DATA, tmp);
  
--
-+/*
-+   This is how the framebuffer base address is stored in g200 cards:
-+   * Assume @offset is the gpu_addr variable of the framebuffer object
-+   * Then addr is the number of _pixels_ (not bytes) from the start of
-+     VRAM to the first pixel we want to display. (divided by 2 for 32bit
-+     framebuffers)
-+   * addr is stored in the CRTCEXT0, CRTCC and CRTCD registers
-+   addr<20> -> CRTCEXT0<6>
-+   addr<19-16> -> CRTCEXT0<3-0>
-+   addr<15-8> -> CRTCC<7-0>
-+   addr<7-0> -> CRTCD<7-0>
-+   CRTCEXT0 has to be programmed last to trigger an update and make the
-+   new addr variable take effect.
-+ */
- void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
- {
- 	struct mga_device *mdev = crtc->dev->dev_private;
- 	u32 addr;
- 	int count;
-+	u8 crtcext0;
+ 		tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 		tmp |= 0x3 << 2;
+@@ -425,7 +425,7 @@ static int mga_g200eh_set_plls(struct mg
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
  
- 	while (RREG8(0x1fda) & 0x08);
- 	while (!(RREG8(0x1fda) & 0x08));
-@@ -670,10 +684,17 @@ void mga_set_start_address(struct drm_cr
- 	count = RREG8(MGAREG_VCOUNT) + 2;
- 	while (RREG8(MGAREG_VCOUNT) < count);
+ 		udelay(500);
  
--	addr = offset >> 2;
-+	WREG8(MGAREG_CRTCEXT_INDEX, 0);
-+	crtcext0 = RREG8(MGAREG_CRTCEXT_DATA);
-+	crtcext0 &= 0xB0;
-+	addr = offset / 8;
-+	/* Can't store addresses any higher than that...
-+	   but we also don't have more than 16MB of memory, so it should be fine. */
-+	WARN_ON(addr > 0x1fffff);
-+	crtcext0 |= (!!(addr & (1<<20)))<<6;
- 	WREG_CRT(0x0d, (u8)(addr & 0xff));
- 	WREG_CRT(0x0c, (u8)(addr >> 8) & 0xff);
--	WREG_CRT(0xaf, (u8)(addr >> 16) & 0xf);
-+	WREG_ECRT(0x0, ((u8)(addr >> 16) & 0xf) | crtcext0);
- }
+@@ -439,13 +439,13 @@ static int mga_g200eh_set_plls(struct mg
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_SEL_MSK;
+ 		tmp |= MGA1064_PIX_CLK_CTL_SEL_PLL;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
  
+ 		WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 		tmp = RREG8(DAC_DATA);
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+ 		tmp &= ~MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-		WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++		WREG8(DAC_DATA, tmp);
+ 
+ 		vcount = RREG8(MGAREG_VCOUNT);
+ 
+@@ -515,12 +515,12 @@ static int mga_g200er_set_plls(struct mg
+ 	WREG8(DAC_INDEX, MGA1064_PIX_CLK_CTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_DIS;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL_CLK_DIS, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	WREG8(DAC_INDEX, MGA1064_REMHEADCTL);
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp |= MGA1064_REMHEADCTL_CLKDIS;
+-	WREG_DAC(MGA1064_REMHEADCTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	tmp = RREG8(MGAREG_MEM_MISC_READ);
+ 	tmp |= (0x3<<2) | 0xc0;
+@@ -530,7 +530,7 @@ static int mga_g200er_set_plls(struct mg
+ 	tmp = RREG8(DAC_DATA);
+ 	tmp &= ~MGA1064_PIX_CLK_CTL_CLK_DIS;
+ 	tmp |= MGA1064_PIX_CLK_CTL_CLK_POW_DOWN;
+-	WREG_DAC(MGA1064_PIX_CLK_CTL, tmp);
++	WREG8(DAC_DATA, tmp);
+ 
+ 	udelay(500);
  
 
 
