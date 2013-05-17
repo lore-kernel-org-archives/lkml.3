@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab3EQTGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 15:06:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43155 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab3EQTGR (ORCPT
+	id S1756676Ab3EQTIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 15:08:31 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45738 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756147Ab3EQTIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 15:06:17 -0400
-Message-ID: <51967F8E.2070400@oracle.com>
-Date: Fri, 17 May 2013 15:05:50 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130429 Thunderbird/17.0.5
+	Fri, 17 May 2013 15:08:30 -0400
+Message-ID: <5196802A.604@hurleysoftware.com>
+Date: Fri, 17 May 2013 15:08:26 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>
-CC: koverstreet@google.com, akpm@linux-foundation.org, tytso@mit.edu,
-        viro@zeniv.linux.org.uk, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: aio: use correct integer overflow checks when creation
- aio ctx
-References: <1368815034-844-1-git-send-email-sasha.levin@oracle.com> <20130517185317.GM1008@kvack.org>
-In-Reply-To: <20130517185317.GM1008@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
+References: <20130515105656.GI24440@8bytes.org> <5193A3B5.7010400@suse.cz> <20130515154753.GJ24440@8bytes.org> <5193D7E0.5010803@hurleysoftware.com> <20130515194835.GK24440@8bytes.org> <519415F3.6060103@hurleysoftware.com> <20130517114845.GA2602@8bytes.org>
+In-Reply-To: <20130517114845.GA2602@8bytes.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 02:53 PM, Benjamin LaHaise wrote:
-> On Fri, May 17, 2013 at 02:23:54PM -0400, Sasha Levin wrote:
->> Commit "aio: percpu reqs_available" added some math to the nr_requests
->> calculation, but didn't correct the overflow calculations to handle that.
+On 05/17/2013 07:48 AM, Joerg Roedel wrote:
+> Hi Peter,
+>
+> thanks for you explanations. They helped me to better understand what is
+> happening now.
+>
+> On Wed, May 15, 2013 at 07:10:43PM -0400, Peter Hurley wrote:
+>> On 05/15/2013 03:48 PM, Joerg Roedel wrote:
+>
+>> Agreed. Those functions look written for single-producer/single-consumer
+>> i/o model. (That's why I asked about CONFIG_CONSOLE_POLL=y as well because
+>> that doesn't look thread-safe either).
+>
+> Ok, I checked that. CONFIG_CONSOLE_POLL is on in that kernel.
+>
+>> Just to be clear here: there's a difference between a console driver
+>> and a tty driver.
 >>
->> This means that this:
+>> The console driver's write() method is serialized with the global
+>> console_lock() so parallel console writes are not possible.
 >>
->> 	#include <linux/aio_abi.h>
->> 	void main(void)
->> 	{
->> 	        aio_context_t ctx_idp;
->> 	        io_setup(0x80000001, &ctx_idp);
->> 	}
->>
->> Would trigger the newly added BUG() couple of lines after the overflow
->> checks.
-> 
-> This BUG() isn't in Linus' tree, and probably should be removed before 
-> it gets there.
+>> No such guarantee exists for the tty driver write() method, although it
+>> probably wouldn't be difficult to provide that guarantee (since the
+>> line discipline write() is already serialized by tty->atomic_write_lock).
+>
+> Okay, so it is safe to say that currently the drivers write() (and
+> put_chars()) functions need to expect to be called concurrently and
+> therefore they have to serialize themselves when they need it, right?
 
-It's not, it's in -next though.
+If only it were that simple :)
 
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> ---
->>  fs/aio.c | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/aio.c b/fs/aio.c
->> index 5b7ed78..0ae450a 100644
->> --- a/fs/aio.c
->> +++ b/fs/aio.c
->> @@ -411,7 +411,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
->>  
->>  	/* Prevent overflows */
->>  	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
->> -	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
->> +	    (nr_events > (0x10000000U / sizeof(struct kiocb))) ||
->> +	    (nr_events < num_possible_cpus() * 4)) {
->>  		pr_debug("ENOMEM: nr_events too high\n");
->>  		return ERR_PTR(-EINVAL);
-> 
-> This is completely wrong.  Enforcing a minimum needs to be done in a way 
-> that doesn't fail for existing users that potentially use a minimum 
-> smaller than what is newly required.  That is: an existing userland program 
-> that only requests 16 events must not fail because of changes to the kernel 
-> that increase the minimum number of requests.  So I have to NACK this patch 
-> as it stands.
+Yes, console write() and tty write() can be concurrent. However, the
+console write() can also be _recursive_ wrt. tty write(). This can happen,
+for example, if something oopses in the tty write() path.
 
-You didn't look around the context of the patch.
+If you review serial8250_console_write() in drivers/tty/serial/8250/8250_core.c,
+you'll see how some of this is worked around.
 
-Couple of lines before that check, this happens:
+But looking at this from a wider perspective, the goal should be
+to limit the overlap as much as possible.
 
-        nr_events = max(nr_events, num_possible_cpus() * 4);
-        nr_events *= 2;
-
-The check I've added would only make sense if nr_events wrapped around, not if
-nr_events was originally smaller than (num_possible_cpus() * 4).
+Regards,
+Peter Hurley
 
 
-Thanks,
-Sasha
 
