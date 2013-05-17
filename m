@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab3EQCwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 22:52:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:44848 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab3EQCwl (ORCPT
+	id S1753094Ab3EQCxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 22:53:50 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:34683 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab3EQCxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 22:52:41 -0400
-X-Spam-Score: -100.8
-Message-ID: <51959B45.30207@asianux.com>
-Date: Fri, 17 May 2013 10:51:49 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 16 May 2013 22:53:49 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, vgoyal@redhat.com,
+        akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+References: <20130515090507.28109.28956.stgit@localhost6.localdomain6>
+	<51957469.2000008@zytor.com>
+Date: Thu, 16 May 2013 19:53:31 -0700
+In-Reply-To: <51957469.2000008@zytor.com> (H. Peter Anvin's message of "Thu,
+	16 May 2013 17:06:01 -0700")
+Message-ID: <87y5bee2qc.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/workqueue.c: need call device_remove_file() when
- failure occurs after called device_create_file()
-References: <51922D30.8000809@asianux.com> <20130514151752.GB6795@mtj.dyndns.org> <5192EFE0.4040903@asianux.com> <5193277A.3040506@asianux.com> <20130515212228.GE26222@htj.dyndns.org> <51945384.9060308@asianux.com> <51945D90.8010600@asianux.com> <5194652B.4010209@asianux.com> <20130516175017.GA7171@mtj.dyndns.org>
-In-Reply-To: <20130516175017.GA7171@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19JEcUZxXkgpNmRlsrt7Ex6k3i5OKVgMzc=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0037]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v6 0/8] kdump, vmcore: support mmap() on /proc/vmcore
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 01:50 AM, Tejun Heo wrote:
-> Hey,
-> 
-> On Thu, May 16, 2013 at 12:48:43PM +0800, Chen Gang wrote:
->> __sysfs_remove_dir() remove all related things, but not deref the count.
->>
->> For __sysfs_remove_dir() ->
->>   ...
->>   sysfs_addrm_start()
->>   ...
->>   while() {
->>     ...
->>     sysfs_remove_one()  (not deref the related file)
->>   }
->>   sysfs_addrm_finish()  (will deref current dir)
->>
->> For device_remove_file() ->
->>   sysfs_remove_file() ->
->>     sysfs_hash_and_remove() ->
->>       ...
->>       sysfs_addrm_start()
->>       ...
->>       sysfs_remove_one() (not deref the current file)
->>       sysfs_addrm_finish()  (will deref current file)
->>
->>
->> So if not call device_remove_file() firstly, the all files under the
->> directory are removed, but the related resources are not released which
->> will cause resource leak.
-> 
-> Can you please be more specific on what gets leaked and if possible
-> fix it from sysfs side?
-> 
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-Oh, it is my fault. It is not the correct reason.
+> On 05/15/2013 02:05 AM, HATAYAMA Daisuke wrote:
+>> Currently, read to /proc/vmcore is done by read_oldmem() that uses
+>> ioremap/iounmap per a single page. For example, if memory is 1GB,
+>> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+>> times. This causes big performance degradation.
+>
+> read_oldmem() is fundamentally broken and unsafe.  It needs to be
+> unified with the plain /dev/mem code and any missing functionality fixed
+> instead of "let's just do a whole new driver".
 
-But I will continue to analyse why it should be add device_remove_file()
-before device_unregister() in all 'drivers/*' and 'arch/*' source files.
+That is completely and totally orthogonal to this change.
 
+read_oldmem may have problems but in practice on a large systems those
+problems are totally dwarfed by real life performance issues that come
+from playing too much with the page tables.
 
-Thanks.
--- 
-Chen Gang
+I really don't find bringing up whatever foundational issues you have
+with read_oldmem() appropriate or relevant here.
 
-Asianux Corporation
+Eric
