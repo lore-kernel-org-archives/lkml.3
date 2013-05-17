@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab3EQVri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54488 "EHLO
+	id S1757775Ab3EQVrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:47:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab3EQVrf (ORCPT
+	with ESMTP id S1757721Ab3EQVri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:35 -0400
+	Fri, 17 May 2013 17:47:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 09/50] xen/vcpu/pvhvm: Fix vcpu hotplugging hanging.
-Date: Fri, 17 May 2013 14:46:44 -0700
-Message-Id: <20130517213843.660682906@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [ 14/50] tracing: Fix leaks of filter preds
+Date: Fri, 17 May 2013 14:46:49 -0700
+Message-Id: <20130517213844.178770933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,108 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 7f1fc268c47491fd5e63548f6415fc8604e13003 upstream.
+commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
 
-If a user did:
+Special preds are created when folding a series of preds that
+can be done in serial. These are allocated in an ops field of
+the pred structure. But they were never freed, causing memory
+leaks.
 
-	echo 0 > /sys/devices/system/cpu/cpu1/online
-	echo 1 > /sys/devices/system/cpu/cpu1/online
+This was discovered using the kmemleak checker:
 
-we would (this a build with DEBUG enabled) get to:
-smpboot: ++++++++++++++++++++=_---CPU UP  1
-.. snip..
-smpboot: Stack at about ffff880074c0ff44
-smpboot: CPU1: has booted.
+unreferenced object 0xffff8800797fd5e0 (size 32):
+  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
+  hex dump (first 32 bytes):
+    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
+    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
+    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
+    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
+    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
+    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
+    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
+    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
+    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
+    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
+    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
+    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
+    [<ffffffffffffffff>] 0xffffffffffffffff
 
-and hang. The RCU mechanism would kick in an try to IPI the CPU1
-but the IPIs (and all other interrupts) would never arrive at the
-CPU1. At first glance at least. A bit digging in the hypervisor
-trace shows that (using xenanalyze):
-
-[vla] d4v1 vec 243 injecting
-   0.043163027 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043163639 --|x d4v1 vmentry cycles 1468
-]  0.043164913 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043164913 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-   0.043164913 --|x d4v1 intr_window vec 243 src 5(vector) intr f3
-]  0.043165526 --|x d4v1 vmentry cycles 1472
-]  0.043166800 --|x d4v1 vmexit exit_reason PENDING_INTERRUPT eip ffffffff81673254
-   0.043166800 --|x d4v1 inj_virq vec 243  real
-  [vla] d4v1 vec 243 injecting
-
-there is a pending event (subsequent debugging shows it is the IPI
-from the VCPU0 when smpboot.c on VCPU1 has done
-"set_cpu_online(smp_processor_id(), true)") and the guest VCPU1 is
-interrupted with the callback IPI (0xf3 aka 243) which ends up calling
-__xen_evtchn_do_upcall.
-
-The __xen_evtchn_do_upcall seems to do *something* but not acknowledge
-the pending events. And the moment the guest does a 'cli' (that is the
-ffffffff81673254 in the log above) the hypervisor is invoked again to
-inject the IPI (0xf3) to tell the guest it has pending interrupts.
-This repeats itself forever.
-
-The culprit was the per_cpu(xen_vcpu, cpu) pointer. At the bootup
-we set each per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] but later on use the VCPUOP_register_vcpu_info
-to register per-CPU  structures (xen_vcpu_setup).
-This is used to allow events for more than 32 VCPUs and for performance
-optimizations reasons.
-
-When the user performs the VCPU hotplug we end up calling the
-the xen_vcpu_setup once more. We make the hypercall which returns
--EINVAL as it does not allow multiple registration calls (and
-already has re-assigned where the events are being set). We pick
-the fallback case and set per_cpu(xen_vcpu, cpu) to point to the
-shared_info->vcpu_info[vcpu] (which is a good fallback during bootup).
-However the hypervisor is still setting events in the register
-per-cpu structure (per_cpu(xen_vcpu_info, cpu)).
-
-As such when the events are set by the hypervisor (such as timer one),
-and when we iterate in __xen_evtchn_do_upcall we end up reading stale
-events from the shared_info->vcpu_info[vcpu] instead of the
-per_cpu(xen_vcpu_info, cpu) structures. Hence we never acknowledge the
-events that the hypervisor has set and the hypervisor keeps on reminding
-us to ack the events which we never do.
-
-The fix is simple. Don't on the second time when xen_vcpu_setup is
-called over-write the per_cpu(xen_vcpu, cpu) if it points to
-per_cpu(xen_vcpu_info).
-
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ kernel/trace/trace_events_filter.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -139,6 +139,21 @@ static void xen_vcpu_setup(int cpu)
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -777,7 +777,11 @@ static int filter_set_pred(struct event_
  
- 	BUG_ON(HYPERVISOR_shared_info == &xen_dummy_shared_info);
- 
-+	/*
-+	 * This path is called twice on PVHVM - first during bootup via
-+	 * smp_init -> xen_hvm_cpu_notify, and then if the VCPU is being
-+	 * hotplugged: cpu_up -> xen_hvm_cpu_notify.
-+	 * As we can only do the VCPUOP_register_vcpu_info once lets
-+	 * not over-write its result.
-+	 *
-+	 * For PV it is called during restore (xen_vcpu_restore) and bootup
-+	 * (xen_setup_vcpu_info_placement). The hotplug mechanism does not
-+	 * use this function.
-+	 */
-+	if (xen_hvm_domain()) {
-+		if (per_cpu(xen_vcpu, cpu) == &per_cpu(xen_vcpu_info, cpu))
-+			return;
-+	}
- 	if (cpu < MAX_VIRT_CPUS)
- 		per_cpu(xen_vcpu,cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
- 
+ static void __free_preds(struct event_filter *filter)
+ {
++	int i;
++
+ 	if (filter->preds) {
++		for (i = 0; i < filter->n_preds; i++)
++			kfree(filter->preds[i].ops);
+ 		kfree(filter->preds);
+ 		filter->preds = NULL;
+ 	}
 
 
