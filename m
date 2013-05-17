@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3EQLCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 07:02:10 -0400
-Received: from [213.199.154.187] ([213.199.154.187]:37900 "EHLO
-	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753940Ab3EQLCI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 07:02:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz9371I103dK542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
-From: Lu Jingchang-B35083 <B35083@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Subject: RE: [PATCH v3] clocksource: add MVF600 pit timer support
-Thread-Topic: [PATCH v3] clocksource: add MVF600 pit timer support
-Thread-Index: AQHOUgLKkKGGf9R2n0eRY3h+AwTdH5kH2KoAgADQtzA=
-Date: Fri, 17 May 2013 11:01:08 +0000
-Message-ID: <B56CDBE15CE27145A4B77D2D24263E851C9FBB@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1368684924-1560-1-git-send-email-b35083@freescale.com>
- <alpine.LFD.2.02.1305161214570.1388@ionos>
-In-Reply-To: <alpine.LFD.2.02.1305161214570.1388@ionos>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.27]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755739Ab3EQLDC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 07:03:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42321 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab3EQLDA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 07:03:00 -0400
+Date: Fri, 17 May 2013 12:02:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Philip Balister <philip@balister.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Message-ID: <20130517110241.GI1627@sirena.org.uk>
+References: <7c5e7537-6ed5-4622-a7a9-bf46820ef695@VA3EHSMHS033.ehs.local>
+ <519124D3.2040403@gmail.com>
+ <af51c63e-7ff1-4e73-9305-08309217ab38@TX2EHSMHS037.ehs.local>
+ <20130514164611.10068.46384@quantum>
+ <51927DEB.7090001@balister.org>
+ <20130515044604.GA24524@sirena.org.uk>
+ <51946082.1000606@codeaurora.org>
+ <5194F0C0.9020609@balister.org>
+ <20130516172605.GB1627@sirena.org.uk>
+ <1b69c011-cab5-4fde-a61d-7e2536208920@CH1EHSMHS003.ehs.local>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZOudaV4lSIjFTlHv"
+Content-Disposition: inline
+In-Reply-To: <1b69c011-cab5-4fde-a61d-7e2536208920@CH1EHSMHS003.ehs.local>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 212.183.132.60
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFC] clk: Introduce userspace clock driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--ZOudaV4lSIjFTlHv
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->-----Original Message-----
->From: Thomas Gleixner [mailto:tglx@linutronix.de]
->Sent: Thursday, May 16, 2013 10:05 PM
->To: Lu Jingchang-B35083
->Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
->john.stultz@linaro.org; shawn.guo@linaro.org; s.hauer@pengutronix.de
->Subject: Re: [PATCH v3] clocksource: add MVF600 pit timer support
->
->> +static int pit_set_next_event(unsigned long delta,
->> +				struct clock_event_device *unused) {
->> +	pit_timer_disable();
->> +	__raw_writel(delta - 1, clkevt_base + PITLDVAL);
->> +	pit_irq_acknowledge();
->> +	pit_timer_enable();
->
->It would be much more interesting to comment, why you need to acknowlegde
->the timer here.
-[Lu Jingchang-B35083] 
- The pit is a period load and count timer, ack here is to make sure the int flag is clear,
-I will check if the ack here is needed and remove the redundant code. Thanks!
->
->> +static irqreturn_t pit_timer_interrupt(int irq, void *dev_id) {
->> +	struct clock_event_device *evt = &clockevent_pit;
->> +
->> +	pit_irq_acknowledge();
->> +
->> +	if (clockevent_mode == CLOCK_EVT_MODE_ONESHOT)
->> +		pit_timer_disable();
->
->So in oneshot mode you do:
->
->     pit_irq_ack()
->     pit_timer_disable()
->     ....
->	set_next_event()
->  	  pit_timer_disable()
->	  write_new_value()
->	  pit_irq_ack()
->	  pit_timer_enable()
->
->Not really the most efficient way in the interrupt fast path, right?
-[Lu Jingchang-B35083] 
- The pit hardware doesn't support oneshot timer. So for oneshot mode event,
-software need to disable and enable the timer each time.
- The timers generate interrupt at periodic intervals, when enabled. The timers load the start
-values as specified in their LDVAL registers, count down to 0, generate an INT and then reload the respective
-start value again. Each time a timer reaches 0, it will set the interrupt flag.
-I will remove the redundant irq_ack.
-Thanks!
->
->> +	evt->event_handler(evt);
->> +
->> +	clockevents_config_and_register(&clockevent_pit, c, 0x100,
->> +0xffffff00);
->
->0x100 and 0xffffff00 ?? Random numbers pulled out of what?
-[Lu Jingchang-B35083] 
-It seems too small delta is not reasonable, and the max delta value is not sensible.
-So refer to some other platforms, I set it to 0x100-0xffffff00. I'm OK to set it to 0x2~0xffffffff.
-Thanks!
->
->> +
->> +	timer_base = of_iomap(np, 0);
->> +	WARN_ON(!timer_base);
->
->Great, timer_base is NULL and you just emit a warning and then proceed? So
->instead of either bailing out or crashing the machine right away you let
->it randomly die with the first access.
-[Lu Jingchang-B35083] 
-I will use BUG_ON() instead of WARN_ON(). Thanks!
->
->> +
->> +	clk_prepare_enable(pit_clk);
->
->And while you're worried about the core code sending you random crap, you
->assume that this call always succeeds.
-[Lu Jingchang-B35083] 
-I will check the return value for that call. Thanks!
+On Thu, May 16, 2013 at 11:55:45AM -0700, S=F6ren Brinkmann wrote:
+> On Thu, May 16, 2013 at 06:26:05PM +0100, Mark Brown wrote:
 
->> +	__raw_writel(0, clksrc_base + PITTCTRL);
->> +	__raw_writel(0xffffffff, clksrc_base + PITLDVAL);
->
->And of this? Why isn't the setup done in the relevant init functions?
-[Lu Jingchang-B35083] 
-I will move these to relevant init functions. Thanks!
+> > The binding should obviously be defined as a set of clocks rather than a
+> > single clock - something like how we specify regulators on PMICs
+> > probably makes sense.  Each clock can have its own properties.
 
+> For a device driver as clock consumer, the bindings etc. are well
+> defined. Just add the 'clocks' and 'clock-names' props and use the CCF.
 
+That's not really intended to be used for enumeration by the child,
+though - you'd at least need to define that the child looks through
+the same binding to figure out what clocks to request.
 
+--ZOudaV4lSIjFTlHv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRlg5JAAoJELSic+t+oim9sGMQAI6fZ9tF1kH8rNmPLw6SCsr9
+GPJEeNspAA87Of5KYMN4zNGFDbggRyN3RYzIlX6VIxQqqzTNTZFy/gQaZDTxU6+U
+dHBJtdWnJtIoCHyZ7PIcvwTop/hoP0QrSPoj4R6ecQlSYi6GNbVonC7vxgBn5cwU
+wUGf1OShGAok+jGxWjtMxNwy9B2SJgEKIOs3BavXq8PpuPYpnSQlSgj1LJm4lE1k
+jlYidvwcdYq//DBAo1XX9zE9vXOXjHWlR7K/ogXuWd+sM3zeCQ2aJ8zi5//q6KOa
+Pj+ujvV1t5FT3tRh5iwoznwmjMNc+3TKudD2Vr1ri+FNGskM2f4ASzJJyHOtAnPF
+ghGx9OQhbebAZwpJGtMolTcn4uRr6uJrlkeVVpBqJRVmkotcpos6m0vNKnFWyoCc
+SywctRyqeW5GO8W+gRVTHUZ/Flg4TEMpTJGQd18F1r4EEsgZIXLnEBYz2nHKgQw2
+kWb/XEfCGwdAxhXrMKTPLDfNu9MzMYjRqYaANe0qlNAhe7lAS3q+aYWvmgDy0cfL
+JegaEpsPqguEsjpSj96cWhFynYZ9qrfK2ucF+oBamyRkoiHZKF/k2XEgHQEIbIr3
+ihXafkfmU4xsIPi7Ud2GJRQ9davXHRlUguFZvvosedUDfmcPQ3uGAU1m8SFXYYG5
+idDXhnonIpKbFPmEIToS
+=mSci
+-----END PGP SIGNATURE-----
+
+--ZOudaV4lSIjFTlHv--
