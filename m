@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3EQVvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:51:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54822 "EHLO
+	id S932645Ab3EQVvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:51:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570Ab3EQVul (ORCPT
+	with ESMTP id S932550Ab3EQVuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:41 -0400
+	Fri, 17 May 2013 17:50:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Lucas De Marchi <lucas.demarchi@intel.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 33/33] usermodehelper: check subprocess_info->path != NULL
-Date: Fri, 17 May 2013 14:50:17 -0700
-Message-Id: <20130517214920.427338239@linuxfoundation.org>
+Subject: [ 31/33] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
+Date: Fri, 17 May 2013 14:50:15 -0700
+Message-Id: <20130517214920.230856837@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -28,45 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 264b83c07a84223f0efd0d1db9ccc66d6f88288f upstream.
+commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
 
-argv_split(empty_or_all_spaces) happily succeeds, it simply returns
-argc == 0 and argv[0] == NULL. Change call_usermodehelper_exec() to
-check sub_info->path != NULL to avoid the crash.
+When a 32 bit version of ipmitool is used on a 64 bit kernel, the
+ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
+incomplete data being retrieved in some cases, or other possible failures.
+Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
 
-This is the minimal fix, todo:
-
- - perhaps we should change argv_split() to return NULL or change the
-   callers.
-
- - kill or justify ->path[0] check
-
- - narrow the scope of helper_lock()
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kmod.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/char/ipmi/ipmi_devintf.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -421,6 +421,11 @@ int call_usermodehelper_exec(struct subp
- 	int retval = 0;
- 
- 	helper_lock();
-+	if (!sub_info->path) {
-+		retval = -EINVAL;
-+		goto out;
-+	}
+--- a/drivers/char/ipmi/ipmi_devintf.c
++++ b/drivers/char/ipmi/ipmi_devintf.c
+@@ -838,13 +838,25 @@ static long compat_ipmi_ioctl(struct fil
+ 		return ipmi_ioctl(filep, cmd, arg);
+ 	}
+ }
 +
- 	if (sub_info->path[0] == '\0')
- 		goto out;
++static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
++				       unsigned long arg)
++{
++	int ret;
++
++	mutex_lock(&ipmi_mutex);
++	ret = compat_ipmi_ioctl(filep, cmd, arg);
++	mutex_unlock(&ipmi_mutex);
++
++	return ret;
++}
+ #endif
  
+ static const struct file_operations ipmi_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+-	.compat_ioctl   = compat_ipmi_ioctl,
++	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
+ #endif
+ 	.open		= ipmi_open,
+ 	.release	= ipmi_release,
 
 
