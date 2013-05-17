@@ -1,54 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab3EQJrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 05:47:15 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12190 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3EQJrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 05:47:13 -0400
-Date: Fri, 17 May 2013 11:47:04 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: Robert Norris <robn@opera.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        linux-kernel@vger.kernel.org, Linux I2C <linux-i2c@vger.kernel.org>
-Subject: Re: PROBLEM: modprobe hang at startup (3.8.x, 3.9.x, IBM x3550)
-Message-ID: <20130517114704.442f1368@endymion.delvare>
-In-Reply-To: <5195F6C9.5050200@fold.natur.cuni.cz>
-References: <1368408152.29197.140661229821177.2C1CC406@webmail.messagingengine.com>
-	<20130514231626.GA12961@pyro.melbourne.osa>
-	<20130515112044.753bb7bb@endymion.delvare>
-	<20130515112741.GA23766@pyro.melbourne.osa>
-	<20130515214923.036dabdb@endymion.delvare>
-	<20130516034455.GA19452@pyro.melbourne.osa>
-	<20130517103622.5000d277@endymion.delvare>
-	<5195F6C9.5050200@fold.natur.cuni.cz>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755382Ab3EQJsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 05:48:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54894 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754093Ab3EQJsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 05:48:14 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>
+Cc: Theodore Tso <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/5] mm: Add tracepoints for LRU activation and insertions
+Date: Fri, 17 May 2013 10:48:03 +0100
+Message-Id: <1368784087-956-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1368784087-956-1-git-send-email-mgorman@suse.de>
+References: <1368784087-956-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 May 2013 11:22:17 +0200, Martin Mokrejs wrote:
-> Hi,
->   while you are chasing some problem with i2c_801 I would like to mention
-> that I never got an answer on the thread https://lkml.org/lkml/2013/1/23/405
-> about a kmemleak reported by kernel . Maybe this could give you a hint?
-> If these do not overlap I would be anyways glad to receive an answer via
-> the original thread I have started.
-> Thank you,
-> Martin
+Using these tracepoints it is possible to model LRU activity and the
+average residency of pages of different types. This can be used to
+debug problems related to premature reclaim of pages of particular
+types.
 
-I have no clue what the problem is nor how to investigate it, and in
-fact I strongly suspect that this is either a false positive or a
-problem in lower layers - driver core, sysfs etc. so nothing I can help
-with.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/trace/events/pagemap.h | 89 ++++++++++++++++++++++++++++++++++++++++++
+ mm/swap.c                      |  5 +++
+ 2 files changed, 94 insertions(+)
+ create mode 100644 include/trace/events/pagemap.h
 
-So until someone comes with an evidence that there is an actual memory
-leak in the i2c-i801 driver itself I'm not going to pay any attention
-to your report, sorry.
-
+diff --git a/include/trace/events/pagemap.h b/include/trace/events/pagemap.h
+new file mode 100644
+index 0000000..1c9fabd
+--- /dev/null
++++ b/include/trace/events/pagemap.h
+@@ -0,0 +1,89 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM pagemap
++
++#if !defined(_TRACE_PAGEMAP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_PAGEMAP_H
++
++#include <linux/tracepoint.h>
++#include <linux/mm.h>
++
++#define	PAGEMAP_MAPPED		0x0001u
++#define PAGEMAP_ANONYMOUS	0x0002u
++#define PAGEMAP_FILE		0x0004u
++#define PAGEMAP_SWAPCACHE	0x0008u
++#define PAGEMAP_SWAPBACKED	0x0010u
++#define PAGEMAP_MAPPEDDISK	0x0020u
++#define PAGEMAP_BUFFERS		0x0040u
++
++#define trace_pagemap_flags(page) ( \
++	(PageAnon(page)		? PAGEMAP_ANONYMOUS  : PAGEMAP_FILE) | \
++	(page_mapped(page)	? PAGEMAP_MAPPED     : 0) | \
++	(PageSwapCache(page)	? PAGEMAP_SWAPCACHE  : 0) | \
++	(PageSwapBacked(page)	? PAGEMAP_SWAPBACKED : 0) | \
++	(PageMappedToDisk(page)	? PAGEMAP_MAPPEDDISK : 0) | \
++	(page_has_private(page) ? PAGEMAP_BUFFERS    : 0) \
++	)
++
++TRACE_EVENT(mm_lru_insertion,
++
++	TP_PROTO(
++		struct page *page,
++		unsigned long pfn,
++		int lru,
++		unsigned long flags
++	),
++
++	TP_ARGS(page, pfn, lru, flags),
++
++	TP_STRUCT__entry(
++		__field(struct page *,	page	)
++		__field(unsigned long,	pfn	)
++		__field(int,		lru	)
++		__field(unsigned long,	flags	)
++	),
++
++	TP_fast_assign(
++		__entry->page	= page;
++		__entry->pfn	= pfn;
++		__entry->lru	= lru;
++		__entry->flags	= flags;
++	),
++
++	/* Flag format is based on page-types.c formatting for pagemap */
++	TP_printk("page=%p pfn=%lu lru=%d flags=%s%s%s%s%s%s",
++			__entry->page,
++			__entry->pfn,
++			__entry->lru,
++			__entry->flags & PAGEMAP_MAPPED		? "M" : " ",
++			__entry->flags & PAGEMAP_ANONYMOUS	? "a" : "f",
++			__entry->flags & PAGEMAP_SWAPCACHE	? "s" : " ",
++			__entry->flags & PAGEMAP_SWAPBACKED	? "b" : " ",
++			__entry->flags & PAGEMAP_MAPPEDDISK	? "d" : " ",
++			__entry->flags & PAGEMAP_BUFFERS	? "B" : " ")
++);
++
++TRACE_EVENT(mm_lru_activate,
++
++	TP_PROTO(struct page *page, unsigned long pfn),
++
++	TP_ARGS(page, pfn),
++
++	TP_STRUCT__entry(
++		__field(struct page *,	page	)
++		__field(unsigned long,	pfn	)
++	),
++
++	TP_fast_assign(
++		__entry->page	= page;
++		__entry->pfn	= pfn;
++	),
++
++	/* Flag format is based on page-types.c formatting for pagemap */
++	TP_printk("page=%p pfn=%lu", __entry->page, __entry->pfn)
++
++);
++
++#endif /* _TRACE_PAGEMAP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/mm/swap.c b/mm/swap.c
+index dfd7d71..53c9ceb 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -34,6 +34,9 @@
+ 
+ #include "internal.h"
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/pagemap.h>
++
+ /* How many pages do we try to swap or page in/out together? */
+ int page_cluster;
+ 
+@@ -384,6 +387,7 @@ static void __activate_page(struct page *page, struct lruvec *lruvec,
+ 		SetPageActive(page);
+ 		lru += LRU_ACTIVE;
+ 		add_page_to_lru_list(page, lruvec, lru);
++		trace_mm_lru_activate(page, page_to_pfn(page));
+ 
+ 		__count_vm_event(PGACTIVATE);
+ 		update_page_reclaim_stat(lruvec, file, 1);
+@@ -808,6 +812,7 @@ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
+ 		SetPageActive(page);
+ 	add_page_to_lru_list(page, lruvec, lru);
+ 	update_page_reclaim_stat(lruvec, file, active);
++	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
+ }
+ 
+ /*
 -- 
-Jean Delvare
+1.8.1.4
+
