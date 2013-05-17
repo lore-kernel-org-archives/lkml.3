@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3EQWHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:07:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54518 "EHLO
+	id S1757771Ab3EQWHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:07:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54512 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab3EQVrk (ORCPT
+	with ESMTP id S1757736Ab3EQVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:40 -0400
+	Fri, 17 May 2013 17:47:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 17/50] ath9k: fix key allocation error handling for powersave keys
-Date: Fri, 17 May 2013 14:46:52 -0700
-Message-Id: <20130517213844.499995223@linuxfoundation.org>
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 16/50] powerpc: Bring all threads online prior to migration/hibernation
+Date: Fri, 17 May 2013 14:46:51 -0700
+Message-Id: <20130517213844.400706058@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,52 +27,253 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 upstream.
+commit 120496ac2d2d60aee68d3123a68169502a85f4b5 upstream.
 
-If no keycache slots are available, ath_key_config can return -ENOSPC.
-If the key index is not checked for errors, it can lead to logspam that
-looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
-This can cause follow-up errors if the invalid keycache index gets
-used for tx.
+This patch brings online all threads which are present but not online
+prior to migration/hibernation.  After migration/hibernation those
+threads are taken back offline.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+During migration/hibernation all online CPUs must call H_JOIN, this is
+required by the hypervisor.  Without this patch, threads that are offline
+(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
+deadlocked (all threads either JOIN'd or CEDE'd).
+
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/rtas.h          |    2 
+ arch/powerpc/kernel/rtas.c               |  113 +++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/pseries/suspend.c |   22 ++++++
+ 3 files changed, 137 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1711,6 +1711,7 @@ static int ath9k_sta_add(struct ieee8021
- 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
- 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
- 	struct ieee80211_key_conf ps_key = { };
-+	int key;
+--- a/arch/powerpc/include/asm/rtas.h
++++ b/arch/powerpc/include/asm/rtas.h
+@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsig
+ extern void rtas_initialize(void);
+ extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
+ extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
++extern int rtas_online_cpus_mask(cpumask_var_t cpus);
++extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
+ extern int rtas_ibm_suspend_me(struct rtas_args *);
  
- 	ath_node_attach(sc, sta, vif);
+ struct rtc_time;
+--- a/arch/powerpc/kernel/rtas.c
++++ b/arch/powerpc/kernel/rtas.c
+@@ -19,6 +19,7 @@
+ #include <linux/init.h>
+ #include <linux/capability.h>
+ #include <linux/delay.h>
++#include <linux/cpu.h>
+ #include <linux/smp.h>
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+@@ -808,6 +809,95 @@ static void rtas_percpu_suspend_me(void
+ 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
+ }
  
-@@ -1718,7 +1719,9 @@ static int ath9k_sta_add(struct ieee8021
- 	    vif->type != NL80211_IFTYPE_AP_VLAN)
++enum rtas_cpu_state {
++	DOWN,
++	UP,
++};
++
++#ifndef CONFIG_SMP
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	if (!cpumask_empty(cpus)) {
++		cpumask_clear(cpus);
++		return -EINVAL;
++	} else
++		return 0;
++}
++#else
++/* On return cpumask will be altered to indicate CPUs changed.
++ * CPUs with states changed will be set in the mask,
++ * CPUs with status unchanged will be unset in the mask. */
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	int cpu;
++	int cpuret = 0;
++	int ret = 0;
++
++	if (cpumask_empty(cpus))
++		return 0;
++
++	for_each_cpu(cpu, cpus) {
++		switch (state) {
++		case DOWN:
++			cpuret = cpu_down(cpu);
++			break;
++		case UP:
++			cpuret = cpu_up(cpu);
++			break;
++		}
++		if (cpuret) {
++			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
++					__func__,
++					((state == UP) ? "up" : "down"),
++					cpu, cpuret);
++			if (!ret)
++				ret = cpuret;
++			if (state == UP) {
++				/* clear bits for unchanged cpus, return */
++				cpumask_shift_right(cpus, cpus, cpu);
++				cpumask_shift_left(cpus, cpus, cpu);
++				break;
++			} else {
++				/* clear bit for unchanged cpu, continue */
++				cpumask_clear_cpu(cpu, cpus);
++			}
++		}
++	}
++
++	return ret;
++}
++#endif
++
++int rtas_online_cpus_mask(cpumask_var_t cpus)
++{
++	int ret;
++
++	ret = rtas_cpu_state_change_mask(UP, cpus);
++
++	if (ret) {
++		cpumask_var_t tmp_mask;
++
++		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
++			return ret;
++
++		/* Use tmp_mask to preserve cpus mask from first failure */
++		cpumask_copy(tmp_mask, cpus);
++		rtas_offline_cpus_mask(tmp_mask);
++		free_cpumask_var(tmp_mask);
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(rtas_online_cpus_mask);
++
++int rtas_offline_cpus_mask(cpumask_var_t cpus)
++{
++	return rtas_cpu_state_change_mask(DOWN, cpus);
++}
++EXPORT_SYMBOL(rtas_offline_cpus_mask);
++
+ int rtas_ibm_suspend_me(struct rtas_args *args)
+ {
+ 	long state;
+@@ -815,6 +905,8 @@ int rtas_ibm_suspend_me(struct rtas_args
+ 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
+ 	struct rtas_suspend_me_data data;
+ 	DECLARE_COMPLETION_ONSTACK(done);
++	cpumask_var_t offline_mask;
++	int cpuret;
+ 
+ 	if (!rtas_service_present("ibm,suspend-me"))
+ 		return -ENOSYS;
+@@ -838,11 +930,24 @@ int rtas_ibm_suspend_me(struct rtas_args
  		return 0;
+ 	}
  
--	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
-+	key = ath_key_config(common, vif, sta, &ps_key);
-+	if (key > 0)
-+		an->ps_key = key;
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	atomic_set(&data.working, 0);
+ 	atomic_set(&data.done, 0);
+ 	atomic_set(&data.error, 0);
+ 	data.token = rtas_token("ibm,suspend-me");
+ 	data.complete = &done;
++
++	/* All present CPUs must be online */
++	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
++	cpuret = rtas_online_cpus_mask(offline_mask);
++	if (cpuret) {
++		pr_err("%s: Could not bring present CPUs online.\n", __func__);
++		atomic_set(&data.error, cpuret);
++		goto out;
++	}
++
+ 	stop_topology_update();
  
- 	return 0;
+ 	/* Call function on all CPUs.  One of us will make the
+@@ -858,6 +963,14 @@ int rtas_ibm_suspend_me(struct rtas_args
+ 
+ 	start_topology_update();
+ 
++	/* Take down CPUs not online prior to suspend */
++	cpuret = rtas_offline_cpus_mask(offline_mask);
++	if (cpuret)
++		pr_warn("%s: Could not restore CPUs to offline state.\n",
++				__func__);
++
++out:
++	free_cpumask_var(offline_mask);
+ 	return atomic_read(&data.error);
  }
-@@ -1735,6 +1738,7 @@ static void ath9k_del_ps_key(struct ath_
- 	    return;
+ #else /* CONFIG_PPC_PSERIES */
+--- a/arch/powerpc/platforms/pseries/suspend.c
++++ b/arch/powerpc/platforms/pseries/suspend.c
+@@ -16,6 +16,7 @@
+   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+   */
  
- 	ath_key_delete(common, &ps_key);
-+	an->ps_key = 0;
++#include <linux/cpu.h>
+ #include <linux/delay.h>
+ #include <linux/suspend.h>
+ #include <linux/stat.h>
+@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct de
+ 			       struct device_attribute *attr,
+ 			       const char *buf, size_t count)
+ {
++	cpumask_var_t offline_mask;
+ 	int rc;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	stream_id = simple_strtoul(buf, NULL, 16);
+ 
+ 	do {
+@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct de
+ 	} while (rc == -EAGAIN);
+ 
+ 	if (!rc) {
++		/* All present CPUs must be online */
++		cpumask_andnot(offline_mask, cpu_present_mask,
++				cpu_online_mask);
++		rc = rtas_online_cpus_mask(offline_mask);
++		if (rc) {
++			pr_err("%s: Could not bring present CPUs online.\n",
++					__func__);
++			goto out;
++		}
++
+ 		stop_topology_update();
+ 		rc = pm_suspend(PM_SUSPEND_MEM);
+ 		start_topology_update();
++
++		/* Take down CPUs not online prior to suspend */
++		if (!rtas_offline_cpus_mask(offline_mask))
++			pr_warn("%s: Could not restore CPUs to offline "
++					"state.\n", __func__);
+ 	}
+ 
+ 	stream_id = 0;
+ 
+ 	if (!rc)
+ 		rc = count;
++out:
++	free_cpumask_var(offline_mask);
+ 	return rc;
  }
  
- static int ath9k_sta_remove(struct ieee80211_hw *hw,
 
 
