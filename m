@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab3EQJEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 05:04:09 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27592 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab3EQJEF (ORCPT
+	id S1754264Ab3EQJFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 05:05:01 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:47947 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab3EQJE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 05:04:05 -0400
-Message-ID: <5195F265.4000603@huawei.com>
-Date: Fri, 17 May 2013 17:03:33 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Fri, 17 May 2013 05:04:59 -0400
+Date: Fri, 17 May 2013 11:04:50 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1756541549.20130517110450@eikelenboom.it>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [media] cx25821 regression from 3.9: BUG: bad unlock balance detected!
+In-Reply-To: <201305171025.24166.hverkuil@xs4all.nl>
+References: <1139404719.20130516194142@eikelenboom.it> <201305171025.24166.hverkuil@xs4all.nl>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: <linux-fsdevel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: (cred_guard_mutex vs seq->lock) INFO: possible circular locking dependency
- detected
-Content-Type: text/plain; charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[  130.287724] ======================================================
-[  130.287732] [ INFO: possible circular locking dependency detected ]
-[  130.287742] 3.10.0-rc1-0.7-default+ #9 Not tainted
-[  130.287749] -------------------------------------------------------
-[  130.287758] trinity-child3/11061 is trying to acquire lock:
-[  130.287766]  (&p->lock){+.+.+.}, at: [<ffffffff811a3ed0>] seq_read+0x40/0x410
-[  130.287784]
-[  130.287784] but task is already holding lock:
-[  130.287794]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81183f77>] prepare_bprm_creds+0x37/0x80
-[  130.287812]
-[  130.287812] which lock already depends on the new lock.
-[  130.287812]
-[  130.287826]
-[  130.287826] the existing dependency chain (in reverse order) is:
-[  130.287837]
-[  130.287837] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
-[  130.287851]        [<ffffffff810aa49c>] lock_acquire+0xdc/0x110
-[  130.287862]        [<ffffffff814994cc>] mutex_lock_killable_nested+0x4c/0x420
-[  130.287876]        [<ffffffff8103cd24>] mm_access+0x34/0xc0
-[  130.287886]        [<ffffffff811e5d71>] m_start+0x71/0x180
-[  130.287897]        [<ffffffff811a3f2b>] seq_read+0x9b/0x410
-[  130.287907]        [<ffffffff8117d558>] vfs_read+0xc8/0x130
-[  130.287919]        [<ffffffff8117dbf4>] SyS_read+0x64/0xa0
-[  130.287929]        [<ffffffff814a6682>] system_call_fastpath+0x16/0x1b
-[  130.287941]
-[  130.287941] -> #0 (&p->lock){+.+.+.}:
-[  130.287953]        [<ffffffff810a9ffd>] __lock_acquire+0x14dd/0x18a0
-[  130.287963]        [<ffffffff810aa49c>] lock_acquire+0xdc/0x110
-[  130.287973]        [<ffffffff81498d20>] mutex_lock_nested+0x40/0x390
-[  130.287984]        [<ffffffff811a3ed0>] seq_read+0x40/0x410
-[  130.287993]        [<ffffffff811e6f1f>] proc_reg_read+0x4f/0x80
-[  130.288004]        [<ffffffff8117d558>] vfs_read+0xc8/0x130
-[  130.288013]        [<ffffffff81184369>] kernel_read+0x49/0x60
-[  130.288023]        [<ffffffff8118446a>] prepare_binprm+0xea/0x180
-[  130.288033]        [<ffffffff811850bb>] do_execve_common+0x48b/0x6e0
-[  130.288044]        [<ffffffff811853d9>] do_execve+0x39/0x40
-[  130.288054]        [<ffffffff81185427>] SyS_execve+0x47/0x70
-[  130.288063]        [<ffffffff814a6c79>] stub_execve+0x69/0xa0
-[  130.288074]
-[  130.288074] other info that might help us debug this:
-[  130.288074]
-[  130.288088]  Possible unsafe locking scenario:
-[  130.288088]
-[  130.288098]        CPU0                    CPU1
-[  130.288105]        ----                    ----
-[  130.288111]   lock(&sig->cred_guard_mutex);
-[  130.288120]                                lock(&p->lock);
-[  130.288130]                                lock(&sig->cred_guard_mutex);
-[  130.288140]   lock(&p->lock);
-[  130.288147]
-[  130.288147]  *** DEADLOCK ***
-[  130.288147]
-[  130.288160] 1 lock held by trinity-child3/11061:
-[  130.288167]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff81183f77>] prepare_bprm_creds+0x37/0x80
-[  130.288184]
-[  130.288184] stack backtrace:
-[  130.288195] CPU: 3 PID: 11061 Comm: trinity-child3 Not tainted 3.10.0-rc1-0.7-default+ #9
-[  130.288205] Hardware name: Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA              , BIOS CTSAV036 04/27/2011
-[  130.288217]  ffffffff81e51fa0 ffff880bf6cb5b18 ffffffff8149845c ffff880bf6cb5b58
-[  130.288231]  ffffffff810a7183 0000000000000001 0000000000000000 0000000000000001
-[  130.288244]  0000000000000000 ffff880bf8be2680 00000000002e2188 ffff880bf6cb5c38
-[  130.288257] Call Trace:
-[  130.288266]  [<ffffffff8149845c>] dump_stack+0x19/0x1d
-[  130.288276]  [<ffffffff810a7183>] print_circular_bug+0x223/0x330
-[  130.288286]  [<ffffffff810a9ffd>] __lock_acquire+0x14dd/0x18a0
-[  130.288296]  [<ffffffff810aa49c>] lock_acquire+0xdc/0x110
-[  130.288306]  [<ffffffff811a3ed0>] ? seq_read+0x40/0x410
-[  130.288317]  [<ffffffff81498d20>] mutex_lock_nested+0x40/0x390
-[  130.288327]  [<ffffffff811a3ed0>] ? seq_read+0x40/0x410
-[  130.288337]  [<ffffffff811a3ed0>] seq_read+0x40/0x410
-[  130.288347]  [<ffffffff8149d3fb>] ? _raw_spin_unlock+0x2b/0x40
-[  130.288360]  [<ffffffff811971cf>] ? dput+0x9f/0x230
-[  130.288369]  [<ffffffff811e6f1f>] proc_reg_read+0x4f/0x80
-[  130.288380]  [<ffffffff8117d558>] vfs_read+0xc8/0x130
-[  130.288389]  [<ffffffff81184369>] kernel_read+0x49/0x60
-[  130.288399]  [<ffffffff8118446a>] prepare_binprm+0xea/0x180
-[  130.288409]  [<ffffffff811850bb>] do_execve_common+0x48b/0x6e0
-[  130.288419]  [<ffffffff81184d4f>] ? do_execve_common+0x11f/0x6e0
-[  130.288430]  [<ffffffff811853d9>] do_execve+0x39/0x40
-[  130.288440]  [<ffffffff81185427>] SyS_execve+0x47/0x70
-[  130.288450]  [<ffffffff814a6c79>] stub_execve+0x69/0xa0
+
+Friday, May 17, 2013, 10:25:24 AM, you wrote:
+
+> On Thu May 16 2013 19:41:42 Sander Eikelenboom wrote:
+>> Hi Hans / Mauro,
+>> 
+>> With 3.10.0-rc1 (including the cx25821 changes from Hans), I get the bug below which wasn't present with 3.9.
+
+> How do I reproduce this? I've tried to, but I can't make this happen.
+
+> Looking at the code I can't see how it could hit this bug anyway.
+
+I'm using "motion" to grab and process 6 from the video streams of the card i have (card with 8 inputs).
+It seems the cx25821 underwent quite some changes between 3.9 and 3.10.
+
+And in the past there have been some more locking issues around mmap and media devices, although they seem to appear as circular locking dependencies and with different devices.
+   - http://www.mail-archive.com/linux-media@vger.kernel.org/msg46217.html
+   - Under kvm: http://www.spinics.net/lists/linux-media/msg63322.html
+
+- Perhaps that running in a VM could have to do with it ?
+   - The driver on 3.9 occasionaly gives this, probably latency related (but continues to work):
+     cx25821: cx25821_video_wakeup: 2 buffers handled (should be 1)
+
+     Could it be something double unlocking in that path ?
+
+- Is there any extra debugging i could enable that could pinpoint the issue ?
+
+
+--
+
+Sander
+
+
+
+> Regards,
+
+>         Hans
+
+>> 
+>> --
+>> Sander
+>> 
+>> 
+>> [   53.004968] =====================================
+>> [   53.004968] [ BUG: bad unlock balance detected! ]
+>> [   53.004968] 3.10.0-rc1-20130516-jens+ #1 Not tainted
+>> [   53.004968] -------------------------------------
+>> [   53.004968] motion/3328 is trying to release lock (&dev->lock) at:
+>> [   53.004968] [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
+>> [   53.004968] but there are no more locks to release!
+>> [   53.004968]
+>> [   53.004968] other info that might help us debug this:
+>> [   53.004968] 1 lock held by motion/3328:
+>> [   53.004968]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81156cae>] vm_munmap+0x3e/0x70
+>> [   53.004968]
+>> [   53.004968] stack backtrace:
+>> [   53.004968] CPU: 1 PID: 3328 Comm: motion Not tainted 3.10.0-rc1-20130516-jens+ #1
+>> [   53.004968] Hardware name: Xen HVM domU, BIOS 4.3-unstable 05/16/2013
+>> [   53.004968]  ffffffff819be5f9 ffff88002ac35c58 ffffffff819b9029 ffff88002ac35c88
+>> [   53.004968]  ffffffff810e615e ffff88002ac35cb8 ffff88002b7c18a8 ffffffff819be5f9
+>> [   53.004968]  00000000ffffffff ffff88002ac35d28 ffffffff810eb17e ffffffff810e7ba5
+>> [   53.004968] Call Trace:
+>> [   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
+>> [   53.004968]  [<ffffffff819b9029>] dump_stack+0x19/0x1b
+>> [   53.004968]  [<ffffffff810e615e>] print_unlock_imbalance_bug+0xfe/0x110
+>> [   53.004968]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
+>> [   53.004968]  [<ffffffff810eb17e>] lock_release_non_nested+0x1ce/0x320
+>> [   53.004968]  [<ffffffff810e7ba5>] ? debug_check_no_locks_freed+0x105/0x1b0
+>> [   53.353529]  [<ffffffff819be5f9>] ? mutex_unlock+0x9/0x10
+>> [   53.353529]  [<ffffffff810eb3cc>] lock_release+0xfc/0x250
+>> [   53.353529]  [<ffffffff819be4b2>] __mutex_unlock_slowpath+0xb2/0x1f0
+>> [   53.353529]  [<ffffffff819be5f9>] mutex_unlock+0x9/0x10
+>> [   53.353529]  [<ffffffff81711105>] videobuf_waiton+0x55/0x230
+>> [   53.353529]  [<ffffffff8114d052>] ? tlb_finish_mmu+0x32/0x50
+>> [   53.353529]  [<ffffffff81154a46>] ? unmap_region+0xc6/0x100
+>> [   53.353529]  [<ffffffff81172e05>] ? kmem_cache_free+0x195/0x230
+>> [   53.353529]  [<ffffffff8172d3d9>] cx25821_free_buffer+0x49/0xa0
+>> [   53.353529]  [<ffffffff8172f939>] cx25821_buffer_release+0x9/0x10
+>> [   53.353529]  [<ffffffff81712c35>] videobuf_vm_close+0xc5/0x160
+>> [   53.353529]  [<ffffffff81154aa5>] remove_vma+0x25/0x60
+>> [   53.353529]  [<ffffffff81156b67>] do_munmap+0x307/0x410
+>> [   53.353529]  [<ffffffff81156cbc>] vm_munmap+0x4c/0x70
+>> [   53.353529]  [<ffffffff81157c09>] SyS_munmap+0x9/0x10
+>> [   53.353529]  [<ffffffff819c20a9>] system_call_fastpath+0x16/0x1b
+>> 
+
+
