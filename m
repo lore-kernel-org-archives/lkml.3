@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3EQBqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 21:46:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48590 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab3EQBql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 21:46:41 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <51958BC0.207@jp.fujitsu.com>
-Date: Fri, 17 May 2013 10:45:36 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752720Ab3EQBw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 21:52:57 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49931 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632Ab3EQBw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 16 May 2013 21:52:56 -0400
+Date: Fri, 17 May 2013 02:52:54 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1305170250100.15866@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
-        cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
-        riel@redhat.com, walken@google.com, hughd@google.com,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH v6 0/8] kdump, vmcore: support mmap() on /proc/vmcore
-References: <20130515090507.28109.28956.stgit@localhost6.localdomain6> <51957469.2000008@zytor.com>
-In-Reply-To: <51957469.2000008@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/05/17 9:06), H. Peter Anvin wrote:
-> On 05/15/2013 02:05 AM, HATAYAMA Daisuke wrote:
->> Currently, read to /proc/vmcore is done by read_oldmem() that uses
->> ioremap/iounmap per a single page. For example, if memory is 1GB,
->> ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
->> times. This causes big performance degradation.
->
-> read_oldmem() is fundamentally broken and unsafe.  It needs to be
-> unified with the plain /dev/mem code and any missing functionality fixed
-> instead of "let's just do a whole new driver".
->
-> 	-hpa
 
-Do you mean range_is_allowed should be extended so that it checks 
-according to memory map passed from the 1st kernel?
+Hi Linus,
 
-BTW, read request to read_oldmem via read_vmcore and mmap on some part 
-of the 1st kernel, seems safe since it's always restrected to within the 
-memory map.
+Fix for radeon nomodeset regression, old radeon interface cliprects fix, 2 
+qxl crasher fixes, and a couple of minor cleanups.
 
-Or is there other missing point?
+I may have a new AMD hw support branch next week, its one of those doesn't 
+affect anything existing just adds new support, I'll see how it 
+shapes up and I might ask you to take it, just thought I'd warn in 
+advance.
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Dave.
 
+The following changes since commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e:
+
+  drm/mgag200: Fix framebuffer base address programming (2013-05-13 12:17:32 +1000)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux.git drm-next
+
+for you to fetch changes up to e9ced8e040ebe40e9953db90acbe7d0b58702ebb:
+
+  drm/radeon: restore nomodeset operation (v2) (2013-05-17 11:47:07 +1000)
+
+----------------------------------------------------------------
+Dave Airlie (6):
+      drm: remove unused wrapper macros
+      drm/qxl: fix ioport interactions for kernel submitted commands.
+      qxl: drop unused variable.
+      drm/qxl: drop active_user_framebuffer as its unneeded
+      qxl: fix bug with object eviction and update area
+      drm/radeon: restore nomodeset operation (v2)
+
+Kees Cook (1):
+      drm/radeon: check incoming cliprects pointer
+
+ drivers/gpu/drm/qxl/qxl_cmd.c        | 29 +++++++++++++++++++----------
+ drivers/gpu/drm/qxl/qxl_display.c    | 17 ++++-------------
+ drivers/gpu/drm/qxl/qxl_drv.h        |  7 -------
+ drivers/gpu/drm/qxl/qxl_ioctl.c      |  1 +
+ drivers/gpu/drm/radeon/r300_cmdbuf.c |  2 +-
+ drivers/gpu/drm/radeon/radeon_drv.c  | 12 +++++++++++-
+ include/drm/drm_os_linux.h           |  9 ---------
+ 7 files changed, 36 insertions(+), 41 deletions(-)
