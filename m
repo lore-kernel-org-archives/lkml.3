@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab3EQSaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:30:06 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:57907 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab3EQSaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:30:04 -0400
-Date: Fri, 17 May 2013 14:30:03 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Zach Brown <zab@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, jmoyer@redhat.com,
-        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
-Message-ID: <20130517183003.GL1008@kvack.org>
-References: <20130205120137.GG21389@suse.de> <20130206004234.GD11197@blaptop> <20130206095617.GN21389@suse.de> <5190AE4F.4000103@cn.fujitsu.com> <20130513091902.GP11497@suse.de> <5191B5B3.7080406@cn.fujitsu.com> <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <20130517181708.GG318@lenny.home.zabbo.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517181708.GG318@lenny.home.zabbo.net>
-User-Agent: Mutt/1.4.2.2i
+	id S1756189Ab3EQSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:33:56 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:52921 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3EQSdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:33:55 -0400
+Message-ID: <51967811.7090709@gmail.com>
+Date: Fri, 17 May 2013 11:33:53 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, david.daney@cavium.com
+Subject: Re: [PATCH] arm64: extable: sort the exception table at build time
+References: <1368809021-25130-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1368809021-25130-1-git-send-email-will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 11:17:08AM -0700, Zach Brown wrote:
-> > I ended up working on this a bit today, and managed to cobble together 
-> > something that somewhat works -- please see the patch below.
-> 
-> Just some quick observations:
-> 
-> > +	ctx->ctx_file = anon_inode_getfile("[aio]", &aio_ctx_fops, ctx, O_RDWR);
-> > +	if (IS_ERR(ctx->ctx_file)) {
-> > +		ctx->ctx_file = NULL;
-> > +		return -EAGAIN;
-> > +	}
-> 
-> It's too bad that aio contexts will now be accounted against the filp
-> limits (get_empty_filp -> files_stat.max_files, etc). 
+On 05/17/2013 09:43 AM, Will Deacon wrote:
+> As is done for other architectures, sort the exception table at
+> build-time rather than during boot.
+>
+> Since sortextable appears to be a standalone C program relying on the
+> host elf.h to provide EM_AARCH64, I've had to add a conditional check in
+> order to allow cross-compilation on machines that aren't running a
+> bleeding-edge libc-dev.
+>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>   arch/arm64/Kconfig              |  1 +
+>   arch/arm64/kernel/vmlinux.lds.S | 15 +++++++--------
+>   scripts/sortextable.c           |  5 +++++
+>   3 files changed, 13 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 48347dc..fb8fd90 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -7,6 +7,7 @@ config ARM64
+>   	select ARM_AMBA
+>   	select ARM_ARCH_TIMER
+>   	select ARM_GIC
+> +	select BUILDTIME_EXTABLE_SORT
+>   	select CLONE_BACKWARDS
+>   	select COMMON_CLK
+>   	select GENERIC_CLOCKEVENTS
+> diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+> index 3fae2be..3d527726 100644
+> --- a/arch/arm64/kernel/vmlinux.lds.S
+> +++ b/arch/arm64/kernel/vmlinux.lds.S
+> @@ -57,6 +57,13 @@ SECTIONS
+>
+>   	RO_DATA(PAGE_SIZE)
+>
+> +	. = ALIGN(8);
+> +	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
+> +		__start___ex_table = .;
+> +		*(__ex_table)
+> +		__stop___ex_table = .;
+> +	}
+> +
+>   	_etext = .;			/* End of text and rodata section */
 
-Yeah, that is a downside of this approach.  It would be possible to to 
-do it with only an inode/address_space, but that would mean bypassing 
-do_mmap(), which is not worth considering.  If it is really an issue, we 
-could add a flag to bypass that limit since aio has its own.  
-anon_inode_getfile() as it stands is a major problem.
 
-> > +	for (i=0; i<nr_pages; i++) {
-> > +		struct page *page;
-> > +		void *ptr;
-> > +		page = find_or_create_page(ctx->ctx_file->f_inode->i_mapping,
-> > +					   i, GFP_KERNEL);
-> > +		if (!page) {
-> > +			break;
-> > +		}
-> > +		ptr = kmap(page);
-> > +		clear_page(ptr);
-> > +		kunmap(page);
-> > +		SetPageUptodate(page);
-> > +		SetPageDirty(page);
-> > +		unlock_page(page);
-> > +	}
-> 
-> If they're GFP_KERNEL then you don't need to kmap them.  But we probably
-> want to allocate with GFP_HIGHUSER and then use clear_user_highpage() to
-> zero them?
+You have moved this to rodata.
 
-Adding __GFP_ZERO would fix that too. The next respin will include that 
-change.  I also have to properly handle the mremap() case as well.
+o Will the runtime sort still work like this?
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+o Do we care?  Maybe not.
+
+David Daney
+
+
+>
+>   	. = ALIGN(PAGE_SIZE);
+> @@ -99,14 +106,6 @@ SECTIONS
+>   		READ_MOSTLY_DATA(64)
+>
+>   		/*
+> -		 * The exception fixup table (might need resorting at runtime)
+> -		 */
+> -		. = ALIGN(32);
+> -		__start___ex_table = .;
+> -		*(__ex_table)
+> -		__stop___ex_table = .;
+> -
+> -		/*
+>   		 * and the usual data section
+>   		 */
+>   		DATA_DATA
+> diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+> index 1f10e89..f9ce116 100644
+> --- a/scripts/sortextable.c
+> +++ b/scripts/sortextable.c
+> @@ -31,6 +31,10 @@
+>   #include <tools/be_byteshift.h>
+>   #include <tools/le_byteshift.h>
+>
+> +#ifndef EM_AARCH64
+> +#define EM_AARCH64	183
+> +#endif
+> +
+>   static int fd_map;	/* File descriptor for file being modified. */
+>   static int mmap_failed; /* Boolean flag. */
+>   static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
+> @@ -249,6 +253,7 @@ do_file(char const *const fname)
+>   		custom_sort = sort_relative_table;
+>   		break;
+>   	case EM_ARM:
+> +	case EM_AARCH64:
+>   	case EM_MIPS:
+>   		break;
+>   	}  /* end switch */
+>
+
