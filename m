@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab3EQVmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54370 "EHLO
+	id S1757432Ab3EQVmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:42:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54368 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab3EQViB (ORCPT
+	with ESMTP id S1757285Ab3EQViA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:01 -0400
+	Fri, 17 May 2013 17:38:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 089/102] ACPI / EC: Restart transaction even when the IBF flag set
-Date: Fri, 17 May 2013 14:36:44 -0700
-Message-Id: <20130517213253.616570884@linuxfoundation.org>
+        Chris Boot <bootc@bootc.net>, Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 088/102] target/iblock: Fix WCE=1 + DPOFUA=1 backend WRITE regression
+Date: Fri, 17 May 2013 14:36:43 -0700
+Message-Id: <20130517213253.527651373@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,58 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
+commit d2bdbee0d91a5d3ba2e439ce889e20bfe6fd4f1b upstream.
 
-The EC driver works abnormally with IBF flag always set.
-IBF means "The host has written a byte of data to the command
-or data port, but the embedded controller has not yet read it".
-If IBF is set in the EC status and not cleared, this will cause
-all subsequent EC requests to fail with a timeout error.
+This patch fixes a regression bug introduced in v3.9-rc1 where if the
+underlying struct block_device for a IBLOCK backend is configured with
+WCE=1 + DPOFUA=1 settings, the rw = WRITE assignment no longer occurs
+in iblock_execute_rw(), and rw = 0 is passed to iblock_submit_bios()
+in effect causing a READ bio operation to occur.
 
-Change the EC driver so that it doesn't refuse to restart a
-transaction if IBF is set in the status.  Also increase the
-number of transaction restarts to 5, as it turns out that 2
-is not sufficient in some cases.
+The offending commit is:
 
-This bug happens on several different machines (Asus V1S,
-Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
-Sony Vaio SR19VN and others).
+commit d0c8b259f8970d39354c1966853363345d401330
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Tue Jan 29 22:10:06 2013 -0800
 
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
-References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    target/iblock: Use backend REQ_FLUSH hint for WriteCacheEnabled status
+
+Note the WCE=1 + DPOFUA=0, WCE=0 + DPOFUA=1, and WCE=0 + DPOFUA=0 cases
+are not affected by this regression bug.
+
+Reported-by: Chris Boot <bootc@bootc.net>
+Tested-by: Chris Boot <bootc@bootc.net>
+Reported-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/target/target_core_iblock.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -223,7 +223,7 @@ static int ec_check_sci_sync(struct acpi
- static int ec_poll(struct acpi_ec *ec)
- {
- 	unsigned long flags;
--	int repeat = 2; /* number of command restarts */
-+	int repeat = 5; /* number of command restarts */
- 	while (repeat--) {
- 		unsigned long delay = jiffies +
- 			msecs_to_jiffies(ec_delay);
-@@ -241,8 +241,6 @@ static int ec_poll(struct acpi_ec *ec)
- 			}
- 			advance_transaction(ec, acpi_ec_read_status(ec));
- 		} while (time_before(jiffies, delay));
--		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
--			break;
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->lock, flags);
- 		start_transaction(ec);
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -679,6 +679,8 @@ iblock_execute_rw(struct se_cmd *cmd)
+ 				rw = WRITE_FUA;
+ 			else if (!(q->flush_flags & REQ_FLUSH))
+ 				rw = WRITE_FUA;
++			else
++				rw = WRITE;
+ 		} else {
+ 			rw = WRITE;
+ 		}
 
 
