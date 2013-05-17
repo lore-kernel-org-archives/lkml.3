@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab3EQVho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54233 "EHLO
+	id S1757750Ab3EQWLy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:11:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54261 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757028Ab3EQVhj (ORCPT
+	with ESMTP id S1757156Ab3EQVho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:39 -0400
+	Fri, 17 May 2013 17:37:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 058/102] tcp: reset timer after any SYNACK retransmit
-Date: Fri, 17 May 2013 14:36:13 -0700
-Message-Id: <20130517213250.483791897@linuxfoundation.org>
+Subject: [ 055/102] sfc: Fix naming of MTD partitions for FPGA bitfiles
+Date: Fri, 17 May 2013 14:36:10 -0700
+Message-Id: <20130517213250.163278297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -29,46 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit cd75eff64dae8856afbf6ef0f0ca3c145465d8e0 ]
+[ Upstream commit 89cc80a44b7c320e08599cb86f6aef0ead8986a1 ]
 
-Linux immediately returns SYNACK on (spurious) SYN retransmits, but
-keeps the SYNACK timer running independently. Thus the timer may
-fire right after the SYNACK retransmit and causes a SYN-SYNACK
-cross-fire burst.
+efx_mcdi_get_board_cfg() uses a buffer for the firmware response that
+is only large enough to hold subtypes for the originally defined set
+of NVRAM partitions.  Longer responses are truncated, and we may read
+off the end of the buffer when copying out subtypes for additional
+partitions.  In particular, this can result in the MTD partition for
+an FPGA bitfile being named e.g. 'eth5 sfc_fpga:00' when it should be
+'eth5 sfc_fpga:01'.  This means the firmware update tool (sfupdate)
+can't tell which bitfile should be written to the partition.
 
-Adopt the fast retransmit/recovery idea in established state by
-re-arming the SYNACK timer after the fast (SYNACK) retransmit. The
-timer may fire late up to 500ms due to the current SYNACK timer wheel,
-but it's OK to be conservative when network is congested. Eric's new
-listener design should address this issue.
+Correct the response buffer size.
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_minisocks.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/sfc/mcdi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_minisocks.c
-+++ b/net/ipv4/tcp_minisocks.c
-@@ -583,8 +583,13 @@ struct sock *tcp_check_req(struct sock *
- 		 *
- 		 * Note that even if there is new data in the SYN packet
- 		 * they will be thrown away too.
-+		 *
-+		 * Reset timer after retransmitting SYNACK, similar to
-+		 * the idea of fast retransmit in recovery.
- 		 */
--		inet_rtx_syn_ack(sk, req);
-+		if (!inet_rtx_syn_ack(sk, req))
-+			req->expires = min(TCP_TIMEOUT_INIT << req->num_timeout,
-+					   TCP_RTO_MAX) + jiffies;
- 		return NULL;
- 	}
- 
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -667,7 +667,7 @@ fail:
+ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 			   u16 *fw_subtype_list, u32 *capabilities)
+ {
+-	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMIN];
++	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMAX];
+ 	size_t outlen, offset, i;
+ 	int port_num = efx_port_num(efx);
+ 	int rc;
 
 
