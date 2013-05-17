@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab3EQWLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54460 "EHLO
+	id S1758109Ab3EQWL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:11:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54276 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab3EQVr3 (ORCPT
+	with ESMTP id S1757166Ab3EQVhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:29 -0400
+	Fri, 17 May 2013 17:37:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 02/50] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
-Date: Fri, 17 May 2013 14:46:37 -0700
-Message-Id: <20130517213842.749488872@linuxfoundation.org>
+        Matthew Whitehead <tedheadster@gmail.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 068/102] 3c59x: fix freeing nonexistent resource on driver unload
+Date: Fri, 17 May 2013 14:36:23 -0700
+Message-Id: <20130517213251.514644043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
-References: <20130517213842.447809965@linuxfoundation.org>
+In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
+References: <20130517213244.277411019@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
-broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
-not fully understood, but it seems to be related to the probe order. SPI
-communication to the panel driver (spi1.2) fails unless the touchscreen
-(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
-was converted to a platform driver, it resulted in that the devices are
-probed immediately after the board registers them in the order they are
-listed in the board file.
+[ Upstream commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 ]
 
-Fix the issue by moving the touchscreen before the panel in the SPI
-device list.
+When unloading the driver that drives an EISA board, a message similar to the
+following one is displayed:
 
-The patch fixes the following failure:
+Trying to free nonexistent resource <0000000000013000-000000000001301f>
 
-[    1.260955] acx565akm spi1.2: invalid display ID
-[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
-[    1.273071] omapdss CORE error: driver probe failed: -19
+Then an user is unable to reload the driver because the resource it requested in
+the previous load hasn't been freed. This happens most probably due to a typo in
+vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
+of 'edev->base_addr'...
 
-Tested-by: Sebastian Reichel <sre@debian.org>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Pali Rohár <pali.rohar@gmail.com>
-Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+Tested-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/3com/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -63,11 +63,11 @@
- #define RX51_TSC2005_RESET_GPIO         104
- #define RX51_TSC2005_IRQ_GPIO           100
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -951,7 +951,7 @@ static int vortex_eisa_remove(struct dev
  
--/* list all spi devices here */
-+/* List all SPI devices here. Note that the list/probe order seems to matter! */
- enum {
- 	RX51_SPI_WL1251,
--	RX51_SPI_MIPID,		/* LCD panel */
- 	RX51_SPI_TSC2005,	/* Touch Controller */
-+	RX51_SPI_MIPID,		/* LCD panel */
- };
+ 	unregister_netdev(dev);
+ 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
+-	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
++	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
  
- static struct wl12xx_platform_data wl1251_pdata;
+ 	free_netdev(dev);
+ 	return 0;
 
 
