@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab3EQWJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:09:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54472 "EHLO
+	id S932110Ab3EQWKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:10:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757659Ab3EQVrb (ORCPT
+	with ESMTP id S1757632Ab3EQVra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:31 -0400
+	Fri, 17 May 2013 17:47:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 06/50] dm snapshot: fix error return code in snapshot_ctr
-Date: Fri, 17 May 2013 14:46:41 -0700
-Message-Id: <20130517213843.294383446@linuxfoundation.org>
+        Wang YanQing <udknight@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 05/50] ALSA: HDA: Fix Oops caused by dereference NULL pointer
+Date: Fri, 17 May 2013 14:46:40 -0700
+Message-Id: <20130517213843.158033406@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,30 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Wang YanQing <udknight@gmail.com>
 
-commit 09e8b813897a0f85bb401435d009228644c81214 upstream.
+commit 2195b063f6609e4c6268f291683902f25eaf9aa6 upstream.
 
-Return -ENOMEM instead of success if unable to allocate pending
-exception mempool in snapshot_ctr.
+The interrupt handler azx_interrupt will call azx_update_rirb,
+which may call snd_hda_queue_unsol_event, snd_hda_queue_unsol_event
+will dereference chip->bus pointer.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+The problem is we alloc chip->bus in azx_codec_create
+which will be called after we enable IRQ and enable unsolicited
+event in azx_probe.
+
+This will cause Oops due dereference NULL pointer. I meet it, good luck:)
+
+[Rearranged the NULL check before the tracepoint and added another
+ NULL check of bus->workq -- tiwai]
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-snap.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/hda_codec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -1117,6 +1117,7 @@ static int snapshot_ctr(struct dm_target
- 	s->pending_pool = mempool_create_slab_pool(MIN_IOS, pending_cache);
- 	if (!s->pending_pool) {
- 		ti->error = "Could not allocate mempool for pending exceptions";
-+		r = -ENOMEM;
- 		goto bad_pending_pool;
- 	}
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -617,6 +617,9 @@ int snd_hda_queue_unsol_event(struct hda
+ 	struct hda_bus_unsolicited *unsol;
+ 	unsigned int wp;
  
++	if (!bus || !bus->workq)
++		return 0;
++
+ 	trace_hda_unsol_event(bus, res, res_ex);
+ 	unsol = bus->unsol;
+ 	if (!unsol)
 
 
