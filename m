@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab3EQVlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:41:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54391 "EHLO
+	id S1757306Ab3EQViB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:38:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757315Ab3EQViE (ORCPT
+	with ESMTP id S1757107Ab3EQVhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:04 -0400
+	Fri, 17 May 2013 17:37:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 084/102] cpufreq / intel_pstate: use lowest requested max performance
-Date: Fri, 17 May 2013 14:36:39 -0700
-Message-Id: <20130517213253.131450330@linuxfoundation.org>
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 065/102] packet: tpacket_v3: do not trigger bug() on wrong header status
+Date: Fri, 17 May 2013 14:36:20 -0700
+Message-Id: <20130517213251.225459638@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -28,70 +28,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit d8f469e9cff3bc4a6317d923e9506be046aa7bdc upstream.
+From: Daniel Borkmann <dborkman@redhat.com>
 
-There are two ways that the maximum p-state can be clamped, via a
-policy change and via the sysfs file.
+[ Upstream commit 8da3056c04bfc5f69f840ab038a38389e2de8189 ]
 
-The acpi-thermal driver adjusts the p-state policy in response to
-thermal events.  These changes override the users settings at the
-moment.
+Jakub reported that it is fairly easy to trigger the BUG() macro
+from user space with TPACKET_V3's RX_RING by just giving a wrong
+header status flag. We already had a similar situation in commit
+7f5c3e3a80e6654 (``af_packet: remove BUG statement in
+tpacket_destruct_skb'') where this was the case in the TX_RING
+side that could be triggered from user space. So really, don't use
+BUG() or BUG_ON() unless there's really no way out, and i.e.
+don't use it for consistency checking when there's user space
+involved, no excuses, especially not if you're slapping the user
+with WARN + dump_stack + BUG all at once. The two functions are
+of concern:
 
-Use the lowest of the two requested values this ensures that we will
-not exceed the requested pstate from either mechanism.
+  prb_retire_current_block() [when block status != TP_STATUS_KERNEL]
+  prb_open_block() [when block_status != TP_STATUS_KERNEL]
 
-Reported-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Calls to prb_open_block() are guarded by ealier checks if block_status
+is really TP_STATUS_KERNEL (racy!), but the first one BUG() is easily
+triggable from user space. System behaves still stable after they are
+removed. Also remove that yoda condition entirely, since it's already
+guarded.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/cpufreq/intel_pstate.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ net/packet/af_packet.c |   53 +++++++++++++++++++++----------------------------
+ 1 file changed, 23 insertions(+), 30 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -117,6 +117,8 @@ struct perf_limits {
- 	int min_perf_pct;
- 	int32_t max_perf;
- 	int32_t min_perf;
-+	int max_policy_pct;
-+	int max_sysfs_pct;
- };
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -693,36 +693,33 @@ static void prb_open_block(struct tpacke
  
- static struct perf_limits limits = {
-@@ -125,6 +127,8 @@ static struct perf_limits limits = {
- 	.max_perf = int_tofp(1),
- 	.min_perf_pct = 0,
- 	.min_perf = 0,
-+	.max_policy_pct = 100,
-+	.max_sysfs_pct = 100,
- };
+ 	smp_rmb();
  
- static inline void pid_reset(struct _pid *pid, int setpoint, int busy,
-@@ -295,7 +299,8 @@ static ssize_t store_max_perf_pct(struct
- 	if (ret != 1)
- 		return -EINVAL;
+-	if (likely(TP_STATUS_KERNEL == BLOCK_STATUS(pbd1))) {
++	/* We could have just memset this but we will lose the
++	 * flexibility of making the priv area sticky
++	 */
  
--	limits.max_perf_pct = clamp_t(int, input, 0 , 100);
-+	limits.max_sysfs_pct = clamp_t(int, input, 0 , 100);
-+	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
- 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
- 	return count;
+-		/* We could have just memset this but we will lose the
+-		 * flexibility of making the priv area sticky
+-		 */
+-		BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
+-		BLOCK_NUM_PKTS(pbd1) = 0;
+-		BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		getnstimeofday(&ts);
+-		h1->ts_first_pkt.ts_sec = ts.tv_sec;
+-		h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
+-		pkc1->pkblk_start = (char *)pbd1;
+-		pkc1->nxt_offset = pkc1->pkblk_start + BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+-		BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
+-		pbd1->version = pkc1->version;
+-		pkc1->prev = pkc1->nxt_offset;
+-		pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
+-		prb_thaw_queue(pkc1);
+-		_prb_refresh_rx_retire_blk_timer(pkc1);
++	BLOCK_SNUM(pbd1) = pkc1->knxt_seq_num++;
++	BLOCK_NUM_PKTS(pbd1) = 0;
++	BLOCK_LEN(pbd1) = BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+ 
+-		smp_wmb();
++	getnstimeofday(&ts);
+ 
+-		return;
+-	}
++	h1->ts_first_pkt.ts_sec = ts.tv_sec;
++	h1->ts_first_pkt.ts_nsec = ts.tv_nsec;
++
++	pkc1->pkblk_start = (char *)pbd1;
++	pkc1->nxt_offset = pkc1->pkblk_start + BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
+ 
+-	WARN(1, "ERROR block:%p is NOT FREE status:%d kactive_blk_num:%d\n",
+-		pbd1, BLOCK_STATUS(pbd1), pkc1->kactive_blk_num);
+-	dump_stack();
+-	BUG();
++	BLOCK_O2FP(pbd1) = (__u32)BLK_PLUS_PRIV(pkc1->blk_sizeof_priv);
++	BLOCK_O2PRIV(pbd1) = BLK_HDR_LEN;
++
++	pbd1->version = pkc1->version;
++	pkc1->prev = pkc1->nxt_offset;
++	pkc1->pkblk_end = pkc1->pkblk_start + pkc1->kblk_size;
++
++	prb_thaw_queue(pkc1);
++	_prb_refresh_rx_retire_blk_timer(pkc1);
++
++	smp_wmb();
  }
-@@ -641,8 +646,9 @@ static int intel_pstate_set_policy(struc
- 	limits.min_perf_pct = clamp_t(int, limits.min_perf_pct, 0 , 100);
- 	limits.min_perf = div_fp(int_tofp(limits.min_perf_pct), int_tofp(100));
  
--	limits.max_perf_pct = policy->max * 100 / policy->cpuinfo.max_freq;
--	limits.max_perf_pct = clamp_t(int, limits.max_perf_pct, 0 , 100);
-+	limits.max_policy_pct = policy->max * 100 / policy->cpuinfo.max_freq;
-+	limits.max_policy_pct = clamp_t(int, limits.max_policy_pct, 0 , 100);
-+	limits.max_perf_pct = min(limits.max_policy_pct, limits.max_sysfs_pct);
- 	limits.max_perf = div_fp(int_tofp(limits.max_perf_pct), int_tofp(100));
+ /*
+@@ -813,10 +810,6 @@ static void prb_retire_current_block(str
+ 		prb_close_block(pkc, pbd, po, status);
+ 		return;
+ 	}
+-
+-	WARN(1, "ERROR-pbd[%d]:%p\n", pkc->kactive_blk_num, pbd);
+-	dump_stack();
+-	BUG();
+ }
  
- 	if (policy->policy == CPUFREQ_POLICY_PERFORMANCE) {
+ static int prb_curr_blk_in_use(struct tpacket_kbdq_core *pkc,
 
 
