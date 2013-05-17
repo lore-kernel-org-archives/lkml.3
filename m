@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab3EQWUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:20:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54059 "EHLO
+	id S1756951Ab3EQWUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:20:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756940Ab3EQVhW (ORCPT
+	with ESMTP id S1756944Ab3EQVhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:22 -0400
+	Fri, 17 May 2013 17:37:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, John Stultz <john.stultz@linaro.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Tirupathi Reddy <tirupath@codeaurora.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 033/102] time: Revert ALWAYS_USE_PERSISTENT_CLOCK compile time optimizaitons
-Date: Fri, 17 May 2013 14:35:48 -0700
-Message-Id: <20130517213247.817587821@linuxfoundation.org>
+Subject: [ 034/102] timer: Dont reinitialize the cpu base lock during CPU_UP_PREPARE
+Date: Fri, 17 May 2013 14:35:49 -0700
+Message-Id: <20130517213247.907368417@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -29,102 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Tirupathi Reddy <tirupath@codeaurora.org>
 
-commit b4f711ee03d28f776fd2324fd0bd999cc428e4d2 upstream.
+commit 42a5cf46cd56f46267d2a9fcf2655f4078cd3042 upstream.
 
-Kay Sievers noted that the ALWAYS_USE_PERSISTENT_CLOCK config,
-which enables some minor compile time optimization to avoid
-uncessary code in mostly the suspend/resume path could cause
-problems for userland.
+An inactive timer's base can refer to a offline cpu's base.
 
-In particular, the dependency for RTC_HCTOSYS on
-!ALWAYS_USE_PERSISTENT_CLOCK, which avoids setting the time
-twice and simplifies suspend/resume, has the side effect
-of causing the /sys/class/rtc/rtcN/hctosys flag to always be
-zero, and this flag is commonly used by udev to setup the
-/dev/rtc symlink to /dev/rtcN, which can cause pain for
-older applications.
+In the current code, cpu_base's lock is blindly reinitialized each
+time a CPU is brought up. If a CPU is brought online during the period
+that another thread is trying to modify an inactive timer on that CPU
+with holding its timer base lock, then the lock will be reinitialized
+under its feet. This leads to following SPIN_BUG().
 
-While the udev rules could use some work to be less fragile,
-breaking userland should strongly be avoided. Additionally
-the compile time optimizations are fairly minor, and the code
-being optimized is likely to be reworked in the future, so
-lets revert this change.
+<0> BUG: spinlock already unlocked on CPU#3, kworker/u:3/1466
+<0> lock: 0xe3ebe000, .magic: dead4ead, .owner: kworker/u:3/1466, .owner_cpu: 1
+<4> [<c0013dc4>] (unwind_backtrace+0x0/0x11c) from [<c026e794>] (do_raw_spin_unlock+0x40/0xcc)
+<4> [<c026e794>] (do_raw_spin_unlock+0x40/0xcc) from [<c076c160>] (_raw_spin_unlock+0x8/0x30)
+<4> [<c076c160>] (_raw_spin_unlock+0x8/0x30) from [<c009b858>] (mod_timer+0x294/0x310)
+<4> [<c009b858>] (mod_timer+0x294/0x310) from [<c00a5e04>] (queue_delayed_work_on+0x104/0x120)
+<4> [<c00a5e04>] (queue_delayed_work_on+0x104/0x120) from [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c)
+<4> [<c04eae00>] (sdhci_msm_bus_voting+0x88/0x9c) from [<c04d8780>] (sdhci_disable+0x40/0x48)
+<4> [<c04d8780>] (sdhci_disable+0x40/0x48) from [<c04bf300>] (mmc_release_host+0x4c/0xb0)
+<4> [<c04bf300>] (mmc_release_host+0x4c/0xb0) from [<c04c7aac>] (mmc_sd_detect+0x90/0xfc)
+<4> [<c04c7aac>] (mmc_sd_detect+0x90/0xfc) from [<c04c2504>] (mmc_rescan+0x7c/0x2c4)
+<4> [<c04c2504>] (mmc_rescan+0x7c/0x2c4) from [<c00a6a7c>] (process_one_work+0x27c/0x484)
+<4> [<c00a6a7c>] (process_one_work+0x27c/0x484) from [<c00a6e94>] (worker_thread+0x210/0x3b0)
+<4> [<c00a6e94>] (worker_thread+0x210/0x3b0) from [<c00aad9c>] (kthread+0x80/0x8c)
+<4> [<c00aad9c>] (kthread+0x80/0x8c) from [<c000ea80>] (kernel_thread_exit+0x0/0x8)
 
-Reported-by: Kay Sievers <kay@vrfy.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Feng Tang <feng.tang@intel.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Link: http://lkml.kernel.org/r/1366828376-18124-1-git-send-email-john.stultz@linaro.org
+As an example, this particular crash occurred when CPU #3 is executing
+mod_timer() on an inactive timer whose base is refered to offlined CPU
+#2.  The code locked the timer_base corresponding to CPU #2. Before it
+could proceed, CPU #2 came online and reinitialized the spinlock
+corresponding to its base. Thus now CPU #3 held a lock which was
+reinitialized. When CPU #3 finally ended up unlocking the old cpu_base
+corresponding to CPU #2, we hit the above SPIN_BUG().
+
+CPU #0		CPU #3				       CPU #2
+------		-------				       -------
+.....		 ......				      <Offline>
+		mod_timer()
+		 lock_timer_base
+		   spin_lock_irqsave(&base->lock)
+
+cpu_up(2)	 .....				        ......
+							init_timers_cpu()
+....		 .....				    	spin_lock_init(&base->lock)
+.....		   spin_unlock_irqrestore(&base->lock)  ......
+		   <spin_bug>
+
+Allocation of per_cpu timer vector bases is done only once under
+"tvec_base_done[]" check. In the current code, spinlock_initialization
+of base->lock isn't under this check. When a CPU is up each time the
+base lock is reinitialized. Move base spinlock initialization under
+the check.
+
+Signed-off-by: Tirupathi Reddy <tirupath@codeaurora.org>
+Link: http://lkml.kernel.org/r/1368520142-4136-1-git-send-email-tirupath@codeaurora.org
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig     |    1 -
- drivers/rtc/Kconfig  |    2 --
- include/linux/time.h |    4 ----
- kernel/time/Kconfig  |    5 -----
- 4 files changed, 12 deletions(-)
+ kernel/timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -107,7 +107,6 @@ config X86
- 	select GENERIC_CLOCKEVENTS_BROADCAST if X86_64 || (X86_32 && X86_LOCAL_APIC)
- 	select GENERIC_TIME_VSYSCALL if X86_64
- 	select KTIME_SCALAR if X86_32
--	select ALWAYS_USE_PERSISTENT_CLOCK
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
- 	select HAVE_CONTEXT_TRACKING if X86_64
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -20,7 +20,6 @@ if RTC_CLASS
- config RTC_HCTOSYS
- 	bool "Set system time from RTC on startup and resume"
- 	default y
--	depends on !ALWAYS_USE_PERSISTENT_CLOCK
- 	help
- 	  If you say yes here, the system time (wall clock) will be set using
- 	  the value read from a specified RTC device. This is useful to avoid
-@@ -29,7 +28,6 @@ config RTC_HCTOSYS
- config RTC_SYSTOHC
- 	bool "Set the RTC time based on NTP synchronization"
- 	default y
--	depends on !ALWAYS_USE_PERSISTENT_CLOCK
- 	help
- 	  If you say yes here, the system time (wall clock) will be stored
- 	  in the RTC specified by RTC_HCTOSYS_DEVICE approximately every 11
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -117,14 +117,10 @@ static inline bool timespec_valid_strict
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1678,12 +1678,12 @@ static int __cpuinit init_timers_cpu(int
+ 			boot_done = 1;
+ 			base = &boot_tvec_bases;
+ 		}
++		spin_lock_init(&base->lock);
+ 		tvec_base_done[cpu] = 1;
+ 	} else {
+ 		base = per_cpu(tvec_bases, cpu);
+ 	}
  
- extern bool persistent_clock_exist;
+-	spin_lock_init(&base->lock);
  
--#ifdef ALWAYS_USE_PERSISTENT_CLOCK
--#define has_persistent_clock()	true
--#else
- static inline bool has_persistent_clock(void)
- {
- 	return persistent_clock_exist;
- }
--#endif
- 
- extern void read_persistent_clock(struct timespec *ts);
- extern void read_boot_clock(struct timespec *ts);
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -12,11 +12,6 @@ config CLOCKSOURCE_WATCHDOG
- config ARCH_CLOCKSOURCE_DATA
- 	bool
- 
--# Platforms has a persistent clock
--config ALWAYS_USE_PERSISTENT_CLOCK
--	bool
--	default n
--
- # Timekeeping vsyscall support
- config GENERIC_TIME_VSYSCALL
- 	bool
+ 	for (j = 0; j < TVN_SIZE; j++) {
+ 		INIT_LIST_HEAD(base->tv5.vec + j);
 
 
