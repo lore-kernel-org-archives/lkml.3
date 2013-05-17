@@ -1,123 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3EQSnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:43:25 -0400
-Received: from forward10.mail.yandex.net ([77.88.61.49]:32780 "EHLO
-	forward10.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab3EQSnW (ORCPT
+	id S1756665Ab3EQSsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:48:04 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:34431 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755923Ab3EQSsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:43:22 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Fri, 17 May 2013 14:43:21 EDT
-Authentication-Results: smtp6.mail.yandex.net; dkim=pass header.i=@ya.ru
-Message-ID: <519678A2.5040509@ya.ru>
-Date: Fri, 17 May 2013 22:36:18 +0400
-From: Andrew Perepechko <anserper@ya.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 17 May 2013 14:48:02 -0400
+Message-ID: <51967B5D.4080701@hurleysoftware.com>
+Date: Fri, 17 May 2013 14:47:57 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Alexey Lyahkov <alexey.lyashkov@gmail.com>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Obey mark_page_accessed hint given by filesystems
- v3r1
-References: <1368784087-956-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1368784087-956-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: channing <chao.bi@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty_buffer: avoid race due to tty_buffer_free_all() being
+ misused
+References: <1368694762.2911.16.camel@bichao>  <5194D6F9.5000505@hurleysoftware.com> <1368772178.1876.31.camel@bichao>
+In-Reply-To: <1368772178.1876.31.camel@bichao>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel, thank you very much for the patches!
+On 05/17/2013 02:29 AM, channing wrote:
+> On Thu, 2013-05-16 at 08:54 -0400, Peter Hurley wrote:
+>> On 05/16/2013 04:59 AM, channing wrote:
+>>>
+>>> In tty_buffer.c, function tty_buffer_free_all() is used to remove
+>>> all buffers for a tty, although it's declared that it mustn't be called
+>>> when the tty is in use, it cannot guarantee that. we can observe some
+>>> device driver make use it by mistake, for example, while tty device is
+>>> releasing, the tty data forwarding is not stopped, then it might hit
+>>> the case that tty buffer is being used while tty_buffer_free_all()
+>>> free this tty buffer, and finally lead to random error at any places,
+>>> and it's not clear to debug.
+>>
+>> What kernel version?
+> 3.4
+>>
+>>> Although device driver could do better, it's simpler and safer to
+>>> strengthen protection in the view of tty buffer, by adding a tty->buf.lock
+>>> in tty_buffer_free_all() to avoid it racing with ongoing tty buffer
+>>> operations.
+>>
+>> Sorry, but this isn't correct.
+>>
+>> The driver cannot continue to perform i/o concurrently with
+>> tty_port_destroy().
+>>
+> Thanks for remind, 3.4 haven't tty_port_destroy(), the mainline has
+> changed the way to call tty_buffer_free_all().
+>
+>> If the concurrent use you're observing is with flush_to_ldisc(),
+>> that should be fixed in current mainline.
+>>
+> Yes, when calling flush_to_ldisc() in Kernel 3.4, we could observe the
+> tty buffer is corrupted, and dummped stack shows that
+> tty_buffer_free_all() was called before. Is it a known issue fixed in
+> old version? would you please tell me related patch to solve this
+> flush_to_ldisc() issue? Thanks very much.
 
-Unfortunately, it may take some time for us to test them,
-because currently we depend very much on an older (2.6.32-based)
-kernel.
+Hi Chao,
 
-Andrew
+Unfortunately, the fixes for flush_to_ldisc() continuing to
+run during, and even after, tty teardown have not been backported
+to stable kernels, mostly due to the extensive nature of the fixes.
 
-On 05/17/2013 01:48 PM, Mel Gorman wrote:
-> This series could still do with some Tested-by's from the original bug
-> reporters. Andrew Perepechko?
->
-> Changelog since V2
-> o Beef up the comments in a number of places			(akpm)
-> o Remove lru parameter from __lru_cache_add, lru_cache_add_lru	(akpm)
-> o Use congestion_wait instead of wait_on_page_writeback in case
->    of storage disconnects					(akpm)
->
-> Changelog since V1
-> o Add tracepoint to model age of page types			(mel)
->
-> Andrew Perepechko reported a problem whereby pages are being prematurely
-> evicted as the mark_page_accessed() hint is ignored for pages that are
-> currently on a pagevec -- http://www.spinics.net/lists/linux-ext4/msg37340.html .
-> Alexey Lyahkov and Robin Dong have also reported problems recently that
-> could be due to hot pages reaching the end of the inactive list too quickly
-> and be reclaimed.
->
-> Rather than addressing this on a per-filesystem basis, this series aims
-> to fix the mark_page_accessed() interface by deferring what LRU a page
-> is added to pagevec drain time and allowing mark_page_accessed() to call
-> SetPageActive on a pagevec page.
->
-> Patch 1 adds two tracepoints for LRU page activation and insertion. Using
-> 	these processes it's possible to build a model of pages in the
-> 	LRU that can be processed offline.
->
-> Patch 2 defers making the decision on what LRU to add a page to until when
-> 	the pagevec is drained.
->
-> Patch 3 searches the local pagevec for pages to mark PageActive on
-> 	mark_page_accessed. The changelog explains why only the local
-> 	pagevec is examined.
->
-> Patches 4 and 5 tidy up the API.
->
-> postmark, a dd-based test and fs-mark both single and threaded mode were
-> run but none of them showed any performance degradation or gain as a result
-> of the patch.
->
-> Using patch 1, I built a *very* basic model of the LRU to examine
-> offline what the average age of different page types on the LRU were in
-> milliseconds. Of course, capturing the trace distorts the test as it's
-> written to local disk but it does not matter for the purposes of this test.
-> The average age of pages in milliseconds were
->
-> 				    vanilla deferdrain
-> Average age mapped anon:               1454       1250
-> Average age mapped file:             127841     155552
-> Average age unmapped anon:               85        235
-> Average age unmapped file:            73633      38884
-> Average age unmapped buffers:         74054     116155
->
-> The LRU activity was mostly files which you'd expect for a dd-based
-> workload. Note that the average age of buffer pages is increased by the
-> series and it is expected this is due to the fact that the buffer pages are
-> now getting added to the active list when drained from the pagevecs. Note
-> that the average age of the unmapped file data is decreased as they are
-> still added to the inactive list and are reclaimed before the buffers. There
-> is no guarantee this is a universal win for all workloads and it would be
-> nice if the filesystem people gave some thought as to whether this decision
-> is generally a win or a loss.
->
->   fs/cachefiles/rdwr.c           |  30 +++---------
->   fs/nfs/dir.c                   |   7 +--
->   include/linux/pagevec.h        |  34 +-------------
->   include/linux/swap.h           |  11 +++--
->   include/trace/events/pagemap.h |  89 +++++++++++++++++++++++++++++++++++
->   mm/rmap.c                      |   7 +--
->   mm/swap.c                      | 103 ++++++++++++++++++++++++++---------------
->   mm/vmscan.c                    |   4 +-
->   8 files changed, 176 insertions(+), 109 deletions(-)
->   create mode 100644 include/trace/events/pagemap.h
->
+In fact, even in current mainline and linux-next this problem is
+still possible. Hopefully soon the remaining patches will be
+reviewed and merged into linux-next.
+
+For your reference, here is a link [1] to the patchset that was
+partially accepted for 3.10 (up through 'tty: Fix recursive
+deadlock in tty_perform_flush()')
+
+Regards,
+Peter Hurley
+
+[1] [PATCH v5 00/44] ldisc patchset
+http://www.gossamer-threads.com/lists/linux/kernel/1692114?do=post_view_flat
+
 
