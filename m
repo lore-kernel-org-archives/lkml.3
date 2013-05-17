@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3EQOKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 10:10:04 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:32890 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab3EQOKA (ORCPT
+	id S1756225Ab3EQOKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 10:10:44 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:44358 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158Ab3EQOKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 10:10:00 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: willy@linux.intel.com, keith.busch@intel.com, vishal.l.verma@intel.com
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] NVMe: Fix incompatible pointer type warnings
-Date: Fri, 17 May 2013 16:09:40 +0200
-Message-Id: <1368799780-2871-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 17 May 2013 10:10:43 -0400
+Message-ID: <51963A5E.6000300@gmail.com>
+Date: Fri, 17 May 2013 22:10:38 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
+To: Jiri Kosina <trivial@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [TRIVIAL PATCH] mm/sparse: Remove unused ret in sparse_index_init
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6a4d55146334 ("block: prep work for batch completion")
-added a struct batch_complete * as a third argument to bi_end_io.
-This patch adds the missing third argument to the nvme_bio_pair_endio
-function.
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Sparse output:
+The ret variable is not used in the function, so remove it and
+directly return 0 at the end of the function.
 
-drivers/block/nvme-core.c: In function ‘nvme_bio_split’:
-drivers/block/nvme-core.c:483:19: warning:
-	assignment from incompatible pointer type [enabled by default]
-drivers/block/nvme-core.c:484:19: warning:
-	assignment from incompatible pointer type [enabled by default]
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/block/nvme-core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/sparse.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 8efdfaa..9380133 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -413,7 +413,8 @@ struct nvme_bio_pair {
- 	atomic_t cnt;
- };
- 
--static void nvme_bio_pair_endio(struct bio *bio, int err)
-+static void nvme_bio_pair_endio(struct bio *bio, int err,
-+						struct batch_complete *batch)
+diff --git a/mm/sparse.c b/mm/sparse.c
+index 1c91f0d..9ac2f74 100644
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -79,7 +79,6 @@ static int __meminit sparse_index_init(unsigned long section_nr, int nid)
  {
- 	struct nvme_bio_pair *bp = bio->bi_private;
+ 	unsigned long root = SECTION_NR_TO_ROOT(section_nr);
+ 	struct mem_section *section;
+-	int ret = 0;
  
+ 	if (mem_section[root])
+ 		return -EEXIST;
+@@ -90,7 +89,7 @@ static int __meminit sparse_index_init(unsigned long section_nr, int nid)
+ 
+ 	mem_section[root] = section;
+ 
+-	return ret;
++	return 0;
+ }
+ #else /* !SPARSEMEM_EXTREME */
+ static inline int sparse_index_init(unsigned long section_nr, int nid)
 -- 
-1.7.10.4
-
+1.7.1
