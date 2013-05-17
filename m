@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756601Ab3EQSEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:04:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19209 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756567Ab3EQSE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:04:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,694,1363158000"; 
-   d="scan'208";a="243140198"
-Message-ID: <5196712D.40908@intel.com>
-Date: Fri, 17 May 2013 11:04:29 -0700
-From: Dave Jiang <dave.jiang@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1756621Ab3EQSGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:06:13 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:38337 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756567Ab3EQSGM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:06:12 -0400
+Message-ID: <5196718D.30904@hurleysoftware.com>
+Date: Fri, 17 May 2013 14:06:05 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jon Mason <jon.mason@intel.com>
-CC: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH] ioat: device control support
-References: <1368813227-29512-1-git-send-email-jon.mason@intel.com>
-In-Reply-To: <1368813227-29512-1-git-send-email-jon.mason@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexander Holler <holler@ahsoftware.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] tty: make sure a BUG is hit if tty_port will be destroyed
+ before tty
+References: <5195B561.3090503@ahsoftware.de> <1368774728-4817-1-git-send-email-holler@ahsoftware.de> <20130517153136.GC19541@kroah.com> <51965DC0.7030901@ahsoftware.de>
+In-Reply-To: <51965DC0.7030901@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Dave Jiang <dave.jiang@intel.com>
-
-On 05/17/2013 10:53 AM, Jon Mason wrote:
-> Add device control support for CBDMA v2 and v3 in the ioat driver.
-> This allows DMA engine clients to call into the ioat driver and issue a
-> DMA_TERMINATE_ALL.
+On 05/17/2013 12:41 PM, Alexander Holler wrote:
+> Am 17.05.2013 17:31, schrieb Greg Kroah-Hartman:
+>> On Fri, May 17, 2013 at 09:12:08AM +0200, Alexander Holler wrote:
+>>> tty depends on tty_port until tty_release() was called. Make sure a BUG
+>>> will be hit, if tty_port will be destroyed before tty.
+>>
+>> So you want to ensure that we crash a machine?  No, please never add
 >
-> Signed-off-by: Jon Mason <jon.mason@intel.com>
-> ---
->   drivers/dma/ioat/dma_v2.c |   22 ++++++++++++++++++++++
->   drivers/dma/ioat/dma_v3.c |   22 ++++++++++++++++++++++
->   2 files changed, 44 insertions(+)
+> Exactly. Let me quote myself:
 >
-> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-> index b925e1b..d373ee3 100644
-> --- a/drivers/dma/ioat/dma_v2.c
-> +++ b/drivers/dma/ioat/dma_v2.c
-> @@ -847,6 +847,27 @@ void ioat2_free_chan_resources(struct dma_chan *c)
->   	ioat->dmacount = 0;
->   }
->   
-> +static int ioat2_device_control(struct dma_chan *c, enum dma_ctrl_cmd cmd,
-> +				unsigned long arg)
-> +{
-> +	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
-> +	struct ioat_chan_common *chan = &ioat->base;
-> +
-> +	switch (cmd) {
-> +	case DMA_TERMINATE_ALL:
-> +		spin_lock_bh(&chan->cleanup_lock);
-> +		spin_lock_bh(&ioat->prep_lock);
-> +		ioat2_restart_channel(ioat);
-> +		spin_unlock_bh(&ioat->prep_lock);
-> +		spin_unlock_bh(&chan->cleanup_lock);
-> +		break;
-> +	default:
-> +		return -ENOSYS;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->   static ssize_t ring_size_show(struct dma_chan *c, char *page)
->   {
->   	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
-> @@ -896,6 +917,7 @@ int ioat2_dma_probe(struct ioatdma_device *device, int dca)
->   	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
->   	dma->device_free_chan_resources = ioat2_free_chan_resources;
->   	dma->device_tx_status = ioat_dma_tx_status;
-> +	dma->device_control = ioat2_device_control;
->   
->   	err = ioat_probe(device);
->   	if (err)
-> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-> index ca6ea9b..ca6ecdc 100644
-> --- a/drivers/dma/ioat/dma_v3.c
-> +++ b/drivers/dma/ioat/dma_v3.c
-> @@ -1833,6 +1833,27 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
->   	return err;
->   }
->   
-> +static int ioat3_device_control(struct dma_chan *c, enum dma_ctrl_cmd cmd,
-> +				unsigned long arg)
-> +{
-> +	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
-> +	struct ioat_chan_common *chan = &ioat->base;
-> +
-> +	switch (cmd) {
-> +	case DMA_TERMINATE_ALL:
-> +		spin_lock_bh(&chan->cleanup_lock);
-> +		spin_lock_bh(&ioat->prep_lock);
-> +		ioat3_restart_channel(ioat);
-> +		spin_unlock_bh(&ioat->prep_lock);
-> +		spin_unlock_bh(&chan->cleanup_lock);
-> +		break;
-> +	default:
-> +		return -ENOSYS;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->   static void ioat3_intr_quirk(struct ioatdma_device *device)
->   {
->   	struct dma_device *dma;
-> @@ -1878,6 +1899,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
->   	dma->device_issue_pending = ioat2_issue_pending;
->   	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
->   	dma->device_free_chan_resources = ioat2_free_chan_resources;
-> +	dma->device_control = ioat3_device_control;
->   
->   	if (is_xeon_cb32(pdev))
->   		dma->copy_align = 6;
+>  >> As described before, it ends up with memory corruption because freed
+>  >> memory is used, so if a BUG() happens, it doesn't help much. E.g. with
+>  >> kernel 3.9.2 I never have seen a bug, just a rebooting machine
+>  >> (sometimes minutes after the real bug happened).
+>
+>> BUG() statements to the kernel, unless something _really_ bad is going
+>> to happen if we don't call it.  I never want to stop a machine from
+>> running, do you?
+>
+> Yes. I'm not sure how you define _really_ bad, but a memory corruption with undefined result is exactly how I would define such.
+
+First, I like the idea of a diagnostic here. But I'm with Greg on
+this; BUG() is overkill. Just because the specific path which you found
+only kills the process doesn't mean that other callers might not
+prompt machine halt.
+
+The memory corruption happens as a result of the tty_port being freed
+by tty_port_destructor(). So a suitable diagnostic is to detect the
+condition, WARN, and return without actually performing the destroy, yes?
+
+> And in the case of rfcomm, the box doesn't stop, at least not here. Just the process is killed together with an easy to identfiy oops. And the BUG_ON() prevents that memory will become corrupted and the machine is still usable afterwards. If that isn't a use case for BUG_ON(), I really don't know what else would be a use case for it.
+>
+>> I can't take this as-is, why not just fix the root problem?
+>
+> First I'm still not sure about the root problem and awaiting some response to my mail before that patch. As noted in the mail with the patch, 3.10-rc1 looks different, so the it might already be fixed there, even if rfcomm doesn't handle the tty as it (now in 3.8 and 3.9) should be (I haven't tested 3.10-rc1 up to now).
+
+This problem exists from the commit identified up through current
+mainline. It has not been fixed yet. I'll specifically respond to what
+I believe is the correct solution in that thread.
+
+> Second, if I would fix the bug in rfcomm, as Peter suggested, I still would not know if the same problem doesn't appear in any other user of ttys too, so even if I would fix rfcomm, I still would want that BUG_ON() to make sure I don't get a memory corruption whenever another similiar bug is hit.
+
+Only a handful of tty drivers use the ref-counted destroy method of
+tty_port cleanup (the other method being calling tty_port_destroy()
+directly). They are:
+
+   drivers/tty/pty.c
+   drivers/mmc/card/sdio_uart.c
+   drivers/idsn/capi/capi.c
+   drivers/usb/class/cdc-acm.c
+   drivers/tty/n_gsm.c
+   drivers/tty/hvc/hvc_console.c
+   drivers/tty/hvc/hvcs.c
+   net/bluetooth/rfcomm/tty.c
+
+Of these, I know and have reviewed the first two drivers; their
+usage is correct.
+
+While reviewing these additional drivers, maybe we should review
+whether it makes sense to
+   * require and document the tty_port to live at least
+     to ops->cleanup() (currently the default)
+   * allow tty_port lifetime to be completely independent of
+     a tty's lifetime
+   * remove ref-counting from tty_port
+
+Regards,
+Peter Hurley
 
 
--- 
-
-Dave Jiang
-Application Engineer, Storage Divsion
-Intel Corp.
-dave.jiang@intel.com
 
