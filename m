@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab3EQWOg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:14:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54219 "EHLO
+	id S1758249Ab3EQWOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087Ab3EQVhh (ORCPT
+	with ESMTP id S1757086Ab3EQVhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:37 -0400
+	Fri, 17 May 2013 17:37:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 043/102] mwifiex: clear is_suspended flag when interrupt is received early
-Date: Fri, 17 May 2013 14:35:58 -0700
-Message-Id: <20130517213248.856426253@linuxfoundation.org>
+        Christopher Harvey <charvey@matrox.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 051/102] drm/mm: fix dump table BUG
+Date: Fri, 17 May 2013 14:36:06 -0700
+Message-Id: <20130517213249.731411434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,60 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 48795424acff7215d5eac0b52793a2c1eb3a6283 upstream.
+commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
 
-When the XO-4 with 8787 wireless is woken up due to wake-on-WLAN
-mwifiex is often flooded with "not allowed while suspended" messages
-and the interface is unusable.
+In
 
-[  202.171609] int: sdio_ireg = 0x1
-[  202.180700] info: mwifiex_process_hs_config: auto cancelling host
-               sleep since there is interrupt from the firmware
-[  202.201880] event: wakeup device...
-[  202.211452] event: hs_deactivated
-[  202.514638] info: --- Rx: Data packet ---
-[  202.514753] data: 4294957544 BSS(0-0): Data <= kernel
-[  202.514825] PREP_CMD: device in suspended state
-[  202.514839] data: dequeuing the packet ec7248c0 ec4869c0
-[  202.514886] mwifiex_write_data_sync: not allowed while suspended
-[  202.514886] host_to_card, write iomem (1) failed: -1
-[  202.514917] mwifiex_write_data_sync: not allowed while suspended
-[  202.514936] host_to_card, write iomem (2) failed: -1
-[  202.514949] mwifiex_write_data_sync: not allowed while suspended
-[  202.514965] host_to_card, write iomem (3) failed: -1
-[  202.514976] mwifiex_write_data_async failed: 0xFFFFFFFF
+commit 9e8944ab564f2e3dde90a518cd32048c58918608
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Nov 15 11:32:17 2012 +0000
 
-This can be readily reproduced when putting the XO-4 in a loop where
-it goes to sleep due to inactivity, but then wakes up due to an
-incoming ping. The error is hit within an hour or two.
+    drm: Introduce an iterator over holes in the drm_mm range manager
 
-This issue happens when an interrupt comes in early while host sleep
-is still activated. Driver handles this case by auto cancelling host
-sleep. However is_suspended flag is still set which prevents any cmd
-or data from being sent to firmware. Fix it by clearing is_suspended
-flag in this path.
+helpers and iterators for hole handling have been introduced with some
+debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
+which unconditionally tried to compute the size of the very first
+hole.
 
-Reported-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+While at it unify the code a bit with the hole dumping in the loop.
+
+v2: Extract a hole dump helper.
+
+Reported-by: Christopher Harvey <charvey@matrox.com>
+Cc: Christopher Harvey <charvey@matrox.com>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Acked-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cmdevt.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/drm_mm.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -1176,6 +1176,7 @@ mwifiex_process_hs_config(struct mwifiex
- 	adapter->if_ops.wakeup(adapter);
- 	adapter->hs_activated = false;
- 	adapter->is_hs_configured = false;
-+	adapter->is_suspended = false;
- 	mwifiex_hs_activated_event(mwifiex_get_priv(adapter,
- 						    MWIFIEX_BSS_ROLE_ANY),
- 				   false);
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -755,33 +755,35 @@ void drm_mm_debug_table(struct drm_mm *m
+ EXPORT_SYMBOL(drm_mm_debug_table);
+ 
+ #if defined(CONFIG_DEBUG_FS)
+-int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
+ {
+-	struct drm_mm_node *entry;
+-	unsigned long total_used = 0, total_free = 0, total = 0;
+ 	unsigned long hole_start, hole_end, hole_size;
+ 
+-	hole_start = drm_mm_hole_node_start(&mm->head_node);
+-	hole_end = drm_mm_hole_node_end(&mm->head_node);
+-	hole_size = hole_end - hole_start;
+-	if (hole_size)
++	if (entry->hole_follows) {
++		hole_start = drm_mm_hole_node_start(entry);
++		hole_end = drm_mm_hole_node_end(entry);
++		hole_size = hole_end - hole_start;
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+ 				hole_start, hole_end, hole_size);
+-	total_free += hole_size;
++		return hole_size;
++	}
++
++	return 0;
++}
++
++int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
++{
++	struct drm_mm_node *entry;
++	unsigned long total_used = 0, total_free = 0, total = 0;
++
++	total_free += drm_mm_dump_hole(m, &mm->head_node);
+ 
+ 	drm_mm_for_each_node(entry, mm) {
+ 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
+ 				entry->start, entry->start + entry->size,
+ 				entry->size);
+ 		total_used += entry->size;
+-		if (entry->hole_follows) {
+-			hole_start = drm_mm_hole_node_start(entry);
+-			hole_end = drm_mm_hole_node_end(entry);
+-			hole_size = hole_end - hole_start;
+-			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
+-					hole_start, hole_end, hole_size);
+-			total_free += hole_size;
+-		}
++		total_free += drm_mm_dump_hole(m, entry);
+ 	}
+ 	total = total_free + total_used;
+ 
 
 
