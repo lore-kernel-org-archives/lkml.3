@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab3EQRBC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 13:01:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756336Ab3EQRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 13:00:59 -0400
-Date: Fri, 17 May 2013 18:00:53 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Bob Liu <bob.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv11 3/4] zswap: add to mm/
-Message-ID: <20130517170053.GQ11497@suse.de>
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1368448803-2089-4-git-send-email-sjenning@linux.vnet.ibm.com>
- <51920197.9070105@oracle.com>
- <20130514160040.GB4024@medulla>
- <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
+	id S1756438Ab3EQRXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 13:23:50 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51273 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756245Ab3EQRXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 13:23:49 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/onTMTfja8cSlXmgugWq3Q
+Date: Fri, 17 May 2013 10:23:35 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@iki.fi>, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH] ARM: OMAP4: change the device names in usb_bind_phy
+Message-ID: <20130517172335.GX5600@atomide.com>
+References: <1366697656-14315-1-git-send-email-kishon@ti.com>
+ <51936946.3030507@iki.fi>
+ <20130516155857.GV5600@atomide.com>
+ <519503DA.5070303@iki.fi>
+ <20130516162034.GX5600@atomide.com>
+ <5195C28C.40300@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <b9131728-5cf8-4979-a6de-ac14cc409b28@default>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5195C28C.40300@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 14, 2013 at 09:37:08AM -0700, Dan Magenheimer wrote:
-> > Can I get your ack on this pending the other changes?
+* Kishon Vijay Abraham I <kishon@ti.com> [130516 22:45]:
+> Hi,
 > 
-> I'd like to hear Mel's feedback about this, but perhaps
-> a compromise to allow for zswap merging would be to add
-> something like the following to zswap's Kconfig comment:
+> On Thursday 16 May 2013 09:50 PM, Tony Lindgren wrote:
+> >* Tomi Valkeinen <tomi.valkeinen@iki.fi> [130516 09:11]:
+> >>On 16/05/13 18:58, Tony Lindgren wrote:
+> >>>* Tomi Valkeinen <tomi.valkeinen@iki.fi> [130515 03:59]:
+> >>>
+> >>>Just checking.. Do you have CONFIG_OMAP_OCP2SCP=y in your .config? Sounds
+> >>>like the some transceivers should depend on that for omap4.
+> >>
+> >>Yes, I have OCP2SCP=y.
+> >
+> >Hmm well no idea beyond that then. Sounds like Kishon should check it.
+> >
+> >>>>The musb-hdrc id is wrong on overo also.
+> >>>
+> >>>Hmm has there been a fix posted for that?
+> >>
+> >>I couldn't find with a quick look. We debugged and discussed this on an irc
+> >>channel with Kishon, who said he'll send a patch. Changing the musb-hdrc ID
+> >>on overo fixed the issue, and it looks very similar to the error on 4430sdp.
+> >>The overo fix was just:
 > 
+> hmm.. I think using device name to bind the controller and the phy
+> can no longer be used reliably. I think it's better to have
+> something like what Grant suggested in my other patch series.. to
+> have the phy reference into the host controllers platform_data
+> structure. And for the phy reference I'll have label and id.
+> 
+> Does this makes sense to you?
 
-I think there is a lot of ugly in there and potential for weird performance
-bugs. I ran out of beans complaining about different parts during the
-review but fixing it out of tree or in staging like it's been happening to
-date has clearly not worked out at all. As starting points go, it could be
-a hell of a lot worse. I do agree that it needs a big fat warning until
-some of the ugly is beaten out of it.  Requiring that it address all the
-issues such as automatic pool sizing, NUMA issues, proper allocation prior
-to merging will just end up with an unreviewable set of patches again so
-lets just bite the bullet because at least there is a chance reviewers
-can follow the incremental developments. Merging it to drivers will not
-address anything IMO.
+Sounds OK to me, but I guess that would be for v3.11. I think we
+still need a fix for at least overo for v3.10?
 
--- 
-Mel Gorman
-SUSE Labs
+Regards,
+
+Tony
