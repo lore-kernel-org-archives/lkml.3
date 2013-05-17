@@ -1,104 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3EQXgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 19:36:54 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57754 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752974Ab3EQXgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 19:36:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Paul E. McKenney" <paul.mckenney@linaro.org>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: REGRESSION: 3.10-rc1: Dell Latitude e6410 hangs within 3 seconds
-Date: Sat, 18 May 2013 01:45:30 +0200
-Message-ID: <2152370.hoU9Fodeoj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <519697CC.1070308@broadcom.com>
-References: <5192363E.7040204@broadcom.com> <5192A0DE.90209@broadcom.com> <519697CC.1070308@broadcom.com>
+	id S1753875Ab3EQXlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 19:41:47 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45073 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab3EQXlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 19:41:46 -0400
+Message-ID: <5196C02C.2080707@ahsoftware.de>
+Date: Sat, 18 May 2013 01:41:32 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] tty: make sure a BUG is hit if tty_port will be destroyed
+ before tty
+References: <5195B561.3090503@ahsoftware.de> <1368774728-4817-1-git-send-email-holler@ahsoftware.de> <20130517153136.GC19541@kroah.com> <51965DC0.7030901@ahsoftware.de> <5196718D.30904@hurleysoftware.com> <5196835B.4060100@ahsoftware.de> <5196887A.2010906@ahsoftware.de> <5196B477.8080904@hurleysoftware.com>
+In-Reply-To: <5196B477.8080904@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Am 18.05.2013 00:51, schrieb Peter Hurley:
+> On 05/17/2013 03:43 PM, Alexander Holler wrote:
+>> Am 17.05.2013 21:22, schrieb Alexander Holler:
+>>
+>>> The case that the machine didn't die, but just the process, only happens
+>>> when my proposed patch is applied, which prevents the memory corruption.
+>>
+>> In short, the proposed BUG_ON() prevents the memory corruption because
+>> it is hit before something bad can happen. The result is that just the
+>> process in question will be killed (and a tty is not released), but only
+>> that BUG_ON() prevents that something _really_ bad happens.
+>>
+>> I hope I could describe it now clearly. ;)
+>
+> Your descriptions have been clear and I understood your meaning. However,
+> I think you may have misunderstood my suggestion.
+>
+> Would you please test the patch below?
+>
+> --- >% ---
+> Subject: [PATCH] tty: Prevent tty_port destruction if tty not released
+>
+> If the tty driver mistakenly drops the last port reference
+> before the tty has been released, issue a diagnostic and
+> abort the port destruction.
+>
+> This will leak memory and may zombify the port, but should
+> otherwise keep the machine in runnable state.
+>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>   drivers/tty/tty_port.c | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+> index 6d9e0b2..a4f4fa9 100644
+> --- a/drivers/tty/tty_port.c
+> +++ b/drivers/tty/tty_port.c
+> @@ -140,6 +140,10 @@ EXPORT_SYMBOL(tty_port_destroy);
+>   static void tty_port_destructor(struct kref *kref)
+>   {
+>       struct tty_port *port = container_of(kref, struct tty_port, kref);
+> +
+> +    /* check if last port ref was dropped before tty release */
+> +    if (WARN_ON(port->itty))
+> +        return;
+>       if (port->xmit_buf)
+>           free_page((unsigned long)port->xmit_buf);
+>       tty_port_destroy(port);
 
-Is this known?
+I don't have to test this, I see what will happen. Sorry, but I'm 
+exhausted and need a break dealing with lkml and maintainers.
 
-Rafael
+Regards,
 
-
-On Friday, May 17, 2013 10:49:16 PM Arend van Spriel wrote:
-> On 05/14/2013 10:38 PM, Arend van Spriel wrote:
-> > On 05/14/2013 10:34 PM, Rafael J. Wysocki wrote:
-> >> On Tuesday, May 14, 2013 03:03:58 PM Arend van Spriel wrote:
-> >>> Laptop hangs pretty soon after booting. Workaround for me was to turn
-> >>> off ACPI on kernel command line, ie. acpi=off
-> >>>
-> >>> Attached is my kernel configuration.
-> >>
-> >> Well, I have no idea what may be the source of this.
-> >
-> > Me neither.
-> >
-> >> Any chance to bisect?
-> >
-> > can try. Rebuilding kernels can be a drag :-p
-> >
-> > Regards,
-> > Arend
-> 
-> Hi Rafael,
-> 
-> The bisect result found commit c0f4dfd4f as culprit. I also verified 
-> that the merge into Linus' tree introduced the issue upstream, ie. 
-> 6c24499 works and 1f889ec does not. I tried to revert the commit, but 
-> that was a bit risky (conflict to resolve) and did not give me a stable 
-> kernel. The only thing that works is selecting acpi=off. I tried also 
-> nohz=off but that resulted in /init failure.
-> 
-> Regards,
-> Arend
-> 
-> ---8<----------------------------------------------------------------
-> 
-> commit 1f889ec62c3f0d8913f3c32f9aff2a1e15099346
->    Merge: 6c24499 8fcfae3
-> 
->    commit 8fcfae31719c0a6c03f2cf63f815b46d378d8be4
->      Merge: d02a9a8 6d87669
-> 
->      commit 6d87669357936bffa1e8fea7a4e7743e76905736
->        Merge: 3f944ad 81e5949 910ee45
-> 
->        commit c0f4dfd4f90f1667d234d21f15153ea09a2eaa66
->        Author: Paul E. McKenney <paul.mckenney@linaro.org>
->        Date:   Fri Dec 28 11:30:36 2012 -0800
-> 
->            rcu: Make RCU_FAST_NO_HZ take advantage of numbered callbacks
-> 
->            Because RCU callbacks are now associated with the number
->            of the grace period that they must wait for, CPUs can now
->            take advance callbacks corresponding to grace periods that
->            ended while a given CPU was in dyntick-idle mode. This
->            eliminates the need to try forcing the RCU state machine
->            while entering idle, thus reducing the CPU intensiveness
->            of RCU_FAST_NO_HZ, which should increase its energy
->            efficiency.
-> 
->        Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
->        Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Alexander Holler
