@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3EQRp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 13:45:57 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53663 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3EQRpz convert rfc822-to-8bit (ORCPT
+	id S1756548Ab3EQRu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 13:50:58 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:34233 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3EQRu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 13:45:55 -0400
+	Fri, 17 May 2013 13:50:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <b4e0e499-b922-4e9c-a0f8-02318ddf3b9b@email.android.com>
-References: <1368431172-6844-1-git-send-email-mhocko@suse.cz>
-	<1368431172-6844-2-git-send-email-mhocko@suse.cz>
-	<20130517160247.GA10023@cmpxchg.org>
-	<20130517165712.GB12632@mtj.dyndns.org>
-	<b4e0e499-b922-4e9c-a0f8-02318ddf3b9b@email.android.com>
-Date: Fri, 17 May 2013 10:45:54 -0700
-X-Google-Sender-Auth: r33Xvo1uaGbbrnR9aWWOWt8RIXU
-Message-ID: <CAOS58YP6qXM_mXvsCtGSViOZTw=mwnfUS7cZGAES8F4w5mCQdA@mail.gmail.com>
-Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
- zone shrinking code
-From: Tejun Heo <tj@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Cgroups <cgroups@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+X-Originating-IP: [84.109.219.89]
+In-Reply-To: <20130516221321.GG22822@zurbaran>
+References: <1368615236-21345-1-git-send-email-leon@leon.nu> <20130516221321.GG22822@zurbaran>
+From: Leon Romanovsky <leon@leon.nu>
+Date: Fri, 17 May 2013 20:50:36 +0300
+Message-ID: <CALq1K=J=Aeg11H5aX8bj-_EowdADJSg5oVY98c1q0v6YbhZEdg@mail.gmail.com>
+Subject: Re: [PATCH] drivers: mfd: sec-code: Fix sizeof argument
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: sbkim73@samsung.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, May 17, 2013 at 10:27 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->>Hmmm... if the iteration is the problem, it shouldn't be difficult to
->>build list of children which should be iterated.  Would that make it
->>acceptable?
+On Fri, May 17, 2013 at 1:13 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> Hi Leon,
 >
-> You mean, a separate structure that tracks which groups are in excess of the limit?  Like the current tree? :)
+> On Wed, May 15, 2013 at 01:53:56PM +0300, Leon Romanovsky wrote:
+>> Signed-off-by: Leon Romanovsky <leon@leon.nu>
+>> ---
+>>  drivers/mfd/sec-core.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+>> index 77ee26ef..5b740a3 100644
+>> --- a/drivers/mfd/sec-core.c
+>> +++ b/drivers/mfd/sec-core.c
+>> @@ -121,7 +121,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
+>>  {
+>>       struct sec_platform_data *pd;
+>>
+>> -     pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+>> +     pd = devm_kzalloc(dev, sizeof(struct sec_platform_data), GFP_KERNEL);
+> How is that fixing anything ?
+Technically you are right, this fix brings code to be align to common
+code convention and allows to automatic tools  correctly parse it.
 
-Heh, yeah, realized that after writing it but it can be something much
-simpler. ie. just linked list of children with soft limit configured.
-
-> Kidding aside, yes, that would be better, and an unsorted list would probably be enough for the global case.
-
-Yeap.
-
-> To support target reclaim soft limits later on, we could maybe propagate tags upwards the cgroup tree when a group is in excess so that reclaim can be smarter about which subtrees to test for soft limits and which to skip during the soft limit pass.  The no-softlimit-set-anywhere case is then only a single tag test in the root cgroup.
 >
-> But starting with the list would be simple enough, delete a bunch of code, come with the same performance improvements etc.
+> Cheers,
+> Samuel.
+>
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
 
-Thanks.
+
 
 --
-tejun
+Leon Romanovsky | Independent Linux Consultant
+        www.leon.nu | leon@leon.nu
