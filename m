@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3EQTIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 15:08:31 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45738 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756147Ab3EQTIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 15:08:30 -0400
-Message-ID: <5196802A.604@hurleysoftware.com>
-Date: Fri, 17 May 2013 15:08:26 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Add missing lock in n_tty_write()
-References: <20130515105656.GI24440@8bytes.org> <5193A3B5.7010400@suse.cz> <20130515154753.GJ24440@8bytes.org> <5193D7E0.5010803@hurleysoftware.com> <20130515194835.GK24440@8bytes.org> <519415F3.6060103@hurleysoftware.com> <20130517114845.GA2602@8bytes.org>
-In-Reply-To: <20130517114845.GA2602@8bytes.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756708Ab3EQTJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 15:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756599Ab3EQTJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 15:09:05 -0400
+Message-ID: <1368817739.1372.5.camel@localhost>
+Subject: Re: linux-next: build warning after merge of the final tree (in
+ Linus' tree)
+From: Eric Paris <eparis@redhat.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Date: Fri, 17 May 2013 15:08:59 -0400
+In-Reply-To: <CAOh2x=nNNdgndfXCAQ7-oXDcuiNwAbNSb3_DgYuGsO8cPC__5g@mail.gmail.com>
+References: <20130515132001.6cc824ba42106db973f90991@canb.auug.org.au>
+	 <1368624762.27262.1.camel@localhost>
+	 <CAOh2x=nNNdgndfXCAQ7-oXDcuiNwAbNSb3_DgYuGsO8cPC__5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 07:48 AM, Joerg Roedel wrote:
-> Hi Peter,
->
-> thanks for you explanations. They helped me to better understand what is
-> happening now.
->
-> On Wed, May 15, 2013 at 07:10:43PM -0400, Peter Hurley wrote:
->> On 05/15/2013 03:48 PM, Joerg Roedel wrote:
->
->> Agreed. Those functions look written for single-producer/single-consumer
->> i/o model. (That's why I asked about CONFIG_CONSOLE_POLL=y as well because
->> that doesn't look thread-safe either).
->
-> Ok, I checked that. CONFIG_CONSOLE_POLL is on in that kernel.
->
->> Just to be clear here: there's a difference between a console driver
->> and a tty driver.
->>
->> The console driver's write() method is serialized with the global
->> console_lock() so parallel console writes are not possible.
->>
->> No such guarantee exists for the tty driver write() method, although it
->> probably wouldn't be difficult to provide that guarantee (since the
->> line discipline write() is already serialized by tty->atomic_write_lock).
->
-> Okay, so it is safe to say that currently the drivers write() (and
-> put_chars()) functions need to expect to be called concurrently and
-> therefore they have to serialize themselves when they need it, right?
+On Fri, 2013-05-17 at 10:47 +0530, Viresh Kumar wrote:
+> On Wed, May 15, 2013 at 7:02 PM, Eric Paris <eparis@redhat.com> wrote:
+> > On Wed, 2013-05-15 at 13:20 +1000, Stephen Rothwell wrote:
+> >> Hi ,
+> >>
+> >> After merging the final tree, today's linux-next build (i386 defconfig)
+> >> produced this warning:
+> >>
+> >> kernel/auditfilter.c: In function 'audit_data_to_entry':
+> >> kernel/auditfilter.c:426:3: warning: this decimal constant is unsigned only in ISO C90 [enabled by default]
+> >>
+> >> Introduced by commit 780a7654cee8 ("audit: Make testing for a valid
+> >> loginuid explicit") from Linus' tree.
+> >
+> > Thank you, I'll fix it up.  What am I likely missing that I don't see it
+> > on my builds?  I'm using gcc 4.8.  Is there a config option that enables
+> > additional warnings?
+> 
+> Is  this fixed? I couldn't find a relevant patch in linux-next/master for it.
 
-If only it were that simple :)
-
-Yes, console write() and tty write() can be concurrent. However, the
-console write() can also be _recursive_ wrt. tty write(). This can happen,
-for example, if something oopses in the tty write() path.
-
-If you review serial8250_console_write() in drivers/tty/serial/8250/8250_core.c,
-you'll see how some of this is worked around.
-
-But looking at this from a wider perspective, the goal should be
-to limit the overlap as much as possible.
-
-Regards,
-Peter Hurley
-
-
+Something should be posted by the end of the day.  Sorry for the delay.
 
