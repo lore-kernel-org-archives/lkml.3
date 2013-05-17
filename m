@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3EQHlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 03:41:08 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40187 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3EQHlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 03:41:06 -0400
-Date: Thu, 16 May 2013 13:06:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
- enabled
-Message-ID: <20130516200602.GF4442@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1368547372-21011-1-git-send-email-fweisbec@gmail.com>
- <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
- <20130515083729.GC10510@laptop.programming.kicks-ass.net>
- <20130515150652.GP23604@redhat.com>
- <1368631622.6828.69.camel@gandalf.local.home>
- <20130515165915.GE13916@laptop.home>
- <1368637441.6828.70.camel@gandalf.local.home>
- <20130516081027.GD19669@dyad.programming.kicks-ass.net>
- <20130516150706.GY4442@linux.vnet.ibm.com>
- <20130516175602.GL19669@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516175602.GL19669@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051707-5406-0000-0000-000008948165
+	id S1751665Ab3EQHqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 03:46:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56146 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab3EQHqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 03:46:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,690,1363158000"; 
+   d="scan'208";a="339112880"
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH] blkpm: avoid sleep when holding queue lock
+Date: Fri, 17 May 2013 15:47:20 +0800
+Message-Id: <1368776840-4877-1-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.3.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 07:56:02PM +0200, Peter Zijlstra wrote:
-> On Thu, May 16, 2013 at 08:07:06AM -0700, Paul E. McKenney wrote:
-> > On Thu, May 16, 2013 at 10:10:27AM +0200, Peter Zijlstra wrote:
-> > > On Wed, May 15, 2013 at 01:04:01PM -0400, Steven Rostedt wrote:
-> > > > On Wed, 2013-05-15 at 18:59 +0200, Peter Zijlstra wrote:
-> > > > 
-> > > > > At which point we could run the watchdog without perf_event_task_tick().
-> > > > 
-> > > > At which point we can drop the disable LOCKUP_DETECTOR when NO_HZ_FULL
-> > > > is enabled ;-)
-> > > > 
-> > > 
-> > > Can we? The thing I'm worried about is RCU (of course!). ISTR we rely on RCU
-> > > working in NMI context. AFAIR for RCU to work, we need to come out of out magic
-> > > NO_HZ state since that would've put RCU into EQS.
-> > > 
-> > > Frederic, PaulMck?
-> > 
-> > Not sure I understand the question, but hopefully the verbiage below helps.
-> > 
-> > Only RCU read-side critical sections need to work in NMI context,
-> > and RCU hooks into nmi_enter() and nmi_exit() to handle this, and this
-> > will work in NO_HZ_FULL in the same way that it works for NO_HZ_IDLE.
-> > 
-> > But if there are no NMIs, RCU doesn't care.  In other words, RCU needs
-> > to know about NMIs so that it can deal with any RCU read-side critical
-> > sections in the NMI handlers, but RCU doesn't rely on NMIs happening at
-> > any particular time or frequency.
-> 
-> I suppose the fundamental question was: will receiving NMIs negate NO_HZ_FULL's
-> functionality? That is, will the getting of NMIs make us drop out of NO_HZ_FULL
-> and re-enable all sorts of things?
-> 
-> Because clearly RCU needs to exit from EQS, which might (or might not) mean
-> leaving NO_HZ_FULL.
-> 
-> I'm not entirely up-to-date on those details.
+In blk_post_runtime_resume, an autosuspend request will be initiated for
+the device. Since we are holding the queue lock, we can't sleep and thus
+we should use the async version to initiate an autosuspend, i.e.
+pm_request_suspend instead of pm_runtime_suspend, which might sleep.
 
-My belief is that NMIs won't cause NO_HZ_FULL to kick that CPU out of
-adaptive-ticks mode, but I must defer to Frederic on that.
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+I didn't turn on the lock debugging config options while doing test so
+this issue didn't show up until recently I have all those lock debugging
+options turned on, a warning instantly showed up. While it is correctly
+using pm_request_autosuspend in pre-v7 series, and is brought by me
+mistakenly, sorry for this.
 
-Of course, the NMI -will- cause OS jitter on whichever CPU handles it,
-which some people would want to avoid.
+ block/blk-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-							Thanx, Paul
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 33c33bc..d5745b5 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -3164,7 +3164,7 @@ void blk_post_runtime_resume(struct request_queue *q, int err)
+ 		q->rpm_status = RPM_ACTIVE;
+ 		__blk_run_queue(q);
+ 		pm_runtime_mark_last_busy(q->dev);
+-		pm_runtime_autosuspend(q->dev);
++		pm_request_autosuspend(q->dev);
+ 	} else {
+ 		q->rpm_status = RPM_SUSPENDED;
+ 	}
+-- 
+1.8.3.rc2
 
