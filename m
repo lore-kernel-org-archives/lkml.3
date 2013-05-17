@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab3EQVvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:51:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54812 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550Ab3EQVuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932556Ab3EQVuk (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 May 2013 17:50:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54762 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757959Ab3EQVuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:50:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 31/33] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
-Date: Fri, 17 May 2013 14:50:15 -0700
-Message-Id: <20130517214920.230856837@linuxfoundation.org>
+        Matthew Whitehead <tedheadster@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/33] 3c509.c: call SET_NETDEV_DEV for all device types (ISA/ISAPnP/EISA)
+Date: Fri, 17 May 2013 14:50:00 -0700
+Message-Id: <20130517214918.537043773@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -27,52 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
+From: Matthew Whitehead <tedheadster@gmail.com>
 
-When a 32 bit version of ipmitool is used on a 64 bit kernel, the
-ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
-incomplete data being retrieved in some cases, or other possible failures.
-Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
+[ Upstream commit 3b54912f9cd167641b91d4a697bd742f70e534fe ]
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
+It does this with the SET_NETDEV_DEV function. It should register with the device
+hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
+
+- Currently they appear here:
+/sys/devices/virtual/net/eth0 (standard ISA)
+/sys/devices/virtual/net/eth1 (EISA)
+
+- Rather, they should instead be here:
+/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
+/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
+
+Tested on ISA and EISA boards.
+
+Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/char/ipmi/ipmi_devintf.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/net/3c509.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/char/ipmi/ipmi_devintf.c
-+++ b/drivers/char/ipmi/ipmi_devintf.c
-@@ -838,13 +838,25 @@ static long compat_ipmi_ioctl(struct fil
- 		return ipmi_ioctl(filep, cmd, arg);
- 	}
- }
-+
-+static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
-+				       unsigned long arg)
-+{
-+	int ret;
-+
-+	mutex_lock(&ipmi_mutex);
-+	ret = compat_ipmi_ioctl(filep, cmd, arg);
-+	mutex_unlock(&ipmi_mutex);
-+
-+	return ret;
-+}
- #endif
+--- a/drivers/net/3c509.c
++++ b/drivers/net/3c509.c
+@@ -309,6 +309,7 @@ static int __devinit el3_isa_match(struc
+ 	if (!dev)
+ 		return -ENOMEM;
  
- static const struct file_operations ipmi_fops = {
- 	.owner		= THIS_MODULE,
- 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
--	.compat_ioctl   = compat_ipmi_ioctl,
-+	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
- #endif
- 	.open		= ipmi_open,
- 	.release	= ipmi_release,
++	SET_NETDEV_DEV(dev, pdev);
+ 	netdev_boot_setup_check(dev);
+ 
+ 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
+@@ -704,6 +705,7 @@ static int __init el3_eisa_probe (struct
+ 		return -ENOMEM;
+ 	}
+ 
++	SET_NETDEV_DEV(dev, device);
+ 	netdev_boot_setup_check(dev);
+ 
+ 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
 
 
