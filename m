@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab3EQQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 12:03:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45140 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755785Ab3EQQDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756558Ab3EQQDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 12:03:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43492 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab3EQQDG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 12:03:06 -0400
-Date: Fri, 17 May 2013 12:02:47 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
- zone shrinking code
-Message-ID: <20130517160247.GA10023@cmpxchg.org>
-References: <1368431172-6844-1-git-send-email-mhocko@suse.cz>
- <1368431172-6844-2-git-send-email-mhocko@suse.cz>
+From: Dan Murphy <dmurphy@ti.com>
+To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Dan Murphy <dmurphy@ti.com>
+Subject: [PATCH v6] ARM:dts:omap4-panda: Update the LED support for the panda DTS
+Date: Fri, 17 May 2013 11:02:32 -0500
+Message-ID: <1368806552-8851-1-git-send-email-dmurphy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368431172-6844-2-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 09:46:10AM +0200, Michal Hocko wrote:
-> Memcg soft reclaim has been traditionally triggered from the global
-> reclaim paths before calling shrink_zone. mem_cgroup_soft_limit_reclaim
-> then picked up a group which exceeds the soft limit the most and
-> reclaimed it with 0 priority to reclaim at least SWAP_CLUSTER_MAX pages.
-> 
-> The infrastructure requires per-node-zone trees which hold over-limit
-> groups and keep them up-to-date (via memcg_check_events) which is not
-> cost free. Although this overhead hasn't turned out to be a bottle neck
-> the implementation is suboptimal because mem_cgroup_update_tree has no
-> idea which zones consumed memory over the limit so we could easily end
-> up having a group on a node-zone tree having only few pages from that
-> node-zone.
-> 
-> This patch doesn't try to fix node-zone trees management because it
-> seems that integrating soft reclaim into zone shrinking sounds much
-> easier and more appropriate for several reasons.
-> First of all 0 priority reclaim was a crude hack which might lead to
-> big stalls if the group's LRUs are big and hard to reclaim (e.g. a lot
-> of dirty/writeback pages).
-> Soft reclaim should be applicable also to the targeted reclaim which is
-> awkward right now without additional hacks.
-> Last but not least the whole infrastructure eats quite some code.
-> 
-> After this patch shrink_zone is done in 2 passes. First it tries to do the
-> soft reclaim if appropriate (only for global reclaim for now to keep
-> compatible with the original state) and fall back to ignoring soft limit
-> if no group is eligible to soft reclaim or nothing has been scanned
-> during the first pass. Only groups which are over their soft limit or
-> any of their parents up the hierarchy is over the limit are considered
-> eligible during the first pass.
+The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+are different.
 
-There are setups with thousands of groups that do not even use soft
-limits.  Having them pointlessly iterate over all of them for every
-couple of pages reclaimed is just not acceptable.
+A1-A3 = gpio_wk7
+ES = gpio_110
 
-This is not the first time this implementation was proposed, either,
-I'm afraid we have now truly gone full circle on this stuff.
+There is no change to LED D2
+
+Abstract away the pinmux and the LED definitions for the two boards into
+the respective DTS files.
+
+Signed-off-by: Dan Murphy <dmurphy@ti.com>
+---
+Changes in this version:
+	- review comments incorporated.
+Previous version of this patch was discussed in:
+	https://patchwork.kernel.org/patch/2582771/
+
+ arch/arm/boot/dts/omap4-panda-common.dtsi |   16 +++++++++++++++-
+ arch/arm/boot/dts/omap4-panda-es.dts      |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+index 03bd60d..5fd59b3 100644
+--- a/arch/arm/boot/dts/omap4-panda-common.dtsi
++++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+@@ -16,8 +16,13 @@
+ 		reg = <0x80000000 0x40000000>; /* 1 GB */
+ 	};
+ 
+-	leds {
++	leds: leds {
+ 		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <
++			&led_wkgpio_pins
++		>;
++
+ 		heartbeat {
+ 			label = "pandaboard::status1";
+ 			gpios = <&gpio1 7 0>;
+@@ -137,6 +142,15 @@
+ 	};
+ };
+ 
++&omap4_pmx_wkup {
++	led_wkgpio_pins: pinmux_leds_wkpins {
++		pinctrl-single,pins = <
++			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
++			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
++		>;
++	};
++};
++
+ &i2c1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&i2c1_pins>;
+diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
+index f1d8c21..c968a3b 100644
+--- a/arch/arm/boot/dts/omap4-panda-es.dts
++++ b/arch/arm/boot/dts/omap4-panda-es.dts
+@@ -34,3 +34,31 @@
+ 		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
+ 		>;
+ };
++
++&omap4_pmx_core {
++	led_gpio_pins: gpio_led_pmx {
++		pinctrl-single,pins = <
++			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
++		>;
++	};
++};
++
++&led_wkgpio_pins {
++	pinctrl-single,pins = <
++		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
++	>;
++};
++
++&leds {
++	pinctrl-0 = <
++		&led_gpio_pins
++		&led_wkgpio_pins
++	>;
++
++	heartbeat {
++		gpios = <&gpio4 14 0>;
++	};
++	mmc {
++		gpios = <&gpio1 8 0>;
++	};
++};
+-- 
+1.7.5.4
+
