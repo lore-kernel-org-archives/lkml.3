@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3EQCQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 22:16:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33386 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3EQCQn (ORCPT
+	id S1752349Ab3EQCVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 22:21:14 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:53945 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab3EQCVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 22:16:43 -0400
+	Thu, 16 May 2013 22:21:13 -0400
+Message-ID: <51959417.7070403@hitachi.com>
+Date: Fri, 17 May 2013 11:21:11 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Fri, 17 May 2013 10:16:40 +0800
-Message-ID: <CACVXFVPjo2dQpYPpqZS8GC8UPNzB5HLURpYm6-g1FOBbSUjDyA@mail.gmail.com>
-Subject: [Bug] ARM 'perf' regression by commit a43cb95d5
-From: Ming Lei <ming.lei@canonical.com>
-To: Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Irina Tirdea <irina.tirdea@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Tom Zanussi <tom.zanussi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@suse.de>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/5] perf: Reorder parameters of strglobmatch
+References: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>  <20130516114852.13508.72995.stgit@mhiramat-M0-7522> <1368716142.6828.98.camel@gandalf.local.home>
+In-Reply-To: <1368716142.6828.98.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2013/05/16 23:55), Steven Rostedt wrote:
+> On Thu, 2013-05-16 at 20:48 +0900, Masami Hiramatsu wrote:
+>> Reorder parameters of strglobmatch() so that the first
+>> parameter is the glob pattern as like as regexec(),
+>> because the subjective parameter of strglobmatch() must
+>> be the glob pattern, but not a sample string.
+>> So, the new interface is:
+> 
+> I'm a bit confused to the rational here. Can you explain in more detail
+> to why this patch is actually needed?
 
-The commit a43cb95d5(dump_stack: unify debug information printed by show_regs())
-caused ARM perf regression, then 'perf top' outputs mistakenly, see
-[1].  The correct
-output should be [2], which can be got after reverting the commit or
-doing it partly
-by the one line change below:
+Yes, actually, this patch is not needed from the viewpoint of execution,
+but less misuse for future use of the strglobmatch, I think.
 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index f219703..89bc3a4 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -225,7 +225,7 @@ void __show_regs(struct pt_regs *regs)
-        unsigned long flags;
-        char buf[64];
+For example, glob(3) has the pattern parameter as the first one,
 
--       show_regs_print_info(KERN_DEFAULT);
-+       //show_regs_print_info(KERN_DEFAULT);
+       int glob(const char *pattern, int flags,
+                int (*errfunc) (const char *epath, int eerrno),
+                glob_t *pglob);
 
+regexec(3) also has the compiled regexp at the first parameter,
 
-Looks a bit weird, anyone can give a hint?
+       int regexec(const regex_t *preg, const char *string, size_t nmatch,
+                   regmatch_t pmatch[], int eflags);
 
+Thus, I think a new user of strglobmatch() may guess that the first
+parameter should be the glob pattern.
 
-Thanks,
---
-Ming Lei
+So, this patch is not technically needed, but from the viewpoint of coding
+naturally, it should be changed, IMHO.
 
-[1], 'perf top' mistaken output
-Samples: 17K of event 'cpu-clock', Event count (approx.): 3516532661
- 97.51%  [smsc95xx]            [k] 0x013645b8
-  0.21%  libc-2.15.so          [.] strstr
-  0.14%  libc-2.15.so          [.] strchr
-  0.12%  libc-2.15.so          [.] strcmp
-  0.12%  perf                  [.] perf_evsel__parse_sample
-  0.09%  perf                  [.] symbols__insert
-  0.09%  perf                  [.] dso__load_sym
-  0.08%  perf                  [.] perf_top__mmap_read_idx
-  0.08%  perf                  [.] symbol_filter
-  0.07%  libc-2.15.so          [.] memchr
-  0.07%  libc-2.15.so          [.] memset
-  0.07%  perf                  [.] internal_cplus_demangle
-  0.06%  perf                  [.] sort__dso_cmp
-  0.06%  libc-2.15.so          [.] strncmp
-  0.06%  perf                  [.] add_hist_entry.isra.2
-  0.06%  perf                  [.] dso__find_symbol
-  0.06%  libc-2.15.so          [.] _int_malloc
-  0.05%  perf                  [.] 0x00010d60
-  0.04%  libc-2.15.so          [.] memcpy
-  0.04%  perf                  [.] map__find_symbol
-  0.04%  perf                  [.] rb_next
-  0.04%  libelf-0.154.so       [.] gelf_getsym
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
-[2], 'perf top' correct output
-Samples: 46K of event 'cpu-clock', Event count (approx.): 937128704
- 96.44%  [kernel]            [k] cpuidle_enter_state
-  0.19%  libc-2.15.so        [.] strstr
-  0.16%  [kernel]            [k] kallsyms_expand_symbol.clone.0
-  0.13%  [kernel]            [k] _raw_spin_unlock_irq
-  0.13%  [kernel]            [k] _raw_spin_unlock_irqrestore
-  0.10%  [kernel]            [k] format_decode
-  0.10%  perf                [.] perf_top__mmap_read_idx
-  0.10%  perf                [.] rb_next
-  0.09%  perf                [.] dso__find_symbol
-  0.08%  [kernel]            [k] vsnprintf
-  0.08%  perf                [.] add_hist_entry.isra.2
-  0.08%  libc-2.15.so        [.] strcmp
-  0.08%  libc-2.15.so        [.] memchr
-  0.07%  perf                [.] sort__dso_cmp
-  0.07%  libc-2.15.so        [.] strchr
-  0.07%  [kernel]            [k] number.clone.1
-  0.07%  perf                [.] map__process_kallsym_symbol
-  0.06%  [kernel]            [k] memcpy
-  0.05%  perf                [.] perf_evsel__parse_sample
-  0.05%  libc-2.15.so        [.] _int_malloc
-  0.05%  libc-2.15.so        [.] memcpy
-  0.05%  perf                [.] perf_event__preprocess_sample
