@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758412Ab3EQWWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:22:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54059 "EHLO
+	id S1758381Ab3EQWWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:22:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894Ab3EQVhR (ORCPT
+	with ESMTP id S1756899Ab3EQVhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:37:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Shuah Khan <shuah.khan@hp.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [ 026/102] hp_accel: Ignore the error from lis3lv02d_poweron() at resume
-Date: Fri, 17 May 2013 14:35:41 -0700
-Message-Id: <20130517213247.126136610@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Hansen <dave@sr71.net>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, rostedt@goodmis.org
+Subject: [ 023/102] sched: Avoid prev->stime underflow
+Date: Fri, 17 May 2013 14:35:38 -0700
+Message-Id: <20130517213246.830373308@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,36 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shuah Khan <shuah.khan@hp.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 7783819920ca52fc582a2782f654fe6ed373f465 upstream.
+commit 68aa8efcd1ab961e4684ef5af32f72a6ec1911de upstream.
 
-The error in lis3lv02_poweron() is harmless in the resume path, so
-we should ignore it. It is inline with the other usages of lis3lv02_poweron()
-and matches the 3.0 code for this routine. This patch is in suse git and
-might have missed making it into the mainline.
-opensuse - commit id: 66ccdac87c322cf7af12bddba8c805af640b1cff
+Dave Hansen reported strange utime/stime values on his system:
+https://lkml.org/lkml/2013/4/4/435
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+This happens because prev->stime value is bigger than rtime
+value. Root of the problem are non-monotonic rtime values (i.e.
+current rtime is smaller than previous rtime) and that should be
+debugged and fixed.
+
+But since problem did not manifest itself before commit
+62188451f0d63add7ad0cd2a1ae269d600c1663d "cputime: Avoid
+multiplication overflow on utime scaling", it should be threated
+as regression, which we can easily fixed on cputime_adjust()
+function.
+
+For now, let's apply this fix, but further work is needed to fix
+root of the problem.
+
+Reported-and-tested-by: Dave Hansen <dave@sr71.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rostedt@goodmis.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1367314507-9728-3-git-send-email-sgruszka@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/hp_accel.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/sched/cputime.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/platform/x86/hp_accel.c
-+++ b/drivers/platform/x86/hp_accel.c
-@@ -362,7 +362,8 @@ static int lis3lv02d_suspend(struct devi
- 
- static int lis3lv02d_resume(struct device *dev)
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -574,7 +574,7 @@ static void cputime_adjust(struct task_c
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
  {
--	return lis3lv02d_poweron(&lis3_dev);
-+	lis3lv02d_poweron(&lis3_dev);
-+	return 0;
- }
+-	cputime_t rtime, stime, total;
++	cputime_t rtime, stime, utime, total;
  
- static SIMPLE_DEV_PM_OPS(hp_accel_pm, lis3lv02d_suspend, lis3lv02d_resume);
+ 	stime = curr->stime;
+ 	total = stime + curr->utime;
+@@ -599,13 +599,13 @@ static void cputime_adjust(struct task_c
+ 	if (prev->stime + prev->utime >= rtime)
+ 		goto out;
+ 
+-	if (!rtime) {
+-		stime = 0;
+-	} else if (!total) {
+-		stime = rtime;
+-	} else {
++	if (total) {
+ 		stime = scale_stime((__force u64)stime,
+ 				    (__force u64)rtime, (__force u64)total);
++		utime = rtime - stime;
++	} else {
++		stime = rtime;
++		utime = 0;
+ 	}
+ 
+ 	/*
+@@ -614,7 +614,7 @@ static void cputime_adjust(struct task_c
+ 	 * Let's enforce monotonicity.
+ 	 */
+ 	prev->stime = max(prev->stime, stime);
+-	prev->utime = max(prev->utime, rtime - prev->stime);
++	prev->utime = max(prev->utime, utime);
+ 
+ out:
+ 	*ut = prev->utime;
 
 
