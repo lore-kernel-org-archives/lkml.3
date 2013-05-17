@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3EQFKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 01:10:46 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:65368 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab3EQFKp (ORCPT
+	id S1753956Ab3EQFRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 01:17:41 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:37541 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab3EQFRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 01:10:45 -0400
+	Fri, 17 May 2013 01:17:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1561290.MnyCnpJz5W@avalon>
-References: <1368709102-2854-1-git-send-email-prabhakar.csengg@gmail.com>
- <1368709102-2854-2-git-send-email-prabhakar.csengg@gmail.com> <1561290.MnyCnpJz5W@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 17 May 2013 10:40:24 +0530
-Message-ID: <CA+V-a8sCk2STGuEJnyp99yA218UzZFXp0aXAdQOVkZzZmG8msg@mail.gmail.com>
-Subject: Re: [PATCH 1/7] media: davinci: vpif: remove unwanted header includes
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
+In-Reply-To: <1368624762.27262.1.camel@localhost>
+References: <20130515132001.6cc824ba42106db973f90991@canb.auug.org.au>
+	<1368624762.27262.1.camel@localhost>
+Date: Fri, 17 May 2013 10:47:38 +0530
+X-Google-Sender-Auth: ei_mGaAKa2F5VrZv7k7h2_jqSnw
+Message-ID: <CAOh2x=nNNdgndfXCAQ7-oXDcuiNwAbNSb3_DgYuGsO8cPC__5g@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the final tree (in
+ Linus' tree)
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Richard Guy Briggs <rgb@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
-
-Thanks for the review.
-
-On Thu, May 16, 2013 at 6:32 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Prabhakar,
->
-> Thank you for the patch.
->
-> On Thursday 16 May 2013 18:28:16 Lad Prabhakar wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Wed, May 15, 2013 at 7:02 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Wed, 2013-05-15 at 13:20 +1000, Stephen Rothwell wrote:
+>> Hi ,
 >>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>  drivers/media/platform/davinci/vpif.c |    7 -------
->>  1 files changed, 0 insertions(+), 7 deletions(-)
+>> After merging the final tree, today's linux-next build (i386 defconfig)
+>> produced this warning:
 >>
->> diff --git a/drivers/media/platform/davinci/vpif.c
->> b/drivers/media/platform/davinci/vpif.c index ea82a8b..d354d50 100644
->> --- a/drivers/media/platform/davinci/vpif.c
->> +++ b/drivers/media/platform/davinci/vpif.c
->> @@ -17,18 +17,11 @@
->>   * GNU General Public License for more details.
->>   */
+>> kernel/auditfilter.c: In function 'audit_data_to_entry':
+>> kernel/auditfilter.c:426:3: warning: this decimal constant is unsigned only in ISO C90 [enabled by default]
 >>
->> -#include <linux/init.h>
->>  #include <linux/module.h>
->>  #include <linux/platform_device.h>
->> -#include <linux/spinlock.h>
->> -#include <linux/kernel.h>
->> -#include <linux/io.h>
->> -#include <linux/err.h>
->>  #include <linux/pm_runtime.h>
->>  #include <linux/v4l2-dv-timings.h>
+>> Introduced by commit 780a7654cee8 ("audit: Make testing for a valid
+>> loginuid explicit") from Linus' tree.
 >
-> I think you should keep most of those includes. For instance this file uses
-> spinlock functions, so linux/spinlock.h should be included. It might work fine
-> now due to nested includes, but if someone reorganizes the kernel headers
-> internal includes then the driver might break. As a general rule of good
-> practice you should include headers for all the APIs you use.
->
-OK, do you want me too drop the similar patches from this series ?
+> Thank you, I'll fix it up.  What am I likely missing that I don't see it
+> on my builds?  I'm using gcc 4.8.  Is there a config option that enables
+> additional warnings?
 
-Regards,
---Prabhakar Lad
+Is  this fixed? I couldn't find a relevant patch in linux-next/master for it.
