@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab3EQWRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54163 "EHLO
+	id S1758219Ab3EQWSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:18:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54153 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab3EQVh2 (ORCPT
+	with ESMTP id S1756996Ab3EQVh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:28 -0400
+	Fri, 17 May 2013 17:37:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Jaburek <jjaburek@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: [ 032/102] audit: vfs: fix audit_inode call in O_CREAT case of do_last
-Date: Fri, 17 May 2013 14:35:47 -0700
-Message-Id: <20130517213247.697597159@linuxfoundation.org>
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 040/102] powerpc: Bring all threads online prior to migration/hibernation
+Date: Fri, 17 May 2013 14:35:55 -0700
+Message-Id: <20130517213248.523612383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,56 +27,253 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-commit 33e2208acfc15ce00d3dd13e839bf6434faa2b04 upstream.
+commit 120496ac2d2d60aee68d3123a68169502a85f4b5 upstream.
 
-Jiri reported a regression in auditing of open(..., O_CREAT) syscalls.
-In older kernels, creating a file with open(..., O_CREAT) created
-audit_name records that looked like this:
+This patch brings online all threads which are present but not online
+prior to migration/hibernation.  After migration/hibernation those
+threads are taken back offline.
 
-type=PATH msg=audit(1360255720.628:64): item=1 name="/abc/foo" inode=138810 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-type=PATH msg=audit(1360255720.628:64): item=0 name="/abc/" inode=138635 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+During migration/hibernation all online CPUs must call H_JOIN, this is
+required by the hypervisor.  Without this patch, threads that are offline
+(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
+deadlocked (all threads either JOIN'd or CEDE'd).
 
-...in recent kernels though, they look like this:
-
-type=PATH msg=audit(1360255402.886:12574): item=2 name=(null) inode=264599 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-type=PATH msg=audit(1360255402.886:12574): item=1 name=(null) inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-type=PATH msg=audit(1360255402.886:12574): item=0 name="/abc/foo" inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-
-Richard bisected to determine that the problems started with commit
-bfcec708, but the log messages have changed with some later
-audit-related patches.
-
-The problem is that this audit_inode call is passing in the parent of
-the dentry being opened, but audit_inode is being called with the parent
-flag false. This causes later audit_inode and audit_inode_child calls to
-match the wrong entry in the audit_names list.
-
-This patch simply sets the flag to properly indicate that this inode
-represents the parent. With this, the audit_names entries are back to
-looking like they did before.
-
-Reported-by: Jiri Jaburek <jjaburek@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Test By: Richard Guy Briggs <rbriggs@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/rtas.h          |    2 
+ arch/powerpc/kernel/rtas.c               |  113 +++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/pseries/suspend.c |   22 ++++++
+ 3 files changed, 137 insertions(+)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2740,7 +2740,7 @@ static int do_last(struct nameidata *nd,
- 		if (error)
- 			return error;
+--- a/arch/powerpc/include/asm/rtas.h
++++ b/arch/powerpc/include/asm/rtas.h
+@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsig
+ extern void rtas_initialize(void);
+ extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
+ extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
++extern int rtas_online_cpus_mask(cpumask_var_t cpus);
++extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
+ extern int rtas_ibm_suspend_me(struct rtas_args *);
  
--		audit_inode(name, dir, 0);
-+		audit_inode(name, dir, LOOKUP_PARENT);
- 		error = -EISDIR;
- 		/* trailing slashes? */
- 		if (nd->last.name[nd->last.len])
+ struct rtc_time;
+--- a/arch/powerpc/kernel/rtas.c
++++ b/arch/powerpc/kernel/rtas.c
+@@ -19,6 +19,7 @@
+ #include <linux/init.h>
+ #include <linux/capability.h>
+ #include <linux/delay.h>
++#include <linux/cpu.h>
+ #include <linux/smp.h>
+ #include <linux/completion.h>
+ #include <linux/cpumask.h>
+@@ -807,6 +808,95 @@ static void rtas_percpu_suspend_me(void
+ 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
+ }
+ 
++enum rtas_cpu_state {
++	DOWN,
++	UP,
++};
++
++#ifndef CONFIG_SMP
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	if (!cpumask_empty(cpus)) {
++		cpumask_clear(cpus);
++		return -EINVAL;
++	} else
++		return 0;
++}
++#else
++/* On return cpumask will be altered to indicate CPUs changed.
++ * CPUs with states changed will be set in the mask,
++ * CPUs with status unchanged will be unset in the mask. */
++static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
++				cpumask_var_t cpus)
++{
++	int cpu;
++	int cpuret = 0;
++	int ret = 0;
++
++	if (cpumask_empty(cpus))
++		return 0;
++
++	for_each_cpu(cpu, cpus) {
++		switch (state) {
++		case DOWN:
++			cpuret = cpu_down(cpu);
++			break;
++		case UP:
++			cpuret = cpu_up(cpu);
++			break;
++		}
++		if (cpuret) {
++			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
++					__func__,
++					((state == UP) ? "up" : "down"),
++					cpu, cpuret);
++			if (!ret)
++				ret = cpuret;
++			if (state == UP) {
++				/* clear bits for unchanged cpus, return */
++				cpumask_shift_right(cpus, cpus, cpu);
++				cpumask_shift_left(cpus, cpus, cpu);
++				break;
++			} else {
++				/* clear bit for unchanged cpu, continue */
++				cpumask_clear_cpu(cpu, cpus);
++			}
++		}
++	}
++
++	return ret;
++}
++#endif
++
++int rtas_online_cpus_mask(cpumask_var_t cpus)
++{
++	int ret;
++
++	ret = rtas_cpu_state_change_mask(UP, cpus);
++
++	if (ret) {
++		cpumask_var_t tmp_mask;
++
++		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
++			return ret;
++
++		/* Use tmp_mask to preserve cpus mask from first failure */
++		cpumask_copy(tmp_mask, cpus);
++		rtas_offline_cpus_mask(tmp_mask);
++		free_cpumask_var(tmp_mask);
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(rtas_online_cpus_mask);
++
++int rtas_offline_cpus_mask(cpumask_var_t cpus)
++{
++	return rtas_cpu_state_change_mask(DOWN, cpus);
++}
++EXPORT_SYMBOL(rtas_offline_cpus_mask);
++
+ int rtas_ibm_suspend_me(struct rtas_args *args)
+ {
+ 	long state;
+@@ -814,6 +904,8 @@ int rtas_ibm_suspend_me(struct rtas_args
+ 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
+ 	struct rtas_suspend_me_data data;
+ 	DECLARE_COMPLETION_ONSTACK(done);
++	cpumask_var_t offline_mask;
++	int cpuret;
+ 
+ 	if (!rtas_service_present("ibm,suspend-me"))
+ 		return -ENOSYS;
+@@ -837,11 +929,24 @@ int rtas_ibm_suspend_me(struct rtas_args
+ 		return 0;
+ 	}
+ 
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	atomic_set(&data.working, 0);
+ 	atomic_set(&data.done, 0);
+ 	atomic_set(&data.error, 0);
+ 	data.token = rtas_token("ibm,suspend-me");
+ 	data.complete = &done;
++
++	/* All present CPUs must be online */
++	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
++	cpuret = rtas_online_cpus_mask(offline_mask);
++	if (cpuret) {
++		pr_err("%s: Could not bring present CPUs online.\n", __func__);
++		atomic_set(&data.error, cpuret);
++		goto out;
++	}
++
+ 	stop_topology_update();
+ 
+ 	/* Call function on all CPUs.  One of us will make the
+@@ -857,6 +962,14 @@ int rtas_ibm_suspend_me(struct rtas_args
+ 
+ 	start_topology_update();
+ 
++	/* Take down CPUs not online prior to suspend */
++	cpuret = rtas_offline_cpus_mask(offline_mask);
++	if (cpuret)
++		pr_warn("%s: Could not restore CPUs to offline state.\n",
++				__func__);
++
++out:
++	free_cpumask_var(offline_mask);
+ 	return atomic_read(&data.error);
+ }
+ #else /* CONFIG_PPC_PSERIES */
+--- a/arch/powerpc/platforms/pseries/suspend.c
++++ b/arch/powerpc/platforms/pseries/suspend.c
+@@ -16,6 +16,7 @@
+   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+   */
+ 
++#include <linux/cpu.h>
+ #include <linux/delay.h>
+ #include <linux/suspend.h>
+ #include <linux/stat.h>
+@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct de
+ 			       struct device_attribute *attr,
+ 			       const char *buf, size_t count)
+ {
++	cpumask_var_t offline_mask;
+ 	int rc;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
++		return -ENOMEM;
++
+ 	stream_id = simple_strtoul(buf, NULL, 16);
+ 
+ 	do {
+@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct de
+ 	} while (rc == -EAGAIN);
+ 
+ 	if (!rc) {
++		/* All present CPUs must be online */
++		cpumask_andnot(offline_mask, cpu_present_mask,
++				cpu_online_mask);
++		rc = rtas_online_cpus_mask(offline_mask);
++		if (rc) {
++			pr_err("%s: Could not bring present CPUs online.\n",
++					__func__);
++			goto out;
++		}
++
+ 		stop_topology_update();
+ 		rc = pm_suspend(PM_SUSPEND_MEM);
+ 		start_topology_update();
++
++		/* Take down CPUs not online prior to suspend */
++		if (!rtas_offline_cpus_mask(offline_mask))
++			pr_warn("%s: Could not restore CPUs to offline "
++					"state.\n", __func__);
+ 	}
+ 
+ 	stream_id = 0;
+ 
+ 	if (!rc)
+ 		rc = count;
++out:
++	free_cpumask_var(offline_mask);
+ 	return rc;
+ }
+ 
 
 
