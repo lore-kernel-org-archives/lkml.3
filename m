@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab3EQVhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:37:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53997 "EHLO
+	id S1757018Ab3EQVh3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:37:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab3EQVhD (ORCPT
+	with ESMTP id S1756936Ab3EQVhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:03 -0400
+	Fri, 17 May 2013 17:37:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 006/102] ARM: OMAP: RX-51: change probe order of touchscreen and panel SPI devices
-Date: Fri, 17 May 2013 14:35:21 -0700
-Message-Id: <20130517213244.994849760@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 042/102] ath9k: fix key allocation error handling for powersave keys
+Date: Fri, 17 May 2013 14:35:57 -0700
+Message-Id: <20130517213248.731988519@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,56 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e65f131a14726e5f1b880a528271a52428e5b3a5 upstream.
+commit 4ef69d0394cba8caa9f75d3f2e53429bfb8b3045 upstream.
 
-Commit 9fdca9df (spi: omap2-mcspi: convert to module_platform_driver)
-broke the SPI display/panel driver probe on RX-51/N900. The exact cause is
-not fully understood, but it seems to be related to the probe order. SPI
-communication to the panel driver (spi1.2) fails unless the touchscreen
-(spi1.0) has been probed/initialized before. When the omap2-mcspi driver
-was converted to a platform driver, it resulted in that the devices are
-probed immediately after the board registers them in the order they are
-listed in the board file.
+If no keycache slots are available, ath_key_config can return -ENOSPC.
+If the key index is not checked for errors, it can lead to logspam that
+looks like this: "ath: wiphy0: keyreset: keycache entry 228 out of range"
+This can cause follow-up errors if the invalid keycache index gets
+used for tx.
 
-Fix the issue by moving the touchscreen before the panel in the SPI
-device list.
-
-The patch fixes the following failure:
-
-[    1.260955] acx565akm spi1.2: invalid display ID
-[    1.265899] panel-acx565akm display0: acx_panel_probe panel detect error
-[    1.273071] omapdss CORE error: driver probe failed: -19
-
-Tested-by: Sebastian Reichel <sre@debian.org>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Pali Rohár <pali.rohar@gmail.com>
-Cc: Joni Lapilainen <joni.lapilainen@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -73,11 +73,11 @@
- #define LIS302_IRQ1_GPIO 181
- #define LIS302_IRQ2_GPIO 180  /* Not yet in use */
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1308,6 +1308,7 @@ static int ath9k_sta_add(struct ieee8021
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
+ 	struct ieee80211_key_conf ps_key = { };
++	int key;
  
--/* list all spi devices here */
-+/* List all SPI devices here. Note that the list/probe order seems to matter! */
- enum {
- 	RX51_SPI_WL1251,
--	RX51_SPI_MIPID,		/* LCD panel */
- 	RX51_SPI_TSC2005,	/* Touch Controller */
-+	RX51_SPI_MIPID,		/* LCD panel */
- };
+ 	ath_node_attach(sc, sta, vif);
  
- static struct wl12xx_platform_data wl1251_pdata;
+@@ -1315,7 +1316,9 @@ static int ath9k_sta_add(struct ieee8021
+ 	    vif->type != NL80211_IFTYPE_AP_VLAN)
+ 		return 0;
+ 
+-	an->ps_key = ath_key_config(common, vif, sta, &ps_key);
++	key = ath_key_config(common, vif, sta, &ps_key);
++	if (key > 0)
++		an->ps_key = key;
+ 
+ 	return 0;
+ }
+@@ -1332,6 +1335,7 @@ static void ath9k_del_ps_key(struct ath_
+ 	    return;
+ 
+ 	ath_key_delete(common, &ps_key);
++	an->ps_key = 0;
+ }
+ 
+ static int ath9k_sta_remove(struct ieee80211_hw *hw,
 
 
