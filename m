@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab3EQWTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:19:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54109 "EHLO
+	id S1758327Ab3EQWTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:19:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54137 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab3EQVh0 (ORCPT
+	with ESMTP id S1756956Ab3EQVhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:26 -0400
+	Fri, 17 May 2013 17:37:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@kernel.org>, fenghua.yu@intel.com,
-        xen-devel@lists.xensource.com
-Subject: [ 038/102] x86/microcode: Add local mutex to fix physical CPU hot-add deadlock
-Date: Fri, 17 May 2013 14:35:53 -0700
-Message-Id: <20130517213248.334309022@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [ 036/102] tracing: Fix leaks of filter preds
+Date: Fri, 17 May 2013 14:35:51 -0700
+Message-Id: <20130517213248.121906563@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -28,97 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 074d72ff57f65de779e2f70d5906964c0ba1c123 upstream.
+commit 60705c89460fdc7227f2d153b68b3f34814738a4 upstream.
 
-This can easily be triggered if a new CPU is added (via
-ACPI hotplug mechanism) and from user-space you do:
+Special preds are created when folding a series of preds that
+can be done in serial. These are allocated in an ops field of
+the pred structure. But they were never freed, causing memory
+leaks.
 
-   echo 1 > /sys/devices/system/cpu/cpu3/online
+This was discovered using the kmemleak checker:
 
-(or wait for UDEV to do it) on a newly appeared physical CPU.
+unreferenced object 0xffff8800797fd5e0 (size 32):
+  comm "swapper/0", pid 1, jiffies 4294690605 (age 104.608s)
+  hex dump (first 32 bytes):
+    00 00 01 00 03 00 05 00 07 00 09 00 0b 00 0d 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff814b52af>] kmemleak_alloc+0x73/0x98
+    [<ffffffff8111ff84>] kmemleak_alloc_recursive.constprop.42+0x16/0x18
+    [<ffffffff81120e68>] __kmalloc+0xd7/0x125
+    [<ffffffff810d47eb>] kcalloc.constprop.24+0x2d/0x2f
+    [<ffffffff810d4896>] fold_pred_tree_cb+0xa9/0xf4
+    [<ffffffff810d3781>] walk_pred_tree+0x47/0xcc
+    [<ffffffff810d5030>] replace_preds.isra.20+0x6f8/0x72f
+    [<ffffffff810d50b5>] create_filter+0x4e/0x8b
+    [<ffffffff81b1c30d>] ftrace_test_event_filter+0x5a/0x155
+    [<ffffffff8100028d>] do_one_initcall+0xa0/0x137
+    [<ffffffff81afbedf>] kernel_init_freeable+0x14d/0x1dc
+    [<ffffffff814b24b7>] kernel_init+0xe/0xdb
+    [<ffffffff814d539c>] ret_from_fork+0x7c/0xb0
+    [<ffffffffffffffff>] 0xffffffffffffffff
 
-The deadlock is that the "store_online" in drivers/base/cpu.c
-takes the cpu_hotplug_driver_lock() lock, then calls "cpu_up".
-"cpu_up" eventually ends up calling "save_mc_for_early"
-which also takes the cpu_hotplug_driver_lock() lock.
-
-And here is that lockdep thinks of it:
-
- smpboot: Stack at about ffff880075c39f44
- smpboot: CPU3: has booted.
- microcode: CPU3 sig=0x206a7, pf=0x2, revision=0x25
-
- =============================================
- [ INFO: possible recursive locking detected ]
- 3.9.0upstream-10129-g167af0e #1 Not tainted
- ---------------------------------------------
- sh/2487 is trying to acquire lock:
-  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-
- but task is already holding lock:
-  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-
- other info that might help us debug this:
-  Possible unsafe locking scenario:
-
-        CPU0
-        ----
-   lock(x86_cpu_hotplug_driver_mutex);
-   lock(x86_cpu_hotplug_driver_mutex);
-
-  *** DEADLOCK ***
-
-  May be due to missing lock nesting notation
-
- 6 locks held by sh/2487:
-  #0:  (sb_writers#5){.+.+.+}, at: [<ffffffff811ca48d>] vfs_write+0x17d/0x190
-  #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff812464ef>] sysfs_write_file+0x3f/0x160
-  #2:  (s_active#20){.+.+.+}, at: [<ffffffff81246578>] sysfs_write_file+0xc8/0x160
-  #3:  (x86_cpu_hotplug_driver_mutex){+.+.+.}, at: [<ffffffff81075512>] cpu_hotplug_driver_lock+0x12/0x20
-  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810961c2>] cpu_maps_update_begin+0x12/0x20
-  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810962a7>] cpu_hotplug_begin+0x27/0x60
-
-Suggested-and-Acked-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: fenghua.yu@intel.com
-Cc: xen-devel@lists.xensource.com
-Link: http://lkml.kernel.org/r/1368029583-23337-1-git-send-email-konrad.wilk@oracle.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/microcode_intel_early.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/trace/trace_events_filter.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -487,6 +487,7 @@ static inline void show_saved_mc(void)
- #endif
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -777,7 +777,11 @@ static int filter_set_pred(struct event_
  
- #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
-+static DEFINE_MUTEX(x86_cpu_microcode_mutex);
- /*
-  * Save this mc into mc_saved_data. So it will be loaded early when a CPU is
-  * hot added or resumes.
-@@ -507,7 +508,7 @@ int save_mc_for_early(u8 *mc)
- 	 * Hold hotplug lock so mc_saved_data is not accessed by a CPU in
- 	 * hotplug.
- 	 */
--	cpu_hotplug_driver_lock();
-+	mutex_lock(&x86_cpu_microcode_mutex);
- 
- 	mc_saved_count_init = mc_saved_data.mc_saved_count;
- 	mc_saved_count = mc_saved_data.mc_saved_count;
-@@ -544,7 +545,7 @@ int save_mc_for_early(u8 *mc)
+ static void __free_preds(struct event_filter *filter)
+ {
++	int i;
++
+ 	if (filter->preds) {
++		for (i = 0; i < filter->n_preds; i++)
++			kfree(filter->preds[i].ops);
+ 		kfree(filter->preds);
+ 		filter->preds = NULL;
  	}
- 
- out:
--	cpu_hotplug_driver_unlock();
-+	mutex_unlock(&x86_cpu_microcode_mutex);
- 
- 	return ret;
- }
 
 
