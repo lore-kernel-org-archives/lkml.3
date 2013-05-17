@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab3EQWOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:14:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54225 "EHLO
+	id S1758204Ab3EQWOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:14:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757096Ab3EQVhi (ORCPT
+	with ESMTP id S1757087Ab3EQVhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:37:38 -0400
+	Fri, 17 May 2013 17:37:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gao feng <gaofeng@cn.fujitsu.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 056/102] net: tun: release the reference of tun device in tun_recvmsg
-Date: Fri, 17 May 2013 14:36:11 -0700
-Message-Id: <20130517213250.268121777@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 043/102] mwifiex: clear is_suspended flag when interrupt is received early
+Date: Fri, 17 May 2013 14:35:58 -0700
+Message-Id: <20130517213248.856426253@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,44 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Bing Zhao <bzhao@marvell.com>
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+commit 48795424acff7215d5eac0b52793a2c1eb3a6283 upstream.
 
-[ Upstream commit 3811ae76bc84e5dc1a670ae10695f046b310bee1 ]
+When the XO-4 with 8787 wireless is woken up due to wake-on-WLAN
+mwifiex is often flooded with "not allowed while suspended" messages
+and the interface is unusable.
 
-We forget to release the reference of tun device in tun_recvmsg.
-bug introduced in commit 54f968d6efdbf7dec36faa44fc11f01b0e4d1990
-(tuntap: move socket to tun_file)
+[  202.171609] int: sdio_ireg = 0x1
+[  202.180700] info: mwifiex_process_hs_config: auto cancelling host
+               sleep since there is interrupt from the firmware
+[  202.201880] event: wakeup device...
+[  202.211452] event: hs_deactivated
+[  202.514638] info: --- Rx: Data packet ---
+[  202.514753] data: 4294957544 BSS(0-0): Data <= kernel
+[  202.514825] PREP_CMD: device in suspended state
+[  202.514839] data: dequeuing the packet ec7248c0 ec4869c0
+[  202.514886] mwifiex_write_data_sync: not allowed while suspended
+[  202.514886] host_to_card, write iomem (1) failed: -1
+[  202.514917] mwifiex_write_data_sync: not allowed while suspended
+[  202.514936] host_to_card, write iomem (2) failed: -1
+[  202.514949] mwifiex_write_data_sync: not allowed while suspended
+[  202.514965] host_to_card, write iomem (3) failed: -1
+[  202.514976] mwifiex_write_data_async failed: 0xFFFFFFFF
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This can be readily reproduced when putting the XO-4 in a loop where
+it goes to sleep due to inactivity, but then wakes up due to an
+incoming ping. The error is hit within an hour or two.
+
+This issue happens when an interrupt comes in early while host sleep
+is still activated. Driver handles this case by auto cancelling host
+sleep. However is_suspended flag is still set which prevents any cmd
+or data from being sent to firmware. Fix it by clearing is_suspended
+flag in this path.
+
+Reported-by: Daniel Drake <dsd@laptop.org>
+Tested-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/tun.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1471,14 +1471,17 @@ static int tun_recvmsg(struct kiocb *ioc
- 	if (!tun)
- 		return -EBADFD;
- 
--	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC))
--		return -EINVAL;
-+	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 	ret = tun_do_read(tun, tfile, iocb, m->msg_iov, total_len,
- 			  flags & MSG_DONTWAIT);
- 	if (ret > total_len) {
- 		m->msg_flags |= MSG_TRUNC;
- 		ret = flags & MSG_TRUNC ? ret : total_len;
- 	}
-+out:
- 	tun_put(tun);
- 	return ret;
- }
+---
+ drivers/net/wireless/mwifiex/cmdevt.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -1176,6 +1176,7 @@ mwifiex_process_hs_config(struct mwifiex
+ 	adapter->if_ops.wakeup(adapter);
+ 	adapter->hs_activated = false;
+ 	adapter->is_hs_configured = false;
++	adapter->is_suspended = false;
+ 	mwifiex_hs_activated_event(mwifiex_get_priv(adapter,
+ 						    MWIFIEX_BSS_ROLE_ANY),
+ 				   false);
 
 
