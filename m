@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab3EQVmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:42:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54362 "EHLO
+	id S1757464Ab3EQVnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:43:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab3EQViA (ORCPT
+	with ESMTP id S1757165Ab3EQVh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:00 -0400
+	Fri, 17 May 2013 17:37:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
+        Shlomo Pongratz <shlomop@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 087/102] target: close target_put_sess_cmd() vs. core_tmr_abort_task() race
-Date: Fri, 17 May 2013 14:36:42 -0700
-Message-Id: <20130517213253.422491092@linuxfoundation.org>
+Subject: [ 086/102] iscsi-target: Fix processing of OOO commands
+Date: Fri, 17 May 2013 14:36:41 -0700
+Message-Id: <20130517213253.327465408@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,113 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joern Engel <joern@logfs.org>
+From: Shlomo Pongratz <shlomop@mellanox.com>
 
-commit ccf5ae83a6cf3d9cfe9a7038bfe7cd38ab03d5e1 upstream.
+commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
 
-It is possible for one thread to to take se_sess->sess_cmd_lock in
-core_tmr_abort_task() before taking a reference count on
-se_cmd->cmd_kref, while another thread in target_put_sess_cmd() drops
-se_cmd->cmd_kref before taking se_sess->sess_cmd_lock.
+Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
 
-This introduces kref_put_spinlock_irqsave() and uses it in
-target_put_sess_cmd() to close the race window.
+Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
 
-Signed-off-by: Joern Engel <joern@logfs.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The routine iterates until it finds an entry whose serial number is greater than the serial number of
+the new one, thus the new entry should be inserted before that entry and not after.
+
+Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |   11 +++++------
- include/linux/kref.h                   |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 6 deletions(-)
+ drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2213,21 +2213,19 @@ static void target_release_cmd_kref(stru
- {
- 	struct se_cmd *se_cmd = container_of(kref, struct se_cmd, cmd_kref);
- 	struct se_session *se_sess = se_cmd->se_sess;
--	unsigned long flags;
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -819,7 +819,7 @@ static int iscsit_attach_ooo_cmdsn(
+ 		/*
+ 		 * CmdSN is greater than the tail of the list.
+ 		 */
+-		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
++		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
+ 			list_add_tail(&ooo_cmdsn->ooo_list,
+ 					&sess->sess_ooo_cmdsn_list);
+ 		else {
+@@ -829,11 +829,12 @@ static int iscsit_attach_ooo_cmdsn(
+ 			 */
+ 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
+ 						ooo_list) {
+-				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
++				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
+ 					continue;
  
--	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
- 	if (list_empty(&se_cmd->se_cmd_list)) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		se_cmd->se_tfo->release_cmd(se_cmd);
- 		return;
- 	}
- 	if (se_sess->sess_tearing_down && se_cmd->cmd_wait_set) {
--		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+		spin_unlock(&se_sess->sess_cmd_lock);
- 		complete(&se_cmd->cmd_wait_comp);
- 		return;
- 	}
- 	list_del(&se_cmd->se_cmd_list);
--	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
-+	spin_unlock(&se_sess->sess_cmd_lock);
- 
- 	se_cmd->se_tfo->release_cmd(se_cmd);
- }
-@@ -2238,7 +2236,8 @@ static void target_release_cmd_kref(stru
-  */
- int target_put_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd)
- {
--	return kref_put(&se_cmd->cmd_kref, target_release_cmd_kref);
-+	return kref_put_spinlock_irqsave(&se_cmd->cmd_kref, target_release_cmd_kref,
-+			&se_sess->sess_cmd_lock);
- }
- EXPORT_SYMBOL(target_put_sess_cmd);
- 
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -19,6 +19,7 @@
- #include <linux/atomic.h>
- #include <linux/kernel.h>
- #include <linux/mutex.h>
-+#include <linux/spinlock.h>
- 
- struct kref {
- 	atomic_t refcount;
-@@ -95,6 +96,38 @@ static inline int kref_put(struct kref *
- 	return kref_sub(kref, 1, release);
- }
- 
-+/**
-+ * kref_put_spinlock_irqsave - decrement refcount for object.
-+ * @kref: object.
-+ * @release: pointer to the function that will clean up the object when the
-+ *	     last reference to the object is released.
-+ *	     This pointer is required, and it is not acceptable to pass kfree
-+ *	     in as this function.
-+ * @lock: lock to take in release case
-+ *
-+ * Behaves identical to kref_put with one exception.  If the reference count
-+ * drops to zero, the lock will be taken atomically wrt dropping the reference
-+ * count.  The release function has to call spin_unlock() without _irqrestore.
-+ */
-+static inline int kref_put_spinlock_irqsave(struct kref *kref,
-+		void (*release)(struct kref *kref),
-+		spinlock_t *lock)
-+{
-+	unsigned long flags;
-+
-+	WARN_ON(release == NULL);
-+	if (atomic_add_unless(&kref->refcount, -1, 1))
-+		return 0;
-+	spin_lock_irqsave(lock, flags);
-+	if (atomic_dec_and_test(&kref->refcount)) {
-+		release(kref);
-+		local_irq_restore(flags);
-+		return 1;
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+	return 0;
-+}
-+
- static inline int kref_put_mutex(struct kref *kref,
- 				 void (*release)(struct kref *kref),
- 				 struct mutex *lock)
++				/* Insert before this entry */
+ 				list_add(&ooo_cmdsn->ooo_list,
+-					&ooo_tmp->ooo_list);
++					ooo_tmp->ooo_list.prev);
+ 				break;
+ 			}
+ 		}
 
 
