@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756648Ab3EQVVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:21:45 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51336 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3EQVVo (ORCPT
+	id S1756701Ab3EQVcq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:32:46 -0400
+Received: from mail-ye0-f169.google.com ([209.85.213.169]:40130 "EHLO
+	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab3EQVco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:21:44 -0400
-Message-ID: <51969F66.7080205@free-electrons.com>
-Date: Fri, 17 May 2013 23:21:42 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 17 May 2013 17:32:44 -0400
+Date: Fri, 17 May 2013 16:32:23 -0500
+From: Calvin Owens <jcalvinowens@gmail.com>
+To: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>
+Subject: [PATCH] md: Partially revert 2f6db2a7, which broke raid5
+Message-ID: <20130517213223.GA2530@gmail.com>
 MIME-Version: 1.0
-To: Oliver Schinagl <oliver+list@schinagl.nl>
-CC: arnd@ardb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Oliver Schinagl <oliver@schinagl.nl>
-Subject: Re: [PATCH 2/2] Add sunxi-sid to dts for sun4i and sun5i
-References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl> <1368797744-13737-3-git-send-email-oliver+list@schinagl.nl>
-In-Reply-To: <1368797744-13737-3-git-send-email-oliver+list@schinagl.nl>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oliver,
+Commit 2f6db2a7 was part of a series that cleaned up mdraid code by
+replacing explicit re-initialization of struct bio with bio_reset().
 
-Le 17/05/2013 15:35, Oliver Schinagl a écrit :
-> From: Oliver Schinagl <oliver@schinagl.nl>
-> 
-> This should add support for the sunxi-sid driver to the device table for sun4i and sun5i
+In raid5 it incorrectly assumed that a couple initializations of its
+members was a full reset, erasing the existing data and unconditionally
+triggering the following BUG when assembling arrays:
 
-And it actually does :)
+[   14.653072] kernel BUG at /home/calvinow/git/linux/drivers/scsi/scsi_lib.c:1196!
+[   14.653074] invalid opcode: 0000 [#1] PREEMPT SMP
+[   14.653076] CPU: 1 PID: 40 Comm: kworker/1:0H Not tainted 3.10.0-rc1-amd-00279-g8f710dd #3
+[   14.653077] Hardware name: System manufacturer System Product Name/M5A88-M, BIOS 0601    09/20/2011
+[   14.653082] Workqueue: kblockd blk_delay_work
+<snip>
+[   14.653123] Call Trace:
+[   14.653126]  [<ffffffff81477248>] sd_prep_fn+0x2c8/0xb70
+[   14.653129]  [<ffffffff812c8b70>] ? deadline_remove_request.isra.9+0x50/0x90
+[   14.653132]  [<ffffffff812b8f5b>] blk_peek_request+0xdb/0x210
+[   14.653134]  [<ffffffff81465f15>] scsi_request_fn+0x45/0x4e0
+[   14.653136]  [<ffffffff812b6a51>] __blk_run_queue+0x31/0x40
+[   14.653138]  [<ffffffff812b6a84>] blk_delay_work+0x24/0x40
+[   14.653141]  [<ffffffff8105dc2a>] process_one_work+0x1da/0x490
+[   14.653143]  [<ffffffff8105dbcd>] ? process_one_work+0x17d/0x490
+[   14.653145]  [<ffffffff8105e32a>] worker_thread+0x11a/0x370
+[   14.653147]  [<ffffffff8105e210>] ? rescuer_thread+0x2f0/0x2f0
+[   14.653149]  [<ffffffff81066296>] kthread+0xd6/0xe0
+[   14.653151]  [<ffffffff810661c0>] ? __kthread_unpark+0x50/0x50
+[   14.653154]  [<ffffffff816e4d6c>] ret_from_fork+0x7c/0xb0
+[   14.653156]  [<ffffffff810661c0>] ? __kthread_unpark+0x50/0x50
+[   14.653172] Code: <snip>
+[   14.653174] RIP  [<ffffffff81467329>] scsi_setup_fs_cmnd+0x89/0x90
 
-> 
-> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
-> ---
->  arch/arm/boot/dts/sun4i-a10.dtsi | 5 +++++
->  arch/arm/boot/dts/sun5i-a13.dtsi | 5 +++++
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-> index e7ef619..1043db2 100644
-> --- a/arch/arm/boot/dts/sun4i-a10.dtsi
-> +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-> @@ -163,6 +163,11 @@
->  		reg = <0x01c20000 0x300000>;
->  		ranges;
->  
-> +		sid: eeprom@01c23800 {
-> +			compatible = "allwinner,sun4i-sid";
-> +			reg = <0x01c23800 0x10>;
-> +		};
-> +
+Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+---
+ drivers/md/raid5.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-I'd prefer to have the nodes sorted by base addresses.
-Also, the reserved address space for this IP is 1kB, please make it as
-such in the dt.
-
->  		intc: interrupt-controller@01c20400 {
->  			compatible = "allwinner,sun4i-ic";
->  			reg = <0x01c20400 0x400>;
-> diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-> index 8ba65c1..f715132 100644
-> --- a/arch/arm/boot/dts/sun5i-a13.dtsi
-> +++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-> @@ -153,6 +153,11 @@
->  		reg = <0x01c20000 0x300000>;
->  		ranges;
->  
-> +		sid: eeprom@01c23800 {
-> +			compatible = "allwinner,sun4i-sid";
-> +			reg = <0x01c23800 0x10>;
-> +		};
-
-Ditto,
-
-> +
->  		intc: interrupt-controller@01c20400 {
->  			compatible = "allwinner,sun4i-ic";
->  			reg = <0x01c20400 0x400>;
-> 
-
-Thanks,
-Maxime
-
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 9359828..97be03f 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -643,7 +643,6 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
+ 
+-			bio_reset(bi);
+ 			bi->bi_bdev = rdev->bdev;
+ 			bi->bi_rw = rw;
+ 			bi->bi_end_io = (rw & WRITE)
+@@ -664,9 +663,12 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+ 				bi->bi_rw |= REQ_FLUSH;
+ 
++			bi->bi_flags = 1 << BIO_UPTODATE;
++			bi->bi_idx = 0;
+ 			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			bi->bi_io_vec[0].bv_offset = 0;
+ 			bi->bi_size = STRIPE_SIZE;
++			bi->bi_next = NULL;
+ 			if (rrdev)
+ 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
+ 
+@@ -683,7 +685,6 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
+ 
+-			bio_reset(rbi);
+ 			rbi->bi_bdev = rrdev->bdev;
+ 			rbi->bi_rw = rw;
+ 			BUG_ON(!(rw & WRITE));
 -- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.2.1
+
