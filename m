@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3EQDhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 23:37:43 -0400
-Received: from [207.46.163.28] ([207.46.163.28]:25451 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753792Ab3EQDf1 (ORCPT
+	id S1753602Ab3EQDl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 23:41:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52089 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab3EQDl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 23:35:27 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(z3121kzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <vikram186@gmail.com>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 07/10] mtd: add ECC info for nand_flash_dev{}
-Date: Fri, 17 May 2013 11:17:31 +0800
-Message-ID: <1368760654-28754-8-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1368760654-28754-1-git-send-email-b32955@freescale.com>
-References: <1368760654-28754-1-git-send-email-b32955@freescale.com>
+	Thu, 16 May 2013 23:41:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5195A6DF.4080403@jp.fujitsu.com>
+Date: Fri, 17 May 2013 12:41:19 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] mm: vmscan: Obey proportional scanning requirements
+ for kswapd
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de> <1368432760-21573-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1368432760-21573-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an instance of an anonymous struct to store the ECC infor for full id
-nand chips.
-	@ecc.strength_ds: ECC correctability from the datasheet.
-	@ecc.step_ds: ECC size required by the @ecc.strength_ds,
+(2013/05/13 17:12), Mel Gorman wrote:
+> Simplistically, the anon and file LRU lists are scanned proportionally
+> depending on the value of vm.swappiness although there are other factors
+> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> the number of pages kswapd reclaims" limits the number of pages kswapd
+> reclaims but it breaks this proportional scanning and may evenly shrink
+> anon/file LRUs regardless of vm.swappiness.
+> 
+> This patch preserves the proportional scanning and reclaim. It does mean
+> that kswapd will reclaim more than requested but the number of pages will
+> be related to the high watermark.
+> 
+> [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
+> [kamezawa.hiroyu@jp.fujitsu.com: Recalculate scan based on target]
+> [hannes@cmpxchg.org: Account for already scanned pages properly]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
-These two fields are all from the datasheet.
-
-Also add the necessary macros to make the code simple and clean.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- include/linux/mtd/nand.h |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 9574e0a..217cdfe 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -625,6 +625,11 @@ struct nand_chip {
- 	{ .name = (nm), {{ .dev_id = (devid) }}, .chipsize = (chipsz), \
- 	  .options = (opts) }
- 
-+#define NAND_ECC_INFO(_strength, _step)	\
-+			{ .strength_ds = (_strength), .step_ds = (_step) }
-+#define NAND_ECC_STRENGTH(type)		((type)->ecc.strength_ds)
-+#define NAND_ECC_STEP(type)		((type)->ecc.step_ds)
-+
- /**
-  * struct nand_flash_dev - NAND Flash Device ID Structure
-  * @name: a human-readable name of the NAND chip
-@@ -642,6 +647,12 @@ struct nand_chip {
-  * @options: stores various chip bit options
-  * @id_len: The valid length of the @id.
-  * @oobsize: OOB size
-+ * @ecc.strength_ds: The ECC correctability from the datasheet, same as the
-+ *                   @ecc_strength_ds in nand_chip{}.
-+ * @ecc.step_ds: The ECC step required by the @ecc.strength_ds, same as the
-+ *               @ecc_step_ds in nand_chip{}, also from the datasheet.
-+ *               For example, the "4bit ECC for each 512Byte" can be set with
-+ *               NAND_ECC_INFO(4, 512).
-  */
- struct nand_flash_dev {
- 	char *name;
-@@ -658,6 +669,10 @@ struct nand_flash_dev {
- 	unsigned int options;
- 	uint16_t id_len;
- 	uint16_t oobsize;
-+	struct {
-+		uint16_t strength_ds;
-+		uint16_t step_ds;
-+	} ecc;
- };
- 
- /**
--- 
-1.7.1
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
