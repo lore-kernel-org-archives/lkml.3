@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab3EQPrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 11:47:04 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51159 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab3EQPrA (ORCPT
+	id S1756471Ab3EQPrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 11:47:19 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39849 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756400Ab3EQPrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 11:47:00 -0400
+	Fri, 17 May 2013 11:47:14 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,18 +19,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: [PATCH v7, part3 13/16] mm: correctly update zone->mamaged_pages
-Date: Fri, 17 May 2013 23:45:15 +0800
-Message-Id: <1368805518-2634-14-git-send-email-jiang.liu@huawei.com>
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: [PATCH v7, part3 16/16] AVR32: fix building warnings caused by redifinitions of HZ
+Date: Fri, 17 May 2013 23:45:18 +0800
+Message-Id: <1368805518-2634-17-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
 References: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
@@ -38,223 +31,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance adjust_managed_page_count() to adjust totalhigh_pages for
-highmem pages. And change code which directly adjusts totalram_pages
-to use adjust_managed_page_count() because it adjusts totalram_pages,
-totalhigh_pages and zone->managed_pages altogether in a safe way.
+As suggested by David Howells <dhowells@redhat.com>, use
+asm-generic/param.h and uapi/asm-generic/param.h for AVR32.
 
-Remove inc_totalhigh_pages() and dec_totalhigh_pages() from xen/balloon
-driver bacause adjust_managed_page_count() has already adjusted
-totalhigh_pages.
-
-This patch also fixes two bugs:
-1) enhances virtio_balloon driver to adjust totalhigh_pages when
-   reserve/unreserve pages.
-2) enhance memory_hotplug.c to adjust totalhigh_pages when hot-removing
-   memory.
-
-We still need to deal with modifications of totalram_pages in file
-arch/powerpc/platforms/pseries/cmm.c, but need help from PPC experts.
+It also fixes building warnings caused by redifinitions of HZ:
+In file included from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
+                 from include/linux/timex.h:63,
+                 from include/linux/jiffies.h:8,
+                 from include/linux/ktime.h:25,
+                 from include/linux/timer.h:5,
+                 from include/linux/workqueue.h:8,
+                 from include/linux/srcu.h:34,
+                 from include/linux/notifier.h:15,
+                 from include/linux/memory_hotplug.h:6,
+                 from include/linux/mmzone.h:777,
+                 from include/linux/gfp.h:4,
+                 from arch/avr32/mm/init.c:10:
+/ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:6:1: warning: "HZ" redefined
+In file included from /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:4,
+                 from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
+                 from include/linux/timex.h:63,
+                 from include/linux/jiffies.h:8,
+                 from include/linux/ktime.h:25,
+                 from include/linux/timer.h:5,
+                 from include/linux/workqueue.h:8,
+                 from include/linux/srcu.h:34,
+                 from include/linux/notifier.h:15,
+                 from include/linux/memory_hotplug.h:6,
+                 from include/linux/mmzone.h:777,
+                 from include/linux/gfp.h:4,
+                 from arch/avr32/mm/init.c:10:
+/ws/linux/kernel/linux.git/arch/avr32/include/uapi/asm/param.h:6:1: warning: this is the location of the previous definition
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan@kernel.org>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Cc: virtualization@lists.linux-foundation.org
-Cc: xen-devel@lists.xensource.com
-Cc: linux-mm@kvack.org
 ---
- drivers/virtio/virtio_balloon.c |  8 +++++---
- drivers/xen/balloon.c           | 23 +++++------------------
- mm/hugetlb.c                    |  2 +-
- mm/memory_hotplug.c             | 15 +++------------
- mm/page_alloc.c                 | 10 +++++-----
- 5 files changed, 19 insertions(+), 39 deletions(-)
+ arch/avr32/include/asm/Kbuild       |  1 +
+ arch/avr32/include/asm/param.h      |  9 ---------
+ arch/avr32/include/uapi/asm/Kbuild  |  1 +
+ arch/avr32/include/uapi/asm/param.h | 18 ------------------
+ 4 files changed, 2 insertions(+), 27 deletions(-)
+ delete mode 100644 arch/avr32/include/asm/param.h
+ delete mode 100644 arch/avr32/include/uapi/asm/param.h
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index bd3ae32..6649968 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -148,7 +148,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- 		}
- 		set_page_pfns(vb->pfns + vb->num_pfns, page);
- 		vb->num_pages += VIRTIO_BALLOON_PAGES_PER_PAGE;
--		totalram_pages--;
-+		adjust_managed_page_count(page, -1);
- 	}
- 
- 	/* Did we get any? */
-@@ -160,11 +160,13 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
- static void release_pages_by_pfn(const u32 pfns[], unsigned int num)
- {
- 	unsigned int i;
-+	struct page *page;
- 
- 	/* Find pfns pointing at start of each page, get pages and free them. */
- 	for (i = 0; i < num; i += VIRTIO_BALLOON_PAGES_PER_PAGE) {
--		balloon_page_free(balloon_pfn_to_page(pfns[i]));
--		totalram_pages++;
-+		page = balloon_pfn_to_page(pfns[i]);
-+		balloon_page_free(page);
-+		adjust_managed_page_count(page, 1);
- 	}
- }
- 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index d42da3b..a453c05 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -89,14 +89,6 @@ EXPORT_SYMBOL_GPL(balloon_stats);
- /* We increase/decrease in batches which fit in a page */
- static xen_pfn_t frame_list[PAGE_SIZE / sizeof(unsigned long)];
- 
--#ifdef CONFIG_HIGHMEM
--#define inc_totalhigh_pages() (totalhigh_pages++)
--#define dec_totalhigh_pages() (totalhigh_pages--)
--#else
--#define inc_totalhigh_pages() do {} while (0)
--#define dec_totalhigh_pages() do {} while (0)
+diff --git a/arch/avr32/include/asm/Kbuild b/arch/avr32/include/asm/Kbuild
+index 4dd4f78..d22af85 100644
+--- a/arch/avr32/include/asm/Kbuild
++++ b/arch/avr32/include/asm/Kbuild
+@@ -2,3 +2,4 @@
+ generic-y	+= clkdev.h
+ generic-y	+= exec.h
+ generic-y	+= trace_clock.h
++generic-y	+= param.h
+diff --git a/arch/avr32/include/asm/param.h b/arch/avr32/include/asm/param.h
+deleted file mode 100644
+index 009a167..0000000
+--- a/arch/avr32/include/asm/param.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-#ifndef __ASM_AVR32_PARAM_H
+-#define __ASM_AVR32_PARAM_H
+-
+-#include <uapi/asm/param.h>
+-
+-# define HZ		CONFIG_HZ
+-# define USER_HZ	100		/* User interfaces are in "ticks" */
+-# define CLOCKS_PER_SEC	(USER_HZ)	/* frequency at which times() counts */
+-#endif /* __ASM_AVR32_PARAM_H */
+diff --git a/arch/avr32/include/uapi/asm/Kbuild b/arch/avr32/include/uapi/asm/Kbuild
+index df53e7a..3b85ead 100644
+--- a/arch/avr32/include/uapi/asm/Kbuild
++++ b/arch/avr32/include/uapi/asm/Kbuild
+@@ -33,3 +33,4 @@ header-y += termbits.h
+ header-y += termios.h
+ header-y += types.h
+ header-y += unistd.h
++generic-y += param.h
+diff --git a/arch/avr32/include/uapi/asm/param.h b/arch/avr32/include/uapi/asm/param.h
+deleted file mode 100644
+index d28aa5e..0000000
+--- a/arch/avr32/include/uapi/asm/param.h
++++ /dev/null
+@@ -1,18 +0,0 @@
+-#ifndef _UAPI__ASM_AVR32_PARAM_H
+-#define _UAPI__ASM_AVR32_PARAM_H
+-
+-
+-#ifndef HZ
+-# define HZ		100
 -#endif
 -
- /* List of ballooned pages, threaded through the mem_map array. */
- static LIST_HEAD(ballooned_pages);
- 
-@@ -132,9 +124,7 @@ static void __balloon_append(struct page *page)
- static void balloon_append(struct page *page)
- {
- 	__balloon_append(page);
--	if (PageHighMem(page))
--		dec_totalhigh_pages();
--	totalram_pages--;
-+	adjust_managed_page_count(page, -1);
- }
- 
- /* balloon_retrieve: rescue a page from the balloon, if it is not empty. */
-@@ -151,13 +141,12 @@ static struct page *balloon_retrieve(bool prefer_highmem)
- 		page = list_entry(ballooned_pages.next, struct page, lru);
- 	list_del(&page->lru);
- 
--	if (PageHighMem(page)) {
-+	if (PageHighMem(page))
- 		balloon_stats.balloon_high--;
--		inc_totalhigh_pages();
--	} else
-+	else
- 		balloon_stats.balloon_low--;
- 
--	totalram_pages++;
-+	adjust_managed_page_count(page, 1);
- 
- 	return page;
- }
-@@ -374,9 +363,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
- #endif
- 
- 		/* Relinquish the page back to the allocator. */
--		ClearPageReserved(page);
--		init_page_count(page);
--		__free_page(page);
-+		__free_reserved_page(page);
- 	}
- 
- 	balloon_stats.current_pages += rc;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index f8feeec..95c5a6b 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1246,7 +1246,7 @@ static void __init gather_bootmem_prealloc(void)
- 		 * side-effects, like CommitLimit going negative.
- 		 */
- 		if (h->order > (MAX_ORDER - 1))
--			totalram_pages += 1 << h->order;
-+			adjust_managed_page_count(page, 1 << h->order);
- 	}
- }
- 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index c291295..304ada7 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -769,20 +769,13 @@ EXPORT_SYMBOL_GPL(__online_page_set_limits);
- 
- void __online_page_increment_counters(struct page *page)
- {
--	totalram_pages++;
+-/* TODO: Should be configurable */
+-#define EXEC_PAGESIZE	4096
 -
--#ifdef CONFIG_HIGHMEM
--	if (PageHighMem(page))
--		totalhigh_pages++;
+-#ifndef NOGROUP
+-# define NOGROUP	(-1)
 -#endif
-+	adjust_managed_page_count(page, 1);
- }
- EXPORT_SYMBOL_GPL(__online_page_increment_counters);
- 
- void __online_page_free(struct page *page)
- {
--	ClearPageReserved(page);
--	init_page_count(page);
--	__free_page(page);
-+	__free_reserved_page(page);
- }
- EXPORT_SYMBOL_GPL(__online_page_free);
- 
-@@ -979,7 +972,6 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
- 		return ret;
- 	}
- 
--	zone->managed_pages += onlined_pages;
- 	zone->present_pages += onlined_pages;
- 	zone->zone_pgdat->node_present_pages += onlined_pages;
- 	if (onlined_pages) {
-@@ -1563,10 +1555,9 @@ repeat:
- 	/* reset pagetype flags and makes migrate type to be MOVABLE */
- 	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
- 	/* removal success */
--	zone->managed_pages -= offlined_pages;
-+	adjust_managed_page_count(pfn_to_page(start_pfn), -offlined_pages);
- 	zone->present_pages -= offlined_pages;
- 	zone->zone_pgdat->node_present_pages -= offlined_pages;
--	totalram_pages -= offlined_pages;
- 
- 	init_per_zone_wmark_min();
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a07e70a..56b0097 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -780,11 +780,7 @@ void __init init_cma_reserved_pageblock(struct page *page)
- 	set_page_refcounted(page);
- 	set_pageblock_migratetype(page, MIGRATE_CMA);
- 	__free_pages(page, pageblock_order);
--	totalram_pages += pageblock_nr_pages;
--#ifdef CONFIG_HIGHMEM
--	if (PageHighMem(page))
--		totalhigh_pages += pageblock_nr_pages;
--#endif
-+	adjust_managed_page_count(page, pageblock_nr_pages);
- }
- #endif
- 
-@@ -5189,6 +5185,10 @@ void adjust_managed_page_count(struct page *page, long count)
- 	spin_lock(&managed_page_count_lock);
- 	page_zone(page)->managed_pages += count;
- 	totalram_pages += count;
-+#ifdef	CONFIG_HIGHMEM
-+	if (PageHighMem(page))
-+		totalhigh_pages += count;
-+#endif
- 	spin_unlock(&managed_page_count_lock);
- }
- EXPORT_SYMBOL(adjust_managed_page_count);
+-
+-#define MAXHOSTNAMELEN	64
+-
+-#endif /* _UAPI__ASM_AVR32_PARAM_H */
 -- 
 1.8.1.2
 
