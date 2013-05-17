@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab3EQOH0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 10:07:26 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:58038
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755382Ab3EQOHZ (ORCPT
+	id S1756167Ab3EQOJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 10:09:06 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:47486 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754967Ab3EQOJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 10:07:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <519639A5.9070807@freescale.com>
-Date: Fri, 17 May 2013 11:07:33 -0300
-From: Fabio Estevam <fabio.estevam@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 17 May 2013 10:09:04 -0400
 MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>, <festevam@gmail.com>
-Subject: Re: mxsfb on i.MX28 uses bypassed ref_xtal 24MHz clock for LCD
-References: <5196375A.1070308@digi.com>
-In-Reply-To: <5196375A.1070308@digi.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 17 May 2013 07:08:41 -0700
+X-Google-Sender-Auth: 2dm9KIi1GWNcD0O9dqDrei7vd4E
+Message-ID: <CAB=NE6VQA3fLXNeE-ihRp7sO1PDQotzmeuPGxftBFA7HzZDdPg@mail.gmail.com>
+Subject: Developer Certificate of Origin - Signed-off-by standalone project followup
+To: Discussion and development of copyleft-next 
+	<copyleft-next@lists.fedorahosted.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "W. Trevor King" <wking@tremily.us>,
+        Richard Fontana <fontana@sharpeleven.org>,
+        "Luis R. Rodriguez" <mcgrof@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 10:57 AM, Hector Palacios wrote:
+At the 2013 San Francisco Linux Collaboration talk I gave a talk [0]
+as a followup on the discussions I initiated a while ago on lkml [1]
+on the possibility of taking the Linux kernel's Developer Certificate
+of Origin and streamlining it by making it a stand alone project for
+other projects to benefit from it. This is a follow up to that talk.
 
-> On the MX28EVK board with the Seiko 4.3" LCD, I do not see the penguin
-> or any image in v3.8 or v3.9 though the framebuffer device is present
-> and correctly loaded and backlight on.
-> This LCD works in kernel v2.6.35 with the same 24MHz frequency.
-> @Fabio, does this LCD work out of the box on v3.9? Am I missing something?
+W. Trevor King did some handy work by doing taking the Linux kernel's
+DCO and making it a standalone project on github [2] and keeping its
+history already. He's also made it project agnostic. To make a
+standalone DCO project agnostic and useful for any type of project it
+would help if any licensed project could use it. One question that we
+had over this idea was whether or not the DCO is licensed under the
+GPLv2 or not. Its arguable whether or not its copyrightable, perhaps
+not but just the idea of contributions to it might make it so.
+Although we could try to get a Creative Commons licensed DCO (and at
+least for the standard body text, not the rest of SubmittingPatches
+I'll go poke) King has made it possible for any licensed project to
+use the DCO standalone project by making a Creative Commons licensed
+file that simply refers to the public URL of the project.
 
-Yes, works fine here.
+As per discussions at LF collab it was acknowledged that the DCO could
+indeed be a benefit to other projects but we'd need to ensure that the
+body of the text is maintained as a very conservative document. I also
+wanted to address volunteering a real life attorney to help with
+reviews / maintenance so I volunteered Richard Fontana given Richard's
+public work on copyleft-next and the copyleft-next mailing list
+availability and his public work as an attorney for the community
+there [3]. Richard seems to have accepted.
 
-Make sure you update both the kernel and dtb files on your tests.
+What's next? Please join the copyleft-next mailing list if you are
+interested in evolving the DCO and helping with streamlining this
+effort.
 
-Regards,
+[0] https://docs.google.com/presentation/d/1J4VTSTuiJ88xcvOrYg7HRvwUoxOW9qvnBqOfoPPuc64/edit
+[1] https://lkml.org/lkml/2012/11/20/636
+[2] git://github.com/wking/signed-off-by.git
+[3] http://lists.fedorahosted.org/mailman/listinfo/copyleft-next
 
-Fabio Estevam
-
-
+  Luis
