@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758184Ab3EQWNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:13:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54241 "EHLO
+	id S1758188Ab3EQWN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:13:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116Ab3EQVhk (ORCPT
+	with ESMTP id S1757112Ab3EQVhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:37:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
+        Matthew Whitehead <tedheadster@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 060/102] net_sched: act_ipt forward compat with xtables
-Date: Fri, 17 May 2013 14:36:15 -0700
-Message-Id: <20130517213250.699107251@linuxfoundation.org>
+Subject: [ 059/102] 3c509.c: call SET_NETDEV_DEV for all device types (ISA/ISAPnP/EISA)
+Date: Fri, 17 May 2013 14:36:14 -0700
+Message-Id: <20130517213250.593785465@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -28,77 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jamal Hadi Salim <jhs@mojatatu.com>
+From: Matthew Whitehead <tedheadster@gmail.com>
 
-[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
+[ Upstream commit 3b54912f9cd167641b91d4a697bd742f70e534fe ]
 
-Deal with changes in newer xtables while maintaining backward
-compatibility. Thanks to Jan Engelhardt for suggestions.
+The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
+It does this with the SET_NETDEV_DEV function. It should register with the device
+hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
 
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
+- Currently they appear here:
+/sys/devices/virtual/net/eth0 (standard ISA)
+/sys/devices/virtual/net/eth1 (EISA)
+
+- Rather, they should instead be here:
+/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
+/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
+
+Tested on ISA and EISA boards.
+
+Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/act_ipt.c |   33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/3com/3c509.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/sched/act_ipt.c
-+++ b/net/sched/act_ipt.c
-@@ -8,7 +8,7 @@
-  *		as published by the Free Software Foundation; either version
-  *		2 of the License, or (at your option) any later version.
-  *
-- * Copyright:	Jamal Hadi Salim (2002-4)
-+ * Copyright:	Jamal Hadi Salim (2002-13)
-  */
+--- a/drivers/net/ethernet/3com/3c509.c
++++ b/drivers/net/ethernet/3com/3c509.c
+@@ -306,6 +306,7 @@ static int el3_isa_match(struct device *
+ 	if (!dev)
+ 		return -ENOMEM;
  
- #include <linux/types.h>
-@@ -303,17 +303,44 @@ static struct tc_action_ops act_ipt_ops
- 	.walk		=	tcf_generic_walker
- };
++	SET_NETDEV_DEV(dev, pdev);
+ 	netdev_boot_setup_check(dev);
  
--MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
-+static struct tc_action_ops act_xt_ops = {
-+	.kind		=	"xt",
-+	.hinfo		=	&ipt_hash_info,
-+	.type		=	TCA_ACT_IPT,
-+	.capab		=	TCA_CAP_NONE,
-+	.owner		=	THIS_MODULE,
-+	.act		=	tcf_ipt,
-+	.dump		=	tcf_ipt_dump,
-+	.cleanup	=	tcf_ipt_cleanup,
-+	.lookup		=	tcf_hash_search,
-+	.init		=	tcf_ipt_init,
-+	.walk		=	tcf_generic_walker
-+};
-+
-+MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
- MODULE_DESCRIPTION("Iptables target actions");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("act_xt");
+ 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
+@@ -595,6 +596,7 @@ static int __init el3_eisa_probe (struct
+ 		return -ENOMEM;
+ 	}
  
- static int __init ipt_init_module(void)
- {
--	return tcf_register_action(&act_ipt_ops);
-+	int ret1, ret2;
-+	ret1 = tcf_register_action(&act_xt_ops);
-+	if (ret1 < 0)
-+		printk("Failed to load xt action\n");
-+	ret2 = tcf_register_action(&act_ipt_ops);
-+	if (ret2 < 0)
-+		printk("Failed to load ipt action\n");
-+
-+	if (ret1 < 0 && ret2 < 0)
-+		return ret1;
-+	else
-+		return 0;
- }
++	SET_NETDEV_DEV(dev, device);
+ 	netdev_boot_setup_check(dev);
  
- static void __exit ipt_cleanup_module(void)
- {
-+	tcf_unregister_action(&act_xt_ops);
- 	tcf_unregister_action(&act_ipt_ops);
- }
- 
+ 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
 
 
