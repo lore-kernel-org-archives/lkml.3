@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab3EQWZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:25:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54031 "EHLO
+	id S1758555Ab3EQW0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:26:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756834Ab3EQVhJ (ORCPT
+	with ESMTP id S1756818Ab3EQVhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:37:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 015/102] dm bufio: avoid a possible __vmalloc deadlock
-Date: Fri, 17 May 2013 14:35:30 -0700
-Message-Id: <20130517213245.925662501@linuxfoundation.org>
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 014/102] dm stripe: fix regression in stripe_width calculation
+Date: Fri, 17 May 2013 14:35:29 -0700
+Message-Id: <20130517213245.821266131@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
@@ -27,78 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 502624bdad3dba45dfaacaf36b7d83e39e74b2d2 upstream.
+commit d793e684277124d55c5d2444007e224635821346 upstream.
 
-This patch uses memalloc_noio_save to avoid a possible deadlock in
-dm-bufio.  (it could happen only with large block size, at most
-PAGE_SIZE << MAX_ORDER (typically 8MiB).
+Fix a regression in the calculation of the stripe_width in the
+dm stripe target which led to incorrect processing of device limits.
 
-__vmalloc doesn't fully respect gfp flags. The specified gfp flags are
-used for allocation of requested pages, structures vmap_area, vmap_block
-and vm_struct and the radix tree nodes.
+The stripe_width is the stripe device length divided by the number of
+stripes.  The group of commits in the range f14fa69 ("dm stripe: fix
+size test") to eb850de ("dm stripe: support for non power of 2
+chunksize") interfered with each other (a merging error) and led to the
+stripe_width being set incorrectly to the stripe device length divided by
+chunk_size * stripe_count.
 
-However, the kernel pagetables are allocated always with GFP_KERNEL.
-Thus the allocation of pagetables can recurse back to the I/O layer and
-cause a deadlock.
+For example, a stripe device's table with: 0 33553920 striped 3 512 ...
+should result in a stripe_width of 11184640 (33553920 / 3), but due to
+the bug it was getting set to 21845 (33553920 / (512 * 3)).
 
-This patch uses the function memalloc_noio_save to set per-process
-PF_MEMALLOC_NOIO flag and the function memalloc_noio_restore to restore
-it. When this flag is set, all allocations in the process are done with
-implied GFP_NOIO flag, thus the deadlock can't happen.
+The impact of this bug is that device topologies that previously worked
+fine with the stripe target are no longer considered valid.  In
+particular, there is a higher risk of seeing this issue if one of the
+stripe devices has a 4K logical block size.  Resulting in an error
+message like this:
+"device-mapper: table: 253:4: len=21845 not aligned to h/w logical block size 4096 of dm-1"
 
-This should be backported to stable kernels, but they don't have the
-PF_MEMALLOC_NOIO flag and memalloc_noio_save/memalloc_noio_restore
-functions. So, PF_MEMALLOC should be set and restored instead.
+The fix is to swap the order of the divisions and to use a temporary
+variable for the second one, so that width retains the intended
+value.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-bufio.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/md/dm-stripe.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -319,6 +319,9 @@ static void __cache_size_refresh(void)
- static void *alloc_buffer_data(struct dm_bufio_client *c, gfp_t gfp_mask,
- 			       enum data_mode *data_mode)
+--- a/drivers/md/dm-stripe.c
++++ b/drivers/md/dm-stripe.c
+@@ -94,7 +94,7 @@ static int get_stripe(struct dm_target *
+ static int stripe_ctr(struct dm_target *ti, unsigned int argc, char **argv)
  {
-+	unsigned noio_flag;
-+	void *ptr;
-+
- 	if (c->block_size <= DM_BUFIO_BLOCK_SIZE_SLAB_LIMIT) {
- 		*data_mode = DATA_MODE_SLAB;
- 		return kmem_cache_alloc(DM_BUFIO_CACHE(c), gfp_mask);
-@@ -332,7 +335,26 @@ static void *alloc_buffer_data(struct dm
+ 	struct stripe_c *sc;
+-	sector_t width;
++	sector_t width, tmp_len;
+ 	uint32_t stripes;
+ 	uint32_t chunk_size;
+ 	int r;
+@@ -116,15 +116,16 @@ static int stripe_ctr(struct dm_target *
  	}
  
- 	*data_mode = DATA_MODE_VMALLOC;
--	return __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	/*
-+	 * __vmalloc allocates the data pages and auxiliary structures with
-+	 * gfp_flags that were specified, but pagetables are always allocated
-+	 * with GFP_KERNEL, no matter what was specified as gfp_mask.
-+	 *
-+	 * Consequently, we must set per-process flag PF_MEMALLOC_NOIO so that
-+	 * all allocations done by this process (including pagetables) are done
-+	 * as if GFP_NOIO was specified.
-+	 */
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		noio_flag = memalloc_noio_save();
-+
-+	ptr = __vmalloc(c->block_size, gfp_mask, PAGE_KERNEL);
-+
-+	if (gfp_mask & __GFP_NORETRY)
-+		memalloc_noio_restore(noio_flag);
-+
-+	return ptr;
- }
+ 	width = ti->len;
+-	if (sector_div(width, chunk_size)) {
++	if (sector_div(width, stripes)) {
+ 		ti->error = "Target length not divisible by "
+-		    "chunk size";
++		    "number of stripes";
+ 		return -EINVAL;
+ 	}
  
- /*
+-	if (sector_div(width, stripes)) {
++	tmp_len = width;
++	if (sector_div(tmp_len, chunk_size)) {
+ 		ti->error = "Target length not divisible by "
+-		    "number of stripes";
++		    "chunk size";
+ 		return -EINVAL;
+ 	}
+ 
 
 
