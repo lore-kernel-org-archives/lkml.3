@@ -1,85 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab3EQNeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 09:34:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35284 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3EQNet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 09:34:49 -0400
-Date: Fri, 17 May 2013 08:34:18 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Dan Murphy <dmurphy@ti.com>
-CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5] ARM:dts:omap4-panda: Update the LED support for the
- panda DTS
-Message-ID: <20130517133418.GA5068@kahuna>
-References: <1368796883-5501-1-git-send-email-dmurphy@ti.com>
+	id S1756041Ab3EQNfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 09:35:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755239Ab3EQNfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 09:35:31 -0400
+Date: Fri, 17 May 2013 14:35:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tim.c.chen@linux.intel.com
+Subject: Re: [RFCv2][PATCH 5/5] batch shrink_page_list() locking operations
+Message-ID: <20130517133527.GM11497@suse.de>
+References: <20130516203427.E3386936@viggo.jf.intel.com>
+ <20130516203434.41DFD429@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1368796883-5501-1-git-send-email-dmurphy@ti.com>
+In-Reply-To: <20130516203434.41DFD429@viggo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08:21-20130517, Dan Murphy wrote:
-[...]
-May be others with better DT experience can help here..
-but here is a trick to reduce dts file changes:
-> diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-> index f1d8c21..08d2e38 100644
-> --- a/arch/arm/boot/dts/omap4-panda-es.dts
-> +++ b/arch/arm/boot/dts/omap4-panda-es.dts
-> @@ -34,3 +34,37 @@
->  		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
->  		>;
->  };
+On Thu, May 16, 2013 at 01:34:34PM -0700, Dave Hansen wrote:
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> changes for v2:
+>  * remove batch_has_same_mapping() helper.  A local varible makes
+>    the check cheaper and cleaner
+>  * Move batch draining later to where we already know
+>    page_mapping().  This probably fixes a truncation race anyway
+>  * rename batch_for_mapping_removal -> batch_for_mapping_rm.  It
+>    caused a line over 80 chars and needed shortening anyway.
+>  * Note: we only set 'batch_mapping' when there are pages in the
+>    batch_for_mapping_rm list
+> 
+> --
+> 
+> We batch like this so that several pages can be freed with a
+> single mapping->tree_lock acquisition/release pair.  This reduces
+> the number of atomic operations and ensures that we do not bounce
+> cachelines around.
+> 
+> Tim Chen's earlier version of these patches just unconditionally
+> created large batches of pages, even if they did not share a
+> page_mapping().  This is a bit suboptimal for a few reasons:
+> 1. if we can not consolidate lock acquisitions, it makes little
+>    sense to batch
+> 2. The page locks are held for long periods of time, so we only
+>    want to do this when we are sure that we will gain a
+>    substantial throughput improvement because we pay a latency
+>    cost by holding the locks.
+> 
+> This patch makes sure to only batch when all the pages on
+> 'batch_for_mapping_rm' continue to share a page_mapping().
+> This only happens in practice in cases where pages in the same
+> file are close to each other on the LRU.  That seems like a
+> reasonable assumption.
+> 
+> In a 128MB virtual machine doing kernel compiles, the average
+> batch size when calling __remove_mapping_batch() is around 5,
+> so this does seem to do some good in practice.
+> 
+> On a 160-cpu system doing kernel compiles, I still saw an
+> average batch length of about 2.8.  One promising feature:
+> as the memory pressure went up, the average batches seem to
+> have gotten larger.
+> 
+> It has shown some substantial performance benefits on
+> microbenchmarks.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+>
+> <SNIP>
+>
+> @@ -718,6 +775,7 @@ static unsigned long shrink_page_list(st
+>  		cond_resched();
+>  
+>  		page = lru_to_page(page_list);
 > +
-> +&omap4_pmx_core {
-> +	led_gpio_pins: gpio_led_pmx {
-> +		pinctrl-single,pins = <
-> +			0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
-> +		>;
-> +	};
-> +};
-> +
-> +&led_wkgpio_pins {
-> +	pinctrl-single,pins = <
-> +		0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-> +	>;
-> +};
-> +
-> +&leds {
-> +	compatible = "gpio-leds";
-> +	pinctrl-names = "default";
-Normally, override  will either add (if new param) OR replace (if same param)
-	So the above two are superfluous.
-> +	pinctrl-0 = <
-> +		&led_gpio_pins
-> +		&led_wkgpio_pins
-> +	>;
-These are needed
-> +
-> +	heartbeat {
-> +		label = "pandaboard::status1";
-can drop this
-> +		gpios = <&gpio4 14 0>;
-needed
-> +		linux,default-trigger = "heartbeat";
-can be dropped
-> +	};
-> +	mmc {
-> +		label = "pandaboard::status2";
-could be dropped
-> +		gpios = <&gpio1 8 0>;
-needed
-> +		linux,default-trigger = "mmc0";
-could be dropped.
+>  		list_del(&page->lru);
+>  
+>  		if (!trylock_page(page))
+
+Can drop this hunk :/
+
+> @@ -776,6 +834,10 @@ static unsigned long shrink_page_list(st
+>  				nr_writeback++;
+>  				goto keep_locked;
+>  			}
+> +			/*
+> +			 * batch_for_mapping_rm could be drained here
+> +			 * if its lock_page()s hurt latency elsewhere.
+> +			 */
+>  			wait_on_page_writeback(page);
+>  		}
+>  
+> @@ -805,6 +867,18 @@ static unsigned long shrink_page_list(st
+>  		}
+>  
+>  		mapping = page_mapping(page);
+> +		/*
+> +		 * batching only makes sense when we can save lock
+> +		 * acquisitions, so drain the previously-batched
+> +		 * pages when we move over to a different mapping
+> +		 */
+> +		if (batch_mapping && (batch_mapping != mapping)) {
+> +			nr_reclaimed +=
+> +				__remove_mapping_batch(&batch_for_mapping_rm,
+> +							&ret_pages,
+> +							&free_pages);
+> +			batch_mapping = NULL;
+> +		}
+>  
+>  		/*
+>  		 * The page is mapped into the page tables of one or more
+
+As a heads-up, Andrew picked up a reclaim-related series from me. It
+adds a new wait_on_page_writeback() with a revised patch making it a
+congestion_wait() inside shrink_page_list. Watch when these two series
+are integrated because you almost certainly want to do a follow-up patch
+that drains before that congestion_wait too. 
+
+Otherwise
+
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Regards,
-Nishanth Menon
+Mel Gorman
+SUSE Labs
