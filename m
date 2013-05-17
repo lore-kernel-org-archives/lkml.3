@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab3EQJGs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 05:06:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58381 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab3EQJGr (ORCPT
+	id S1753749Ab3EQJJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 05:09:56 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:32797
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750712Ab3EQJJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 05:06:47 -0400
-Date: Fri, 17 May 2013 11:04:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Robert Richter <rric@kernel.org>, Josh Boyer <jwboyer@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130517090451.GQ19669@dyad.programming.kicks-ass.net>
-References: <20130516151026.GB18325@hansolo.jdub.homelinux.org>
- <20130516175117.GK19669@dyad.programming.kicks-ass.net>
- <20130516175557.GC18325@hansolo.jdub.homelinux.org>
- <20130516181018.GO19669@dyad.programming.kicks-ass.net>
- <20130516205558.GE8356@rric.localhost>
- <20130516213420.GB31393@pd.tnic>
+	Fri, 17 May 2013 05:09:54 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 17 May 2013 17:09:51 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-can@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        U Bhaskar-B22300 <B22300@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2] can: flexcan: remove HAVE_CAN_FLEXCAN Kconfig symbol
+Message-ID: <20130517090949.GI8607@S2101-09.ap.freescale.net>
+References: <1368781157-4646-1-git-send-email-mkl@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20130516213420.GB31393@pd.tnic>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1368781157-4646-1-git-send-email-mkl@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 11:34:20PM +0200, Borislav Petkov wrote:
-> On Thu, May 16, 2013 at 10:55:58PM +0200, Robert Richter wrote:
-> > iirc the reason was the different msr range that is switched on fam15h
-> > with a different counter to counter msr offset of 2 instead of 1. The
-> > code relies on the assumption that the msrs exist on that cpu. Thus
-> > the warning if not. Also note that code may have changed in 3.10 in
-> > that area.
+On Fri, May 17, 2013 at 10:59:17AM +0200, Marc Kleine-Budde wrote:
+> This patch removes the Kconfig symbol HAVE_CAN_FLEXCAN from arch/{arm,powerpc}
+> and allowing compilation unconditionally on all arm and powerpc platforms.
 > 
-> Stupid question: why is check_hw_exists() *after* the vendor-specific
-> counter detection code in init_hw_perf_events() even though it is
-> supposed to check whether hardware is emulated?
+> This brings a bigger compile time coverage and removes the following dependency
+> warning found by Arnd Bergmann:
+> 
+>     warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 && IMX_HAVE_PLATFORM_FLEXCAN &&
+>         SOC_IMX53 && SOC_IMX6Q) selects HAVE_CAN_FLEXCAN
+>     which has unmet direct dependencies (NET && CAN && CAN_DEV)
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
 
-Mostly so that check_hw_exists() doesn't need to know about the vendor
-specifics like where the MSRs live, how many there are etc..
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: U Bhaskar-B22300 <B22300@freescale.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
