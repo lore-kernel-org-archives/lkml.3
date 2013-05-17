@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab3EQOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 10:38:29 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:51686 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab3EQOi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 10:38:26 -0400
-From: dirk.brandewie@gmail.com
-To: linux-pm@vger.kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org
-Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, torvalds@linux-foundation.org
-Subject: [PATCH] cpufreq/intel_pstate: Add additional supported CPU ID's
-Date: Fri, 17 May 2013 07:38:17 -0700
-Message-Id: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1756258Ab3EQOjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 10:39:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755456Ab3EQOjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 10:39:41 -0400
+Date: Fri, 17 May 2013 16:39:16 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/9] perf hists: Move locking to its call-sites
+Message-ID: <20130517143916.GE3848@krava.brq.redhat.com>
+References: <1368497347-9628-1-git-send-email-namhyung@kernel.org>
+ <1368497347-9628-5-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368497347-9628-5-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+On Tue, May 14, 2013 at 11:09:02AM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> It's a preparation patch to eliminate unneeded locking in the perf
+> report path.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-report.c | 26 ++++++++++++++------------
+>  tools/perf/builtin-top.c    |  3 +++
+>  tools/perf/util/hist.c      |  6 +-----
+>  3 files changed, 18 insertions(+), 17 deletions(-)
 
-Add CPU ID's for supported Sandybridge and Ivybrigde processors.
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-Cc: torvalds@linux-foundation.org
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- drivers/cpufreq/intel_pstate.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 1813311..85b1fd8 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -520,7 +520,9 @@ static void intel_pstate_timer_func(unsigned long __data)
- 
- static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- 	ICPU(0x2a, default_policy),
-+	ICPU(0x25, default_policy),
- 	ICPU(0x2d, default_policy),
-+	ICPU(0x3a, default_policy),
- 	{}
- };
- MODULE_DEVICE_TABLE(x86cpu, intel_pstate_cpu_ids);
--- 
-1.7.7.6
-
+jirka
