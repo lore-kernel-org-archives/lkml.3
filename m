@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3EQMOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 08:14:53 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48221 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab3EQMOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 08:14:52 -0400
-Message-ID: <51961F37.3030202@monstr.eu>
-Date: Fri, 17 May 2013 14:14:47 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1755735Ab3EQMPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 08:15:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55075 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755753Ab3EQMPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 08:15:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Fernando Luis =?ISO-8859-1?Q?V=E1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>,
+        x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 3.10-rc1 system starts regular boot when waking from s2ram
+Date: Fri, 17 May 2013 14:23:51 +0200
+Message-ID: <12938302.tF5W4zpWEQ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130517120930.GD5048@dhcp22.suse.cz>
+References: <20130514160108.GA5055@dhcp22.suse.cz> <1795910.x0krlBPTaf@vostro.rjw.lan> <20130517120930.GD5048@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <joshc@eso.teric.us>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v2 0/5] Zynq: revised CCF code
-References: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1368467199-8702-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2EUHXNQOXRVASMKVGIRTE"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2EUHXNQOXRVASMKVGIRTE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Friday, May 17, 2013 02:09:30 PM Michal Hocko wrote:
+> On Fri 17-05-13 14:11:26, Rafael J. Wysocki wrote:
+> > On Friday, May 17, 2013 09:54:46 AM Michal Hocko wrote:
+> > > On Wed 15-05-13 11:56:08, Michal Hocko wrote:
+> > > > OK, I have bisected it to 78d77df7 (x86-64, init: Do not set NX bits on
+> > > > non-NX capable hardware). Reverting the patch on top of 3.10-rc1 fixes
+> > > > the issue for me and the machine resumes just fine.
+> > > > 
+> > > > Let's add involved people to the CC.
+> > > > 
+> > > > The original message with the confing and dmesg is bellow.
+> > > 
+> > > Anybody had chance to look at this? I am quite surprised that something
+> > > that is in init code might influence resume from suspend path. Or is it
+> > > just a side effect of some other changes in that area?
+> > > 
+> > > <goes and checks the latest 3.9 stable which has the backport of the patch>
+> > > 
+> > > Yes the latest stable is affected as well!
+> > 
+> > Well, I suppose there will be more response if you send a revert request to
+> > Linus.
+> 
+> Maybe the patch should be reverted in the stable tree right now
 
-Hi Mike,
+No, it doesn't work like that.  It won't be reverted in -stable before it is
+reverted in the Linus' tree.
 
-I have sent email to Greg to take this patch from this series
-though his serial tree because it is unrelated to this clock stuff.
+> - I am not sure about all the consequences as from reading the changelog
+> I do not understand which bug the patch is supposed to fix.
 
-Can you please give me your ACK for these patches or add them
-to your CLK tree?
-
-I just need to move this to be able to start to push other drivers
-which are related to this.
+That really doesn't matter.  If it breaks things, it is a revert candidate
+regardless.
 
 Thanks,
-Michal
+Rafael
 
 
-On 05/13/2013 07:46 PM, Soren Brinkmann wrote:
-> I rebased this series on v3.10-rc1 eliminating all dependencies and inc=
-orporated
-> Greg's feedback.
-> I'll push this also to my github repository.
-> https://github.com/sorenb-xlnx/linux-xlnx/tree/zynq/clkc
->=20
-> v2:
->  - dropped the 'sort #includes' patches
->=20
-> 	S=C3=B6ren
->=20
->=20
-> Soren Brinkmann (5):
->   tty: xuartps: Remove suspend/resume functions
->   clk: zynq: Factor out PLL driver
->   clk: zynq: Add clock controller driver
->   arm: zynq: Migrate platform to clock controller
->   clk: zynq: Remove deprecated clock code
->=20
->  .../devicetree/bindings/clock/zynq-7000.txt        | 127 +++--
->  arch/arm/boot/dts/zynq-7000.dtsi                   |  71 +--
->  arch/arm/boot/dts/zynq-zc702.dts                   |   4 -
->  arch/arm/mach-zynq/slcr.c                          |   2 +-
->  drivers/clk/Makefile                               |   2 +-
->  drivers/clk/clk-zynq.c                             | 378 -------------=
---
->  drivers/clk/zynq/Makefile                          |   3 +
->  drivers/clk/zynq/clkc.c                            | 533 +++++++++++++=
-++++++++
->  drivers/clk/zynq/pll.c                             | 235 +++++++++
->  drivers/clocksource/cadence_ttc_timer.c            |  23 +-
->  drivers/tty/serial/xilinx_uartps.c                 | 115 +++--
->  include/linux/clk/zynq.h                           |   8 +-
->  12 files changed, 974 insertions(+), 527 deletions(-)
->  delete mode 100644 drivers/clk/clk-zynq.c
->  create mode 100644 drivers/clk/zynq/Makefile
->  create mode 100644 drivers/clk/zynq/clkc.c
->  create mode 100644 drivers/clk/zynq/pll.c
->=20
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
-------enig2EUHXNQOXRVASMKVGIRTE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGWHzcACgkQykllyylKDCHn9QCfeLs6xmbvcJTfM6cgVFSpFrCk
-OFwAoI+ZduvQCiA6MW5FJ/XZ+Q/4pQX9
-=yaEo
------END PGP SIGNATURE-----
-
-------enig2EUHXNQOXRVASMKVGIRTE--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
