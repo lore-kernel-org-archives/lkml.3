@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab3EQVsH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:48:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54648 "EHLO
+	id S932409Ab3EQVsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:48:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932334Ab3EQVsA (ORCPT
+	with ESMTP id S932385Ab3EQVr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:48:00 -0400
+	Fri, 17 May 2013 17:47:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 46/50] ACPI / EC: Restart transaction even when the IBF flag set
-Date: Fri, 17 May 2013 14:47:21 -0700
-Message-Id: <20130517213847.495386523@linuxfoundation.org>
+        Shlomo Pongratz <shlomop@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 45/50] iscsi-target: Fix processing of OOO commands
+Date: Fri, 17 May 2013 14:47:20 -0700
+Message-Id: <20130517213847.403881854@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -27,58 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Shlomo Pongratz <shlomop@mellanox.com>
 
-commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
+commit 3eccfdb01da58fbd0f789ae6ca61cee3769e26de upstream.
 
-The EC driver works abnormally with IBF flag always set.
-IBF means "The host has written a byte of data to the command
-or data port, but the embedded controller has not yet read it".
-If IBF is set in the EC status and not cleared, this will cause
-all subsequent EC requests to fail with a timeout error.
+Fix two issues in OOO commands processing done at iscsit_attach_ooo_cmdsn.
 
-Change the EC driver so that it doesn't refuse to restart a
-transaction if IBF is set in the status.  Also increase the
-number of transaction restarts to 5, as it turns out that 2
-is not sufficient in some cases.
+Handle command serial numbers wrap around by using iscsi_sna_lt and not regular comparisson.
 
-This bug happens on several different machines (Asus V1S,
-Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
-Sony Vaio SR19VN and others).
+The routine iterates until it finds an entry whose serial number is greater than the serial number of
+the new one, thus the new entry should be inserted before that entry and not after.
 
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
-References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Shlomo Pongratz <shlomop@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/target/iscsi/iscsi_target_erl1.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -217,7 +217,7 @@ static int ec_check_sci_sync(struct acpi
- static int ec_poll(struct acpi_ec *ec)
- {
- 	unsigned long flags;
--	int repeat = 2; /* number of command restarts */
-+	int repeat = 5; /* number of command restarts */
- 	while (repeat--) {
- 		unsigned long delay = jiffies +
- 			msecs_to_jiffies(ec_delay);
-@@ -235,8 +235,6 @@ static int ec_poll(struct acpi_ec *ec)
+--- a/drivers/target/iscsi/iscsi_target_erl1.c
++++ b/drivers/target/iscsi/iscsi_target_erl1.c
+@@ -824,7 +824,7 @@ static int iscsit_attach_ooo_cmdsn(
+ 		/*
+ 		 * CmdSN is greater than the tail of the list.
+ 		 */
+-		if (ooo_tail->cmdsn < ooo_cmdsn->cmdsn)
++		if (iscsi_sna_lt(ooo_tail->cmdsn, ooo_cmdsn->cmdsn))
+ 			list_add_tail(&ooo_cmdsn->ooo_list,
+ 					&sess->sess_ooo_cmdsn_list);
+ 		else {
+@@ -834,11 +834,12 @@ static int iscsit_attach_ooo_cmdsn(
+ 			 */
+ 			list_for_each_entry(ooo_tmp, &sess->sess_ooo_cmdsn_list,
+ 						ooo_list) {
+-				if (ooo_tmp->cmdsn < ooo_cmdsn->cmdsn)
++				if (iscsi_sna_lt(ooo_tmp->cmdsn, ooo_cmdsn->cmdsn))
+ 					continue;
+ 
++				/* Insert before this entry */
+ 				list_add(&ooo_cmdsn->ooo_list,
+-					&ooo_tmp->ooo_list);
++					ooo_tmp->ooo_list.prev);
+ 				break;
  			}
- 			advance_transaction(ec, acpi_ec_read_status(ec));
- 		} while (time_before(jiffies, delay));
--		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
--			break;
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->curr_lock, flags);
- 		start_transaction(ec);
+ 		}
 
 
