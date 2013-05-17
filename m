@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3EQMaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 08:30:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60174 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475Ab3EQMaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 08:30:11 -0400
-Date: Fri, 17 May 2013 14:30:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-pm@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando@oss.ntt.co.jp>,
-        x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.10-rc1 system starts regular boot when waking from s2ram
-Message-ID: <20130517123008.GF5048@dhcp22.suse.cz>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
- <1795910.x0krlBPTaf@vostro.rjw.lan>
- <20130517120930.GD5048@dhcp22.suse.cz>
- <12938302.tF5W4zpWEQ@vostro.rjw.lan>
+	id S1755941Ab3EQMau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 08:30:50 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39823 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537Ab3EQMat convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 08:30:49 -0400
+From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
+To: =?iso-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>
+Cc: Jean-Luc BLANC <jean-luc.blanc@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajiv Andrade <mail@srajiv.net>, Sirrix AG <tpmdd@sirrix.com>
+Date: Fri, 17 May 2013 14:26:04 +0200
+Subject: RE: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver
+ SPI
+Thread-Topic: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver
+ SPI
+Thread-Index: Ac5SZ1VfcifWQ6ZxRuCazwclkhgOAwAkl4Vd
+Message-ID: <35286B1AE75A7C47BFF0870081A31B4B49E30480E2@SAFEX1MAIL4.st.com>
+References: <1368625999-1963-1-git-send-email-mathias.leblanc@st.com>
+ <201305160029.07073.PeterHuewe@gmx.de>
+ <35286B1AE75A7C47BFF0870081A31B4B45A8A84AF6@SAFEX1MAIL4.st.com>,<201305162103.11996.PeterHuewe@gmx.de>
+In-Reply-To: <201305162103.11996.PeterHuewe@gmx.de>
+Accept-Language: en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12938302.tF5W4zpWEQ@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 17-05-13 14:23:51, Rafael J. Wysocki wrote:
-> On Friday, May 17, 2013 02:09:30 PM Michal Hocko wrote:
-> > On Fri 17-05-13 14:11:26, Rafael J. Wysocki wrote:
-> > > On Friday, May 17, 2013 09:54:46 AM Michal Hocko wrote:
-> > > > On Wed 15-05-13 11:56:08, Michal Hocko wrote:
-> > > > > OK, I have bisected it to 78d77df7 (x86-64, init: Do not set NX bits on
-> > > > > non-NX capable hardware). Reverting the patch on top of 3.10-rc1 fixes
-> > > > > the issue for me and the machine resumes just fine.
-> > > > > 
-> > > > > Let's add involved people to the CC.
-> > > > > 
-> > > > > The original message with the confing and dmesg is bellow.
-> > > > 
-> > > > Anybody had chance to look at this? I am quite surprised that something
-> > > > that is in init code might influence resume from suspend path. Or is it
-> > > > just a side effect of some other changes in that area?
-> > > > 
-> > > > <goes and checks the latest 3.9 stable which has the backport of the patch>
-> > > > 
-> > > > Yes the latest stable is affected as well!
-> > > 
-> > > Well, I suppose there will be more response if you send a revert request to
-> > > Linus.
-> > 
-> > Maybe the patch should be reverted in the stable tree right now
-> 
-> No, it doesn't work like that.  It won't be reverted in -stable before it is
-> reverted in the Linus' tree.
-> 
-> > - I am not sure about all the consequences as from reading the changelog
-> > I do not understand which bug the patch is supposed to fix.
-> 
-> That really doesn't matter.  If it breaks things, it is a revert candidate
-> regardless.
+Hi Peter, 
 
-OK, if there is no progress on this I will send the revert during the
-weekend. It doesn't seem that many people would be affected ATM.
+Thanks for this new function.
+I had already changed the for loop but i would to be sure that it's the best way and that you expected.
 
--- 
-Michal Hocko
-SUSE Labs
+Don't hesitate if you have any other recommendation or any comments for this driver.
+
+Regards,
+
+Mathias Leblanc
+________________________________________
+From: Peter Hüwe [PeterHuewe@gmx.de]
+Sent: 16 May 2013 21:03
+To: tpmdd-devel@lists.sourceforge.net
+Cc: Mathias LEBLANC; Jean-Luc BLANC; linux-kernel@vger.kernel.org; Rajiv Andrade; Sirrix AG
+Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
+
+Hi Matthias:
+
+> Regarding the while loop, I don't see how can I check the number of dummy
+> byte differently?
+
+
+Checking the number of dummy bytes is fine -
+in line #144 you check it with a while loop which looks fine
+in line #198 you check it with a for loop with an empty body, which in my
+opinion looks less nice than the while in #144.
+
+So simply replace the second instance in #198 and I'm happy with that part ;)
+
+Maybe also have a look at memchr_inv
+
+/**
+ * memchr_inv - Find an unmatching character in an area of memory.
+ * @start: The memory area
+ * @c: Find a character other than c
+ * @bytes: The size of the area.
+ *
+ * returns the address of the first character other than @c, or %NULL
+ * if the whole buffer contains just @c.
+ */
+void *memchr_inv(const void *start, int c, size_t bytes)
+
+
+
+so #198 would look something like:
+nbr_dummy_bytes = memchr_inv (xfer.rx_buf+nbr_dummy_bytes,
+                                        0,
+                                         total_length-nbr_dummy_bytes) - xfer.rx_buf;
+
+But I'm not sure whether that's more readable, maybe give it a try.
+ I'm also fine with the while loop.
+
+
+Peter
+
+
+
+
+
+
