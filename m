@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab3EQVrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:47:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54538 "EHLO
+	id S932448Ab3EQVsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:48:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778Ab3EQVrn (ORCPT
+	with ESMTP id S932386Ab3EQVsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:47:43 -0400
+	Fri, 17 May 2013 17:48:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Harvey <charvey@matrox.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 21/50] drm/mm: fix dump table BUG
-Date: Fri, 17 May 2013 14:46:56 -0700
-Message-Id: <20130517213844.906259572@linuxfoundation.org>
+        Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 47/50] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid memory overflow
+Date: Fri, 17 May 2013 14:47:22 -0700
+Message-Id: <20130517213847.598628403@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -29,92 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
+commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
 
-In
+When calling memcpy, read_data and write_data need additional 2 bytes.
 
-commit 9e8944ab564f2e3dde90a518cd32048c58918608
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Nov 15 11:32:17 2012 +0000
+  write_data:
+    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
 
-    drm: Introduce an iterator over holes in the drm_mm range manager
+  read_data:
+    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
 
-helpers and iterators for hole handling have been introduced with some
-debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
-which unconditionally tried to compute the size of the very first
-hole.
-
-While at it unify the code a bit with the hole dumping in the loop.
-
-v2: Extract a hole dump helper.
-
-Reported-by: Christopher Harvey <charvey@matrox.com>
-Cc: Christopher Harvey <charvey@matrox.com>
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Acked-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_mm.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ drivers/char/ipmi/ipmi_bt_sm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/drm_mm.c
-+++ b/drivers/gpu/drm/drm_mm.c
-@@ -680,33 +680,35 @@ void drm_mm_debug_table(struct drm_mm *m
- EXPORT_SYMBOL(drm_mm_debug_table);
- 
- #if defined(CONFIG_DEBUG_FS)
--int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
-+static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
- {
--	struct drm_mm_node *entry;
--	unsigned long total_used = 0, total_free = 0, total = 0;
- 	unsigned long hole_start, hole_end, hole_size;
- 
--	hole_start = drm_mm_hole_node_start(&mm->head_node);
--	hole_end = drm_mm_hole_node_end(&mm->head_node);
--	hole_size = hole_end - hole_start;
--	if (hole_size)
-+	if (entry->hole_follows) {
-+		hole_start = drm_mm_hole_node_start(entry);
-+		hole_end = drm_mm_hole_node_end(entry);
-+		hole_size = hole_end - hole_start;
- 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
- 				hole_start, hole_end, hole_size);
--	total_free += hole_size;
-+		return hole_size;
-+	}
-+
-+	return 0;
-+}
-+
-+int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
-+{
-+	struct drm_mm_node *entry;
-+	unsigned long total_used = 0, total_free = 0, total = 0;
-+
-+	total_free += drm_mm_dump_hole(m, &mm->head_node);
- 
- 	drm_mm_for_each_node(entry, mm) {
- 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
- 				entry->start, entry->start + entry->size,
- 				entry->size);
- 		total_used += entry->size;
--		if (entry->hole_follows) {
--			hole_start = drm_mm_hole_node_start(entry);
--			hole_end = drm_mm_hole_node_end(entry);
--			hole_size = hole_end - hole_start;
--			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
--					hole_start, hole_end, hole_size);
--			total_free += hole_size;
--		}
-+		total_free += drm_mm_dump_hole(m, entry);
- 	}
- 	total = total_free + total_used;
- 
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -95,9 +95,9 @@ struct si_sm_data {
+ 	enum bt_states	state;
+ 	unsigned char	seq;		/* BT sequence number */
+ 	struct si_sm_io	*io;
+-	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		write_count;
+-	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		read_count;
+ 	int		truncated;
+ 	long		timeout;	/* microseconds countdown */
 
 
