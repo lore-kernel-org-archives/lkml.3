@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab3EQPyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 11:54:06 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:41989 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3EQPyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 11:54:03 -0400
-From: Pavel Tikhomirov <snorcht@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Matthew Helsley <matt.helsley@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Pavel Tikhomirov <snorcht@gmail.com>
-Subject: [PATCH 1/1] posix-timers: Show clock ID in proc file
-Date: Fri, 17 May 2013 02:12:03 +0400
-Message-Id: <1368742323-46949-2-git-send-email-snorcht@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368742323-46949-1-git-send-email-snorcht@gmail.com>
-References: <1368742323-46949-1-git-send-email-snorcht@gmail.com>
+	id S1756482Ab3EQP4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 11:56:45 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39672
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755853Ab3EQP4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 11:56:44 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Stable <stable@vger.kernel.org> (V3.9)
+Subject: [PATCH V1 1/1] Drivers: hv: Fix a bug in get_vp_index()
+Date: Fri, 17 May 2013 09:30:35 -0700
+Message-Id: <1368808235-4709-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expand information about posix-timers in /proc/<pid>/timers by adding
-info about clock, with which the timer was created. I.e. in the forth
-line of timer info after "notify:" line go "ClockID: <clock_id>".
+Linux' notion of cpuid is different from the Host's notion of CPUID. In the
+call to bind the channel interrupts, we should use the host's notion of
+CPU Ids. Fix this bug.
 
-Signed-off-by: Pavel Tikhomirov <snorcht@gmail.com>
+In this version fixed the Subject line.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Stable <stable@vger.kernel.org> (V3.9)
 ---
- fs/proc/base.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hv/channel_mgmt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 2dad4a9..8a38eef 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2079,6 +2079,7 @@ static int show_timer(struct seq_file *m, void *v)
- 		nstr[notify & ~SIGEV_THREAD_ID],
- 		(notify & SIGEV_THREAD_ID) ? "tid" : "pid",
- 		pid_nr_ns(timer->it_pid, tp->ns));
-+	seq_printf(m, "ClockID: %d\n", timer->it_clock);
- 
- 	return 0;
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index bad8128..21ef689 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -329,7 +329,7 @@ static u32 get_vp_index(uuid_le *type_guid)
+ 		return 0;
+ 	}
+ 	cur_cpu = (++next_vp % max_cpus);
+-	return cur_cpu;
++	return hv_context.vp_index[cur_cpu];
  }
+ 
+ /*
 -- 
-1.7.9.5
+1.7.4.1
 
