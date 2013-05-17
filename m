@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3EQE5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 00:57:01 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:42388 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab3EQE47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 00:56:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130516223739.GB2077@valkosipuli.retiisi.org.uk>
-References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
- <1368619042-28252-2-git-send-email-prabhakar.csengg@gmail.com> <20130516223739.GB2077@valkosipuli.retiisi.org.uk>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 17 May 2013 10:26:38 +0530
-Message-ID: <CA+V-a8uzz=P9LzVeuzUhX5PTzi_VpFvVfKuGFHkcYaX02w1JrQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] media: i2c: ths7303: remove init_enable option from pdata
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754126Ab3EQE5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 00:57:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35290 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752647Ab3EQE5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 00:57:18 -0400
+Message-ID: <1368766637.2194.80.camel@joe-AO722>
+Subject: Re: [PATCH 3/4] ipmi: Improve error messages on failed irq enable
+From: Joe Perches <joe@perches.com>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
+Date: Thu, 16 May 2013 21:57:17 -0700
+In-Reply-To: <5195A836.3010002@mvista.com>
+References: <1368731067-31404-1-git-send-email-cminyard@mvista.com>
+	 <1368731067-31404-4-git-send-email-cminyard@mvista.com>
+	 <CALCETrXu2At7pRWReYpdFa6OgY79M4KiEKXR=beH+5FcTOL6zg@mail.gmail.com>
+	 <5195A836.3010002@mvista.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sakari,
+On Thu, 2013-05-16 at 22:47 -0500, Corey Minyard wrote:
+> On 05/16/2013 05:23 PM, Andy Lutomirski wrote:
+> >
+> >                  /* We got the flags from the SMI, now handle them. */
+> >                  smi_info->handlers->get_result(smi_info->si_sm, msg, 4);
+> > -               if (msg[2] != 0)
+> > -                       dev_warn(smi_info->dev, "Could not enable interrupts"
+> > -                                ", failed set, using polled mode.\n");
+> > -               else
+> > +               if (msg[2] != 0) {
+> > +                       dev_warn(smi_info->dev,
+> > +                                "Couldn't set irq info: %x.\n", msg[2]);
+> > +                       dev_warn(smi_info->dev,
+> > +                                "Maybe ok, but ipmi might run very slowly.\n");
+> > +               } else
+> > Minor nit: it would be nice if these warnings were collapsed into a
+> > single printk -- that would save me a whitelist entry of acceptable
+> > KERN_WARNING messages :)
+> 
+> Yeah, the trouble is that checkpatch will give a warning if you split a 
+> string
+> between two lines or if a line is longer than 80 characters.
 
-Thanks for the review.
+Hi Corey.
 
-On Fri, May 17, 2013 at 4:07 AM, Sakari Ailus <sakari.ailus@iki.fi> wrote:
-> Hi Prabhakar,
->
-> Thanks for the patch!
->
-> On Wed, May 15, 2013 at 05:27:17PM +0530, Lad Prabhakar wrote:
->> diff --git a/drivers/media/i2c/ths7303.c b/drivers/media/i2c/ths7303.c
->> index 65853ee..8cddcd0 100644
->> --- a/drivers/media/i2c/ths7303.c
->> +++ b/drivers/media/i2c/ths7303.c
->> @@ -356,9 +356,7 @@ static int ths7303_setup(struct v4l2_subdev *sd)
->>       int ret;
->>       u8 mask;
->>
->> -     state->stream_on = pdata->init_enable;
->> -
->> -     mask = state->stream_on ? 0xff : 0xf8;
->> +     mask = 0xf8;
->
-> You can assign mask in declaration. It'd be nice to have a human-readable
-> name for the mask, too.
->
-This function gets removed in the preceding patch of this series.
+Yes it will and no it won't.
 
-Regards,
---Prabhakar Lad
+	dev_<level>(struct device *, "some really really long format string that makes the line longer than 80 chars\n");
+
+passes checkpatch without warning just fine.
+
+I'd use something like:
+
+			dev_warn(smi_info->dev,
+				 "Couldn't set irq info: %x - this may be OK, but ipmi might run very slowly\n",
+				 msg[2]);
+
+
