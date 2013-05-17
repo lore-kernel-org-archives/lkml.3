@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3EQHvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 03:51:46 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52382 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751665Ab3EQHvp (ORCPT
+	id S1753184Ab3EQHvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 03:51:52 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62919 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab3EQHvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 03:51:45 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH] ARM: vt8500: Add missing NULL terminator in dt_compat
-Date: Fri, 17 May 2013 08:44:17 +0100
-Message-Id: <1368776657-23035-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
+	Fri, 17 May 2013 03:51:51 -0400
+Date: Fri, 17 May 2013 09:51:40 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
+Message-ID: <20130517075140.GA25077@balto.lan>
+References: <20130514091956.GG3297@gmail.com>
+ <20130515090449.GA3494@gmail.com>
+ <20130516224337.GZ22822@zurbaran>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516224337.GZ22822@zurbaran>
+X-Operating-System: Linux balto 3.9.0-10518-gd7ab730 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Hello Samuel,
 
-When I tried booting a stih415 Dual core A9 with multi_v7_defconfig, it
-failed to boot. The issues seems to be changing by enabling or disabling
-VT8550 platform. Having a quick look at dt_compat list, it seems to miss
-a NULL terminator, which means of_flat_dt_match will compat check will
-cross the boundary of dt_compat and fault at some point , which is what
-was happening in my case.
+On Fri, May 17, 2013 at 12:43:37AM +0200, Samuel Ortiz wrote:
+> > Fabio Baltieri (5):
+> >       mfd: abx500-core: Fix sparse warning
+> >       mfd: ab8500-sysctrl: Fix sparse warning
+> >       mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+> >       mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+> Unless I'm missing something here, this one is not really rcN material, so
+> I'd appreciate if you could queue it to your for-mfd branch instead.
 
-Without this patch if we try to boot multi_v7_defconfig you might notice
-that some of the platforms might fault if they fall after vt8500 in
-machine-desc list. Other platforms which fall before vt8500 in mdesc list
-will not fault.
+The last two:
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- arch/arm/mach-vt8500/vt8500.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+  mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+  mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
 
-diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
-index 1dd281e..f5c33df 100644
---- a/arch/arm/mach-vt8500/vt8500.c
-+++ b/arch/arm/mach-vt8500/vt8500.c
-@@ -173,6 +173,7 @@ static const char * const vt8500_dt_compat[] = {
- 	"wm,wm8505",
- 	"wm,wm8750",
- 	"wm,wm8850",
-+	NULL
- };
- 
- DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
+are actually fixes for bugs introduced in this merge window that
+inhibited the ab8500-sysctl driver as a consequence.  Would you
+reconsider pulling just those?
+
+Thanks,
+Fabio
+
 -- 
-1.7.6.5
-
+Fabio Baltieri
