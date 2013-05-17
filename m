@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3EQQ5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 12:57:20 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:38722 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139Ab3EQQ5S (ORCPT
+	id S1756316Ab3EQRAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 13:00:52 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:36288 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795Ab3EQRAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 12:57:18 -0400
-Date: Fri, 17 May 2013 09:57:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [patch v3 -mm 1/3] memcg: integrate soft reclaim tighter with
- zone shrinking code
-Message-ID: <20130517165712.GB12632@mtj.dyndns.org>
-References: <1368431172-6844-1-git-send-email-mhocko@suse.cz>
- <1368431172-6844-2-git-send-email-mhocko@suse.cz>
- <20130517160247.GA10023@cmpxchg.org>
+	Fri, 17 May 2013 13:00:50 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Scott Wood <scottwood@freescale.com>,
+        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        "open list\:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: allow host header to be included even for !CONFIG_KVM
+References: <1363891354.31522.17@snotra> <20130321191600.GG9382@redhat.com>
+	<1363894393.31522.20@snotra> <20130321211736.GI9382@redhat.com>
+	<CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
+	<20130324140114.GV3889@redhat.com> <87txnz9o7n.fsf@linaro.org>
+	<20130515225201.GA2341@somewhere> <20130517010442.GB12928@somewhere>
+	<871u95u28p.fsf@linaro.org> <20130517143445.GA23086@somewhere>
+Date: Fri, 17 May 2013 10:00:47 -0700
+In-Reply-To: <20130517143445.GA23086@somewhere> (Frederic Weisbecker's message
+	of "Fri, 17 May 2013 16:34:54 +0200")
+Message-ID: <87fvxlsfr4.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130517160247.GA10023@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Johannes.
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-On Fri, May 17, 2013 at 12:02:47PM -0400, Johannes Weiner wrote:
-> There are setups with thousands of groups that do not even use soft
-> limits.  Having them pointlessly iterate over all of them for every
-> couple of pages reclaimed is just not acceptable.
+> On Fri, May 17, 2013 at 07:09:42AM -0700, Kevin Hilman wrote:
+>> Frederic Weisbecker <fweisbec@gmail.com> writes:
+>> 
+>> > On Thu, May 16, 2013 at 12:52:03AM +0200, Frederic Weisbecker wrote:
+>> >> On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
+>> >> > Gleb Natapov <gleb@redhat.com> writes:
+>> >> > 
+>> >> > > On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
+>> >> > >> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
+>> >> > >> > Isn't is simpler for kernel/context_tracking.c to define empty
+>> >> > >> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
+>> >> > >> 
+>> >> > >> That doesn't look right. Off-cases are usually handled from the
+>> >> > >> headers, right? So that we avoid iffdeffery ugliness in core code.
+>> >> > > Lets put it in linux/context_tracking.h header then.
+>> >> > 
+>> >> > Here's a version to do that.
+>> >> > 
+>> >> > Kevin
+>> >> > 
+>> >> > From d9d909394479dd7ff90b7bddb95a564945406719 Mon Sep 17 00:00:00 2001
+>> >> > From: Kevin Hilman <khilman@linaro.org>
+>> >> > Date: Mon, 25 Mar 2013 14:12:41 -0700
+>> >> > Subject: [PATCH v2] ontext_tracking: fix !CONFIG_KVM compile: add stub guest
+>> >> >  enter/exit
+>> >> 
+>> >> Sorry for my very delayed response...
+>> >> 
+>> >> > 
+>> >> > When KVM is not enabled, or not available on a platform, the KVM
+>> >> > headers should not be included.  Instead, just define stub
+>> >> > __guest_[enter|exit] functions.
+>> >> 
+>> >> May be it would be cleaner to move guest_enter/exit definitions altogether
+>> >> in linux/context_tracking.h
+>> >> 
+>> >> After all that's where the implementation mostly belong to.
+>> >> 
+>> >> Let me see if I can get that in shape.
+>> >
+>> > Does the following work for you?
+>> 
+>> Nope. 
+>> 
+>> Since it still includs kvm_host.h on non-KVM builds, there is potential
+>> for problems.  For example, on ARM (v3.10-rc1 + this patch) has this
+>> build error:
+>> 
+>>   CC      kernel/context_tracking.o
+>> In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
+>>                  from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
+>>                  from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
+>> /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:38:6: warning: "CONFIG_KVM_ARM_MAX_VCPUS" is not defined [-Wundef]
+>> In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
+>>                  from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
+>>                  from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
+>> /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:59:11: error: 'CONFIG_KVM_ARM_MAX_VCPUS' undeclared here (not in a function)
+>
+> Sorry I forgot to remove the include to kvm_host.h in context_tracking.c,
+> here's the fixed patch:
 
-Hmmm... if the iteration is the problem, it shouldn't be difficult to
-build list of children which should be iterated.  Would that make it
-acceptable?
+Yup, that one builds just fine.
 
-Thanks.
+Reviewed-and-Tested-by: Kevin Hilman <khilman@linaro.org>
 
--- 
-tejun
+Kevin
