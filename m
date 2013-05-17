@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab3EQV4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:56:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54727 "EHLO
+	id S1758057Ab3EQV4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:56:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54723 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932479Ab3EQVu1 (ORCPT
+	with ESMTP id S932468Ab3EQVu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:27 -0400
+	Fri, 17 May 2013 17:50:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Harvey <charvey@matrox.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 14/33] drm/mm: fix dump table BUG
-Date: Fri, 17 May 2013 14:49:58 -0700
-Message-Id: <20130517214918.345117878@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/33] mwifiex: fix setting of multicast filter
+Date: Fri, 17 May 2013 14:49:57 -0700
+Message-Id: <20130517214918.255347423@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -29,92 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 3a359f0b21ab218c1bf7a6a1b638b6fd143d0b99 upstream.
+commit ccd384b10420ac81ba3fb9b0a7d18272c7173552 upstream.
 
-In
+A small bug in this code was causing the ALLMULTI filter to be set
+when in fact we were just wanting to program a selective multicast list
+to the hardware.
 
-commit 9e8944ab564f2e3dde90a518cd32048c58918608
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Nov 15 11:32:17 2012 +0000
+Fix that bug and remove a redundant if condition in the code that
+follows.
 
-    drm: Introduce an iterator over holes in the drm_mm range manager
+This fixes wakeup behaviour when multicast WOL is enabled. Previously,
+all multicast packets would wake up the system. Now, only those that the
+host intended to receive trigger wakeups.
 
-helpers and iterators for hole handling have been introduced with some
-debug BUG_ONs sprinkled over. Unfortunately this broke the mm dumper
-which unconditionally tried to compute the size of the very first
-hole.
-
-While at it unify the code a bit with the hole dumping in the loop.
-
-v2: Extract a hole dump helper.
-
-Reported-by: Christopher Harvey <charvey@matrox.com>
-Cc: Christopher Harvey <charvey@matrox.com>
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Acked-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_mm.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ drivers/net/wireless/mwifiex/sta_ioctl.c |   21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
---- a/drivers/gpu/drm/drm_mm.c
-+++ b/drivers/gpu/drm/drm_mm.c
-@@ -679,33 +679,35 @@ void drm_mm_debug_table(struct drm_mm *m
- EXPORT_SYMBOL(drm_mm_debug_table);
- 
- #if defined(CONFIG_DEBUG_FS)
--int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
-+static unsigned long drm_mm_dump_hole(struct seq_file *m, struct drm_mm_node *entry)
- {
--	struct drm_mm_node *entry;
--	unsigned long total_used = 0, total_free = 0, total = 0;
- 	unsigned long hole_start, hole_end, hole_size;
- 
--	hole_start = drm_mm_hole_node_start(&mm->head_node);
--	hole_end = drm_mm_hole_node_end(&mm->head_node);
--	hole_size = hole_end - hole_start;
--	if (hole_size)
-+	if (entry->hole_follows) {
-+		hole_start = drm_mm_hole_node_start(entry);
-+		hole_end = drm_mm_hole_node_end(entry);
-+		hole_size = hole_end - hole_start;
- 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
- 				hole_start, hole_end, hole_size);
--	total_free += hole_size;
-+		return hole_size;
-+	}
-+
-+	return 0;
-+}
-+
-+int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm)
-+{
-+	struct drm_mm_node *entry;
-+	unsigned long total_used = 0, total_free = 0, total = 0;
-+
-+	total_free += drm_mm_dump_hole(m, &mm->head_node);
- 
- 	drm_mm_for_each_node(entry, mm) {
- 		seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: used\n",
- 				entry->start, entry->start + entry->size,
- 				entry->size);
- 		total_used += entry->size;
--		if (entry->hole_follows) {
--			hole_start = drm_mm_hole_node_start(entry);
--			hole_end = drm_mm_hole_node_end(entry);
--			hole_size = hole_end - hole_start;
--			seq_printf(m, "0x%08lx-0x%08lx: 0x%08lx: free\n",
--					hole_start, hole_end, hole_size);
--			total_free += hole_size;
--		}
-+		total_free += drm_mm_dump_hole(m, entry);
+--- a/drivers/net/wireless/mwifiex/sta_ioctl.c
++++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
+@@ -100,7 +100,7 @@ int mwifiex_request_set_multicast_list(s
+ 	} else {
+ 		/* Multicast */
+ 		priv->curr_pkt_filter &= ~HostCmd_ACT_MAC_PROMISCUOUS_ENABLE;
+-		if (mcast_list->mode == MWIFIEX_MULTICAST_MODE) {
++		if (mcast_list->mode == MWIFIEX_ALL_MULTI_MODE) {
+ 			dev_dbg(priv->adapter->dev,
+ 				"info: Enabling All Multicast!\n");
+ 			priv->curr_pkt_filter |=
+@@ -112,20 +112,11 @@ int mwifiex_request_set_multicast_list(s
+ 				dev_dbg(priv->adapter->dev,
+ 					"info: Set multicast list=%d\n",
+ 				       mcast_list->num_multicast_addr);
+-				/* Set multicast addresses to firmware */
+-				if (old_pkt_filter == priv->curr_pkt_filter) {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				} else {
+-					/* Send request to firmware */
+-					ret = mwifiex_send_cmd_async(priv,
+-						HostCmd_CMD_MAC_MULTICAST_ADR,
+-						HostCmd_ACT_GEN_SET, 0,
+-						mcast_list);
+-				}
++				/* Send multicast addresses to firmware */
++				ret = mwifiex_send_cmd_async(priv,
++					HostCmd_CMD_MAC_MULTICAST_ADR,
++					HostCmd_ACT_GEN_SET, 0,
++					mcast_list);
+ 			}
+ 		}
  	}
- 	total = total_free + total_used;
- 
 
 
