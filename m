@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3EQSRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:17:18 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:37512 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab3EQSRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:17:17 -0400
+	id S1755300Ab3EQSRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:17:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab3EQSRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:17:32 -0400
+Date: Fri, 17 May 2013 11:17:08 -0700
+From: Zach Brown <zab@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, Lin Feng <linfeng@cn.fujitsu.com>,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, jmoyer@redhat.com,
+        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm:
+ hotplug: implement non-movable version of get_user_pages() called
+ get_user_pages_non_movable())
+Message-ID: <20130517181708.GG318@lenny.home.zabbo.net>
+References: <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com>
+ <20130205120137.GG21389@suse.de>
+ <20130206004234.GD11197@blaptop>
+ <20130206095617.GN21389@suse.de>
+ <5190AE4F.4000103@cn.fujitsu.com>
+ <20130513091902.GP11497@suse.de>
+ <5191B5B3.7080406@cn.fujitsu.com>
+ <20130515132453.GB11497@suse.de>
+ <5194748A.5070700@cn.fujitsu.com>
+ <20130517002349.GI1008@kvack.org>
 MIME-Version: 1.0
-X-Originating-IP: [84.109.219.89]
-In-Reply-To: <1368813500.2194.83.camel@joe-AO722>
-References: <1368615236-21345-1-git-send-email-leon@leon.nu>
- <20130516221321.GG22822@zurbaran> <CALq1K=J=Aeg11H5aX8bj-_EowdADJSg5oVY98c1q0v6YbhZEdg@mail.gmail.com>
- <1368813500.2194.83.camel@joe-AO722>
-From: Leon Romanovsky <leon@leon.nu>
-Date: Fri, 17 May 2013 21:16:56 +0300
-Message-ID: <CALq1K=JTcx0i8JVAmjhjQ_f+2AhPcc=Ot15cZd4gmM1krchpoA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: mfd: sec-code: Fix sizeof argument
-To: Joe Perches <joe@perches.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, sbkim73 <sbkim73@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130517002349.GI1008@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 8:58 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2013-05-17 at 20:50 +0300, Leon Romanovsky wrote:
->> On Fri, May 17, 2013 at 1:13 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
->> > On Wed, May 15, 2013 at 01:53:56PM +0300, Leon Romanovsky wrote:
->> >> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> []
->> >> @@ -121,7 +121,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
-> []
->> >> -     pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
->> >> +     pd = devm_kzalloc(dev, sizeof(struct sec_platform_data), GFP_KERNEL);
->> > How is that fixing anything ?
->> Technically you are right, this fix brings code to be align to common
->> code convention and allows to automatic tools  correctly parse it.
->
-> Not really.
-> Common coding convention is actually the original code.
->
-> from: Documentation/CodingStyle:
->
->                 Chapter 14: Allocating memory
-> []
-> The preferred form for passing a size of a struct is the following:
->
->         p = kmalloc(sizeof(*p), ...);
->
->
-Thanks Joe, it is good to know, but from my simple grep, most
-developers doesn't follow with this guide:
-leon@tux ~/dev/kernel/linux-staging $ grep -r "sizeof(struct" * | wc -l
-25865
-leon@tux ~/dev/kernel/linux-staging $ grep -r "sizeof(\*" * | wc -l
-14568
+> I ended up working on this a bit today, and managed to cobble together 
+> something that somewhat works -- please see the patch below.
 
---
-Leon Romanovsky | Independent Linux Consultant
-        www.leon.nu | leon@leon.nu
+Just some quick observations:
+
+> +	ctx->ctx_file = anon_inode_getfile("[aio]", &aio_ctx_fops, ctx, O_RDWR);
+> +	if (IS_ERR(ctx->ctx_file)) {
+> +		ctx->ctx_file = NULL;
+> +		return -EAGAIN;
+> +	}
+
+It's too bad that aio contexts will now be accounted against the filp
+limits (get_empty_filp -> files_stat.max_files, etc). 
+
+> +	for (i=0; i<nr_pages; i++) {
+> +		struct page *page;
+> +		void *ptr;
+> +		page = find_or_create_page(ctx->ctx_file->f_inode->i_mapping,
+> +					   i, GFP_KERNEL);
+> +		if (!page) {
+> +			break;
+> +		}
+> +		ptr = kmap(page);
+> +		clear_page(ptr);
+> +		kunmap(page);
+> +		SetPageUptodate(page);
+> +		SetPageDirty(page);
+> +		unlock_page(page);
+> +	}
+
+If they're GFP_KERNEL then you don't need to kmap them.  But we probably
+want to allocate with GFP_HIGHUSER and then use clear_user_highpage() to
+zero them?
+
+- z
