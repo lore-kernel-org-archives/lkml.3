@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3EQVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:54:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54766 "EHLO
+	id S1758005Ab3EQVza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:55:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab3EQVud (ORCPT
+	with ESMTP id S1757291Ab3EQVu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:50:33 -0400
+	Fri, 17 May 2013 17:50:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/33] net_sched: act_ipt forward compat with xtables
-Date: Fri, 17 May 2013 14:50:01 -0700
-Message-Id: <20130517214918.655368710@linuxfoundation.org>
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [ 25/33] pch_dma: Use GFP_ATOMIC because called from interrupt context
+Date: Fri, 17 May 2013 14:50:09 -0700
+Message-Id: <20130517214919.555635825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -27,78 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-From: Jamal Hadi Salim <jhs@mojatatu.com>
+commit 5c1ef59168c485318e40ba485c1eba57d81d0faa upstream.
 
-[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
+pdc_desc_get() is called from pd_prep_slave_sg, and the function is
+called from interrupt context(e.g. Uart driver "pch_uart.c").
+In fact, I saw kernel error message.
+So, GFP_ATOMIC must be used not GFP_NOIO.
 
-Deal with changes in newer xtables while maintaining backward
-compatibility. Thanks to Jan Engelhardt for suggestions.
-
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sched/act_ipt.c |   33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/net/sched/act_ipt.c
-+++ b/net/sched/act_ipt.c
-@@ -8,7 +8,7 @@
-  *		as published by the Free Software Foundation; either version
-  *		2 of the License, or (at your option) any later version.
-  *
-- * Copyright:	Jamal Hadi Salim (2002-4)
-+ * Copyright:	Jamal Hadi Salim (2002-13)
-  */
+---
+ drivers/dma/pch_dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -489,7 +489,7 @@ static struct pch_dma_desc *pdc_desc_get
+ 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
  
- #include <linux/types.h>
-@@ -299,17 +299,44 @@ static struct tc_action_ops act_ipt_ops
- 	.walk		=	tcf_generic_walker
- };
- 
--MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
-+static struct tc_action_ops act_xt_ops = {
-+	.kind		=	"xt",
-+	.hinfo		=	&ipt_hash_info,
-+	.type		=	TCA_ACT_IPT,
-+	.capab		=	TCA_CAP_NONE,
-+	.owner		=	THIS_MODULE,
-+	.act		=	tcf_ipt,
-+	.dump		=	tcf_ipt_dump,
-+	.cleanup	=	tcf_ipt_cleanup,
-+	.lookup		=	tcf_hash_search,
-+	.init		=	tcf_ipt_init,
-+	.walk		=	tcf_generic_walker
-+};
-+
-+MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
- MODULE_DESCRIPTION("Iptables target actions");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("act_xt");
- 
- static int __init ipt_init_module(void)
- {
--	return tcf_register_action(&act_ipt_ops);
-+	int ret1, ret2;
-+	ret1 = tcf_register_action(&act_xt_ops);
-+	if (ret1 < 0)
-+		printk("Failed to load xt action\n");
-+	ret2 = tcf_register_action(&act_ipt_ops);
-+	if (ret2 < 0)
-+		printk("Failed to load ipt action\n");
-+
-+	if (ret1 < 0 && ret2 < 0)
-+		return ret1;
-+	else
-+		return 0;
- }
- 
- static void __exit ipt_cleanup_module(void)
- {
-+	tcf_unregister_action(&act_xt_ops);
- 	tcf_unregister_action(&act_ipt_ops);
- }
- 
+ 	if (!ret) {
+-		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
++		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
+ 		if (ret) {
+ 			spin_lock(&pd_chan->lock);
+ 			pd_chan->descs_allocated++;
 
 
