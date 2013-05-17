@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab3EQFkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 01:40:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39127 "EHLO comal.ext.ti.com"
+	id S1753870Ab3EQFo2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 01:44:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54007 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238Ab3EQFkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 01:40:20 -0400
-Message-ID: <5195C28C.40300@ti.com>
-Date: Fri, 17 May 2013 11:09:24 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752795Ab3EQFo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 01:44:27 -0400
+Message-ID: <5195C37F.4090302@zytor.com>
+Date: Thu, 16 May 2013 22:43:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Tomi Valkeinen <tomi.valkeinen@iki.fi>, <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>
-Subject: Re: [PATCH] ARM: OMAP4: change the device names in usb_bind_phy
-References: <1366697656-14315-1-git-send-email-kishon@ti.com> <51936946.3030507@iki.fi> <20130516155857.GV5600@atomide.com> <519503DA.5070303@iki.fi> <20130516162034.GX5600@atomide.com>
-In-Reply-To: <20130516162034.GX5600@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, vgoyal@redhat.com,
+        akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH v6 0/8] kdump, vmcore: support mmap() on /proc/vmcore
+References: <20130515090507.28109.28956.stgit@localhost6.localdomain6> <51957469.2000008@zytor.com> <87y5bee2qc.fsf@xmission.com> <5195A223.2070204@zytor.com> <87vc6icjqo.fsf@xmission.com>
+In-Reply-To: <87vc6icjqo.fsf@xmission.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/16/2013 09:29 PM, Eric W. Biederman wrote:
+> 
+> Whatever theoretical issues you have with /dev/oldmem and /proc/vmcore
+> can and should be talked about and addressed independently of these
+> changes.
 
-On Thursday 16 May 2013 09:50 PM, Tony Lindgren wrote:
-> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130516 09:11]:
->> On 16/05/13 18:58, Tony Lindgren wrote:
->>> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130515 03:59]:
->>>
->>> Just checking.. Do you have CONFIG_OMAP_OCP2SCP=y in your .config? Sounds
->>> like the some transceivers should depend on that for omap4.
->>
->> Yes, I have OCP2SCP=y.
->
-> Hmm well no idea beyond that then. Sounds like Kishon should check it.
->
->>>> The musb-hdrc id is wrong on overo also.
->>>
->>> Hmm has there been a fix posted for that?
->>
->> I couldn't find with a quick look. We debugged and discussed this on an irc
->> channel with Kishon, who said he'll send a patch. Changing the musb-hdrc ID
->> on overo fixed the issue, and it looks very similar to the error on 4430sdp.
->> The overo fix was just:
+And they are... last I know Dave Hansen was looking at it.
 
-hmm.. I think using device name to bind the controller and the phy can 
-no longer be used reliably. I think it's better to have something like 
-what Grant suggested in my other patch series.. to have the phy 
-reference into the host controllers platform_data structure. And for the 
-phy reference I'll have label and id.
+	-hpa
 
-Does this makes sense to you?
 
-Thanks
-Kishon
