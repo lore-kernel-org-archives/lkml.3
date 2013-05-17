@@ -1,34 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3EQC7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 16 May 2013 22:59:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57440 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3EQC7V (ORCPT
+	id S1752339Ab3EQDDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 16 May 2013 23:03:48 -0400
+Received: from hop-nat-141.emc.com ([168.159.213.141]:37913 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751591Ab3EQDDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 16 May 2013 22:59:21 -0400
-Message-ID: <51959D07.3010509@wwwdotorg.org>
-Date: Thu, 16 May 2013 20:59:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 16 May 2013 23:03:46 -0400
+From: "Peng, Tao" <tao.peng@emc.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Cyril Roelandt <tipecaml@gmail.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "andreas.dilger@intel.com" <andreas.dilger@intel.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging: lustre: fix return type of lo_release.
+Thread-Topic: [PATCH] staging: lustre: fix return type of lo_release.
+Thread-Index: AQHOUlHYocvJB+cfUkGriSdAkRTs9JkIbfYAgABDF1A=
+Date: Fri, 17 May 2013 03:03:12 +0000
+Message-ID: <1882637210201641A747464075FFC64904175946@MX101CL02.corp.emc.com>
+References: <1368720380-20974-1-git-send-email-tipecaml@gmail.com>
+ <20130516190130.GB2778@kroah.com>
+In-Reply-To: <20130516190130.GB2778@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.32.218.60]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: linux-kernel@vger.kernel.org, Dom Cobley <popcornmix@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        linux-rpi-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v4] watchdog: Add Broadcom BCM2835 watchdog timer driver
-References: <1364320200-23569-1-git-send-email-lkundrak@v3.sk> <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
-In-Reply-To: <1364402424-19503-1-git-send-email-lkundrak@v3.sk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4H33qqe026617
 
-On 03/27/2013 10:40 AM, Lubomir Rintel wrote:
-> This adds a driver for watchdog timer hardware present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
 
-Lubomir, I don't believe this patch was applied for 3.10. Are you
-planning to fix up any remaining issues and repost for 3.11?
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, May 17, 2013 3:02 AM
+> To: Cyril Roelandt
+> Cc: kernel-janitors@vger.kernel.org; andreas.dilger@intel.com; Peng, Tao; devel@driverdev.osuosl.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] staging: lustre: fix return type of lo_release.
+> 
+> On Thu, May 16, 2013 at 06:06:20PM +0200, Cyril Roelandt wrote:
+> > The return type of block_device_operations.release() changed to void in commit
+> > db2a144b.
+> 
+> Interesting, how did you test build this patch, given that the driver
+> doesn't currently build at all?  :)
+> 
+> Anyway, thanks, I'll go queue this up.
+My stupid email client... Just saw this one. Please ignore my previous mail. Sorry for the noise.
+
+Thanks,
+Tao
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
