@@ -1,132 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab3EQWPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 18:15:09 -0400
-Received: from mout.gmx.net ([212.227.15.19]:64988 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757094Ab3EQWPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 18:15:00 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18fSiwFqaYf6rJa3LWlWsYFgcf7fBR788azvYZvGn
-	8ztJLhlR9iw+jq
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Huewe <peterhuewe@gmx.de>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/xgifb: Remove dead assignments/increments
-Date: Sat, 18 May 2013 00:19:54 +0200
-Message-Id: <1368829194-16677-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-X-Y-GMX-Trusted: 0
+	id S1758226Ab3EQWOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 18:14:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54213 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936Ab3EQVhg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 17:37:36 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 052/102] drm: dont check modeset locks in panic handler
+Date: Fri, 17 May 2013 14:36:07 -0700
+Message-Id: <20130517213249.824850746@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
+References: <20130517213244.277411019@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code now contains several dead assignments which are shadowed by
-another assignment a few lines later.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
--> This patch removes them (and possibly associated code).
+------------------
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+commit a9b054e8ab06504c2afa0e307ee78d3778993a1d upstream.
+
+Since we know that locking is broken in that case and it's more
+important to not flood the dmesg with random gunk.
+
+Reported-and-tested-by: Borislav Petkov <bp@suse.de>
+References: http://lkml.kernel.org/r/20130502000206.GH15623@pd.tnic
+Cc: Dave Airlie <airlied@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ drivers/gpu/drm/drm_crtc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-The patch did not remove occurences where a register from the device is read.
-If the device does not have implicit actions associated with reading from its
-registers these instances could also be removed.
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -78,6 +78,10 @@ void drm_warn_on_modeset_not_all_locked(
+ {
+ 	struct drm_crtc *crtc;
+ 
++	/* Locking is currently fubar in the panic handler. */
++	if (oops_in_progress)
++		return;
++
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+ 		WARN_ON(!mutex_is_locked(&crtc->mutex));
+ 
 
- drivers/staging/xgifb/vb_init.c    |  1 -
- drivers/staging/xgifb/vb_setmode.c | 20 +-------------------
- 2 files changed, 1 insertion(+), 20 deletions(-)
-
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index 090c424..5c72104 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -1296,7 +1296,6 @@ unsigned char XGIInitNew(struct pci_dev *pdev)
- 		xgifb_reg_set(pVBInfo->Part1Port, 0x00, 0x00);
- 		/* chk if BCLK>=100MHz */
- 		temp1 = xgifb_reg_get(pVBInfo->P3d4, 0x7B);
--		temp = (unsigned char) ((temp1 >> 4) & 0x0F);
- 
- 		xgifb_reg_set(pVBInfo->Part1Port,
- 			      0x02, XGI330_CRT2Data_1_2);
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 5fb699d..bee4b38 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -759,7 +759,6 @@ static void XGI_SetCRT1DE(struct xgi_hw_device_info *HwDeviceExtension,
- 
- 	xgifb_reg_and_or(pVBInfo->P3d4, 0x07, ~0x42, tempax);
- 	data = xgifb_reg_get(pVBInfo->P3d4, 0x07);
--	data &= 0xFF;
- 	tempax = 0;
- 
- 	if (tempbx & 0x04)
-@@ -1589,10 +1588,8 @@ static void XGI_SetLVDSRegs(unsigned short ModeNo, unsigned short ModeIdIndex,
- 	xgifb_reg_and_or(pVBInfo->Part1Port, 0x1a, 0x07,
- 				tempax);
- 
--	tempcx = pVBInfo->VGAVT;
- 	tempbx = pVBInfo->VDE;
- 	tempax = pVBInfo->VGAVDE;
--	tempcx -= tempax;
- 
- 	temp = tempax; /* 0430 ylshieh */
- 	temp1 = (temp << 18) / tempbx;
-@@ -2657,10 +2654,7 @@ static void XGI_GetCRT2Data(unsigned short ModeNo, unsigned short ModeIdIndex,
- 					tempbx = 775;
- 				else if (pVBInfo->VGAVDE == 600)
- 					tempbx = 775;
--				else
--					tempbx = 768;
--			} else
--				tempbx = 768;
-+			}
- 		} else if (pVBInfo->LCDResInfo == Panel_1024x768x75) {
- 			tempax = 1024;
- 			tempbx = 768;
-@@ -3015,9 +3009,6 @@ static void XGI_SetGroup1(unsigned short ModeNo, unsigned short ModeIdIndex,
- 	temp |= ((tempcx & 0xFF00) >> 8);
- 	xgifb_reg_set(pVBInfo->Part1Port, 0x12, temp);
- 
--	tempax = pVBInfo->VGAVDE;
--	tempbx = pVBInfo->VGAVDE;
--	tempcx = pVBInfo->VGAVT;
- 	/* BTVGA2VRS 0x10,0x11 */
- 	tempbx = (pVBInfo->VGAVT + pVBInfo->VGAVDE) >> 1;
- 	/* BTVGA2VRE 0x11 */
-@@ -3226,7 +3217,6 @@ static void XGI_SetLockRegs(unsigned short ModeNo, unsigned short ModeIdIndex,
- 		}
- 	}
- 	tempbx--;
--	temp = tempbx & 0x00FF;
- 	tempbx--;
- 	temp = tempbx & 0x00FF;
- 	/* 0x10 vertical Blank Start */
-@@ -3445,9 +3435,6 @@ static void XGI_SetGroup2(unsigned short ModeNo, unsigned short ModeIdIndex,
- 	temp &= 0x80;
- 	xgifb_reg_and_or(pVBInfo->Part2Port, 0x0A, 0xFF, temp);
- 
--	if (pVBInfo->VBInfo & SetCRT2ToHiVision)
--		tempax = 950;
--
- 	if (pVBInfo->TVInfo & TVSetPAL)
- 		tempax = 520;
- 	else
-@@ -4211,11 +4198,6 @@ static void XGI_SetGroup4(unsigned short ModeNo, unsigned short ModeIdIndex,
- 
- 	tempebx = pVBInfo->VDE;
- 
--	if (tempcx & SetCRT2ToHiVision) {
--		if (!(temp & 0xE000))
--			tempbx = tempbx >> 1;
--	}
--
- 	tempcx = pVBInfo->RVBHRS;
- 	temp = tempcx & 0x00FF;
- 	xgifb_reg_set(pVBInfo->Part4Port, 0x18, temp);
--- 
-1.8.1.5
 
