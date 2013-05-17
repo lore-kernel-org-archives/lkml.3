@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab3EQSyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 14:54:51 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:42688 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3EQSyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 14:54:50 -0400
-Message-ID: <51967CF5.7060806@schinagl.nl>
-Date: Fri, 17 May 2013 20:54:45 +0200
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130322 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, maxime.ripard@free-electrons.com,
-        arnd@ardb.de, gregkh@linuxfoundation.org,
-        Oliver Schinagl <oliver@schinagl.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl> <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl> <4144514.S8gIuIKLrJ@wuerfel>
-In-Reply-To: <4144514.S8gIuIKLrJ@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756632Ab3EQTAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 15:00:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:59073 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab3EQTAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 15:00:46 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH 0/2] perf tools: Add MIPS userspace DWARF callchains.
+Date: Fri, 17 May 2013 12:00:36 -0700
+Message-Id: <1368817238-11548-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/13 15:45, Arnd Bergmann wrote:
-> On Friday 17 May 2013 15:35:43 Oliver Schinagl wrote:
->> +static struct bin_attribute sid_bin_attr = {
->> +       .attr = {
->> +               .name = "key",
->> +               .mode = S_IRUGO,
->> +       },
->> +       .size = SUNXI_SID_SIZE,
->> +       .read = sid_read,
->> +};
->
-> I believe all the other drivers in drivers/misc/eeprom use "eeprom"
-> as the name for the attribute, so using "key" here is a bit inconsistent.
->
-> Can you change that?
-Changed, will wait for more feedback and then use that in the final version.
+From: David Daney <david.daney@cavium.com>
 
-Should there also be a symlink elsewhere in /sys? Just curious is all.
->
-> 	Arnd
->
+These patches to the perf tool depend on the kernel patch here:
+
+http://www.linux-mips.org/archives/linux-mips/2013-05/msg00124.html
+
+With these two applied, I get the same nice call graphs on MIPS that
+are obtained on my x86_64 workstation.
+
+The patches are against Jiri Olsa's
+git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git perf/core
+branch.  I hope that is the proper thing to base these things off of.
+
+David Daney (2):
+  perf tools: Add support for MIPS userspace DWARF callchains.
+  perf tools: Hook up MIPS unwind and dwarf-regs in the Makefile
+
+ tools/perf/Makefile                      |  3 ++
+ tools/perf/arch/mips/Makefile            |  7 +++
+ tools/perf/arch/mips/include/perf_regs.h | 84 ++++++++++++++++++++++++++++++++
+ tools/perf/arch/mips/util/dwarf-regs.c   | 37 ++++++++++++++
+ tools/perf/arch/mips/util/unwind.c       | 20 ++++++++
+ tools/perf/config/Makefile               | 12 ++++-
+ 6 files changed, 161 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/arch/mips/Makefile
+ create mode 100644 tools/perf/arch/mips/include/perf_regs.h
+ create mode 100644 tools/perf/arch/mips/util/dwarf-regs.c
+ create mode 100644 tools/perf/arch/mips/util/unwind.c
+
+-- 
+1.7.11.7
 
