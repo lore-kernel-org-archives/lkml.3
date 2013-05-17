@@ -1,52 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab3EQR6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 13:58:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45529 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756530Ab3EQR6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 13:58:20 -0400
-Message-ID: <1368813500.2194.83.camel@joe-AO722>
-Subject: Re: [PATCH] drivers: mfd: sec-code: Fix sizeof argument
-From: Joe Perches <joe@perches.com>
-To: Leon Romanovsky <leon@leon.nu>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, sbkim73@samsung.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 17 May 2013 10:58:20 -0700
-In-Reply-To: <CALq1K=J=Aeg11H5aX8bj-_EowdADJSg5oVY98c1q0v6YbhZEdg@mail.gmail.com>
-References: <1368615236-21345-1-git-send-email-leon@leon.nu>
-	 <20130516221321.GG22822@zurbaran>
-	 <CALq1K=J=Aeg11H5aX8bj-_EowdADJSg5oVY98c1q0v6YbhZEdg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1756601Ab3EQSEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 14:04:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19209 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756567Ab3EQSE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 14:04:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,694,1363158000"; 
+   d="scan'208";a="243140198"
+Message-ID: <5196712D.40908@intel.com>
+Date: Fri, 17 May 2013 11:04:29 -0700
+From: Dave Jiang <dave.jiang@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jon Mason <jon.mason@intel.com>
+CC: Dan Williams <djbw@fb.com>, linux-kernel@vger.kernel.org,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH] ioat: device control support
+References: <1368813227-29512-1-git-send-email-jon.mason@intel.com>
+In-Reply-To: <1368813227-29512-1-git-send-email-jon.mason@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-17 at 20:50 +0300, Leon Romanovsky wrote:
-> On Fri, May 17, 2013 at 1:13 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > On Wed, May 15, 2013 at 01:53:56PM +0300, Leon Romanovsky wrote:
-> >> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-[]
-> >> @@ -121,7 +121,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
-[]
-> >> -     pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-> >> +     pd = devm_kzalloc(dev, sizeof(struct sec_platform_data), GFP_KERNEL);
-> > How is that fixing anything ?
-> Technically you are right, this fix brings code to be align to common
-> code convention and allows to automatic tools  correctly parse it.
+Acked-by: Dave Jiang <dave.jiang@intel.com>
 
-Not really.
-Common coding convention is actually the original code.
+On 05/17/2013 10:53 AM, Jon Mason wrote:
+> Add device control support for CBDMA v2 and v3 in the ioat driver.
+> This allows DMA engine clients to call into the ioat driver and issue a
+> DMA_TERMINATE_ALL.
+>
+> Signed-off-by: Jon Mason <jon.mason@intel.com>
+> ---
+>   drivers/dma/ioat/dma_v2.c |   22 ++++++++++++++++++++++
+>   drivers/dma/ioat/dma_v3.c |   22 ++++++++++++++++++++++
+>   2 files changed, 44 insertions(+)
+>
+> diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> index b925e1b..d373ee3 100644
+> --- a/drivers/dma/ioat/dma_v2.c
+> +++ b/drivers/dma/ioat/dma_v2.c
+> @@ -847,6 +847,27 @@ void ioat2_free_chan_resources(struct dma_chan *c)
+>   	ioat->dmacount = 0;
+>   }
+>   
+> +static int ioat2_device_control(struct dma_chan *c, enum dma_ctrl_cmd cmd,
+> +				unsigned long arg)
+> +{
+> +	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
+> +	struct ioat_chan_common *chan = &ioat->base;
+> +
+> +	switch (cmd) {
+> +	case DMA_TERMINATE_ALL:
+> +		spin_lock_bh(&chan->cleanup_lock);
+> +		spin_lock_bh(&ioat->prep_lock);
+> +		ioat2_restart_channel(ioat);
+> +		spin_unlock_bh(&ioat->prep_lock);
+> +		spin_unlock_bh(&chan->cleanup_lock);
+> +		break;
+> +	default:
+> +		return -ENOSYS;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   static ssize_t ring_size_show(struct dma_chan *c, char *page)
+>   {
+>   	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
+> @@ -896,6 +917,7 @@ int ioat2_dma_probe(struct ioatdma_device *device, int dca)
+>   	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
+>   	dma->device_free_chan_resources = ioat2_free_chan_resources;
+>   	dma->device_tx_status = ioat_dma_tx_status;
+> +	dma->device_control = ioat2_device_control;
+>   
+>   	err = ioat_probe(device);
+>   	if (err)
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index ca6ea9b..ca6ecdc 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -1833,6 +1833,27 @@ static int ioat3_reset_hw(struct ioat_chan_common *chan)
+>   	return err;
+>   }
+>   
+> +static int ioat3_device_control(struct dma_chan *c, enum dma_ctrl_cmd cmd,
+> +				unsigned long arg)
+> +{
+> +	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
+> +	struct ioat_chan_common *chan = &ioat->base;
+> +
+> +	switch (cmd) {
+> +	case DMA_TERMINATE_ALL:
+> +		spin_lock_bh(&chan->cleanup_lock);
+> +		spin_lock_bh(&ioat->prep_lock);
+> +		ioat3_restart_channel(ioat);
+> +		spin_unlock_bh(&ioat->prep_lock);
+> +		spin_unlock_bh(&chan->cleanup_lock);
+> +		break;
+> +	default:
+> +		return -ENOSYS;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   static void ioat3_intr_quirk(struct ioatdma_device *device)
+>   {
+>   	struct dma_device *dma;
+> @@ -1878,6 +1899,7 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
+>   	dma->device_issue_pending = ioat2_issue_pending;
+>   	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
+>   	dma->device_free_chan_resources = ioat2_free_chan_resources;
+> +	dma->device_control = ioat3_device_control;
+>   
+>   	if (is_xeon_cb32(pdev))
+>   		dma->copy_align = 6;
 
-from: Documentation/CodingStyle:
 
-		Chapter 14: Allocating memory
-[]
-The preferred form for passing a size of a struct is the following:
+-- 
 
-	p = kmalloc(sizeof(*p), ...);
-
+Dave Jiang
+Application Engineer, Storage Divsion
+Intel Corp.
+dave.jiang@intel.com
 
