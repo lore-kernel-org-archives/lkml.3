@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3EQViq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:38:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54428 "EHLO
+	id S932113Ab3EQVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:38:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757375Ab3EQViL (ORCPT
+	with ESMTP id S1757366Ab3EQViJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 17:38:11 -0400
+	Fri, 17 May 2013 17:38:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 094/102] drm/radeon: restore nomodeset operation (v2)
-Date: Fri, 17 May 2013 14:36:49 -0700
-Message-Id: <20130517213254.102395284@linuxfoundation.org>
+        Mike Frysinger <vapier@gentoo.org>, Jeroen Roovers <jer@gentoo.org>,
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [ 100/102] parisc: make default cross compiler search more robust (v3)
+Date: Fri, 17 May 2013 14:36:55 -0700
+Message-Id: <20130517213254.783306218@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213244.277411019@linuxfoundation.org>
 References: <20130517213244.277411019@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,54 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Helge Deller <deller@gmx.de>
 
-commit e9ced8e040ebe40e9953db90acbe7d0b58702ebb upstream.
+commit 6880b0150a7c25fd75c5ece80abc49ebf53c38c1 upstream.
 
-When UMS was deprecated it removed support for nomodeset commandline
-we really want this in distro land so we can debug stuff, everyone
-should fallback to vesa correctly.
+People/distros vary how they prefix the toolchain name for 64bit builds.
+Rather than enforce one convention over another, add a for loop which
+does a search for all the general prefixes.
 
-v2: oops -1 isn't used anymore, restore original behaviour
--1 is default, so we can boot with nomodeset on the command line,
-then use radeon.modeset=1 to override it for debugging later.
+For 64bit builds, we now search for (in order):
+	hppa64-unknown-linux-gnu
+	hppa64-linux-gnu
+	hppa64-linux
 
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+For 32bit builds, we look for:
+	hppa-unknown-linux-gnu
+	hppa-linux-gnu
+	hppa-linux
+	hppa2.0-unknown-linux-gnu
+	hppa2.0-linux-gnu
+	hppa2.0-linux
+	hppa1.1-unknown-linux-gnu
+	hppa1.1-linux-gnu
+	hppa1.1-linux
+
+This patch was initiated by Mike Frysinger, with feedback from Jeroen
+Roovers, John David Anglin and Helge Deller.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Jeroen Roovers <jer@gentoo.org>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_drv.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ arch/parisc/Makefile |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -144,7 +144,7 @@ static inline void radeon_unregister_atp
- #endif
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -23,24 +23,21 @@ NM		= sh $(srctree)/arch/parisc/nm
+ CHECKFLAGS	+= -D__hppa__=1
+ LIBGCC		= $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
  
- int radeon_no_wb;
--int radeon_modeset = 1;
-+int radeon_modeset = -1;
- int radeon_dynclks = -1;
- int radeon_r4xx_atom = 0;
- int radeon_agpmode = 0;
-@@ -449,6 +449,16 @@ static struct pci_driver radeon_kms_pci_
+-MACHINE		:= $(shell uname -m)
+-NATIVE		:= $(if $(filter parisc%,$(MACHINE)),1,0)
+-
+ ifdef CONFIG_64BIT
+ UTS_MACHINE	:= parisc64
+ CHECKFLAGS	+= -D__LP64__=1 -m64
+-WIDTH		:= 64
++CC_ARCHES	= hppa64
+ else # 32-bit
+-WIDTH		:=
++CC_ARCHES	= hppa hppa2.0 hppa1.1
+ endif
  
- static int __init radeon_init(void)
- {
-+#ifdef CONFIG_VGA_CONSOLE
-+	if (vgacon_text_force() && radeon_modeset == -1) {
-+		DRM_INFO("VGACON disable radeon kernel modesetting.\n");
-+		radeon_modeset = 0;
-+	}
-+#endif
-+	/* set to modesetting by default if not nomodeset */
-+	if (radeon_modeset == -1)
-+		radeon_modeset = 1;
-+
- 	if (radeon_modeset == 1) {
- 		DRM_INFO("radeon kernel modesetting enabled.\n");
- 		driver = &kms_driver;
+-# attempt to help out folks who are cross-compiling
+-ifeq ($(NATIVE),1)
+-CROSS_COMPILE	:= hppa$(WIDTH)-linux-
+-else
+- ifeq ($(CROSS_COMPILE),)
+- CROSS_COMPILE	:= hppa$(WIDTH)-linux-gnu-
+- endif
++ifneq ($(SUBARCH),$(UTS_MACHINE))
++	ifeq ($(CROSS_COMPILE),)
++		CC_SUFFIXES = linux linux-gnu unknown-linux-gnu
++		CROSS_COMPILE := $(call cc-cross-prefix, \
++			$(foreach a,$(CC_ARCHES), \
++			$(foreach s,$(CC_SUFFIXES),$(a)-$(s)-)))
++	endif
+ endif
+ 
+ OBJCOPY_FLAGS =-O binary -R .note -R .comment -S
 
 
