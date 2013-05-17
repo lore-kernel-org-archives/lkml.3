@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976Ab3EQVyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:54:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54770 "EHLO
+	id S1757996Ab3EQVy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:54:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab3EQVud (ORCPT
+	with ESMTP id S1757961Ab3EQVud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:50:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        JerryKang <jerry.kang@samsung.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/33] bridge: fix race with topology change timer
-Date: Fri, 17 May 2013 14:50:02 -0700
-Message-Id: <20130517214918.772718992@linuxfoundation.org>
+Subject: [ 17/33] net_sched: act_ipt forward compat with xtables
+Date: Fri, 17 May 2013 14:50:01 -0700
+Message-Id: <20130517214918.655368710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517214916.821259930@linuxfoundation.org>
 References: <20130517214916.821259930@linuxfoundation.org>
@@ -29,36 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Jamal Hadi Salim <jhs@mojatatu.com>
 
-[ Upstream commit 83401eb4990ff6af55aeed8f49681558544192e6 ]
+[ Upstream commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c ]
 
-A bridge should only send topology change notice if it is not
-the root bridge. It is possible for message age timer to elect itself
-as a new root bridge, and still have a topology change timer running
-but waiting for bridge lock on other CPU.
+Deal with changes in newer xtables while maintaining backward
+compatibility. Thanks to Jan Engelhardt for suggestions.
 
-Solve the race by checking if we are root bridge before continuing.
-This was the root cause of the cases where br_send_tcn_bpdu would OOPS.
-
-Reported-by: JerryKang <jerry.kang@samsung.com>
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_stp_timer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sched/act_ipt.c |   33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
---- a/net/bridge/br_stp_timer.c
-+++ b/net/bridge/br_stp_timer.c
-@@ -106,7 +106,7 @@ static void br_tcn_timer_expired(unsigne
+--- a/net/sched/act_ipt.c
++++ b/net/sched/act_ipt.c
+@@ -8,7 +8,7 @@
+  *		as published by the Free Software Foundation; either version
+  *		2 of the License, or (at your option) any later version.
+  *
+- * Copyright:	Jamal Hadi Salim (2002-4)
++ * Copyright:	Jamal Hadi Salim (2002-13)
+  */
  
- 	br_debug(br, "tcn timer expired\n");
- 	spin_lock(&br->lock);
--	if (br->dev->flags & IFF_UP) {
-+	if (!br_is_root_bridge(br) && (br->dev->flags & IFF_UP)) {
- 		br_transmit_tcn(br);
+ #include <linux/types.h>
+@@ -299,17 +299,44 @@ static struct tc_action_ops act_ipt_ops
+ 	.walk		=	tcf_generic_walker
+ };
  
- 		mod_timer(&br->tcn_timer,jiffies + br->bridge_hello_time);
+-MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
++static struct tc_action_ops act_xt_ops = {
++	.kind		=	"xt",
++	.hinfo		=	&ipt_hash_info,
++	.type		=	TCA_ACT_IPT,
++	.capab		=	TCA_CAP_NONE,
++	.owner		=	THIS_MODULE,
++	.act		=	tcf_ipt,
++	.dump		=	tcf_ipt_dump,
++	.cleanup	=	tcf_ipt_cleanup,
++	.lookup		=	tcf_hash_search,
++	.init		=	tcf_ipt_init,
++	.walk		=	tcf_generic_walker
++};
++
++MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
+ MODULE_DESCRIPTION("Iptables target actions");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("act_xt");
+ 
+ static int __init ipt_init_module(void)
+ {
+-	return tcf_register_action(&act_ipt_ops);
++	int ret1, ret2;
++	ret1 = tcf_register_action(&act_xt_ops);
++	if (ret1 < 0)
++		printk("Failed to load xt action\n");
++	ret2 = tcf_register_action(&act_ipt_ops);
++	if (ret2 < 0)
++		printk("Failed to load ipt action\n");
++
++	if (ret1 < 0 && ret2 < 0)
++		return ret1;
++	else
++		return 0;
+ }
+ 
+ static void __exit ipt_cleanup_module(void)
+ {
++	tcf_unregister_action(&act_xt_ops);
+ 	tcf_unregister_action(&act_ipt_ops);
+ }
+ 
 
 
