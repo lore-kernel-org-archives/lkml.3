@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3EQVtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 17:49:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54635 "EHLO
+	id S1757883Ab3EQVtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 17:49:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54612 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab3EQVr6 (ORCPT
+	with ESMTP id S932375Ab3EQVr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 17:47:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 43/50] drbd: fix for deadlock when using automatic split-brain-recovery
-Date: Fri, 17 May 2013 14:47:18 -0700
-Message-Id: <20130517213847.200962709@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 44/50] drivers/rtc/rtc-pcf2123.c: fix error return code in pcf2123_probe()
+Date: Fri, 17 May 2013 14:47:19 -0700
+Message-Id: <20130517213847.313112794@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130517213842.447809965@linuxfoundation.org>
 References: <20130517213842.447809965@linuxfoundation.org>
@@ -28,41 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream.
+commit 35623715818dfa720cccf99cd280dcbb4b78da23 upstream.
 
-With an automatic after split-brain recovery policy of
-"after-sb-1pri call-pri-lost-after-sb",
-when trying to drbd_set_role() to R_SECONDARY,
-we run into a deadlock.
+Fix to return -ENODEV in the chip not found error handling
+case instead of 0, as done elsewhere in this function.
 
-This was first recognized and supposedly fixed by
-2009-06-10 "Fixed a deadlock when using automatic split brain recovery when both nodes are"
-replacing drbd_set_role() with drbd_change_state() in that code-path,
-but the first hunk of that patch forgets to remove the drbd_set_role().
-
-We apparently only ever tested the "two primaries" case.
-
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/drbd/drbd_receiver.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/rtc/rtc-pcf2123.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2225,7 +2225,6 @@ static int drbd_asb_recover_1p(struct dr
- 		if (hg == -1 && mdev->state.role == R_PRIMARY) {
- 			enum drbd_state_rv rv2;
+--- a/drivers/rtc/rtc-pcf2123.c
++++ b/drivers/rtc/rtc-pcf2123.c
+@@ -264,6 +264,7 @@ static int __devinit pcf2123_probe(struc
  
--			drbd_set_role(mdev, R_SECONDARY, 0);
- 			 /* drbd_change_state() does not sleep while in SS_IN_TRANSIENT_STATE,
- 			  * we might be here in C_WF_REPORT_PARAMS which is transient.
- 			  * we do not need to wait for the after state change work either. */
+ 	if (!(rxbuf[0] & 0x20)) {
+ 		dev_err(&spi->dev, "chip not found\n");
++		ret = -ENODEV;
+ 		goto kfree_exit;
+ 	}
+ 
 
 
