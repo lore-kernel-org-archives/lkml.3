@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab3EQOJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 10:09:06 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:47486 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab3EQOJE (ORCPT
+	id S1756198Ab3EQOJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 10:09:47 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:51163 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab3EQOJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 10:09:04 -0400
+	Fri, 17 May 2013 10:09:45 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Scott Wood <scottwood@freescale.com>,
+        linaro-kernel@lists.linaro.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        "open list\:KERNEL VIRTUAL MA..." <kvm@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: allow host header to be included even for !CONFIG_KVM
+References: <20130321072955.GO3889@redhat.com> <87ppyshlq5.fsf@linaro.org>
+	<1363891354.31522.17@snotra> <20130321191600.GG9382@redhat.com>
+	<1363894393.31522.20@snotra> <20130321211736.GI9382@redhat.com>
+	<CAFTL4hz2=VJBLG1w31JSPDtRdobcmL5oY6XkR46vi3zS904VGA@mail.gmail.com>
+	<20130324140114.GV3889@redhat.com> <87txnz9o7n.fsf@linaro.org>
+	<20130515225201.GA2341@somewhere> <20130517010442.GB12928@somewhere>
+Date: Fri, 17 May 2013 07:09:42 -0700
+In-Reply-To: <20130517010442.GB12928@somewhere> (Frederic Weisbecker's message
+	of "Fri, 17 May 2013 03:04:43 +0200")
+Message-ID: <871u95u28p.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 17 May 2013 07:08:41 -0700
-X-Google-Sender-Auth: 2dm9KIi1GWNcD0O9dqDrei7vd4E
-Message-ID: <CAB=NE6VQA3fLXNeE-ihRp7sO1PDQotzmeuPGxftBFA7HzZDdPg@mail.gmail.com>
-Subject: Developer Certificate of Origin - Signed-off-by standalone project followup
-To: Discussion and development of copyleft-next 
-	<copyleft-next@lists.fedorahosted.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "W. Trevor King" <wking@tremily.us>,
-        Richard Fontana <fontana@sharpeleven.org>,
-        "Luis R. Rodriguez" <mcgrof@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the 2013 San Francisco Linux Collaboration talk I gave a talk [0]
-as a followup on the discussions I initiated a while ago on lkml [1]
-on the possibility of taking the Linux kernel's Developer Certificate
-of Origin and streamlining it by making it a stand alone project for
-other projects to benefit from it. This is a follow up to that talk.
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-W. Trevor King did some handy work by doing taking the Linux kernel's
-DCO and making it a standalone project on github [2] and keeping its
-history already. He's also made it project agnostic. To make a
-standalone DCO project agnostic and useful for any type of project it
-would help if any licensed project could use it. One question that we
-had over this idea was whether or not the DCO is licensed under the
-GPLv2 or not. Its arguable whether or not its copyrightable, perhaps
-not but just the idea of contributions to it might make it so.
-Although we could try to get a Creative Commons licensed DCO (and at
-least for the standard body text, not the rest of SubmittingPatches
-I'll go poke) King has made it possible for any licensed project to
-use the DCO standalone project by making a Creative Commons licensed
-file that simply refers to the public URL of the project.
+> On Thu, May 16, 2013 at 12:52:03AM +0200, Frederic Weisbecker wrote:
+>> On Mon, Mar 25, 2013 at 02:14:20PM -0700, Kevin Hilman wrote:
+>> > Gleb Natapov <gleb@redhat.com> writes:
+>> > 
+>> > > On Sun, Mar 24, 2013 at 02:44:26PM +0100, Frederic Weisbecker wrote:
+>> > >> 2013/3/21 Gleb Natapov <gleb@redhat.com>:
+>> > >> > Isn't is simpler for kernel/context_tracking.c to define empty
+>> > >> > __guest_enter()/__guest_exit() if !CONFIG_KVM.
+>> > >> 
+>> > >> That doesn't look right. Off-cases are usually handled from the
+>> > >> headers, right? So that we avoid iffdeffery ugliness in core code.
+>> > > Lets put it in linux/context_tracking.h header then.
+>> > 
+>> > Here's a version to do that.
+>> > 
+>> > Kevin
+>> > 
+>> > From d9d909394479dd7ff90b7bddb95a564945406719 Mon Sep 17 00:00:00 2001
+>> > From: Kevin Hilman <khilman@linaro.org>
+>> > Date: Mon, 25 Mar 2013 14:12:41 -0700
+>> > Subject: [PATCH v2] ontext_tracking: fix !CONFIG_KVM compile: add stub guest
+>> >  enter/exit
+>> 
+>> Sorry for my very delayed response...
+>> 
+>> > 
+>> > When KVM is not enabled, or not available on a platform, the KVM
+>> > headers should not be included.  Instead, just define stub
+>> > __guest_[enter|exit] functions.
+>> 
+>> May be it would be cleaner to move guest_enter/exit definitions altogether
+>> in linux/context_tracking.h
+>> 
+>> After all that's where the implementation mostly belong to.
+>> 
+>> Let me see if I can get that in shape.
+>
+> Does the following work for you?
 
-As per discussions at LF collab it was acknowledged that the DCO could
-indeed be a benefit to other projects but we'd need to ensure that the
-body of the text is maintained as a very conservative document. I also
-wanted to address volunteering a real life attorney to help with
-reviews / maintenance so I volunteered Richard Fontana given Richard's
-public work on copyleft-next and the copyleft-next mailing list
-availability and his public work as an attorney for the community
-there [3]. Richard seems to have accepted.
+Nope. 
 
-What's next? Please join the copyleft-next mailing list if you are
-interested in evolving the DCO and helping with streamlining this
-effort.
+Since it still includs kvm_host.h on non-KVM builds, there is potential
+for problems.  For example, on ARM (v3.10-rc1 + this patch) has this
+build error:
 
-[0] https://docs.google.com/presentation/d/1J4VTSTuiJ88xcvOrYg7HRvwUoxOW9qvnBqOfoPPuc64/edit
-[1] https://lkml.org/lkml/2012/11/20/636
-[2] git://github.com/wking/signed-off-by.git
-[3] http://lists.fedorahosted.org/mailman/listinfo/copyleft-next
+  CC      kernel/context_tracking.o
+In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
+                 from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
+                 from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
+/work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:38:6: warning: "CONFIG_KVM_ARM_MAX_VCPUS" is not defined [-Wundef]
+In file included from /work/kernel/linaro/nohz/arch/arm/include/asm/kvm_host.h:41:0,
+                 from /work/kernel/linaro/nohz/include/linux/kvm_host.h:34,
+                 from /work/kernel/linaro/nohz/kernel/context_tracking.c:18:
+/work/kernel/linaro/nohz/arch/arm/include/asm/kvm_vgic.h:59:11: error: 'CONFIG_KVM_ARM_MAX_VCPUS' undeclared here (not in a function)
 
-  Luis
+Kevin
