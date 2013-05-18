@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab3ERDA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:00:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23572 "EHLO
+	id S1758878Ab3ERDHT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:07:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758549Ab3ERDAR (ORCPT
+	with ESMTP id S1758786Ab3ERDA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:17 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qFtTPqmYhZAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PU4n4AM8CeYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=QThCRtUKAn8qdFw7WdUA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:26 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=aqyYB4cJgfEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aXVauKmVCREA:10 a=VwQbUJbxAAAA:8 a=gAnH3GRIAAAA:8 a=QyXUC8HyAAAA:8 a=uCZktWHDQ6yKDXGXcpUA:9 a=8NEP1B8RWw4A:10 a=rPGc2HzQRbAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021659.187994936@goodmis.org>
+Message-Id: <20130518021655.266080689@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:46 -0400
+Date: Fri, 17 May 2013 22:17:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dave Airlie <airlied@redhat.com>
-Subject: [ 109/136 ] drm/ast: deal with bo reserve fail in dirty update path
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 084/136 ] mfd: adp5520: Restore mode bits on resume
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0109-drm-ast-deal-with-bo-reserve-fail-in-dirty-update-pa.patch
+Content-Disposition: inline; filename=0084-mfd-adp5520-Restore-mode-bits-on-resume.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,136 +31,56 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-[ Upstream commit 306373b645d80625335b8e684fa09b14ba460cec ]
+[ Upstream commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 ]
 
-Port over the mgag200 fix to ast as it suffers the same issue.
-
-    On F19 testing, it was noticed we get a lot of errors in dmesg
-    about being unable to reserve the buffer when plymouth starts,
-    this is due to the buffer being in the process of migrating,
-    so it makes sense we can't reserve it.
-
-    In order to deal with it, this adds delayed updates for the dirty
-    updates, when the bo is unreservable, in the normal console case
-    this shouldn't ever happen, its just when plymouth or X is
-    pushing the console bo to system memory.
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
 
 Cc: stable@vger.kernel.org
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/ast/ast_drv.h |    2 ++
- drivers/gpu/drm/ast/ast_fb.c  |   43 ++++++++++++++++++++++++++++++++++++++---
- drivers/gpu/drm/ast/ast_ttm.c |    2 +-
- 3 files changed, 43 insertions(+), 4 deletions(-)
+ drivers/mfd/adp5520.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/ast/ast_drv.h b/drivers/gpu/drm/ast/ast_drv.h
-index d4af9ed..85a6eeb 100644
---- a/drivers/gpu/drm/ast/ast_drv.h
-+++ b/drivers/gpu/drm/ast/ast_drv.h
-@@ -240,6 +240,8 @@ struct ast_fbdev {
- 	void *sysram;
- 	int size;
- 	struct ttm_bo_kmap_obj mapping;
-+	int x1, y1, x2, y2; /* dirty rect */
-+	spinlock_t dirty_lock;
+diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
+index ea8b947..7e41d54 100644
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
  };
  
- #define to_ast_crtc(x) container_of(x, struct ast_crtc, base)
-diff --git a/drivers/gpu/drm/ast/ast_fb.c b/drivers/gpu/drm/ast/ast_fb.c
-index 2fc8e9e..853f831 100644
---- a/drivers/gpu/drm/ast/ast_fb.c
-+++ b/drivers/gpu/drm/ast/ast_fb.c
-@@ -53,16 +53,52 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
- 	int bpp = (afbdev->afb.base.bits_per_pixel + 7)/8;
- 	int ret;
- 	bool unmap = false;
-+	bool store_for_later = false;
-+	int x2, y2;
-+	unsigned long flags;
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device *dev)
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
  
- 	obj = afbdev->afb.obj;
- 	bo = gem_to_ast_bo(obj);
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
+ }
  
-+	/*
-+	 * try and reserve the BO, if we fail with busy
-+	 * then the BO is being moved and we should
-+	 * store up the damage until later.
-+	 */
- 	ret = ast_bo_reserve(bo, true);
- 	if (ret) {
--		DRM_ERROR("failed to reserve fb bo\n");
-+		if (ret != -EBUSY)
-+			return;
-+
-+		store_for_later = true;
-+	}
-+
-+	x2 = x + width - 1;
-+	y2 = y + height - 1;
-+	spin_lock_irqsave(&afbdev->dirty_lock, flags);
-+
-+	if (afbdev->y1 < y)
-+		y = afbdev->y1;
-+	if (afbdev->y2 > y2)
-+		y2 = afbdev->y2;
-+	if (afbdev->x1 < x)
-+		x = afbdev->x1;
-+	if (afbdev->x2 > x2)
-+		x2 = afbdev->x2;
-+
-+	if (store_for_later) {
-+		afbdev->x1 = x;
-+		afbdev->x2 = x2;
-+		afbdev->y1 = y;
-+		afbdev->y2 = y2;
-+		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
- 		return;
- 	}
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device *dev)
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
  
-+	afbdev->x1 = afbdev->y1 = INT_MAX;
-+	afbdev->x2 = afbdev->y2 = 0;
-+	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
-+
- 	if (!bo->kmap.virtual) {
- 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
- 		if (ret) {
-@@ -72,10 +108,10 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
- 		}
- 		unmap = true;
- 	}
--	for (i = y; i < y + height; i++) {
-+	for (i = y; i <= y2; i++) {
- 		/* assume equal stride for now */
- 		src_offset = dst_offset = i * afbdev->afb.base.pitches[0] + (x * bpp);
--		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, width * bpp);
-+		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, (x2 - x + 1) * bpp);
- 
- 	}
- 	if (unmap)
-@@ -306,6 +342,7 @@ int ast_fbdev_init(struct drm_device *dev)
- 
- 	ast->fbdev = afbdev;
- 	afbdev->helper.funcs = &ast_fb_helper_funcs;
-+	spin_lock_init(&afbdev->dirty_lock);
- 	ret = drm_fb_helper_init(dev, &afbdev->helper,
- 				 1, 1);
- 	if (ret) {
-diff --git a/drivers/gpu/drm/ast/ast_ttm.c b/drivers/gpu/drm/ast/ast_ttm.c
-index 6cf2ade..2a6027c 100644
---- a/drivers/gpu/drm/ast/ast_ttm.c
-+++ b/drivers/gpu/drm/ast/ast_ttm.c
-@@ -316,7 +316,7 @@ int ast_bo_reserve(struct ast_bo *bo, bool no_wait)
- 
- 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
- 	if (ret) {
--		if (ret != -ERESTARTSYS)
-+		if (ret != -ERESTARTSYS && ret != -EBUSY)
- 			DRM_ERROR("reserve failed %p\n", bo);
- 		return ret;
- 	}
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
 -- 
 1.7.10.4
 
