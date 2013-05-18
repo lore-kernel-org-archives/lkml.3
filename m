@@ -1,118 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab3ERNWt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 09:22:49 -0400
-Received: from smtp39.i.mail.ru ([94.100.177.99]:36296 "EHLO smtp39.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab3ERNWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 09:22:48 -0400
-Message-ID: <5197800D.60601@list.ru>
-Date: Sat, 18 May 2013 17:20:13 +0400
-From: Stas Sergeev <stsp@list.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1751532Ab3ERN26 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 09:28:58 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:55508 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab3ERN24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 09:28:56 -0400
 MIME-Version: 1.0
-To: Linux kernel <linux-kernel@vger.kernel.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] n_tty: fix .chars_in_buffer confusion
-Content-Type: multipart/mixed;
- boundary="------------020304020400070202030504"
-X-Spam: Not detected
-X-Mras: Ok
+In-Reply-To: <1368868514-18975-5-git-send-email-linux@prisktech.co.nz>
+References: <1368868514-18975-1-git-send-email-linux@prisktech.co.nz>
+	<1368868514-18975-5-git-send-email-linux@prisktech.co.nz>
+Date: Sat, 18 May 2013 17:28:54 +0400
+Message-ID: <CABjd4Yxrk3hXnB5f6u+1HcJjymDZbtQ1F1HXkZ2dzF3dwCrWhg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] fb: vt8500: Add VGA output support to wm8505fb driver.
+From: Alexey Charkov <alchark@gmail.com>
+To: "VT8500/WM8505 Linux Kernel" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tomi.valkeinen@ti.com,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Tony Prisk <linux@prisktech.co.nz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020304020400070202030504
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+2013/5/18 Tony Prisk <linux@prisktech.co.nz>:
+> The APC8750 does not support an LCD panel, but provides a VGA connector.
+> This patch adds support for the VGA interface, and defines an optional
+> devicetree property to specify the output interface. The default if not
+> specified is LCD for backward compatibility.
+>
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+>  .../devicetree/bindings/video/wm,wm8505-fb.txt     |    5 ++++
+>  drivers/video/wm8505fb.c                           |   31 ++++++++++++++++++--
+>  2 files changed, 34 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+> index 601416c..9f1d648 100644
+> --- a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+> +++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+> @@ -7,6 +7,10 @@ Required properties:
+>  - bits-per-pixel : bit depth of framebuffer (16 or 32)
+>  - clocks : phandle to DVO clock
+>
+> +Optional properties:
+> +- output-interface : the interface the fb should output on. Valid values are
+> +       "lcd" or "vga". If not specified, the default is "lcd".
+> +
+>  Required subnodes:
+>  - display-timings: see display-timing.txt for information
+>
+> @@ -17,6 +21,7 @@ Example:
+>                 reg = <0xd8051700 0x200>;
+>                 bits-per-pixel = <16>;
+>                 clocks = <&clkdvo>;
+> +               output-interface = "vga";
+>
+>                 display-timings {
+>                         native-mode = <&timing0>;
+> diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+> index f8bffc2..d1f7f33 100644
+> --- a/drivers/video/wm8505fb.c
+> +++ b/drivers/video/wm8505fb.c
+> @@ -130,12 +130,17 @@
+>
+>  #define to_wm8505fb_info(__info) container_of(__info, \
+>                                                 struct wm8505fb_info, fb)
+> +
+> +#define INTERFACE_LCD  1
+> +#define INTERFACE_VGA  2
+> +
+>  struct wm8505fb_info {
+>         struct fb_info fb;
+>         void __iomem *regbase;
+>         unsigned int contrast;
+>         struct device *dev;
+>         struct clk *clk_dvo;
+> +       int interface;
+>  };
+>
+>
+> @@ -158,7 +163,11 @@ static int wm8505fb_init_hw(struct fb_info *info)
+>          * 0x31C sets the correct color mode (RGB565) for WM8650
+>          * Bit 8+9 (0x300) are ignored on WM8505 as reserved
+>          */
+> -       writel(0x31c,                  fbi->regbase + REG_GOVRH_YUVRGB);
+> +       if (fbi->interface == INTERFACE_VGA)
+> +               writel(0x338, fbi->regbase + REG_GOVRH_YUVRGB);
+> +       else
+> +               writel(0x31c, fbi->regbase + REG_GOVRH_YUVRGB);
+> +
+>         writel(1,                      fbi->regbase + REG_GOVRH_DVO_PIX);
 
-Hi.
+Tony,
 
-I think there is a confusion with n_tty_chars_in_buffer(): it
-calculates the amount of input chars, but is used as a
-.chars_in_buffer member of tty_ldisc_ops, which, AFAIK,
-should calculate the amount of _output_ chars buffered.
+Would it be possible to also define known bit offsets for those
+registers, while you are at this? It would probably reduce the black
+magic quite a bit :)
 
-Here is the patch that changes this.
-Since it doesn't fix any problem I can practically observe,
-the chances are high that I am missing something obvious.
+>         /* Virtual buffer size */
+> @@ -167,7 +176,12 @@ static int wm8505fb_init_hw(struct fb_info *info)
+>
+>         /* black magic ;) */
+>         writel(0xf,                    fbi->regbase + REG_GOVRH_FHI);
+> -       writel(4,                      fbi->regbase + REG_GOVRH_DVO_SET);
+> +
+> +       if (fbi->interface == INTERFACE_VGA)
+> +               writel(0xe, fbi->regbase + REG_GOVRH_DVO_SET);
+> +       else
+> +               writel(4, fbi->regbase + REG_GOVRH_DVO_SET);
 
-Can someone please take a look if there is really a bug here?
+I don't remember if HDMI is yet another option for this register or
+not... If it is, it would probably warrant defining fbi->interface as
+an enum and changing this if-else into a switch statement to let the
+compiler add its checks/warnings.
 
---------------020304020400070202030504
-Content-Type: text/x-patch;
- name="0001-n_tty-fix-.chars_in_buffer-confusion.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="0001-n_tty-fix-.chars_in_buffer-confusion.patch"
+>         writel(1,                      fbi->regbase + REG_GOVRH_MIF);
+>         writel(1,                      fbi->regbase + REG_GOVRH_REG_STS);
+>
+> @@ -194,11 +208,15 @@ static int wm8505fb_set_timing(struct fb_info *info)
+>         writel(h_end,   fbi->regbase + REG_GOVRH_ACTPX_END);
+>         writel(h_all,   fbi->regbase + REG_GOVRH_H_ALLPXL);
+>         writel(h_sync,  fbi->regbase + REG_GOVRH_HDMI_HSYNW);
+> +       if (fbi->interface == INTERFACE_VGA)
+> +               writel(h_sync,  fbi->regbase + REG_GOVRH_VGA_HSYNW);
 
->From cea19eda592e61db780e3ce1a7bf9a5f0899a0fc Mon Sep 17 00:00:00 2001
-From: Stas Sergeev <stsp@users.sourceforge.net>
-Date: Sat, 18 May 2013 15:06:39 +0400
-Subject: [PATCH] n_tty: fix .chars_in_buffer confusion
+Will it misbehave on LCD if you write to the VGA register unconditionally?
 
-n_tty_chars_in_buffer() was calculating the amount of input
-chars, not output chars. It therefore should not be used as
-a .chars_in_buffer member.
-This patch removes it from tty_ldisc_ops and renames to
-chars_in_input_buffer()
+>         writel(v_start, fbi->regbase + REG_GOVRH_ACTLN_BG);
+>         writel(v_end,   fbi->regbase + REG_GOVRH_ACTLN_END);
+>         writel(v_all,   fbi->regbase + REG_GOVRH_V_ALLLN);
+>         writel(v_sync,  fbi->regbase + REG_GOVRH_HDMI_VBISW);
+> +       if (fbi->interface == INTERFACE_VGA)
+> +               writel(info->var.pixclock,  fbi->regbase + REG_GOVRH_VGA_VSYNW);
 
-Signed-off-by: Stas Sergeev <stsp@users.sourceforge.net>
----
- drivers/tty/n_tty.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+Same here. I would assume that setting the pixclock should not hurt
+LCD, which would then simplify the code a little.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 3f228c9..0567235 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -253,7 +253,7 @@ static void n_tty_flush_buffer(struct tty_struct *tty)
- }
- 
- /**
-- *	n_tty_chars_in_buffer	-	report available bytes
-+ *	chars_in_input_buffer	-	report available bytes
-  *	@tty: tty device
-  *
-  *	Report the number of characters buffered to be delivered to user
-@@ -262,7 +262,7 @@ static void n_tty_flush_buffer(struct tty_struct *tty)
-  *	Locking: read_lock
-  */
- 
--static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
-+static ssize_t chars_in_input_buffer(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
-@@ -1977,7 +1977,7 @@ do_it_again:
- 		}
- 
- 		/* If there is enough space in the read buffer now, let the
--		 * low-level driver know. We use n_tty_chars_in_buffer() to
-+		 * low-level driver know. We use chars_in_input_buffer() to
- 		 * check the buffer, as it now knows about canonical mode.
- 		 * Otherwise, if the driver is throttled and the line is
- 		 * longer than TTY_THRESHOLD_UNTHROTTLE in canonical mode,
-@@ -1985,7 +1985,7 @@ do_it_again:
- 		 */
- 		while (1) {
- 			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
--			if (n_tty_chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
-+			if (chars_in_input_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
- 				break;
- 			if (!tty->count)
- 				break;
-@@ -2206,7 +2206,6 @@ struct tty_ldisc_ops tty_ldisc_N_TTY = {
- 	.open            = n_tty_open,
- 	.close           = n_tty_close,
- 	.flush_buffer    = n_tty_flush_buffer,
--	.chars_in_buffer = n_tty_chars_in_buffer,
- 	.read            = n_tty_read,
- 	.write           = n_tty_write,
- 	.ioctl           = n_tty_ioctl,
--- 
-1.7.11.7
-
-
---------------020304020400070202030504--
+Thanks,
+Alexey
