@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab3ERAxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 20:53:19 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45018 "EHLO
+	id S1755775Ab3ERAxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 20:53:22 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45030 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3ERAxR (ORCPT
+	with ESMTP id S1755381Ab3ERAxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 20:53:17 -0400
+	Fri, 17 May 2013 20:53:20 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Roland Dreier <roland@kernel.org>, Joern Engel <joern@logfs.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/3] target: Re-instate sess_wait_list usage
-Date: Sat, 18 May 2013 00:40:28 +0000
-Message-Id: <1368837631-2239-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 3/3] ib_srpt: Call target_sess_cmd_list_set_waiting during shutdown_session
+Date: Sat, 18 May 2013 00:40:31 +0000
+Message-Id: <1368837631-2239-4-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1368837631-2239-1-git-send-email-nab@linux-iscsi.org>
+References: <1368837631-2239-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Hi folks,
+Given that srpt_release_channel_work() calls target_wait_for_sess_cmds()
+to allow outstanding se_cmd_t->cmd_kref a change to complete, the call
+to perform target_sess_cmd_list_set_waiting() needs to happen in
+srpt_shutdown_session()
 
-Here's a short series to re-instate the original sess_wait_list to pre
-commit 1c7b13fe652 logic, along with the necessary changes to function
-within ib_srpt code during active I/O shutdown.
+Also, this patch adds an explicit call to srpt_shutdown_session() within
+srpt_drain_channel() so that target_sess_cmd_list_set_waiting() will be
+called in the cases where TFO->shutdown_session() is not triggered
+directly by TCM.
 
-This has been tested with ib_srpt, but still needs to be verified with
-tcm_qla2xxx during active I/O shutdown.
+Cc: Joern Engel <joern@logfs.org>
+Cc: Roland Dreier <roland@kernel.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   32 ++++++++++++++++++++++++--------
+ drivers/infiniband/ulp/srpt/ib_srpt.h |    1 +
+ 2 files changed, 25 insertions(+), 8 deletions(-)
 
-Thanks,
-
---nab
-
-Joern Engel (1):
-  target: Remove unused wait_for_tasks bit in target_wait_for_sess_cmds
-
-Nicholas Bellinger (2):
-  target: Re-instate sess_wait_list for target_wait_for_sess_cmds
-  ib_srpt: Call target_sess_cmd_list_set_waiting during
-    shutdown_session
-
- drivers/infiniband/ulp/srpt/ib_srpt.c  |   34 +++++++++++++++++------
- drivers/infiniband/ulp/srpt/ib_srpt.h  |    1 +
- drivers/scsi/qla2xxx/tcm_qla2xxx.c     |    2 +-
- drivers/target/target_core_transport.c |   46 +++++++++++++------------------
- include/target/target_core_base.h      |    1 +
- include/target/target_core_fabric.h    |    2 +-
- 6 files changed, 48 insertions(+), 38 deletions(-)
-
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index c318f7c..824b704 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -2227,6 +2227,27 @@ static void srpt_close_ch(struct srpt_rdma_ch *ch)
+ }
+ 
+ /**
++ * srpt_shutdown_session() - Whether or not a session may be shut down.
++ */
++static int srpt_shutdown_session(struct se_session *se_sess)
++{
++	struct srpt_rdma_ch *ch = se_sess->fabric_sess_ptr;
++	unsigned long flags;
++
++	spin_lock_irqsave(&ch->spinlock, flags);
++	if (ch->in_shutdown) {
++		spin_unlock_irqrestore(&ch->spinlock, flags);
++		return true;
++	}
++
++	ch->in_shutdown = true;
++	target_sess_cmd_list_set_waiting(se_sess);
++	spin_unlock_irqrestore(&ch->spinlock, flags);
++
++	return true;
++}
++
++/**
+  * srpt_drain_channel() - Drain a channel by resetting the IB queue pair.
+  * @cm_id: Pointer to the CM ID of the channel to be drained.
+  *
+@@ -2264,6 +2285,9 @@ static void srpt_drain_channel(struct ib_cm_id *cm_id)
+ 	spin_unlock_irq(&sdev->spinlock);
+ 
+ 	if (do_reset) {
++		if (ch->sess)
++			srpt_shutdown_session(ch->sess);
++
+ 		ret = srpt_ch_qp_err(ch);
+ 		if (ret < 0)
+ 			printk(KERN_ERR "Setting queue pair in error state"
+@@ -3467,14 +3491,6 @@ static void srpt_release_cmd(struct se_cmd *se_cmd)
+ }
+ 
+ /**
+- * srpt_shutdown_session() - Whether or not a session may be shut down.
+- */
+-static int srpt_shutdown_session(struct se_session *se_sess)
+-{
+-	return true;
+-}
+-
+-/**
+  * srpt_close_session() - Forcibly close a session.
+  *
+  * Callback function invoked by the TCM core to clean up sessions associated
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.h b/drivers/infiniband/ulp/srpt/ib_srpt.h
+index 4caf55c..3dae156 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.h
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.h
+@@ -325,6 +325,7 @@ struct srpt_rdma_ch {
+ 	u8			sess_name[36];
+ 	struct work_struct	release_work;
+ 	struct completion	*release_done;
++	bool			in_shutdown;
+ };
+ 
+ /**
 -- 
 1.7.2.5
 
