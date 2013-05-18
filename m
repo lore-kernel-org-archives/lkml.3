@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3EROsD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 10:48:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61301 "EHLO mga09.intel.com"
+	id S1752631Ab3EROsT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 10:48:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22426 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab3EROsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 10:48:00 -0400
+	id S1751989Ab3EROsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 10:48:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,700,1363158000"; 
-   d="scan'208";a="339441334"
-Date: Sat, 18 May 2013 07:47:59 -0700
+   d="scan'208";a="339441370"
+Date: Sat, 18 May 2013 07:48:14 -0700
 From: Jon Mason <jon.mason@intel.com>
 To: Jonghwan Choi <jhbird.choi@gmail.com>
 Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH 3.9-table] NTB: Link toggle memory leak
-Message-ID: <20130518144759.GC29066@jonmason-lab>
-References: <1368845091-4042-1-git-send-email-jhbird.choi@samsung.com>
+Subject: Re: [PATCH 3.9-stable] NTB: reset tx_index on link toggle
+Message-ID: <20130518144814.GD29066@jonmason-lab>
+References: <1368845237-4114-1-git-send-email-jhbird.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368845091-4042-1-git-send-email-jhbird.choi@samsung.com>
+In-Reply-To: <1368845237-4114-1-git-send-email-jhbird.choi@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 18, 2013 at 11:44:51AM +0900, Jonghwan Choi wrote:
+On Sat, May 18, 2013 at 11:47:17AM +0900, Jonghwan Choi wrote:
 > From: Jon Mason <jon.mason@intel.com>
 > 
 > This patch looks like it should be in the 3.9-stable tree, should we apply
@@ -39,84 +39,43 @@ Yes, thanks.
 > 
 > From: "Jon Mason <jon.mason@intel.com>"
 > 
-> commit b77b2637b39ecc380bb08992380d7d48452b0872 upstream
+> commit 90f9e934647e652a69396e18c779215a493271cf upstream
 > 
-> Each link-up will allocate a new NTB receive buffer when the NTB
-> properties are negotiated with the remote system.  These allocations did
-> not check for existing buffers and thus did not free them.  Now, the
-> driver will check for an existing buffer and free it if not of the
-> correct size, before trying to alloc a new one.
+> If the NTB link toggles, the driver could stop receiving due to the
+> tx_index not being set to 0 on the transmitting size on a link-up event.
+> This is due to the driver expecting the incoming data to start at the
+> beginning of the receive buffer and not at a random place.
 > 
 > Cc: <stable@vger.kernel.org> # 3.9.x: ad3e2751: ntb: off by one
 > Cc: <stable@vger.kernel.org> # 3.9.x: cc0f868d: NTB: fix pointer math
 > Cc: <stable@vger.kernel.org> # 3.9.x: 113fc505: NTB: Handle 64bit BAR
+> Cc: <stable@vger.kernel.org> # 3.9.x: b77b2637: NTB: Link toggle memory
 > Signed-off-by: Jon Mason <jon.mason@intel.com>
 > Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 > ---
->  drivers/ntb/ntb_transport.c | 32 ++++++++++++++++++++------------
->  1 file changed, 20 insertions(+), 12 deletions(-)
+>  drivers/ntb/ntb_transport.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
 > diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-> index 2258649..f5a424d 100644
+> index f5a424d..0828124 100644
 > --- a/drivers/ntb/ntb_transport.c
 > +++ b/drivers/ntb/ntb_transport.c
-> @@ -507,17 +507,37 @@ static void ntb_transport_setup_qp_mw(struct ntb_transport *nt,
+> @@ -505,6 +505,7 @@ static void ntb_transport_setup_qp_mw(struct ntb_transport *nt,
+>  
+>  	qp->rx_pkts = 0;
 >  	qp->tx_pkts = 0;
+> +	qp->tx_index = 0;
 >  }
 >  
-> +static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
-> +{
-> +	struct ntb_transport_mw *mw = &nt->mw[num_mw];
-> +	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
-> +
-> +	if (!mw->virt_addr)
-> +		return;
-> +
-> +	dma_free_coherent(&pdev->dev, mw->size, mw->virt_addr, mw->dma_addr);
-> +	mw->virt_addr = NULL;
-> +}
-> +
->  static int ntb_set_mw(struct ntb_transport *nt, int num_mw, unsigned int size)
->  {
->  	struct ntb_transport_mw *mw = &nt->mw[num_mw];
->  	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
+>  static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
+> @@ -819,7 +820,6 @@ static void ntb_transport_init_queue(struct ntb_transport *nt,
+>  	qp->tx_mw = qp->rx_info + 1;
+>  	qp->tx_max_frame = min(transport_mtu, tx_size);
+>  	qp->tx_max_entry = tx_size / qp->tx_max_frame;
+> -	qp->tx_index = 0;
 >  
-> +	/* No need to re-setup */
-> +	if (mw->size == ALIGN(size, 4096))
-> +		return 0;
-> +
-> +	if (mw->size != 0)
-> +		ntb_free_mw(nt, num_mw);
-> +
->  	/* Alloc memory for receiving data.  Must be 4k aligned */
->  	mw->size = ALIGN(size, 4096);
->  
->  	mw->virt_addr = dma_alloc_coherent(&pdev->dev, mw->size, &mw->dma_addr,
->  					   GFP_KERNEL);
->  	if (!mw->virt_addr) {
-> +		mw->size = 0;
->  		dev_err(&pdev->dev, "Unable to allocate MW buffer of size %d\n",
->  		       (int) mw->size);
->  		return -ENOMEM;
-> @@ -529,18 +549,6 @@ static int ntb_set_mw(struct ntb_transport *nt, int num_mw, unsigned int size)
->  	return 0;
->  }
->  
-> -static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
-> -{
-> -	struct ntb_transport_mw *mw = &nt->mw[num_mw];
-> -	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
-> -
-> -	if (!mw->virt_addr)
-> -		return;
-> -
-> -	dma_free_coherent(&pdev->dev, mw->size, mw->virt_addr, mw->dma_addr);
-> -	mw->virt_addr = NULL;
-> -}
-> -
->  static void ntb_qp_link_cleanup(struct work_struct *work)
->  {
->  	struct ntb_transport_qp *qp = container_of(work,
+>  	if (nt->debugfs_dir) {
+>  		char debugfs_name[4];
 > -- 
 > 1.8.1.2
 > 
