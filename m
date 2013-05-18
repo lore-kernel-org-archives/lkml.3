@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab3ERTgL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 15:36:11 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:53892 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab3ERTgJ (ORCPT
+	id S1753374Ab3ERTjR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 15:39:17 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:49970 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab3ERTjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 15:36:09 -0400
-Date: Sat, 18 May 2013 21:33:56 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH v7, part3 16/16] AVR32: fix building warnings caused by
- redifinitions of HZ
-Message-ID: <20130518193356.GA4953@samfundet.no>
-References: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
- <1368805518-2634-17-git-send-email-jiang.liu@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368805518-2634-17-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 18 May 2013 15:39:13 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, romieu@fr.zoreil.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv9 0/3] Add support for velocity network driver on platform devices
+Date: Sun, 19 May 2013 07:39:04 +1200
+Message-Id: <1368905947-27004-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Fri 17 May 2013 23:45:18 +0800 or thereabout, Jiang Liu wrote:
-> As suggested by David Howells <dhowells@redhat.com>, use
-> asm-generic/param.h and uapi/asm-generic/param.h for AVR32.
-> 
-> It also fixes building warnings caused by redifinitions of HZ:
-> In file included from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
->                  from include/linux/timex.h:63,
->                  from include/linux/jiffies.h:8,
->                  from include/linux/ktime.h:25,
->                  from include/linux/timer.h:5,
->                  from include/linux/workqueue.h:8,
->                  from include/linux/srcu.h:34,
->                  from include/linux/notifier.h:15,
->                  from include/linux/memory_hotplug.h:6,
->                  from include/linux/mmzone.h:777,
->                  from include/linux/gfp.h:4,
->                  from arch/avr32/mm/init.c:10:
-> /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:6:1: warning: "HZ" redefined
-> In file included from /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:4,
->                  from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
->                  from include/linux/timex.h:63,
->                  from include/linux/jiffies.h:8,
->                  from include/linux/ktime.h:25,
->                  from include/linux/timer.h:5,
->                  from include/linux/workqueue.h:8,
->                  from include/linux/srcu.h:34,
->                  from include/linux/notifier.h:15,
->                  from include/linux/memory_hotplug.h:6,
->                  from include/linux/mmzone.h:777,
->                  from include/linux/gfp.h:4,
->                  from arch/avr32/mm/init.c:10:
-> /ws/linux/kernel/linux.git/arch/avr32/include/uapi/asm/param.h:6:1: warning: this is the location of the previous definition
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: linux-kernel@vger.kernel.org
+v9 changes:
+Code tidyup as requested by Francois Romieu.
 
-Thanks, I'll pull this into the linux-avr32 tree. I'm in the mountains right
-now, but will make a pull request early next week.
+v8 changes:
+Remove velocity_choose_state from via-velocity.h: unused function.
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+v7 changes:
+Forgot to merge a patch to fix an error with the pm ops changes. Apologies Dave.
 
-> ---
->  arch/avr32/include/asm/Kbuild       |  1 +
->  arch/avr32/include/asm/param.h      |  9 ---------
->  arch/avr32/include/uapi/asm/Kbuild  |  1 +
->  arch/avr32/include/uapi/asm/param.h | 18 ------------------
->  4 files changed, 2 insertions(+), 27 deletions(-)
->  delete mode 100644 arch/avr32/include/asm/param.h
->  delete mode 100644 arch/avr32/include/uapi/asm/param.h
+v6 changes:
+Remove more bus specific code from velocity_probe()
+Make velocity_(suspend/resume) accept a struct device *
+Simplify PM code to use velocity_(suspend/resume) - remove the individual
+pci and platform functions.
+Add a struct pci_dev variable to velocity_get_pci_info() to reduce churn
 
-<snipp diff>
+v5 changes:
+Remove velocity_info union. Change velocity_info->pdev back to struct pci_dev.
+Remove more 'if (pci)' sections.
+Remove 'void *pdev' function parameters.
+Pass correct variable to velocity_choose_state()
+
+v4 changes:
+Code tidyup as requested by Francois Romieu
+Removed '#ifdef PCI' around PCI code. Compile tested on (!)PCI and (!)PM.
+
+v3 changes:
+Rebased against net-next.
+Fix errors in pm code.
+
+v2 changes:
+Drop patch #1 as requested by David Miller.
+Correct the PHYID_ICPLUS_IP101A MII bits - should be ON, rather than OFF.
+Read the platform rev_id from the correct register [regs->rev_id]. It's possible
+this would work for the PCI version as well and would remove the need for the
+'if (pci)' test to set vptr->rev_id.
+
+v1:
+The first three patches are general tidyup.
+
+[DROPPED] Patch ## just alphabetizes the #includes to make it easier to read.
+
+Patch #1 replaces vptr->dev with vptr->netdev, in preparation of adding a
+struct device *dev in Patch #2
+
+Patch #2 replaces the pci dma functions with the generic versions.
+
+I have build tested these patches but don't have a PCI velocity to run-test it.
+I can't see that they should introduce any problems as it is all renames and
+function swapping.
+
+Patch #3 adds support for the velocity driver on devicetree platform devices.
+Binding document included. This patch is compile-tested for PCI, and boot
+tested on a VIA APC8750.
+
+I think it would be pertinent to get some tested-by's for PCI users.
+
+Regards
+Tony Prisk
+
+Tony Prisk (3):
+  net: velocity: Rename vptr->dev to vptr->netdev
+  net: velocity: Convert to generic dma functions
+  net: velocity: Add platform device support to VIA velocity driver
+
+ .../devicetree/bindings/net/via-velocity.txt       |   20 +
+ drivers/net/ethernet/via/Kconfig                   |    3 +-
+ drivers/net/ethernet/via/via-velocity.c            |  507 +++++++++++++-------
+ drivers/net/ethernet/via/via-velocity.h            |    8 +-
+ 4 files changed, 357 insertions(+), 181 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/via-velocity.txt
 
 -- 
-HcE
+1.7.9.5
+
