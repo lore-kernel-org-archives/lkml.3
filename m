@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759111Ab3ERDK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:10:57 -0400
+	id S1758736Ab3ERDAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:00:20 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756357Ab3ERDAU (ORCPT
+	with ESMTP id S1758575Ab3ERDAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:20 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1XSAouYftQgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=iZ796WgSZHkA:10 a=d4lxWNCCAAAA:8 a=3HDBlxybAAAA:8 a=aCPqOQJ_S1qBLZ7JjQ4A:9 a=1jcDQfjXLUsA:10 a=m2JXGx9I94EA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:08 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=aXP8fMTToM0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=7euwk4VhSqgA:10 a=cH6R9-kdAAAA:8 a=ag1SF4gXAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=bt0zGP92IBIA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021657.424688476@goodmis.org>
+Message-Id: <20130518021703.235580069@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:35 -0400
+Date: Fri, 17 May 2013 22:18:12 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Patrick McHardy <kaber@trash.net>, Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 098/136 ] netfilter: nf_ct_sip: dont drop packets with offsets pointing
- outside the packet
+Cc: Jerry Hoemann <jerry.hoemann@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 135/136 ] x86/mm: account for PGDIR_SIZE alignment
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0098-netfilter-nf_ct_sip-don-t-drop-packets-with-offsets-.patch
+Content-Disposition: inline; filename=0135-x86-mm-account-for-PGDIR_SIZE-alignment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +30,59 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-[ Upstream commit 3a7b21eaf4fb3c971bdb47a98f570550ddfe4471 ]
+Patch for -stable.  Function find_early_table_space removed upstream.
 
-Some Cisco phones create huge messages that are spread over multiple packets.
-After calculating the offset of the SIP body, it is validated to be within
-the packet and the packet is dropped otherwise. This breaks operation of
-these phones. Since connection tracking is supposed to be passive, just let
-those packets pass unmodified and untracked.
+Fixes panic in alloc_low_page due to pgt_buf overflow during
+init_memory_mapping.
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+find_early_table_space sizes pgt_buf based upon the size of the
+memory being mapped, but it does not take into account the alignment
+of the memory.  When the region being mapped spans a 512GB (PGDIR_SIZE)
+alignment, a panic from alloc_low_pages occurs.
+
+kernel_physical_mapping_init takes into account PGDIR_SIZE alignment.
+This causes an extra call to alloc_low_page to be made.  This extra call
+isn't accounted for by find_early_table_space and causes a kernel panic.
+
+Change is to take into account PGDIR_SIZE alignment in find_early_table_space.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/netfilter/nf_conntrack_sip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/init.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
-index 5c0a112..8ec43a7 100644
---- a/net/netfilter/nf_conntrack_sip.c
-+++ b/net/netfilter/nf_conntrack_sip.c
-@@ -1521,7 +1521,7 @@ static int sip_help_tcp(struct sk_buff *skb, unsigned int protoff,
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index d7aea41..7d7a36d 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -45,11 +45,15 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ 	int i;
+ 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+ 	unsigned long start = 0, good_end;
++	unsigned long pgd_extra = 0;
+ 	phys_addr_t base;
  
- 		msglen = origlen = end - dptr;
- 		if (msglen > datalen)
--			return NF_DROP;
-+			return NF_ACCEPT;
+ 	for (i = 0; i < nr_range; i++) {
+ 		unsigned long range, extra;
  
- 		ret = process_sip_msg(skb, ct, dataoff, &dptr, &msglen);
- 		if (ret != NF_ACCEPT)
++		if ((mr[i].end >> PGDIR_SHIFT) - (mr[i].start >> PGDIR_SHIFT))
++			pgd_extra++;
++
+ 		range = mr[i].end - mr[i].start;
+ 		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+@@ -74,6 +78,7 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+ 	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
++	tables += (pgd_extra * PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+ 	/* for fixmap */
 -- 
 1.7.10.4
 
