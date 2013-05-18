@@ -1,152 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3ERChI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:37:08 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:65312 "EHLO
+	id S1758267Ab3ERChy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:37:54 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:54223 "EHLO
 	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab3ERChG (ORCPT
+	with ESMTP id S1756429Ab3ERChx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:37:06 -0400
-Message-ID: <1368844623.3301.142.camel@edumazet-glaptop>
-Subject: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against spraying
- attacks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 17 May 2013 19:37:03 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 17 May 2013 22:37:53 -0400
+From: Jonghwan Choi <jhbird.choi@gmail.com>
+To: Jon Mason <jon.mason@intel.com>, Dan Carpenter <dan.carpenter@oracle.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [PATCH 3.9-stable] ntb: off by one sanity checks
+Date: Sat, 18 May 2013 11:35:38 +0900
+Message-Id: <1368844538-3841-1-git-send-email-jhbird.choi@samsung.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-hpa bringed into my attention some security related issues
-with BPF JIT on x86.
+This patch looks like it should be in the 3.9-stable tree, should we apply
+it?
 
-This patch makes sure the bpf generated code is marked read only,
-as other kernel text sections.
+------------------
 
-It also splits the unused space (we vmalloc() and only use a fraction of
-the page) in two parts, so that the generated bpf code not starts at a
-known offset in the page, but a pseudo random one.
+From: "Dan Carpenter <dan.carpenter@oracle.com>"
 
-Refs:
-http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
+commit ad3e2751e7c546ae678be1f8d86e898506b42cef upstream
 
-Reported-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+These tests are off by one.  If "mw" is equal to NTB_NUM_MW then we
+would go beyond the end of the ndev->mw[] array.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- arch/x86/net/bpf_jit_comp.c |   53 ++++++++++++++++++++++++++++++----
- 1 file changed, 47 insertions(+), 6 deletions(-)
+ drivers/ntb/ntb_hw.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index c0212db..79c216a 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -12,6 +12,7 @@
- #include <linux/netdevice.h>
- #include <linux/filter.h>
- #include <linux/if_vlan.h>
-+#include <linux/random.h>
- 
- /*
-  * Conventions :
-@@ -144,6 +145,39 @@ static int pkt_type_offset(void)
- 	return -1;
- }
- 
-+struct bpf_binary_header {
-+	unsigned int	pages;
-+	/* Note : for security reasons, bpf code will follow a randomly
-+	 * sized amount of int3 instructions
-+	 */
-+	u8		image[];
-+};
-+
-+static struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
-+						  u8 **image_ptr)
-+{
-+	unsigned int sz, hole;
-+	struct bpf_binary_header *header;
-+
-+	/* Most of BPF filters are really small,
-+	 * but if some of them fill a page, allow at least
-+	 * 128 extra bytes to insert a random section of int3
-+	 */
-+	sz = round_up(proglen + sizeof(*header) + 128, PAGE_SIZE);
-+	header = module_alloc(sz);
-+	if (!header)
-+		return NULL;
-+
-+	memset(header, 0xcc, sz); /* fill whole space with int3 instructions */
-+
-+	header->pages = sz / PAGE_SIZE;
-+	hole = sz - (proglen + sizeof(*header));
-+
-+	/* insert a random number of int3 instructions before BPF code */
-+	*image_ptr = &header->image[prandom_u32() % hole];
-+	return header;
-+}
-+
- void bpf_jit_compile(struct sk_filter *fp)
+diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+index f802e7c..195cc51 100644
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -345,7 +345,7 @@ int ntb_read_remote_spad(struct ntb_device *ndev, unsigned int idx, u32 *val)
+  */
+ void __iomem *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw)
  {
- 	u8 temp[64];
-@@ -153,6 +187,7 @@ void bpf_jit_compile(struct sk_filter *fp)
- 	int t_offset, f_offset;
- 	u8 t_op, f_op, seen = 0, pass;
- 	u8 *image = NULL;
-+	struct bpf_binary_header *header = NULL;
- 	u8 *func;
- 	int pc_ret0 = -1; /* bpf index of first RET #0 instruction (if any) */
- 	unsigned int cleanup_addr; /* epilogue code offset */
-@@ -693,7 +728,7 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
- 				if (unlikely(proglen + ilen > oldproglen)) {
- 					pr_err("bpb_jit_compile fatal error\n");
- 					kfree(addrs);
--					module_free(NULL, image);
-+					module_free(NULL, header);
- 					return;
- 				}
- 				memcpy(image + proglen, temp, ilen);
-@@ -717,8 +752,8 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
- 			break;
- 		}
- 		if (proglen == oldproglen) {
--			image = module_alloc(proglen);
--			if (!image)
-+			header = bpf_alloc_binary(proglen, &image);
-+			if (!header)
- 				goto out;
- 		}
- 		oldproglen = proglen;
-@@ -728,7 +763,8 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
- 		bpf_jit_dump(flen, proglen, pass, image);
+-	if (mw > NTB_NUM_MW)
++	if (mw >= NTB_NUM_MW)
+ 		return NULL;
  
- 	if (image) {
--		bpf_flush_icache(image, image + proglen);
-+		bpf_flush_icache(header, image + proglen);
-+		set_memory_ro((unsigned long)header, header->pages);
- 		fp->bpf_func = (void *)image;
- 	}
- out:
-@@ -738,6 +774,11 @@ out:
- 
- void bpf_jit_free(struct sk_filter *fp)
+ 	return ndev->mw[mw].vbase;
+@@ -362,7 +362,7 @@ void __iomem *ntb_get_mw_vbase(struct ntb_device *ndev, unsigned int mw)
+  */
+ resource_size_t ntb_get_mw_size(struct ntb_device *ndev, unsigned int mw)
  {
--	if (fp->bpf_func != sk_run_filter)
--		module_free(NULL, fp->bpf_func);
-+	if (fp->bpf_func != sk_run_filter) {
-+		unsigned long addr = (unsigned long)fp->bpf_func & PAGE_MASK;
-+		struct bpf_binary_header *header = (void *)addr;
-+
-+		set_memory_rw(addr, header->pages);
-+		module_free(NULL, header);
-+	}
- }
-
+-	if (mw > NTB_NUM_MW)
++	if (mw >= NTB_NUM_MW)
+ 		return 0;
+ 
+ 	return ndev->mw[mw].bar_sz;
+@@ -380,7 +380,7 @@ resource_size_t ntb_get_mw_size(struct ntb_device *ndev, unsigned int mw)
+  */
+ void ntb_set_mw_addr(struct ntb_device *ndev, unsigned int mw, u64 addr)
+ {
+-	if (mw > NTB_NUM_MW)
++	if (mw >= NTB_NUM_MW)
+ 		return;
+ 
+ 	dev_dbg(&ndev->pdev->dev, "Writing addr %Lx to BAR %d\n", addr,
+-- 
+1.8.1.2
 
