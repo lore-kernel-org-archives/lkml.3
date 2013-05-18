@@ -1,68 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab3ERClR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:41:17 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62666 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab3ERClQ (ORCPT
+	id S1758330Ab3ERCoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:44:08 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45618 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab3ERCoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:41:16 -0400
+	Fri, 17 May 2013 22:44:06 -0400
 From: Jonghwan Choi <jhbird.choi@gmail.com>
-To: Jon Mason <jon.mason@intel.com>, Dan Carpenter <dan.carpenter@oracle.com>
+To: Jon Mason <jon.mason@intel.com>
 Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [PATCH 3.9-table] NTB: fix pointer math issues
-Date: Sat, 18 May 2013 11:39:05 +0900
-Message-Id: <1368844745-3908-1-git-send-email-jhbird.choi@samsung.com>
+Subject: [PATCH 3.9-table] NTB: Handle 64bit BAR sizes
+Date: Sat, 18 May 2013 11:41:56 +0900
+Message-Id: <1368844916-3961-1-git-send-email-jhbird.choi@samsung.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jon Mason <jon.mason@intel.com>
 
 This patch looks like it should be in the 3.9-stable tree, should we apply
 it?
 
 ------------------
 
-From: "Dan Carpenter <dan.carpenter@oracle.com>"
+From: "Jon Mason <jon.mason@intel.com>"
 
-commit cc0f868d8adef7bdc12cda132654870086d766bc upstream
+commit 113fc505b83b2d16e820ca74fa07f99a34877b1d upstream
 
-->remote_rx_info and ->rx_info are struct ntb_rx_info pointers.  If we
-add sizeof(struct ntb_rx_info) then it goes too far.
+64bit BAR sizes are permissible with an NTB device.  To support them
+various modifications and clean-ups were required, most significantly
+using 2 32bit scratch pad registers for each BAR.
+
+Also, modify the driver to allow more than 2 Memory Windows.
 
 Cc: <stable@vger.kernel.org> # 3.9.x: ad3e2751: ntb: off by one
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: <stable@vger.kernel.org> # 3.9.x: cc0f868d: NTB: fix pointer math
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- drivers/ntb/ntb_transport.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ntb/ntb_hw.c        |   4 +-
+ drivers/ntb/ntb_transport.c | 121 ++++++++++++++++++++++++++------------------
+ 2 files changed, 75 insertions(+), 50 deletions(-)
 
+diff --git a/drivers/ntb/ntb_hw.c b/drivers/ntb/ntb_hw.c
+index 195cc51..2dacd19 100644
+--- a/drivers/ntb/ntb_hw.c
++++ b/drivers/ntb/ntb_hw.c
+@@ -1027,8 +1027,8 @@ static int ntb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		ndev->mw[i].vbase =
+ 		    ioremap_wc(pci_resource_start(pdev, MW_TO_BAR(i)),
+ 			       ndev->mw[i].bar_sz);
+-		dev_info(&pdev->dev, "MW %d size %d\n", i,
+-			 (u32) pci_resource_len(pdev, MW_TO_BAR(i)));
++		dev_info(&pdev->dev, "MW %d size %llu\n", i,
++			 pci_resource_len(pdev, MW_TO_BAR(i)));
+ 		if (!ndev->mw[i].vbase) {
+ 			dev_warn(&pdev->dev, "Cannot remap BAR %d\n",
+ 				 MW_TO_BAR(i));
 diff --git a/drivers/ntb/ntb_transport.c b/drivers/ntb/ntb_transport.c
-index e0bdfd7..676ee16 100644
+index 676ee16..2258649 100644
 --- a/drivers/ntb/ntb_transport.c
 +++ b/drivers/ntb/ntb_transport.c
-@@ -486,7 +486,7 @@ static void ntb_transport_setup_qp_mw(struct ntb_transport *nt,
- 			     (qp_num / NTB_NUM_MW * rx_size);
- 	rx_size -= sizeof(struct ntb_rx_info);
+@@ -58,7 +58,7 @@
+ #include <linux/ntb.h>
+ #include "ntb_hw.h"
  
--	qp->rx_buff = qp->remote_rx_info + sizeof(struct ntb_rx_info);
-+	qp->rx_buff = qp->remote_rx_info + 1;
- 	qp->rx_max_frame = min(transport_mtu, rx_size);
- 	qp->rx_max_entry = rx_size / qp->rx_max_frame;
- 	qp->rx_index = 0;
-@@ -780,7 +780,7 @@ static void ntb_transport_init_queue(struct ntb_transport *nt,
- 		      (qp_num / NTB_NUM_MW * tx_size);
- 	tx_size -= sizeof(struct ntb_rx_info);
+-#define NTB_TRANSPORT_VERSION	2
++#define NTB_TRANSPORT_VERSION	3
  
--	qp->tx_mw = qp->rx_info + sizeof(struct ntb_rx_info);
-+	qp->tx_mw = qp->rx_info + 1;
- 	qp->tx_max_frame = min(transport_mtu, tx_size);
- 	qp->tx_max_entry = tx_size / qp->tx_max_frame;
- 	qp->tx_index = 0;
+ static unsigned int transport_mtu = 0x401E;
+ module_param(transport_mtu, uint, 0644);
+@@ -173,10 +173,13 @@ struct ntb_payload_header {
+ 
+ enum {
+ 	VERSION = 0,
+-	MW0_SZ,
+-	MW1_SZ,
+-	NUM_QPS,
+ 	QP_LINKS,
++	NUM_QPS,
++	NUM_MWS,
++	MW0_SZ_HIGH,
++	MW0_SZ_LOW,
++	MW1_SZ_HIGH,
++	MW1_SZ_LOW,
+ 	MAX_SPAD,
+ };
+ 
+@@ -526,6 +529,18 @@ static int ntb_set_mw(struct ntb_transport *nt, int num_mw, unsigned int size)
+ 	return 0;
+ }
+ 
++static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
++{
++	struct ntb_transport_mw *mw = &nt->mw[num_mw];
++	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
++
++	if (!mw->virt_addr)
++		return;
++
++	dma_free_coherent(&pdev->dev, mw->size, mw->virt_addr, mw->dma_addr);
++	mw->virt_addr = NULL;
++}
++
+ static void ntb_qp_link_cleanup(struct work_struct *work)
+ {
+ 	struct ntb_transport_qp *qp = container_of(work,
+@@ -604,25 +619,31 @@ static void ntb_transport_link_work(struct work_struct *work)
+ 	u32 val;
+ 	int rc, i;
+ 
+-	/* send the local info */
+-	rc = ntb_write_remote_spad(ndev, VERSION, NTB_TRANSPORT_VERSION);
+-	if (rc) {
+-		dev_err(&pdev->dev, "Error writing %x to remote spad %d\n",
+-			0, VERSION);
+-		goto out;
+-	}
++	/* send the local info, in the opposite order of the way we read it */
++	for (i = 0; i < NTB_NUM_MW; i++) {
++		rc = ntb_write_remote_spad(ndev, MW0_SZ_HIGH + (i * 2),
++					   ntb_get_mw_size(ndev, i) >> 32);
++		if (rc) {
++			dev_err(&pdev->dev, "Error writing %u to remote spad %d\n",
++				(u32)(ntb_get_mw_size(ndev, i) >> 32),
++				MW0_SZ_HIGH + (i * 2));
++			goto out;
++		}
+ 
+-	rc = ntb_write_remote_spad(ndev, MW0_SZ, ntb_get_mw_size(ndev, 0));
+-	if (rc) {
+-		dev_err(&pdev->dev, "Error writing %x to remote spad %d\n",
+-			(u32) ntb_get_mw_size(ndev, 0), MW0_SZ);
+-		goto out;
++		rc = ntb_write_remote_spad(ndev, MW0_SZ_LOW + (i * 2),
++					   (u32) ntb_get_mw_size(ndev, i));
++		if (rc) {
++			dev_err(&pdev->dev, "Error writing %u to remote spad %d\n",
++				(u32) ntb_get_mw_size(ndev, i),
++				MW0_SZ_LOW + (i * 2));
++			goto out;
++		}
+ 	}
+ 
+-	rc = ntb_write_remote_spad(ndev, MW1_SZ, ntb_get_mw_size(ndev, 1));
++	rc = ntb_write_remote_spad(ndev, NUM_MWS, NTB_NUM_MW);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "Error writing %x to remote spad %d\n",
+-			(u32) ntb_get_mw_size(ndev, 1), MW1_SZ);
++			NTB_NUM_MW, NUM_MWS);
+ 		goto out;
+ 	}
+ 
+@@ -633,16 +654,10 @@ static void ntb_transport_link_work(struct work_struct *work)
+ 		goto out;
+ 	}
+ 
+-	rc = ntb_read_local_spad(nt->ndev, QP_LINKS, &val);
+-	if (rc) {
+-		dev_err(&pdev->dev, "Error reading spad %d\n", QP_LINKS);
+-		goto out;
+-	}
+-
+-	rc = ntb_write_remote_spad(ndev, QP_LINKS, val);
++	rc = ntb_write_remote_spad(ndev, VERSION, NTB_TRANSPORT_VERSION);
+ 	if (rc) {
+ 		dev_err(&pdev->dev, "Error writing %x to remote spad %d\n",
+-			val, QP_LINKS);
++			NTB_TRANSPORT_VERSION, VERSION);
+ 		goto out;
+ 	}
+ 
+@@ -667,33 +682,43 @@ static void ntb_transport_link_work(struct work_struct *work)
+ 		goto out;
+ 	dev_dbg(&pdev->dev, "Remote max number of qps = %d\n", val);
+ 
+-	rc = ntb_read_remote_spad(ndev, MW0_SZ, &val);
++	rc = ntb_read_remote_spad(ndev, NUM_MWS, &val);
+ 	if (rc) {
+-		dev_err(&pdev->dev, "Error reading remote spad %d\n", MW0_SZ);
++		dev_err(&pdev->dev, "Error reading remote spad %d\n", NUM_MWS);
+ 		goto out;
+ 	}
+ 
+-	if (!val)
++	if (val != NTB_NUM_MW)
+ 		goto out;
+-	dev_dbg(&pdev->dev, "Remote MW0 size = %d\n", val);
++	dev_dbg(&pdev->dev, "Remote number of mws = %d\n", val);
+ 
+-	rc = ntb_set_mw(nt, 0, val);
+-	if (rc)
+-		goto out;
++	for (i = 0; i < NTB_NUM_MW; i++) {
++		u64 val64;
+ 
+-	rc = ntb_read_remote_spad(ndev, MW1_SZ, &val);
+-	if (rc) {
+-		dev_err(&pdev->dev, "Error reading remote spad %d\n", MW1_SZ);
+-		goto out;
+-	}
++		rc = ntb_read_remote_spad(ndev, MW0_SZ_HIGH + (i * 2), &val);
++		if (rc) {
++			dev_err(&pdev->dev, "Error reading remote spad %d\n",
++				MW0_SZ_HIGH + (i * 2));
++			goto out1;
++		}
+ 
+-	if (!val)
+-		goto out;
+-	dev_dbg(&pdev->dev, "Remote MW1 size = %d\n", val);
++		val64 = (u64) val << 32;
+ 
+-	rc = ntb_set_mw(nt, 1, val);
+-	if (rc)
+-		goto out;
++		rc = ntb_read_remote_spad(ndev, MW0_SZ_LOW + (i * 2), &val);
++		if (rc) {
++			dev_err(&pdev->dev, "Error reading remote spad %d\n",
++				MW0_SZ_LOW + (i * 2));
++			goto out1;
++		}
++
++		val64 |= val;
++
++		dev_dbg(&pdev->dev, "Remote MW%d size = %llu\n", i, val64);
++
++		rc = ntb_set_mw(nt, i, val64);
++		if (rc)
++			goto out1;
++	}
+ 
+ 	nt->transport_link = NTB_LINK_UP;
+ 
+@@ -708,6 +733,9 @@ static void ntb_transport_link_work(struct work_struct *work)
+ 
+ 	return;
+ 
++out1:
++	for (i = 0; i < NTB_NUM_MW; i++)
++		ntb_free_mw(nt, i);
+ out:
+ 	if (ntb_hw_link_status(ndev))
+ 		schedule_delayed_work(&nt->link_work,
+@@ -897,10 +925,7 @@ void ntb_transport_free(void *transport)
+ 	pdev = ntb_query_pdev(nt->ndev);
+ 
+ 	for (i = 0; i < NTB_NUM_MW; i++)
+-		if (nt->mw[i].virt_addr)
+-			dma_free_coherent(&pdev->dev, nt->mw[i].size,
+-					  nt->mw[i].virt_addr,
+-					  nt->mw[i].dma_addr);
++		ntb_free_mw(nt, i);
+ 
+ 	kfree(nt->qps);
+ 	ntb_unregister_transport(nt->ndev);
 -- 
 1.8.1.2
 
