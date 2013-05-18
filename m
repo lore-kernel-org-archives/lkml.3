@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759149Ab3ERDM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:12:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758711Ab3ERDAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758714Ab3ERDAS (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 17 May 2013 23:00:18 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=aTh_rax0Q6IA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3Xg0TcrJk-gA:10 a=DfNHnWVPAAAA:8 a=zhf81SHlAAAA:8 a=n9Sqmae0AAAA:8 a=J1Y8HTJGAAAA:8 a=poVTkzvNeXFeW-M0QIIA:9 a=lBRciGGoxdUA:10 a=z0jh1eRXt18A:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8107 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758516Ab3ERDAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 17 May 2013 23:00:08 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5KyoKaReq3oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xwbbgsaVZFcA:10 a=Z4Rwk6OoAAAA:8 a=VnNF1IyMAAAA:8 a=F-6q-gLq3rtfC1HCImYA:9 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021658.398536101@goodmis.org>
+Message-Id: <20130518021703.397632313@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:41 -0400
+Date: Fri, 17 May 2013 22:18:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Stefan Bader <stefan.bader@canonical.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        hayeswang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 104/136 ] r8169: fix 8168evl frame padding.
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [ 136/136 ] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0104-r8169-fix-8168evl-frame-padding.patch
+Content-Disposition: inline; filename=0136-s390-move-dummy-io_remap_pfn_range-to-asm-pgtable.h.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,46 +30,46 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit e5195c1f31f399289347e043d6abf3ffa80f0005 ]
+[ Upstream commit 4f2e29031e6c67802e7370292dd050fd62f337ee ]
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: hayeswang <hayeswang@realtek.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
+a helper function wrapper around io_remap_pfn_range(), and every other
+architecture defined it in <asm/pgtable.h>.
+
+The s390 choice of <asm/io.h> may make sense, but is not very convenient
+for this case, and gratuitous differences like that cause unexpected errors like this:
+
+   mm/memory.c: In function 'vm_iomap_memory':
+   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+
+Glory be the kbuild test robot who noticed this, bisected it, and
+reported it to the guilty parties (ie me).
+
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/realtek/r8169.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/s390/include/asm/pgtable.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 886b52f..74ca124 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5806,6 +5806,14 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 		goto err_stop_0;
- 	}
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index 6bd7d74..fb433eb 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -65,6 +65,10 @@ static inline int is_zero_pfn(unsigned long pfn)
  
-+	/* 8168evl does not automatically pad to minimum length. */
-+	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
-+		     skb->len < ETH_ZLEN)) {
-+		if (skb_padto(skb, ETH_ZLEN))
-+			goto err_update_stats;
-+		skb_put(skb, ETH_ZLEN - skb->len);
-+	}
+ #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
+ 
++/* TODO: s390 cannot support io_remap_pfn_range... */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
 +
- 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
- 		goto err_stop_0;
+ #endif /* !__ASSEMBLY__ */
  
-@@ -5877,6 +5885,7 @@ err_dma_1:
- 	rtl8169_unmap_tx_skb(d, tp->tx_skb + entry, txd);
- err_dma_0:
- 	dev_kfree_skb(skb);
-+err_update_stats:
- 	dev->stats.tx_dropped++;
- 	return NETDEV_TX_OK;
- 
+ /*
 -- 
 1.7.10.4
 
