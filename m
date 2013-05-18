@@ -1,192 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3ERS4G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 14:56:06 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:42145 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab3ERS4E (ORCPT
+	id S1753034Ab3ERTgL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 15:36:11 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:53892 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab3ERTgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 14:56:04 -0400
-Date: Sat, 18 May 2013 20:55:26 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv8 3/3] net: velocity: Add platform device support to VIA
- velocity driver
-Message-ID: <20130518185526.GA25486@electric-eye.fr.zoreil.com>
-References: <1368853187-17823-1-git-send-email-linux@prisktech.co.nz>
- <1368853187-17823-4-git-send-email-linux@prisktech.co.nz>
+	Sat, 18 May 2013 15:36:09 -0400
+Date: Sat, 18 May 2013 21:33:56 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
+        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: Re: [PATCH v7, part3 16/16] AVR32: fix building warnings caused by
+ redifinitions of HZ
+Message-ID: <20130518193356.GA4953@samfundet.no>
+References: <1368805518-2634-1-git-send-email-jiang.liu@huawei.com>
+ <1368805518-2634-17-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368853187-17823-4-git-send-email-linux@prisktech.co.nz>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1368805518-2634-17-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Prisk <linux@prisktech.co.nz> :
-[...]
-> diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-> index 5996cee..d8d5bc5 100644
-> --- a/drivers/net/ethernet/via/via-velocity.c
-> +++ b/drivers/net/ethernet/via/via-velocity.c
-[...]
-> @@ -84,6 +88,16 @@
->  static int velocity_nics;
->  static int msglevel = MSG_LEVEL_INFO;
->  
-> +static void velocity_set_power_state(struct velocity_info *vptr, char state)
-> +{
-> +	void *addr = vptr->mac_regs;
+Around Fri 17 May 2013 23:45:18 +0800 or thereabout, Jiang Liu wrote:
+> As suggested by David Howells <dhowells@redhat.com>, use
+> asm-generic/param.h and uapi/asm-generic/param.h for AVR32.
+> 
+> It also fixes building warnings caused by redifinitions of HZ:
+> In file included from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
+>                  from include/linux/timex.h:63,
+>                  from include/linux/jiffies.h:8,
+>                  from include/linux/ktime.h:25,
+>                  from include/linux/timer.h:5,
+>                  from include/linux/workqueue.h:8,
+>                  from include/linux/srcu.h:34,
+>                  from include/linux/notifier.h:15,
+>                  from include/linux/memory_hotplug.h:6,
+>                  from include/linux/mmzone.h:777,
+>                  from include/linux/gfp.h:4,
+>                  from arch/avr32/mm/init.c:10:
+> /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:6:1: warning: "HZ" redefined
+> In file included from /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:4,
+>                  from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
+>                  from include/linux/timex.h:63,
+>                  from include/linux/jiffies.h:8,
+>                  from include/linux/ktime.h:25,
+>                  from include/linux/timer.h:5,
+>                  from include/linux/workqueue.h:8,
+>                  from include/linux/srcu.h:34,
+>                  from include/linux/notifier.h:15,
+>                  from include/linux/memory_hotplug.h:6,
+>                  from include/linux/mmzone.h:777,
+>                  from include/linux/gfp.h:4,
+>                  from arch/avr32/mm/init.c:10:
+> /ws/linux/kernel/linux.git/arch/avr32/include/uapi/asm/param.h:6:1: warning: this is the location of the previous definition
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> Cc: linux-kernel@vger.kernel.org
 
-Your choice but it's only used once.
+Thanks, I'll pull this into the linux-avr32 tree. I'm in the mountains right
+now, but will make a pull request early next week.
 
-[...]
-> @@ -1353,9 +1366,12 @@ static void velocity_init_registers(struct velocity_info *vptr,
->  		velocity_soft_reset(vptr);
->  		mdelay(5);
->  
-> -		mac_eeprom_reload(regs);
-> -		for (i = 0; i < 6; i++)
-> -			writeb(vptr->netdev->dev_addr[i], &(regs->PAR[i]));
-> +		if (!vptr->no_eeprom) {
-> +			mac_eeprom_reload(regs);
-> +			for (i = 0; i < 6; i++)
-> +				writeb(vptr->netdev->dev_addr[i],
-> +							&(regs->PAR[i]));
-> +		}
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-velocity_init_registers would not suffer from a local vptr->netdev variable.
+> ---
+>  arch/avr32/include/asm/Kbuild       |  1 +
+>  arch/avr32/include/asm/param.h      |  9 ---------
+>  arch/avr32/include/uapi/asm/Kbuild  |  1 +
+>  arch/avr32/include/uapi/asm/param.h | 18 ------------------
+>  4 files changed, 2 insertions(+), 27 deletions(-)
+>  delete mode 100644 arch/avr32/include/asm/param.h
+>  delete mode 100644 arch/avr32/include/uapi/asm/param.h
 
-If you change this code, you may replace &(regs->PAR[i]) with regs->PAR + i.
-
-[...]
-> @@ -2730,19 +2773,19 @@ static int velocity_found1(struct pci_dev *pdev,
->  	 * can support more than MAX_UNITS.
->  	 */
->  	if (velocity_nics >= MAX_UNITS) {
-> -		dev_notice(&pdev->dev, "already found %d NICs.\n",
-> -			   velocity_nics);
-> +		dev_notice(dev, "already found %d NICs.\n", velocity_nics);
->  		return -ENODEV;
->  	}
->  
-> -	dev = alloc_etherdev(sizeof(struct velocity_info));
-> -	if (!dev)
-> +	netdev = alloc_etherdev(sizeof(struct velocity_info));
-> +	if (!netdev)
->  		goto out;
->  
->  	/* Chain it all together */
->  
-> -	SET_NETDEV_DEV(dev, &pdev->dev);
-> -	vptr = netdev_priv(dev);
-> +	SET_NETDEV_DEV(netdev, dev);
-> +	vptr = netdev_priv(netdev);
-> +	memset(vptr, 0, sizeof(struct velocity_info));
-
-memset is not needed (alloc_etherdev indirectly uses kzalloc).
-
-[...]
-> +static int velocity_pci_probe(struct pci_dev *pdev,
-> +			   const struct pci_device_id *ent)
-
-It does not seem to line up as it should.
-
-> +{
-> +	int ret;
-> +	const struct velocity_info_tbl *info =
-> +					&chip_info_table[ent->driver_data];
-
-Long lines ought to come first.
-
-> +
-> +	ret = pci_enable_device(pdev);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = pci_request_regions(pdev, VELOCITY_NAME);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "No PCI resources.\n");
-> +		pci_disable_device(pdev);
-> +		return ret;
-> +	}
-> +
-> +	ret = velocity_probe(&pdev->dev, pdev->irq, info, BUS_PCI);
-> +	if (ret < 0) {
-> +		pci_release_regions(pdev);
-> +		pci_disable_device(pdev);
-> +	}
-
-Please use gotos for the error paths.
-
-[...]
-> @@ -3270,7 +3409,11 @@ static void velocity_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo
->  	struct velocity_info *vptr = netdev_priv(dev);
->  	strlcpy(info->driver, VELOCITY_NAME, sizeof(info->driver));
-
-You may sneak an empty line after the declaration.
-
->  	strlcpy(info->version, VELOCITY_VERSION, sizeof(info->version));
-> -	strlcpy(info->bus_info, pci_name(vptr->pdev), sizeof(info->bus_info));
-> +	if (vptr->bustype == BUS_PCI)
-> +		strlcpy(info->bus_info, pci_name(vptr->pdev),
-> +						sizeof(info->bus_info));
-> +	else
-> +		strlcpy(info->bus_info, "platform", sizeof(info->bus_info));
-
-	strlcpy(info->bus_info, vptr->pdev ? pci_name(vptr->pdev) : "platform",
-		sizeof(info->bus_info));
-
->  static void velocity_ethtool_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
-> @@ -3563,9 +3706,15 @@ static int __init velocity_init_module(void)
->  	int ret;
->  
->  	velocity_register_notifier();
-> -	ret = pci_register_driver(&velocity_driver);
-> +
-> +	ret = pci_register_driver(&velocity_pci_driver);
-> +	if (ret < 0)
-> +		velocity_unregister_notifier();
-> +
-> +	ret = platform_driver_register(&velocity_platform_driver);
->  	if (ret < 0)
->  		velocity_unregister_notifier();
-> +
-
-I'd rather velocity_unregister_notifier iif both driver registrations
-failed.
-
-[...]
-> diff --git a/drivers/net/ethernet/via/via-velocity.h b/drivers/net/ethernet/via/via-velocity.h
-> index c38bbae..1d94612 100644
-> --- a/drivers/net/ethernet/via/via-velocity.h
-> +++ b/drivers/net/ethernet/via/via-velocity.h
-[...]
-> @@ -1433,10 +1433,17 @@ struct velocity_opt {
->  
->  #define GET_RD_BY_IDX(vptr, idx)   (vptr->rd_ring[idx])
->  
-> +enum velocity_bus_type {
-> +	BUS_PCI,
-> +	BUS_PLATFORM,
-> +};
-> +
->  struct velocity_info {
-> -	struct device *dev;
->  	struct pci_dev *pdev;
-> +	struct device *dev;
-
-Please don't move the fields you added.
-
->  	struct net_device *netdev;
-> +	enum velocity_bus_type bustype;
-
-velocity_bus_type is not really needed since you always have pdev to
-check against.
+<snipp diff>
 
 -- 
-Ueimor
+HcE
