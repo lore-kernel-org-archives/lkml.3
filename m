@@ -1,222 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab3ERFAc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 01:00:32 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:54295 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3ERE7s (ORCPT
+	id S1756673Ab3ERFIC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 01:08:02 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35318 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab3ERFH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 00:59:48 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, romieu@fr.zoreil.com,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv8 2/3] net: velocity: Convert to generic dma functions
-Date: Sat, 18 May 2013 16:59:46 +1200
-Message-Id: <1368853187-17823-3-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1368853187-17823-1-git-send-email-linux@prisktech.co.nz>
-References: <1368853187-17823-1-git-send-email-linux@prisktech.co.nz>
+	Sat, 18 May 2013 01:07:59 -0400
+Message-ID: <51970BF9.7070602@linux.vnet.ibm.com>
+Date: Sat, 18 May 2013 10:34:57 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Olivier Doucet <webmaster@ajeux.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: Performance issue since 3.2.6
+References: <CAPPqfY1-sYT8rcPoJ6BD0axq=oczq+xbGFSQj=uth4wc_cvkGw@mail.gmail.com> <CAPPqfY2ba5M27omZBwe0h26Eutyd+2KkLXht6uLN5VdjEKT_Ug@mail.gmail.com> <519689F2.5070207@linux.vnet.ibm.com> <1426477.y1e3fnLN2J@vostro.rjw.lan>
+In-Reply-To: <1426477.y1e3fnLN2J@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13051805-5816-0000-0000-0000080830B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the pci_* dma functions and replace with the more generic
-versions.
+On 05/18/2013 05:21 AM, Rafael J. Wysocki wrote:
+> On Saturday, May 18, 2013 01:20:10 AM Srivatsa S. Bhat wrote:
+>> On 05/17/2013 11:47 PM, Olivier Doucet wrote:
+>>> Hello,
+>>>
+>>> This performance penalty is still present in kernel 3.9.2. And
+>>> CONFIG_PM cannot be deactivated anymore.
+>>>
+>>> I was able to make a working 3.9.2 (meaning with no penalty)  with
+>>> following config and patch :
+>>> CONFIG_PM=y
+>>> CONFIG_PM_SLEEP=y
+>>> CONFIG_PM_SLEEP_SMP=y
+>>> CONFIG_CPU_IDLE=y
+>>> CONFIG_ACPI=y
+>>> CONFIG_ACPI_PROCESSOR=y
+>>>
+>>> Patch : https://gist.github.com/odoucet/5600630
+>>>
+[...]
+>> So, to summarize my thoughts:
+>>  - IMHO there is no regression here, you just depended on a bug included
+>>    in 3.2.0 (which made it behave like idle=poll with CONFIG_PM=n) and
+>>    started your comparisons from there. The later kernels (3.2.6+) got
+>>    that bug fixed which is why you saw "performance drops".
+>>
+>>  - As much as we would like to do it, we can't set the value of
+>>    PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE to 0 when CONFIG_PM=n, because
+>>    CONFIG_PM doesn't encompass all power-management features (which is
+>>    a pity). Doing that would need a big overhaul of all the relevant
+>>    Kconfigs, which might or might not be worth the effort. (Because, who
+>>    says that CONFIG_PM=n kernels are supposed to eat power like crazy??)
+> 
+> I think it *is* worth the effort.  We could drop some CONFIG_PM* options in the
+> process which would simplify things quite a bit too.
+>
 
-In preparation of adding platform support, a new struct device *dev
-is added to struct velocity_info which can be used by both the pci
-and platform code.
+Ah, ok..
+ 
+>> So here is my suggestion - use the interfaces provided by the kernel to
+>> fix your problem:
+>>    - you can give idle=poll in the kernel command line,
+>>    - OR you can echo 0 > /dev/cpu_dma_latency
+>>
+>> Irrespective of your kernel configuration options (CONFIG_PM=y/n), the
+>> CPUs will not enter deep idle states, giving you the performance
+>> improvement that you are looking for.
+> 
+> Thanks a lot for the very clear explanation of this!
+> 
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/net/ethernet/via/via-velocity.c |   51 +++++++++++++++----------------
- drivers/net/ethernet/via/via-velocity.h |    1 +
- 2 files changed, 26 insertions(+), 26 deletions(-)
+No problem! :-)
 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index 187eef3..5996cee 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -46,6 +46,7 @@
- #include <linux/types.h>
- #include <linux/bitops.h>
- #include <linux/init.h>
-+#include <linux/dma-mapping.h>
- #include <linux/mm.h>
- #include <linux/errno.h>
- #include <linux/ioport.h>
-@@ -1459,7 +1460,6 @@ static int velocity_init_dma_rings(struct velocity_info *vptr)
- 	struct velocity_opt *opt = &vptr->options;
- 	const unsigned int rx_ring_size = opt->numrx * sizeof(struct rx_desc);
- 	const unsigned int tx_ring_size = opt->numtx * sizeof(struct tx_desc);
--	struct pci_dev *pdev = vptr->pdev;
- 	dma_addr_t pool_dma;
- 	void *pool;
- 	unsigned int i;
-@@ -1467,13 +1467,13 @@ static int velocity_init_dma_rings(struct velocity_info *vptr)
- 	/*
- 	 * Allocate all RD/TD rings a single pool.
- 	 *
--	 * pci_alloc_consistent() fulfills the requirement for 64 bytes
-+	 * dma_alloc_coherent() fulfills the requirement for 64 bytes
- 	 * alignment
- 	 */
--	pool = pci_alloc_consistent(pdev, tx_ring_size * vptr->tx.numq +
--				    rx_ring_size, &pool_dma);
-+	pool = dma_alloc_coherent(vptr->dev, tx_ring_size * vptr->tx.numq +
-+				    rx_ring_size, &pool_dma, GFP_ATOMIC);
- 	if (!pool) {
--		dev_err(&pdev->dev, "%s : DMA memory allocation failed.\n",
-+		dev_err(vptr->dev, "%s : DMA memory allocation failed.\n",
- 			vptr->netdev->name);
- 		return -ENOMEM;
- 	}
-@@ -1524,8 +1524,8 @@ static int velocity_alloc_rx_buf(struct velocity_info *vptr, int idx)
- 	 */
- 	skb_reserve(rd_info->skb,
- 			64 - ((unsigned long) rd_info->skb->data & 63));
--	rd_info->skb_dma = pci_map_single(vptr->pdev, rd_info->skb->data,
--					vptr->rx.buf_sz, PCI_DMA_FROMDEVICE);
-+	rd_info->skb_dma = dma_map_single(vptr->dev, rd_info->skb->data,
-+					vptr->rx.buf_sz, DMA_FROM_DEVICE);
- 
- 	/*
- 	 *	Fill in the descriptor to match
-@@ -1588,8 +1588,8 @@ static void velocity_free_rd_ring(struct velocity_info *vptr)
- 
- 		if (!rd_info->skb)
- 			continue;
--		pci_unmap_single(vptr->pdev, rd_info->skb_dma, vptr->rx.buf_sz,
--				 PCI_DMA_FROMDEVICE);
-+		dma_unmap_single(vptr->dev, rd_info->skb_dma, vptr->rx.buf_sz,
-+				 DMA_FROM_DEVICE);
- 		rd_info->skb_dma = 0;
- 
- 		dev_kfree_skb(rd_info->skb);
-@@ -1670,7 +1670,7 @@ static void velocity_free_dma_rings(struct velocity_info *vptr)
- 	const int size = vptr->options.numrx * sizeof(struct rx_desc) +
- 		vptr->options.numtx * sizeof(struct tx_desc) * vptr->tx.numq;
- 
--	pci_free_consistent(vptr->pdev, size, vptr->rx.ring, vptr->rx.pool_dma);
-+	dma_free_coherent(vptr->dev, size, vptr->rx.ring, vptr->rx.pool_dma);
- }
- 
- static int velocity_init_rings(struct velocity_info *vptr, int mtu)
-@@ -1727,8 +1727,8 @@ static void velocity_free_tx_buf(struct velocity_info *vptr,
- 				pktlen = max_t(size_t, pktlen,
- 						td->td_buf[i].size & ~TD_QUEUE);
- 
--			pci_unmap_single(vptr->pdev, tdinfo->skb_dma[i],
--					le16_to_cpu(pktlen), PCI_DMA_TODEVICE);
-+			dma_unmap_single(vptr->dev, tdinfo->skb_dma[i],
-+					le16_to_cpu(pktlen), DMA_TO_DEVICE);
- 		}
- 	}
- 	dev_kfree_skb_irq(skb);
-@@ -1750,8 +1750,8 @@ static void velocity_free_td_ring_entry(struct velocity_info *vptr,
- 	if (td_info->skb) {
- 		for (i = 0; i < td_info->nskb_dma; i++) {
- 			if (td_info->skb_dma[i]) {
--				pci_unmap_single(vptr->pdev, td_info->skb_dma[i],
--					td_info->skb->len, PCI_DMA_TODEVICE);
-+				dma_unmap_single(vptr->dev, td_info->skb_dma[i],
-+					td_info->skb->len, DMA_TO_DEVICE);
- 				td_info->skb_dma[i] = 0;
- 			}
- 		}
-@@ -2029,7 +2029,6 @@ static inline void velocity_iph_realign(struct velocity_info *vptr,
-  */
- static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- {
--	void (*pci_action)(struct pci_dev *, dma_addr_t, size_t, int);
- 	struct net_device_stats *stats = &vptr->netdev->stats;
- 	struct velocity_rd_info *rd_info = &(vptr->rx.info[idx]);
- 	struct rx_desc *rd = &(vptr->rx.ring[idx]);
-@@ -2047,8 +2046,8 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 
- 	skb = rd_info->skb;
- 
--	pci_dma_sync_single_for_cpu(vptr->pdev, rd_info->skb_dma,
--				    vptr->rx.buf_sz, PCI_DMA_FROMDEVICE);
-+	dma_sync_single_for_cpu(vptr->dev, rd_info->skb_dma,
-+				    vptr->rx.buf_sz, DMA_FROM_DEVICE);
- 
- 	/*
- 	 *	Drop frame not meeting IEEE 802.3
-@@ -2061,19 +2060,18 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 		}
- 	}
- 
--	pci_action = pci_dma_sync_single_for_device;
--
- 	velocity_rx_csum(rd, skb);
- 
- 	if (velocity_rx_copy(&skb, pkt_len, vptr) < 0) {
- 		velocity_iph_realign(vptr, skb, pkt_len);
--		pci_action = pci_unmap_single;
- 		rd_info->skb = NULL;
-+		dma_unmap_single(vptr->dev, rd_info->skb_dma, vptr->rx.buf_sz,
-+				 DMA_FROM_DEVICE);
-+	} else {
-+		dma_sync_single_for_device(vptr->dev, rd_info->skb_dma,
-+					   vptr->rx.buf_sz, DMA_FROM_DEVICE);
- 	}
- 
--	pci_action(vptr->pdev, rd_info->skb_dma, vptr->rx.buf_sz,
--		   PCI_DMA_FROMDEVICE);
--
- 	skb_put(skb, pkt_len - 4);
- 	skb->protocol = eth_type_trans(skb, vptr->netdev);
- 
-@@ -2550,7 +2548,8 @@ static netdev_tx_t velocity_xmit(struct sk_buff *skb,
- 	 *	add it to the transmit ring.
- 	 */
- 	tdinfo->skb = skb;
--	tdinfo->skb_dma[0] = pci_map_single(vptr->pdev, skb->data, pktlen, PCI_DMA_TODEVICE);
-+	tdinfo->skb_dma[0] = dma_map_single(vptr->dev, skb->data, pktlen,
-+								DMA_TO_DEVICE);
- 	td_ptr->tdesc0.len = cpu_to_le16(pktlen);
- 	td_ptr->td_buf[0].pa_low = cpu_to_le32(tdinfo->skb_dma[0]);
- 	td_ptr->td_buf[0].pa_high = 0;
-@@ -2560,7 +2559,7 @@ static netdev_tx_t velocity_xmit(struct sk_buff *skb,
- 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
- 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 
--		tdinfo->skb_dma[i + 1] = skb_frag_dma_map(&vptr->pdev->dev,
-+		tdinfo->skb_dma[i + 1] = skb_frag_dma_map(vptr->dev,
- 							  frag, 0,
- 							  skb_frag_size(frag),
- 							  DMA_TO_DEVICE);
-@@ -2637,6 +2636,7 @@ static void velocity_init_info(struct pci_dev *pdev, struct velocity_info *vptr,
- {
- 	memset(vptr, 0, sizeof(struct velocity_info));
- 
-+	vptr->dev = &pdev->dev;
- 	vptr->pdev = pdev;
- 	vptr->chip_id = info->chip_id;
- 	vptr->tx.numq = info->txqueue;
-@@ -2744,7 +2744,6 @@ static int velocity_found1(struct pci_dev *pdev,
- 	SET_NETDEV_DEV(dev, &pdev->dev);
- 	vptr = netdev_priv(dev);
- 
--
- 	if (first) {
- 		printk(KERN_INFO "%s Ver. %s\n",
- 			VELOCITY_FULL_DRV_NAM, VELOCITY_VERSION);
-diff --git a/drivers/net/ethernet/via/via-velocity.h b/drivers/net/ethernet/via/via-velocity.h
-index ff8d7828..c38bbae 100644
---- a/drivers/net/ethernet/via/via-velocity.h
-+++ b/drivers/net/ethernet/via/via-velocity.h
-@@ -1434,6 +1434,7 @@ struct velocity_opt {
- #define GET_RD_BY_IDX(vptr, idx)   (vptr->rd_ring[idx])
- 
- struct velocity_info {
-+	struct device *dev;
- 	struct pci_dev *pdev;
- 	struct net_device *netdev;
- 
--- 
-1.7.9.5
+Regards,
+Srivatsa S. Bhat
 
