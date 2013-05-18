@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab3ERDA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:00:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23572 "EHLO
+	id S1758970Ab3ERDE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:04:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758733Ab3ERDAU (ORCPT
+	with ESMTP id S1758792Ab3ERDA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:20 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=K4mWUdzOkQoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=W9CejI3FiaYA:10 a=3HDBlxybAAAA:8 a=WCQTGU7NibcHvBS_UyEA:9 a=m2JXGx9I94EA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:28 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7MNWGyO-0acA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xjNSPwSaa6kA:10 a=VwQbUJbxAAAA:8 a=aCPqOQJ_S1qBLZ7JjQ4A:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021657.273905058@goodmis.org>
+Message-Id: <20130518021654.357727548@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:34 -0400
+Date: Fri, 17 May 2013 22:17:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 097/136 ] netfilter: ipset: list:set: fix reference counter update
+Cc: "Theodore Tso" <tytso@mit.edu>
+Subject: [ 078/136 ] ext4: fix Kconfig documentation for CONFIG_EXT4_DEBUG
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0097-netfilter-ipset-list-set-fix-reference-counter-updat.patch
+Content-Disposition: inline; filename=0078-ext4-fix-Kconfig-documentation-for-CONFIG_EXT4_DEBUG.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,41 +29,32 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Theodore Ts'o <tytso@mit.edu>
 
-[ Upstream commit 02f815cb6d3f57914228be84df9613ee5a01c2e6 ]
+[ Upstream commit 7f3e3c7cfcec148ccca9c0dd2dbfd7b00b7ac10f ]
 
-The last element can be replaced or pushed off and in both
-cases the reference counter must be updated.
+Fox the Kconfig documentation for CONFIG_EXT4_DEBUG to match the
+change made by commit a0b30c1229: ext4: use module parameters instead
+of debugfs for mballoc_debug
 
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/netfilter/ipset/ip_set_list_set.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/ext4/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/netfilter/ipset/ip_set_list_set.c b/net/netfilter/ipset/ip_set_list_set.c
-index 6cb1225..19bf0fe 100644
---- a/net/netfilter/ipset/ip_set_list_set.c
-+++ b/net/netfilter/ipset/ip_set_list_set.c
-@@ -171,9 +171,13 @@ list_set_add(struct list_set *map, u32 i, ip_set_id_t id,
- {
- 	const struct set_elem *e = list_set_elem(map, i);
+diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
+index c22f170..e38370b 100644
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -84,4 +84,5 @@ config EXT4_DEBUG
+ 	  Enables run-time debugging support for the ext4 filesystem.
  
--	if (i == map->size - 1 && e->id != IPSET_INVALID_ID)
--		/* Last element replaced: e.g. add new,before,last */
--		ip_set_put_byindex(e->id);
-+	if (e->id != IPSET_INVALID_ID) {
-+		const struct set_elem *x = list_set_elem(map, map->size - 1);
-+
-+		/* Last element replaced or pushed off */
-+		if (x->id != IPSET_INVALID_ID)
-+			ip_set_put_byindex(x->id);
-+	}
- 	if (with_timeout(map->timeout))
- 		list_elem_tadd(map, i, id, ip_set_timeout_set(timeout));
- 	else
+ 	  If you select Y here, then you will be able to turn on debugging
+-	  with a command such as "echo 1 > /sys/kernel/debug/ext4/mballoc-debug"
++	  with a command such as:
++		echo 1 > /sys/module/ext4/parameters/mballoc_debug
 -- 
 1.7.10.4
 
