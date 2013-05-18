@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3ERLpm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 07:45:42 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:37406 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab3ERLpk (ORCPT
+	id S1754985Ab3ERL6a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 07:58:30 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:51838 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab3ERL62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 07:45:40 -0400
+	Sat, 18 May 2013 07:58:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <1368807024-15251-1-git-send-email-dirk.j.brandewie@gmail.com>
-References: <1368801497-13072-1-git-send-email-dirk.j.brandewie@gmail.com>
-	<1368807024-15251-1-git-send-email-dirk.j.brandewie@gmail.com>
-Date: Sat, 18 May 2013 17:15:37 +0530
-X-Google-Sender-Auth: rtTWFtQxiDl86rizbadfeikrUh4
-Message-ID: <CAOh2x==jU5aFBQqGyARX7A0kNNEqpxCh4xOrqsv10MG4st7LyA@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq/intel_pstate: Add additional supported CPU ID
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dirk.brandewie@gmail.com
-Cc: linux-pm@vger.kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        torvalds@linux-foundation.org
+In-Reply-To: <20130518100052.GA30128@mwanda>
+References: <1368844745-3908-1-git-send-email-jhbird.choi@samsung.com>
+	<20130518100052.GA30128@mwanda>
+Date: Sat, 18 May 2013 04:58:27 -0700
+Message-ID: <CAGZ6kuNJNw=MRDdK3kY1O0bM79RLBkya4Y3JUAv_+JZC7jaTcw@mail.gmail.com>
+Subject: Re: [PATCH 3.9-table] NTB: fix pointer math issues
+From: jonghwan Choi <jhbird.choi@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jon Mason <jon.mason@intel.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 9:40 PM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
->
-> Add CPU ID for Ivybrigde processor.
->
-> Cc: torvalds@linux-foundation.org
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> ---
->  drivers/cpufreq/intel_pstate.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+Thanks for your advice.
 
-Add my Acked-by: Viresh Kumar <viresh.kumar@linaro.org>, even if
-next version is required with some more machine no.s
+Best Regards.
+
+On Sat, May 18, 2013 at 3:00 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sat, May 18, 2013 at 11:39:05AM +0900, Jonghwan Choi wrote:
+>> From: Dan Carpenter <dan.carpenter@oracle.com>
+>>
+>> This patch looks like it should be in the 3.9-stable tree, should we apply
+>> it?
+>>
+>
+> Normally these questions are handled by the subsystem maintainer.
+>
+> regards,
+> dan carpenter
