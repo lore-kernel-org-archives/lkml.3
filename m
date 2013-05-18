@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3ERC1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:27:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4553 "EHLO
+	id S1757503Ab3ERC1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:27:07 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4820 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab3ERCQt (ORCPT
+	with ESMTP id S1756235Ab3ERCQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:16:49 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=67R-nQQk79sA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=bjsJvxqRM9cA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=2P_yjdDCiPxNvVu0absA:9 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=x2pSk5NLVyX0FJlV:21 a=o4NAIQm9Z9bu5PUa:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 22:16:50 -0400
+X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=vLP5C46XyEkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=N_OEv__elwEA:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=ag1SF4gXAAAA:8 a=aCPqOQJ_S1qBLZ7JjQ4A:9 a=XNN-oNMjSfgA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021645.585397709@goodmis.org>
+Message-Id: <20130518021644.646081473@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:16:21 -0400
+Date: Fri, 17 May 2013 22:16:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 024/136 ] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for
- every CPU online/offline
+Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 018/136 ] usb: chipidea: udc: fix memory leak in _ep_nuke
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0024-xen-smp-spinlock-Fix-leakage-of-the-spinlock-interru.patch
+Content-Disposition: inline; filename=0018-usb-chipidea-udc-fix-memory-leak-in-_ep_nuke.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,75 +31,41 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
 
-[ Upstream commit 66ff0fe9e7bda8aec99985b24daad03652f7304e ]
+[ Upstream commit 7ca2cd291fd84ae499390f227a255ccba2780a81 ]
 
-While we don't use the spinlock interrupt line (see for details
-commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
-xen: disable PV spinlocks on HVM) - we should still do the proper
-init / deinit sequence. We did not do that correctly and for the
-CPU init for PVHVM guest we would allocate an interrupt line - but
-failed to deallocate the old interrupt line.
+In hardware_enqueue code adds one extra td with dma_pool_alloc if
+mReq->req.zero is true. When _ep_nuke will be called for that endpoint,
+dma_pool_free will not be called to free that memory again. That patch
+fixes this.
 
-This resulted in leakage of an irq_desc but more importantly this splat
-as we online an offlined CPU:
-
-genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
-Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
-Call Trace:
- [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
- [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
- [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
- [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
- [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
- [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
- [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
- [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
- [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
- [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
- [<ffffffff816684ce>] cpu_up+0xd9/0xec
- [<ffffffff8165f754>] store_online+0x94/0xd0
- [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
- [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
- [<ffffffff811a2864>] vfs_write+0xb4/0x130
- [<ffffffff811a302a>] sys_write+0x5a/0xa0
- [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
-cpu 1 spinlock event irq -16
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-
-And if one looks at the /proc/interrupts right after
-offlining (CPU1):
-
-  70:          0          0  xen-percpu-ipi       spinlock0
-  71:          0          0  xen-percpu-ipi       spinlock1
-  77:          0          0  xen-percpu-ipi       spinlock2
-
-There is the oddity of the 'spinlock1' still being present.
-
-CC: stable@vger.kernel.org
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: stable <stable@vger.kernel.org> # v3.5
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/xen/smp.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/chipidea/udc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 3fc224d..641c91e 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -667,6 +667,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
- 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
- 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
-+	xen_uninit_lock_cpu(cpu);
- 	xen_teardown_timer(cpu);
- 	native_cpu_die(cpu);
- }
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index e0315f9..d5172fa 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -541,6 +541,12 @@ __acquires(mEp->lock)
+ 		struct ci13xxx_req *mReq = \
+ 			list_entry(mEp->qh.queue.next,
+ 				   struct ci13xxx_req, queue);
++
++		if (mReq->zptr) {
++			dma_pool_free(mEp->td_pool, mReq->zptr, mReq->zdma);
++			mReq->zptr = NULL;
++		}
++
+ 		list_del_init(&mReq->queue);
+ 		mReq->req.status = -ESHUTDOWN;
+ 
 -- 
 1.7.10.4
 
