@@ -1,51 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3ERHa4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 03:30:56 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:64004 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab3ERHaz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 03:30:55 -0400
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Sat, 18 May 2013 03:30:55 EDT
-Message-ID: <51972CAF.3060802@gmail.com>
-Date: Sat, 18 May 2013 03:24:31 -0400
-From: Eric Appleman <erappleman@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1752021Ab3ERHjX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 03:39:23 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:56838 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3ERHjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 03:39:22 -0400
+Message-ID: <51972E7A.1080601@alice.it>
+Date: Sat, 18 May 2013 09:32:10 +0200
+From: Marco <firefox82@alice.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: legal@lists.gpl-violations.org
-CC: linux-kernel@vger.kernel.org
-Subject: Would like to form a pool of Linux copyright holders for faster GPL
- enforcement against Anthrax Kernels
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 1/4] fsfreeze: wait in killable state in __sb_start_write
+References: <5184AF95.9060604@gmail.com>
+In-Reply-To: <5184AF95.9060604@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would anyone be interested in forming such a pool? I am willing to wait 
-years for this to be resolved through certain organizations, but I 
-believe we can do better.
+Any comments about these patches?
 
-Last I checked, I have 1 long-time poster of this list on board. Would 
-anyone else like to join? Ideally I'd like to get the LKML (which I have 
-CC'd) involved so that authors of critical Linux components be a part of 
-this. I'm not sure if my defconfig commits to Android kernel branches 
-count as contributions, so I'm not going to consider myself a Linux 
-contributor unless told otherwise.
+Marco
 
-This pool would be used in the following manner:
-
-* Formally requesting source for binaries (means to request source
-* Formally requesting removal of critical copyrighted code that Linux 
-cannot function without
-* Informing interested parties with respect to refusals of the above
-
-The CTO of Anthrax's hosting server is very interested in terminating 
-Chad Goodman's account. Bullet point #3 might come into effect here.
-
-If this is a bad idea, uses incorrect logic, or does not follow the 
-conventions of GPL enforcement, feel free to shoot this idea down with 
-utmost prejudice.
-
-- Eric
+Il 04/05/2013 08:49, Marco Stornelli ha scritto:
+> Added a new enum to decide if we want to sleep in uninterruptible or
+> killable state or we want simply to return immediately.
+>
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+> ---
+>   fs/super.c         |   24 ++++++++++++++++++------
+>   include/linux/fs.h |   19 +++++++++++++------
+>   2 files changed, 31 insertions(+), 12 deletions(-)
+>
+> diff --git a/fs/super.c b/fs/super.c
+> index 7465d43..6b70c7f 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -1190,14 +1190,25 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
+>    * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+>    * instead.
+>    */
+> -int __sb_start_write(struct super_block *sb, int level, bool wait)
+> +int __sb_start_write(struct super_block *sb, int level, int wait)
+>   {
+> +	int ret = 0;
+>   retry:
+>   	if (unlikely(sb->s_writers.frozen >= level)) {
+> -		if (!wait)
+> -			return 0;
+> -		wait_event(sb->s_writers.wait_unfrozen,
+> -			   sb->s_writers.frozen < level);
+> +		switch (wait) {
+> +		case FREEZE_NOWAIT:
+> +			return ret;
+> +		case FREEZE_WAIT:
+> +			wait_event(sb->s_writers.wait_unfrozen,
+> +				   sb->s_writers.frozen < level);
+> +			break;
+> +		case FREEZE_WAIT_KILLABLE:
+> +			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
+> +				   sb->s_writers.frozen < level);
+> +			if (ret)
+> +				return -EINTR;
+> +			break;
+> +		}
+>   	}
+>
+>   #ifdef CONFIG_LOCKDEP
+> @@ -1213,7 +1224,8 @@ retry:
+>   		__sb_end_write(sb, level);
+>   		goto retry;
+>   	}
+> -	return 1;
+> +	ret = 1;
+> +	return ret;
+>   }
+>   EXPORT_SYMBOL(__sb_start_write);
+>
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index e8cd6b8..6d9bcef 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1220,6 +1220,13 @@ enum {
+>
+>   #define SB_FREEZE_LEVELS (SB_FREEZE_COMPLETE - 1)
+>
+> +/* Possible waiting modes */
+> +enum {
+> +	FREEZE_NOWAIT = 0,		/* no blocking call */
+> +	FREEZE_WAIT	= 1,		/* wait in uninterruptible state */
+> +	FREEZE_WAIT_KILLABLE = 2,	/* wait in killable state */
+> +};
+> +
+>   struct sb_writers {
+>   	/* Counters for counting writers at each level */
+>   	struct percpu_counter	counter[SB_FREEZE_LEVELS];
+> @@ -1335,7 +1342,7 @@ extern struct timespec current_fs_time(struct super_block *sb);
+>    */
+>
+>   void __sb_end_write(struct super_block *sb, int level);
+> -int __sb_start_write(struct super_block *sb, int level, bool wait);
+> +int __sb_start_write(struct super_block *sb, int level, int wait);
+>
+>   /**
+>    * sb_end_write - drop write access to a superblock
+> @@ -1394,12 +1401,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
+>    */
+>   static inline void sb_start_write(struct super_block *sb)
+>   {
+> -	__sb_start_write(sb, SB_FREEZE_WRITE, true);
+> +	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+>   }
+>
+>   static inline int sb_start_write_trylock(struct super_block *sb)
+>   {
+> -	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
+> +	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+>   }
+>
+>   /**
+> @@ -1423,7 +1430,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+>    */
+>   static inline void sb_start_pagefault(struct super_block *sb)
+>   {
+> -	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
+> +	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, FREEZE_WAIT);
+>   }
+>
+>   /*
+> @@ -1441,7 +1448,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
+>    */
+>   static inline void sb_start_intwrite(struct super_block *sb)
+>   {
+> -	__sb_start_write(sb, SB_FREEZE_FS, true);
+> +	__sb_start_write(sb, SB_FREEZE_FS, FREEZE_WAIT);
+>   }
+>
+>
+> @@ -2224,7 +2231,7 @@ static inline void file_start_write(struct file *file)
+>   {
+>   	if (!S_ISREG(file_inode(file)->i_mode))
+>   		return;
+> -	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
+> +	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+>   }
+>
+>   static inline void file_end_write(struct file *file)
+>
