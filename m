@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab3ERDC6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:02:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8107 "EHLO
+	id S1758900Ab3ERDDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:03:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5799 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531Ab3ERDAc (ORCPT
+	with ESMTP id S1758814Ab3ERDAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:32 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=vynWSW92JrsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Jm3g4v_EwJgA:10 a=JDjsHSkAAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=Hf6muOzgCGQA:10 a=LI9Vle30uBYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:31 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7C4tOO4FpcUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Q9EHz9ZhQQUA:10 a=8T59DR07AAAA:8 a=0EVWFJeoAAAA:8 a=VwQbUJbxAAAA:8 a=EUhRXARSZPaAX6DBEUEA:9 a=xQdB8fRqRzQA:10 a=b7qhRrUdVfIA:10 a=jeBq3FmKZ4MA:10 a=NWVoK91CQyQA:10 a=OW6z1LKz4PhUeTUb:21 a=ciIGHck2BTGAS8Zy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021652.918743974@goodmis.org>
+Message-Id: <20130518021653.568184897@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:06 -0400
+Date: Fri, 17 May 2013 22:17:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Bryan Schumaker <bjschuma@netapp.com>, <stable@kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 069/136 ] nfsd: Decode and send 64bit time values
+Cc: "Theodore Tso" <tytso@mit.edu>, Ben Hutchings <ben@decadent.org.uk>,
+        George Barnett <gbarnett@atlassian.com>
+Subject: [ 073/136 ] ext4/jbd2: dont wait (forever) for stale tid caused by wraparound
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0069-nfsd-Decode-and-send-64bit-time-values.patch
+Content-Disposition: inline; filename=0073-ext4-jbd2-don-t-wait-forever-for-stale-tid-caused-by.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,79 +30,127 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-[ Upstream commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 ]
+[ Upstream commit d76a3a77113db020d9bb1e894822869410450bd9 ]
 
-The seconds field of an nfstime4 structure is 64bit, but we are assuming
-that the first 32bits are zero-filled.  So if the client tries to set
-atime to a value before the epoch (touch -t 196001010101), then the
-server will save the wrong value on disk.
+In the case where an inode has a very stale transaction id (tid) in
+i_datasync_tid or i_sync_tid, it's possible that after a very large
+(2**31) number of transactions, that the tid number space might wrap,
+causing tid_geq()'s calculations to fail.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Cc: stable@kernel.org
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Commit deeeaf13 "jbd2: fix fsync() tid wraparound bug", later modified
+by commit e7b04ac0 "jbd2: don't wake kjournald unnecessarily",
+attempted to fix this problem, but it only avoided kjournald spinning
+forever by fixing the logic in jbd2_log_start_commit().
+
+Unfortunately, in the codepaths in fs/ext4/fsync.c and fs/ext4/inode.c
+that might call jbd2_log_start_commit() with a stale tid, those
+functions will subsequently call jbd2_log_wait_commit() with the same
+stale tid, and then wait for a very long time.  To fix this, we
+replace the calls to jbd2_log_start_commit() and
+jbd2_log_wait_commit() with a call to a new function,
+jbd2_complete_transaction(), which will correctly handle stale tid's.
+
+As a bonus, jbd2_complete_transaction() will avoid locking
+j_state_lock for writing unless a commit needs to be started.  This
+should have a small (but probably not measurable) improvement for
+ext4's scalability.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: George Barnett <gbarnett@atlassian.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/nfsd/nfs4xdr.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+ fs/ext4/fsync.c      |    3 +--
+ fs/ext4/inode.c      |    3 +--
+ fs/jbd2/journal.c    |   31 +++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    1 +
+ 4 files changed, 34 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 551b061..348937b 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -343,10 +343,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_atime.tv_sec);
-+			READ64(iattr->ia_atime.tv_sec);
- 			READ32(iattr->ia_atime.tv_nsec);
- 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -369,10 +366,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
- 			   all 32 bits of 'nseconds'. */
- 			READ_BUF(12);
- 			len += 12;
--			READ32(dummy32);
--			if (dummy32)
--				return nfserr_inval;
--			READ32(iattr->ia_mtime.tv_sec);
-+			READ64(iattr->ia_mtime.tv_sec);
- 			READ32(iattr->ia_mtime.tv_nsec);
- 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
- 				return nfserr_inval;
-@@ -2397,8 +2391,7 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.atime.tv_sec);
-+		WRITE64((s64)stat.atime.tv_sec);
- 		WRITE32(stat.atime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
-@@ -2411,15 +2404,13 @@ out_acl:
- 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.ctime.tv_sec);
-+		WRITE64((s64)stat.ctime.tv_sec);
- 		WRITE32(stat.ctime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
- 		if ((buflen -= 12) < 0)
- 			goto out_resource;
--		WRITE32(0);
--		WRITE32(stat.mtime.tv_sec);
-+		WRITE64((s64)stat.mtime.tv_sec);
- 		WRITE32(stat.mtime.tv_nsec);
- 	}
- 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 2a1dcea..3d28be5 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -253,8 +253,7 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 	if (journal->j_flags & JBD2_BARRIER &&
+ 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = true;
+-	jbd2_log_start_commit(journal, commit_tid);
+-	ret = jbd2_log_wait_commit(journal, commit_tid);
++	ret = jbd2_complete_transaction(journal, commit_tid);
+ 	if (needs_barrier)
+ 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+  out:
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 5cf441c..0113b16 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -216,8 +216,7 @@ void ext4_evict_inode(struct inode *inode)
+ 			journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
+ 			tid_t commit_tid = EXT4_I(inode)->i_datasync_tid;
+ 
+-			jbd2_log_start_commit(journal, commit_tid);
+-			jbd2_log_wait_commit(journal, commit_tid);
++			jbd2_complete_transaction(journal, commit_tid);
+ 			filemap_write_and_wait(&inode->i_data);
+ 		}
+ 		truncate_inode_pages(&inode->i_data, 0);
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 484b8d1..b2d3cbe 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -699,6 +699,37 @@ int jbd2_log_wait_commit(journal_t *journal, tid_t tid)
+ }
+ 
+ /*
++ * When this function returns the transaction corresponding to tid
++ * will be completed.  If the transaction has currently running, start
++ * committing that transaction before waiting for it to complete.  If
++ * the transaction id is stale, it is by definition already completed,
++ * so just return SUCCESS.
++ */
++int jbd2_complete_transaction(journal_t *journal, tid_t tid)
++{
++	int	need_to_wait = 1;
++
++	read_lock(&journal->j_state_lock);
++	if (journal->j_running_transaction &&
++	    journal->j_running_transaction->t_tid == tid) {
++		if (journal->j_commit_request != tid) {
++			/* transaction not yet started, so request it */
++			read_unlock(&journal->j_state_lock);
++			jbd2_log_start_commit(journal, tid);
++			goto wait_commit;
++		}
++	} else if (!(journal->j_committing_transaction &&
++		     journal->j_committing_transaction->t_tid == tid))
++		need_to_wait = 0;
++	read_unlock(&journal->j_state_lock);
++	if (!need_to_wait)
++		return 0;
++wait_commit:
++	return jbd2_log_wait_commit(journal, tid);
++}
++EXPORT_SYMBOL(jbd2_complete_transaction);
++
++/*
+  * Log buffer allocation routines:
+  */
+ 
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 3efc43f..deee02a 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -1211,6 +1211,7 @@ int __jbd2_log_start_commit(journal_t *journal, tid_t tid);
+ int jbd2_journal_start_commit(journal_t *journal, tid_t *tid);
+ int jbd2_journal_force_commit_nested(journal_t *journal);
+ int jbd2_log_wait_commit(journal_t *journal, tid_t tid);
++int jbd2_complete_transaction(journal_t *journal, tid_t tid);
+ int jbd2_log_do_checkpoint(journal_t *journal);
+ int jbd2_trans_will_send_data_barrier(journal_t *journal, tid_t tid);
+ 
 -- 
 1.7.10.4
 
