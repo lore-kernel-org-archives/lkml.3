@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab3ERDAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:00:18 -0400
+	id S1759262Ab3ERDNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:13:10 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8107 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758516Ab3ERDAI (ORCPT
+	with ESMTP id S1758696Ab3ERDAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:08 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5KyoKaReq3oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xwbbgsaVZFcA:10 a=Z4Rwk6OoAAAA:8 a=VnNF1IyMAAAA:8 a=F-6q-gLq3rtfC1HCImYA:9 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:17 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ateejRvXsnwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Hwy47DA1cqAA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=MBAcmN61x_GgG62BUf4A:9 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021703.397632313@goodmis.org>
+Message-Id: <20130518021659.035809154@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:18:13 -0400
+Date: Fri, 17 May 2013 22:17:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [ 136/136 ] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@redhat.com>
+Subject: [ 108/136 ] drm/prime: keep a reference from the handle to exported dma-buf (v6)
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0136-s390-move-dummy-io_remap_pfn_range-to-asm-pgtable.h.patch
+Content-Disposition: inline; filename=0108-drm-prime-keep-a-reference-from-the-handle-to-export.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,46 +29,260 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Dave Airlie <airlied@gmail.com>
 
-[ Upstream commit 4f2e29031e6c67802e7370292dd050fd62f337ee ]
+[ Upstream commit 219b47339ced80ca580bb6ce7d1636166984afa7 ]
 
-Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
-a helper function wrapper around io_remap_pfn_range(), and every other
-architecture defined it in <asm/pgtable.h>.
+Currently we have a problem with this:
+1. i915: create gem object
+2. i915: export gem object to prime
+3. radeon: import gem object
+4. close prime fd
+5. radeon: unref object
+6. i915: unref object
 
-The s390 choice of <asm/io.h> may make sense, but is not very convenient
-for this case, and gratuitous differences like that cause unexpected errors like this:
+i915 has an imported object reference in its file priv, that isn't
+cleaned up properly until fd close. The reference gets added at step 2,
+but at step 6 we don't have enough info to clean it up.
 
-   mm/memory.c: In function 'vm_iomap_memory':
-   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+The solution is to take a reference on the dma-buf when we export it,
+and drop the reference when the gem handle goes away.
 
-Glory be the kbuild test robot who noticed this, bisected it, and
-reported it to the guilty parties (ie me).
+So when we export a dma_buf from a gem object, we keep track of it
+with the handle, we take a reference to the dma_buf. When we close
+the handle (i.e. userspace is finished with the buffer), we drop
+the reference to the dma_buf, and it gets collected.
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch isn't meant to fix any other problem or bikesheds, and it doesn't
+fix any races with other scenarios.
+
+v1.1: move export symbol line back up.
+
+v2: okay I had to do a bit more, as the first patch showed a leak
+on one of my tests, that I found using the dma-buf debugfs support,
+the problem case is exporting a buffer twice with the same handle,
+we'd add another export handle for it unnecessarily, however
+we now fail if we try to export the same object with a different gem handle,
+however I'm not sure if that is a case I want to support, and I've
+gotten the code to WARN_ON if we hit something like that.
+
+v2.1: rebase this patch, write better commit msg.
+v3: cleanup error handling, track import vs export in linked list,
+these two patches were separate previously, but seem to work better
+like this.
+v4: danvet is correct, this code is no longer useful, since the buffer
+better exist, so remove it.
+v5: always take a reference to the dma buf object, import or export.
+(Imre Deak contributed this originally)
+v6: square the circle, remove import vs export tracking now
+that there is no difference
+
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/s390/include/asm/pgtable.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/drm_gem.c   |    4 +--
+ drivers/gpu/drm/drm_prime.c |   76 +++++++++++++++++++++++--------------------
+ include/drm/drmP.h          |    5 ++-
+ 3 files changed, 44 insertions(+), 41 deletions(-)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 6bd7d74..fb433eb 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -65,6 +65,10 @@ static inline int is_zero_pfn(unsigned long pfn)
+diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
+index fbe0842..730b93f 100644
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -205,11 +205,11 @@ static void
+ drm_gem_remove_prime_handles(struct drm_gem_object *obj, struct drm_file *filp)
+ {
+ 	if (obj->import_attach) {
+-		drm_prime_remove_imported_buf_handle(&filp->prime,
++		drm_prime_remove_buf_handle(&filp->prime,
+ 				obj->import_attach->dmabuf);
+ 	}
+ 	if (obj->export_dma_buf) {
+-		drm_prime_remove_imported_buf_handle(&filp->prime,
++		drm_prime_remove_buf_handle(&filp->prime,
+ 				obj->export_dma_buf);
+ 	}
+ }
+diff --git a/drivers/gpu/drm/drm_prime.c b/drivers/gpu/drm/drm_prime.c
+index f546ff9..6497c53 100644
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -61,6 +61,7 @@ struct drm_prime_member {
+ 	struct dma_buf *dma_buf;
+ 	uint32_t handle;
+ };
++static int drm_prime_add_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle);
  
- #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
+ int drm_gem_prime_handle_to_fd(struct drm_device *dev,
+ 		struct drm_file *file_priv, uint32_t handle, uint32_t flags,
+@@ -68,7 +69,8 @@ int drm_gem_prime_handle_to_fd(struct drm_device *dev,
+ {
+ 	struct drm_gem_object *obj;
+ 	void *buf;
+-	int ret;
++	int ret = 0;
++	struct dma_buf *dmabuf;
  
-+/* TODO: s390 cannot support io_remap_pfn_range... */
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
+ 	obj = drm_gem_object_lookup(dev, file_priv, handle);
+ 	if (!obj)
+@@ -77,43 +79,44 @@ int drm_gem_prime_handle_to_fd(struct drm_device *dev,
+ 	mutex_lock(&file_priv->prime.lock);
+ 	/* re-export the original imported object */
+ 	if (obj->import_attach) {
+-		get_dma_buf(obj->import_attach->dmabuf);
+-		*prime_fd = dma_buf_fd(obj->import_attach->dmabuf, flags);
+-		drm_gem_object_unreference_unlocked(obj);
+-		mutex_unlock(&file_priv->prime.lock);
+-		return 0;
++		dmabuf = obj->import_attach->dmabuf;
++		goto out_have_obj;
+ 	}
+ 
+ 	if (obj->export_dma_buf) {
+-		get_dma_buf(obj->export_dma_buf);
+-		*prime_fd = dma_buf_fd(obj->export_dma_buf, flags);
+-		drm_gem_object_unreference_unlocked(obj);
+-	} else {
+-		buf = dev->driver->gem_prime_export(dev, obj, flags);
+-		if (IS_ERR(buf)) {
+-			/* normally the created dma-buf takes ownership of the ref,
+-			 * but if that fails then drop the ref
+-			 */
+-			drm_gem_object_unreference_unlocked(obj);
+-			mutex_unlock(&file_priv->prime.lock);
+-			return PTR_ERR(buf);
+-		}
+-		obj->export_dma_buf = buf;
+-		*prime_fd = dma_buf_fd(buf, flags);
++		dmabuf = obj->export_dma_buf;
++		goto out_have_obj;
+ 	}
 +
- #endif /* !__ASSEMBLY__ */
++	buf = dev->driver->gem_prime_export(dev, obj, flags);
++	if (IS_ERR(buf)) {
++		/* normally the created dma-buf takes ownership of the ref,
++		 * but if that fails then drop the ref
++		 */
++		ret = PTR_ERR(buf);
++		goto out;
++	}
++	obj->export_dma_buf = buf;
++
+ 	/* if we've exported this buffer the cheat and add it to the import list
+ 	 * so we get the correct handle back
+ 	 */
+-	ret = drm_prime_add_imported_buf_handle(&file_priv->prime,
+-			obj->export_dma_buf, handle);
+-	if (ret) {
+-		drm_gem_object_unreference_unlocked(obj);
+-		mutex_unlock(&file_priv->prime.lock);
+-		return ret;
+-	}
++	ret = drm_prime_add_buf_handle(&file_priv->prime,
++				       obj->export_dma_buf, handle);
++	if (ret)
++		goto out;
  
- /*
++	*prime_fd = dma_buf_fd(buf, flags);
+ 	mutex_unlock(&file_priv->prime.lock);
+ 	return 0;
++
++out_have_obj:
++	get_dma_buf(dmabuf);
++	*prime_fd = dma_buf_fd(dmabuf, flags);
++out:
++	drm_gem_object_unreference_unlocked(obj);
++	mutex_unlock(&file_priv->prime.lock);
++	return ret;
+ }
+ EXPORT_SYMBOL(drm_gem_prime_handle_to_fd);
+ 
+@@ -130,7 +133,7 @@ int drm_gem_prime_fd_to_handle(struct drm_device *dev,
+ 
+ 	mutex_lock(&file_priv->prime.lock);
+ 
+-	ret = drm_prime_lookup_imported_buf_handle(&file_priv->prime,
++	ret = drm_prime_lookup_buf_handle(&file_priv->prime,
+ 			dma_buf, handle);
+ 	if (!ret) {
+ 		ret = 0;
+@@ -149,7 +152,7 @@ int drm_gem_prime_fd_to_handle(struct drm_device *dev,
+ 	if (ret)
+ 		goto out_put;
+ 
+-	ret = drm_prime_add_imported_buf_handle(&file_priv->prime,
++	ret = drm_prime_add_buf_handle(&file_priv->prime,
+ 			dma_buf, *handle);
+ 	if (ret)
+ 		goto fail;
+@@ -307,7 +310,7 @@ void drm_prime_destroy_file_private(struct drm_prime_file_private *prime_fpriv)
+ }
+ EXPORT_SYMBOL(drm_prime_destroy_file_private);
+ 
+-int drm_prime_add_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle)
++static int drm_prime_add_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle)
+ {
+ 	struct drm_prime_member *member;
+ 
+@@ -315,14 +318,14 @@ int drm_prime_add_imported_buf_handle(struct drm_prime_file_private *prime_fpriv
+ 	if (!member)
+ 		return -ENOMEM;
+ 
++	get_dma_buf(dma_buf);
+ 	member->dma_buf = dma_buf;
+ 	member->handle = handle;
+ 	list_add(&member->entry, &prime_fpriv->head);
+ 	return 0;
+ }
+-EXPORT_SYMBOL(drm_prime_add_imported_buf_handle);
+ 
+-int drm_prime_lookup_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle)
++int drm_prime_lookup_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle)
+ {
+ 	struct drm_prime_member *member;
+ 
+@@ -334,19 +337,20 @@ int drm_prime_lookup_imported_buf_handle(struct drm_prime_file_private *prime_fp
+ 	}
+ 	return -ENOENT;
+ }
+-EXPORT_SYMBOL(drm_prime_lookup_imported_buf_handle);
++EXPORT_SYMBOL(drm_prime_lookup_buf_handle);
+ 
+-void drm_prime_remove_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf)
++void drm_prime_remove_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf)
+ {
+ 	struct drm_prime_member *member, *safe;
+ 
+ 	mutex_lock(&prime_fpriv->lock);
+ 	list_for_each_entry_safe(member, safe, &prime_fpriv->head, entry) {
+ 		if (member->dma_buf == dma_buf) {
++			dma_buf_put(dma_buf);
+ 			list_del(&member->entry);
+ 			kfree(member);
+ 		}
+ 	}
+ 	mutex_unlock(&prime_fpriv->lock);
+ }
+-EXPORT_SYMBOL(drm_prime_remove_imported_buf_handle);
++EXPORT_SYMBOL(drm_prime_remove_buf_handle);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index d6b67bb..efd9db4 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1554,9 +1554,8 @@ extern void drm_prime_gem_destroy(struct drm_gem_object *obj, struct sg_table *s
+ 
+ void drm_prime_init_file_private(struct drm_prime_file_private *prime_fpriv);
+ void drm_prime_destroy_file_private(struct drm_prime_file_private *prime_fpriv);
+-int drm_prime_add_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t handle);
+-int drm_prime_lookup_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle);
+-void drm_prime_remove_imported_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf);
++int drm_prime_lookup_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf, uint32_t *handle);
++void drm_prime_remove_buf_handle(struct drm_prime_file_private *prime_fpriv, struct dma_buf *dma_buf);
+ 
+ int drm_prime_add_dma_buf(struct drm_device *dev, struct drm_gem_object *obj);
+ int drm_prime_lookup_obj(struct drm_device *dev, struct dma_buf *buf,
 -- 
 1.7.10.4
 
