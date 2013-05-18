@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab3ERNlv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 09:41:51 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:54916 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab3ERNlt (ORCPT
+	id S1751917Ab3ERNsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 09:48:12 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:35662 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3ERNsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 09:41:49 -0400
-Message-ID: <51978519.7090907@gmail.com>
-Date: Sat, 18 May 2013 15:41:45 +0200
-From: Andy Chernyak <andy.chernyak@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sat, 18 May 2013 09:48:10 -0400
+Message-ID: <51978696.6040705@colorfullife.com>
+Date: Sat, 18 May 2013 15:48:06 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-CC: Alexey Charkov <alchark@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tomi.valkeinen@ti.com,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH 4/4] fb: vt8500: Add VGA output support to wm8505fb driver.
-References: <1368868514-18975-1-git-send-email-linux@prisktech.co.nz> <1368868514-18975-5-git-send-email-linux@prisktech.co.nz> <CABjd4Yxrk3hXnB5f6u+1HcJjymDZbtQ1F1HXkZ2dzF3dwCrWhg@mail.gmail.com>
-In-Reply-To: <CABjd4Yxrk3hXnB5f6u+1HcJjymDZbtQ1F1HXkZ2dzF3dwCrWhg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: riel@redhat.com
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: ipc/sem.c: Lockup with complex ops, comments not updated
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2013 03:28 PM, Alexey Charkov wrote:
-> 2013/5/18 Tony Prisk <linux@prisktech.co.nz>:
->
->>         /* Virtual buffer size */
->> @@ -167,7 +176,12 @@ static int wm8505fb_init_hw(struct fb_info *info)
->>
->>         /* black magic ;) */
->>         writel(0xf,                    fbi->regbase + REG_GOVRH_FHI);
->> -       writel(4,                      fbi->regbase + REG_GOVRH_DVO_SET);
->> +
->> +       if (fbi->interface == INTERFACE_VGA)
->> +               writel(0xe, fbi->regbase + REG_GOVRH_DVO_SET);
->> +       else
->> +               writel(4, fbi->regbase + REG_GOVRH_DVO_SET);
-> I don't remember if HDMI is yet another option for this register or
-> not... If it is, it would probably warrant defining fbi->interface as
-> an enum and changing this if-else into a switch statement to let the
-> compiler add its checks/warnings.
-HDMI output can work simultaneously with LCD (on 8850 at least), which
-fbi->interface in its current form would not allow to express.
+Hi Rik,
 
-> +       if (fbi->interface == INTERFACE_VGA)
-> +               writel(h_sync,  fbi->regbase + REG_GOVRH_VGA_HSYNW);
-> Will it misbehave on LCD if you write to the VGA register unconditionally?
->
-Can we have 3 flags, something like LCD_ON, VGA_ON, HDMI_ON instead of
-enum for video interface selection?
+I like your change to the ipc/sem locking:
+A scheme with a per-semaphore lock and without the overhead of always 
+acquiring both the global and the per-semaphore lock.
 
-Regards,
-Andy.
+But:
+1) I found one bug with your sem locking changes:
+If
+- a complex operation is sleeping [would be woken up by update_queue(,-1)]
+- a simple op is sleeping
+- the success of the simple op would allow the complex op to complete
+     [i.e.: update_queue(,sem_num) changes the semaphore value to the 
+value that the complex op waits on]
+- an operation wakes up the simple op.
+
+then the complex op is not woken up.
+
+One fix would be a loop in do_smart_update():
+- first check the global queue
+- then the per-semaphore queues
+- if one of the per-semaphore queues made progress: check the global 
+queue again
+- if the global queue made progress: check the per semaphore queues again
+...
+
+2) Your patches remove FIFO ordering of the wakeups:
+As far as I can see complex ops are now preferred over simple ops.
+It's not a bug, noone exept linux implements FIFO.
+But the comment it line 28 should be updated
+
+Should I write a patch, do you want to fix it yourself?
+
+--
+     Manfred
