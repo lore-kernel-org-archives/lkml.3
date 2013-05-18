@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab3ERC2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:28:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30194 "EHLO
+	id S1757700Ab3ERC2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:28:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14848 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab3ERCQt (ORCPT
+	with ESMTP id S1756160Ab3ERCQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 22:16:49 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=JfmCN0InqAkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xIKWC3RsU0EA:10 a=7CQSdrXTAAAA:8 a=drOt6m5kAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=3awN1vTrJB2_KaZi7AkA:9 a=ESTKKtUg-DoA:10 a=UTB_XpHje0EA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=ZBo8780zpc-Ioygr:21 a=o_l5b48T7ad5DmUE:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=92jobwC1EFYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=wx8ibm-TJJ4A:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=-kIiLd4cUwbsnts9:21 a=gAhymId6y3GaBDLF:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021645.902972501@goodmis.org>
+Message-Id: <20130518021645.260943020@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:16:23 -0400
+Date: Fri, 17 May 2013 22:16:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 026/136 ] arm: set the page table freeing ceiling to TASK_SIZE
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 022/136 ] xen/time: Fix kasprintf splat when allocating timer%d IRQ line.
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0026-arm-set-the-page-table-freeing-ceiling-to-TASK_SIZE.patch
+Content-Disposition: inline; filename=0022-xen-time-Fix-kasprintf-splat-when-allocating-timer-d.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,58 +29,78 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-[ Upstream commit 104ad3b32d7a71941c8ab2dee78eea38e8a23309 ]
+[ Upstream commit 7918c92ae9638eb8a6ec18e2b4a0de84557cccc8 ]
 
-ARM processors with LPAE enabled use 3 levels of page tables, with an
-entry in the top level (pgd) covering 1GB of virtual space.  Because of
-the branch relocation limitations on ARM, the loadable modules are
-mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-between kernel modules and user space.
+When we online the CPU, we get this splat:
 
-If free_pgtables() is called with the default ceiling 0,
-free_pgd_range() (and subsequently called functions) also frees the page
-table shared between user space and kernel modules (which is normally
-handled by the ARM-specific pgd_free() function).  This patch changes
-defines the ARM USER_PGTABLES_CEILING to TASK_SIZE when CONFIG_ARM_LPAE
-is enabled.
+smpboot: Booting Node 0 Processor 1 APIC 0x2
+installing Xen timer for CPU 1
+BUG: sleeping function called from invalid context at /home/konrad/ssd/konrad/linux/mm/slab.c:3179
+in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/1
+Pid: 0, comm: swapper/1 Not tainted 3.9.0-rc6upstream-00001-g3884fad #1
+Call Trace:
+ [<ffffffff810c1fea>] __might_sleep+0xda/0x100
+ [<ffffffff81194617>] __kmalloc_track_caller+0x1e7/0x2c0
+ [<ffffffff81303758>] ? kasprintf+0x38/0x40
+ [<ffffffff813036eb>] kvasprintf+0x5b/0x90
+ [<ffffffff81303758>] kasprintf+0x38/0x40
+ [<ffffffff81044510>] xen_setup_timer+0x30/0xb0
+ [<ffffffff810445af>] xen_hvm_setup_cpu_clockevents+0x1f/0x30
+ [<ffffffff81666d0a>] start_secondary+0x19c/0x1a8
 
-Note that the pgd_free() function already checks the presence of the
-shared pmd page allocated by pgd_alloc() and frees it, though with
-ceiling 0 this wasn't necessary.
+The solution to that is use kasprintf in the CPU hotplug path
+that 'online's the CPU. That is, do it in in xen_hvm_cpu_notify,
+and remove the call to in xen_hvm_setup_cpu_clockevents.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: <stable@vger.kernel.org>	[3.3+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Unfortunatly the later is not a good idea as the bootup path
+does not use xen_hvm_cpu_notify so we would end up never allocating
+timer%d interrupt lines when booting. As such add the check for
+atomic() to continue.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/include/asm/pgtable.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/xen/enlighten.c |    5 ++++-
+ arch/x86/xen/time.c      |    6 +++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index 41dc31f..cc5e50f 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -61,6 +61,15 @@ extern void __pgd_error(const char *file, int line, pgd_t);
- #define FIRST_USER_ADDRESS	PAGE_SIZE
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c1461de..0dc16d6 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1553,8 +1553,11 @@ static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 		xen_vcpu_setup(cpu);
+-		if (xen_have_vector_callback)
++		if (xen_have_vector_callback) {
+ 			xen_init_lock_cpu(cpu);
++			if (xen_feature(XENFEAT_hvm_safe_pvclock))
++				xen_setup_timer(cpu);
++		}
+ 		break;
+ 	default:
+ 		break;
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 0296a95..054cc01 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -497,7 +497,11 @@ static void xen_hvm_setup_cpu_clockevents(void)
+ {
+ 	int cpu = smp_processor_id();
+ 	xen_setup_runstate_info(cpu);
+-	xen_setup_timer(cpu);
++	/*
++	 * xen_setup_timer(cpu) - snprintf is bad in atomic context. Hence
++	 * doing it xen_hvm_cpu_notify (which gets called by smp_init during
++	 * early bootup and also during CPU hotplug events).
++	 */
+ 	xen_setup_cpu_clockevents();
+ }
  
- /*
-+ * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-+ * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-+ * page shared between user and kernel).
-+ */
-+#ifdef CONFIG_ARM_LPAE
-+#define USER_PGTABLES_CEILING	TASK_SIZE
-+#endif
-+
-+/*
-  * The pgprot_* and protection_map entries will be fixed up in runtime
-  * to include the cachable and bufferable bits based on memory policy,
-  * as well as any architecture dependent bits like global/ASID and SMP
 -- 
 1.7.10.4
 
