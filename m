@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3ERX1O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 19:27:14 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34458 "EHLO hydra.sisk.pl"
+	id S1753793Ab3ERX1P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 19:27:15 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:34437 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab3ERX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753566Ab3ERX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 May 2013 19:27:11 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
@@ -17,9 +17,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
         linux-mm@kvack.org
-Subject: [PATCH 3/5] Driver core / MM: Drop offline_memory_block()
-Date: Sun, 19 May 2013 01:33:02 +0200
-Message-ID: <2529630.QGJsLhExPp@vostro.rjw.lan>
+Subject: [PATCH 5/5] ACPI / memhotplug: Drop unnecessary code
+Date: Sun, 19 May 2013 01:34:59 +0200
+Message-ID: <2228904.eTtCrFuSan@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2250271.rGYN6WlBxf@vostro.rjw.lan>
 References: <2250271.rGYN6WlBxf@vostro.rjw.lan>
@@ -32,72 +32,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Since offline_memory_block(mem) is functionally equivalent to
-device_offline(&mem->dev), make the only caller of the former use
-the latter instead and drop offline_memory_block() entirely.
+Now that the memory offlining should be taken care of by the
+companion device offlining code in acpi_scan_hot_remove(), the
+ACPI memory hotplug driver doesn't need to offline it in
+acpi_memory_remove_memory() any more.  Consequently, it doesn't
+need to call remove_memory() any more, which means that that
+funtion may be dropped entirely, because acpi_memory_remove_memory()
+is the only user of it.
+
+Make the changes described above to get rid of the dead code.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/base/memory.c          |   21 ---------------------
- include/linux/memory_hotplug.h |    1 -
- mm/memory_hotplug.c            |    2 +-
- 3 files changed, 1 insertion(+), 23 deletions(-)
+ drivers/acpi/acpi_memhotplug.c |   15 ------
+ include/linux/memory_hotplug.h |    1 
+ mm/memory_hotplug.c            |  102 -----------------------------------------
+ 3 files changed, 2 insertions(+), 116 deletions(-)
 
-Index: linux-pm/drivers/base/memory.c
+Index: linux-pm/drivers/acpi/acpi_memhotplug.c
 ===================================================================
---- linux-pm.orig/drivers/base/memory.c
-+++ linux-pm/drivers/base/memory.c
-@@ -735,27 +735,6 @@ int unregister_memory_section(struct mem
+--- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
++++ linux-pm/drivers/acpi/acpi_memhotplug.c
+@@ -271,31 +271,20 @@ static int acpi_memory_enable_device(str
+ 	return 0;
  }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
  
--/*
-- * offline one memory block. If the memory block has been offlined, do nothing.
-- *
-- * Call under device_hotplug_lock.
-- */
--int offline_memory_block(struct memory_block *mem)
--{
--	int ret = 0;
--
--	mutex_lock(&mem->state_mutex);
--	if (mem->state != MEM_OFFLINE) {
--		ret = __memory_block_change_state_uevent(mem, MEM_OFFLINE,
--							 MEM_ONLINE, -1);
--		if (!ret)
--			mem->dev.offline = true;
--	}
--	mutex_unlock(&mem->state_mutex);
--
--	return ret;
--}
--
- /* return true if the memory block is offlined, otherwise, return false */
- bool is_memblock_offlined(struct memory_block *mem)
+-static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
++static void acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
  {
+ 	acpi_handle handle = mem_device->device->handle;
+-	int result = 0, nid;
+ 	struct acpi_memory_info *info, *n;
+ 
+-	nid = acpi_get_node(handle);
+-
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (!info->enabled)
+ 			continue;
+ 
+-		if (nid < 0)
+-			nid = memory_add_physaddr_to_nid(info->start_addr);
+-
++		/* All of the memory blocks are offline at this point. */
+ 		acpi_unbind_memory_blocks(info, handle);
+-		result = remove_memory(nid, info->start_addr, info->length);
+-		if (result)
+-			return result;
+-
+ 		list_del(&info->list);
+ 		kfree(info);
+ 	}
+-
+-	return result;
+ }
+ 
+ static void acpi_memory_device_free(struct acpi_memory_device *mem_device)
 Index: linux-pm/include/linux/memory_hotplug.h
 ===================================================================
 --- linux-pm.orig/include/linux/memory_hotplug.h
 +++ linux-pm/include/linux/memory_hotplug.h
-@@ -251,7 +251,6 @@ extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
+@@ -252,7 +252,6 @@ extern int add_memory(int nid, u64 start
  extern int arch_add_memory(int nid, u64 start, u64 size);
  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
--extern int offline_memory_block(struct memory_block *mem);
  extern bool is_memblock_offlined(struct memory_block *mem);
- extern int remove_memory(int nid, u64 start, u64 size);
+-extern int remove_memory(int nid, u64 start, u64 size);
  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+ 								int nr_pages);
+ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
 Index: linux-pm/mm/memory_hotplug.c
 ===================================================================
 --- linux-pm.orig/mm/memory_hotplug.c
 +++ linux-pm/mm/memory_hotplug.c
-@@ -1680,7 +1680,7 @@ int walk_memory_range(unsigned long star
- static int offline_memory_block_cb(struct memory_block *mem, void *arg)
- {
- 	int *ret = arg;
--	int error = offline_memory_block(mem);
-+	int error = device_offline(&mem->dev);
+@@ -1670,41 +1670,6 @@ int walk_memory_range(unsigned long star
+ }
  
- 	if (error != 0 && *ret == 0)
- 		*ret = error;
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+-/**
+- * offline_memory_block_cb - callback function for offlining memory block
+- * @mem: the memory block to be offlined
+- * @arg: buffer to hold error msg
+- *
+- * Always return 0, and put the error msg in arg if any.
+- */
+-static int offline_memory_block_cb(struct memory_block *mem, void *arg)
+-{
+-	int *ret = arg;
+-	int error = device_offline(&mem->dev);
+-
+-	if (error != 0 && *ret == 0)
+-		*ret = error;
+-
+-	return 0;
+-}
+-
+-static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+-{
+-	int ret = !is_memblock_offlined(mem);
+-
+-	if (unlikely(ret)) {
+-		phys_addr_t beginpa, endpa;
+-
+-		beginpa = PFN_PHYS(section_nr_to_pfn(mem->start_section_nr));
+-		endpa = PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1))-1;
+-		pr_warn("removing memory fails, because memory "
+-			"[%pa-%pa] is onlined\n",
+-			&beginpa, &endpa);
+-	}
+-
+-	return ret;
+-}
+-
+ static int check_cpu_on_node(void *data)
+ {
+ 	struct pglist_data *pgdat = data;
+@@ -1812,76 +1777,9 @@ void try_offline_node(int nid)
+ 	memset(pgdat, 0, sizeof(*pgdat));
+ }
+ EXPORT_SYMBOL(try_offline_node);
+-
+-int __ref remove_memory(int nid, u64 start, u64 size)
+-{
+-	unsigned long start_pfn, end_pfn;
+-	int ret = 0;
+-	int retry = 1;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = PFN_UP(start + size - 1);
+-
+-	/*
+-	 * When CONFIG_MEMCG is on, one memory block may be used by other
+-	 * blocks to store page cgroup when onlining pages. But we don't know
+-	 * in what order pages are onlined. So we iterate twice to offline
+-	 * memory:
+-	 * 1st iterate: offline every non primary memory block.
+-	 * 2nd iterate: offline primary (i.e. first added) memory block.
+-	 */
+-repeat:
+-	walk_memory_range(start_pfn, end_pfn, &ret,
+-			  offline_memory_block_cb);
+-	if (ret) {
+-		if (!retry)
+-			return ret;
+-
+-		retry = 0;
+-		ret = 0;
+-		goto repeat;
+-	}
+-
+-	lock_memory_hotplug();
+-
+-	/*
+-	 * we have offlined all memory blocks like this:
+-	 *   1. lock memory hotplug
+-	 *   2. offline a memory block
+-	 *   3. unlock memory hotplug
+-	 *
+-	 * repeat step1-3 to offline the memory block. All memory blocks
+-	 * must be offlined before removing memory. But we don't hold the
+-	 * lock in the whole operation. So we should check whether all
+-	 * memory blocks are offlined.
+-	 */
+-
+-	ret = walk_memory_range(start_pfn, end_pfn, NULL,
+-				is_memblock_offlined_cb);
+-	if (ret) {
+-		unlock_memory_hotplug();
+-		return ret;
+-	}
+-
+-	/* remove memmap entry */
+-	firmware_map_remove(start, start + size, "System RAM");
+-
+-	arch_remove_memory(start, size);
+-
+-	try_offline_node(nid);
+-
+-	unlock_memory_hotplug();
+-
+-	return 0;
+-}
+ #else
+ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ {
+ 	return -EINVAL;
+ }
+-int remove_memory(int nid, u64 start, u64 size)
+-{
+-	return -EINVAL;
+-}
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+-EXPORT_SYMBOL_GPL(remove_memory);
 
