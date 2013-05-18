@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab3ERX17 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 19:27:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34481 "EHLO hydra.sisk.pl"
+	id S1753656Ab3ERX2W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 19:28:22 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:34449 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622Ab3ERX1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 19:27:12 -0400
+	id S1753562Ab3ERX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 19:27:11 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,10 +17,12 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
         linux-mm@kvack.org
-Subject: [PATCH 0/5] ACPI / scan / memhotplug: ACPI hotplug rework followup changes
-Date: Sun, 19 May 2013 01:29:43 +0200
-Message-ID: <2250271.rGYN6WlBxf@vostro.rjw.lan>
+Subject: [PATCH 4/5] ACPI / scan: Add second pass of companion offlining to hot-remove code
+Date: Sun, 19 May 2013 01:34:14 +0200
+Message-ID: <3662688.5fMZaG7XgD@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2250271.rGYN6WlBxf@vostro.rjw.lan>
+References: <2250271.rGYN6WlBxf@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -28,25 +30,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-This series contains changes that are possible on top of the linux-pm.git
-tree's acpi-hotplug branch.  They touch ACPI, driver core and the core memory
-hotplug code and the majority of them are about removing code that's not
-necessary any more.
+As indicated by comments in mm/memory_hotplug.c:remove_memory(),
+if CONFIG_MEMCG is set, it may not be possible to offline all of the
+memory blocks held by one module (FRU) in one pass (because one of
+them may be used by the others to store page cgroup in that case
+and that block has to be offlined before the other ones).
 
-Please review and let me know if there's anything wrong with any of them.
+To handle that arguably corner case, add a second pass of companion
+device offlining to acpi_scan_hot_remove() and make it ignore errors
+returned in the first pass (and make it skip the second pass if the
+first one is successful).
 
-[1/5] Drop the struct acpi_device's removal_type field that's not used any more.
-[2/5] Pass processor object handle to acpi_bind_one()
-[3/5] Replace offline_memory_block() with device_offline().
-[4/5] Add second pass of companion offlining to acpi_scan_hot_remove().
-[5/5] Drop ACPI memory hotplug code that's not necessary any more.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/scan.c |   67 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 50 insertions(+), 17 deletions(-)
 
-Thanks,
-Rafael
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -131,6 +131,7 @@ static acpi_status acpi_bus_offline_comp
+ {
+ 	struct acpi_device *device = NULL;
+ 	struct acpi_device_physical_node *pn;
++	bool second_pass = (bool)data;
+ 	acpi_status status = AE_OK;
+ 
+ 	if (acpi_bus_get_device(handle, &device))
+@@ -141,15 +142,26 @@ static acpi_status acpi_bus_offline_comp
+ 	list_for_each_entry(pn, &device->physical_node_list, node) {
+ 		int ret;
+ 
++		if (second_pass) {
++			/* Skip devices offlined by the first pass. */
++			if (pn->put_online)
++				continue;
++		} else {
++			pn->put_online = false;
++		}
+ 		ret = device_offline(pn->dev);
+ 		if (acpi_force_hot_remove)
+ 			continue;
+ 
+-		if (ret < 0) {
+-			status = AE_ERROR;
+-			break;
++		if (ret >= 0) {
++			pn->put_online = !ret;
++		} else {
++			*ret_p = pn->dev;
++			if (second_pass) {
++				status = AE_ERROR;
++				break;
++			}
+ 		}
+-		pn->put_online = !ret;
+ 	}
+ 
+ 	mutex_unlock(&device->physical_node_lock);
+@@ -185,6 +197,7 @@ static int acpi_scan_hot_remove(struct a
+ 	acpi_handle not_used;
+ 	struct acpi_object_list arg_list;
+ 	union acpi_object arg;
++	struct device *errdev;
+ 	acpi_status status;
+ 	unsigned long long sta;
+ 
+@@ -197,22 +210,42 @@ static int acpi_scan_hot_remove(struct a
+ 
+ 	lock_device_hotplug();
+ 
+-	status = acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				     NULL, acpi_bus_offline_companions, NULL,
+-				     NULL);
+-	if (ACPI_SUCCESS(status) || acpi_force_hot_remove)
+-		status = acpi_bus_offline_companions(handle, 0, NULL, NULL);
+-
+-	if (ACPI_FAILURE(status) && !acpi_force_hot_remove) {
+-		acpi_bus_online_companions(handle, 0, NULL, NULL);
++	/*
++	 * Carry out two passes here and ignore errors in the first pass,
++	 * because if the devices in question are memory blocks and
++	 * CONFIG_MEMCG is set, one of the blocks may hold data structures
++	 * that the other blocks depend on, but it is not known in advance which
++	 * block holds them.
++	 *
++	 * If the first pass is successful, the second one isn't needed, though.
++	 */
++	errdev = NULL;
++	acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
++			    NULL, acpi_bus_offline_companions,
++			    (void *)false, (void **)&errdev);
++	acpi_bus_offline_companions(handle, 0, (void *)false, (void **)&errdev);
++	if (errdev) {
++		errdev = NULL;
+ 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
+-				    acpi_bus_online_companions, NULL, NULL,
+-				    NULL);
++				    NULL, acpi_bus_offline_companions,
++				    (void *)true , (void **)&errdev);
++		if (!errdev || acpi_force_hot_remove)
++			acpi_bus_offline_companions(handle, 0, (void *)true,
++						    (void **)&errdev);
++
++		if (errdev && !acpi_force_hot_remove) {
++			dev_warn(errdev, "Offline failed.\n");
++			acpi_bus_online_companions(handle, 0, NULL, NULL);
++			acpi_walk_namespace(ACPI_TYPE_ANY, handle,
++					    ACPI_UINT32_MAX,
++					    acpi_bus_online_companions, NULL,
++					    NULL, NULL);
+ 
+-		unlock_device_hotplug();
++			unlock_device_hotplug();
+ 
+-		put_device(&device->dev);
+-		return -EBUSY;
++			put_device(&device->dev);
++			return -EBUSY;
++		}
+ 	}
+ 
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
