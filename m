@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab3ERDAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:00:15 -0400
+	id S1759293Ab3ERDO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:14:29 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758495Ab3ERDAH (ORCPT
+	with ESMTP id S1758684Ab3ERDAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 23:00:07 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=jpEcaPsV8WMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=NRMChUP4DG0A:10 a=20KFwNOVAAAA:8 a=ufHFDILaAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=aCPqOQJ_S1qBLZ7JjQ4A:9 a=jEp0ucaQiEUA:10 a=l7ZknGph1ugA:10 a=0kPLrQdw3YYA:10 a=UTB_XpHje0EA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 23:00:15 -0400
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9kWdfSMoVHkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=-A6U4JZ64oYA:10 a=taGs_qngAAAA:8 a=PSgcYXQzAAAA:8 a=IWxJrl5LAAAA:8 a=cGMaF8Z7J5CfVMR4TXoA:9 a=n7Cch7CHiCMA:10 a=3k7bIPdiljcA:10 a=Cu9E_DCszsQA:10 a=jeBq3FmKZ4MA:10 a=KJKTsv-BUkteaBEt:21 a=qy2dhLuJIBM9ek1X:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021650.462318150@goodmis.org>
+Message-Id: <20130518021659.810315279@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:16:51 -0400
+Date: Fri, 17 May 2013 22:17:50 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 054/136 ] swap: redirty page if page write fails on swap file
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Ben Widawsky <ben@bwidawsk.net>,
+        Kenneth Graunke <kenneth@whitecape.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 113/136 ] drm/i915: Use MLC (l3$) for context objects
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0054-swap-redirty-page-if-page-write-fails-on-swap-file.patch
+Content-Disposition: inline; filename=0113-drm-i915-Use-MLC-l3-for-context-objects.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,45 +31,52 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-[ Upstream commit 2d30d31ea3c5be426ce25607b9bd1835acb85e0a ]
+[ Upstream commit 4615d4c9e27eda42c3e965f208a4b4065841498c ]
 
-Since commit 62c230bc1790 ("mm: add support for a filesystem to activate
-swap files and use direct_IO for writing swap pages"), swap_writepage()
-calls direct_IO on swap files.  However, in that case the page isn't
-redirtied if I/O fails, and is therefore handled afterwards as if it has
-been successfully written to the swap file, leading to memory corruption
-when the page is eventually swapped back in.
+Enabling context support increases SwapBuffers latency by about 20%
+(measured on an i7-3720qm). We can offset that loss slightly by enabling
+faster caching for the contexts. As they are not backed by any
+particular cache (such as the sampler or render caches) our only option
+is to select the generic mid-level cache. This reduces the latency of
+the swap by about 5%.
 
-This patch sets the page dirty when direct_IO() fails.  It fixes a
-memory corruption that happened while using swap-over-NFS.
+Oddly this effect can be observed running smokin-guns on IVB at
+1280x1024:
+Using BLT copies for swaps: 151.67 fps
+Using Render copies for swaps (unpatched):  141.70 fps
+With contexts disabled: 150.23 fps
+With contexts in L3$: 150.77 fps
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: <stable@vger.kernel.org>	[3.6+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Ben Widawsky <ben@bwidawsk.net>
+Cc: Kenneth Graunke <kenneth@whitecape.org>
+Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/page_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_context.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 78eee32..04ca00d 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
- 		if (ret == PAGE_SIZE) {
- 			count_vm_event(PSWPOUT);
- 			ret = 0;
-+		} else {
-+			set_page_dirty(page);
- 		}
- 		return ret;
+diff --git a/drivers/gpu/drm/i915/i915_gem_context.c b/drivers/gpu/drm/i915/i915_gem_context.c
+index a9d58d7..dda0d35 100644
+--- a/drivers/gpu/drm/i915/i915_gem_context.c
++++ b/drivers/gpu/drm/i915/i915_gem_context.c
+@@ -155,6 +155,13 @@ create_hw_context(struct drm_device *dev,
+ 		return ERR_PTR(-ENOMEM);
  	}
+ 
++	if (INTEL_INFO(dev)->gen >= 7) {
++		ret = i915_gem_object_set_cache_level(ctx->obj,
++						      I915_CACHE_LLC_MLC);
++		if (ret)
++			goto err_out;
++	}
++
+ 	/* The ring associated with the context object is handled by the normal
+ 	 * object tracking code. We give an initial ring value simple to pass an
+ 	 * assertion in the context switch code.
 -- 
 1.7.10.4
 
