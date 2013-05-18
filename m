@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab3ERDO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 23:14:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26211 "EHLO
+	id S1759323Ab3ERDO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 23:14:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23572 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758672Ab3ERDAO (ORCPT
+	with ESMTP id S1758673Ab3ERDAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 23:00:14 -0400
-X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=vsAY3MO6lyMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mZ1LCQoEiewA:10 a=e5mUnYsNAAAA:8 a=VwQbUJbxAAAA:8 a=QXbzxznKplSgLJnbAhQA:9 a=VRge421-rs0A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9POAVWnSHSgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FL1KdviKnJ8A:10 a=zd2uoN0lAAAA:8 a=e5mUnYsNAAAA:8 a=VwQbUJbxAAAA:8 a=aCPqOQJ_S1qBLZ7JjQ4A:9 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021700.121002596@goodmis.org>
+Message-Id: <20130518021700.265508105@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:52 -0400
+Date: Fri, 17 May 2013 22:17:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 115/136 ] drm/i915: Fall back to bit banging mode for DVO transmitter
- detection
+Cc: Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 116/136 ] drm/radeon: dont use get_engine_clock() on APUs
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0115-drm-i915-Fall-back-to-bit-banging-mode-for-DVO-trans.patch
+Content-Disposition: inline; filename=0116-drm-radeon-don-t-use-get_engine_clock-on-APUs.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,58 +29,40 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?"David=20M=C3=BCller=20(ELSOFT=20AG)"?= <d.mueller@elsoft.ch>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-[ Upstream commit e4bfff54ed3f5de88f5358504c78c2cb037813aa ]
+[ Upstream commit bf05d9985111f85ed6922c134567b96eb789283b ]
 
-As discussed in this thread
-http://lists.freedesktop.org/archives/dri-devel/2013-April/037411.html
-GMBUS based DVO transmitter detection seems to be unreliable which could
-result in an unusable DVO port.
+It doesn't work reliably.  Just report back the currently
+selected engine clock.
 
-The attached patch fixes this by falling back to bit banging mode for
-the time DVO transmitter detection is in progress.
+Partially fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=62493
 
-Signed-off-by: David Müller <d.mueller@elsoft.ch>
-Tested-by: David Müller <d.mueller@elsoft.ch>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Cc: stable@vger.kernel.org
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/i915/intel_dvo.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_dvo.c b/drivers/gpu/drm/i915/intel_dvo.c
-index 36c542e..5f1d7ef 100644
---- a/drivers/gpu/drm/i915/intel_dvo.c
-+++ b/drivers/gpu/drm/i915/intel_dvo.c
-@@ -370,6 +370,7 @@ void intel_dvo_init(struct drm_device *dev)
- 		const struct intel_dvo_device *dvo = &intel_dvo_devices[i];
- 		struct i2c_adapter *i2c;
- 		int gpio;
-+		bool dvoinit;
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index 395d7e0..8c89481 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -856,7 +856,11 @@ static int radeon_debugfs_pm_info(struct seq_file *m, void *data)
+ 	struct radeon_device *rdev = dev->dev_private;
  
- 		/* Allow the I2C driver info to specify the GPIO to be used in
- 		 * special cases, but otherwise default to what's defined
-@@ -389,7 +390,17 @@ void intel_dvo_init(struct drm_device *dev)
- 		i2c = intel_gmbus_get_adapter(dev_priv, gpio);
- 
- 		intel_dvo->dev = *dvo;
--		if (!dvo->dev_ops->init(&intel_dvo->dev, i2c))
-+
-+		/* GMBUS NAK handling seems to be unstable, hence let the
-+		 * transmitter detection run in bit banging mode for now.
-+		 */
-+		intel_gmbus_force_bit(i2c, true);
-+
-+		dvoinit = dvo->dev_ops->init(&intel_dvo->dev, i2c);
-+
-+		intel_gmbus_force_bit(i2c, false);
-+
-+		if (!dvoinit)
- 			continue;
- 
- 		intel_encoder->type = INTEL_OUTPUT_DVO;
+ 	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
+-	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
++	/* radeon_get_engine_clock is not reliable on APUs so just print the current clock */
++	if ((rdev->family >= CHIP_PALM) && (rdev->flags & RADEON_IS_IGP))
++		seq_printf(m, "current engine clock: %u0 kHz\n", rdev->pm.current_sclk);
++	else
++		seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
+ 	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
+ 	if (rdev->asic->pm.get_memory_clock)
+ 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
 -- 
 1.7.10.4
 
