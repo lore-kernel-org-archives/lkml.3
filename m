@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3ERVFq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 17:05:46 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:58886 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3ERVFp (ORCPT
+	id S1753214Ab3ERVKA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 17:10:00 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:42230 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3ERVJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 17:05:45 -0400
+	Sat, 18 May 2013 17:09:59 -0400
+Date: Sat, 18 May 2013 23:09:48 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Petko Manolov <petkan@nucleusys.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: bug fixing and cleanup
+Message-ID: <20130518210948.GA26590@electric-eye.fr.zoreil.com>
+References: <alpine.DEB.2.02.1305181902080.7518@fry.nucleusys.com>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Sat, 18 May 2013 14:05:23 -0700
-X-Google-Sender-Auth: DfGmvZ6v_K8V00Q-KMLhmhBfkzQ
-Message-ID: <CAB=NE6VAWUQpbZpM8T77d-r7ZYJd4veghKY_eMV9sDv831gbXw@mail.gmail.com>
-Subject: [ANN] Backports based on v3.10-rc1 released
-To: "backports@vger.kernel.org" <backports@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305181902080.7518@fry.nucleusys.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As announced on the list the compat-drivers project was renamed to
-backports [0] and uses now only one new tree for development [1]. Due
-to the huge amount of changes we've been behind on linux-next daily
-snapshots but we've now caught up with Linus so a release based on
-v3.10-rc1 is due and is now available [2]. Please test ! There are
-tons of changes in terms of how we do backports that should make it
-easier and consistent to backport drivers and subsystems thanks mainly
-to Johannes' huge changes. As it is now most if not all development
-scripts have been converted to Python, except for scripts required on
-the user's part for installation.
+Petko Manolov <petkan@nucleusys.com> :
+> From: Petko Manolov <petkan@nucleusys.com>
+> 
+> Moving constant and structure definitions out of rtl8150.c;
 
-As for user's experience you no longer have to use the silly
-./scripts/drivers-select script to enable only one driver for
-compilation, you just type in
+What's the point ?
 
-make menuconfig
-make -j 4
-# Then as root:
-make install
+[...]
+> ---
+>  drivers/net/usb/rtl8150.c |  121 +----------------------------------
+>  1 file changed, 2 insertions(+), 119 deletions(-)
+> 
+> diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
+> index a491d3a..7d1897b 100644
+> --- a/drivers/net/usb/rtl8150.c
+> +++ b/drivers/net/usb/rtl8150.c
+> @@ -17,132 +17,15 @@
+>  #include <linux/usb.h>
+>  #include <asm/uaccess.h>
+>  
+> +#include "rtl8150.h"
 
-There are also a series of defconfigs, present on the defconfig
-directory, you can use the iwlwifi defconfig as follows for example:
+It won't compile. You shouldn't do that.
 
-make defconfig-iwlwifi
-
-We need more defconfigs! Please feel free to send your submissions.
-I'm willing to merge these in for the rc series prior to the final
-release. Apart from these changes we now also backport three new
-subsystems: NFC, media and regulator subsystems. For NFC we have 8 new
-drivers. For media we ended up backporting 433 new drivers. For
-regulator we backported 37 new drivers.
-
-Many thanks to Johannes, Samuel, and Hauke for their huge help with
-all these new changes. Now please go test!
-
-[0] http://marc.info/?l=linux-backports&m=136891011622088&w=2
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/mcgrof/backports.git
-[2] https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.10-rc1/backports-3.10-rc1-1.tar.bz2
-
-  Luis
+-- 
+Ueimor
