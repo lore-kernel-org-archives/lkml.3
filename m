@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab3ERCSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:18:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26005 "EHLO
+	id S1757342Ab3ERCUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:20:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31662 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817Ab3ERCRA (ORCPT
+	with ESMTP id S1756075Ab3ERCQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:17:00 -0400
-X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Fp4bBEs0It8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=PyxvwjimkMMA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=0kPLrQdw3YYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 17 May 2013 22:16:57 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=shadTm2mtMsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=blLi1_f1S_8A:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=LI9Vle30uBYA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021652.096107875@goodmis.org>
+Message-Id: <20130518021647.914743224@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:17:01 -0400
+Date: Fri, 17 May 2013 22:16:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jonathan Brassow <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [ 064/136 ] md: bad block list should default to disabled.
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 038/136 ] PCI / ACPI: Dont query OSC support with all possible controls
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0064-md-bad-block-list-should-default-to-disabled.patch
+Content-Disposition: inline; filename=0038-PCI-ACPI-Don-t-query-OSC-support-with-all-possible-c.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,64 +30,70 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Yinghai Lu <yinghai@kernel.org>
 
-[ Upstream commit 486adf72ccc0c235754923d47a2270c5dcb0c98b ]
+[ Upstream commit 545d6e189a41c94c11f55045a771118eccc9d9eb ]
 
-Maintenance of a bad-block-list currently defaults to 'enabled'
-and is then disabled when it cannot be supported.
-This is backwards and causes problem for dm-raid which didn't know
-to disable it.
+Found problem on system that firmware that could handle pci aer.
+Firmware get error reporting after pci injecting error, before os boots.
+But after os boots, firmware can not get report anymore, even pci=noaer
+is passed.
 
-So fix the defaults, and only enabled for v1.x metadata which
-explicitly has bad blocks enabled.
+Root cause: BIOS _OSC has problem with query bit checking.
+It turns out that BIOS vendor is copying example code from ACPI Spec.
+In ACPI Spec 5.0, page 290:
 
-The problem with dm-raid has been present since badblock support was
-added in v3.1, so this patch is suitable for any -stable from 3.1
-onwards.
+	If (Not(And(CDW1,1))) // Query flag clear?
+	{	// Disable GPEs for features granted native control.
+		If (And(CTRL,0x01)) // Hot plug control granted?
+		{
+			Store(0,HPCE) // clear the hot plug SCI enable bit
+			Store(1,HPCS) // clear the hot plug SCI status bit
+		}
+	...
+	}
 
-Cc: stable@vger.kernel.org (3.1+)
-Reported-by: Jonathan Brassow <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+So it will get into code path that should be for control set only.
+BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+
+Current kernel code is using _OSC query to notify firmware about support
+from OS and then use _OSC to set control bits.
+During query support, current code is using all possible controls.
+So will execute code that should be only for control set stage.
+
+That will have problem when pci=noaer or aer firmware_first is used.
+As firmware have that control set for os aer already in query support stage,
+but later will not os aer handling.
+
+We should avoid passing all possible controls, just use osc_control_set
+instead.
+That should workaround BIOS bugs with affected systems on the field
+as more bios vendors are copying sample code from ACPI spec.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/md/md.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index c7b000f..833957e 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1576,8 +1576,8 @@ static int super_1_load(struct md_rdev *rdev, struct md_rdev *refdev, int minor_
- 					     sector, count, 1) == 0)
- 				return -EINVAL;
- 		}
--	} else if (sb->bblog_offset == 0)
--		rdev->badblocks.shift = -1;
-+	} else if (sb->bblog_offset != 0)
-+		rdev->badblocks.shift = 0;
- 
- 	if (!refdev) {
- 		ret = 1;
-@@ -3224,7 +3224,7 @@ int md_rdev_init(struct md_rdev *rdev)
- 	 * be used - I wonder if that matters
- 	 */
- 	rdev->badblocks.count = 0;
--	rdev->badblocks.shift = 0;
-+	rdev->badblocks.shift = -1; /* disabled until explicitly enabled */
- 	rdev->badblocks.page = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	seqlock_init(&rdev->badblocks.lock);
- 	if (rdev->badblocks.page == NULL)
-@@ -3296,9 +3296,6 @@ static struct md_rdev *md_import_device(dev_t newdev, int super_format, int supe
- 			goto abort_free;
- 		}
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 72a2c98..ef0690e 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -247,8 +247,8 @@ static acpi_status acpi_pci_query_osc(struct acpi_pci_root *root,
+ 		*control &= OSC_PCI_CONTROL_MASKS;
+ 		capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+ 	} else {
+-		/* Run _OSC query for all possible controls. */
+-		capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
++		/* Run _OSC query only with existing controls. */
++		capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
  	}
--	if (super_format == -1)
--		/* hot-add for 0.90, or non-persistent: so no badblocks */
--		rdev->badblocks.shift = -1;
  
- 	return rdev;
- 
+ 	status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
 -- 
 1.7.10.4
 
