@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab3ERFkl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 01:40:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52749 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab3ERFkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 01:40:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,696,1363158000"; 
-   d="asc'?scan'208";a="243339358"
-Message-ID: <1368855636.2235.136.camel@jtkirshe-mobl>
-Subject: Re: [ 094/136 ] e1000e: fix runtime power management transitions
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Bruce Allan <bruce.w.allan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>
-Date: Fri, 17 May 2013 22:40:36 -0700
-In-Reply-To: <5197132A.5030308@openvz.org>
-References: <20130518021557.139113314@goodmis.org>
-	 <20130518021656.829696669@goodmis.org> <5197132A.5030308@openvz.org>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-yQWPYFFiJHSIA/BLGYdC"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1753725Ab3ERGkn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 02:40:43 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:44828 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3ERGkm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 02:40:42 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [RFC PATCHv3 4/6] clocksource: Add TI-Nspire timer drivers
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <CACRpkdaO7ieSdo5+Yq0+CLDfP==+DBOWn8+v0ap5iMOJy0Vf=Q@mail.gmail.com>
+Date: Sat, 18 May 2013 16:40:31 +1000
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6807056B-84F9-468D-87C6-4C4AD7D8BA99@gmail.com>
+References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <1368332581-94691-5-git-send-email-dt.tangr@gmail.com> <CACRpkdZBFbOnQ9rCehO0yKDN7fH9VR3VYCa_NkOGJz7KN+02FQ@mail.gmail.com> <26FBB324-AAA9-4C10-8978-C2EC1C26672E@gmail.com> <CACRpkdaO7ieSdo5+Yq0+CLDfP==+DBOWn8+v0ap5iMOJy0Vf=Q@mail.gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-yQWPYFFiJHSIA/BLGYdC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 17/05/2013, at 11:17 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-On Sat, 2013-05-18 at 09:35 +0400, Konstantin Khlebnikov wrote:
-> Steven Rostedt wrote:
-> > 3.6.11.4 stable review patch.
-> > If anyone has any objections, please let me know.
->=20
-> I don't think that 3.6.y needs this. That was fix for problem which appea=
-red
-> in 3.8 after some changes in PCI power management code. Probably it depen=
-ds
-> on these changes. If no one complains about problems we should leave it a=
-s is.
+>>> If this timer is really just 16 bits, it's a *pretty* good idea to use
+>>> the prescaler (I guess this is what IO_DIVIDER is) beacuse else you
+>>> will get short sleep times with CONFIG_NO_HZ_IDLE on this system,
+>>> and wake up unnecessarily often.
+>>> 
+>>> The same goes for the clock event.
+>> 
+>> The clock frequency is 32768Hz. Should I be scaling it down at that frequency?
+> 
+> No. But that was *pretty* slow.
+> 
+> The thing is that the driver is getting "some clockfrequency" from
+> the clk subsystem and does not know what it is.
+> 
+> Usually (and I've seen this hardware design pattern a lot) when you
+> have a clock like this, and go talk to the clk implementation specialist
+> s/he will say "oh, yeah, I can mux in this 34 MHz clock to the timer
+> as well", and if that is possible then that is often what you want,
+> because it's good for things like HRtimers, and then it's useful to have
+> a prescaler och the clocksource/clockevent.
+> 
+> You can use that 32768 Hz for clock events and clocksource (but I
+> suspect that HRtimers will never be useful on this platform due to this).
+> 
 
-My thoughts are the same as Konstantin, but I would like Bruce Allan to
-weigh in on this since he is the e1000e maintainer.  Since it is late
-Friday night, Bruce probably won't see this until Monday to respond.
+I forgot to mention before that there is also another timer that runs at the same freq as the APB (which is usually around 30MHz). Is this what you were alluding to? I haven't tested the driver on that timer yet.
 
-> >
-> > ------------------
-> >
-> > From: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> >
-> > [ Upstream commit 66148babe728f3e00e13c56f6b0ecf325abd80da ]
-> >
-> > This patch removes redundant actions from driver and fixes its interact=
-ion
-> > with actions in pci-bus runtime power management code.
-> >
-> > It removes pci_save_state() from __e1000_shutdown() for normal adapters=
-,
-> > PCI bus callbacks pci_pm_*() will do all this for us. Now __e1000_shutd=
-own()
-> > switches to D3-state only quad-port adapters, because they needs quirk =
-for
-> > clearing false-positive error from downsteam pci-e port.
-> >
-> > pci_save_state() now called after clearing bus-master bit, thus __e1000=
-_resume()
-> > and e1000_io_slot_reset() must set it back after restoring configuratio=
-n space.
-> >
-> > This patch set get_link_status before calling pm_runtime_put() in e1000=
-_open()
-> > to allow e1000_idle() get real link status and schedule first runtime s=
-uspend.
-> >
-> > This patch also enables wakeup for device if management mode is enabled
-> > (like for WoL) as result pci_prepare_to_sleep() would setup wakeup with=
-out
-> > special actions like custom 'enable_wakeup' sign.
-> >
-> > Cc: Bruce Allan<bruce.w.allan@intel.com>
-> > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > Acked-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
-> > Tested-by: Borislav Petkov<bp@suse.de>
-> > Tested-by: Aaron Brown<aaron.f.brown@intel.com>
-> > Signed-off-by: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
-> > Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
->=20
+As I understand it, you're saying to use a prescaler on faster clock rates so the kernel can have a longer maximum delay time (since a 16 bit register can only hold only so much). In that case, what kind of range should I be scaling to? I suspect it needs to be large enough to keep the kernel from constantly waking but small enough for HR timers to be useful.
 
-
-
---=-yQWPYFFiJHSIA/BLGYdC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAABCgAGBQJRlxRUAAoJEOVv75VaS+3OMCsP/2ttsaKvPTYI4lnWp49Nju0W
-QJt7/b6LLU52CroLkglO96/3XZsA9C0BtK6u2T6vQBhtCoFkjrZI8aocBoBNWaOv
-KGRAsyoCIN25MJ3wZzwB6cMvMtKyi9e8h3VfCA8xSsZNvKK5uKjSDBJzdkvnbucO
-KWTLGx02qvWPYIwjcX2jq8N62Vo31y/YdkYLqp1V326ihCXwyV53bePGprL7bEtg
-2XXMexgoISc4f9L1Am1qk+MC44zQCz1PF4h36M5aRWLXdUNhjZI7SNeJkSY7MRc2
-0iGQTRc0dQPchv+95KMAKH4ryPyA1YXfF/FdFzTgcN2beejZFzMXLnedHHHYxpeO
-CIBWuG/dfs14mhwFAhfflCjQaiyQazsoeRDbePJ39Ghqa1p2ndFPKygQo15h9DQL
-G0w+YawldfvADyjqeKg6xAxx65QP/+e3v7I9g3e/dtvhtTCh0vqTdIEl/pafmzJ8
-fIMn+r213iDU9Os3KQ9r/ExKmc9xdblrrRyUDY8riNLd2WWO+r9f58ePWhYPthph
-pS21WiWbB43geFSCXpz65dy/HpFtsg6KTm7jOGjlkbN0ozDGnWpvujlu4lVCsl0X
-3cTOy0TzemzqAizFCBru9oEqNg6E2X7ucb+QOnVUWM4kvIxpyMIFhz3SsEFQ+YFs
-8sjMYqO4Xygs2imuGI/f
-=46jN
------END PGP SIGNATURE-----
-
---=-yQWPYFFiJHSIA/BLGYdC--
+> Yours,
+> Linus Walleij
 
