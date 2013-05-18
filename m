@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab3ERCCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:02:31 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1712 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab3ERCCa (ORCPT
+	id S1754934Ab3ERCLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:11:42 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:60077 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab3ERCLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:02:30 -0400
-Message-ID: <5196E0A1.6000300@spin.net.au>
-Date: Sat, 18 May 2013 12:00:01 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Fri, 17 May 2013 22:11:41 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Roland Eggner <edvx1@systemanalysen.net>
-Subject: Re: Linux source tree size difference issue
-References: <519577DD.3040204@spin.net.au> <20130517194419.GA4002@mobil.systemanalysen.net>
-In-Reply-To: <20130517194419.GA4002@mobil.systemanalysen.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-1.823, required 4, AWL 0.68, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+In-Reply-To: <1368791235-10242-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1368791235-10242-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Sat, 18 May 2013 07:41:40 +0530
+X-Google-Sender-Auth: 7kSD28Ua5GyHlN0MK64V4w18Y1E
+Message-ID: <CAOh2x=kcwhaT+0d5G+1L9__fvMAd3AXrvo2z+bYEFhRUJ13rfg@mail.gmail.com>
+Subject: Re: [PATCH] dw_dmac: print message if IO resource is not found
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2013 05:44 AM, Roland Eggner wrote:
+On Fri, May 17, 2013 at 5:17 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> devm_ioremap_resource() will print a message if resource is not found.
 >
-> $  LC_ALL=C du --help  | grep -E -e 'apparent|sparse|fragmentation'
-> -------------------------------------------------------------------
->       --apparent-size   print apparent sizes, rather than disk usage; although
->                           the apparent size is usually smaller, it may be
->                           larger due to holes in ('sparse') files, internal
->                           fragmentation, indirect blocks, and the like
->   -b, --bytes           equivalent to '--apparent-size --block-size=1'
->
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+>  drivers/dma/dw_dmac.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
 
-Thanks Roland. I figured it out in the end. Things were not as bad as
-they first seemed.
+Log and subject should be something like this.
 
-
-Regards
-
--- 
-
-Chris Jones
-
-Founder and Lead Software Architect
-Paradise Software
-chrisjones@spin.net.au
-
+https://patchwork.kernel.org/patch/2549091/
