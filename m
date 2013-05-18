@@ -1,89 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab3ERTlE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 15:41:04 -0400
-Received: from mout.gmx.net ([212.227.15.15]:53603 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab3ERTlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 15:41:01 -0400
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX18QzUdqm5oQ9RDZrleGcPCyL99kHXKfqNUSEqPUlN
-	Cv9zp4CF1Douei
-Message-ID: <5197D947.4070200@gmx.de>
-Date: Sat, 18 May 2013 21:40:55 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1753334Ab3ERTvj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 15:51:39 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:50280 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab3ERTvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 15:51:38 -0400
+Message-ID: <5197DBCA.8050708@prisktech.co.nz>
+Date: Sun, 19 May 2013 07:51:38 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-parisc@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] parisc: avoid WARNING: at kernel/cpu/idle.c:96
-References: <20130508204242.GA16254@p100.box> <1368047134.8623.5.camel@dabdike> <5196843B.8060807@linux.vnet.ibm.com>
-In-Reply-To: <5196843B.8060807@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Alexey Charkov <alchark@gmail.com>
+CC: VT8500/WM8505 Linux Kernel 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tomi.valkeinen@ti.com,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 4/4] fb: vt8500: Add VGA output support to wm8505fb driver.
+References: <1368868514-18975-1-git-send-email-linux@prisktech.co.nz> <1368868514-18975-5-git-send-email-linux@prisktech.co.nz> <CABjd4Yxrk3hXnB5f6u+1HcJjymDZbtQ1F1HXkZ2dzF3dwCrWhg@mail.gmail.com>
+In-Reply-To: <CABjd4Yxrk3hXnB5f6u+1HcJjymDZbtQ1F1HXkZ2dzF3dwCrWhg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2013 09:25 PM, Srivatsa S. Bhat wrote:
-> On 05/09/2013 02:35 AM, James Bottomley wrote:
->> On Wed, 2013-05-08 at 22:42 +0200, Helge Deller wrote:
->>> We need to enable local irqs to avoid this runtime warning.
->>>
->>> Signed-off-by: Helge Deller <deller@gmx.de>
->>>
->>> diff --git a/arch/parisc/kernel/process.c b/arch/parisc/kernel/process.c
->>> index 55f92b6..2840d43 100644
->>> --- a/arch/parisc/kernel/process.c
->>> +++ b/arch/parisc/kernel/process.c
->>> @@ -286,3 +286,8 @@ void *dereference_function_descriptor(void *ptr)
->>>  	return ptr;
->>>  }
->>>  #endif
->>> +
->>> +void arch_cpu_idle(void)
->>> +{
->>> +	local_irq_enable();
+On 19/05/13 01:28, Alexey Charkov wrote:
+> 2013/5/18 Tony Prisk <linux@prisktech.co.nz>:
+>> The APC8750 does not support an LCD panel, but provides a VGA connector.
+>> This patch adds support for the VGA interface, and defines an optional
+>> devicetree property to specify the output interface. The default if not
+>> specified is LCD for backward compatibility.
 >>
->> This is definitely wrong.  we'd need at least a cpu_relax() in there.
->> Without that the cpu will bounce around in the idle loop.  I'd advise
->> that we simply keep the default cpu_idle_poll().
+>> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+>> ---
+>>   .../devicetree/bindings/video/wm,wm8505-fb.txt     |    5 ++++
+>>   drivers/video/wm8505fb.c                           |   31 ++++++++++++++++++--
+>>   2 files changed, 34 insertions(+), 2 deletions(-)
 >>
->> However, this looks like a kernel bug to me in cpu_idle_loop()?  not
->> something we should be working around in the arch code.
+>> diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+>> index 601416c..9f1d648 100644
+>> --- a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+>> +++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+>> @@ -7,6 +7,10 @@ Required properties:
+>>   - bits-per-pixel : bit depth of framebuffer (16 or 32)
+>>   - clocks : phandle to DVO clock
 >>
->> Thomas, what's going on here?  It looks like you can never avoid the
->> WARN_ON_ONCE if you don't provide any arch specific idle functions.  If
->> you wish to allow this case then the correct patch (keeping the WARN_ON)
->> would appear to be this one.
+>> +Optional properties:
+>> +- output-interface : the interface the fb should output on. Valid values are
+>> +       "lcd" or "vga". If not specified, the default is "lcd".
+>> +
+>>   Required subnodes:
+>>   - display-timings: see display-timing.txt for information
 >>
->> James
+>> @@ -17,6 +21,7 @@ Example:
+>>                  reg = <0xd8051700 0x200>;
+>>                  bits-per-pixel = <16>;
+>>                  clocks = <&clkdvo>;
+>> +               output-interface = "vga";
 >>
->> ----
->> diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
->> index 8b86c0c..829e41f 100644
->> --- a/kernel/cpu/idle.c
->> +++ b/kernel/cpu/idle.c
->> @@ -56,6 +56,7 @@ void __weak arch_cpu_idle_dead(void) { }
->>  void __weak arch_cpu_idle(void)
->>  {
->>  	cpu_idle_force_poll = 1;
->> +	local_irq_enable();
->>  }
+>>                  display-timings {
+>>                          native-mode = <&timing0>;
+>> diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+>> index f8bffc2..d1f7f33 100644
+>> --- a/drivers/video/wm8505fb.c
+>> +++ b/drivers/video/wm8505fb.c
+>> @@ -130,12 +130,17 @@
 >>
->>  /*
+>>   #define to_wm8505fb_info(__info) container_of(__info, \
+>>                                                  struct wm8505fb_info, fb)
+>> +
+>> +#define INTERFACE_LCD  1
+>> +#define INTERFACE_VGA  2
+>> +
+>>   struct wm8505fb_info {
+>>          struct fb_info fb;
+>>          void __iomem *regbase;
+>>          unsigned int contrast;
+>>          struct device *dev;
+>>          struct clk *clk_dvo;
+>> +       int interface;
+>>   };
 >>
-> 
-> This patch looks like the correct fix to me.
-> 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-Thanks Srivatsa!
-
-I can push it through the parisc tree if nobody objects...
-
-Helge
+>>
+>> @@ -158,7 +163,11 @@ static int wm8505fb_init_hw(struct fb_info *info)
+>>           * 0x31C sets the correct color mode (RGB565) for WM8650
+>>           * Bit 8+9 (0x300) are ignored on WM8505 as reserved
+>>           */
+>> -       writel(0x31c,                  fbi->regbase + REG_GOVRH_YUVRGB);
+>> +       if (fbi->interface == INTERFACE_VGA)
+>> +               writel(0x338, fbi->regbase + REG_GOVRH_YUVRGB);
+>> +       else
+>> +               writel(0x31c, fbi->regbase + REG_GOVRH_YUVRGB);
+>> +
+>>          writel(1,                      fbi->regbase + REG_GOVRH_DVO_PIX);
+> Tony,
+>
+> Would it be possible to also define known bit offsets for those
+> registers, while you are at this? It would probably reduce the black
+> magic quite a bit :)
+On my list of things to do :)
+>>          /* Virtual buffer size */
+>> @@ -167,7 +176,12 @@ static int wm8505fb_init_hw(struct fb_info *info)
+>>
+>>          /* black magic ;) */
+>>          writel(0xf,                    fbi->regbase + REG_GOVRH_FHI);
+>> -       writel(4,                      fbi->regbase + REG_GOVRH_DVO_SET);
+>> +
+>> +       if (fbi->interface == INTERFACE_VGA)
+>> +               writel(0xe, fbi->regbase + REG_GOVRH_DVO_SET);
+>> +       else
+>> +               writel(4, fbi->regbase + REG_GOVRH_DVO_SET);
+> I don't remember if HDMI is yet another option for this register or
+> not... If it is, it would probably warrant defining fbi->interface as
+> an enum and changing this if-else into a switch statement to let the
+> compiler add its checks/warnings.
+This register defines the h/v syncpolarity and enable/disable for DVO.
+>
+>>          writel(1,                      fbi->regbase + REG_GOVRH_MIF);
+>>          writel(1,                      fbi->regbase + REG_GOVRH_REG_STS);
+>>
+>> @@ -194,11 +208,15 @@ static int wm8505fb_set_timing(struct fb_info *info)
+>>          writel(h_end,   fbi->regbase + REG_GOVRH_ACTPX_END);
+>>          writel(h_all,   fbi->regbase + REG_GOVRH_H_ALLPXL);
+>>          writel(h_sync,  fbi->regbase + REG_GOVRH_HDMI_HSYNW);
+>> +       if (fbi->interface == INTERFACE_VGA)
+>> +               writel(h_sync,  fbi->regbase + REG_GOVRH_VGA_HSYNW);
+> Will it misbehave on LCD if you write to the VGA register unconditionally?
+Don't know - wouldn't imagine so. I will test it and see.
+>
+>>          writel(v_start, fbi->regbase + REG_GOVRH_ACTLN_BG);
+>>          writel(v_end,   fbi->regbase + REG_GOVRH_ACTLN_END);
+>>          writel(v_all,   fbi->regbase + REG_GOVRH_V_ALLLN);
+>>          writel(v_sync,  fbi->regbase + REG_GOVRH_HDMI_VBISW);
+>> +       if (fbi->interface == INTERFACE_VGA)
+>> +               writel(info->var.pixclock,  fbi->regbase + REG_GOVRH_VGA_VSYNW);
+> Same here. I would assume that setting the pixclock should not hurt
+> LCD, which would then simplify the code a little.
+>
+> Thanks,
+> Alexey
+Regards
+Tony Prisk
