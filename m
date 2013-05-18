@@ -1,105 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab3ERCW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:22:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14784 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756548Ab3ERCQw (ORCPT
+	id S1757674Ab3ERCXx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:23:53 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:64475 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab3ERCXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 17 May 2013 22:16:52 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=v0x9YhvvHwgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_oFXO-w7mCoA:10 a=VwQbUJbxAAAA:8 a=2x_WxHEYObsG1DZEiU8A:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021646.390640694@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:16:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 029/136 ] tracing: Use stack of calling function for stack tracer
-References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0029-tracing-Use-stack-of-calling-function-for-stack-trac.patch
+	Fri, 17 May 2013 22:23:47 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, romieu@fr.zoreil.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv7 2/3] net: velocity: Convert to generic dma functions
+Date: Sat, 18 May 2013 14:23:44 +1200
+Message-Id: <1368843825-14813-3-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1368843825-14813-1-git-send-email-linux@prisktech.co.nz>
+References: <1368843825-14813-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.4 stable review patch.
-If anyone has any objections, please let me know.
+Remove the pci_* dma functions and replace with the more generic
+versions.
 
-------------------
+In preparation of adding platform support, a new struct device *dev
+is added to struct velocity_info which can be used by both the pci
+and platform code.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-
-[ Upstream commit 87889501d0adfae10e3b0f0e6f2d7536eed9ae84 ]
-
-Use the stack of stack_trace_call() instead of check_stack() as
-the test pointer for max stack size. It makes it a bit cleaner
-and a little more accurate.
-
-Adding stable, as a later fix depends on this patch.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- kernel/trace/trace_stack.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/via/via-velocity.c |   51 +++++++++++++++----------------
+ drivers/net/ethernet/via/via-velocity.h |    1 +
+ 2 files changed, 26 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index aa4270a..6ee97e5 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -40,20 +40,21 @@ static DEFINE_MUTEX(stack_sysctl_mutex);
- int stack_tracer_enabled;
- static int last_stack_tracer_enabled;
- 
--static inline void check_stack(void)
-+static inline void
-+check_stack(unsigned long *stack)
- {
- 	unsigned long this_size, flags;
- 	unsigned long *p, *top, *start;
- 	int i;
- 
--	this_size = ((unsigned long)&this_size) & (THREAD_SIZE-1);
-+	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
- 	this_size = THREAD_SIZE - this_size;
- 
- 	if (this_size <= max_stack_size)
- 		return;
- 
- 	/* we do not handle interrupt stacks yet */
--	if (!object_is_on_stack(&this_size))
-+	if (!object_is_on_stack(stack))
- 		return;
- 
- 	local_irq_save(flags);
-@@ -74,7 +75,7 @@ static inline void check_stack(void)
- 	 * Now find where in the stack these are.
+diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
+index 187eef3..5996cee 100644
+--- a/drivers/net/ethernet/via/via-velocity.c
++++ b/drivers/net/ethernet/via/via-velocity.c
+@@ -46,6 +46,7 @@
+ #include <linux/types.h>
+ #include <linux/bitops.h>
+ #include <linux/init.h>
++#include <linux/dma-mapping.h>
+ #include <linux/mm.h>
+ #include <linux/errno.h>
+ #include <linux/ioport.h>
+@@ -1459,7 +1460,6 @@ static int velocity_init_dma_rings(struct velocity_info *vptr)
+ 	struct velocity_opt *opt = &vptr->options;
+ 	const unsigned int rx_ring_size = opt->numrx * sizeof(struct rx_desc);
+ 	const unsigned int tx_ring_size = opt->numtx * sizeof(struct tx_desc);
+-	struct pci_dev *pdev = vptr->pdev;
+ 	dma_addr_t pool_dma;
+ 	void *pool;
+ 	unsigned int i;
+@@ -1467,13 +1467,13 @@ static int velocity_init_dma_rings(struct velocity_info *vptr)
+ 	/*
+ 	 * Allocate all RD/TD rings a single pool.
+ 	 *
+-	 * pci_alloc_consistent() fulfills the requirement for 64 bytes
++	 * dma_alloc_coherent() fulfills the requirement for 64 bytes
+ 	 * alignment
  	 */
- 	i = 0;
--	start = &this_size;
-+	start = stack;
- 	top = (unsigned long *)
- 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
+-	pool = pci_alloc_consistent(pdev, tx_ring_size * vptr->tx.numq +
+-				    rx_ring_size, &pool_dma);
++	pool = dma_alloc_coherent(vptr->dev, tx_ring_size * vptr->tx.numq +
++				    rx_ring_size, &pool_dma, GFP_ATOMIC);
+ 	if (!pool) {
+-		dev_err(&pdev->dev, "%s : DMA memory allocation failed.\n",
++		dev_err(vptr->dev, "%s : DMA memory allocation failed.\n",
+ 			vptr->netdev->name);
+ 		return -ENOMEM;
+ 	}
+@@ -1524,8 +1524,8 @@ static int velocity_alloc_rx_buf(struct velocity_info *vptr, int idx)
+ 	 */
+ 	skb_reserve(rd_info->skb,
+ 			64 - ((unsigned long) rd_info->skb->data & 63));
+-	rd_info->skb_dma = pci_map_single(vptr->pdev, rd_info->skb->data,
+-					vptr->rx.buf_sz, PCI_DMA_FROMDEVICE);
++	rd_info->skb_dma = dma_map_single(vptr->dev, rd_info->skb->data,
++					vptr->rx.buf_sz, DMA_FROM_DEVICE);
  
-@@ -113,6 +114,7 @@ static inline void check_stack(void)
- static void
- stack_trace_call(unsigned long ip, unsigned long parent_ip)
+ 	/*
+ 	 *	Fill in the descriptor to match
+@@ -1588,8 +1588,8 @@ static void velocity_free_rd_ring(struct velocity_info *vptr)
+ 
+ 		if (!rd_info->skb)
+ 			continue;
+-		pci_unmap_single(vptr->pdev, rd_info->skb_dma, vptr->rx.buf_sz,
+-				 PCI_DMA_FROMDEVICE);
++		dma_unmap_single(vptr->dev, rd_info->skb_dma, vptr->rx.buf_sz,
++				 DMA_FROM_DEVICE);
+ 		rd_info->skb_dma = 0;
+ 
+ 		dev_kfree_skb(rd_info->skb);
+@@ -1670,7 +1670,7 @@ static void velocity_free_dma_rings(struct velocity_info *vptr)
+ 	const int size = vptr->options.numrx * sizeof(struct rx_desc) +
+ 		vptr->options.numtx * sizeof(struct tx_desc) * vptr->tx.numq;
+ 
+-	pci_free_consistent(vptr->pdev, size, vptr->rx.ring, vptr->rx.pool_dma);
++	dma_free_coherent(vptr->dev, size, vptr->rx.ring, vptr->rx.pool_dma);
+ }
+ 
+ static int velocity_init_rings(struct velocity_info *vptr, int mtu)
+@@ -1727,8 +1727,8 @@ static void velocity_free_tx_buf(struct velocity_info *vptr,
+ 				pktlen = max_t(size_t, pktlen,
+ 						td->td_buf[i].size & ~TD_QUEUE);
+ 
+-			pci_unmap_single(vptr->pdev, tdinfo->skb_dma[i],
+-					le16_to_cpu(pktlen), PCI_DMA_TODEVICE);
++			dma_unmap_single(vptr->dev, tdinfo->skb_dma[i],
++					le16_to_cpu(pktlen), DMA_TO_DEVICE);
+ 		}
+ 	}
+ 	dev_kfree_skb_irq(skb);
+@@ -1750,8 +1750,8 @@ static void velocity_free_td_ring_entry(struct velocity_info *vptr,
+ 	if (td_info->skb) {
+ 		for (i = 0; i < td_info->nskb_dma; i++) {
+ 			if (td_info->skb_dma[i]) {
+-				pci_unmap_single(vptr->pdev, td_info->skb_dma[i],
+-					td_info->skb->len, PCI_DMA_TODEVICE);
++				dma_unmap_single(vptr->dev, td_info->skb_dma[i],
++					td_info->skb->len, DMA_TO_DEVICE);
+ 				td_info->skb_dma[i] = 0;
+ 			}
+ 		}
+@@ -2029,7 +2029,6 @@ static inline void velocity_iph_realign(struct velocity_info *vptr,
+  */
+ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
  {
-+	unsigned long stack;
- 	int cpu;
+-	void (*pci_action)(struct pci_dev *, dma_addr_t, size_t, int);
+ 	struct net_device_stats *stats = &vptr->netdev->stats;
+ 	struct velocity_rd_info *rd_info = &(vptr->rx.info[idx]);
+ 	struct rx_desc *rd = &(vptr->rx.ring[idx]);
+@@ -2047,8 +2046,8 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
  
- 	if (unlikely(!ftrace_enabled || stack_trace_disabled))
-@@ -125,7 +127,7 @@ stack_trace_call(unsigned long ip, unsigned long parent_ip)
- 	if (per_cpu(trace_active, cpu)++ != 0)
- 		goto out;
+ 	skb = rd_info->skb;
  
--	check_stack();
-+	check_stack(&stack);
+-	pci_dma_sync_single_for_cpu(vptr->pdev, rd_info->skb_dma,
+-				    vptr->rx.buf_sz, PCI_DMA_FROMDEVICE);
++	dma_sync_single_for_cpu(vptr->dev, rd_info->skb_dma,
++				    vptr->rx.buf_sz, DMA_FROM_DEVICE);
  
-  out:
- 	per_cpu(trace_active, cpu)--;
+ 	/*
+ 	 *	Drop frame not meeting IEEE 802.3
+@@ -2061,19 +2060,18 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
+ 		}
+ 	}
+ 
+-	pci_action = pci_dma_sync_single_for_device;
+-
+ 	velocity_rx_csum(rd, skb);
+ 
+ 	if (velocity_rx_copy(&skb, pkt_len, vptr) < 0) {
+ 		velocity_iph_realign(vptr, skb, pkt_len);
+-		pci_action = pci_unmap_single;
+ 		rd_info->skb = NULL;
++		dma_unmap_single(vptr->dev, rd_info->skb_dma, vptr->rx.buf_sz,
++				 DMA_FROM_DEVICE);
++	} else {
++		dma_sync_single_for_device(vptr->dev, rd_info->skb_dma,
++					   vptr->rx.buf_sz, DMA_FROM_DEVICE);
+ 	}
+ 
+-	pci_action(vptr->pdev, rd_info->skb_dma, vptr->rx.buf_sz,
+-		   PCI_DMA_FROMDEVICE);
+-
+ 	skb_put(skb, pkt_len - 4);
+ 	skb->protocol = eth_type_trans(skb, vptr->netdev);
+ 
+@@ -2550,7 +2548,8 @@ static netdev_tx_t velocity_xmit(struct sk_buff *skb,
+ 	 *	add it to the transmit ring.
+ 	 */
+ 	tdinfo->skb = skb;
+-	tdinfo->skb_dma[0] = pci_map_single(vptr->pdev, skb->data, pktlen, PCI_DMA_TODEVICE);
++	tdinfo->skb_dma[0] = dma_map_single(vptr->dev, skb->data, pktlen,
++								DMA_TO_DEVICE);
+ 	td_ptr->tdesc0.len = cpu_to_le16(pktlen);
+ 	td_ptr->td_buf[0].pa_low = cpu_to_le32(tdinfo->skb_dma[0]);
+ 	td_ptr->td_buf[0].pa_high = 0;
+@@ -2560,7 +2559,7 @@ static netdev_tx_t velocity_xmit(struct sk_buff *skb,
+ 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+ 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
+-		tdinfo->skb_dma[i + 1] = skb_frag_dma_map(&vptr->pdev->dev,
++		tdinfo->skb_dma[i + 1] = skb_frag_dma_map(vptr->dev,
+ 							  frag, 0,
+ 							  skb_frag_size(frag),
+ 							  DMA_TO_DEVICE);
+@@ -2637,6 +2636,7 @@ static void velocity_init_info(struct pci_dev *pdev, struct velocity_info *vptr,
+ {
+ 	memset(vptr, 0, sizeof(struct velocity_info));
+ 
++	vptr->dev = &pdev->dev;
+ 	vptr->pdev = pdev;
+ 	vptr->chip_id = info->chip_id;
+ 	vptr->tx.numq = info->txqueue;
+@@ -2744,7 +2744,6 @@ static int velocity_found1(struct pci_dev *pdev,
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 	vptr = netdev_priv(dev);
+ 
+-
+ 	if (first) {
+ 		printk(KERN_INFO "%s Ver. %s\n",
+ 			VELOCITY_FULL_DRV_NAM, VELOCITY_VERSION);
+diff --git a/drivers/net/ethernet/via/via-velocity.h b/drivers/net/ethernet/via/via-velocity.h
+index ff8d7828..c38bbae 100644
+--- a/drivers/net/ethernet/via/via-velocity.h
++++ b/drivers/net/ethernet/via/via-velocity.h
+@@ -1434,6 +1434,7 @@ struct velocity_opt {
+ #define GET_RD_BY_IDX(vptr, idx)   (vptr->rd_ring[idx])
+ 
+ struct velocity_info {
++	struct device *dev;
+ 	struct pci_dev *pdev;
+ 	struct net_device *netdev;
+ 
 -- 
-1.7.10.4
-
+1.7.9.5
 
