@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3ERJPn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 05:15:43 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:51380 "EHLO
+	id S1753171Ab3ERJPm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 05:15:42 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:54713 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab3ERJPR (ORCPT
+	with ESMTP id S1751929Ab3ERJPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 18 May 2013 05:15:17 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
@@ -13,9 +13,9 @@ Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
         Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 1/4] fb: vt8500: Move register defines inside driver
-Date: Sat, 18 May 2013 21:15:11 +1200
-Message-Id: <1368868514-18975-2-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCH 3/4] fb: vt8500: Require a device clock for wm8505fb driver
+Date: Sat, 18 May 2013 21:15:13 +1200
+Message-Id: <1368868514-18975-4-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1368868514-18975-1-git-send-email-linux@prisktech.co.nz>
 References: <1368868514-18975-1-git-send-email-linux@prisktech.co.nz>
@@ -23,140 +23,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The #defines in wm8505fb_regs.h are only used in the wm8505fb driver,
-and don't need to be visible outside.
-
-Move the defines into the driver and remove the header.
+The wm8505fb driver requires a clock to work properly. Without a clock,
+the driver can only initialize the display resolution that was set in
+uboot.
+This patch updates the driver to get and use a clock, and updates
+the devicetree documentation to indicate the requirement for a clock.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/video/wm8505fb.c      |   25 +++++++++++++-
- drivers/video/wm8505fb_regs.h |   76 -----------------------------------------
- 2 files changed, 24 insertions(+), 77 deletions(-)
- delete mode 100644 drivers/video/wm8505fb_regs.h
+ .../devicetree/bindings/video/wm,wm8505-fb.txt     |    4 ++-
+ drivers/video/wm8505fb.c                           |   30 +++++++++++++++++---
+ 2 files changed, 29 insertions(+), 5 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+index 0bcadb2..601416c 100644
+--- a/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
++++ b/Documentation/devicetree/bindings/video/wm,wm8505-fb.txt
+@@ -5,6 +5,7 @@ Required properties:
+ - compatible : "wm,wm8505-fb"
+ - reg : Should contain 1 register ranges(address and length)
+ - bits-per-pixel : bit depth of framebuffer (16 or 32)
++- clocks : phandle to DVO clock
+ 
+ Required subnodes:
+ - display-timings: see display-timing.txt for information
+@@ -15,11 +16,12 @@ Example:
+ 		compatible = "wm,wm8505-fb";
+ 		reg = <0xd8051700 0x200>;
+ 		bits-per-pixel = <16>;
++		clocks = <&clkdvo>;
+ 
+ 		display-timings {
+ 			native-mode = <&timing0>;
+ 			timing0: 800x480 {
+-				clock-frequency = <0>; /* unused but required */
++				clock-frequency = <30000000>;
+ 				hactive = <800>;
+ 				vactive = <480>;
+ 				hfront-porch = <40>;
 diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index 01f9ace..f824af8 100644
+index 167a9e2..f8bffc2 100644
 --- a/drivers/video/wm8505fb.c
 +++ b/drivers/video/wm8505fb.c
-@@ -34,11 +34,34 @@
- #include <linux/wait.h>
- #include <video/of_display_timing.h>
+@@ -14,6 +14,7 @@
+  * GNU General Public License for more details.
+  */
  
--#include "wm8505fb_regs.h"
- #include "wmt_ge_rops.h"
- 
- #define DRIVER_NAME "wm8505-fb"
- 
-+#define WMT_GOVR_COLORSPACE1	0x030
-+#define WMT_GOVR_MIF_ENABLE	0x080
-+#define WMT_GOVR_FBADDR		0x090
-+#define WMT_GOVR_FBADDR1	0x094
-+#define WMT_GOVR_XRES		0x098
-+#define WMT_GOVR_XRES_VIRTUAL	0x09c
-+#define WMT_GOVR_YPAN		0x0a0
-+#define WMT_GOVR_XPAN		0x0a4
-+#define WMT_GOVR_FHI		0x0a8
-+#define WMT_GOVR_REG_UPDATE	0x0e4
-+#define WMT_GOVR_TG		0x100
-+#define WMT_GOVR_TIMING_H_ALL	0x108
-+#define WMT_GOVR_TIMING_V_ALL	0x10c
-+#define WMT_GOVR_TIMING_V_START	0x110
-+#define WMT_GOVR_TIMING_V_END	0x114
-+#define WMT_GOVR_TIMING_H_START	0x118
-+#define WMT_GOVR_TIMING_H_END	0x11c
-+#define WMT_GOVR_TIMING_V_SYNC	0x128
-+#define WMT_GOVR_TIMING_H_SYNC	0x12c
-+#define WMT_GOVR_DVO_SET	0x148
-+#define WMT_GOVR_CONTRAST	0x1b8
-+#define WMT_GOVR_BRGHTNESS	0x1bc
-+#define WMT_GOVR_COLORSPACE	0x1e4
-+
++#include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/fb.h>
+@@ -130,9 +131,11 @@
  #define to_wm8505fb_info(__info) container_of(__info, \
  						struct wm8505fb_info, fb)
  struct wm8505fb_info {
-diff --git a/drivers/video/wm8505fb_regs.h b/drivers/video/wm8505fb_regs.h
-deleted file mode 100644
-index 4dd4166..0000000
---- a/drivers/video/wm8505fb_regs.h
-+++ /dev/null
-@@ -1,76 +0,0 @@
--/*
-- *  GOVR registers list for WM8505 chips
-- *
-- *  Copyright (C) 2010 Ed Spiridonov <edo.rus@gmail.com>
-- *   Based on VIA/WonderMedia wm8510-govrh-reg.h
-- *   http://github.com/projectgus/kernel_wm8505/blob/wm8505_2.6.29/
-- *         drivers/video/wmt/register/wm8510/wm8510-govrh-reg.h
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef _WM8505FB_REGS_H
--#define _WM8505FB_REGS_H
--
--/*
-- * Color space select register, default value 0x1c
-- *   BIT0 GOVRH_DVO_YUV2RGB_ENABLE
-- *   BIT1 GOVRH_VGA_YUV2RGB_ENABLE
-- *   BIT2 GOVRH_RGB_MODE
-- *   BIT3 GOVRH_DAC_CLKINV
-- *   BIT4 GOVRH_BLANK_ZERO
-- */
--#define WMT_GOVR_COLORSPACE	0x1e4
--/*
-- * Another colorspace select register, default value 1
-- *   BIT0 GOVRH_DVO_RGB
-- *   BIT1 GOVRH_DVO_YUV422
-- */
--#define WMT_GOVR_COLORSPACE1	 0x30
--
--#define WMT_GOVR_CONTRAST	0x1b8
--#define WMT_GOVR_BRGHTNESS	0x1bc /* incompatible with RGB? */
--
--/* Framubeffer address */
--#define WMT_GOVR_FBADDR		 0x90
--#define WMT_GOVR_FBADDR1	 0x94 /* UV offset in YUV mode */
--
--/* Offset of visible window */
--#define WMT_GOVR_XPAN		 0xa4
--#define WMT_GOVR_YPAN		 0xa0
--
--#define WMT_GOVR_XRES		 0x98
--#define WMT_GOVR_XRES_VIRTUAL	 0x9c
--
--#define WMT_GOVR_MIF_ENABLE	 0x80
--#define WMT_GOVR_FHI		 0xa8
--#define WMT_GOVR_REG_UPDATE	 0xe4
--
--/*
-- *   BIT0 GOVRH_DVO_OUTWIDTH
-- *   BIT1 GOVRH_DVO_SYNC_POLAR
-- *   BIT2 GOVRH_DVO_ENABLE
-- */
--#define WMT_GOVR_DVO_SET	0x148
--
--/* Timing generator? */
--#define WMT_GOVR_TG		0x100
--
--/* Timings */
--#define WMT_GOVR_TIMING_H_ALL	0x108
--#define WMT_GOVR_TIMING_V_ALL	0x10c
--#define WMT_GOVR_TIMING_V_START	0x110
--#define WMT_GOVR_TIMING_V_END	0x114
--#define WMT_GOVR_TIMING_H_START	0x118
--#define WMT_GOVR_TIMING_H_END	0x11c
--#define WMT_GOVR_TIMING_V_SYNC	0x128
--#define WMT_GOVR_TIMING_H_SYNC	0x12c
--
--#endif /* _WM8505FB_REGS_H */
+-	struct fb_info		fb;
+-	void __iomem		*regbase;
+-	unsigned int		contrast;
++	struct fb_info fb;
++	void __iomem *regbase;
++	unsigned int contrast;
++	struct device *dev;
++	struct clk *clk_dvo;
+ };
+ 
+ 
+@@ -210,6 +213,13 @@ static int wm8505fb_set_par(struct fb_info *info)
+ 	if (!fbi)
+ 		return -EINVAL;
+ 
++	if (info->var.pixclock == 0) {
++		dev_err(fbi->dev, "requested pixclock = 0\n");
++		return -EINVAL;
++	}
++
++	clk_set_rate(fbi->clk_dvo, PICOS2KHZ(info->var.pixclock)*1000);
++
+ 	if (info->var.bits_per_pixel == 32) {
+ 		info->var.red.offset = 16;
+ 		info->var.red.length = 8;
+@@ -369,6 +379,8 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	fbi->dev = &pdev->dev;
++
+ 	strcpy(fbi->fb.fix.id, DRIVER_NAME);
+ 
+ 	fbi->fb.fix.type	= FB_TYPE_PACKED_PIXELS;
+@@ -408,6 +420,14 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	fbi->clk_dvo = of_clk_get(pdev->dev.of_node, 0);
++	if (IS_ERR(fbi->clk_dvo)) {
++		dev_err(&pdev->dev, "Error retrieving clock\n");
++		return PTR_ERR(fbi->clk_dvo);
++	}
++
++	clk_prepare_enable(fbi->clk_dvo);
++
+ 	fb_videomode_to_var(&fbi->fb.var, &mode);
+ 
+ 	fbi->fb.var.nonstd		= 0;
+@@ -421,7 +441,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
+ 	fb_mem_virt = dmam_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
+ 				GFP_KERNEL);
+ 	if (!fb_mem_virt) {
+-		pr_err("%s: Failed to allocate framebuffer\n", __func__);
++		dev_err(&pdev->dev, "Failed to allocate framebuffer\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -480,6 +500,8 @@ static int wm8505fb_remove(struct platform_device *pdev)
+ 
+ 	unregister_framebuffer(&fbi->fb);
+ 
++	clk_disable_unprepare(fbi->clk_dvo);
++
+ 	writel(0, fbi->regbase);
+ 
+ 	if (fbi->fb.cmap.len)
 -- 
 1.7.9.5
 
