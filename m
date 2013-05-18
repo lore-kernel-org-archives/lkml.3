@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3ERJvI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 05:51:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:22507 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab3ERJvE (ORCPT
+	id S1753561Ab3ERJvP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 05:51:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:39407 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab3ERJvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 05:51:04 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-1e-51974f05afbc
+	Sat, 18 May 2013 05:51:09 -0400
+X-AuditID: cbfee68e-b7f276d000002279-8d-51974f0cdf23
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
@@ -15,34 +15,34 @@ Cc: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
         Amit Dinel Kachhap <amit.kachhap@linaro.org>,
         Jonghwa Lee <jonghwa3.lee@samsung.com>,
         MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH 2/3] Thermal: core: Modify temp_crit_show() to use proper
- callback function.
-Date: Sat, 18 May 2013 18:50:56 +0900
-Message-id: <1368870656-1183-1-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH 3/3] Thermal:core: Handle trips focused on current trip point
+ only.
+Date: Sat, 18 May 2013 18:51:03 +0900
+Message-id: <1368870663-1225-1-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsWyRsSkQJfNf3qgwYbLTBZLHkxhtFiz/yeT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsWyRsSkSJfHf3qgwd9fChZLHkxhtFiz/yeT
 	RefZJ8wWl3fNYbP43HuE0eJ24wo2iycP+9gc2D0W73nJ5HHn2h42j74tqxg9jt/YzuTxeZNc
-	AGsUl01Kak5mWWqRvl0CV8a3vVNZCs6yVbzfMJ+1gfE4axcjJ4eEgInE3a9fWSBsMYkL99az
-	dTFycQgJLGWUWDnhG1xR/9v5jCC2kMAiRomHPUwQRS1MEl1bN7OBJNgEdCT+77vJDmKLCMhI
-	TL2ynxWkiFngE6PEpIM7mEASwgJxEj0ztoI1sAioSiy//AKsgVfAXWJa50cgmwNom4LEnEk2
-	IL0SAs3sEntalzFC1AtIfJt8iAWiRlZi0wFmiOMkJQ6uuMEygVFwASPDKkbR1ILkguKk9CJT
-	veLE3OLSvHS95PzcTYzAsD3979nEHYz3D1gfYkwGGjeRWUo0OR8Y9nkl8YbGZkYWpiamxkbm
-	lmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYIzYfvWwveaeByoHDWYwXHnS
-	U82lXrExdZG/YF73pEVzwzYq2zf97O2ftOlxZnP5zHUSL0NXeghLGXgHKc7RVHbgVl5hu+L0
-	5ozdOqw+6/7NnXlBXdMso75pftcj9uSCvxM/zroUI+V9MHjO5IZ+pTeSf/8v13j/Yfe8mbYn
-	XnUsKZP9z3hSZKUSS3FGoqEWc1FxIgBh9slDcQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jAV1W/+mBBr9Om1sseTCF0WLN/p9M
-	Fp1nnzBbXN41h83ic+8RRovbjSvYLJ487GNzYPdYvOclk8eda3vYPPq2rGL0OH5jO5PH501y
-	AaxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
-	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzvu2dylJwlq3i/Yb5rA2M
-	x1m7GDk5JARMJPrfzmeEsMUkLtxbzwZiCwksYpR42MPUxcgFZLcwSXRt3QyWYBPQkfi/7yY7
-	iC0iICMx9cp+VpAiZoFPjBKTDu5gAkkIC8RJ9MzYCtbAIqAqsfzyC7AGXgF3iWmdH4FsDqBt
-	ChJzJtlMYORewMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Kp5J7WBc2WBxiFGAg1GJ
-	h/eD67RAIdbEsuLK3EOMEhzMSiK8z4uBQrwpiZVVqUX58UWlOanFhxiTgZZPZJYSTc4HRmxe
-	SbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTBun5X9U6jqbx6r
-	/OIkvzWMbNPWX9+s5j7JYuq0DzO2r2fat8z1cejZV4nTlv2+t0fLw/TLpKbGhcaH7mRutnn1
-	JtcgK2/pVYfJnKXdOzjFcyO2nAy8r/3pqthPdZZZJ6fcFHwhN0HhtcM9vZteolkbPv36GnTM
-	lDHt2LstYTObC/L+NBnOb3iWo8RSnJFoqMVcVJwIAJwFHKnOAgAA
+	AGsUl01Kak5mWWqRvl0CV8a6B4EF5/krHh5vZW1g/MfTxcjJISFgIrHtQCsThC0mceHeerYu
+	Ri4OIYGljBJTfs5lgSk62bqOGSIxnVFizqVVUFUtTBIr9r0Fq2IT0JH4v+8mO4gtIiAjMfXK
+	flaQImaBT4wSkw7uANshLBAqMWveQbAiFgFViQdz5gNN4uDgFXCXmH3LEcSUEFCQmDPJBqRV
+	QqCZXeL61YeMEOUCEt8mH2KBqJGV2HSAGeI4SYmDK26wTGAUXMDIsIpRNLUguaA4Kb3ISK84
+	Mbe4NC9dLzk/dxMjMGhP/3vWt4Px5gHrQ4zJQOMmMkuJJucDgz6vJN7Q2MzIwtTE1NjI3NKM
+	NGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYx9c5Zkfvzfm7zgf5L//UUL/mw8
+	GjXv9J+TM5TPFP50PuHDJX7hyv0rNc7HiyZcyt8T5b2/5tl6Rudvbzcm3zuScqFPbMrF17Ua
+	fZMv2e6xe7nm+MHtzIyfWMJWc816sj+hMKr7QJNpgHHHv+/vmiY3zovxTxA8u0XURctH1uve
+	B6EUibdTNhYUKbEUZyQaajEXFScCACSy3hdwAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jQV0e/+mBBueaJC2WPJjCaLFm/08m
+	i86zT5gtLu+aw2bxufcIo8XtxhVsFk8e9rE5sHss3vOSyePOtT1sHn1bVjF6HL+xncnj8ya5
+	ANaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKA7
+	lBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ6x4EFpznr3h4vJW1gfEf
+	TxcjJ4eEgInEydZ1zBC2mMSFe+vZuhi5OIQEpjNKzLm0CsppYZJYse8tC0gVm4COxP99N9lB
+	bBEBGYmpV/azghQxC3xilJh0cAcTSEJYIFRi1ryDYEUsAqoSD+bMB5rEwcEr4C4x+5YjiCkh
+	oCAxZ5LNBEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCY+KZ9A7GVQ0WhxgFOBiV
+	eHhnOE8LFGJNLCuuzD3EKMHBrCTC+7wYKMSbklhZlVqUH19UmpNafIgxGWj3RGYp0eR8YLzm
+	lcQbGpuYGVkamRtaGBmbkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOjkS/PD7cJTPZX
+	Xa7ZX3yqtebu8wleGnO67K98ZxH4pfFQdteBOoNK1rO+Z39InhZ4tPNSVNmGjl2H2xqmbwks
+	uOITY7X01jO1+LV/HPXrphYdEez6J7i2Wshw2oMrBqqq56wZ10wvZLD4MDuR/Zpobv/Ty8eV
+	D1v7/N9TffTtQe/WFp1F92JmK7EUZyQaajEXFScCADBNY8XNAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,28 +50,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies temp_crit_show() which is used to create hwmon's sysfs
-node to use .get_crit_temp callback function of thermal zone device rather
-than .get_trip_temp.
+When thermal zone device is updated, it doesn't need to check
+every trip points and its handling mathod even current temperature
+doesn't exceed the trip's temperature. To modify those dissipatve
+mechanism, this patch introduces the way to get current thermal
+trip point to call only correspond trip point handling.
 
 Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 ---
- drivers/thermal/thermal_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/thermal/thermal_core.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index f753f48..ce4384a 100644
+index ce4384a..1cc4825 100644
 --- a/drivers/thermal/thermal_core.c
 +++ b/drivers/thermal/thermal_core.c
-@@ -924,7 +924,7 @@ temp_crit_show(struct device *dev, struct device_attribute *attr,
- 	long temperature;
- 	int ret;
+@@ -333,14 +333,6 @@ static void handle_non_critical_trips(struct thermal_zone_device *tz,
+ static void handle_critical_trips(struct thermal_zone_device *tz,
+ 				int trip, enum thermal_trip_type trip_type)
+ {
+-	long trip_temp;
+-
+-	tz->ops->get_trip_temp(tz, trip, &trip_temp);
+-
+-	/* If we have not crossed the trip_temp, we do not care. */
+-	if (tz->temperature < trip_temp)
+-		return;
+-
+ 	if (tz->ops->notify)
+ 		tz->ops->notify(tz, trip, trip_type);
  
--	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
-+	ret = tz->ops->get_crit_temp(tz, &temperature);
- 	if (ret)
- 		return ret;
+@@ -437,14 +429,28 @@ static void update_temperature(struct thermal_zone_device *tz)
+ 	mutex_unlock(&tz->lock);
+ }
+ 
++static int thermal_zone_get_current_trip(struct thermal_zone_device *tz)
++{
++	int trip;
++	long trip_temp;
++
++	for (trip = tz->trips - 1; trip > 0; trip--) {
++		tz->ops->get_trip_temp(tz, trip, &trip_temp);
++		if (tz->temperature > trip_temp)
++			continue;
++	}
++	return trip;
++}
++
+ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ {
+-	int count;
++	int trip;
+ 
+ 	update_temperature(tz);
+ 
+-	for (count = 0; count < tz->trips; count++)
+-		handle_thermal_trip(tz, count);
++	trip = thermal_zone_get_current_trip(tz);
++
++	handle_thermal_trip(tz, trip);
+ }
+ EXPORT_SYMBOL_GPL(thermal_zone_device_update);
  
 -- 
 1.7.9.5
