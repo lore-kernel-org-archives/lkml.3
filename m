@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab3ERCS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 17 May 2013 22:18:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14912 "EHLO
+	id S1757214Ab3ERCS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 17 May 2013 22:18:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25200 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756801Ab3ERCQ7 (ORCPT
+	with ESMTP id S1756802Ab3ERCQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 17 May 2013 22:16:59 -0400
-X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=EkHcsc4YyhkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=iT4wd3fUEwIA:10 a=i0EeH86SAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=20KFwNOVAAAA:8 a=77d_1CzMAAAA:8 a=VwQbUJbxAAAA:8 a=Nc5lta3nJawr1F_pDB8A:9 a=hPjdaMEvmhQA:10 a=jbrJJM5MRmoA:10 a=2e6ZYRoF4I4A:10 a=jEp0ucaQiEUA:10 a=w2G1Yk43JnIA:10 a=jeBq3FmKZ4MA:10 a=UxyJTjye8zGWrGUJ:21 a=7cHGK3AtX-GkLJQe:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=DKcNElxb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3bC4PlcwEf0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3Wp929HF2voA:10 a=VwQbUJbxAAAA:8 a=xrzxy3i7KhNRffTyM_AA:9 a=0kPLrQdw3YYA:10 a=7t4jVOfIR2gA:10 a=jeBq3FmKZ4MA:10 a=nZeU1PyzKR3bVYbG:21 a=L4t5MuhOV8vExaZY:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130518021651.427121663@goodmis.org>
+Message-Id: <20130518021649.476363388@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 17 May 2013 22:16:57 -0400
+Date: Fri, 17 May 2013 22:16:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        Jim Somerville <Jim.Somerville@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Eric Paris <eparis@parisplace.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 060/136 ] inotify: invalid mask should return a error number but not set it
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 048/136 ] ALSA: usb-audio: Fix missing autopm for MIDI input
 References: <20130518021557.139113314@goodmis.org>
-Content-Disposition: inline; filename=0060-inotify-invalid-mask-should-return-a-error-number-bu.patch
+Content-Disposition: inline; filename=0048-ALSA-usb-audio-Fix-missing-autopm-for-MIDI-input.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,70 +29,207 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 04df32fa10ab9a6f0643db2949d42efc966bc844 ]
+[ Upstream commit f5f165418cabf2218eb466c0e94693b8b1aee88b ]
 
-When we run the crackerjack testsuite, the inotify_add_watch test is
-stalled.
+The commit [88a8516a: ALSA: usbaudio: implement USB autosuspend] added
+the support of autopm for USB MIDI output, but it didn't take the MIDI
+input into account.
 
-This is caused by the invalid mask 0 - the task is waiting for the event
-but it never comes.  inotify_add_watch() should return -EINVAL as it did
-before commit 676a0675cf92 ("inotify: remove broken mask checks causing
-unmount to be EINVAL").  That commit removes the invalid mask check, but
-that check is needed.
+This patch adds the following for fixing the autopm:
+- Manage the URB start at the first MIDI input stream open, instead of
+  the time of instance creation
+- Move autopm code to the common substream_open()
+- Make snd_usbmidi_input_start/_stop() more robust and add the running
+  state check
 
-Check the mask's ALL_INOTIFY_BITS before the inotify_arg_to_mask() call.
-If none are set, just return -EINVAL.
-
-Because IN_UNMOUNT is in ALL_INOTIFY_BITS, this change will not trigger
-the problem that above commit fixed.
-
-[akpm@linux-foundation.org: fix build]
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-Acked-by: Jim Somerville <Jim.Somerville@windriver.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: Eric Paris <eparis@parisplace.org>
+Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Clemens Ladisch <clemens@ladisch.de>
 Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/notify/inotify/inotify_user.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/midi.c |   78 +++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 45 insertions(+), 33 deletions(-)
 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 8445fbc..7e15ab0 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -577,7 +577,6 @@ static int inotify_update_existing_watch(struct fsnotify_group *group,
- 	int add = (arg & IN_MASK_ADD);
- 	int ret;
+diff --git a/sound/usb/midi.c b/sound/usb/midi.c
+index eeefbce..084d1ba 100644
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -125,8 +125,10 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	unsigned int opened;
++	bool autopm_reference;
++	unsigned int opened[2];
+ 	unsigned char disconnected;
++	unsigned char input_running;
  
--	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
- 	if (unlikely(!(mask & IN_ALL_EVENTS)))
- 		return -EINVAL;
-@@ -630,7 +629,6 @@ static int inotify_new_watch(struct fsnotify_group *group,
- 	struct idr *idr = &group->inotify_data.idr;
- 	spinlock_t *idr_lock = &group->inotify_data.idr_lock;
+ 	struct snd_kcontrol *roland_load_ctl;
+ };
+@@ -148,7 +150,6 @@ struct snd_usb_midi_out_endpoint {
+ 		struct snd_usb_midi_out_endpoint* ep;
+ 		struct snd_rawmidi_substream *substream;
+ 		int active;
+-		bool autopm_reference;
+ 		uint8_t cable;		/* cable number << 4 */
+ 		uint8_t state;
+ #define STATE_UNKNOWN	0
+@@ -1033,29 +1034,51 @@ static void update_roland_altsetting(struct snd_usb_midi* umidi)
+ 	snd_usbmidi_input_start(&umidi->list);
+ }
  
--	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
- 	if (unlikely(!(mask & IN_ALL_EVENTS)))
- 		return -EINVAL;
-@@ -761,6 +759,10 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
- 	int ret, fput_needed;
- 	unsigned flags = 0;
+-static void substream_open(struct snd_rawmidi_substream *substream, int open)
++static int substream_open(struct snd_rawmidi_substream *substream, int dir,
++			  int open)
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
++	int err;
  
-+	/* don't allow invalid bits: we don't want flags set */
-+	if (unlikely(!(mask & ALL_INOTIFY_BITS)))
-+		return -EINVAL;
-+
- 	filp = fget_light(fd, &fput_needed);
- 	if (unlikely(!filp))
- 		return -EBADF;
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+-		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			err = usb_autopm_get_interface(umidi->iface);
++			umidi->autopm_reference = err >= 0;
++			if (err < 0 && err != -EACCES) {
++				mutex_unlock(&umidi->mutex);
++				up_read(&umidi->disc_rwsem);
++				return -EIO;
++			}
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+-			update_roland_altsetting(umidi);
++				update_roland_altsetting(umidi);
++			}
+ 		}
++		umidi->opened[dir]++;
++		if (umidi->opened[1])
++			snd_usbmidi_input_start(&umidi->list);
+ 	} else {
+-		if (--umidi->opened == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		umidi->opened[dir]--;
++		if (!umidi->opened[1])
++			snd_usbmidi_input_stop(&umidi->list);
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
++			}
++			if (umidi->autopm_reference)
++				usb_autopm_put_interface(umidi->iface);
+ 		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
++	return 0;
+ }
+ 
+ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+@@ -1063,7 +1086,6 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct usbmidi_out_port* port = NULL;
+ 	int i, j;
+-	int err;
+ 
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		if (umidi->endpoints[i].out)
+@@ -1076,25 +1098,14 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+ 		snd_BUG();
+ 		return -ENXIO;
+ 	}
+-	err = usb_autopm_get_interface(umidi->iface);
+-	port->autopm_reference = err >= 0;
+-	if (err < 0 && err != -EACCES)
+-		return -EIO;
+ 	substream->runtime->private_data = port;
+ 	port->state = STATE_UNKNOWN;
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 0, 1);
+ }
+ 
+ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ {
+-	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+-	struct usbmidi_out_port *port = substream->runtime->private_data;
+-
+-	substream_open(substream, 0);
+-	if (port->autopm_reference)
+-		usb_autopm_put_interface(umidi->iface);
+-	return 0;
++	return substream_open(substream, 0, 0);
+ }
+ 
+ static void snd_usbmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -1147,14 +1158,12 @@ static void snd_usbmidi_output_drain(struct snd_rawmidi_substream *substream)
+ 
+ static int snd_usbmidi_input_open(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 1, 1);
+ }
+ 
+ static int snd_usbmidi_input_close(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 0);
+-	return 0;
++	return substream_open(substream, 1, 0);
+ }
+ 
+ static void snd_usbmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -2060,12 +2069,15 @@ void snd_usbmidi_input_stop(struct list_head* p)
+ 	unsigned int i, j;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (!umidi->input_running)
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
+ 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
+ 		if (ep->in)
+ 			for (j = 0; j < INPUT_URBS; ++j)
+ 				usb_kill_urb(ep->in->urbs[j]);
+ 	}
++	umidi->input_running = 0;
+ }
+ 
+ static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
+@@ -2090,8 +2102,11 @@ void snd_usbmidi_input_start(struct list_head* p)
+ 	int i;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (umidi->input_running || !umidi->opened[1])
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
++	umidi->input_running = 1;
+ }
+ 
+ /*
+@@ -2229,9 +2244,6 @@ int snd_usbmidi_create(struct snd_card *card,
+ 	}
+ 
+ 	list_add_tail(&umidi->list, midi_list);
+-
+-	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+-		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
