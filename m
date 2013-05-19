@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab3ESSNZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 14:13:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab3ESSNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 14:13:24 -0400
-Date: Sun, 19 May 2013 20:09:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] do_execve_common: use current_user()
-Message-ID: <20130519180943.GA24227@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753378Ab3ESSOn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 14:14:43 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59312 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab3ESSOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 14:14:41 -0400
+From: David Hauweele <david@hauweele.net>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel@lists.sourceforge.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Hauweele <david@hauweele.net>
+Subject: [PATCH 1/1] 6lowpan: Fix fragmentation with link-local compressed addresses
+Date: Sun, 19 May 2013 20:13:31 +0200
+Message-Id: <1368987211-19826-1-git-send-email-david@hauweele.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial cleanup. do_execve_common() can use current_user() and
-avoid the unnecessary "struct cred *cred" var.
+When a new 6lowpan fragment is received, a skbuff is allocated for
+the reassembled packet. However when a 6lowpan packet compresses
+link-local addresses based on link-layer addresses, the processing
+function relies on the skb mac control block to find the related
+link-layer address.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+This patch copies the control block from the first fragment into
+the newly allocated skb to keep a trace of the link-layer addresses
+in case of a link-local compressed address.
+
+Signed-off-by: David Hauweele <david@hauweele.net>
 ---
- fs/exec.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ net/ieee802154/6lowpan.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 6430195..13f9bb0 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1461,7 +1461,6 @@ static int do_execve_common(const char *filename,
- 	struct files_struct *displaced;
- 	bool clear_in_exec;
- 	int retval;
--	const struct cred *cred = current_cred();
+diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
+index 55e1fd5..d9a41e2 100644
+--- a/net/ieee802154/6lowpan.c
++++ b/net/ieee802154/6lowpan.c
+@@ -702,6 +702,13 @@ lowpan_alloc_new_frame(struct sk_buff *skb, u16 len, u16 tag)
+ 	skb_reserve(frame->skb, sizeof(struct ipv6hdr));
+ 	skb_put(frame->skb, frame->length);
  
- 	/*
- 	 * We move the actual failure in case of RLIMIT_NPROC excess from
-@@ -1470,7 +1469,7 @@ static int do_execve_common(const char *filename,
- 	 * whether NPROC limit is still exceeded.
- 	 */
- 	if ((current->flags & PF_NPROC_EXCEEDED) &&
--	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
-+	    atomic_read(&current_user()->processes) > rlimit(RLIMIT_NPROC)) {
- 		retval = -EAGAIN;
- 		goto out_ret;
- 	}
++	/*
++	 * copy the first control block to keep a
++	 * trace of the link-layer addresses in case
++	 * of a link-local compressed address
++	 */
++	memcpy(frame->skb->cb, skb->cb, sizeof(skb->cb));
++
+ 	init_timer(&frame->timer);
+ 	/* time out is the same as for ipv6 - 60 sec */
+ 	frame->timer.expires = jiffies + LOWPAN_FRAG_TIMEOUT;
 -- 
-1.5.5.1
-
+1.7.10.4
 
