@@ -1,92 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab3ERX2U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 18 May 2013 19:28:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34475 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab3ERX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 18 May 2013 19:27:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wen Congyang <wency@cn.fujitsu.com>,
+	id S1753711Ab3ESBXc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 18 May 2013 21:23:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33409 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab3ESBXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 18 May 2013 21:23:31 -0400
+Date: Sat, 18 May 2013 18:23:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
         Tang Chen <tangchen@cn.fujitsu.com>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jiang Liu <liuj97@gmail.com>,
         Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
         linux-mm@kvack.org
-Subject: [PATCH 1/5] ACPI: Drop removal_type field from struct acpi_device
-Date: Sun, 19 May 2013 01:30:51 +0200
-Message-ID: <9407764.8eTBrx1MOj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2250271.rGYN6WlBxf@vostro.rjw.lan>
+Subject: Re: [PATCH 3/5] Driver core / MM: Drop offline_memory_block()
+Message-ID: <20130519012347.GA26947@kroah.com>
 References: <2250271.rGYN6WlBxf@vostro.rjw.lan>
+ <2529630.QGJsLhExPp@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2529630.QGJsLhExPp@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sun, May 19, 2013 at 01:33:02AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Since offline_memory_block(mem) is functionally equivalent to
+> device_offline(&mem->dev), make the only caller of the former use
+> the latter instead and drop offline_memory_block() entirely.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The ACPI processor driver was the only user of the removal_type
-field in struct acpi_device, but it doesn't use that field any more
-after recent changes.  Thus, removal_type has no more users, so drop
-it along with the associated data type.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c     |    2 --
- include/acpi/acpi_bus.h |    8 --------
- 2 files changed, 10 deletions(-)
-
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -63,13 +63,6 @@ acpi_get_physical_device_location(acpi_h
- #define ACPI_BUS_FILE_ROOT	"acpi"
- extern struct proc_dir_entry *acpi_root_dir;
- 
--enum acpi_bus_removal_type {
--	ACPI_BUS_REMOVAL_NORMAL = 0,
--	ACPI_BUS_REMOVAL_EJECT,
--	ACPI_BUS_REMOVAL_SUPRISE,
--	ACPI_BUS_REMOVAL_TYPE_COUNT
--};
--
- enum acpi_bus_device_type {
- 	ACPI_BUS_TYPE_DEVICE = 0,
- 	ACPI_BUS_TYPE_POWER,
-@@ -311,7 +304,6 @@ struct acpi_device {
- 	struct acpi_driver *driver;
- 	void *driver_data;
- 	struct device dev;
--	enum acpi_bus_removal_type removal_type;	/* indicate for different removal type */
- 	u8 physical_node_count;
- 	struct list_head physical_node_list;
- 	struct mutex physical_node_lock;
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1036,7 +1036,6 @@ int acpi_device_add(struct acpi_device *
- 		printk(KERN_ERR PREFIX "Error creating sysfs interface for device %s\n",
- 		       dev_name(&device->dev));
- 
--	device->removal_type = ACPI_BUS_REMOVAL_NORMAL;
- 	return 0;
- 
-  err:
-@@ -2026,7 +2025,6 @@ static acpi_status acpi_bus_device_detac
- 	if (!acpi_bus_get_device(handle, &device)) {
- 		struct acpi_scan_handler *dev_handler = device->handler;
- 
--		device->removal_type = ACPI_BUS_REMOVAL_EJECT;
- 		if (dev_handler) {
- 			if (dev_handler->detach)
- 				dev_handler->detach(device);
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
