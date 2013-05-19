@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab3ESRHt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 13:07:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37695 "EHLO
+	id S1752700Ab3ESRJg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 13:09:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab3ESRHs (ORCPT
+	with ESMTP id S1751471Ab3ESRJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 13:07:48 -0400
-Date: Sun, 19 May 2013 10:07:55 -0700
+	Sun, 19 May 2013 13:09:35 -0400
+Date: Sun, 19 May 2013 10:09:53 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, stable@vger.kernel.org
 Subject: Re: [ 00/33] 3.0.79-stable review
-Message-ID: <20130519170753.GA12608@kroah.com>
+Message-ID: <20130519170951.GB12608@kroah.com>
 References: <20130517214916.821259930@linuxfoundation.org>
  <8738tj6x0v.wl%satoru.takeuchi@gmail.com>
 MIME-Version: 1.0
@@ -39,14 +39,6 @@ On Sun, May 19, 2013 at 08:15:28PM +0900, Satoru Takeuchi wrote:
 > 
 > This kernel can be built and boot without any problem.
 > Building a kernel with this kernel also works fine.
-> 
->  - Build Machine: debian wheezy x86_64
->    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    memory: 8GB
-> 
->  - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
->    vCPU: x2
->    memory: 2GB
 
 Wonderful, thanks for testing.
 
