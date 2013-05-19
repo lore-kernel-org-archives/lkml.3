@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab3ESSOn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 14:14:43 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:59312 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab3ESSOl (ORCPT
+	id S1753342Ab3ESSat (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 14:30:49 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47233 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab3ESSar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 14:14:41 -0400
-From: David Hauweele <david@hauweele.net>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Hauweele <david@hauweele.net>
-Subject: [PATCH 1/1] 6lowpan: Fix fragmentation with link-local compressed addresses
-Date: Sun, 19 May 2013 20:13:31 +0200
-Message-Id: <1368987211-19826-1-git-send-email-david@hauweele.net>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 19 May 2013 14:30:47 -0400
+Date: Sun, 19 May 2013 21:30:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] gru: fix a sanity test in gru_set_context_option()
+Message-ID: <20130519183041.GB30128@mwanda>
+References: <20130519125950.GA17651@elgon.mountain>
+ <20130519144442.GA8926@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130519144442.GA8926@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a new 6lowpan fragment is received, a skbuff is allocated for
-the reassembled packet. However when a 6lowpan packet compresses
-link-local addresses based on link-layer addresses, the processing
-function relies on the skb mac control block to find the related
-link-layer address.
+On Sun, May 19, 2013 at 09:44:42AM -0500, Dimitri Sivanich wrote:
+> 
+> Since we're here, maybe we should neaten this up a little?
+> 
+> Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+> ---
+>  drivers/misc/sgi-gru/grufault.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux/drivers/misc/sgi-gru/grufault.c
+> ===================================================================
+> --- linux.orig/drivers/misc/sgi-gru/grufault.c
+> +++ linux/drivers/misc/sgi-gru/grufault.c
+> @@ -876,8 +876,9 @@ int gru_set_context_option(unsigned long
+>  	switch (req.op) {
+>  	case sco_blade_chiplet:
+>  		/* Select blade/chiplet for GRU context */
+> -		if (req.val1 < -1 || req.val1 >= GRU_MAX_BLADES || !gru_base[req.val1] ||
+> -		    req.val0 < -1 || req.val0 >= GRU_CHIPLETS_PER_HUB) {
+> +		if (req.val0 < -1 || req.val0 >= GRU_CHIPLETS_PER_HUB ||
+> +			req.val1 < -1 || req.val1 >= GRU_MAX_BLADES ||
+> +			(req.val1 >= 0 && !gru_base[req.val1])) {
+>  			ret = -EINVAL;
 
-This patch copies the control block from the first fragment into
-the newly allocated skb to keep a trace of the link-layer addresses
-in case of a link-local compressed address.
+I generally prefer how in the original code all the sub conditions
+were aligned nicely but I will Ack your version as well.  Thanks.
 
-Signed-off-by: David Hauweele <david@hauweele.net>
----
- net/ieee802154/6lowpan.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+regards,
+dan carpenter
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index 55e1fd5..d9a41e2 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -702,6 +702,13 @@ lowpan_alloc_new_frame(struct sk_buff *skb, u16 len, u16 tag)
- 	skb_reserve(frame->skb, sizeof(struct ipv6hdr));
- 	skb_put(frame->skb, frame->length);
- 
-+	/*
-+	 * copy the first control block to keep a
-+	 * trace of the link-layer addresses in case
-+	 * of a link-local compressed address
-+	 */
-+	memcpy(frame->skb->cb, skb->cb, sizeof(skb->cb));
-+
- 	init_timer(&frame->timer);
- 	/* time out is the same as for ipv6 - 60 sec */
- 	frame->timer.expires = jiffies + LOWPAN_FRAG_TIMEOUT;
--- 
-1.7.10.4
-
+>  		} else {
+>  			gts->ts_user_blade_id = req.val1;
