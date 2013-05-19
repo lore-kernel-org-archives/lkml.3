@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab3ESQSv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 12:18:51 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38241 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab3ESQSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 12:18:49 -0400
-Date: Sun, 19 May 2013 09:18:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+	id S1752097Ab3ESQlt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 12:41:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab3ESQlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 12:41:47 -0400
+Date: Sun, 19 May 2013 19:40:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] nohz: Disable LOCKUP_DETECTOR when NO_HZ_FULL is
- enabled
-Message-ID: <20130519161843.GI4006@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1368547372-21011-2-git-send-email-fweisbec@gmail.com>
- <20130515083729.GC10510@laptop.programming.kicks-ass.net>
- <20130515150652.GP23604@redhat.com>
- <1368631622.6828.69.camel@gandalf.local.home>
- <20130515165915.GE13916@laptop.home>
- <1368637441.6828.70.camel@gandalf.local.home>
- <20130516081027.GD19669@dyad.programming.kicks-ass.net>
- <20130516150706.GY4442@linux.vnet.ibm.com>
- <20130516175602.GL19669@dyad.programming.kicks-ass.net>
- <1368729178.6828.105.camel@gandalf.local.home>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
+Message-ID: <20130519164009.GA2434@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+ <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
+ <20130516184041.GP19669@dyad.programming.kicks-ass.net>
+ <20130519093526.GD19883@redhat.com>
+ <1368966844.6828.111.camel@gandalf.local.home>
+ <20130519133418.GA24381@redhat.com>
+ <1368979579.6828.114.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1368729178.6828.105.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13051916-3620-0000-0000-000002919952
+In-Reply-To: <1368979579.6828.114.camel@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 02:32:58PM -0400, Steven Rostedt wrote:
-> On Thu, 2013-05-16 at 19:56 +0200, Peter Zijlstra wrote:
+On Sun, May 19, 2013 at 12:06:19PM -0400, Steven Rostedt wrote:
+> On Sun, 2013-05-19 at 16:34 +0300, Michael S. Tsirkin wrote:
 > 
-> > I suppose the fundamental question was: will receiving NMIs negate NO_HZ_FULL's
-> > functionality? That is, will the getting of NMIs make us drop out of NO_HZ_FULL
-> > and re-enable all sorts of things?
+> > Right but we need to keep it working on upstream as well.
+> > If I do preempt_enable under a spinlock upstream won't it
+> > try to sleep under spinlock?
 > 
-> It shouldn't. The nmi_enter() notifies RCU that it can no longer ignore
-> this CPU, where as nmi_enter() tells it that it can ignore it, as it has
-> re-entered user space.
+> No it wont. A spinlock calls preempt_disable implicitly, and a
+> preempt_enable() will not schedule unless preempt_count is zero, which
+> it wont be under a spinlock.
 > 
-> > 
-> > Because clearly RCU needs to exit from EQS, which might (or might not) mean
-> > leaving NO_HZ_FULL.
+> If it did, there would be lots of bugs all over the place because this
+> is done throughout the kernel (a preempt_enable() under a spinlock).
 > 
-> Yep, but the two are pretty much agnostic from each other.
+> In other words, don't ever use preempt_enable_no_resched().
 > 
-> We only need to leave NO_HZ_FULL if RCU (or anything for that matter)
-> required having a tick again. But as Paul said, getting an NMI in idle
-> wont restart the tick, so there's no need to restart it here either.
-> 
-> Now if an NMI were to do a call_rcu() then it would require a tick. But
-> NMIs doing call_rcu() has much bigger issues to worry about ;-)
-
-Someone invoking call_rcu() from an NMI handler will get what they deserve,
-good and hard!  ;-)
-
-							Thanx, Paul
-
 > -- Steve
 > 
-> > 
-> > I'm not entirely up-to-date on those details.
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
+
+OK I get it. So let me correct myself. The simple code
+that does something like this under a spinlock:
+>       preempt_disable
+>       pagefault_disable
+>       error = copy_to_user
+>       pagefault_enable
+>       preempt_enable
+>
+is not doing anything wrong and should not get a warning,
+as long as error is handled correctly later.
+Right?
