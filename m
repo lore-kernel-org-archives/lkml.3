@@ -1,110 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab3ESPWg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 11:22:36 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:33715 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab3ESPWf (ORCPT
+	id S1754741Ab3ESPW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 11:22:57 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:54448 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab3ESPWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 11:22:35 -0400
-X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
-X-RZG-CLASS-ID: mo00
-Date: Sun, 19 May 2013 17:22:30 +0200
-From: Michael Braun <michael.braun@fem.tu-ilmenau.de>
-To: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Cc: projekt-wlan@fem.tu-ilmenau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Message-ID: <20130519152230.GA2938@dynamic.fami-braun.de>
-References: <20130417100809.GA8855@dynamic.fami-braun.de>
- <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
- <751900163975fc8d055bd2414c76d59b@fami-braun.de>
+	Sun, 19 May 2013 11:22:54 -0400
+Date: Sun, 19 May 2013 17:22:40 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Oliver Schinagl <oliver@schinagl.nl>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130519152240.GB7717@lukather>
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
+ <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+ <51969EA9.1060602@free-electrons.com>
+ <5197B82F.8010809@schinagl.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <751900163975fc8d055bd2414c76d59b@fami-braun.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5197B82F.8010809@schinagl.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, May 18, 2013 at 07:19:43PM +0200, Oliver Schinagl wrote:
+> On 05/17/13 23:18, Maxime Ripard wrote:
+> >Hi Oliver,
+> >
+> >Le 17/05/2013 15:35, Oliver Schinagl a écrit :
+> >>From: Oliver Schinagl <oliver@schinagl.nl>
+> >>
+> >>Allwinner has electric fuses (efuse) on their line of chips. This driver
+> >>reads those fuses and exports them as a sysfs node. Also a symbol is exported
+> >>for in-kernel useage.
+> >>
+> >>While initially these fuses are used to somewhat determin the chipID, these
+> >>appear to be writeable by the user and thus can be used for other purpouses.
+> >>For example storing a 128 bit root key, a unique serial number, which could
+> >>then even be used as a MAC address.
+> >>
+> >>Because writing to e-fuses can be potentially dangerous, and are certainly
+> >>not as often writable (if at all) as flash memory, these shouldn't be easily
+> >>changeable, hence only a read-only mode. An offline tool to write the fuses
+> >>is in the works.
+> >>
+> >>Currently supported are the following known chips:
+> >>Allwinner sun4i (A10)
+> >>Allwinner sun5i (A10s A13)
+> >>Allwinner sun6i (A31, A31s)
+> >>Allwinner sun7i (A20)
+> >
+> >Since I don't think those patches have been tested on sun6i/sun7i, and
+> >that there's not even kernel support for those, maybe it's not worth
+> >mentionning them?
+> A31 is out in the wild, but haven't seen that functionality in, I
+> have seen the register named and defined, just not used, so that
+> could go until confirmed.
+> 
+> A20 has the same feature as we can see in the dumped sources. [0]
 
-I've got hardware here to test with, so if there any changes to test, I'm willing to support.
-Meanwhile, might it be a good idea to make that check optional - i.e. add a module parameter or something like this around it?
+Yet, we can't even boot a mainline kernel, and this list will probably
+need some update when new SoCs come out.
 
-Regards,
- M. Braun
+Anyway, it's not a big deal.
 
-On Thu, Apr 18, 2013 at 05:13:39PM +0200, michael-dev wrote:
-> Hi,
 > 
-> thanks for the quick reply.
 > 
-> >Please review the patch http://patchwork.ozlabs.org/patch/237201/
-> I applied it, but it does not make any difference on my platform.
+> >
+> >>
+> >>Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+> >>---
+> >>  drivers/misc/eeprom/Kconfig     |  19 ++++
+> >>  drivers/misc/eeprom/Makefile    |   1 +
+> >>  drivers/misc/eeprom/sunxi_sid.c | 218 ++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 238 insertions(+)
+> >>  create mode 100644 drivers/misc/eeprom/sunxi_sid.c
+> >>
+> >>diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
+> >>index 04f2e1f..c9ddda5 100644
+> >>--- a/drivers/misc/eeprom/Kconfig
+> >>+++ b/drivers/misc/eeprom/Kconfig
+> >>@@ -96,4 +96,23 @@ config EEPROM_DIGSY_MTC_CFG
+> >>
+> >>  	  If unsure, say N.
+> >>
+> >>+config EEPROM_SUNXI_SID
+> >>+	tristate "Allwinner sunxi security ID support"
+> >>+	depends on ARCH_SUNXI && SYSFS
+> >>+	help
+> >>+	  This is a driver for the 'security ID' available on various Allwinner
+> >>+	  devices. Currently supported are:
+> >>+		sun4i (A10)
+> >>+		sun5i (A10s, A12, A13)
+> >>+		sun6i (A31)
+> >>+		sun7i (A20)
+> >
+> >Same things here.
+> >
+> >>+
+> >>+	  Due to the potential risks involved with changing e-fuses,
+> >>+	  this driver is read-only
+> >>+
+> >>+	  For more information visit http://linux-sunxi.org/SID
+> >>+
+> >>+	  This driver can also be built as a module. If so, the module
+> >>+	  will be called sunxi_sid.
+> >>+
+> >>  endmenu
+> >>diff --git a/drivers/misc/eeprom/Makefile b/drivers/misc/eeprom/Makefile
+> >>index fc1e81d..9507aec 100644
+> >>--- a/drivers/misc/eeprom/Makefile
+> >>+++ b/drivers/misc/eeprom/Makefile
+> >>@@ -4,4 +4,5 @@ obj-$(CONFIG_EEPROM_LEGACY)	+= eeprom.o
+> >>  obj-$(CONFIG_EEPROM_MAX6875)	+= max6875.o
+> >>  obj-$(CONFIG_EEPROM_93CX6)	+= eeprom_93cx6.o
+> >>  obj-$(CONFIG_EEPROM_93XX46)	+= eeprom_93xx46.o
+> >>+obj-$(CONFIG_EEPROM_SUNXI_SID)	+= sunxi_sid.o
+> >>  obj-$(CONFIG_EEPROM_DIGSY_MTC_CFG) += digsy_mtc_eeprom.o
+> >>diff --git a/drivers/misc/eeprom/sunxi_sid.c b/drivers/misc/eeprom/sunxi_sid.c
+> >>new file mode 100644
+> >>index 0000000..953f137
+> >>--- /dev/null
+> >>+++ b/drivers/misc/eeprom/sunxi_sid.c
+> >>@@ -0,0 +1,218 @@
+> >>+/*
+> >>+ * Copyright (c) 2013 Oliver Schinagl
+> >>+ * http://www.linux-sunxi.org
+> >>+ *
+> >>+ * Oliver Schinagl <oliver@schinagl.nl>
+> >>+ *
+> >>+ * This program is free software; you can redistribute it and/or modify
+> >>+ * it under the terms of the GNU General Public License as published by
+> >>+ * the Free Software Foundation; either version 2 of the License, or
+> >>+ * (at your option) any later version.
+> >>+ *
+> >>+ * This program is distributed in the hope that it will be useful,
+> >>+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> >>+ * GNU General Public License for more details.
+> >>+ *
+> >>+ * This driver exposes the Allwinner security ID, a 128 bit eeprom, in chunks
+> >>+ * of 8 bytes.
+> >
+> >16 bytes or 8 bits? because 8 bytes != 128 bits.
+> fixed, it was late when I wrote that :( It is indeed 8 bits, e.g.
+> byte sized chunks.
 > 
-> Regards,
->  M. Braun
+> >
+> >>+ */
+> >>+
+> >>+#include <linux/compiler.h>
+> >>+#include <linux/device.h>
+> >>+#include <linux/errno.h>
+> >>+#include <linux/export.h>
+> >>+#include <linux/fs.h>
+> >>+#include <linux/init.h>
+> >>+#include <linux/io.h>
+> >>+#include <linux/kobject.h>
+> >>+#include <linux/module.h>
+> >>+#include <linux/of_address.h>
+> >>+#include <linux/platform_device.h>
+> >>+#include <linux/stat.h>
+> >>+#include <linux/sysfs.h>
+> >>+#include <linux/types.h>
+> >>+
+> >>+
+> >>+#define DRV_NAME "sunxi-sid"
+> >>+#define DRV_VERSION "1.0"
+> >>+
+> >>+/* Register offsets */
+> >>+#define SUNXI_SID_KEY0 0x00
+> >>+#define SUNXI_SID_KEY1 0x04
+> >>+#define SUNXI_SID_KEY2 0x08
+> >>+#define SUNXI_SID_KEY3 0x0c
+> >>+
+> >>+/* There are 4 32-bit keys */
+> >>+#define SUNXI_SID_KEYS 4
+> >>+/* and 4 32-bit keys per 32-bit key */
+> >
+> >The comment is wrong here.
+> Same as above, corrected.
 > 
-> Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
-> >Hi Braun,
 > >
-> >It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit
-> >unstable,
-> >introduced by patch "EHCI: centralize controller initialization".
-> >I submitted a patch to fix it.
-> >Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> >>+#define SUNXI_SID_SIZE (SUNXI_SID_KEYS * 4)
+> >>+
+> >>+#if (SUNXI_SID_SIZE > PAGE_SIZE)
+> >>+#error "SUNXI_SID_SIZE is larger then the target's PAGE_SIZE, ENOMEM."
+> >>+#endif
 > >
-> >Regards,
-> >Shengzhou
+> >Hmmmm, I don't follow you here, what's the relation between your driver
+> >and PAGE_SIZE?
+> Nothing, I thought there was, but isn't. removed.
 > >
+> >>+
+> >>+static u8 keys_lut[] = {
+> >>+	SUNXI_SID_KEY0,
+> >>+	SUNXI_SID_KEY1,
+> >>+	SUNXI_SID_KEY2,
+> >>+	SUNXI_SID_KEY3,
+> >>+};
+> >>+
+> >>+struct sid_priv {
+> >>+	void __iomem *sid_base;
+> >>+};
+> >>+
+> >>+struct sid_priv *p;
 > >
-> >>-----Original Message-----
-> >>From: Michael Braun [mailto:michael-dev@fami-braun.de]
-> >>Sent: Wednesday, April 17, 2013 6:08 PM
-> >>To: Liu Shengzhou-B36685
-> >>Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
-> >>linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> >>Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
-> >>Freescale P1020
+> >What's the point of having a structure here? And why putting a global
+> >value, !static, with a generic name, while you could have an
+> >instance-specific one?
+> Forgot the static keyword, and the struct kept on shrinking until
+> only the base address was left. I guess memory wise it shouldn't
+> make a difference, but the compiler also doesn't agree, so gone it
+> is :)
+> >
+> >struct file has a private_data field, use it.
+> But since we don't 'open' it, we can't use that, as we talked on IRC.
+
+Then, use the passed kobject to retrieve its parent device structure,
+and from there, get the drvdata to get back on your feet.
+
+Actually, you already seem to do that and I overlooked that part in my
+previous review.
+
+So just use the priv structure you have defined in your read function
+and that is useless right now.
+
+> >
+> >>+
+> >>+
+> >>+/* We read the entire key, using a look up table. Returned is only the
+> >>+ * requested byte. This is of course slower then it could be and uses 4 times
+> >>+ * more reads as needed but keeps code a little simpler.
+> >>+ */
+> >>+u8 sunxi_sid_read_byte(const int key)
+> >>+{
+> >>+	u32 sid_key;
+> >>+	u8 ret;
+> >>+
+> >>+	ret = 0;
+> >>+	if (likely((key <= SUNXI_SID_SIZE))) {
+> >>+		sid_key = ioread32(p->sid_base + keys_lut[key >> 2]);
+> >>+		switch (key % 4) {
+> >>+		case 0:
+> >>+			ret = (sid_key >> 24) & 0xff;
+> >>+			break;
+> >>+		case 1:
+> >>+			ret = (sid_key >> 16) & 0xff;
+> >>+			break;
+> >>+		case 2:
+> >>+			ret = (sid_key >> 8) & 0xff;
+> >>+			break;
+> >>+		case 3:
+> >>+			ret = sid_key & 0xff;
+> >>+			break;
+> >>+		}
+> >>+	}
+> >
+> >Come on, you can do better. This lookup table is useless.
+> I didn't want to depend on the fixed layout of memory, but consider
+> it removed.
+> >
+> >Also, why the first key is the one with the MSBs?
+> >I'd expect that the key 0 is the one holding the LSBs.
+> Strangely enough, they have swapped the MSB and LSB bytes. I double
+> checked it with u-boot and yep, swapped. Though in the end, if we
+> write stuff there and we read stuff from there, order doesn't
+> matter? So what do we prefer. Have it so that it makes sense and
+> ignore how u-boot reads it, or correct it and be consistent?
+
+Which u-boot are you talking about?
+I'd really prefer to have a sane and logical behaviour rather than a
+broken one, even though it used to be like that in the
+Allwinner-provided kernel.
+
+> >
+> >>+
+> >>+	return ret;
+> >>+}
+> >>+
+> >>+static ssize_t sid_read(struct file *fd, struct kobject *kobj,
+> >>+			struct bin_attribute *attr, char *buf,
+> >>+			loff_t pos, size_t size)
+> >>+{
+> >>+	ssize_t ret;
+> >>+	struct device *dev;
+> >>+	struct sid_priv *priv;
+> >>+	int i;
+> >>+
+> >>+	ret = -EPERM;
+> >>+	dev = kobj_to_dev(kobj);
+> >>+	priv = dev_get_drvdata(dev);
+> >>+
+> >>+	if ((likely(size > 0)) && ((size + pos) <= SUNXI_SID_SIZE)) {
+> >>+		for (i = 0; i < size; i++) {
+> >>+			buf[i] = sunxi_sid_read_byte(pos + i);
+> >>+		}
+> >>+		if (i < PAGE_SIZE) {
+> >>+			buf[i] = '\0';
+> >>+			ret = (ssize_t)size;
+> >>+		} else {
+> >>+			ret = -ENOMEM;
+> >>+		}
+> >
+> >Hmmmm, what? Why returning \0 here? It's not a string, it's binary data.
+> >What's the relation with PAGE_SIZE again?
+> I thought that buf is at most PAGE_SIZE large [1] "sysfs allocates a
+> buffer of size (PAGE_SIZE) and passes it to the method."
+
+And you already check the size passed.
+
+> >
+> >Just return the number of bytes read, that's it.
+> Yes, had forgotten that this was of course the binary read function
+> and not the text version. So yeah, in the binary case, gone.
+> >
+> >>+	} else {
+> >>+		buf[0] = '\0';
+> >>+		ret = 0;
+> >>+	}
+> >>+
+> >>+	return ret;
+> >>+}
+> >>+
+> >>+static struct of_device_id sid_of_match[] = {
+> >>+	{
+> >>+		.compatible = "allwinner,sun4i-sid",
+> >>+	},
+> >>+	{/* sentinel */}
+> >>+};
+> >>+MODULE_DEVICE_TABLE(of, sid_of_match);
+> >>+
+> >>+static struct bin_attribute sid_bin_attr = {
+> >>+	.attr = {
+> >>+		.name = "key",
+> >>+		.mode = S_IRUGO,
+> >>+	},
+> >>+	.size = SUNXI_SID_SIZE,
+> >>+	.read = sid_read,
+> >>+};
+> >>+
+> >>+static int sid_remove(struct platform_device *pdev)
+> >>+{
+> >>+	struct device *dev = &pdev->dev;
+> >>+	struct sid_priv *priv;
+> >>+
+> >>+	priv = dev_get_drvdata(dev);
+> >>+	device_remove_bin_file(dev, &sid_bin_attr);
+> >>+	iounmap(priv->sid_base);
+> >>+	devm_kfree(dev, priv);
+> >>+	return 0;
+> >>+}
+> >>+
+> >>+static int __init sid_probe(struct platform_device *pdev)
+> >>+{
+> >>+	int ret;
+> >>+	struct device *dev = &pdev->dev;
+> >>+	struct sid_priv *priv;
+> >>+
+> >>+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> >>+	p = priv;
+> >>+
+> >>+	dev_set_drvdata(dev, priv);
+> >>+
+> >>+	if (!priv) {
+> >>+		dev_err(dev, "Unable to allocate device private data\n");
+> >>+		ret = -ENOMEM;
+> >>+		goto exit;
+> >>+	}
+> >
+> >Isn't it a bit weird to check for the memory allocation after using the
+> Yes, more 'oops'. Re-arranged.
+> >variable. Also, you don't really need the dev_err, since if the kernel
+> >fails to allocate some memory, it will tell you anyway.
+> I had it there mostly for consistency, the other 2 did the same
+> check. Initially I had 5 functions here, but you corrected me on
+> that :)
+> 
+> >
+> >>+	priv->sid_base = of_iomap(dev->of_node, 0);
+> >>+	if (!priv->sid_base) {
+> >>+		dev_err(dev, "Unable to map memory region\n");
+> >>+		ret = -ENOMEM;
+> >>+		goto exit_free;
+> >>+	}
+> >>+
+> >>+	ret = device_create_bin_file(dev, &sid_bin_attr);
+> >>+	if (ret) {
+> >>+		dev_err(dev, "Unable to create sysfs bin entry\n");
+> >>+		goto exit_unmap;
+> >>+	}
+> >
+> >Hmmm, maybe it's not worth all these gotos just for an iounmap, I'd
+> >probably return right away, but that's your call.
+> I saw a lot of drivers do the goto: dance in init/probe/exit/remove
+> functions, I don't think the overhead here would be so bad?
+
+It's not really that it's bad, but using return directly would take less
+code overall, but that's not a big deal, if you prefer to keep it that
+way, I'm fine with it.
+
+> >
+> >>+	dev_info(dev, "Sunxi security ID driver loaded successfully.\n");
+> >>+
+> >>+	return 0;
+> >>+
+> >>+
+> >>+exit_unmap:
+> >>+	iounmap(priv->sid_base);
+> >>+exit_free:
+> >>+	devm_kfree(dev, priv);
+> >>+exit:
+> >>+	return ret;
+> >>+}
+> >>+
+> >>+static struct platform_driver sid_driver = {
+> >>+	.probe = sid_probe,
+> >>+	.remove = sid_remove,
+> >>+	.driver = {
+> >>+		.name = DRV_NAME,
+> >>+		.owner = THIS_MODULE,
+> >>+		.of_match_table = sid_of_match,
+> >>+	},
+> >>+};
+> >>+module_platform_driver(sid_driver);
+> >>+
+> >>+
+> >>+MODULE_AUTHOR("Oliver Schinagl <oliver@schinagl.nl>");
+> >>+MODULE_DESCRIPTION("Allwinner sunxi security id driver");
+> >>+MODULE_VERSION(DRV_VERSION);
+> >>+MODULE_LICENSE("GPL");
 > >>
-> >>Hi,
-> >>
-> >>I'm running OpenWRT Kernel 3.8.3 (which already has
-> >>f66dea709cd9309b2ee9f715697818001fb518de and
-> >>5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN
-> >>(QorlQ,
-> >>PPC) device.
-> >>Before updating the kernel from 3.3.0, USB host support was
-> >>working fine.
-> >>Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and the
-> >>lsusb output is empty, so USB host support is not working. When
-> >>I apply
-> >>the following patch, USB host support starts working again, so I
-> >>guess
-> >>3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
-> >>Do you have an idea how to fix it more appropriately?
-> >>
-> >>Thanks,
-> >>  M. Braun
-> >>
-> >>--- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
-> >>+0200
-> >>+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
-> >>+0200
-> >>@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
-> >>                 if (!spin_event_timeout(in_be32(non_ehci +
-> >>FSL_SOC_USB_CTRL) &
-> >>                                 PHY_CLK_VALID,
-> >>FSL_USB_PHY_CLK_TIMEOUT,
-> >>0)) {
-> >>                         printk(KERN_WARNING "fsl-ehci: USB PHY clock
-> >>invalid\n");
-> >>-                       return -EINVAL;
-> >>                 }
-> >>         }
-> >>
+> >
+> >Thanks for this driver!
+> >Maxime
+> >
+> You are welcome! :D While awaiting more feedback, i've pushed the
+> current version to my github [2].
+> 
+> Oliver
+> 
+> [0] https://github.com/amery/linux-allwinner/blob/lichee-3.3/sun7i-dev/arch/arm/mach-sun7i/security_id.c#L91
+> [1] https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt
+> [2] https://github.com/oliv3r/linux/blob/wip/sunxi-security-id/drivers/misc/eeprom/sunxi_sid.c
+
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
