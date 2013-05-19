@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3ESOZj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 10:25:39 -0400
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:40839 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab3ESOZi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 10:25:38 -0400
+	id S1753846Ab3ESOoq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 10:44:46 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:55696 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251Ab3ESOoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 10:44:44 -0400
+Date: Sun, 19 May 2013 09:44:42 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] gru: fix a sanity test in gru_set_context_option()
+Message-ID: <20130519144442.GA8926@sgi.com>
+References: <20130519125950.GA17651@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75Ver1mop0cV5T3BfifeMshtxDonDeXrp8mg-WY8jEBL_VQ@mail.gmail.com>
-References: <1368971300-14442-1-git-send-email-bbonev@ipacct.com> <CAHp75Ver1mop0cV5T3BfifeMshtxDonDeXrp8mg-WY8jEBL_VQ@mail.gmail.com>
-From: Boian Bonev <bbonev@ipacct.com>
-Date: Sun, 19 May 2013 17:25:08 +0300
-X-Google-Sender-Auth: FPzp69tvzH7MiRAUbVO357TpwJQ
-Message-ID: <CAD53P8Bo8eeqZ0puMmfnyQJB_61MTU+eeXHRxED1989Nxa8A0w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] net: Fix a typo in comment in ip_tunnels.h
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130519125950.GA17651@elgon.mountain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, May 19, 2013 at 03:59:50PM +0300, Dan Carpenter wrote:
+> "req.val1 == -1" is valid but it doesn't make sense to check
+> gru_base[-1].  gru_base[] is a global array.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/misc/sgi-gru/grufault.c b/drivers/misc/sgi-gru/grufault.c
+> index c4acac7..e7c37b2 100644
+> --- a/drivers/misc/sgi-gru/grufault.c
+> +++ b/drivers/misc/sgi-gru/grufault.c
+> @@ -876,7 +876,8 @@ int gru_set_context_option(unsigned long arg)
+>  	switch (req.op) {
+>  	case sco_blade_chiplet:
+>  		/* Select blade/chiplet for GRU context */
+> -		if (req.val1 < -1 || req.val1 >= GRU_MAX_BLADES || !gru_base[req.val1] ||
+> +		if (req.val1 < -1 || req.val1 >= GRU_MAX_BLADES ||
+> +		    (req.val1 != -1 && !gru_base[req.val1]) ||
+>  		    req.val0 < -1 || req.val0 >= GRU_CHIPLETS_PER_HUB) {
+>  			ret = -EINVAL;
+>  		} else {
 
-> Patch looks okay.
-> Perhaps in future trivial@kernel.org is suitable better for such fixes.
+Since we're here, maybe we should neaten this up a little?
 
-Thanks for the hint for trivial@kernel.org
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ drivers/misc/sgi-gru/grufault.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
->> I am new around and decided to start with something simple to test the process.
->> The fix applies both to net and net-next.
->
-> Good. May be you are also interesting to run / contribute to the
-> codespell tool [1].
-
-No, I am more interested in playing with code rather than running
-spellchecker over source comments :)
-
-I stumbled upon this one while converting some tunnel related patches
-for 3.2.x to net-next and used the opportunity for test. Just now
-writing a RFC email because I think that my changes require
-discussion/approval prior to submitting patches. And not to leave you
-curious what I am working on - https://github.com/bbonev/eoip
-
-With best regards,
-b.
+Index: linux/drivers/misc/sgi-gru/grufault.c
+===================================================================
+--- linux.orig/drivers/misc/sgi-gru/grufault.c
++++ linux/drivers/misc/sgi-gru/grufault.c
+@@ -876,8 +876,9 @@ int gru_set_context_option(unsigned long
+ 	switch (req.op) {
+ 	case sco_blade_chiplet:
+ 		/* Select blade/chiplet for GRU context */
+-		if (req.val1 < -1 || req.val1 >= GRU_MAX_BLADES || !gru_base[req.val1] ||
+-		    req.val0 < -1 || req.val0 >= GRU_CHIPLETS_PER_HUB) {
++		if (req.val0 < -1 || req.val0 >= GRU_CHIPLETS_PER_HUB ||
++			req.val1 < -1 || req.val1 >= GRU_MAX_BLADES ||
++			(req.val1 >= 0 && !gru_base[req.val1])) {
+ 			ret = -EINVAL;
+ 		} else {
+ 			gts->ts_user_blade_id = req.val1;
