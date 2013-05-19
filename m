@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab3ESTZO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 15:25:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21088 "EHLO mga02.intel.com"
+	id S1754178Ab3ESTef (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 15:34:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26650 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289Ab3ESTZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 15:25:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,704,1363158000"; 
-   d="scan'208";a="316256170"
-Message-ID: <51992713.30705@linux.intel.com>
-Date: Sun, 19 May 2013 22:25:07 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1753857Ab3ESTee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 15:34:34 -0400
+Date: Sun, 19 May 2013 20:34:31 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [git pull] device-mapper fix for 3.10
+Message-ID: <20130519193431.GL3316@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v2 net-next 0/4] net: low latency Ethernet device polling
-References: <20130519102525.12527.83301.stgit@ladj378.jer.intel.com> <CAJZOPZJzVykmBH5FFQBVuztAFGRMOPT-GKABiewG6b4pnKVUeA@mail.gmail.com>
-In-Reply-To: <CAJZOPZJzVykmBH5FFQBVuztAFGRMOPT-GKABiewG6b4pnKVUeA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/05/2013 22:06, Or Gerlitz wrote:
-> Last time you've placed a copy of the patchset in the rfc branch of
-> git://github.com/jbrandeb/lls.git  - can you repost there V2 too?
->
-> Or.
->
-BTW did you try the last version on your HW?
+Please pull from:
+ 
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.10-fixes
+
+to get the following device-mapper fix for 3.10.
+
+Thanks,
+Alasdair
+
+
+----------------------------------------------------------------
+A patch to fix metadata resizing with device-mapper thin devices.
+
+----------------------------------------------------------------
+Alasdair G Kergon (1):
+      dm thin: fix metadata dev resize detection
+
+ drivers/md/dm-thin.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
