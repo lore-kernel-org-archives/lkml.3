@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3ESXEe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 19:04:34 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:57840 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754503Ab3ESXEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 19:04:31 -0400
-X-Sasl-enc: l6mvl6U1HDEUFzmh4w0BMtm7M4GeW3WK4vHF8tzUvvlN 1369004668
-Message-ID: <51995A78.20207@signal11.us>
-Date: Sun, 19 May 2013 19:04:24 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1754859Ab3ESXRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 19:17:30 -0400
+Received: from MAIL1.WPI.EDU ([130.215.36.91]:46605 "EHLO MAIL1.WPI.EDU"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679Ab3ESXR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 19:17:29 -0400
+X-Greylist: delayed 1375 seconds by postgrey-1.27 at vger.kernel.org; Sun, 19 May 2013 19:17:29 EDT
+From: Neal Murphy <neal.p.murphy@alum.wpi.edu>
+Reply-To: neal.p.murphy@alum.wpi.edu
+Organization: Self
+To: linux-kernel@vger.kernel.org
+Subject: pipe/fifo, set exception for select() when read end is not open
+Date: Sun, 19 May 2013 18:54:29 -0400
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
 MIME-Version: 1.0
-To: David Hauweele <david@hauweele.net>
-CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
- line enabled
-References: <1368112788-25701-1-git-send-email-david@hauweele.net> <1368112788-25701-2-git-send-email-david@hauweele.net> <5191B5C4.2020609@signal11.us> <CAO+c-UWi5UH-ZN5G0JiJCrCrScaYprKT7jLpFH0wEJecgoHgig@mail.gmail.com>
-In-Reply-To: <CAO+c-UWi5UH-ZN5G0JiJCrCrScaYprKT7jLpFH0wEJecgoHgig@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305191854.29462.neal.p.murphy@alum.wpi.edu>
+X-PerlMx-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
+ SXL_IP_DYNAMIC 3, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1900_1999 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, DATE_TZ_NA 0, NO_URI_FOUND 0, RDNS_BROADBAND 0, RDNS_GENERIC_POOLED 0, RDNS_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, RDNS_SUSP_SPECIFIC 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __RDNS_BROADBAND_5 0, __RDNS_POOLED_11 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2013 05:34 PM, David Hauweele wrote:
-> I have seen the interrupt line going low forever with heavy traffic.
+I've been looking at the gule hacks I have to use to get inotifywait to work 
+in shell scripts. So I figgered I would hack inotifywait to look at exceptions 
+in its select() loop. No joy.
 
-Hi David,
+inotifywait loops using select() to look for changes to at least one inotify 
+FD. Whenever it sees a change, it reads the event and sends it to stdout. 
+Cool. This works well and uses little CPU time. But there's a problem.
 
-I've been doing some testing today and I can reproduce your issue if I
-ping -f both ways simultaneously (after about 3-4 minutes usually). I
-think it has more to do with the tx/rx mutual exclusion that you
-described in patch 1/1 than it does with the disable/enable IRQ. With
-respect to enable/disable irq, I did some checking of other similar
-drivers (non-ieee802154) and noticed that many of them use threaded
-interrupts. I think this may be closer to the right way to do it.
+Suppose you have inotifywait monitoring a specific file for a change, such as 
+"wait for this file to be deleted." And you have piped inotifywait to "while 
+read a b c". The problem is that when the 'while' loop gets the DELETE event, 
+it does what is needed and exits. And it is expected that inotifywait will 
+exit.
 
-Are you running a tickless kernel? What is your preemption model? What's
-your hardware platform?
+But because the file it was watching has been deleted and can cause no more 
+events, inotifywait will never receive another event, never return from 
+select(), never write to the pipe, and never know that the pipe's reader 
+exitted. It will never know that it should exit. Then I got to wondering why 
+it is that writing to a pipe is the *only* way to know that the reader end is 
+or has been closed (other than via complicated signalling). And wondering why.
 
-> The at86rf230 driver has two isr, one for edge-triggered and another
-> for level-triggered interrupt. The latter uses
-> disable_irq_nosync/enable_irq which makes sense for level-triggered
-> interrupt. Otherwise the interrupt would be triggered again and again
-> until the scheduled work read the status register.
->
-> However I don't see the use of disable_irq/enable_irq with an
-> edge-triggered interrupt. Perhaps I'm missing something. Though I
-> don't see any harm using it anyway.
+Would it be possible to set an exception on a pipe's or fifo's writer FD when 
+the reader FD is not open (when there are no readers or when there are none 
+left)? Would it be reasonable to do this? I imagine a pipe should have a 'last 
+reader closed' exception, while fifos could benefit from that and/or a 'no 
+readers' exception.
 
-My understanding based on the datasheet is that the interrupt can be
-asserted again as soon as INTSTAT is read (which is done in the
-workqueue). I guess even if it happens while the workqueue is running,
-it's ok.
+If this exception existed, inotifywait could watch for read and exception 
+changes using select(). An exception on stdout would almost certainly mean 
+that the pipe has been welded shut, so inotifywait should just exit. This 
+can't be the only example of a program that could benefit from knowing that 
+one of its output pipes is closed without needing to write to the pipe to find 
+out.
 
-I think I had a flawed understanding of schedule_work() before, thinking
-that it would not schedule a work_struct it if the work_struct was running.
+Thanks,
+N
 
->  As you said the interrupt should
-> be delayed until enable_irq() is called. In particular when
-> CONFIG_HARDIRQS_SW_RESEND is set.
-
-I think I agree with you. I'll send you a patch to try with threaded
-interrupts to try.
-
-I'm trying to determine exactly what's the cause of the interrupt line
-being stuck low.
-
-Alan.
-
->
-> 2013/5/14 Alan Ott <alan@signal11.us>:
->> On 5/9/13 11:19 AM, David Hauweele wrote:
->>> Disabling the interrupt line could miss an IRQ and leave the line into a
->>> low state hence locking the driver.
->>>
->> Have you observed this? My understanding is that the interrupt won't be lost
->> but instead delayed until enable_irq() is called.
->>
->> I got this pattern from the other 802.15.4 drivers. Perhaps my understanding
->> is wrong.
->>
->>
->>
->>> Signed-off-by: David Hauweele <david@hauweele.net>
->>> ---
->>>   drivers/net/ieee802154/mrf24j40.c |    7 +------
->>>   1 file changed, 1 insertion(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/net/ieee802154/mrf24j40.c
->>> b/drivers/net/ieee802154/mrf24j40.c
->>> index 1e3ddf3..6ef32f7 100644
->>> --- a/drivers/net/ieee802154/mrf24j40.c
->>> +++ b/drivers/net/ieee802154/mrf24j40.c
->>> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
->>>   {
->>>         struct mrf24j40 *devrec = data;
->>>
->>> -       disable_irq_nosync(irq);
->>> -
->>>         schedule_work(&devrec->irqwork);
->>>
->>>         return IRQ_HANDLED;
->>> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
->>>         /* Read the interrupt status */
->>>         ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
->>>         if (ret)
->>> -               goto out;
->>> +               return;
->>>
->>>         /* Check for TX complete */
->>>         if (intstat & 0x1)
->>> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
->>>         /* Check for Rx */
->>>         if (intstat & 0x8)
->>>                 schedule_work(&devrec->rxwork);
->>> -
->>> -out:
->>> -       enable_irq(devrec->spi->irq);
->>>   }
->>>
->>>   static void mrf24j40_rxwork(struct work_struct *work)
->>>
-
-
+(Please CC me on replies.)
