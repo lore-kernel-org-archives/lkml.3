@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3ESMeN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 08:34:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22274 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3ESMeJ (ORCPT
+	id S1754647Ab3ESMfB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 08:35:01 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:50488 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab3ESMfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 08:34:09 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=VaqywNGxpRkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=l0Yg3AS2bs0A:10 a=Yl-b3-1lNjR0Stw38eQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1368966844.6828.111.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org
-Date: Sun, 19 May 2013 08:34:04 -0400
-In-Reply-To: <20130519093526.GD19883@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
-	 <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
-	 <20130516184041.GP19669@dyad.programming.kicks-ass.net>
-	 <20130519093526.GD19883@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 19 May 2013 08:35:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOiHx=ksyGWYZhafde_5NqUf1wpyWKNc3rs5heFHsNKD8GhXGQ@mail.gmail.com>
+References: <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
+	<1368918189923.dd7325ed@Nodemailer>
+	<CAPweEDwYm6iQ1vJ_UwAC5pE-uwfnMDHR6wJ1VppW1wakmTMJGQ@mail.gmail.com>
+	<CAOiHx=ksyGWYZhafde_5NqUf1wpyWKNc3rs5heFHsNKD8GhXGQ@mail.gmail.com>
+Date: Sun, 19 May 2013 13:34:59 +0100
+Message-ID: <CAPweEDzsCf3rQB_hZ2=OH_b8McYRY7VUit=j-1=aVSd7vbM+og@mail.gmail.com>
+Subject: Re: Would like to form a pool of Linux copyright holders for faster
+ GPL enforcement against Anthrax Kernels
+From: "luke.leighton" <luke.leighton@gmail.com>
+To: Jonas Gorski <jonas.gorski+gpl@gmail.com>
+Cc: Cole Johnson <coleharrisjohnson@gmail.com>, legal@lists.gpl-violations.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-05-19 at 12:35 +0300, Michael S. Tsirkin wrote:
+On Sun, May 19, 2013 at 12:19 PM, Jonas Gorski
+<jonas.gorski+gpl@gmail.com> wrote:
 
-> No, I was not assuming that. What I'm trying to say is that a caller
-> that does something like this under a spinlock:
-> 	preempt_disable
-> 	pagefault_disable
-> 	error = copy_to_user
-> 	pagefault_enable
-> 	preempt_enable_no_resched
-> 
-> is not doing anything wrong and should not get a warning,
-> as long as error is handled correctly later.
-> Right?
-> 
+> But dual license means the license taker may chose which license to
+> apply, not that you can dictate which one to use.
 
-What I see wrong with the above is the preempt_enable_no_resched(). The
-only place that should be ever used is right before a schedule(), as you
-don't want to schedule twice (once for the preempt_enable() and then
-again for the schedule itself).
+ yes.
 
-Remember, in -rt, a spin lock does not disable preemption.
+> And as long as any
+> part of the kernel is GPLv2 (no +), (s)he can't choose anything except
+> GPLv2, as GPLv2 and GPLv3 are incompatible.
 
--- Steve
+ that doesn't sound right.  actually, this is a very very important
+misunderstanding, jonas.
 
+ you *can* choose GPLv3 code.  what you can choose is: *only* those
+files of the linux kernel that are released under GPLv3.
 
+ pseudo-algorithm in bash script and maybe a bit of python:
+
+ $ filenames_gplv3 = `find . | xargs grep -l GPLv3`
+ $ filenames_gplv2 = `find . | xargs grep -l GPLv2`
+ $ files_to_delete = []
+ $ for x in filenames_gplv2:
+    if x not in filenames_gplv2:
+        files_to_delete.append(x)
+ $ for x in files_to_delete:
+     rm $x
+
+after that procedure is done, _then_ try doing a kernel compile, see
+how far you get.
+
+many people point out that just because this is unlikely to result in
+success any time in the next 100 years, that nobody should bother even
+starting.
+
+> So any further licenses will never apply to any use in the kernel.
+
+ incorrect!!  logical assertion error!! :)  assert(ELOGICALCONCLUSIONBRAINFART)
+
+> Only if somebody took your code out of the kernel and used it in a
+> separate GPLv3+ project, then the GPLv3+ license could and would
+> apply.
+
+ after reviewing the above pseudo-code i believe you'll agree that
+that's slightly misleading. one could also choose to leave the files
+in-place in the *same* project's source tree, and just not use any of
+the ones that were incompatibly-licensed.
+
+> Also GPLv2 + GPLv3+ == GPLv2+. And there are already plenty of
+> examples in the kernel that are GPLv2+ licensed (try searching for "or
+> later").
+
+ very good point, jonas.
+
+ l.
