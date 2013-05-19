@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab3ESFBb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 01:01:31 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:57610 "EHLO Ishtar.hs"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752838Ab3ESFBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 01:01:30 -0400
-Message-ID: <51985C9E.3020106@tlinx.org>
-Date: Sat, 18 May 2013 22:01:18 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Thunderbird
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: new mount is broken w/regard to devnames in /etc/fstab
-Content-Type: text/plain; charset=UTF-8
+	id S1751670Ab3ESFpi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 01:45:38 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56866 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3ESFph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 01:45:37 -0400
+Message-ID: <1368942331.3455.2.camel@phoenix>
+Subject: [PATCH] pwm: renesas-tpu: Add missing pwmchip_remove() call in
+ tpu_remove()
+From: Axel Lin <axel.lin@ingics.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-kernel@vger.kernel.org
+Date: Sun, 19 May 2013 13:45:31 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/pwm/pwm-renesas-tpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-
-There are 2 problems -- they are unlikely to be
-directly related, but are in so much as they are in the new version
-of mount.
-
-1) How is one supposed to get the real root device?
-It's not /dev/root -- and on my system /dev/root doesn't even exist.
-(though to be fair, it has in the past -- udev musta got sloppy this time,
-and did point to the real root device).  But how can I get /proc to display
-the real root device instead of some fake name.   
-
-It's insecure the way it is -- as /dev/root could be "anything"...
-
-2) I'd like lvm's naming to be available through mount.  Ideally, lvm's
-naming would be available in /proc/mounts...  At least, though
-in going from /dev/VG/LV => /dev/mapper/VG-LV, that can be
-scripted reliably to get the mount device name. 
-
-But /dev/root?... How to script that, *reliably*...
-And why the bogus name?
-
+diff --git a/drivers/pwm/pwm-renesas-tpu.c b/drivers/pwm/pwm-renesas-tpu.c
+index 8e6d8d7..351addd 100644
+--- a/drivers/pwm/pwm-renesas-tpu.c
++++ b/drivers/pwm/pwm-renesas-tpu.c
+@@ -444,7 +444,7 @@ static int tpu_remove(struct platform_device *pdev)
+ 
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	return 0;
++	return pwmchip_remove(&tpu->chip);
+ }
+ 
+ static struct platform_driver tpu_driver = {
+-- 
+1.8.1.2
 
 
 
