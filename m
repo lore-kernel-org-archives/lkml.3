@@ -1,232 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3ESWdF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 18:33:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3ESWdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 18:33:04 -0400
-Date: Sun, 19 May 2013 18:32:50 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com
-Subject: [PATCH] ipc,sem: move restart loop to do_smart_update
-Message-ID: <20130519183250.2a82d642@annuminas.surriel.com>
-In-Reply-To: <51978696.6040705@colorfullife.com>
-References: <51978696.6040705@colorfullife.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754684Ab3ESW5K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 18:57:10 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:27030 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab3ESW5H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 18:57:07 -0400
+From: "Narasimhan, Sriram" <sriram.narasimhan@hp.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Wang <jasowang@redhat.com>
+Subject: RE: [PATCH] virtio-net: Reporting traffic queue distribution
+ statistics through ethtool
+Thread-Topic: [PATCH] virtio-net: Reporting traffic queue distribution
+ statistics through ethtool
+Thread-Index: AQHOVMviHgqUjqv75U6ZiRxYhTpzIZkNDN2g
+Date: Sun, 19 May 2013 22:56:16 +0000
+Message-ID: <228BD1969E90E94D8805535E22CE8EFF063CF195@G9W0717.americas.hpqcorp.net>
+References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com>
+ <20130519112800.GG19883@redhat.com>
+ <228BD1969E90E94D8805535E22CE8EFF063CF133@G9W0717.americas.hpqcorp.net>
+ <20130519200320.GA27407@redhat.com>
+In-Reply-To: <20130519200320.GA27407@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.20]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 18 May 2013 15:48:06 +0200
-Manfred Spraul <manfred@colorfullife.com> wrote:
+Hi Michael,
 
-> Hi Rik,
+Comments inline...
+
+-----Original Message-----
+From: Michael S. Tsirkin [mailto:mst@redhat.com] 
+Sent: Sunday, May 19, 2013 1:03 PM
+To: Narasimhan, Sriram
+Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
+Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
+
+On Sun, May 19, 2013 at 04:09:48PM +0000, Narasimhan, Sriram wrote:
+> Hi Michael,
 > 
-> I like your change to the ipc/sem locking:
-> A scheme with a per-semaphore lock and without the overhead of always 
-> acquiring both the global and the per-semaphore lock.
+> I was getting all packets on the same inbound queue which
+> is why I added this support to virtio-net (and some more
+> instrumentation at tun as well).  But, it turned out to be
+> my misconfiguration - I did not enable IFF_MULTI_QUEUE on
+> the tap device, so the real_num_tx_queues on tap netdev was 
+> always 1 (no tx distribution at tap).
+
+Interesting that qemu didn't fail.
+
+[Sriram] void tun_set_real_num_tx_queues() does not return 
+the EINVAL return from netif_set_real_num_tx_queues() for 
+txq > dev->num_tx_queues (which would be the case if the
+tap device were not created with IFF_MULTI_QUEUE).  I think
+it would be better to fix the code to disable the new 
+queue and fail tun_attach() in this scenario.  If you 
+agree, I can go ahead and create a separate patch for that.
+   
+
+> I am thinking about 
+> adding a -q option to tunctl to specify multi-queue flag on
+> the tap device.
+
+Absolutely.
+
+[Sriram] OK, let me do that.
+
+> Yes, number of exits will be most useful.  I will look into
+> adding the other statistics you mention.
 > 
-> But:
-> 1) I found one bug with your sem locking changes:
-> If
-> - a complex operation is sleeping [would be woken up by update_queue(,-1)]
-> - a simple op is sleeping
-> - the success of the simple op would allow the complex op to complete
->      [i.e.: update_queue(,sem_num) changes the semaphore value to the 
-> value that the complex op waits on]
-> - an operation wakes up the simple op.
+> Sriram  
 
-Are you referring to eg. a complex operation that waits for
-several semaphores to turn 0, and a simple op that subtracts
-1 from a semaphore, turning it into 0?
+Pls note you'll need to switch to virtqueue_kick_prepare
+to detect exits: virtqueue_kick doesn't let you know
+whether there was an exit.
 
-> then the complex op is not woken up.
+Also, it's best to make this a separate patch from the one
+adding per-queue stats.
+
+[Sriram] OK, I will cover only the per-queue statistics in
+this patch. Also, I will address the indentation/data 
+structure name points that you mentioned in your earlier
+email and send a new revision for this patch.
+
+Sriram
+
+> -----Original Message-----
+> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
+> Sent: Sunday, May 19, 2013 4:28 AM
+> To: Narasimhan, Sriram
+> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
 > 
-> One fix would be a loop in do_smart_update():
-> - first check the global queue
-> - then the per-semaphore queues
-> - if one of the per-semaphore queues made progress: check the global 
-> queue again
-> - if the global queue made progress: check the per semaphore queues again
-> ...
-
-Would that be as simple as making do_smart_update() loop back to
-the top if update_queue on a single semaphore's queue returns
-a non-zero value (something was changed), and there are complex
-operations pending?
-
-I implemented that in the patch below.
-
-> 2) Your patches remove FIFO ordering of the wakeups:
-> As far as I can see complex ops are now preferred over simple ops.
-> It's not a bug, noone exept linux implements FIFO.
-> But the comment it line 28 should be updated
+> On Thu, May 16, 2013 at 01:24:29PM -0700, Sriram Narasimhan wrote:
+> > This patch allows virtio-net driver to report traffic distribution
+> > to inbound/outbound queues through ethtool -S.  The per_cpu
+> > virtnet_stats is split into receive and transmit stats and are
+> > maintained on a per receive_queue and send_queue basis.
+> > virtnet_stats() is modified to aggregate interface level statistics
+> > from per-queue statistics.  Sample output below:
+> > 
 > 
-> Should I write a patch, do you want to fix it yourself?
-
-You seem to have looked at this problem more closely than I have,
-so I would appreciate it if you could review this patch :)
-
----8<---
-
-Subject: ipc,sem: move restart loop to do_smart_update
-
-A complex operation may be sleeping on a semaphore to become
-a certain value. A sleeping simple operation may turn the
-semaphore into that value.
-
-Having the restart loop inside update_queue means we may be
-missing the complex operation (which lives on a different
-queue), and result in a semaphore lockup.
-
-The lockup can be avoided by moving the restart loop into
-do_smart_update, so the list of pending complex operations
-will also be checked if required.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c | 44 +++++++++++++++++++++-----------------------
- 1 file changed, 21 insertions(+), 23 deletions(-)
-
-diff --git a/ipc/sem.c b/ipc/sem.c
-index a7e40ed..3d71c3c 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -25,8 +25,6 @@
-  * This file implements System V semaphores.
-  *
-  * User space visible behavior:
-- * - FIFO ordering for semop() operations (just FIFO, not starvation
-- *   protection)
-  * - multiple semaphore operations that alter the same semaphore in
-  *   one semop() are handled.
-  * - sem_ctime (time of last semctl()) is updated in the IPC_SET, SETVAL and
-@@ -51,8 +49,7 @@
-  *   count_semzcnt()
-  * - the task that performs a successful semop() scans the list of all
-  *   sleeping tasks and completes any pending operations that can be fulfilled.
-- *   Semaphores are actively given to waiting tasks (necessary for FIFO).
-- *   (see update_queue())
-+ *   Semaphores are actively given to waiting tasks (see update_queue()).
-  * - To improve the scalability, the actual wake-up calls are performed after
-  *   dropping all locks. (see wake_up_sem_queue_prepare(),
-  *   wake_up_sem_queue_do())
-@@ -68,9 +65,9 @@
-  *   modes for the UNDO variables are supported (per process, per thread)
-  *   (see copy_semundo, CLONE_SYSVSEM)
-  * - There are two lists of the pending operations: a per-array list
-- *   and per-semaphore list (stored in the array). This allows to achieve FIFO
-- *   ordering without always scanning all pending operations.
-- *   The worst-case behavior is nevertheless O(N^2) for N wakeups.
-+ *   and per-semaphore list (stored in the array). The per-array list is
-+ *   used for calls that do multiple semaphore operations in one semop call.
-+ *   The worst-case behavior is O(N^2) for N wakeups.
-  */
- 
- #include <linux/slab.h>
-@@ -606,7 +603,7 @@ static void unlink_queue(struct sem_array *sma, struct sem_queue *q)
-  * @sma: semaphore array
-  * @q: the operation that just completed
-  *
-- * update_queue is O(N^2) when it restarts scanning the whole queue of
-+ * do_smart_update is O(N^2) when it restarts scanning the whole queue of
-  * waiting operations. Therefore this function checks if the restart is
-  * really necessary. It is called after a previously waiting operation
-  * was completed.
-@@ -671,6 +668,7 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
-  * @sma: semaphore array.
-  * @semnum: semaphore that was modified.
-  * @pt: list head for the tasks that must be woken up.
-+ * @restart: did a semop change something that may require a restart?
-  *
-  * update_queue must be called after a semaphore in a semaphore array
-  * was modified. If multiple semaphores were modified, update_queue must
-@@ -680,7 +678,8 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
-  * is stored in q->pid.
-  * The function return 1 if at least one semop was completed successfully.
-  */
--static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
-+static int update_queue(struct sem_array *sma, int semnum,
-+			struct list_head *pt, int *restart)
- {
- 	struct sem_queue *q;
- 	struct list_head *walk;
-@@ -692,10 +691,9 @@ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
- 	else
- 		pending_list = &sma->sem_base[semnum].sem_pending;
- 
--again:
- 	walk = pending_list->next;
- 	while (walk != pending_list) {
--		int error, restart;
-+		int error;
- 
- 		q = container_of(walk, struct sem_queue, list);
- 		walk = walk->next;
-@@ -720,16 +718,11 @@ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
- 
- 		unlink_queue(sma, q);
- 
--		if (error) {
--			restart = 0;
--		} else {
--			semop_completed = 1;
--			restart = check_restart(sma, q);
--		}
-+		semop_completed = 1;
-+		if (check_restart(sma, q))
-+			*restart = 1;
- 
- 		wake_up_sem_queue_prepare(pt, q, error);
--		if (restart)
--			goto again;
- 	}
- 	return semop_completed;
- }
-@@ -751,17 +744,19 @@ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
- static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsops,
- 			int otime, struct list_head *pt)
- {
--	int i;
-+	int i, restart;
- 
-+ again:
-+	restart = 0;
- 	if (sma->complex_count || sops == NULL) {
--		if (update_queue(sma, -1, pt))
-+		if (update_queue(sma, -1, pt, &restart))
- 			otime = 1;
- 	}
- 
- 	if (!sops) {
- 		/* No semops; something special is going on. */
- 		for (i = 0; i < sma->sem_nsems; i++) {
--			if (update_queue(sma, i, pt))
-+			if (update_queue(sma, i, pt, &restart))
- 				otime = 1;
- 		}
- 		goto done;
-@@ -772,9 +767,12 @@ static void do_smart_update(struct sem_array *sma, struct sembuf *sops, int nsop
- 		if (sops[i].sem_op > 0 ||
- 			(sops[i].sem_op < 0 &&
- 				sma->sem_base[sops[i].sem_num].semval == 0))
--			if (update_queue(sma, sops[i].sem_num, pt))
-+			if (update_queue(sma, sops[i].sem_num, pt, &restart))
- 				otime = 1;
- 	}
-+
-+	if (restart)
-+		goto again;
- done:
- 	if (otime)
- 		sma->sem_otime = get_seconds();
-
+> Thanks for the patch. The idea itself looks OK to me.
+> Ben Hutchings already sent some comments
+> so I won't repeat them. Some minor more comments
+> and questions below.
+> 
+> > NIC statistics:
+> >      rxq0: rx_packets: 4357802
+> >      rxq0: rx_bytes: 292642052
+> >      txq0: tx_packets: 824540
+> >      txq0: tx_bytes: 55256404
+> >      rxq1: rx_packets: 0
+> >      rxq1: rx_bytes: 0
+> >      txq1: tx_packets: 1094268
+> >      txq1: tx_bytes: 73328316
+> >      rxq2: rx_packets: 0
+> >      rxq2: rx_bytes: 0
+> >      txq2: tx_packets: 1091466
+> >      txq2: tx_bytes: 73140566
+> >      rxq3: rx_packets: 0
+> >      rxq3: rx_bytes: 0
+> >      txq3: tx_packets: 1093043
+> >      txq3: tx_bytes: 73246142
+> 
+> Interesting. This example implies that all packets are coming in
+> through the same RX queue - is this right?
+> If yes that's worth exploring - could be a tun bug -
+> and shows how this patch is useful.
+> 
+> > Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
+> 
+> BTW, while you are looking at the stats, one other interesting
+> thing to add could be checking more types of stats: number of exits,
+> queue full errors, etc.
+> 
+> > ---
+> >  drivers/net/virtio_net.c |  157 +++++++++++++++++++++++++++++++++++++---------
+> >  1 files changed, 128 insertions(+), 29 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 3c23fdc..3c58c52 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -41,15 +41,46 @@ module_param(gso, bool, 0444);
+> >  
+> >  #define VIRTNET_DRIVER_VERSION "1.0.0"
+> >  
+> > -struct virtnet_stats {
+> > -	struct u64_stats_sync tx_syncp;
+> > +struct virtnet_rx_stats {
+> >  	struct u64_stats_sync rx_syncp;
+> > -	u64 tx_bytes;
+> > +	u64 rx_packets;
+> > +	u64 rx_bytes;
+> > +};
+> > +
+> > +struct virtnet_tx_stats {
+> > +	struct u64_stats_sync tx_syncp;
+> >  	u64 tx_packets;
+> > +	u64 tx_bytes;
+> > +};
+> >  
+> > -	u64 rx_bytes;
+> > -	u64 rx_packets;
+> 
+> I think maintaining the stats in a per-queue data structure like this is
+> fine.  if # of CPUs == # of queues which is typical, we use same amount
+> of memory.  And each queue access is under a lock,
+> or from napi thread, so no races either.
+> 
+> > +struct virtnet_ethtool_stats {
+> > +	char desc[ETH_GSTRING_LEN];
+> > +	int type;
+> > +	int size;
+> > +	int offset;
+> > +};
+> > +
+> > +enum {VIRTNET_STATS_TX, VIRTNET_STATS_RX};
+> > +
+> > +#define VIRTNET_RX_STATS_INFO(_struct, _field) \
+> > +	{#_field, VIRTNET_STATS_RX, FIELD_SIZEOF(_struct, _field), \
+> > +	offsetof(_struct, _field)}
+> > +
+> > +#define VIRTNET_TX_STATS_INFO(_struct, _field) \
+> > +	{#_field, VIRTNET_STATS_TX, FIELD_SIZEOF(_struct, _field), \
+> > +	offsetof(_struct, _field)}
+> > +
+> > +static const struct virtnet_ethtool_stats virtnet_et_rx_stats[] = {
+> > +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_packets),
+> > +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_bytes)
+> > +};
+> > +#define VIRTNET_RX_STATS_NUM (ARRAY_SIZE(virtnet_et_rx_stats))
+> > +
+> > +static const struct virtnet_ethtool_stats virtnet_et_tx_stats[] = {
+> > +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_packets),
+> > +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_bytes)
+> >  };
+> > +#define VIRTNET_TX_STATS_NUM (ARRAY_SIZE(virtnet_et_tx_stats))
+> 
+> I'd prefer a full name: virtnet_ethtool_tx_stats, or
+> just virtnet_tx_stats.
+> 
+> >  
+> >  /* Internal representation of a send virtqueue */
+> >  struct send_queue {
+> > @@ -61,6 +92,9 @@ struct send_queue {
+> >  
+> >  	/* Name of the send queue: output.$index */
+> >  	char name[40];
+> > +
+> > +	/* Active send queue statistics */
+> > +	struct virtnet_tx_stats stats;
+> >  };
+> >  
+> >  /* Internal representation of a receive virtqueue */
+> > @@ -81,6 +115,9 @@ struct receive_queue {
+> >  
+> >  	/* Name of this receive queue: input.$index */
+> >  	char name[40];
+> > +
+> > +	/* Active receive queue statistics */
+> > +	struct virtnet_rx_stats stats;
+> >  };
+> >  
+> >  struct virtnet_info {
+> > @@ -109,9 +146,6 @@ struct virtnet_info {
+> >  	/* enable config space updates */
+> >  	bool config_enable;
+> >  
+> > -	/* Active statistics */
+> > -	struct virtnet_stats __percpu *stats;
+> > -
+> >  	/* Work struct for refilling if we run low on memory. */
+> >  	struct delayed_work refill;
+> >  
+> > @@ -330,7 +364,7 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+> >  {
+> >  	struct virtnet_info *vi = rq->vq->vdev->priv;
+> >  	struct net_device *dev = vi->dev;
+> > -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > +	struct virtnet_rx_stats *stats = &rq->stats;
+> >  	struct sk_buff *skb;
+> >  	struct page *page;
+> >  	struct skb_vnet_hdr *hdr;
+> > @@ -650,8 +684,7 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+> >  {
+> >  	struct sk_buff *skb;
+> >  	unsigned int len;
+> > -	struct virtnet_info *vi = sq->vq->vdev->priv;
+> > -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> > +	struct virtnet_tx_stats *stats = &sq->stats;
+> >  
+> >  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> >  		pr_debug("Sent skb %p\n", skb);
+> > @@ -841,24 +874,25 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
+> >  					       struct rtnl_link_stats64 *tot)
+> >  {
+> >  	struct virtnet_info *vi = netdev_priv(dev);
+> > -	int cpu;
+> > +	int i;
+> >  	unsigned int start;
+> >  
+> > -	for_each_possible_cpu(cpu) {
+> > -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
+> > +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> > +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
+> > +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
+> >  		u64 tpackets, tbytes, rpackets, rbytes;
+> >  
+> >  		do {
+> > -			start = u64_stats_fetch_begin_bh(&stats->tx_syncp);
+> > -			tpackets = stats->tx_packets;
+> > -			tbytes   = stats->tx_bytes;
+> > -		} while (u64_stats_fetch_retry_bh(&stats->tx_syncp, start));
+> > +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
+> > +			tpackets = tstats->tx_packets;
+> > +			tbytes   = tstats->tx_bytes;
+> > +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
+> >  
+> >  		do {
+> > -			start = u64_stats_fetch_begin_bh(&stats->rx_syncp);
+> > -			rpackets = stats->rx_packets;
+> > -			rbytes   = stats->rx_bytes;
+> > -		} while (u64_stats_fetch_retry_bh(&stats->rx_syncp, start));
+> > +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
+> > +			rpackets = rstats->rx_packets;
+> > +			rbytes   = rstats->rx_bytes;
+> > +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
+> >  
+> >  		tot->rx_packets += rpackets;
+> >  		tot->tx_packets += tpackets;
+> > @@ -1177,12 +1211,83 @@ static void virtnet_get_channels(struct net_device *dev,
+> >  	channels->other_count = 0;
+> >  }
+> >  
+> > +static void virtnet_get_stat_strings(struct net_device *dev,
+> > +					u32 stringset,
+> > +					u8 *data)
+> > +{
+> > +	struct virtnet_info *vi = netdev_priv(dev);
+> > +	int i, j;
+> > +
+> > +	switch (stringset) {
+> > +	case ETH_SS_STATS:
+> > +		for (i = 0; i < vi->max_queue_pairs; i++) {
+> > +			for (j = 0; j < VIRTNET_RX_STATS_NUM; j++) {
+> > +				sprintf(data, "rxq%d: %s", i,
+> > +					virtnet_et_rx_stats[j].desc);
+> > +				data += ETH_GSTRING_LEN;
+> > +			}
+> > +			for (j = 0; j < VIRTNET_TX_STATS_NUM; j++) {
+> > +				sprintf(data, "txq%d: %s", i,
+> > +					virtnet_et_tx_stats[j].desc);
+> > +				data += ETH_GSTRING_LEN;
+> > +			}
+> > +		}
+> > +		break;
+> > +	}
+> > +}
+> > +
+> > +static int virtnet_get_sset_count(struct net_device *dev, int stringset)
+> > +{
+> > +	struct virtnet_info *vi = netdev_priv(dev);
+> > +	switch (stringset) {
+> > +	case ETH_SS_STATS:
+> > +		return vi->max_queue_pairs *
+> > +			(VIRTNET_RX_STATS_NUM + VIRTNET_TX_STATS_NUM);
+> > +	default:
+> > +		return -EINVAL;
+> > +	}
+> > +}
+> > +
+> > +static void virtnet_get_ethtool_stats(struct net_device *dev,
+> > +					struct ethtool_stats *stats,
+> > +					u64 *data)
+> > +{
+> > +	struct virtnet_info *vi = netdev_priv(dev);
+> > +	unsigned int i, base;
+> > +	unsigned int start;
+> > +
+> > +	for (i = 0, base = 0; i < vi->max_queue_pairs; i++) {
+> > +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
+> > +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
+> > +
+> > +		do {
+> > +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
+> > +			data[base] = rstats->rx_packets;
+> > +			data[base+1] = rstats->rx_bytes;
+> 
+> nitpicking:
+> We normally has spaces around +, like this:
+> 			data[base + 1] = rstats->rx_bytes;
+> 
+> > +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
+> > +
+> > +		base += VIRTNET_RX_STATS_NUM;
+> > +
+> > +		do {
+> > +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
+> > +			data[base] = tstats->tx_packets;
+> > +			data[base+1]   = tstats->tx_bytes;
+> 
+> 
+> nitpicking:
+> Here, something strange happened to indentation.
+> 
+> > +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
+> > +
+> > +		base += VIRTNET_TX_STATS_NUM;
+> > +	}
+> > +}
+> > +
+> > +
+> >  static const struct ethtool_ops virtnet_ethtool_ops = {
+> >  	.get_drvinfo = virtnet_get_drvinfo,
+> >  	.get_link = ethtool_op_get_link,
+> >  	.get_ringparam = virtnet_get_ringparam,
+> >  	.set_channels = virtnet_set_channels,
+> >  	.get_channels = virtnet_get_channels,
+> > +	.get_strings = virtnet_get_stat_strings,
+> > +	.get_sset_count = virtnet_get_sset_count,
+> > +	.get_ethtool_stats = virtnet_get_ethtool_stats,
+> >  };
+> >  
+> >  #define MIN_MTU 68
+> > @@ -1531,14 +1636,11 @@ static int virtnet_probe(struct virtio_device *vdev)
+> >  	vi->dev = dev;
+> >  	vi->vdev = vdev;
+> >  	vdev->priv = vi;
+> > -	vi->stats = alloc_percpu(struct virtnet_stats);
+> >  	err = -ENOMEM;
+> > -	if (vi->stats == NULL)
+> > -		goto free;
+> >  
+> >  	vi->vq_index = alloc_percpu(int);
+> >  	if (vi->vq_index == NULL)
+> > -		goto free_stats;
+> > +		goto free;
+> >  
+> >  	mutex_init(&vi->config_lock);
+> >  	vi->config_enable = true;
+> > @@ -1616,8 +1718,6 @@ free_vqs:
+> >  	virtnet_del_vqs(vi);
+> >  free_index:
+> >  	free_percpu(vi->vq_index);
+> > -free_stats:
+> > -	free_percpu(vi->stats);
+> >  free:
+> >  	free_netdev(dev);
+> >  	return err;
+> > @@ -1653,7 +1753,6 @@ static void virtnet_remove(struct virtio_device *vdev)
+> >  	flush_work(&vi->config_work);
+> >  
+> >  	free_percpu(vi->vq_index);
+> > -	free_percpu(vi->stats);
+> >  	free_netdev(vi->dev);
+> >  }
+> 
+> Thanks!
+> 
+> > -- 
+> > 1.7.1
