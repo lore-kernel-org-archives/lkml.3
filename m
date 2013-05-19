@@ -1,72 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab3ESIxj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 04:53:39 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:49164 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752171Ab3ESIxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 04:53:38 -0400
-Date: Sun, 19 May 2013 11:53:29 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] drivers: net: usb: rtl8150: bug fixing and cleanup
-In-Reply-To: <20130518211012.GC26590@electric-eye.fr.zoreil.com>
-Message-ID: <alpine.DEB.2.02.1305191149310.4537@fry.nucleusys.com>
-References: <alpine.DEB.2.02.1305181905100.7518@fry.nucleusys.com> <20130518211012.GC26590@electric-eye.fr.zoreil.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752847Ab3ESJhR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 05:37:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751449Ab3ESJhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 05:37:13 -0400
+Date: Sun, 19 May 2013 12:35:26 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org, rostedt@goodmis.org
+Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
+Message-ID: <20130519093526.GD19883@redhat.com>
+References: <cover.1368702323.git.mst@redhat.com>
+ <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
+ <20130516184041.GP19669@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463786495-1647968027-1368953615=:4537"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516184041.GP19669@dyad.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, May 16, 2013 at 08:40:41PM +0200, Peter Zijlstra wrote:
+> On Thu, May 16, 2013 at 02:16:10PM +0300, Michael S. Tsirkin wrote:
+> > There are several ways to make sure might_fault
+> > calling function does not sleep.
+> > One is to use it on kernel or otherwise locked memory - apparently
+> > nfs/sunrpc does this. As noted by Ingo, this is handled by the
+> > migh_fault() implementation in mm/memory.c but not the one in
+> > linux/kernel.h so in the current code might_fault() schedules
+> > differently depending on CONFIG_PROVE_LOCKING, which is an undesired
+> > semantical side effect.
+> > 
+> > Another is to call pagefault_disable: in this case the page fault
+> > handler will go to fixups processing and we get an error instead of
+> > sleeping, so the might_sleep annotation is a false positive.
+> > vhost driver wants to do this now in order to reuse socket ops
+> > under a spinlock (and fall back on slower thread handler
+> > on error).
+> 
+> Are you using the assumption that spin_lock() implies preempt_disable() implies
+> pagefault_disable()? Note that this assumption isn't valid for -rt where the
+> spinlock becomes preemptible but we'll not disable pagefaults.
 
----1463786495-1647968027-1368953615=:4537
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+No, I was not assuming that. What I'm trying to say is that a caller
+that does something like this under a spinlock:
+	preempt_disable
+	pagefault_disable
+	error = copy_to_user
+	pagefault_enable
+	preempt_enable_no_resched
 
-On Sat, 18 May 2013, Francois Romieu wrote:
+is not doing anything wrong and should not get a warning,
+as long as error is handled correctly later.
+Right?
 
-> Petko Manolov <petkan@nucleusys.com> :
-> [...]
-> >  static int set_registers(rtl8150_t * dev, u16 indx, u16 size, void *data)
+> > Address both issues by:
+> > 	- dropping the unconditional call to might_sleep
+> > 	  from the fast might_fault code in linux/kernel.h
+> > 	- checking for pagefault_disable() in the
+> > 	  CONFIG_PROVE_LOCKING implementation
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/kernel.h |  1 -
+> >  mm/memory.c            | 14 +++++++++-----
+> >  2 files changed, 9 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> > index e96329c..322b065 100644
+> > --- a/include/linux/kernel.h
+> > +++ b/include/linux/kernel.h
+> > @@ -198,7 +198,6 @@ void might_fault(void);
+> >  #else
+> >  static inline void might_fault(void)
 > >  {
-> > -	return usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0),
-> > -			       RTL8150_REQ_SET_REGS, RTL8150_REQT_WRITE,
-> > -			       indx, 0, data, size, 500);
-> > +	int res;
+> > -	might_sleep();
+> 
+> This removes potential resched points for PREEMPT_VOLUNTARY -- was that
+> intentional?
+
+No it's a bug. Thanks for pointing this out.
+OK so I guess it should be might_sleep_if(!in_atomic())
+and this means might_fault would have to move from linux/kernel.h to
+linux/uaccess.h, since in_atomic() is in linux/hardirq.h
+
+Makes sense?
+
+> >  }
+> >  #endif
+> >  
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 6dc1882..1b8327b 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -4222,13 +4222,17 @@ void might_fault(void)
+> >  	if (segment_eq(get_fs(), KERNEL_DS))
+> >  		return;
+> >  
+> > -	might_sleep();
+> >  	/*
+> > -	 * it would be nicer only to annotate paths which are not under
+> > -	 * pagefault_disable, however that requires a larger audit and
+> > -	 * providing helpers like get_user_atomic.
+> > +	 * It would be nicer to annotate paths which are under preempt_disable
+> > +	 * but not under pagefault_disable, however that requires a new flag
+> > +	 * for differentiating between the two.
+> 
+> -rt has this, pagefault_disable() doesn't change the preempt count but pokes
+> at task_struct::pagefault_disable.
+
+Good to know.
+
+So maybe we can import this at least for CONFIG_PROVE_LOCKING?
+To make the patch smaller I'd prefer doing both for now,
+this way this patchset does not have to poke in too many
+mm internals.
+I can try doing that - unless
+someone else has plans to merge this part soon anyway?
+
+> >  	 */
+> > -	if (!in_atomic() && current->mm)
+> > +	if (in_atomic())
+> > +		return;
 > > +
-> > +	res = usb_control_msg(dev->udev, usb_sndctrlpipe(dev->udev, 0),
-> > +			      RTL8150_REQ_SET_REGS, RTL8150_REQT_WRITE,
-> > +			      indx, 0, data, size, 500);
-> > +	if (res < 0)
-> > +		dev_dbg(&dev->udev->dev, "%s returned %d\n", __func__, res);
-> > +	return res;
-> 
-> You may move it into a separate patch. It is completely unrelated to the
-> ctrl_urb changes.
-
-The change is so trivial i thought i can smuggle it unnoticed. :-)
-
-> [...]
-> > +static int async_set_registers(rtl8150_t *dev, u16 indx, u16 size, u16 reg)
-> >  {
-> 
-> [...]
-> > +	usb_fill_control_urb(async_urb, dev->udev,
-> > +	                     usb_sndctrlpipe(dev->udev, 0), (void *) &req->dr,
-> 
-> Useless void * cast.
-
-Wrong.  The compiler actually moans quite a lot:
-
-/usr/src/git/rtl8150/rtl8150.c: In function ¡async_set_registers¢:
-/usr/src/git/rtl8150/rtl8150.c:92:9: warning: passing argument 4 of ¡usb_fill_control_urb¢ from incompatible pointer type [enabled by default]
-In file included from /usr/src/git/rtl8150/rtl8150.c:17:0:
-include/linux/usb.h:1440:20: note: expected ¡unsigned char *¢ but argument is of type ¡struct usb_ctrlrequest *¢
----1463786495-1647968027-1368953615=:4537--
+> > +	might_sleep();
+> > +
+> > +	if (current->mm)
+> >  		might_lock_read(&current->mm->mmap_sem);
+> >  }
+> >  EXPORT_SYMBOL(might_fault);
+> > -- 
+> > MST
