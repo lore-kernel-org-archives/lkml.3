@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab3ESRDC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 13:03:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab3ESRDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 13:03:00 -0400
-Message-ID: <519905B6.3080101@redhat.com>
-Date: Sun, 19 May 2013 19:02:46 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752450Ab3ESRHt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 13:07:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37695 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab3ESRHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 13:07:48 -0400
+Date: Sun, 19 May 2013 10:07:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/33] 3.0.79-stable review
+Message-ID: <20130519170753.GA12608@kroah.com>
+References: <20130517214916.821259930@linuxfoundation.org>
+ <8738tj6x0v.wl%satoru.takeuchi@gmail.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against spraying
- attacks
-References: <1368844623.3301.142.camel@edumazet-glaptop>
-In-Reply-To: <1368844623.3301.142.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738tj6x0v.wl%satoru.takeuchi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2013 04:37 AM, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
->
-> hpa bringed into my attention some security related issues
-> with BPF JIT on x86.
->
-> This patch makes sure the bpf generated code is marked read only,
-> as other kernel text sections.
->
-> It also splits the unused space (we vmalloc() and only use a fraction of
-> the page) in two parts, so that the generated bpf code not starts at a
-> known offset in the page, but a pseudo random one.
->
-> Refs:
-> http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
->
-> Reported-by: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+On Sun, May 19, 2013 at 08:15:28PM +0900, Satoru Takeuchi wrote:
+> At Fri, 17 May 2013 14:49:44 -0700,
+> Greg Kroah-Hartman wrote:
+> > 
+> > This is the start of the stable review cycle for the 3.0.79 release.
+> > There are 33 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Sun May 19 21:47:48 UTC 2013.
+> > Anything received after that time might be too late.
+> 
+> This kernel can be built and boot without any problem.
+> Building a kernel with this kernel also works fine.
+> 
+>  - Build Machine: debian wheezy x86_64
+>    CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
+>    memory: 8GB
+> 
+>  - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
+>    vCPU: x2
+>    memory: 2GB
 
-Great work !
+Wonderful, thanks for testing.
 
-Probably other archs could later on follow-up with setting to read-only, too.
-
-Reviewed-by: Daniel Borkmann <dborkman@redhat.com>
+greg k-h
