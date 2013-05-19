@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab3ESK5R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 06:57:17 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39168 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858Ab3ESK5P (ORCPT
+	id S1754038Ab3ESLJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 07:09:28 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:35531 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab3ESLJ1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 06:57:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <ce644e6e12d68aaabed7403b5f21c124@imap.plus.net>
-References: <51972CAF.3060802@gmail.com>
-	<CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
-	<ce644e6e12d68aaabed7403b5f21c124@imap.plus.net>
-Date: Sun, 19 May 2013 11:57:15 +0100
-Message-ID: <CAPweEDztcCOgKQmMSK3R6TMJoOo5m4b5KFg1nVySexqdVZu_DQ@mail.gmail.com>
-Subject: Re: Would like to form a pool of Linux copyright holders for faster
- GPL enforcement against Anthrax Kernels
-From: "luke.leighton" <luke.leighton@gmail.com>
-To: Ian Stirling <gplvio@mauve.plus.com>
-Cc: legal@lists.gpl-violations.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 19 May 2013 07:09:27 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [RFC PATCHv3 3/6] clk: Add TI-Nspire clock drivers
+From: Daniel Tang <dt.tangr@gmail.com>
+In-Reply-To: <201305161417.28133.arnd@arndb.de>
+Date: Sun, 19 May 2013 21:09:17 +1000
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <F8915E01-0FCA-4C9F-8440-63B5A73B349B@gmail.com>
+References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <201305151607.54442.arnd@arndb.de> <15FD6543-D04A-4953-A56A-40B27F0026E4@gmail.com> <201305161417.28133.arnd@arndb.de>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 19, 2013 at 10:12 AM, Ian Stirling <gplvio@mauve.plus.com> wrote:
-> On 18.05.2013 19:27, luke.leighton wrote:
->
->> question: what is the procedure for having that licensing explicitly
->> added to the linux kernel sources?
->
->
-> Fork the kernel, and put it up on a repo somewhere that says you're trying
-> to get it all as
-> GPL3.
 
- pay me $100k per year to set up a foundation which maintains that
-code and i will do so.
+On 16/05/2013, at 10:17 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
- not going to happen, is it ian?   i was initially quite pissed at the
-rest of what you wrote, especially at its sarcasm.  but then it
-occurred to me that it is highly indicative of a feeling of
-dis-empowerment that everyone feels in the linux kernel community.
+> On Thursday 16 May 2013, Daniel Tang wrote:
+>> 
+>> On 16/05/2013, at 12:07 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> 
+>>> You are missing a binding in Documentation/devicetree, same as for some of
+>>> the other drivers in this series.
+>> 
+>> Should we be adding a vendor prefix to it too? If so, we're not sure whether
+>> to use "ti," or not since this isn't an official port by TI.
+> 
+> The binding describes the hardware, it should not matter who does the port.
+> However, any part of the tree that is not actually from TI should have a
+> vendor prefix indicating who made that part. IIRC, the SoC used in there
+> is from TI, so you should use something else for the on-soc components.
+> 
 
- you felt - ian - that what i want to do cannot be done by *anyone* -
-presumably because Linus Has Spoken.  or perhaps because the scale of
-the task is beyond you.
+If the vendors for the on-SOC components are unknown, should we just leave the compatible strings as is (i.e. "nspire-XXX")?
 
- but i'm not interested in any of that.  i've made a decision.  and my
-question was very very specific.
+>>> It seems strange to assign the clk_name variable to node->name
+>>> first and then overriding it with the clock-output-names property.
+>>> Is that intentional? If so, please explain it in a comment.
+>>> 
+>> 
+>> I copied that bit of boilerplate from drivers/clk/clk-fixed-rate.c but
+>> I'm guessing it's to use the node name as the clock name unless there
+>> is a property called "clock-output-names"
+> 
+> Ah, I see. It seems you forgot to add the clock maintainer to Cc in the
+> mail. Mike is the one who will have to take you patch anyway, so I assume
+> he will comment on this if you did it wrong.
+> 
+> 	Arnd
 
-i wish to know the procedure by which my formally and publicly
-announced release of all linux kernel contributions under the dual
-licenses of GPLv2 and GPLv3+ may be entered - formally - upstream and
-into the linux kernel sources being maintained on git.kernel.org
-
- i don't give a fuck about what anybody else may choose; i do not give
-a fuck about the timescales. i want *MY* choice to be respected: *MY*
-code contributions under the GPLv2 and GPLv3+ and have that properly
-recorded.
-
- so.  could someone please inform me what the procedure is: is it as
-simple as submitting a patch?
-
-l.
