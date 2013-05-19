@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab3ESLUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 07:20:12 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:46619 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab3ESLUK (ORCPT
+	id S1754303Ab3ESL0e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 07:26:34 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:61306 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3ESL0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 07:20:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPweEDwYm6iQ1vJ_UwAC5pE-uwfnMDHR6wJ1VppW1wakmTMJGQ@mail.gmail.com>
-References: <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
- <1368918189923.dd7325ed@Nodemailer> <CAPweEDwYm6iQ1vJ_UwAC5pE-uwfnMDHR6wJ1VppW1wakmTMJGQ@mail.gmail.com>
-From: Jonas Gorski <jonas.gorski+gpl@gmail.com>
-Date: Sun, 19 May 2013 13:19:49 +0200
-X-Google-Sender-Auth: pXZtEOjx5kcNjzk5oIx2hCmqRcY
-Message-ID: <CAOiHx=ksyGWYZhafde_5NqUf1wpyWKNc3rs5heFHsNKD8GhXGQ@mail.gmail.com>
-Subject: Re: Would like to form a pool of Linux copyright holders for faster
- GPL enforcement against Anthrax Kernels
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Cole Johnson <coleharrisjohnson@gmail.com>, legal@lists.gpl-violations.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 19 May 2013 07:26:33 -0400
+Message-ID: <1368962741.30275.17.camel@workstation-home>
+Subject: kernel 3.10-rc1 p-state/cpuidle panic
+From: Tommy Apel Hansen <tommyapeldk@gmail.com>
+To: linux-kernel@vger.kernel.org
+Date: Sun, 19 May 2013 13:25:41 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 19, 2013 at 12:39 PM, luke.leighton <luke.leighton@gmail.com> wrote:
-> On Sun, May 19, 2013 at 12:03 AM, Cole Johnson
-> <coleharrisjohnson@gmail.com> wrote:
->>> question: what is the procedure for having that licensing explicitly
->>
->> added to the linux kernel sources?
->>
->> IIRC Linus said he will NOT use the GPLv3 for the kernel.
->
->  mr linus torvalds is one person.  he is not a god.  he does not
-> dictate that which everyone else can choose to do.  if mr linus
-> torvalds is telling everyone "he will not use the GPLv3 for the
-> kernel" i.e. NOBODY may dual-license their copyright material in the
-> linux kernel then he is *MASSIVELY* overstepping a serious boundary of
-> both propriety and copyright law.  if i choose to release all
-> copyright code under dual licenses then THAT IS MY RIGHT AND NO FUCKER
-> IS GOING TO TELL ME OTHERWISE.
->
->  so, let's nip this in the bud and set it straight, ok?
->
->  i assume that what mr linus torvalds *meant* to say was "i have some
-> code, it is under my copyright.  i personally choose not to release
-> that copyright material under any license other than the GPLv2 and
-> that is my choice and my right as the owner of that copyright
-> material.  signed, mr linus torvalds".
->
->  that choice - made by mr linus torvalds - has *nothing to do with
-> anybody else's choice*.
->
->  so the question remains, and i'd like an answer: what is the
-> procedure for formally adding to the linux kernel that my copyrighted
-> material is dual-licensed under both the GPLv2 and the GPLv3+?  do i
-> submit a patch, and is it as simple as that?
->
->  unless.... unless what mr linus torvalds meant to say was, "i don't
-> like the GPLv3+ license.  if any fucker wants to release linux kernel
-> code under the GPLv3+ (as well as the GPLv2), they can fuck off.  in
-> fact, they will be banned from submitting contributions that are not
-> specifically GPLv2.  if they try to dual-license their code, it will
-> not be accepted. i, linus torvalds, have spoken".  which i seriously
-> seriously doubt, but there seems to be some implication that that's
-> the case, here.
+Hello guys, I'm getting this with the current 3.10-rc1, I've enabled the new full-NOHZ
+I'm not sure though if that has something to do with this or if something is changed in the
+p-state code.
 
-But dual license means the license taker may chose which license to
-apply, not that you can dictate which one to use. And as long as any
-part of the kernel is GPLv2 (no +), (s)he can't choose anything except
-GPLv2, as GPLv2 and GPLv3 are incompatible.
+System :
+vendor_id : GenuineIntel
+cpu family  : 6
+model   : 45
+model name  : Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz
+stepping  : 7
+microcode : 0x70b
+cpu MHz   : 1176.000
+cache size  : 10240 KB
+physical id : 1
+siblings  : 4
+core id   : 3
+cpu cores : 4
+apicid    : 38
+initial apicid : 38
+fpu   : yes
+fpu_exception : yes
+cpuid level : 13
+wp    : yes
+flags   : [lots of stuff]
+bogomips  : 4800.56
+clflush size  : 64
+cache_alignment : 64
+address sizes : 46 bits physical, 48 bits virtual
+power management:
 
-So any further licenses will never apply to any use in the kernel.
-Only if somebody took your code out of the kernel and used it in a
-separate GPLv3+ project, then the GPLv3+ license could and would
-apply.
+crash bt:
+PID: 0      TASK: ffff88085c585950  CPU: 5   COMMAND: "swapper/5"
+ #0 [ffff88107fc83b80] machine_kexec at ffffffff8102aad6
+ #1 [ffff88107fc83bc0] crash_kexec at ffffffff810e57d0
+ #2 [ffff88107fc83c90] oops_end at ffffffff810073b8
+ #3 [ffff88107fc83cb0] do_divide_error at ffffffff810040c2
+ #4 [ffff88107fc83d50] divide_error at ffffffff81637348
+    [exception RIP: intel_pstate_timer_func+1071]
+    RIP: ffffffff814f501f  RSP: ffff88107fc83e08  RFLAGS: 00010246
+    RAX: 0000000000000000  RBX: ffff8808555b9e00  RCX: ffff8808555b9e40
+    RDX: 0000000000000000  RSI: 0000000000000064  RDI: 0000000000000001
+    RBP: 0000025debb95955   R8: ffff8808555b9f70   R9: 00000000000003e0
+    R10: dead000000200200  R11: 0000000000000000  R12: 0000001877f8d1d3
+    R13: 000000009a45ae19  R14: 0000001d27d3d1d8  R15: 0000000000000040
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #5 [ffff88107fc83e00] intel_pstate_timer_func at ffffffff814f4fa2
+ #6 [ffff88107fc83e60] call_timer_fn at ffffffff8109edc3
+ #7 [ffff88107fc83e90] run_timer_softirq at ffffffff810a097e
+ #8 [ffff88107fc83f10] __do_softirq at ffffffff810990f1
+ #9 [ffff88107fc83f80] irq_exit at ffffffff810993ce
+#10 [ffff88107fc83f90] smp_apic_timer_interrupt at ffffffff81026448
+#11 [ffff88107fc83fb0] apic_timer_interrupt at ffffffff81636eca
+--- <IRQ stack> ---
+#12 [ffff88085c587db8] apic_timer_interrupt at ffffffff81636eca
+    [exception RIP: cpuidle_enter_state+72]
+    RIP: ffffffff814f5978  RSP: ffff88085c587e68  RFLAGS: 00000216
+    RAX: 000000000001c61d  RBX: ffffffff810a11e8  RCX: 0000000000000018
+    RDX: 0000000225c17d03  RSI: ffff88085c587fd8  RDI: ffffffff81a12500
+    RBP: 0000000000000002   R8: 0000000000000030   R9: 0000000000000001
+    R10: 0000000000000000  R11: 0000000000000000  R12: ffffffff810c48dd
+    R13: ffff88085c173950  R14: 0000000000000086  R15: 0000000000000000
+    ORIG_RAX: ffffffffffffff10  CS: 0010  SS: 0018
+#13 [ffff88085c587eb0] cpuidle_idle_call at ffffffff814f5aca
+#14 [ffff88085c587ef0] arch_cpu_idle at ffffffff8100cef9
+#15 [ffff88085c587f00] cpu_startup_entry at ffffffff810ce5af
 
-Also GPLv2 + GPLv3+ == GPLv2+. And there are already plenty of
-examples in the kernel that are GPLv2+ licensed (try searching for "or
-later").
+kernel config:
+http://pastebin.com/AmEqQNZx
 
+/Tommy
 
-Jonas
