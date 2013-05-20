@@ -1,328 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab3ETNyy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 09:54:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47720 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756270Ab3ETNyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 09:54:53 -0400
-Date: Mon, 20 May 2013 14:54:39 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv11 2/4] zbud: add to mm/
-Message-ID: <20130520135439.GR11497@suse.de>
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130517154837.GN11497@suse.de>
- <20130519205219.GA3252@cerebellum>
+	id S1756928Ab3ETNzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 09:55:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52944 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756148Ab3ETNzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 09:55:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130519205219.GA3252@cerebellum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130520121356.GE12690@pd.tnic>
+References: <1368962741.30275.17.camel@workstation-home>
+	<20130520050837.GA12848@pd.tnic>
+	<CAGA4a+FExrde7ceDZRMWCxe7YgQ5EmYBJ1gmapuYOF2CrJHuRw@mail.gmail.com>
+	<20130520121356.GE12690@pd.tnic>
+Date: Mon, 20 May 2013 15:55:48 +0200
+Message-ID: <CAGA4a+HJ3EUoWYCtqvQ3p46zTFH+i97ucPGU82Uz+N=qqdEt8g@mail.gmail.com>
+Subject: Re: kernel 3.10-rc1 p-state/cpuidle panic
+From: Tommy Apel <tommyapeldk@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 19, 2013 at 03:52:19PM -0500, Seth Jennings wrote:
-> <snip>
-> > >  4 files changed, 597 insertions(+)
-> > > + * zbud pages are divided into "chunks".  The size of the chunks is fixed at
-> > > + * compile time and determined by NCHUNKS_ORDER below.  Dividing zbud pages
-> > > + * into chunks allows organizing unbuddied zbud pages into a manageable number
-> > > + * of unbuddied lists according to the number of free chunks available in the
-> > > + * zbud page.
-> > > + *
-> > 
-> > Fixing the size of the chunks at compile time is a very strict
-> > limitation! Distributions will have to make that decision for all workloads
-> > that might conceivably use zswap. Having the allocator only deal with pairs
-> > of pages limits the worst-case behaviour where reclaim can generate lots of
-> > IO to free a single physical page. However, the chunk size directly affects
-> > the fragmentation properties, both internal and external, of this thing.
-> 
-> > Once NCHUNKS is > 2 it is possible to create a workload that externally
-> > fragments this allocator such that each physical page only holds one
-> > compressed page. If this is a problem for a user then their only option
-> > is to rebuild the kernel which is not always possible.
-> 
-> You lost me here.  Do you mean NCHUNKS > 2 or NCHUNKS_ORDER > 2?
-> 
+Well it beats me why it breaks on a dual but not a single cpu system,
+or maybe I just havn't hit something yet.
 
-NCHUNKS
-
-> My first guess is that the external fragmentation situation you are referring to
-> is a workload in which all pages compress to greater than half a page.  If so,
-> then it doesn't matter what NCHUCNKS_ORDER is, there won't be any pages the
-> compress enough to fit in the < PAGE_SIZE/2 free space that remains in the
-> unbuddied zbud pages.
-> 
-
-There are numerous aspects to this, too many to write them all down.
-Modelling the external fragmentation one and how it affects swap IO
-would be a complete pain in the ass so lets consider the following
-example instead as it's a bit clearer.
-
-Three processes. Process A compresses by 75%, Process B compresses to 15%,
-Process C pages compress to 15%. They are all adding to zswap in lockstep.
-Lets say that zswap can hold 100 physical pages.
-
-NCHUNKS == 2
-	All Process A pages get rejected.
-	All Process B and C pages get added to zswap until zswap fills
-	Zswap fills 300 allocation requests
-		Swap IO is 33 physical pages (all process A rejects)
-	Process B and C see no swap IO
-
-NCHUNKS == 6
-	Zswap fills after 100 allocation requests
-		zswap holds 200 compressed pages
-	All other requests go to swap.
-
-If both configurations were to compare each other for 300 allocation
-requests, NCHUNKS==6 results in more swap IO with a mix of page writes
-from A, B and C than if NCHUNKS==2.
-
-This obviously is overly simplistic because it's ignoring writeback and
-how that will impact page avalability and I didn't model what it would
-look like for arbitrarily long request strings. The point is that the
-value of NCHUNKS affects the amount of swap IO and when it kicks in. A
-higher NCHUNKS might defer when swap IO starts but when it starts, it may
-be continual. A lower NCHUNKS might start writing to swap earlier but in
-some cases will result in less swap IO overall.
-
-> You might also be referring to the fact that if you set NCHUNKS_ORDER to 2
-> (i.e. there are 4 chunks per zbud page) and you receive an allocation for size
-> (3/4 * PAGE_SIZE) + 1, the allocator will use all 4 chunks for that allocation
-> and the rest of the zbud page is lost to internal fragmentation.
-> 
-
-I'm less ocncerned about internal fragmentation because there are only
-ever 2 compressed page in a single physical page. The internal
-fragmentation characteristics are going to suck no matter what.
-
-> That is simply an argument for not choosing a small NCHUNKS_ORDER.
-> 
-> > 
-> > Please make this configurable by a kernel boot parameter at least. At
-> > a glance it looks like only problem would be that you have to kmalloc
-> > unbuddied[NCHUNKS] in the pool structure but that is hardly of earth
-> > shattering difficulty. Make the variables read_mostly to avoid cache-line
-> > bouncing problems.
-> 
-> I am hesitant to make this a tunable without understanding why anyone would
-> want to tune it.  It's hard to convey to a user what this tunable would do and
-> what effect it might have.  I'm not saying that isn't such a situation.
-> I just don't see one didn't understand your case above.
-> 
-
-I would only expect the tunable to be used by a developer supporting a user
-of zswap that complains about zswap-related stalls. They would be checking
-what the rate of swap IO is with default nchunks vs nchunks==2.  They would
-not necessarily be able to do anything useful with this information until
-they were willing to develop zswap. There would be no recommended value
-for this because it's completely workload dependant but data gathered from
-the tunable could potentially be used to justify the full zsmalloc allocator.
-
-> > > +struct zbud_pool {
-> > > +	spinlock_t lock;
-> > > +	struct list_head unbuddied[NCHUNKS];
-> > > +	struct list_head buddied;
-> > > +	struct list_head lru;
-> > > +	atomic_t pages_nr;
-> > 
-> > There is no need for pages_nr to be atomic. It's always manipulated
-> > under the lock. I see that the atomic is exported so someone can read it
-> > that is outside the lock but they are goign to have to deal with races
-> > anyway. atomic does not magically protect them
-> 
-> True.  I'll change it.
-> 
-> > 
-> > Also, pages_nr does not appear to be the number of zbud pages in the pool,
-> > it's the number of zpages. You may want to report both for debugging
-> > purposes as if nr_zpages != 2 * nr_zbud_pages then zswap is using more
-> > physical pages than it should be.
-> 
-> No, pages_nr is the number of pool pages, not zpages.  The number of zpages (or
-> allocations from zbud's point of view) is easily trackable by the user as it
-> does each allocation.  What the user can not know is how many pages are in the
-> pool.  Hence why zbud tracks this stat and makes it accessible via
-> zbud_get_pool_size().
-> 
-
-Bah, I missed up my terminiology. When I wrote this, I thought zbud must
-be a "buddy" page or a compressed page. Bit confusing but it'll settle
-in eventually.
-
-> > > +/*
-> > > + * Encodes the handle of a particular buddy within a zbud page
-> > > + * Pool lock should be held as this function accesses first|last_chunks
-> > > + */
-> > > +static inline unsigned long encode_handle(struct zbud_page *zbpage,
-> > > +					enum buddy bud)
-> > > +{
-> > > +	unsigned long handle;
-> > > +
-> > > +	/*
-> > > +	 * For now, the encoded handle is actually just the pointer to the data
-> > > +	 * but this might not always be the case.  A little information hiding.
-> > > +	 */
-> > > +	handle = (unsigned long)page_address(&zbpage->page);
-> > > +	if (bud == FIRST)
-> > > +		return handle;
-> > > +	handle += PAGE_SIZE - (zbpage->last_chunks  << CHUNK_SHIFT);
-> > > +	return handle;
-> > > +}
-> > 
-> > Your handles are unsigned long and are addresses. Consider making it an
-> > opaque type so someone deferencing it would take a special kind of
-> > stupid.
-> 
-> My argument for keeping the handles as unsigned longs is a forward-looking
-> to the implementation of the pluggable allocator interface in zswap.
-> Typing the handles prevents the creation of an allocator neutral function
-> signature.
-> 
-
-I don't see how but I don't know what your forward-looking
-implementation looks like either so I'll take your word for it.
-
-> > > +	zbpage = NULL;
-> > > +	for_each_unbuddied_list(i, chunks) {
-> > > +		if (!list_empty(&pool->unbuddied[i])) {
-> > > +			zbpage = list_first_entry(&pool->unbuddied[i],
-> > > +					struct zbud_page, buddy);
-> > > +			list_del(&zbpage->buddy);
-> > > +			if (zbpage->first_chunks == 0)
-> > > +				bud = FIRST;
-> > > +			else
-> > > +				bud = LAST;
-> > > +			goto found;
-> > > +		}
-> > > +	}
-> > > +
-> > > +	/* Lastly, couldn't find unbuddied zbpage, create new one */
-> > > +	spin_unlock(&pool->lock);
-> > > +	page = alloc_page(gfp);
-> > > +	if (!page)
-> > > +		return -ENOMEM;
-> > > +	spin_lock(&pool->lock);
-> > > +	atomic_inc(&pool->pages_nr);
-> > > +	zbpage = init_zbud_page(page);
-> > > +	bud = FIRST;
-> > > +
-> > 
-> > What bounds the size of the pool? Maybe a higher layer does but should the
-> > higher layer set the maximum size and enforce it here instead? That way the
-> > higher layer does not need to know that the allocator is dealing with pages.
-> 
-> I see your point.  The higher layer would have to set the limit in some
-> units, likely pages, so it would be aware that zbud is using pages.
-> 
-
-I don't think the higher layer necessarily has to inform zbud.
-
-> However, zswap (or any user) would probably make an initial determination of
-> the limit in pages. Then would have to register a notifier for anything that
-> could change the memory size (i.e. memory add/remove) and adjust the zbud
-> limit.
-> 
-
-To be honest, I would have expected zbud to set the limit as it's the
-allocator. I would also expect it to register the notifier for hotplug
-events because it's the allocator that knows how many physical pages are
-used. The higher layer should not necessarily care about how many pages
-are in use.
-
-> I guess a different way would be to set the zbud limit as a percentage, then
-> zbud could automatically adjust when the amount of ram changes, doing a
-> per-allocation limit check.
-> 
-> Any thoughts about those options?
-> 
-
-Nothing specific, just the general observation that the allocator is
-what is responsible for the physical resource and deferring the sizing
-of it to a higher layer will complicate the API.
-
-> <snip>
-> > > +	spin_lock(&pool->lock);
-> > > +	zbpage = handle_to_zbud_page(handle);
-> > > +
-> > > +	/* If first buddy, handle will be page aligned */
-> > > +	if (handle & ~PAGE_MASK)
-> > > +		zbpage->last_chunks = 0;
-> > > +	else
-> > > +		zbpage->first_chunks = 0;
-> > > +
-> > > +	if (PageReclaim(&zbpage->page)) {
-> > > +		/* zbpage is under reclaim, reclaim will free */
-> > > +		spin_unlock(&pool->lock);
-> > > +		return;
-> > > +	}
-> > > +
-> > 
-> > This implies that it is possible for a zpage to get freed twice. That
-> > sounds wrong. It sounds like a page being reclaimed should be isolated
-> > from other lists that makes it accessible similar to how normal pages are
-> > isolated from the LRU and then freed.
-> 
-> No, a zpage will not be freed twice.
-> 
-> The problem is that even if zbud isolates the page in it's structures,
-> which it does now removing from the buddied/unbuddied and lru list, there is no
-> way to isolate it in the _users_ data structures.  Once we release the pool
-> lock, a free could still come in from the user.
-> 
-
-That sounds very fragile although I cannot point my finger on exactly
-why. I worry that depending on the ordering of events that we might leak
-pages although again I cannot point to exactly where this would happen.
-
-> However, the user should have protections in place in it's eviction handler that
-> prevent two cases:
-> 
-> 1) If the user entry associated with the allocation being evicted has already
-> been freed, the eviction handler should just return 0 (already freed)
-> 
-> 2) If the user entry lookup in the eviction handler is successful, some
-> lock/refcount must protect the entry and its associated zbud allocation from
-> being freed while it is being evicted.
-> 
-> <snip>
-> > > +	for (i = 0; i < retries; i++) {
-> > > +		zbpage = list_tail_entry(&pool->lru, struct zbud_page, lru);
-> > > +		list_del(&zbpage->lru);
-> > > +		list_del(&zbpage->buddy);
-> > > +		/* Protect zbpage against free */
-> > > +		SetPageReclaim(&zbpage->page);
-> > 
-> > Why not isolated it instead of using a page flag?
-> 
-> Same reason as above, can't isolate in the user structure.
-
-Because I cannot point to exactly where this can go to hell I will not
-object to this longer but it feels like zpages should be reference
-counted and get freed (potentially freeing the zbud page) when it drops
-to zero.
-
--- 
-Mel Gorman
-SUSE Labs
+2013/5/20 Borislav Petkov <bp@alien8.de>:
+> On Mon, May 20, 2013 at 12:02:53PM +0200, Tommy Apel wrote:
+>> I think it's worth mentioning that this happens on a dual cpu system,
+>> I'm running the exact same kernel on a Xeon E3
+>> and has not had this problem.
+>>
+>> I also changed back to the regular dyntick and after that the dual cpu
+>> system has been stabil.
+>
+> True story - NO_HZ_FULL=y. Although I can't see the connection between
+> the issue and NO_HZ_FULL.
+>
+> Adding Frederic and leaving in the rest for reference.
+>
+>> On May 20, 2013 7:08 AM, "Borislav Petkov" <bp@alien8.de> wrote:
+>> >
+>> > Hmm,
+>> >
+>> > divide by 0, it seems.
+>> >
+>> > + Dirk Brandewie.
+>> >
+>> > On Sun, May 19, 2013 at 01:25:41PM +0200, Tommy Apel Hansen wrote:
+>> > > Hello guys, I'm getting this with the current 3.10-rc1, I've enabled the new full-NOHZ
+>> > > I'm not sure though if that has something to do with this or if something is changed in the
+>> > > p-state code.
+>> > >
+>> > > System :
+>> > > vendor_id : GenuineIntel
+>> > > cpu family  : 6
+>> > > model   : 45
+>> > > model name  : Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz
+>> > > stepping  : 7
+>> > > microcode : 0x70b
+>> > > cpu MHz   : 1176.000
+>> > > cache size  : 10240 KB
+>> > > physical id : 1
+>> > > siblings  : 4
+>> > > core id   : 3
+>> > > cpu cores : 4
+>> > > apicid    : 38
+>> > > initial apicid : 38
+>> > > fpu   : yes
+>> > > fpu_exception : yes
+>> > > cpuid level : 13
+>> > > wp    : yes
+>> > > flags   : [lots of stuff]
+>> > > bogomips  : 4800.56
+>> > > clflush size  : 64
+>> > > cache_alignment : 64
+>> > > address sizes : 46 bits physical, 48 bits virtual
+>> > > power management:
+>> > >
+>> > > crash bt:
+>> > > PID: 0      TASK: ffff88085c585950  CPU: 5   COMMAND: "swapper/5"
+>> > >  #0 [ffff88107fc83b80] machine_kexec at ffffffff8102aad6
+>> > >  #1 [ffff88107fc83bc0] crash_kexec at ffffffff810e57d0
+>> > >  #2 [ffff88107fc83c90] oops_end at ffffffff810073b8
+>> > >  #3 [ffff88107fc83cb0] do_divide_error at ffffffff810040c2
+>> > >  #4 [ffff88107fc83d50] divide_error at ffffffff81637348
+>> > >     [exception RIP: intel_pstate_timer_func+1071]
+>> > >     RIP: ffffffff814f501f  RSP: ffff88107fc83e08  RFLAGS: 00010246
+>> > >     RAX: 0000000000000000  RBX: ffff8808555b9e00  RCX: ffff8808555b9e40
+>> > >     RDX: 0000000000000000  RSI: 0000000000000064  RDI: 0000000000000001
+>> > >     RBP: 0000025debb95955   R8: ffff8808555b9f70   R9: 00000000000003e0
+>> > >     R10: dead000000200200  R11: 0000000000000000  R12: 0000001877f8d1d3
+>> > >     R13: 000000009a45ae19  R14: 0000001d27d3d1d8  R15: 0000000000000040
+>> > >     ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+>> > >  #5 [ffff88107fc83e00] intel_pstate_timer_func at ffffffff814f4fa2
+>> > >  #6 [ffff88107fc83e60] call_timer_fn at ffffffff8109edc3
+>> > >  #7 [ffff88107fc83e90] run_timer_softirq at ffffffff810a097e
+>> > >  #8 [ffff88107fc83f10] __do_softirq at ffffffff810990f1
+>> > >  #9 [ffff88107fc83f80] irq_exit at ffffffff810993ce
+>> > > #10 [ffff88107fc83f90] smp_apic_timer_interrupt at ffffffff81026448
+>> > > #11 [ffff88107fc83fb0] apic_timer_interrupt at ffffffff81636eca
+>> > > --- <IRQ stack> ---
+>> > > #12 [ffff88085c587db8] apic_timer_interrupt at ffffffff81636eca
+>> > >     [exception RIP: cpuidle_enter_state+72]
+>> > >     RIP: ffffffff814f5978  RSP: ffff88085c587e68  RFLAGS: 00000216
+>> > >     RAX: 000000000001c61d  RBX: ffffffff810a11e8  RCX: 0000000000000018
+>> > >     RDX: 0000000225c17d03  RSI: ffff88085c587fd8  RDI: ffffffff81a12500
+>> > >     RBP: 0000000000000002   R8: 0000000000000030   R9: 0000000000000001
+>> > >     R10: 0000000000000000  R11: 0000000000000000  R12: ffffffff810c48dd
+>> > >     R13: ffff88085c173950  R14: 0000000000000086  R15: 0000000000000000
+>> > >     ORIG_RAX: ffffffffffffff10  CS: 0010  SS: 0018
+>> > > #13 [ffff88085c587eb0] cpuidle_idle_call at ffffffff814f5aca
+>> > > #14 [ffff88085c587ef0] arch_cpu_idle at ffffffff8100cef9
+>> > > #15 [ffff88085c587f00] cpu_startup_entry at ffffffff810ce5af
+>> > >
+>> > > kernel config:
+>> > > http://pastebin.com/AmEqQNZx
+>> > >
+>> > > /Tommy
+>> > >
+>> > > --
+>> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > > the body of a message to majordomo@vger.kernel.org
+>> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > > Please read the FAQ at  http://www.tux.org/lkml/
+>> > >
+>> >
+>> > --
+>> > Regards/Gruss,
+>> >     Boris.
+>> >
+>> > Sent from a fat crate under my desk. Formatting is fine.
+>> > --
+>>
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
