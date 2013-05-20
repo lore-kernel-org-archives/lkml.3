@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3ETSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 14:42:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58984 "EHLO
+	id S1757575Ab3ETSub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 14:50:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59041 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab3ETSm1 (ORCPT
+	with ESMTP id S1752796Ab3ETSua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 14:42:27 -0400
-Date: Mon, 20 May 2013 11:42:05 -0700
+	Mon, 20 May 2013 14:50:30 -0400
+Date: Mon, 20 May 2013 11:50:12 -0700
 From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-03762e92774e216bfad2e0c0e2f1cb581cfab632@git.kernel.org>
+Message-ID: <tip-3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, tglx@linutronix.de, mhocko@suse.cz,
         hpa@linux.intel.com
@@ -20,7 +20,7 @@ In-Reply-To: <20130520182306.GA5348@dhcp22.suse.cz>
 References: <20130520182306.GA5348@dhcp22.suse.cz>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/urgent] x86-64: Make early_pmd_flags __cpuinitdata
-Git-Commit-ID: 03762e92774e216bfad2e0c0e2f1cb581cfab632
+Git-Commit-ID: 3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,12 +33,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03762e92774e216bfad2e0c0e2f1cb581cfab632
-Gitweb:     http://git.kernel.org/tip/03762e92774e216bfad2e0c0e2f1cb581cfab632
+Commit-ID:  3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
+Gitweb:     http://git.kernel.org/tip/3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
 Author:     H. Peter Anvin <hpa@linux.intel.com>
 AuthorDate: Mon, 20 May 2013 11:30:16 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 20 May 2013 11:36:46 -0700
+CommitDate: Mon, 20 May 2013 11:44:52 -0700
 
 x86-64: Make early_pmd_flags __cpuinitdata
 
@@ -46,6 +46,7 @@ Although early_pmd_flags is not actually *used* except at init time, it
 is *set* in secondary_startup_64, which is executed on any CPU
 startup, including hotplug and S3 resume.
 
+Originally-by: Michal Hocko <mhocko@suse.cz>
 Reported-and-tested-by: Michal Hocko <mhocko@suse.cz>
 Debugged-by: Linus Torvalds <torvalds@linux-foundation.org>
 Link: http://lkml.kernel.org/r/20130520182306.GA5348@dhcp22.suse.cz
