@@ -1,146 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab3ETDhM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 23:37:12 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:33591
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755236Ab3ETDhK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 23:37:10 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015I1447Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
-From: Liu Shengzhou-B36685 <B36685@freescale.com>
-To: Michael Braun <michael.braun@fem.tu-ilmenau.de>,
-        Mehresh Ramneek-B31383 <B31383@freescale.com>
-CC: "projekt-wlan@fem.tu-ilmenau.de" <projekt-wlan@fem.tu-ilmenau.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Thread-Topic: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Thread-Index: AQHOVKTREHQoofHZBUeF6TcOpU8t05kNaRUQ
-Date: Mon, 20 May 2013 03:37:06 +0000
-Message-ID: <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <20130417100809.GA8855@dynamic.fami-braun.de>
- <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
- <751900163975fc8d055bd2414c76d59b@fami-braun.de>
- <20130519152230.GA2938@dynamic.fami-braun.de>
-In-Reply-To: <20130519152230.GA2938@dynamic.fami-braun.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.68]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1755394Ab3ETDsa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 23:48:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:64166 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab3ETDs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 23:48:29 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Sun, 19 May 2013 22:48:28 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: lm-sensors <lm-sensors@lm-sensors.org>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] MAINTAINERS: Add myself as maintainer for LM95234 and TMP401 drivers
+Date: Sun, 19 May 2013 20:48:35 -0700
+Message-Id: <1369021715-31502-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Braun,
+I wrote the LM95234 driver and extended the TMP401 driver substantially,
+and I have hardware to test both, so it makes sense to explicitly
+maintain them.
 
-At that time I had an P4080DS board which had the same issue and had been fixed with this patch.
-I didn't test it on P1020 due to the absence of P1020. I think P1020 will need a new patch besides this one.
-Later Ramneek took this issue on P1020 for more investigation.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ MAINTAINERS |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-Hello Ramneek, any update for the PHY_CLK_VALID issue?
-
-Regards,
-Shengzhou
-
-
-> -----Original Message-----
-> From: Michael Braun [mailto:michael.braun@fem.tu-ilmenau.de]
-> Sent: Sunday, May 19, 2013 11:23 PM
-> To: Liu Shengzhou-B36685
-> Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux-
-> usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
-> Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
-> Freescale P1020
-> 
-> Hi,
-> 
-> I've got hardware here to test with, so if there any changes to test, I'm
-> willing to support.
-> Meanwhile, might it be a good idea to make that check optional - i.e. add
-> a module parameter or something like this around it?
-> 
-> Regards,
->  M. Braun
-> 
-> On Thu, Apr 18, 2013 at 05:13:39PM +0200, michael-dev wrote:
-> > Hi,
-> >
-> > thanks for the quick reply.
-> >
-> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
-> > I applied it, but it does not make any difference on my platform.
-> >
-> > Regards,
-> >  M. Braun
-> >
-> > Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
-> > >Hi Braun,
-> > >
-> > >It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit
-> > >unstable, introduced by patch "EHCI: centralize controller
-> > >initialization".
-> > >I submitted a patch to fix it.
-> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
-> > >
-> > >Regards,
-> > >Shengzhou
-> > >
-> > >
-> > >>-----Original Message-----
-> > >>From: Michael Braun [mailto:michael-dev@fami-braun.de]
-> > >>Sent: Wednesday, April 17, 2013 6:08 PM
-> > >>To: Liu Shengzhou-B36685
-> > >>Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
-> > >>linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> > >>Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
-> > >>Freescale P1020
-> > >>
-> > >>Hi,
-> > >>
-> > >>I'm running OpenWRT Kernel 3.8.3 (which already has
-> > >>f66dea709cd9309b2ee9f715697818001fb518de and
-> > >>5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN
-> > >>(QorlQ,
-> > >>PPC) device.
-> > >>Before updating the kernel from 3.3.0, USB host support was working
-> > >>fine.
-> > >>Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and
-> > >>the lsusb output is empty, so USB host support is not working. When
-> > >>I apply the following patch, USB host support starts working again,
-> > >>so I guess
-> > >>3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
-> > >>Do you have an idea how to fix it more appropriately?
-> > >>
-> > >>Thanks,
-> > >>  M. Braun
-> > >>
-> > >>--- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
-> > >>+0200
-> > >>+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
-> > >>+0200
-> > >>@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
-> > >>                 if (!spin_event_timeout(in_be32(non_ehci +
-> > >>FSL_SOC_USB_CTRL) &
-> > >>                                 PHY_CLK_VALID,
-> > >>FSL_USB_PHY_CLK_TIMEOUT,
-> > >>0)) {
-> > >>                         printk(KERN_WARNING "fsl-ehci: USB PHY
-> > >>clock invalid\n");
-> > >>-                       return -EINVAL;
-> > >>                 }
-> > >>         }
-> > >>
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3d7782b..f0f3d20 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4976,6 +4976,13 @@ S:	Maintained
+ F:	Documentation/hwmon/lm90
+ F:	drivers/hwmon/lm90.c
+ 
++LM95234 HARDWARE MONITOR DRIVER
++M:	Guenter Roeck <linux@roeck-us.net>
++L:	lm-sensors@lm-sensors.org
++S:	Maintained
++F:	Documentation/hwmon/lm95234
++F:	drivers/hwmon/lm95234.c
++
+ LME2510 MEDIA DRIVER
+ M:	Malcolm Priestley <tvboxspy@gmail.com>
+ L:	linux-media@vger.kernel.org
+@@ -8182,6 +8189,13 @@ F:	drivers/mmc/host/sh_mobile_sdhi.c
+ F:	include/linux/mmc/tmio.h
+ F:	include/linux/mmc/sh_mobile_sdhi.h
+ 
++TMP401 HARDWARE MONITOR DRIVER
++M:	Guenter Roeck <linux@roeck-us.net>
++L:	lm-sensors@lm-sensors.org
++S:	Maintained
++F:	Documentation/hwmon/tmp401
++F:	drivers/hwmon/tmp401.c
++
+ TMPFS (SHMEM FILESYSTEM)
+ M:	Hugh Dickins <hughd@google.com>
+ L:	linux-mm@kvack.org
+-- 
+1.7.9.7
 
