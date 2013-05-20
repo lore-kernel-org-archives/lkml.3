@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab3ETKwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:52:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55950 "EHLO
+	id S1755837Ab3ETLUk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:20:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56041 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab3ETKwQ (ORCPT
+	with ESMTP id S1755608Ab3ETKwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:16 -0400
+	Mon, 20 May 2013 06:52:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Terry Barnaby <terry@beam.ltd.uk>, Chris Ball <cjb@laptop.org>,
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 008/115] mmc: atmel-mci: pio hang on block errors
-Date: Mon, 20 May 2013 11:50:08 +0100
-Message-Id: <1369047116-9378-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 027/115] powerpc: Add isync to copy_and_flush
+Date: Mon, 20 May 2013 11:50:27 +0100
+Message-Id: <1369047116-9378-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Terry Barnaby <terry@beam.ltd.uk>
+From: Michael Neuling <michael.neuling@au1.ibm.com>
 
-commit bdbc5d0c60f3e9de3eeccf1c1a18bdc11dca62cc upstream.
+commit 29ce3c5073057991217916abc25628e906911757 upstream.
 
-The driver is doing, by default, multi-block reads. When a block error
-occurs, card/block.c instigates a single block read: "mmcblk0: retrying
-using single block read".  It leaves the sg chain intact and just changes
-the length attribute for the first sg entry and the overall sg_len
-parameter.  When atmci_read_data_pio is called to read the single block
-of data it ignores the sg_len and expects to read more than 512 bytes as
-it sees there are multiple items in the sg list. No more data comes as
-the controller has only been commanded to get one block.
+In __after_prom_start we copy the kernel down to zero in two calls to
+copy_and_flush.  After the first call (copy from 0 to copy_to_here:)
+we jump to the newly copied code soon after.
 
-Signed-off-by: Terry Barnaby <terry@beam.ltd.uk>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Unfortunately there's no isync between the copy of this code and the
+jump to it.  Hence it's possible that stale instructions could still be
+in the icache or pipeline before we branch to it.
+
+We've seen this on real machines and it's results in no console output
+after:
+  calling quiesce...
+  returning from prom_init
+
+The below adds an isync to ensure that the copy and flushing has
+completed before any branching to the new instructions occurs.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/atmel-mci.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/head_64.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index 77e998b..ac472be 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -175,6 +175,7 @@ struct atmel_mci {
- 	void __iomem		*regs;
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index 9e07bd0..1a3607b 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -489,6 +489,7 @@ _GLOBAL(copy_and_flush)
+ 	sync
+ 	addi	r5,r5,8
+ 	addi	r6,r6,8
++	isync
+ 	blr
  
- 	struct scatterlist	*sg;
-+	unsigned int		sg_len;
- 	unsigned int		pio_offset;
- 	unsigned int		*buffer;
- 	unsigned int		buf_size;
-@@ -819,6 +820,7 @@ static u32 atmci_prepare_data(struct atmel_mci *host, struct mmc_data *data)
- 	data->error = -EINPROGRESS;
- 
- 	host->sg = data->sg;
-+	host->sg_len = data->sg_len;
- 	host->data = data;
- 	host->data_chan = NULL;
- 
-@@ -1751,7 +1753,8 @@ static void atmci_read_data_pio(struct atmel_mci *host)
- 			if (offset == sg->length) {
- 				flush_dcache_page(sg_page(sg));
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1764,7 +1767,8 @@ static void atmci_read_data_pio(struct atmel_mci *host)
- 
- 			flush_dcache_page(sg_page(sg));
- 			host->sg = sg = sg_next(sg);
--			if (!sg)
-+			host->sg_len--;
-+			if (!sg || !host->sg_len)
- 				goto done;
- 
- 			offset = 4 - remaining;
-@@ -1815,7 +1819,8 @@ static void atmci_write_data_pio(struct atmel_mci *host)
- 			nbytes += 4;
- 			if (offset == sg->length) {
- 				host->sg = sg = sg_next(sg);
--				if (!sg)
-+				host->sg_len--;
-+				if (!sg || !host->sg_len)
- 					goto done;
- 
- 				offset = 0;
-@@ -1829,7 +1834,8 @@ static void atmci_write_data_pio(struct atmel_mci *host)
- 			nbytes += remaining;
- 
- 			host->sg = sg = sg_next(sg);
--			if (!sg) {
-+			host->sg_len--;
-+			if (!sg || !host->sg_len) {
- 				atmci_writel(host, ATMCI_TDR, value);
- 				goto done;
- 			}
+ .align 8
 -- 
 1.8.1.2
 
