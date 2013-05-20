@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757125Ab3ETOjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:39:03 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42020 "EHLO e7.ny.us.ibm.com"
+	id S1757098Ab3ETOi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:38:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48908 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757015Ab3ETOi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:38:59 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 8/8] rcu: Move redundant call to note_gp_changes() into called function
-Date: Mon, 20 May 2013 07:38:15 -0700
-Message-Id: <1369060695-29679-8-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130520143739.GA29365@linux.vnet.ibm.com>
- <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-5806-0000-0000-000021399369
+	id S1756972Ab3ETOik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 10:38:40 -0400
+Date: Mon, 20 May 2013 15:38:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
+        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
+        Theodore Tso <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Bernd Schubert <bernd.schubert@fastmail.fm>,
+        David Howells <dhowells@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux-ext4 <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] mm: Remove lru parameter from __pagevec_lru_add and
+ remove parts of pagevec API
+Message-ID: <20130520143833.GS11497@suse.de>
+References: <1368784087-956-1-git-send-email-mgorman@suse.de>
+ <1368784087-956-5-git-send-email-mgorman@suse.de>
+ <20130517204452.GC15721@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130517204452.GC15721@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, May 17, 2013 at 04:44:52PM -0400, Johannes Weiner wrote:
+> On Fri, May 17, 2013 at 10:48:06AM +0100, Mel Gorman wrote:
+> > Now that the LRU to add a page to is decided at LRU-add time, remove the
+> > misleading lru parameter from __pagevec_lru_add. A consequence of this is
+> > that the pagevec_lru_add_file, pagevec_lru_add_anon and similar helpers
+> > are misleading as the caller no longer has direct control over what LRU
+> > the page is added to. Unused helpers are removed by this patch and existing
+> > users of pagevec_lru_add_file() are converted to use lru_cache_add_file()
+> > directly and use the per-cpu pagevecs instead of creating their own pagevec.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > Reviewed-by: Jan Kara <jack@suse.cz>
+> > Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
+> > @@ -452,8 +448,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
+> >  	if (block) {
+> >  		/* submit the apparently valid page to the backing fs to be
+> >  		 * read from disk */
+> > -		ret = cachefiles_read_backing_file_one(object, op, page,
+> > -						       &pagevec);
+> > +		ret = cachefiles_read_backing_file_one(object, op, page);
+> 
+> Also remove the declaration and pagevec_init a few lines up?  Minor
+> detail, though.
+> 
 
-The __rcu_process_callbacks() invokes note_gp_changes() immediately
-before invoking rcu_check_quiescent_state(), which conditionally
-invokes that same function.  This commit therefore eliminates the
-call to note_gp_changes() in __rcu_process_callbacks() in favor of
-making unconditional to call from rcu_check_quiescent_state() to
-note_gp_changes().
+It's still used and passed to fscache_mark_pages_cached
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 14fa927..34db855 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1704,11 +1704,8 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp)
- static void
- rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
- {
--	/* If there is now a new grace period, record and return. */
--	if (rdp->gpnum != rsp->gpnum) {
--		note_gp_changes(rsp, rdp);
--		return;
--	}
-+	/* Check for grace-period ends and beginnings. */
-+	note_gp_changes(rsp, rdp);
- 
- 	/*
- 	 * Does this CPU still need to do its part for current grace period?
-@@ -2172,9 +2169,6 @@ __rcu_process_callbacks(struct rcu_state *rsp)
- 
- 	WARN_ON_ONCE(rdp->beenonline == 0);
- 
--	/* Handle the end of a grace period that some other CPU ended.  */
--	note_gp_changes(rsp, rdp);
--
- 	/* Update RCU state based on any recent quiescent states. */
- 	rcu_check_quiescent_state(rsp, rdp);
- 
+Thanks
+
 -- 
-1.8.1.5
-
+Mel Gorman
+SUSE Labs
