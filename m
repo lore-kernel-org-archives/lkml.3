@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab3ETVBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 17:01:31 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:42259 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756429Ab3ETVB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 17:01:29 -0400
-Date: Mon, 20 May 2013 23:01:27 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Or Gerlitz <or.gerlitz@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v3 net-next 3/4] ixgbe: Add support for ndo_ll_poll
-Message-ID: <20130520210127.GF24555@two.firstfloor.org>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
- <20130520101622.14133.21998.stgit@ladj378.jer.intel.com>
- <CAJZOPZJx8vpSWqOhmN65gn=vi7hWXQO_J01+hAwGY9RwetX3DA@mail.gmail.com>
- <20130520203307.GE24555@two.firstfloor.org>
- <CAJZOPZJwcgShs-FCaXmPmigdu55ZSt08WnJjadcOi+-_AMq=oA@mail.gmail.com>
+	id S1758188Ab3ETVDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:03:33 -0400
+Received: from mout.gmx.net ([212.227.15.15]:49233 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756690Ab3ETVDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 17:03:32 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/gsOx9aa3g/CU2U1w0KrT8DG7OR13Q1utH61DWKH
+	b5fGODYF7tVjvI
+Message-ID: <519A8FA1.8040007@gmx.de>
+Date: Mon, 20 May 2013 23:03:29 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130516 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJZOPZJwcgShs-FCaXmPmigdu55ZSt08WnJjadcOi+-_AMq=oA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: fuzz testing lets kernel audit complains in the linkat syscall
+ only
+References: <519A88BE.8030309@gmx.de>
+In-Reply-To: <519A88BE.8030309@gmx.de>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:42:37PM +0300, Or Gerlitz wrote:
-> On Mon, May 20, 2013 at 11:33 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> >
-> > This is discussed in 0/x
-> >
-> 
-> I am not with you, V3's cover letter is empty, and in V2's cover letter I
-> don't see that
+On 05/20/2013 10:34 PM, Toralf Förster wrote:
+> While fuzz testing a 3.9.3 kernel I'm wonder why the kernel audit does complain
+> about a file in the syscall "unlinkat" - but audit does not complain when that file
+> was created/modified etc.
 
-It was here. Looks like Eliezer didn't reuse the full cover later.
-
-http://www.gossamer-threads.com/lists/linux/kernel/1715294?page=last
+sry - forget that mail, symlinkat and readlinkat give now audit logs too.
 
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
