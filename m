@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab3ETVDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 17:03:33 -0400
-Received: from mout.gmx.net ([212.227.15.15]:49233 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756690Ab3ETVDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 17:03:32 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/gsOx9aa3g/CU2U1w0KrT8DG7OR13Q1utH61DWKH
-	b5fGODYF7tVjvI
-Message-ID: <519A8FA1.8040007@gmx.de>
-Date: Mon, 20 May 2013 23:03:29 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130516 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: fuzz testing lets kernel audit complains in the linkat syscall
- only
-References: <519A88BE.8030309@gmx.de>
-In-Reply-To: <519A88BE.8030309@gmx.de>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1758239Ab3ETVFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:05:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38016 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756450Ab3ETVFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 17:05:51 -0400
+Date: Mon, 20 May 2013 14:05:50 -0700 (PDT)
+Message-Id: <20130520.140550.1794131076308884181.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2013-05-20
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130520193644.GD11502@tuxdriver.com>
+References: <20130520193644.GD11502@tuxdriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 20 May 2013 14:05:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2013 10:34 PM, Toralf Förster wrote:
-> While fuzz testing a 3.9.3 kernel I'm wonder why the kernel audit does complain
-> about a file in the syscall "unlinkat" - but audit does not complain when that file
-> was created/modified etc.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 20 May 2013 15:36:44 -0400
 
-sry - forget that mail, symlinkat and readlinkat give now audit logs too.
+> This pull request is intended for the 3.10 series.  It contains a
+> variety of fixes for problems discovered during the merge window and
+> after 3.10-rc1.
 
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Pulled, thanks John.
