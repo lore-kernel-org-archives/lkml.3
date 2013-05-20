@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab3ETLK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:10:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56189 "EHLO
+	id S1756136Ab3ETKxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:53:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56085 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756166Ab3ETKxN (ORCPT
+	with ESMTP id S1755842Ab3ETKwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:13 -0400
+	Mon, 20 May 2013 06:52:49 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@samsung.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 057/115] drbd: fix for deadlock when using automatic split-brain-recovery
-Date: Mon, 20 May 2013 11:50:57 +0100
-Message-Id: <1369047116-9378-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 038/115] drm/radeon: fix handling of v6 power tables
+Date: Mon, 20 May 2013 11:50:38 +0100
+Message-Id: <1369047116-9378-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream.
+commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
 
-With an automatic after split-brain recovery policy of
-"after-sb-1pri call-pri-lost-after-sb",
-when trying to drbd_set_role() to R_SECONDARY,
-we run into a deadlock.
+The code was mis-handling variable sized arrays.
 
-This was first recognized and supposedly fixed by
-2009-06-10 "Fixed a deadlock when using automatic split brain recovery when both nodes are"
-replacing drbd_set_role() with drbd_change_state() in that code-path,
-but the first hunk of that patch forgets to remove the drbd_set_role().
-
-We apparently only ever tested the "two primaries" case.
-
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Sylvain BERTRAND <sylware@legeek.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/drbd/drbd_receiver.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index ea4836e..e81cc53 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2260,7 +2260,6 @@ static int drbd_asb_recover_1p(struct drbd_conf *mdev) __must_hold(local)
- 		if (hg == -1 && mdev->state.role == R_PRIMARY) {
- 			enum drbd_state_rv rv2;
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index 78d584e..38d87e1 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2482,6 +2482,7 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
+ 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
+         u16 data_offset;
+ 	u8 frev, crev;
++	u8 *power_state_offset;
  
--			drbd_set_role(mdev, R_SECONDARY, 0);
- 			 /* drbd_change_state() does not sleep while in SS_IN_TRANSIENT_STATE,
- 			  * we might be here in C_WF_REPORT_PARAMS which is transient.
- 			  * we do not need to wait for the after state change work either. */
+ 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
+ 				   &frev, &crev, &data_offset))
+@@ -2504,11 +2505,11 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
+ 				       state_array->ucNumEntries, GFP_KERNEL);
+ 	if (!rdev->pm.power_state)
+ 		return state_index;
++	power_state_offset = (u8 *)state_array->states;
+ 	for (i = 0; i < state_array->ucNumEntries; i++) {
+ 		mode_index = 0;
+-		power_state = (union pplib_power_state *)&state_array->states[i];
+-		/* XXX this might be an inagua bug... */
+-		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
++		power_state = (union pplib_power_state *)power_state_offset;
++		non_clock_array_index = power_state->v2.nonClockInfoIndex;
+ 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
+ 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
+ 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
+@@ -2520,9 +2521,6 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
+ 		if (power_state->v2.ucNumDPMLevels) {
+ 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
+ 				clock_array_index = power_state->v2.clockInfoIndex[j];
+-				/* XXX this might be an inagua bug... */
+-				if (clock_array_index >= clock_info_array->ucNumEntries)
+-					continue;
+ 				clock_info = (union pplib_clock_info *)
+ 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
+ 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
+@@ -2544,6 +2542,7 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
+ 								   non_clock_info);
+ 			state_index++;
+ 		}
++		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
+ 	}
+ 	/* if multiple clock modes, mark the lowest as no display */
+ 	for (i = 0; i < state_index; i++) {
 -- 
 1.8.1.2
 
