@@ -1,46 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3ETPLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:11:21 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:55113 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3ETPLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:11:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <519A3A5D.6090703@digi.com>
-References: <5196375A.1070308@digi.com>
-	<519639A5.9070807@freescale.com>
-	<519A3A5D.6090703@digi.com>
-Date: Mon, 20 May 2013 12:11:18 -0300
-Message-ID: <CAOMZO5BaHRDjomihd-_4-5g8peEwLGkQh0MtqEKqDfV-YnDk+g@mail.gmail.com>
-Subject: Re: mxsfb on i.MX28 uses bypassed ref_xtal 24MHz clock for LCD
-From: Fabio Estevam <festevam@gmail.com>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1757378Ab3ETPLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:11:48 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57769 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757232Ab3ETPKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:10:52 -0400
+From: zwu.kernel@gmail.com
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [RFC PATCH v1 4/5] BTRFS hot reloc, procfs: add three proc interfaces
+Date: Mon, 20 May 2013 23:11:26 +0800
+Message-Id: <1369062687-23544-5-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
+References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052015-9360-0000-0000-00001243555D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:59 AM, Hector Palacios
-<hector.palacios@digi.com> wrote:
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-> Agh. Now it works on the EVK. I had something wrong with the backlight
-> (maybe a bad DTB).
->
-> Do you have any comment on the fact that the lcdif clock is bypassed to the
-> 24MHz ref clock? Doesn't this make useless the definition of pixelclk for
-> the different displays in mach-mxs.c?
-> You can only obtain whole divisors of this frequency (24, 12, 6, 4), which
-> may not be accurate enough to fit some displays.
+  Add three proc interfaces hot-reloc-interval, hot-reloc-threshold,
+and hot-reloc-max-items under the dir /proc/sys/fs/ in order to
+turn HOT_RELOC_INTERVAL, HOT_RELOC_THRESHOLD, and HOT_RELOC_MAX_ITEMS
+into be tunable.
 
-I haven't had a chance to look at it yet, but feel free to submit
-patches if you think you can improve the driver.
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/btrfs/hot_relocate.c | 26 +++++++++++++++++---------
+ fs/btrfs/hot_relocate.h |  5 -----
+ include/linux/btrfs.h   |  4 ++++
+ kernel/sysctl.c         | 22 ++++++++++++++++++++++
+ 4 files changed, 43 insertions(+), 14 deletions(-)
 
-Thanks,
+diff --git a/fs/btrfs/hot_relocate.c b/fs/btrfs/hot_relocate.c
+index ae28b86..3a18555 100644
+--- a/fs/btrfs/hot_relocate.c
++++ b/fs/btrfs/hot_relocate.c
+@@ -25,7 +25,7 @@
+  * The relocation code below operates on the heat map lists to identify
+  * hot or cold data logical file ranges that are candidates for relocation.
+  * The triggering mechanism for relocation is controlled by a global heat
+- * threshold integer value (HOT_RELOC_THRESHOLD). Ranges are
++ * threshold integer value (sysctl_hot_reloc_threshold). Ranges are
+  * queued for relocation by the periodically executing relocate kthread,
+  * which updates the global heat threshold and responds to space pressure
+  * on the nonrotating disks.
+@@ -53,6 +53,15 @@
+  * (assuming, critically, the HOT_MOVE option is set at mount time).
+  */
+ 
++int sysctl_hot_reloc_threshold = 150;
++EXPORT_SYMBOL_GPL(sysctl_hot_reloc_threshold);
++
++int sysctl_hot_reloc_interval __read_mostly = 120;
++EXPORT_SYMBOL_GPL(sysctl_hot_reloc_interval);
++
++int sysctl_hot_reloc_max_items __read_mostly = 250;
++EXPORT_SYMBOL_GPL(sysctl_hot_reloc_max_items);
++
+ /*
+  * Returns the ratio of nonrotating disks that are full.
+  * If no nonrotating disk is found, returns THRESH_MAX_VALUE + 1.
+@@ -103,7 +112,7 @@ static int hot_calc_nonrot_ratio(struct hot_reloc *hot_reloc)
+ static int hot_update_threshold(struct hot_reloc *hot_reloc,
+ 				int update)
+ {
+-	int thresh = hot_reloc->thresh;
++	int thresh = sysctl_hot_reloc_threshold;
+ 	int ratio = hot_calc_nonrot_ratio(hot_reloc);
+ 
+ 	/* Sometimes update global threshold, others not */
+@@ -127,7 +136,7 @@ static int hot_update_threshold(struct hot_reloc *hot_reloc,
+ 			thresh = 0;
+ 	}
+ 
+-	hot_reloc->thresh = thresh;
++	sysctl_hot_reloc_threshold = thresh;
+ 	return ratio;
+ }
+ 
+@@ -215,7 +224,7 @@ static int hot_queue_extent(struct hot_reloc *hot_reloc,
+ 			*counter = *counter + 1;
+ 		}
+ 
+-		if (*counter >= HOT_RELOC_MAX_ITEMS)
++		if (*counter >= sysctl_hot_reloc_max_items)
+ 			break;
+ 
+ 		if (kthread_should_stop()) {
+@@ -293,7 +302,7 @@ again:
+ 		while (1) {
+ 			lock_extent(tree, page_start, page_end);
+ 			ordered = btrfs_lookup_ordered_extent(inode,
+-							page_start);
++							      page_start);
+ 			unlock_extent(tree, page_start, page_end);
+ 			if (!ordered)
+ 				break;
+@@ -559,7 +568,7 @@ void hot_do_relocate(struct hot_reloc *hot_reloc)
+ 
+ 	run++;
+ 	ratio = hot_update_threshold(hot_reloc, !(run % 15));
+-	thresh = hot_reloc->thresh;
++	thresh = sysctl_hot_reloc_threshold;
+ 
+ 	INIT_LIST_HEAD(&hot_reloc->hot_relocq[TYPE_NONROT]);
+ 
+@@ -569,7 +578,7 @@ void hot_do_relocate(struct hot_reloc *hot_reloc)
+ 	if (count_to_hot == 0)
+ 		return;
+ 
+-	count_to_cold = HOT_RELOC_MAX_ITEMS;
++	count_to_cold = sysctl_hot_reloc_max_items;
+ 
+ 	/* Don't move cold data to HDD unless there's space pressure */
+ 	if (ratio < HIGH_WATER_LEVEL)
+@@ -653,7 +662,7 @@ static int hot_relocate_kthread(void *arg)
+ 	unsigned long delay;
+ 
+ 	do {
+-		delay = HZ * HOT_RELOC_INTERVAL;
++		delay = HZ * sysctl_hot_reloc_interval;
+ 		if (mutex_trylock(&hot_reloc->hot_reloc_mutex)) {
+ 			hot_do_relocate(hot_reloc);
+ 			mutex_unlock(&hot_reloc->hot_reloc_mutex);
+@@ -685,7 +694,6 @@ int hot_relocate_init(struct btrfs_fs_info *fs_info)
+ 
+ 	fs_info->hot_reloc = hot_reloc;
+ 	hot_reloc->fs_info = fs_info;
+-	hot_reloc->thresh = HOT_RELOC_THRESHOLD;
+ 	for (i = 0; i < MAX_RELOC_TYPES; i++)
+ 		INIT_LIST_HEAD(&hot_reloc->hot_relocq[i]);
+ 	mutex_init(&hot_reloc->hot_reloc_mutex);
+diff --git a/fs/btrfs/hot_relocate.h b/fs/btrfs/hot_relocate.h
+index 1b1cfb5..94defe6 100644
+--- a/fs/btrfs/hot_relocate.h
++++ b/fs/btrfs/hot_relocate.h
+@@ -18,10 +18,6 @@
+ #include "btrfs_inode.h"
+ #include "volumes.h"
+ 
+-#define HOT_RELOC_INTERVAL  120
+-#define HOT_RELOC_THRESHOLD 150
+-#define HOT_RELOC_MAX_ITEMS 250
+-
+ #define HEAT_MAX_VALUE    (MAP_SIZE - 1)
+ #define HIGH_WATER_LEVEL  75 /* when to raise the threshold */
+ #define LOW_WATER_LEVEL   50 /* when to lower the threshold */
+@@ -32,7 +28,6 @@
+ struct hot_reloc {
+ 	struct btrfs_fs_info *fs_info;
+ 	struct list_head hot_relocq[MAX_RELOC_TYPES];
+-	int thresh;
+ 	struct task_struct *hot_reloc_kthread;
+ 	struct mutex hot_reloc_mutex;
+ };
+diff --git a/include/linux/btrfs.h b/include/linux/btrfs.h
+index 22d7991..7179819 100644
+--- a/include/linux/btrfs.h
++++ b/include/linux/btrfs.h
+@@ -3,4 +3,8 @@
+ 
+ #include <uapi/linux/btrfs.h>
+ 
++extern int sysctl_hot_reloc_threshold;
++extern int sysctl_hot_reloc_interval;
++extern int sysctl_hot_reloc_max_items;
++
+ #endif /* _LINUX_BTRFS_H */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 6ee4338..3ab1a68 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -62,6 +62,7 @@
+ #include <linux/capability.h>
+ #include <linux/binfmts.h>
+ #include <linux/sched/sysctl.h>
++#include <linux/btrfs.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -1630,6 +1631,27 @@ static struct ctl_table fs_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "hot-reloc-threshold",
++		.data		= &sysctl_hot_reloc_threshold,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
++		.procname	= "hot-reloc-interval",
++		.data		= &sysctl_hot_reloc_interval,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
++		.procname	= "hot-reloc-max-items",
++		.data		= &sysctl_hot_reloc_max_items,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
+ 	{ }
+ };
+ 
+-- 
+1.7.11.7
 
-Fabio Estevam
