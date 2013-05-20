@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab3ETVMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 17:12:05 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64785 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab3ETVMA (ORCPT
+	id S1758371Ab3ETVN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:13:27 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:44739 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758218Ab3ETVMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 17:12:00 -0400
+	Mon, 20 May 2013 17:12:02 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v3 0/5] mips/kvm: Fix ABI for compatibility with 64-bit guests.
-Date: Mon, 20 May 2013 14:01:21 -0700
-Message-Id: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v3 1/5] mips/kvm: Fix ABI for use of FPU.
+Date: Mon, 20 May 2013 14:01:22 -0700
+Message-Id: <1369083686-27524-2-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-The initial patch set implementing MIPS KVM does not handle 64-bit
-guests or use of the FPU.  This patch set corrects these ABI issues,
-and does some very minor clean up.
+Define a non-empty struct kvm_fpu.
 
-Changes from v2:  Split into five parts, no code change.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ arch/mips/include/asm/kvm.h | 29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-David Daney (5):
-  mips/kvm: Fix ABI for use of FPU.
-  mips/kvm: Fix ABI for use of 64-bit registers.
-  mips/kvm: Fix name of gpr field in struct kvm_regs.
-  mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in
-    kvm_arch_vcpu_ioctl_{s,g}et_regs
-  mips/kvm: Fix ABI by moving manipulation of CP0 registers to
-    KVM_{G,S}ET_MSRS
-
- arch/mips/include/asm/kvm.h      | 111 ++++++++++---
- arch/mips/include/asm/kvm_host.h |   4 -
- arch/mips/kvm/kvm_mips.c         | 102 +-----------
- arch/mips/kvm/kvm_trap_emul.c    | 330 ++++++++++++++++++++++++++++++++++-----
- 4 files changed, 386 insertions(+), 161 deletions(-)
-
+diff --git a/arch/mips/include/asm/kvm.h b/arch/mips/include/asm/kvm.h
+index 85789ea..0e8f565 100644
+--- a/arch/mips/include/asm/kvm.h
++++ b/arch/mips/include/asm/kvm.h
+@@ -1,11 +1,12 @@
+ /*
+-* This file is subject to the terms and conditions of the GNU General Public
+-* License.  See the file "COPYING" in the main directory of this archive
+-* for more details.
+-*
+-* Copyright (C) 2012  MIPS Technologies, Inc.  All rights reserved.
+-* Authors: Sanjay Lal <sanjayl@kymasys.com>
+-*/
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2012  MIPS Technologies, Inc.  All rights reserved.
++ * Copyright (C) 2013 Cavium, Inc.
++ * Authors: Sanjay Lal <sanjayl@kymasys.com>
++ */
+ 
+ #ifndef __LINUX_KVM_MIPS_H
+ #define __LINUX_KVM_MIPS_H
+@@ -31,8 +32,20 @@ struct kvm_regs {
+ struct kvm_sregs {
+ };
+ 
+-/* for KVM_GET_FPU and KVM_SET_FPU */
++/*
++ * for KVM_GET_FPU and KVM_SET_FPU
++ *
++ * If Status[FR] is zero (32-bit FPU), the upper 32-bits of the FPRs
++ * are zero filled.
++ */
+ struct kvm_fpu {
++	__u64 fpr[32];
++	__u32 fir;
++	__u32 fccr;
++	__u32 fexr;
++	__u32 fenr;
++	__u32 fcsr;
++	__u32 pad;
+ };
+ 
+ struct kvm_debug_exit_arch {
 -- 
 1.7.11.7
 
