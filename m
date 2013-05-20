@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3ETOtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:49:31 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:42420 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3ETOt1 (ORCPT
+	id S1757002Ab3ETOtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:49:49 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:35107 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755226Ab3ETOtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:49:27 -0400
-Message-ID: <1369061360.4616.0.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: moving constant and
- structure definitions out of rtl8150.c
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Petko Manolov <petkan@nucleusys.com>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 20 May 2013 15:49:20 +0100
-In-Reply-To: <alpine.DEB.2.02.1305182306550.16874@fry.nucleusys.com>
-References: <alpine.DEB.2.02.1305182306550.16874@fry.nucleusys.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Mon, 20 May 2013 10:49:46 -0400
+Date: Mon, 20 May 2013 07:49:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/2] Documentation changes for 3.11
+Message-ID: <20130520144934.GA29947@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19878.004
-X-TM-AS-Result: No--6.007700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052014-5518-0000-0000-00000ED06D3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-05-18 at 23:20 +0300, Petko Manolov wrote:
-> From: Petko Manolov <petkan@nucleusys.com>
-> 
-> Moving constant and structure definitions out of rtl8150.c;
-> 
-> Signed-off-by: Petko Manolov <petkan@nucleusys.com>
-> ---
->  drivers/net/usb/rtl8150.c |  121 +----------------------------------
->  1 file changed, 2 insertions(+), 119 deletions(-)
-> 
-> diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
-> index a491d3a..7d1897b 100644
-> --- a/drivers/net/usb/rtl8150.c
-> +++ b/drivers/net/usb/rtl8150.c
-> @@ -17,132 +17,15 @@
->  #include <linux/usb.h>
->  #include <asm/uaccess.h>
->  
-> +#include "rtl8150.h"
-[...]
+Hello!
 
-Now how is this driver going to compile, when rtl8150.h is only added by
-the next patch?!
+A pair of documentation changes.  These are not directly related to RCU,
+but if no one adopts them, I will send them up with the RCU commits.  The
+patches are as follows:
 
-You need to squash these first 2 together, so that the driver can be
-compiled after each step.
+1.	Changes to the new Documentation/timers/NO_HZ.txt documentation
+	based on review comments from Sedat Dilek.
 
-Ben.
+2.	Document ways of turning off the scheduling-clock tick even when
+	there is more than one runnable task on a given CPU.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+3.	Document ways of avoiding OS jitter form the kworker workqueue
+	kthreads.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/kernel-per-CPU-kthreads.txt |   47 ++++++++++++++++
+ b/Documentation/timers/NO_HZ.txt            |   79 +++++++++++++++++++++++-----
+ 2 files changed, 114 insertions(+), 12 deletions(-)
 
