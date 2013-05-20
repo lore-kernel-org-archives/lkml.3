@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3ETK7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:59:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56390 "EHLO
+	id S1756631Ab3ETK7k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:59:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56392 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab3ETKx5 (ORCPT
+	with ESMTP id S1756436Ab3ETKx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:57 -0400
+	Mon, 20 May 2013 06:53:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 096/115] macvlan: fix passthru mode race between dev removal and rx path
-Date: Mon, 20 May 2013 11:51:36 +0100
-Message-Id: <1369047116-9378-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 097/115] ipv6: do not clear pinet6 field
+Date: Mon, 20 May 2013 11:51:37 +0100
+Message-Id: <1369047116-9378-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +28,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 233c7df0821c4190e2d3f4be0f2ca0ab40a5ed8c upstream.
+commit f77d602124d865c38705df7fa25c03de9c284ad2 upstream.
 
-Currently, if macvlan in passthru mode is created and data are rxed and
-you remove this device, following panic happens:
+We have seen multiple NULL dereferences in __inet6_lookup_established()
 
-NULL pointer dereference at 0000000000000198
-IP: [<ffffffffa0196058>] macvlan_handle_frame+0x153/0x1f7 [macvlan]
+After analysis, I found that inet6_sk() could be NULL while the
+check for sk_family == AF_INET6 was true.
 
-I'm using following script to trigger this:
-<script>
-while [ 1 ]
-do
-	ip link add link e1 name macvtap0 type macvtap mode passthru
-	ip link set e1 up
-	ip link set macvtap0 up
-	IFINDEX=`ip link |grep macvtap0 | cut -f 1 -d ':'`
-	cat /dev/tap$IFINDEX  >/dev/null &
-	ip link del dev macvtap0
-done
-</script>
+Bug was added in linux-2.6.29 when RCU lookups were introduced in UDP
+and TCP stacks.
 
-I run this script while "ping -f" is running on another machine to send
-packets to e1 rx.
+Once an IPv6 socket, using SLAB_DESTROY_BY_RCU is inserted in a hash
+table, we no longer can clear pinet6 field.
 
-Reason of the panic is that list_first_entry() is blindly called in
-macvlan_handle_frame() even if the list was empty. vlan is set to
-incorrect pointer which leads to the crash.
+This patch extends logic used in commit fcbdf09d9652c891
+("net: fix nulls list corruptions in sk_prot_alloc")
 
-I'm fixing this by protecting port->vlans list by rcu and by preventing
-from getting incorrect pointer in case the list is empty.
+TCP/UDP/UDPLite IPv6 protocols provide their own .clear_sk() method
+to make sure we do not clear pinet6 field.
 
-Introduced by: commit eb06acdc85585f2 "macvlan: Introduce 'passthru' mode to takeover the underlying device"
+At socket clone phase, we do not really care, as cloning the parent (non
+NULL) pinet6 is not adding a fatal race.
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvlan.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ include/net/sock.h  | 12 ++++++++++++
+ net/core/sock.c     | 12 ------------
+ net/ipv6/tcp_ipv6.c | 12 ++++++++++++
+ net/ipv6/udp.c      | 13 ++++++++++++-
+ net/ipv6/udp_impl.h |  2 ++
+ net/ipv6/udplite.c  |  2 +-
+ 6 files changed, 39 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 666fc20..0bec603 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -204,7 +204,8 @@ static rx_handler_result_t macvlan_handle_frame(struct sk_buff **pskb)
- 	}
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 5e904e6..2a3d405 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -807,6 +807,18 @@ struct inet_hashinfo;
+ struct raw_hashinfo;
+ struct module;
  
- 	if (port->passthru)
--		vlan = list_first_entry(&port->vlans, struct macvlan_dev, list);
-+		vlan = list_first_or_null_rcu(&port->vlans,
-+					      struct macvlan_dev, list);
- 	else
- 		vlan = macvlan_hash_lookup(port, eth->h_dest);
- 	if (vlan == NULL)
-@@ -771,7 +772,7 @@ int macvlan_common_newlink(struct net *src_net, struct net_device *dev,
- 	if (err < 0)
- 		goto destroy_port;
- 
--	list_add_tail(&vlan->list, &port->vlans);
-+	list_add_tail_rcu(&vlan->list, &port->vlans);
- 	netif_stacked_transfer_operstate(lowerdev, dev);
- 
- 	return 0;
-@@ -797,7 +798,7 @@ void macvlan_dellink(struct net_device *dev, struct list_head *head)
- {
- 	struct macvlan_dev *vlan = netdev_priv(dev);
- 
--	list_del(&vlan->list);
-+	list_del_rcu(&vlan->list);
- 	unregister_netdevice_queue(dev, head);
++/*
++ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
++ * un-modified. Special care is taken when initializing object to zero.
++ */
++static inline void sk_prot_clear_nulls(struct sock *sk, int size)
++{
++	if (offsetof(struct sock, sk_node.next) != 0)
++		memset(sk, 0, offsetof(struct sock, sk_node.next));
++	memset(&sk->sk_node.pprev, 0,
++	       size - offsetof(struct sock, sk_node.pprev));
++}
++
+ /* Networking protocol blocks we attach to sockets.
+  * socket layer -> transport layer interface
+  * transport -> network interface is defined by struct inet_proto
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 5d30122..457ae99 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1085,18 +1085,6 @@ static void sock_copy(struct sock *nsk, const struct sock *osk)
+ #endif
  }
- EXPORT_SYMBOL_GPL(macvlan_dellink);
+ 
+-/*
+- * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
+- * un-modified. Special care is taken when initializing object to zero.
+- */
+-static inline void sk_prot_clear_nulls(struct sock *sk, int size)
+-{
+-	if (offsetof(struct sock, sk_node.next) != 0)
+-		memset(sk, 0, offsetof(struct sock, sk_node.next));
+-	memset(&sk->sk_node.pprev, 0,
+-	       size - offsetof(struct sock, sk_node.pprev));
+-}
+-
+ void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
+ {
+ 	unsigned long nulls1, nulls2;
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index 5d10b81..989c024 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -2034,6 +2034,17 @@ void tcp6_proc_exit(struct net *net)
+ }
+ #endif
+ 
++static void tcp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ struct proto tcpv6_prot = {
+ 	.name			= "TCPv6",
+ 	.owner			= THIS_MODULE,
+@@ -2075,6 +2086,7 @@ struct proto tcpv6_prot = {
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ 	.proto_cgroup		= tcp_proto_cgroup,
+ #endif
++	.clear_sk		= tcp_v6_clear_sk,
+ };
+ 
+ static const struct inet6_protocol tcpv6_protocol = {
+diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
+index f05099f..3a5491d 100644
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -1499,6 +1499,17 @@ void udp6_proc_exit(struct net *net) {
+ }
+ #endif /* CONFIG_PROC_FS */
+ 
++void udp_v6_clear_sk(struct sock *sk, int size)
++{
++	struct inet_sock *inet = inet_sk(sk);
++
++	/* we do not want to clear pinet6 field, because of RCU lookups */
++	sk_prot_clear_portaddr_nulls(sk, offsetof(struct inet_sock, pinet6));
++
++	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
++	memset(&inet->pinet6 + 1, 0, size);
++}
++
+ /* ------------------------------------------------------------------------ */
+ 
+ struct proto udpv6_prot = {
+@@ -1529,7 +1540,7 @@ struct proto udpv6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udpv6_protosw = {
+diff --git a/net/ipv6/udp_impl.h b/net/ipv6/udp_impl.h
+index d757104..4691ed5 100644
+--- a/net/ipv6/udp_impl.h
++++ b/net/ipv6/udp_impl.h
+@@ -31,6 +31,8 @@ extern int	udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
+ extern int	udpv6_queue_rcv_skb(struct sock * sk, struct sk_buff *skb);
+ extern void	udpv6_destroy_sock(struct sock *sk);
+ 
++extern void udp_v6_clear_sk(struct sock *sk, int size);
++
+ #ifdef CONFIG_PROC_FS
+ extern int	udp6_seq_show(struct seq_file *seq, void *v);
+ #endif
+diff --git a/net/ipv6/udplite.c b/net/ipv6/udplite.c
+index 1d08e21..dfcc4be 100644
+--- a/net/ipv6/udplite.c
++++ b/net/ipv6/udplite.c
+@@ -56,7 +56,7 @@ struct proto udplitev6_prot = {
+ 	.compat_setsockopt = compat_udpv6_setsockopt,
+ 	.compat_getsockopt = compat_udpv6_getsockopt,
+ #endif
+-	.clear_sk	   = sk_prot_clear_portaddr_nulls,
++	.clear_sk	   = udp_v6_clear_sk,
+ };
+ 
+ static struct inet_protosw udplite6_protosw = {
 -- 
 1.8.1.2
 
