@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab3ETRVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:21:12 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:60354 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab3ETRVK (ORCPT
+	id S1757554Ab3ETRVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:21:43 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:58652 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3ETRVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:21:10 -0400
+	Mon, 20 May 2013 13:21:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130520164335.GA9441@dhcp22.suse.cz>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
-	<1369062192-7066-1-git-send-email-mhocko@suse.cz>
-	<519A483F.7070400@zytor.com>
-	<20130520164335.GA9441@dhcp22.suse.cz>
-Date: Mon, 20 May 2013 10:21:09 -0700
-X-Google-Sender-Auth: 5OxpJ-Gcsx0BqIKv8SfOPCN3p0k
-Message-ID: <CA+55aFzxdGOW=7-x+41U4SZB5par7jKU9vuuhFdsQfZOuLiLtw@mail.gmail.com>
-Subject: Re: [PATCH] Revert "x86-64, init: Do not set NX bits on non-NX
- capable hardware"
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        =?UTF-8?Q?Fernando_Luis_V=C3=A1zquez_Cao?= <fernando@oss.ntt.co.jp>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <5683193.Vsmy0DmceS@vostro.rjw.lan>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+ <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com> <5683193.Vsmy0DmceS@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 20 May 2013 11:21:17 -0600
+Message-ID: <CAErSpo7TvCfQLkMD+zL1W6dNEqMpHYbLtAAHqXf==zbxhE2tcQ@mail.gmail.com>
+Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Zhang, LongX" <longx.zhang@intel.com>,
+        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 9:43 AM, Michal Hocko <mhocko@suse.cz> wrote:
+On Fri, May 17, 2013 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, May 17, 2013 05:43:33 PM Bjorn Helgaas wrote:
+>> On Fri, Apr 26, 2013 at 12:28 AM, Zhang, LongX <longx.zhang@intel.com> wrote:
+
+>> > +       /* restore cfg space for possible link reset at upstream */
+>> > +       dev->state_saved = true;
+>>
+>> "dev->state_saved == true" means that the dev->saved_config_space
+>> contains valid data.  Why do we know that's the case here?  I see that
+>> pcie_portdrv_probe() calls pci_save_state() when we first claim the
+>> port, and I guess we're assuming the state saved then is still valid.
+>> But why do we need to actually set dev->state_saved here?  Shouldn't
+>> it be already set to true anyway?
 >
-> The configuration has been posted in the referenced thread:
-> https://lkml.org/lkml/2013/5/14/398
+> This is a dirty trick to make pci_restore_state(dev) always work here
+> (because it checks dev->state_saved and does nothing if it isn't set).
+> I suppose.
 
-Hmm. That's a regular intel i5 Sandybridge CPU. Which certainly has NX.
+Yes, I did investigate enough to see that this is a dirty trick.  My
+question is how we know it's safe to do this dirty trick.
 
-Hmm. secondary_startup_64 isn't __initcode, is it? I think it's used
-for resuming the other CPU's too and for CPU hotplug. Yes/no?
-
-If so early_pmd_flags shouldn't be __initdata, I think.
-
-Michal, does it work if you don't do the revert, but just remove the
-__initdata instead?
-
-              Linus
+>> > +       pci_restore_state(dev);
+>> > +       pcie_portdrv_restore_config(dev);
+>> > +       pci_enable_pcie_error_reporting(dev);
