@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3ETOwC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:52:02 -0400
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1081 "EHLO
+	id S1757210Ab3ETOwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:52:00 -0400
+Received: from smtp-out-212.synserver.de ([212.40.185.212]:1108 "EHLO
 	smtp-out-206.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757069Ab3ETOv7 (ORCPT
+	by vger.kernel.org with ESMTP id S1757143Ab3ETOv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:51:59 -0400
+	Mon, 20 May 2013 10:51:57 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@metafoo.de
 X-SynServer-PPID: 6266
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 7/7] input: navpoint: Pass correct pointer to free_irq()
-Date: Mon, 20 May 2013 16:51:26 +0200
-Message-Id: <1369061486-28226-7-git-send-email-lars@metafoo.de>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Alessandro Zummo <alessandro.zummo@towertech.it>
+Subject: [PATCH 5/7] input: ixp4xx-beeper: Pass correct pointer to free_irq()
+Date: Mon, 20 May 2013 16:51:24 +0200
+Message-Id: <1369061486-28226-5-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1369061486-28226-1-git-send-email-lars@metafoo.de>
 References: <1369061486-28226-1-git-send-email-lars@metafoo.de>
@@ -49,24 +50,34 @@ position p != r2.p;
 *free_irq@p(...)
 </smpl>
 
+Cc: Alessandro Zummo <alessandro.zummo@towertech.it>
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/input/mouse/navpoint.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/misc/ixp4xx-beeper.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/mouse/navpoint.c b/drivers/input/mouse/navpoint.c
-index 8e1b98e..0b8d335 100644
---- a/drivers/input/mouse/navpoint.c
-+++ b/drivers/input/mouse/navpoint.c
-@@ -287,7 +287,7 @@ static int navpoint_probe(struct platform_device *pdev)
+diff --git a/drivers/input/misc/ixp4xx-beeper.c b/drivers/input/misc/ixp4xx-beeper.c
+index 6ab3dec..deab4a11 100644
+--- a/drivers/input/misc/ixp4xx-beeper.c
++++ b/drivers/input/misc/ixp4xx-beeper.c
+@@ -125,7 +125,7 @@ static int ixp4xx_spkr_probe(struct platform_device *dev)
  	return 0;
  
- err_free_irq:
--	free_irq(ssp->irq, &pdev->dev);
-+	free_irq(ssp->irq, navpoint);
- err_free_mem:
- 	input_free_device(input);
- 	kfree(navpoint);
+  err_free_irq:
+-	free_irq(IRQ_IXP4XX_TIMER2, dev);
++	free_irq(IRQ_IXP4XX_TIMER2, (void *)dev->id);
+  err_free_device:
+ 	input_free_device(input_dev);
+ 
+@@ -144,7 +144,7 @@ static int ixp4xx_spkr_remove(struct platform_device *dev)
+ 	disable_irq(IRQ_IXP4XX_TIMER2);
+ 	ixp4xx_spkr_control(pin, 0);
+ 
+-	free_irq(IRQ_IXP4XX_TIMER2, dev);
++	free_irq(IRQ_IXP4XX_TIMER2, (void *)dev->id);
+ 
+ 	return 0;
+ }
 -- 
 1.8.0
 
