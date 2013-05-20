@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab3ETKwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:52:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55935 "EHLO
+	id S1755784Ab3ETLVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:21:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56031 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab3ETKwN (ORCPT
+	with ESMTP id S1755573Ab3ETKwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:13 -0400
+	Mon, 20 May 2013 06:52:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 006/115] drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
-Date: Mon, 20 May 2013 11:50:06 +0100
-Message-Id: <1369047116-9378-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 023/115] powerpc/spufs: Initialise inode->i_ino in spufs_new_inode()
+Date: Mon, 20 May 2013 11:50:23 +0100
+Message-Id: <1369047116-9378-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c upstream.
+commit 6747e83235caecd30b186d1282e4eba7679f81b7 upstream.
 
-The "Mobile Sandy Bridge CPUs" in the Fujitsu Esprimo Q900
-mini desktop PCs are probably misleading the LVDS detection
-code in intel_lvds_supported. Nothing is connected to the
-LVDS ports in these systems.
+In commit 85fe402 (fs: do not assign default i_ino in new_inode), the
+initialisation of i_ino was removed from new_inode() and pushed down
+into the callers. However spufs_new_inode() was not updated.
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This exhibits as no files appearing in /spu, because all our dirents
+have a zero inode, which readdir() seems to dislike.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/powerpc/platforms/cell/spufs/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 183a8d0..2aff20f 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -794,6 +794,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Fujitsu Esprimo Q900",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
-+		},
-+	},
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index 66519d2..de32bf6 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -99,6 +99,7 @@ spufs_new_inode(struct super_block *sb, umode_t mode)
+ 	if (!inode)
+ 		goto out;
  
- 	{ }	/* terminating entry */
- };
++	inode->i_ino = get_next_ino();
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
 -- 
 1.8.1.2
 
