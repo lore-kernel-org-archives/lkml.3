@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab3ETKyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:54:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56433 "EHLO
+	id S1756742Ab3ETKyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:54:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756632Ab3ETKyI (ORCPT
+	with ESMTP id S1756674Ab3ETKyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:08 -0400
+	Mon, 20 May 2013 06:54:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 105/115] powerpc: Bring all threads online prior to migration/hibernation
-Date: Mon, 20 May 2013 11:51:45 +0100
-Message-Id: <1369047116-9378-106-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 111/115] dm thin: do not set discard_zeroes_data
+Date: Mon, 20 May 2013 11:51:51 +0100
+Message-Id: <1369047116-9378-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,259 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 120496ac2d2d60aee68d3123a68169502a85f4b5 upstream.
+commit 307615a26e95406c42c95916a66ba50434567e0f upstream.
 
-This patch brings online all threads which are present but not online
-prior to migration/hibernation.  After migration/hibernation those
-threads are taken back offline.
+The dm thin pool target claims to support the zeroing of discarded
+data areas.  This turns out to be incorrect when processing discards
+that do not exactly cover a complete number of blocks, so the target
+must always set discard_zeroes_data_unsupported.
 
-During migration/hibernation all online CPUs must call H_JOIN, this is
-required by the hypervisor.  Without this patch, threads that are offline
-(H_CEDE'd) will not be woken to make the H_JOIN call and the OS will be
-deadlocked (all threads either JOIN'd or CEDE'd).
+The thin pool target will zero blocks when they are allocated if the
+skip_block_zeroing feature is not specified.  The block layer
+may send a discard that only partly covers a block.  If a thin pool
+block is partially discarded then there is no guarantee that the
+discarded data will get zeroed before it is accessed again.
+Due to this, thin devices cannot claim discards will always zero data.
 
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/include/asm/rtas.h          |   2 +
- arch/powerpc/kernel/rtas.c               | 113 +++++++++++++++++++++++++++++++
- arch/powerpc/platforms/pseries/suspend.c |  22 ++++++
- 3 files changed, 137 insertions(+)
+ drivers/md/dm-thin.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
-index 557cff8..5e7e008 100644
---- a/arch/powerpc/include/asm/rtas.h
-+++ b/arch/powerpc/include/asm/rtas.h
-@@ -262,6 +262,8 @@ extern void rtas_progress(char *s, unsigned short hex);
- extern void rtas_initialize(void);
- extern int rtas_suspend_cpu(struct rtas_suspend_me_data *data);
- extern int rtas_suspend_last_cpu(struct rtas_suspend_me_data *data);
-+extern int rtas_online_cpus_mask(cpumask_var_t cpus);
-+extern int rtas_offline_cpus_mask(cpumask_var_t cpus);
- extern int rtas_ibm_suspend_me(struct rtas_args *);
- 
- struct rtc_time;
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index fcec382..225e9f2 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -19,6 +19,7 @@
- #include <linux/init.h>
- #include <linux/capability.h>
- #include <linux/delay.h>
-+#include <linux/cpu.h>
- #include <linux/smp.h>
- #include <linux/completion.h>
- #include <linux/cpumask.h>
-@@ -808,6 +809,95 @@ static void rtas_percpu_suspend_me(void *info)
- 	__rtas_suspend_cpu((struct rtas_suspend_me_data *)info, 1);
- }
- 
-+enum rtas_cpu_state {
-+	DOWN,
-+	UP,
-+};
-+
-+#ifndef CONFIG_SMP
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
-+{
-+	if (!cpumask_empty(cpus)) {
-+		cpumask_clear(cpus);
-+		return -EINVAL;
-+	} else
-+		return 0;
-+}
-+#else
-+/* On return cpumask will be altered to indicate CPUs changed.
-+ * CPUs with states changed will be set in the mask,
-+ * CPUs with status unchanged will be unset in the mask. */
-+static int rtas_cpu_state_change_mask(enum rtas_cpu_state state,
-+				cpumask_var_t cpus)
-+{
-+	int cpu;
-+	int cpuret = 0;
-+	int ret = 0;
-+
-+	if (cpumask_empty(cpus))
-+		return 0;
-+
-+	for_each_cpu(cpu, cpus) {
-+		switch (state) {
-+		case DOWN:
-+			cpuret = cpu_down(cpu);
-+			break;
-+		case UP:
-+			cpuret = cpu_up(cpu);
-+			break;
-+		}
-+		if (cpuret) {
-+			pr_debug("%s: cpu_%s for cpu#%d returned %d.\n",
-+					__func__,
-+					((state == UP) ? "up" : "down"),
-+					cpu, cpuret);
-+			if (!ret)
-+				ret = cpuret;
-+			if (state == UP) {
-+				/* clear bits for unchanged cpus, return */
-+				cpumask_shift_right(cpus, cpus, cpu);
-+				cpumask_shift_left(cpus, cpus, cpu);
-+				break;
-+			} else {
-+				/* clear bit for unchanged cpu, continue */
-+				cpumask_clear_cpu(cpu, cpus);
-+			}
-+		}
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
-+int rtas_online_cpus_mask(cpumask_var_t cpus)
-+{
-+	int ret;
-+
-+	ret = rtas_cpu_state_change_mask(UP, cpus);
-+
-+	if (ret) {
-+		cpumask_var_t tmp_mask;
-+
-+		if (!alloc_cpumask_var(&tmp_mask, GFP_TEMPORARY))
-+			return ret;
-+
-+		/* Use tmp_mask to preserve cpus mask from first failure */
-+		cpumask_copy(tmp_mask, cpus);
-+		rtas_offline_cpus_mask(tmp_mask);
-+		free_cpumask_var(tmp_mask);
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(rtas_online_cpus_mask);
-+
-+int rtas_offline_cpus_mask(cpumask_var_t cpus)
-+{
-+	return rtas_cpu_state_change_mask(DOWN, cpus);
-+}
-+EXPORT_SYMBOL(rtas_offline_cpus_mask);
-+
- int rtas_ibm_suspend_me(struct rtas_args *args)
- {
- 	long state;
-@@ -815,6 +905,8 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
- 	struct rtas_suspend_me_data data;
- 	DECLARE_COMPLETION_ONSTACK(done);
-+	cpumask_var_t offline_mask;
-+	int cpuret;
- 
- 	if (!rtas_service_present("ibm,suspend-me"))
- 		return -ENOSYS;
-@@ -838,11 +930,24 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 		return 0;
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index 5f52a9a..1307ba8 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2035,6 +2035,7 @@ static int pool_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 		 * thin devices' discard limits consistent).
+ 		 */
+ 		ti->discards_supported = 1;
++		ti->discard_zeroes_data_unsupported = 1;
  	}
+ 	ti->private = pt;
  
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	atomic_set(&data.working, 0);
- 	atomic_set(&data.done, 0);
- 	atomic_set(&data.error, 0);
- 	data.token = rtas_token("ibm,suspend-me");
- 	data.complete = &done;
-+
-+	/* All present CPUs must be online */
-+	cpumask_andnot(offline_mask, cpu_present_mask, cpu_online_mask);
-+	cpuret = rtas_online_cpus_mask(offline_mask);
-+	if (cpuret) {
-+		pr_err("%s: Could not bring present CPUs online.\n", __func__);
-+		atomic_set(&data.error, cpuret);
-+		goto out;
-+	}
-+
- 	stop_topology_update();
- 
- 	/* Call function on all CPUs.  One of us will make the
-@@ -858,6 +963,14 @@ int rtas_ibm_suspend_me(struct rtas_args *args)
- 
- 	start_topology_update();
- 
-+	/* Take down CPUs not online prior to suspend */
-+	cpuret = rtas_offline_cpus_mask(offline_mask);
-+	if (cpuret)
-+		pr_warn("%s: Could not restore CPUs to offline state.\n",
-+				__func__);
-+
-+out:
-+	free_cpumask_var(offline_mask);
- 	return atomic_read(&data.error);
- }
- #else /* CONFIG_PPC_PSERIES */
-diff --git a/arch/powerpc/platforms/pseries/suspend.c b/arch/powerpc/platforms/pseries/suspend.c
-index 47226e0..5f997e7 100644
---- a/arch/powerpc/platforms/pseries/suspend.c
-+++ b/arch/powerpc/platforms/pseries/suspend.c
-@@ -16,6 +16,7 @@
-   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-   */
- 
-+#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/suspend.h>
- #include <linux/stat.h>
-@@ -126,11 +127,15 @@ static ssize_t store_hibernate(struct device *dev,
- 			       struct device_attribute *attr,
- 			       const char *buf, size_t count)
- {
-+	cpumask_var_t offline_mask;
- 	int rc;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-+	if (!alloc_cpumask_var(&offline_mask, GFP_TEMPORARY))
-+		return -ENOMEM;
-+
- 	stream_id = simple_strtoul(buf, NULL, 16);
- 
- 	do {
-@@ -140,15 +145,32 @@ static ssize_t store_hibernate(struct device *dev,
- 	} while (rc == -EAGAIN);
- 
- 	if (!rc) {
-+		/* All present CPUs must be online */
-+		cpumask_andnot(offline_mask, cpu_present_mask,
-+				cpu_online_mask);
-+		rc = rtas_online_cpus_mask(offline_mask);
-+		if (rc) {
-+			pr_err("%s: Could not bring present CPUs online.\n",
-+					__func__);
-+			goto out;
-+		}
-+
- 		stop_topology_update();
- 		rc = pm_suspend(PM_SUSPEND_MEM);
- 		start_topology_update();
-+
-+		/* Take down CPUs not online prior to suspend */
-+		if (!rtas_offline_cpus_mask(offline_mask))
-+			pr_warn("%s: Could not restore CPUs to offline "
-+					"state.\n", __func__);
- 	}
- 
- 	stream_id = 0;
- 
- 	if (!rc)
- 		rc = count;
-+out:
-+	free_cpumask_var(offline_mask);
- 	return rc;
+@@ -2496,7 +2497,6 @@ static void set_discard_limits(struct pool *pool, struct queue_limits *limits)
+ 	 * bios that overlap 2 blocks.
+ 	 */
+ 	limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
+-	limits->discard_zeroes_data = pool->pf.zero_new_blocks;
  }
  
+ static void pool_io_hints(struct dm_target *ti, struct queue_limits *limits)
 -- 
 1.8.1.2
 
