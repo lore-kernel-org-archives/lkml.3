@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3ETJkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:40:45 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:56198 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab3ETJkn (ORCPT
+	id S1754531Ab3ETJmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:42:14 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:42751 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab3ETJmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:40:43 -0400
+	Mon, 20 May 2013 05:42:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <5199ED83.5040804@linux.vnet.ibm.com>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
-	<20130509125040.GF27333@pd.tnic>
-	<20130509125859.GG27333@pd.tnic>
-	<20130515184528.GO4442@linux.vnet.ibm.com>
-	<20130515224358.GF11783@pd.tnic>
-	<20130515235512.GT4442@linux.vnet.ibm.com>
-	<20130517135641.GF23035@pd.tnic>
-	<51999591.8030401@linux.vnet.ibm.com>
-	<20130520045023.GA12690@pd.tnic>
-	<CAFTL4hwm4Cox=ynVcO-oLG=Jt_1Lro+hbcpEE5hiAYEJGipaLA@mail.gmail.com>
-	<5199ED83.5040804@linux.vnet.ibm.com>
-Date: Mon, 20 May 2013 15:10:42 +0530
-Message-ID: <CAKohpomjuv6G6Qj2YLv=j=pjASx=6vAaUOzd6gJ-NA2PBhOZAg@mail.gmail.com>
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
- round 2
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20130509225833.C37A55A41D4@corp2gmr1-2.hot.corp.google.com>
+References: <20130509225833.C37A55A41D4@corp2gmr1-2.hot.corp.google.com>
+Date: Mon, 20 May 2013 11:42:09 +0200
+Message-ID: <CAFTL4hwvP7GsrNTc4knQRMV1YHXnZRes=E_NpLAKSOgqTeou5g@mail.gmail.com>
+Subject: Re: mmotm 2013-05-09-15-57 uploaded
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 May 2013 15:01, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> And Viresh, in the regular hotplug paths, the call to gov_cancel_work() is
-> supposed to kill any pending workqueue functions pertaining to offline CPUs
-> right?
+Hi Andrew,
 
-Yes.. It will cancel work for all cpus first and will start again for
-online cpus again.
+2013/5/10  <akpm@linux-foundation.org>:
+[...]
+> * posix_cpu_timer-consolidate-expiry-time-type.patch
+> * posix_cpu_timers-consolidate-timer-list-cleanups.patch
+> * posix_cpu_timers-consolidate-expired-timers-check.patch
+> * selftests-add-basic-posix-timers-selftests.patch
+> * posix-timers-correctly-get-dying-task-time-sample-in-posix_cpu_timer_schedule.patch
+> * posix_timers-fix-racy-timer-delta-caching-on-task-exit.patch
 
-> Could there be a synchronization bug somewhere due to which this
-> might not be happening properly?
+Do you have any plans concerning these patches? These seem to have
+missed this merge window.
 
-Not sure.. I have seen mutex's are used well in cpufreq_governor.. don't know
-if I missed something.
+Thanks.
