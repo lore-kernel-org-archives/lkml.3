@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab3ETRNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:13:06 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:45903 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043Ab3ETRNE (ORCPT
+	id S1757425Ab3ETRRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:17:17 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:62106 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab3ETRRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:13:04 -0400
-Message-ID: <519A599C.2020702@samsung.com>
-Date: Tue, 21 May 2013 02:13:00 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 20 May 2013 13:17:15 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 30/33] arch/arm/plat-samsung: don't check resource with
- devm_ioremap_resource
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de> <1368702961-4325-31-git-send-email-wsa@the-dreams.de> <519A517F.5020003@samsung.com> <20130520171118.GA5717@katana>
-In-Reply-To: <20130520171118.GA5717@katana>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1368961914.5122.1.camel@phoenix>
+References: <1368961914.5122.1.camel@phoenix>
+Date: Mon, 20 May 2013 19:17:14 +0200
+Message-ID: <CACRpkdbpVRgZ8r8FK6gZivcaKVeYOpG5aWEtZjWn8n99GPtS4g@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: mcp23s08: Fix build error when
+ CONFIG_SPI_MASTER=y && CONFIG_I2C=m
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Lars Poeschel <poeschel@lemonage.de>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/13 02:11, Wolfram Sang wrote:
-> On Tue, May 21, 2013 at 01:38:23AM +0900, Kukjin Kim wrote:
->> On 05/16/13 20:15, Wolfram Sang wrote:
->>> devm_ioremap_resource does sanity checks on the given resource. No need to
->>> duplicate this in the driver.
->>>
->>> Signed-off-by: Wolfram Sang<wsa@the-dreams.de>
->>
->> Looks good to me, applied into Samsung tree.
->>
->> Wolfram, if you want to take this into your tree, let me know.
->
-> It is already upstream :)
->
-Oh, OK. Let me drop it in my tree ;-)
+On Sun, May 19, 2013 at 1:11 PM, Axel Lin <axel.lin@ingics.com> wrote:
 
-Thanks.
+> This patch fixes below build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m &&
+> CONFIG_GPIO_MCP23S08=y.
+>
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `mcp23017_write':
+> clkdev.c:(.text+0x1e14): undefined reference to `i2c_smbus_write_word_data'
+> drivers/built-in.o: In function `mcp23017_read':
+> clkdev.c:(.text+0x1e24): undefined reference to `i2c_smbus_read_word_data'
+> drivers/built-in.o: In function `mcp23008_write':
+> clkdev.c:(.text+0x1e8c): undefined reference to `i2c_smbus_write_byte_data'
+> drivers/built-in.o: In function `mcp23008_read':
+> clkdev.c:(.text+0x1e98): undefined reference to `i2c_smbus_read_byte_data'
+> drivers/built-in.o: In function `mcp23008_read_regs':
+> clkdev.c:(.text+0x1ed0): undefined reference to `i2c_smbus_read_byte_data'
+> drivers/built-in.o: In function `mcp23s08_init':
+> clkdev.c:(.init.text+0x30): undefined reference to `i2c_register_driver'
+> drivers/built-in.o: In function `mcp23s08_exit':
+> clkdev.c:(.exit.text+0x30): undefined reference to `i2c_del_driver'
+> make: *** [vmlinux] Error 1
+>
+> When CONFIG_I2C=m, meaning we can't build the drivers in with I2C support.
+> Thus don't allow the drivers to be compiled as built-in when CONFIG_I2C=m.
+>
+> The real fix though is to break the driver apart into a SPI part, an I2C part
+> and a common part. But that's something for 3.11 while this is something for
+> 3.10/stable.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-- Kukjin
+Applied for fixes with Andy's ACK.
+
+Yours,
+Linus Walleij
