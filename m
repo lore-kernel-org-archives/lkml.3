@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3ETLC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:02:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56338 "EHLO
+	id S1756483Ab3ETKxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:53:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56297 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756493Ab3ETKxq (ORCPT
+	with ESMTP id S1756397Ab3ETKxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:46 -0400
+	Mon, 20 May 2013 06:53:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Whitehead <tedheadster@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Christopher Harvey <charvey@matrox.com>,
+        Mathieu Larouche <mathieu.larouche@matrox.com>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 087/115] 3c509.c: call SET_NETDEV_DEV for all device types (ISA/ISAPnP/EISA)
-Date: Mon, 20 May 2013 11:51:27 +0100
-Message-Id: <1369047116-9378-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 079/115] drm/mgag200: Fix framebuffer base address programming
+Date: Mon, 20 May 2013 11:51:19 +0100
+Message-Id: <1369047116-9378-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Whitehead <tedheadster@gmail.com>
+From: Christopher Harvey <charvey@matrox.com>
 
-commit 3b54912f9cd167641b91d4a697bd742f70e534fe upstream.
+commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e upstream.
 
-The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
-It does this with the SET_NETDEV_DEV function. It should register with the device
-hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
+Higher bits of the base address of framebuffers weren't being
+programmed properly. This caused framebuffers that didn't happen to be
+allocated at a low enough address to not be displayed properly.
 
-- Currently they appear here:
-/sys/devices/virtual/net/eth0 (standard ISA)
-/sys/devices/virtual/net/eth1 (EISA)
-
-- Rather, they should instead be here:
-/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
-/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
-
-Tested on ISA and EISA boards.
-
-Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Christopher Harvey <charvey@matrox.com>
+Signed-off-by: Mathieu Larouche <mathieu.larouche@matrox.com>
+Acked-by: Julia Lemire <jlemire@matrox.com>
+Tested-by: Julia Lemire <jlemire@matrox.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/3com/3c509.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/mgag200/mgag200_mode.c | 27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/3com/3c509.c b/drivers/net/ethernet/3com/3c509.c
-index 1a8eef2..ce8fb21 100644
---- a/drivers/net/ethernet/3com/3c509.c
-+++ b/drivers/net/ethernet/3com/3c509.c
-@@ -308,6 +308,7 @@ static int __devinit el3_isa_match(struct device *pdev,
- 	if (!dev)
- 		return -ENOMEM;
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index a9a81d8..4860c35 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -658,12 +658,26 @@ static void mga_g200wb_commit(struct drm_crtc *crtc)
+ 	WREG_DAC(MGA1064_GEN_IO_DATA, tmp);
+ }
  
-+	SET_NETDEV_DEV(dev, pdev);
- 	netdev_boot_setup_check(dev);
+-
++/*
++   This is how the framebuffer base address is stored in g200 cards:
++   * Assume @offset is the gpu_addr variable of the framebuffer object
++   * Then addr is the number of _pixels_ (not bytes) from the start of
++     VRAM to the first pixel we want to display. (divided by 2 for 32bit
++     framebuffers)
++   * addr is stored in the CRTCEXT0, CRTCC and CRTCD registers
++   addr<20> -> CRTCEXT0<6>
++   addr<19-16> -> CRTCEXT0<3-0>
++   addr<15-8> -> CRTCC<7-0>
++   addr<7-0> -> CRTCD<7-0>
++   CRTCEXT0 has to be programmed last to trigger an update and make the
++   new addr variable take effect.
++ */
+ void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
+ {
+ 	struct mga_device *mdev = crtc->dev->dev_private;
+ 	u32 addr;
+ 	int count;
++	u8 crtcext0;
  
- 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
-@@ -598,6 +599,7 @@ static int __init el3_eisa_probe (struct device *device)
- 		return -ENOMEM;
- 	}
+ 	while (RREG8(0x1fda) & 0x08);
+ 	while (!(RREG8(0x1fda) & 0x08));
+@@ -671,10 +685,17 @@ void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
+ 	count = RREG8(MGAREG_VCOUNT) + 2;
+ 	while (RREG8(MGAREG_VCOUNT) < count);
  
-+	SET_NETDEV_DEV(dev, device);
- 	netdev_boot_setup_check(dev);
+-	addr = offset >> 2;
++	WREG8(MGAREG_CRTCEXT_INDEX, 0);
++	crtcext0 = RREG8(MGAREG_CRTCEXT_DATA);
++	crtcext0 &= 0xB0;
++	addr = offset / 8;
++	/* Can't store addresses any higher than that...
++	   but we also don't have more than 16MB of memory, so it should be fine. */
++	WARN_ON(addr > 0x1fffff);
++	crtcext0 |= (!!(addr & (1<<20)))<<6;
+ 	WREG_CRT(0x0d, (u8)(addr & 0xff));
+ 	WREG_CRT(0x0c, (u8)(addr >> 8) & 0xff);
+-	WREG_CRT(0xaf, (u8)(addr >> 16) & 0xf);
++	WREG_ECRT(0x0, ((u8)(addr >> 16) & 0xf) | crtcext0);
+ }
  
- 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
+ 
 -- 
 1.8.1.2
 
