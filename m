@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab3ETOiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:38:52 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51188 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab3ETOim (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:38:42 -0400
+	id S1757125Ab3ETOjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:39:03 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42020 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757015Ab3ETOi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 10:38:59 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,64 +15,63 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 7/8] rcu: Inline trivial wrapper function rcu_start_gp_per_cpu()
-Date: Mon, 20 May 2013 07:38:14 -0700
-Message-Id: <1369060695-29679-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 8/8] rcu: Move redundant call to note_gp_changes() into called function
+Date: Mon, 20 May 2013 07:38:15 -0700
+Message-Id: <1369060695-29679-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130520143739.GA29365@linux.vnet.ibm.com>
  <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-3620-0000-0000-000002940F17
+x-cbid: 13052014-5806-0000-0000-000021399369
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Given the changes that introduce note_gp_change(), rcu_start_gp_per_cpu()
-is now a trivial wrapper function with only one caller.  This commit
-therefore inlines it into its sole call site.
+The __rcu_process_callbacks() invokes note_gp_changes() immediately
+before invoking rcu_check_quiescent_state(), which conditionally
+invokes that same function.  This commit therefore eliminates the
+call to note_gp_changes() in __rcu_process_callbacks() in favor of
+making unconditional to call from rcu_check_quiescent_state() to
+note_gp_changes().
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ kernel/rcutree.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 60ff232..14fa927 100644
+index 14fa927..34db855 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -1308,18 +1308,6 @@ static void note_gp_changes(struct rcu_state *rsp, struct rcu_data *rdp)
- }
+@@ -1704,11 +1704,8 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp)
+ static void
+ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+-	/* If there is now a new grace period, record and return. */
+-	if (rdp->gpnum != rsp->gpnum) {
+-		note_gp_changes(rsp, rdp);
+-		return;
+-	}
++	/* Check for grace-period ends and beginnings. */
++	note_gp_changes(rsp, rdp);
  
- /*
-- * Do per-CPU grace-period initialization for running CPU.  The caller
-- * must hold the lock of the leaf rcu_node structure corresponding to
-- * this CPU.
-- */
--static void
--rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
--{
--	/* Set state so that this CPU will detect the next quiescent state. */
--	__note_gp_changes(rsp, rnp, rdp);
--}
+ 	/*
+ 	 * Does this CPU still need to do its part for current grace period?
+@@ -2172,9 +2169,6 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+ 
+ 	WARN_ON_ONCE(rdp->beenonline == 0);
+ 
+-	/* Handle the end of a grace period that some other CPU ended.  */
+-	note_gp_changes(rsp, rdp);
 -
--/*
-  * Initialize a new grace period.
-  */
- static int rcu_gp_init(struct rcu_state *rsp)
-@@ -1367,7 +1355,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 		WARN_ON_ONCE(rnp->completed != rsp->completed);
- 		ACCESS_ONCE(rnp->completed) = rsp->completed;
- 		if (rnp == rdp->mynode)
--			rcu_start_gp_per_cpu(rsp, rnp, rdp);
-+			__note_gp_changes(rsp, rnp, rdp);
- 		rcu_preempt_boost_start_gp(rnp);
- 		trace_rcu_grace_period_init(rsp->name, rnp->gpnum,
- 					    rnp->level, rnp->grplo,
+ 	/* Update RCU state based on any recent quiescent states. */
+ 	rcu_check_quiescent_state(rsp, rdp);
+ 
 -- 
 1.8.1.5
 
