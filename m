@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab3ETHOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 03:14:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41640 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753204Ab3ETHMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 03:12:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,706,1363104000"; 
-   d="scan'208";a="7310995"
-From: Ren Mingxin <renmx@cn.fujitsu.com>
-To: James.Bottomley@HansenPartnership.com, james.smart@emulex.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        michaelc@cs.wisc.edu
-Cc: robert.w.love@intel.com, dgilbert@interlog.com, hare@suse.de,
-        bprakash@broadcom.com, agk@redhat.com, neilb@suse.de,
-        gregkh@linuxfoundation.org, axboe@kernel.dk, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH 0/5] scsi: Allow fast io fail without waiting through timeout
-Date: Mon, 20 May 2013 15:14:58 +0800
-Message-Id: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/20 15:11:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/20 15:11:03,
-	Serialize complete at 2013/05/20 15:11:03
+	id S1754670Ab3ETHPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 03:15:17 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:47030 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751611Ab3ETHPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 03:15:15 -0400
+To: Chen Gang <gang.chen@asianux.com>
+Subject: Re: [PATCH] arm64: kernel: compiling issue, need =?UTF-8?Q?=27EXPORT=5FSY?=
+ =?UTF-8?Q?MBOL=5FGPL=28read=5Fcurrent=5Ftimer=29=27?=
+X-PHP-Originating-Script: 0:func.inc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Mon, 20 May 2013 09:15:04 +0200
+From: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Organization: ARM Ltd
+In-Reply-To: <5199C725.8050102@asianux.com>
+References: <5199C725.8050102@asianux.com>
+Message-ID: <168084c28e8ba5124c05553e97463172@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: gang.chen@asianux.com, Catalin.Marinas@arm.com, will.deacon@arm.com, santosh.shilimkar@ti.com, tony@atomide.com, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: marc.zyngier@arm.com
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When there is a scsi command timed-out or failed, the scsi eh
-tries a thorugh recovery, which is necessary for non-redundant
-systems. However, the thorugh recovery usually takes much time,
-which is not acceptable for misson critical systems. To improve
-this latency, if we are working on a redundant system, we should
-avoid the scsi eh for its long time failing recovery, and quick
-failover to another path.
+On Mon, 20 May 2013 14:48:05 +0800, Chen Gang <gang.chen@asianux.com>
+wrote:
+> Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with allmodconfig.
+> 
+> The related error:
+>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
+>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
+>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  arch/arm64/kernel/time.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+> index a551f88..7fcba80 100644
+> --- a/arch/arm64/kernel/time.c
+> +++ b/arch/arm64/kernel/time.c
+> @@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
+>  	*timer_value = arch_timer_read_counter();
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(read_current_timer);
+>  
+>  void __init time_init(void)
+>  {
 
-This set of patches is trying to implement above.
+While this solves the problem, I'm not sure this is the best fix. The real
+issue is with get_cycles, which is a macro around read_current_timer.
 
-NOTE: the userland tools need to eusure the environment
-restriction, which will be implemented later.
+AArch32 exports it because of the number of timer implementations. On
+arm64, we should be able to just return CNTVCT_EL0.
 
-Thanks,
-Ren
+Catalin, Will, what do you think?
 
-Ren Mingxin (5):
-  scsi: rename return code FAST_IO_FAIL to FAST_IO
-  FC transport: Add interface to specify fast io level for timed-out cmds
-  SAS transport: Add interface to specify fast io level for timed-out cmds
-  lpfc: Allow fast timed-out io recovery
-  mptfusion: Allow fast timed-out io recovery
-
- drivers/message/fusion/mptscsih.c   |   29 ++++++++-
- drivers/scsi/lpfc/lpfc_scsi.c       |   34 ++++++++++
- drivers/scsi/scsi_error.c           |   18 ++---
- drivers/scsi/scsi_sas_internal.h    |    4 -
- drivers/scsi/scsi_transport_fc.c    |  112 ++++++++++++++++++++++++++++++++++--
- drivers/scsi/scsi_transport_iscsi.c |    6 -
- drivers/scsi/scsi_transport_sas.c   |  103 ++++++++++++++++++++++++++++++++-
- include/scsi/scsi.h                 |    2 
- include/scsi/scsi_transport_fc.h    |   11 +++
- include/scsi/scsi_transport_sas.h   |    8 ++
- 10 files changed, 303 insertions(+), 24 deletions(-)
-
+        M.
+-- 
+Fast, cheap, reliable. Pick two.
