@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3ETFJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 01:09:16 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:45741 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3ETFJO (ORCPT
+	id S1753159Ab3ETF3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 01:29:45 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:61321 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab3ETF3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 01:09:14 -0400
-X-Spam-Score: -100.8
-Message-ID: <5199AFC9.8050607@asianux.com>
-Date: Mon, 20 May 2013 13:08:25 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 20 May 2013 01:29:42 -0400
 MIME-Version: 1.0
-To: james.l.morris@oracle.com, Rusty Russell <rusty@rustcorp.com.au>,
-        dmitry.kasatkin@intel.com, "dhowells@redhat.com" <dhowells@redhat.com>,
-        andriy.shevchenko@linux.intel.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lib/mpi/mpicoder.c: looping issue, need stop when equal to
- zero, found by 'EXTRA_FLAGS=-W'.
+In-Reply-To: <2001452.Fn2HjLbNED@vostro.rjw.lan>
+References: <cover.1365079581.git.viresh.kumar@linaro.org>
+	<CAKohponkFB7ND38jv5oGnQLx8cq0b=uHTCmL3EERe6P54ijYhw@mail.gmail.com>
+	<093901ce509f$afe92f40$0fbb8dc0$%kim@samsung.com>
+	<2001452.Fn2HjLbNED@vostro.rjw.lan>
+Date: Mon, 20 May 2013 10:59:42 +0530
+Message-ID: <CAKohpon97dbLDF0xU7vhf5V+UVeJv7WdeMuZ1jXLUTey2+gD2A@mail.gmail.com>
+Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Robin Randhawa <robin.randhawa@arm.com>,
+        Ben Dooks <ben-linux@fluff.org>, linux-pm@vger.kernel.org,
+        patches@linaro.org, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Steve.Bannister@arm.com,
+        arvind.chauhan@arm.com, linaro-kernel@lists.linaro.org,
+        charles.garcia-tobin@arm.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14 May 2013 18:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, May 14, 2013 09:36:42 PM Kukjin Kim wrote:
+>> Viresh Kumar wrote:
+>> >
+>> > On 13 May 2013 16:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > > That doesn't matter I suppose.  I can take it, but please rebase it on
+>> > top
+>> > > of current linux-next.
+>> >
+>> > I have already done that (attached). But i wasn't sure what Kukjin wants
+>> > as
+>> > he may report conflicts again and i will ask the same question for 3.12 :)
+>> >
+>> Since this missed last time, this would be sent to upstream via samsung tree
+>> again. It means the conflicts should be handled by myself.
+>>
+>> Rafael, if you don't mind, let me take this into Samsung tree for v3.11.
+>
+> Sure, please go ahead.
 
-For 'while' looping, need stop when 'nbytes == 0', or will cause issue.
-('nbytes' is size_t which is always bigger or equal than zero).
+Kukjin,
 
-The related warning: (with EXTRA_CFLAGS=-W)
-  lib/mpi/mpicoder.c:40:2: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- lib/mpi/mpicoder.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/lib/mpi/mpicoder.c b/lib/mpi/mpicoder.c
-index 5f9c44c..4cc6442 100644
---- a/lib/mpi/mpicoder.c
-+++ b/lib/mpi/mpicoder.c
-@@ -37,7 +37,7 @@ MPI mpi_read_raw_data(const void *xbuffer, size_t nbytes)
- 	mpi_limb_t a;
- 	MPI val = NULL;
- 
--	while (nbytes >= 0 && buffer[0] == 0) {
-+	while (nbytes > 0 && buffer[0] == 0) {
- 		buffer++;
- 		nbytes--;
- 	}
--- 
-1.7.7.6
+I hope you have already applied this for linux-next?
