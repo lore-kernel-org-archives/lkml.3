@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab3ETUQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 16:16:59 -0400
-Received: from mout.gmx.net ([212.227.15.19]:63807 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771Ab3ETUQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 16:16:58 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+TDKIY9x2ToPYPoYKruFGqormImdU8SgOZP+VsGA
-	BWP3CSQgyK1bNc
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] arm/mach-u300/dummyspichip: Use module_spi_driver to register driver
-Date: Mon, 20 May 2013 22:22:04 +0200
-Message-Id: <1369081324-8062-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-X-Y-GMX-Trusted: 0
+	id S1758039Ab3ETUUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 16:20:06 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:58705 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab3ETUUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 16:20:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130520101622.14133.21998.stgit@ladj378.jer.intel.com>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	<20130520101622.14133.21998.stgit@ladj378.jer.intel.com>
+Date: Mon, 20 May 2013 23:20:03 +0300
+Message-ID: <CAJZOPZJx8vpSWqOhmN65gn=vi7hWXQO_J01+hAwGY9RwetX3DA@mail.gmail.com>
+Subject: Re: [PATCH v3 net-next 3/4] ixgbe: Add support for ndo_ll_poll
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing some boilerplate by using module_spi_driver instead of calling
-register and unregister in the otherwise empty init/exit functions.
+On Mon, May 20, 2013 at 1:16 PM, Eliezer Tamir
+<eliezer.tamir@linux.intel.com> wrote:
+> Add the ixgbe driver code implementing ndo_ll_poll.
+> It should be easy for other drivers to do something similar
+> in order to enable support for CONFIG_INET_LL_RX_POLL
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- arch/arm/mach-u300/dummyspichip.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+I am not sure,
 
-diff --git a/arch/arm/mach-u300/dummyspichip.c b/arch/arm/mach-u300/dummyspichip.c
-index 2785cb6..aee609d 100644
---- a/arch/arm/mach-u300/dummyspichip.c
-+++ b/arch/arm/mach-u300/dummyspichip.c
-@@ -272,19 +272,7 @@ static struct spi_driver pl022_dummy_driver = {
- 	.remove	= pl022_dummy_remove,
- };
- 
--static int __init pl022_init_dummy(void)
--{
--	return spi_register_driver(&pl022_dummy_driver);
--}
--
--static void __exit pl022_exit_dummy(void)
--{
--	spi_unregister_driver(&pl022_dummy_driver);
--}
--
--module_init(pl022_init_dummy);
--module_exit(pl022_exit_dummy);
--
-+module_spi_driver(pl022_dummy_driver);
- MODULE_AUTHOR("Linus Walleij <linus.walleij@stericsson.com>");
- MODULE_DESCRIPTION("PL022 SSP/SPI DUMMY Linux driver");
- MODULE_LICENSE("GPL");
--- 
-1.8.1.5
 
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+[...]
+> @@ -144,6 +145,14 @@ static int debug = -1;
+>  module_param(debug, int, 0);
+>  MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
+>
+> +#ifdef CONFIG_INET_LL_RX_POLL
+> +static int allow_unsafe_removal;
+> +static int unsafe_to_remove;
+> +module_param(allow_unsafe_removal, int, 0);
+> +MODULE_PARM_DESC(allow_unsafe_removal,
+> +       "Allow removal of module after low latency receive was used");
+> +#endif
+
+what?!
+
+[...]
+
+> +#ifdef CONFIG_INET_LL_RX_POLL
+> +/* must be called with local_bh_disable()d */
+> +static int ixgbe_low_latency_recv(struct napi_struct *napi)
+> +{
+> +       struct ixgbe_q_vector *q_vector =
+> +                       container_of(napi, struct ixgbe_q_vector, napi);
+> +       struct ixgbe_adapter *adapter = q_vector->adapter;
+> +       struct ixgbe_ring  *ring;
+> +       int found;
+> +
+> +       if (unlikely(!unsafe_to_remove)) {
+> +               unsafe_to_remove = 1;
+> +               if (!allow_unsafe_removal) {
+> +                       pr_info("module may no longer be removed\n");
+> +                       try_module_get(THIS_MODULE);
+> +               }
+> +       }
+
+guys, so what is going here, you were asking to put this series in
+net-next, and you expect each other driver implementing this ndo to
+follow this undocumented hack? or maybe this code was just left here
+by mistake from previous implementations and just needed to be
+removed?  please clarify.
+
+Or.
