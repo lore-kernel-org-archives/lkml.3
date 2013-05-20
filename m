@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab3ETKzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:55:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56480 "EHLO
+	id S1756777Ab3ETKzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:55:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56474 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756685Ab3ETKyR (ORCPT
+	with ESMTP id S1756679Ab3ETKyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:17 -0400
+	Mon, 20 May 2013 06:54:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Inderpal Singh <inderpal.singh@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 114/115] ARM: EXYNOS5: Fix kernel dump in AFTR idle mode
-Date: Mon, 20 May 2013 11:51:54 +0100
-Message-Id: <1369047116-9378-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 113/115] pch_dma: Use GFP_ATOMIC because called from interrupt context
+Date: Mon, 20 May 2013 11:51:53 +0100
+Message-Id: <1369047116-9378-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Inderpal Singh <inderpal.singh@linaro.org>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 088584618836b159947bc4ab5011a5cf1f081a62 upstream.
+commit 5c1ef59168c485318e40ba485c1eba57d81d0faa upstream.
 
-The kernel crashes while resuming from AFTR idle mode. It happens
-because L2 cache was not going into retention state.
+pdc_desc_get() is called from pd_prep_slave_sg, and the function is
+called from interrupt context(e.g. Uart driver "pch_uart.c").
+In fact, I saw kernel error message.
+So, GFP_ATOMIC must be used not GFP_NOIO.
 
-This patch configures the USE_RETENTION bit of ARM_L2_OPTION register
-so that it does not depend on MANUAL_L2RSTDISABLE_CONTROL of
-ARM_COMMON_OPTION register for L2RSTDISABLE signal.
-
-Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
-Tested-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-exynos/include/mach/regs-pmu.h | 1 +
- arch/arm/mach-exynos/pmu.c                   | 5 ++---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/dma/pch_dma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/include/mach/regs-pmu.h b/arch/arm/mach-exynos/include/mach/regs-pmu.h
-index 43a99e6..20a43be 100644
---- a/arch/arm/mach-exynos/include/mach/regs-pmu.h
-+++ b/arch/arm/mach-exynos/include/mach/regs-pmu.h
-@@ -337,6 +337,7 @@
- #define EXYNOS5_FSYS_ARM_OPTION					S5P_PMUREG(0x2208)
- #define EXYNOS5_ISP_ARM_OPTION					S5P_PMUREG(0x2288)
- #define EXYNOS5_ARM_COMMON_OPTION				S5P_PMUREG(0x2408)
-+#define EXYNOS5_ARM_L2_OPTION					S5P_PMUREG(0x2608)
- #define EXYNOS5_TOP_PWR_OPTION					S5P_PMUREG(0x2C48)
- #define EXYNOS5_TOP_PWR_SYSMEM_OPTION				S5P_PMUREG(0x2CC8)
- #define EXYNOS5_JPEG_MEM_OPTION					S5P_PMUREG(0x2F48)
-diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-index 4aacb66..d054f16 100644
---- a/arch/arm/mach-exynos/pmu.c
-+++ b/arch/arm/mach-exynos/pmu.c
-@@ -227,6 +227,7 @@ static struct exynos_pmu_conf exynos5250_pmu_config[] = {
- 	{ EXYNOS5_DIS_IRQ_ISP_ARM_CENTRAL_SYS_PWR_REG,	{ 0x0, 0x0, 0x0} },
- 	{ EXYNOS5_ARM_COMMON_SYS_PWR_REG,		{ 0x0, 0x0, 0x2} },
- 	{ EXYNOS5_ARM_L2_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
-+	{ EXYNOS5_ARM_L2_OPTION,			{ 0x10, 0x10, 0x0 } },
- 	{ EXYNOS5_CMU_ACLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
- 	{ EXYNOS5_CMU_SCLKSTOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
- 	{ EXYNOS5_CMU_RESET_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
-@@ -352,11 +353,9 @@ static void exynos5_init_pmu(void)
+diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
+index 987ab5c..d5cbd44 100644
+--- a/drivers/dma/pch_dma.c
++++ b/drivers/dma/pch_dma.c
+@@ -476,7 +476,7 @@ static struct pch_dma_desc *pdc_desc_get(struct pch_dma_chan *pd_chan)
+ 	dev_dbg(chan2dev(&pd_chan->chan), "scanned %d descriptors\n", i);
  
- 	/*
- 	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
--	 * MANUAL_L2RSTDISABLE_CONTROL_BITFIELD Enable
- 	 */
- 	tmp = __raw_readl(EXYNOS5_ARM_COMMON_OPTION);
--	tmp |= (EXYNOS5_MANUAL_L2RSTDISABLE_CONTROL |
--		EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN);
-+	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
- 	__raw_writel(tmp, EXYNOS5_ARM_COMMON_OPTION);
- 
- 	/*
+ 	if (!ret) {
+-		ret = pdc_alloc_desc(&pd_chan->chan, GFP_NOIO);
++		ret = pdc_alloc_desc(&pd_chan->chan, GFP_ATOMIC);
+ 		if (ret) {
+ 			spin_lock(&pd_chan->lock);
+ 			pd_chan->descs_allocated++;
 -- 
 1.8.1.2
 
