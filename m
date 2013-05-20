@@ -1,85 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3ETHMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 03:12:13 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:64584 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576Ab3ETHMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 03:12:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <5199CB59.1020309@linux.vnet.ibm.com>
-References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
-	<20130509125040.GF27333@pd.tnic>
-	<20130509125859.GG27333@pd.tnic>
-	<20130515184528.GO4442@linux.vnet.ibm.com>
-	<20130515224358.GF11783@pd.tnic>
-	<20130515235512.GT4442@linux.vnet.ibm.com>
-	<20130517135641.GF23035@pd.tnic>
-	<51999591.8030401@linux.vnet.ibm.com>
-	<20130520045023.GA12690@pd.tnic>
-	<5199C169.7060504@linux.vnet.ibm.com>
-	<20130520064727.GD12690@pd.tnic>
-	<5199C990.3020602@linux.vnet.ibm.com>
-	<5199CB59.1020309@linux.vnet.ibm.com>
-Date: Mon, 20 May 2013 12:42:08 +0530
-Message-ID: <CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com>
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
- round 2
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755109Ab3ETHM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 03:12:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41640 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab3ETHMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 03:12:24 -0400
+X-IronPort-AV: E=Sophos;i="4.87,706,1363104000"; 
+   d="scan'208";a="7310994"
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+To: James.Bottomley@HansenPartnership.com, james.smart@emulex.com,
+        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
+        michaelc@cs.wisc.edu
+Cc: robert.w.love@intel.com, dgilbert@interlog.com, hare@suse.de,
+        bprakash@broadcom.com, agk@redhat.com, neilb@suse.de,
+        gregkh@linuxfoundation.org, axboe@kernel.dk, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Ren Mingxin <renmx@cn.fujitsu.com>
+Subject: [PATCH 2/5] FC transport: Add interface to specify fast io level for timed-out cmds
+Date: Mon, 20 May 2013 15:15:00 +0800
+Message-Id: <1369034103-31644-3-git-send-email-renmx@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
+References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/20 15:11:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/20 15:11:03,
+	Serialize complete at 2013/05/20 15:11:03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+This patch introduces new interfaces through sysfs for fc hosts
+and rports to allow users to avoid the scsi_eh recovery actions
+on different levels when scsi commands timed out, e.g.
+  /sys/devices/pci***/.../hostN/fc_host/hostN/fast_io_tmo_flags
+  /sys/devices/pci***/.../hostN/rport-X:Y-Z/fc_remote_ports/\
+                                rport-X:Y-Z/fast_io_tmo_flags
 
-I haven't followed this mail chain earlier and saw this mail only as I am
-added in cc now. I probably have answers to few questions here:
+This new added interface "fast_io_tmo_flags" is a 8-bit mask with
+low 5-bit available up to now:
+  0x01 - Ignore aborting commands
+  0x02 - Ignore device resets
+  0x04 - Ignore target resets
+  0x08 - Ignore bus resets
+  0x10 - Ignore host resets
 
-On 20 May 2013 12:36, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
-> On 05/20/2013 02:58 PM, Michael Wang wrote:
->> On 05/20/2013 02:47 PM, Borislav Petkov wrote:
->>> On Mon, May 20, 2013 at 02:23:37PM +0800, Michael Wang wrote:
->>>> On 05/20/2013 12:50 PM, Borislav Petkov wrote:
->>>> So there are two questions here:
->>>> 1. Is gov_queue_work() want to queue the work on offline cpu?
+When scsi_eh unjams hosts, the corresponding bit fields will be
+checked by LLDD to decide whether to ignore specified recovery
+levels. Its value is zero by default, so it keeps existing
+behavior, which is necessary for non-redundant systems.
 
-No. We are only working with online cpus now in cpufreq core and governors.
+This interface is mainly for redundant environments. To
+redundant systems, they need a quick give up and failover,
+instead of thorough recovery which usually takes much time.
 
->> Besides, the cpu gov_queue_work() is using 'policy->cpus' which seems to
->> be updated during UP DOWN notify, I think they are supposed to be online.
->>
->> But we need expert in cpufreq to confirm all these...
+The actions in LLDD/redundant configurations should be implemented
+individually later.
 
-I confirm this. policy->cpus only contains online cpus.. and
-policy->related_cpus
-always contain online+offline cpus.
+Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
+---
+ drivers/scsi/scsi_transport_fc.c |  108 +++++++++++++++++++++++++++++++++++++-
+ include/scsi/scsi_transport_fc.h |   11 ++++
+ 2 files changed, 117 insertions(+), 2 deletions(-)
 
-> And I guess this may help to reduce the chance to trigger WARN:
->
-> diff --git a/drivers/cpufreq/cpufreq_governor.c
-> b/drivers/cpufreq/cpufreq_governor.c
-> index 443442d..0f96013 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -180,7 +180,7 @@ void gov_queue_work(struct dbs_data *dbs_data,
-> struct cpufreq_policy *policy,
->         if (!all_cpus) {
->                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
->         } else {
-> -               for_each_cpu(i, policy->cpus)
-> +               for_each_cpu_and(i, policy->cpus, cpu_online_mask)
->                         __gov_queue_work(i, dbs_data, delay);
->         }
->  }
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index 7b29e00..155a658 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -310,9 +310,9 @@ static void fc_scsi_scan_rport(struct work_struct *work);
+  * Increase these values if you add attributes
+  */
+ #define FC_STARGET_NUM_ATTRS 	3
+-#define FC_RPORT_NUM_ATTRS	10
++#define FC_RPORT_NUM_ATTRS	11
+ #define FC_VPORT_NUM_ATTRS	9
+-#define FC_HOST_NUM_ATTRS	29
++#define FC_HOST_NUM_ATTRS	30
+ 
+ struct fc_internal {
+ 	struct scsi_transport_template t;
+@@ -995,6 +995,67 @@ store_fc_rport_fast_io_fail_tmo(struct device *dev,
+ static FC_DEVICE_ATTR(rport, fast_io_fail_tmo, S_IRUGO | S_IWUSR,
+ 	show_fc_rport_fast_io_fail_tmo, store_fc_rport_fast_io_fail_tmo);
+ 
++/*
++ * fast_io_tmo_flags attribute
++ */
++static ssize_t
++show_fc_rport_fast_io_tmo_flags(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct fc_rport *rport = transport_class_to_rport(dev);
++
++	return sprintf(buf, "0x%02x\n", rport->fast_io_tmo_flags);
++}
++
++static int fc_str_to_fast_io_tmo_flags(const char *buf, u8 *val)
++{
++	char *cp;
++
++	*val = simple_strtoul(buf, &cp, 0) & 0xff;
++	if (cp == buf)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int fc_rport_set_fast_io_tmo_flags(struct fc_rport *rport, u8 val)
++{
++	if ((rport->port_state == FC_PORTSTATE_BLOCKED) ||
++	    (rport->port_state == FC_PORTSTATE_DELETED) ||
++	    (rport->port_state == FC_PORTSTATE_NOTPRESENT))
++		return -EBUSY;
++
++	rport->fast_io_tmo_flags = val;
++
++	return 0;
++}
++
++static ssize_t
++store_fc_rport_fast_io_tmo_flags(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf,
++				 size_t count)
++{
++	struct fc_rport *rport = transport_class_to_rport(dev);
++	u8 val;
++	int rc;
++
++	if (count < 1)
++		return -EINVAL;
++
++	rc = fc_str_to_fast_io_tmo_flags(buf, &val);
++	if (rc)
++		return rc;
++
++	rc = fc_rport_set_fast_io_tmo_flags(rport, val);
++	if (rc)
++		return rc;
++	return count;
++}
++static FC_DEVICE_ATTR(rport, fast_io_tmo_flags, S_IRUGO | S_IWUSR,
++	show_fc_rport_fast_io_tmo_flags, store_fc_rport_fast_io_tmo_flags);
++
+ 
+ /*
+  * FC SCSI Target Attribute Management
+@@ -1679,6 +1740,47 @@ static FC_DEVICE_ATTR(host, dev_loss_tmo, S_IRUGO | S_IWUSR,
+ 		      show_fc_host_dev_loss_tmo,
+ 		      store_fc_private_host_dev_loss_tmo);
+ 
++static ssize_t
++show_fc_private_host_fast_io_tmo_flags (struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct Scsi_Host *shost = transport_class_to_shost(dev);
++
++	return sprintf(buf, "0x%02x\n", fc_host_fast_io_tmo_flags(shost));
++}
++
++static ssize_t
++store_fc_private_host_fast_io_tmo_flags(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf,
++					size_t count)
++{
++	struct Scsi_Host *shost = transport_class_to_shost(dev);
++	struct fc_host_attrs *fc_host = shost_to_fc_host(shost);
++	struct fc_rport *rport;
++	u8 val;
++	int rc;
++	unsigned long flags;
++
++	if (count < 1)
++		return -EINVAL;
++
++	rc = fc_str_to_fast_io_tmo_flags(buf, &val);
++	if (rc)
++		return rc;
++
++	fc_host_fast_io_tmo_flags(shost) = val;
++	spin_lock_irqsave(shost->host_lock, flags);
++	list_for_each_entry(rport, &fc_host->rports, peers)
++		fc_rport_set_fast_io_tmo_flags(rport, val);
++	spin_unlock_irqrestore(shost->host_lock, flags);
++	return count;
++}
++static FC_DEVICE_ATTR(host, fast_io_tmo_flags, S_IRUGO | S_IWUSR,
++		      show_fc_private_host_fast_io_tmo_flags,
++		      store_fc_private_host_fast_io_tmo_flags);
++
+ fc_private_host_rd_attr(npiv_vports_inuse, "%u\n", 20);
+ 
+ /*
+@@ -2261,6 +2363,7 @@ fc_attach_transport(struct fc_function_template *ft)
+ 
+ 	/* Transport-managed attributes */
+ 	SETUP_PRIVATE_HOST_ATTRIBUTE_RW(dev_loss_tmo);
++	SETUP_PRIVATE_HOST_ATTRIBUTE_RW(fast_io_tmo_flags);
+ 	SETUP_PRIVATE_HOST_ATTRIBUTE_RW(tgtid_bind_type);
+ 	if (ft->issue_fc_host_lip)
+ 		SETUP_PRIVATE_HOST_ATTRIBUTE_RW(issue_lip);
+@@ -2287,6 +2390,7 @@ fc_attach_transport(struct fc_function_template *ft)
+ 	SETUP_PRIVATE_RPORT_ATTRIBUTE_RD(port_state);
+ 	SETUP_PRIVATE_RPORT_ATTRIBUTE_RD(scsi_target_id);
+ 	SETUP_PRIVATE_RPORT_ATTRIBUTE_RW(fast_io_fail_tmo);
++	SETUP_PRIVATE_RPORT_ATTRIBUTE_RW(fast_io_tmo_flags);
+ 
+ 	BUG_ON(count > FC_RPORT_NUM_ATTRS);
+ 
+diff --git a/include/scsi/scsi_transport_fc.h b/include/scsi/scsi_transport_fc.h
+index b797e8f..8fd673c 100644
+--- a/include/scsi/scsi_transport_fc.h
++++ b/include/scsi/scsi_transport_fc.h
+@@ -336,6 +336,7 @@ struct fc_rport {	/* aka fc_starget_attrs */
+ 	enum fc_port_state port_state;	/* Will only be ONLINE or UNKNOWN */
+ 	u32 scsi_target_id;
+ 	u32 fast_io_fail_tmo;
++	u8 fast_io_tmo_flags;	
+ 
+ 	/* exported data */
+ 	void *dd_data;			/* Used for driver-specific storage */
+@@ -354,6 +355,13 @@ struct fc_rport {	/* aka fc_starget_attrs */
+ 	struct request_queue *rqst_q;	/* bsg support */
+ } __attribute__((aligned(sizeof(unsigned long))));
+ 
++/* bit field values for struct fc_rport "fast_io_tmo_flags" field: */
++#define FC_RPORT_IGN_ABORT_CMDS		0x01
++#define FC_RPORT_IGN_DEVICE_RESET	0x02
++#define FC_RPORT_IGN_TARGET_RESET	0x04
++#define FC_RPORT_IGN_BUS_RESET		0x08
++#define FC_RPORT_IGN_HOST_RESET		0x10
++
+ /* bit field values for struct fc_rport "flags" field: */
+ #define FC_RPORT_DEVLOSS_PENDING	0x01
+ #define FC_RPORT_SCAN_PENDING		0x02
+@@ -519,6 +527,7 @@ struct fc_host_attrs {
+ 
+ 	/* Private (Transport-managed) Attributes */
+ 	enum fc_tgtid_binding_type  tgtid_bind_type;
++	u8 fast_io_tmo_flags;
+ 
+ 	/* internal data */
+ 	struct list_head rports;
+@@ -616,6 +625,8 @@ struct fc_host_attrs {
+ 	(((struct fc_host_attrs *)(x)->shost_data)->devloss_work_q)
+ #define fc_host_dev_loss_tmo(x) \
+ 	(((struct fc_host_attrs *)(x)->shost_data)->dev_loss_tmo)
++#define fc_host_fast_io_tmo_flags(x) \
++	(((struct fc_host_attrs *)(x)->shost_data)->fast_io_tmo_flags)
+ 
+ 
+ struct fc_bsg_buffer {
+-- 
+1.7.1
 
-Not required at all... policy->cpus is guaranteed to have only online cpus.
