@@ -1,204 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab3ETPYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:24:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36789 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab3ETPYj (ORCPT
+	id S1757396Ab3ETP3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:29:35 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:58157 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261Ab3ETP3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:24:39 -0400
-Date: Mon, 20 May 2013 11:24:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
-Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
- first time
-Message-ID: <20130520152415.GD24598@phenom.dumpdata.com>
-References: <20130513140749.GQ6811@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
- <20130513161714.GC10401@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com>
- <20130513182055.GC14177@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com>
- <20130514142013.GA10173@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>
- <5195944A.3050608@oracle.com>
- <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 20 May 2013 11:29:32 -0400
+Message-ID: <1369063764.3301.182.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Mon, 20 May 2013 08:29:24 -0700
+In-Reply-To: <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	 <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:24:04AM +0100, Stefano Stabellini wrote:
-> On Fri, 17 May 2013, Zhenzhong Duan wrote:
-> > On 2013-05-15 17:41, Stefano Stabellini wrote:
-> > > On Tue, 14 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > On Tue, May 14, 2013 at 02:49:50PM +0100, Stefano Stabellini wrote:
-> > > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > On Mon, May 13, 2013 at 06:24:46PM +0100, Stefano Stabellini wrote:
-> > > > > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > > On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini
-> > > > > > > > wrote:
-> > > > > > > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > > > > On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini
-> > > > > > > > > > wrote:
-> > > > > > > > > > > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > > > > > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan
-> > > > > > > > > > > > wrote:
-> > > > > > > > > > > > > When driver load and unload in a loop, pirq will exhaust
-> > > > > > > > > > > > > finally.
-> > > > > > > > > > > > > Try to use the same pirq which was already mapped and
-> > > > > > > > > > > > > binded at first time
-> > > > > > > > > > > > So what happens if I unload and reload two drivers in
-> > > > > > > > > > > > random order?
-> > > > > > > > > > > > 
-> > > > > > > > > > > > > when driver loaded.
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > Read pirq from msix entry and test if data is
-> > > > > > > > > > > > > XEN_PIRQ_MSI_DATA
-> > > > > > > > > > > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq
-> > > > > > > > > > > > > will be freed
-> > > > > > > > > > > > > when driver unload, it's always true in second load.
-> > > > > > > > > > > > If my understanding is right the issue at hand is that the
-> > > > > > > > > > > > caching
-> > > > > > > > > > > > information about the pirq disappears once the driver has
-> > > > > > > > > > > > been
-> > > > > > > > > > > > unloaded b/c the event's irq-info is removed (as the
-> > > > > > > > > > > > driver is
-> > > > > > > > > > > > unloaded and free_irq is called).
-> > > > > > > > > > > > 
-> > > > > > > > > > > > Stefano,
-> > > > > > > > > > > > Is there a specific write to the MSI structure that would
-> > > > > > > > > > > > cause the
-> > > > > > > > > > > > hypervisor to drop the PIRQ? Or a nice hypercall to "free"
-> > > > > > > > > > > > an
-> > > > > > > > > > > > PIRQ in usage?
-> > > > > > > > > > > We already have a "free PIRQ" hypercall, it's called
-> > > > > > > > > > > PHYSDEVOP_unmap_pirq and should be called by QEMU.
-> > > > > > > > > > Considering that we call function that allocates
-> > > > > > > > > > (PHYSDEVOP_get_free_pirq)
-> > > > > > > > > > it in the Linux kernel (and not in QEMU), perhaps that should
-> > > > > > > > > > be done in the
-> > > > > > > > > > Linux kernel as part of xen_destroy_irq()? Or would that
-> > > > > > > > > > confuse QEMU?
-> > > > > > > > > I think it would confuse QEMU. It is probably better to let the
-> > > > > > > > > unmap
-> > > > > > > > > being handled by it.
-> > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > > It looks like QEMU only does that hypercall (via
-> > > > > > > > > > xc_physdev_unmap_pirq)
-> > > > > > > > > > unregister_real_device which is only called during pci unplug?
-> > > > > > > > > You are right! I would think that this behaviour is erroneous
-> > > > > > > > > unless it
-> > > > > > > > > was done on purpose to avoid allocating MSIs twice.
-> > > > > > > > > If that is the case we would need to do something similar in
-> > > > > > > > > Linux too.
-> > > > > > > > > 
-> > > > > > > > > I think that the issue is the mismatch between QEMU's and
-> > > > > > > > > Linux's
-> > > > > > > > > behaviours: either both should be allocating MSIs once, or they
-> > > > > > > > > should
-> > > > > > > > > both be allocating and deallocating MSIs every time the driver
-> > > > > > > > > is loaded
-> > > > > > > > > and unloaded.
-> > > > > > > > Right. But we also have the scenario that QEMU and Linux are going
-> > > > > > > > to
-> > > > > > > > be out of sync. So we need fixes in both places - I think.
-> > > > > > > QEMU is the owner of the pirq, in fact it is the one that creates
-> > > > > > > and
-> > > > > > > destroys the mapping. I think that the right place to fix this
-> > > > > > > problem
-> > > > > > > is in QEMU, the ABI would be much cleaner as a result. As a side
-> > > > > > > effect
-> > > > > > > we don't need to make any changes in Linux.
-> > > > > > You do. You need to remove the PHYSDEVOP_get_free_pirq call in that
-> > > > > > case.
-> > > > >   PHYSDEVOP_get_free_pirq needs to stay, because Linux needs to know the
-> > > > > pirq that QEMU is going to use.
-> > > > That looks like an API violation. We have an hypercall that
-> > > > allocates the PIRQ in the Linux, then two hypercalls in the QEMU
-> > > > layer - one to map, and the other to unmap and free.
-> > > > 
-> > > > > However I would let QEMU handle the mapping (it already does that in
-> > > > > pt_msi_setup calling xc_physdev_map_pirq_msi) and unmapping (that is
-> > > > > done by calling xc_domain_unbind_msi_irq from pt_msi_disable).
-> > > > > I think the problem is that pt_msi_disable is only called on
-> > > > > unregister_real_device and pt_reset_interrupt_and_io_mapping, not when
-> > > > > the guest disables MSIs.
-> > > > Sure, I am not disputing that. I think the fix in QEMU to call the
-> > > > unmap is correct.
-> > > > 
-> > > > But I am also wondering whether it makes sense to do that in the Linux
-> > > > kernel - as it does the alloc in the first place. Seems like a bit of
-> > > > duct-tape has been used to connect this plumbing together.
-> > > 
-> > > I admit that it is not a great interface.
-> > > I would be open to options that move the entire setup/freeing in Linux,
-> > > but keep in mind that we need to retain the pirq code in QEMU for pure
-> > > HVM guests.
-> > Hi Stefano,
-> > 
-> > do you work out a patch for me to test?
-
-I did the patch that which calls PHYSDEVOP_unmap_pirq from within
-Linux kernel. And it did not fix a thing. Here is the patch (sorry about
-the copy-n-paste):
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 6a6bbe4..d122ca9 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -789,21 +789,28 @@ error_irq:
-        return ret;
- }
- #endif
--
-+static bool unmap_pirq = false;
-+static int __init unmap_pirq_setup(char *s)
-+{
-+       unmap_pirq = true;
-+       return 1;
-+}
-+__setup("unmap_pirq", unmap_pirq_setup);
- int xen_destroy_irq(int irq)
- {
-        struct irq_desc *desc;
-        struct physdev_unmap_pirq unmap_irq;
-        struct irq_info *info = info_for_irq(irq);
-        int rc = -ENOENT;
--
-        mutex_lock(&irq_mapping_update_lock);
-
-        desc = irq_to_desc(irq);
-        if (!desc)
-                goto out;
-
--       if (xen_initial_domain()) {
-+       if (xen_initial_domain() || unmap_pirq) {
-+               printk(KERN_INFO "irq: %d, pirq:%d unmapping\n",
-+                      irq, info->u.pirq.pirq);
-                unmap_irq.pirq = info->u.pirq.pirq;
-                unmap_irq.domid = info->u.pirq.domid;
-                rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
-
-
-Meaning that the later call to xen_allocate_pirq_msi would still get new PIRQs
-value.
-
-On the other hand, the original patch proposed by Zhenzhong works nicely.
-
-
-.. I am wondering what is going wrong here.
+On Mon, 2013-05-20 at 13:16 +0300, Eliezer Tamir wrote:
+> Adds a new ndo_ll_poll method and the code that supports and uses it.
+> This method can be used by low latency applications to busy poll ethernet
+> device queues directly from the socket code. The ip_low_latency_poll sysctl
+> entry controls how many cycles to poll. Set to zero to disable.
 > 
-> I'll be traveling/busy for a few weeks, maybe it's best if someone else
-> picks up this work item.
+
+This changelog lacks a lot of information, see below.
+
+Part of this information was in your 0/4 text, but it wont be included
+in the git tree.
+
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Tested-by: Willem de Bruijn <willemb@google.com>
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
+> 
+
+> +
+> +static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
+> +{
+> +	skb->dev_ref = napi;
+> +}
+> +
+> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+> +{
+> +	sk->dev_ref = skb->dev_ref;
+> +}
+
+I do not see why it's safe to keep a pointer to a napi object without
+taking a reference, or something to prevent object being removed.
+
+Using a genid might be enough. (some counter incremented every time a
+napi is dismantled)
+
+Alternatively, use a napi_id instead of a pointer.
+
+
+
