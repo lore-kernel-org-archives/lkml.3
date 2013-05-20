@@ -1,78 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3ETDfz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 23:35:55 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:41635 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755236Ab3ETDdg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 23:33:36 -0400
-X-AuditID: cbfee690-b7efc6d000006d92-07-5199998e6789
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 02/15] f2fs: remove unnecessary flag set
-Date: Mon, 20 May 2013 12:32:16 +0900
-Message-id: <1369020743-18520-2-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.1.3.566.gaa39828
-In-reply-to: <1369020743-18520-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1369020743-18520-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t8zA92+mTMDDWbu5LG4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+Pcu+lsBf3sFZPe
-	PWFrYHzE2sXIySEhYCLR9+I0C4QtJnHh3nq2LkYuDiGBZYwSqxv+ATkcYEVrlyaB1AgJLGKU
-	ePY9C6KmjUli+e8fLCA1bALaEpv3G4DUiAgwSyyYep4RpIZZYAKjxP9F78EWCAtYSNz8cIIZ
-	pJ5FQFVi/WRzkDCvgLvE/cfL2CFu0JVY/f85mM0p4CGx9e4pRpByIaCa1+dKQEZKCHxnkzhz
-	up8RpIZFQEDi2+RDLBBnykpsOsAMMUZS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLRK07MLS7N
-	S9dLzs/dxAgJ1gk7GO8dsD7EmAw0biKzlGhyPjDY80riDY3NjCxMTUyNjcwtzUgTVhLnVW+x
-	DhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA6PYqsNT14/SDHlxTQswPP9o3d8HXx7Gs819L
-	5Tv/v/E51Toh547tX+EXevIMaoUbvM6mlG2c++RdvfSMx92ie+bv/MSyLcQ/Z6mettJy2d8K
-	7/NEWGYantbUPNdxYXbad/ZTdh1i3qGMggevbv360CpzifJ0Oe1j954yhbXaPpD9MFXx3ybZ
-	+UosxRmJhlrMRcWJAG5j0X9sAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd2+mTMDDR50cFpc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5hx7t10toJ+9opJ756wNTA+Yu1i5OCQEDCRWLs0qYuRE8gUk7hwbz0biC0k
-	sIhR4tn3rC5GLiC7jUli+e8fLCD1bALaEpv3G4DUiAgwSyyYep4RpIZZYAKjxP9F71lAEsIC
-	FhI3P5xgBqlnEVCVWD/ZHCTMK+Aucf/xMnaIXboSq/8/B7M5BTwktt49xQhSLgRU8/pcyQRG
-	3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPhmfQOxlUNFocYBTgYlXh4BQJmBgqx
-	JpYVV+YeYpTgYFYS4Y3uBgrxpiRWVqUW5ccXleakFh9iTAa6aSKzlGhyPjBO80riDY1NzIws
-	jcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBsd/jq/DHFLV17M9CvZ7/fJkf
-	/uuW6Tmjw5v3O5x/u2uK3de3NW+ZpR4FPeXZv+Lp7EXyD7+c51aLPfHvk+v6prDQzu3hHF+L
-	t4Qdf2E5ee2m718C0j+2sK5d4qHzbpKGcbLMs1lFK6fe9G2czC29WCFnwQQBZfv+XqkUqXwh
-	JSuGXRtsgabbKrEUZyQaajEXFScCADC870PJAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	id S1755385Ab3ETDhM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 23:37:12 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:33591
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755236Ab3ETDhK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 23:37:10 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015I1447Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
+From: Liu Shengzhou-B36685 <B36685@freescale.com>
+To: Michael Braun <michael.braun@fem.tu-ilmenau.de>,
+        Mehresh Ramneek-B31383 <B31383@freescale.com>
+CC: "projekt-wlan@fem.tu-ilmenau.de" <projekt-wlan@fem.tu-ilmenau.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Topic: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Index: AQHOVKTREHQoofHZBUeF6TcOpU8t05kNaRUQ
+Date: Mon, 20 May 2013 03:37:06 +0000
+Message-ID: <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <20130417100809.GA8855@dynamic.fami-braun.de>
+ <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
+ <751900163975fc8d055bd2414c76d59b@fami-braun.de>
+ <20130519152230.GA2938@dynamic.fami-braun.de>
+In-Reply-To: <20130519152230.GA2938@dynamic.fami-braun.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.68]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an inode is recovered with its dentry, it will not invoke __f2fs_add_link,
-since the recovery routine checks its dentry before calling __f2fs_add_link.
+Hi Braun,
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/recovery.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+At that time I had an P4080DS board which had the same issue and had been fixed with this patch.
+I didn't test it on P1020 due to the absence of P1020. I think P1020 will need a new patch besides this one.
+Later Ramneek took this issue on P1020 for more investigation.
 
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 2941987..993b601 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -125,11 +125,7 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
- 			goto next;
- 
- 		entry = get_fsync_inode(head, ino_of_node(page));
--		if (entry) {
--			if (IS_INODE(page) && is_dent_dnode(page))
--				set_inode_flag(F2FS_I(entry->inode),
--							FI_INC_LINK);
--		} else {
-+		if (!entry) {
- 			if (IS_INODE(page) && is_dent_dnode(page)) {
- 				err = recover_inode_page(sbi, page);
- 				if (err)
--- 
-1.8.1.3.566.gaa39828
+Hello Ramneek, any update for the PHY_CLK_VALID issue?
+
+Regards,
+Shengzhou
+
+
+> -----Original Message-----
+> From: Michael Braun [mailto:michael.braun@fem.tu-ilmenau.de]
+> Sent: Sunday, May 19, 2013 11:23 PM
+> To: Liu Shengzhou-B36685
+> Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux-
+> usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
+> Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+> Freescale P1020
+> 
+> Hi,
+> 
+> I've got hardware here to test with, so if there any changes to test, I'm
+> willing to support.
+> Meanwhile, might it be a good idea to make that check optional - i.e. add
+> a module parameter or something like this around it?
+> 
+> Regards,
+>  M. Braun
+> 
+> On Thu, Apr 18, 2013 at 05:13:39PM +0200, michael-dev wrote:
+> > Hi,
+> >
+> > thanks for the quick reply.
+> >
+> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> > I applied it, but it does not make any difference on my platform.
+> >
+> > Regards,
+> >  M. Braun
+> >
+> > Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
+> > >Hi Braun,
+> > >
+> > >It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit
+> > >unstable, introduced by patch "EHCI: centralize controller
+> > >initialization".
+> > >I submitted a patch to fix it.
+> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> > >
+> > >Regards,
+> > >Shengzhou
+> > >
+> > >
+> > >>-----Original Message-----
+> > >>From: Michael Braun [mailto:michael-dev@fami-braun.de]
+> > >>Sent: Wednesday, April 17, 2013 6:08 PM
+> > >>To: Liu Shengzhou-B36685
+> > >>Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
+> > >>linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > >>Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+> > >>Freescale P1020
+> > >>
+> > >>Hi,
+> > >>
+> > >>I'm running OpenWRT Kernel 3.8.3 (which already has
+> > >>f66dea709cd9309b2ee9f715697818001fb518de and
+> > >>5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN
+> > >>(QorlQ,
+> > >>PPC) device.
+> > >>Before updating the kernel from 3.3.0, USB host support was working
+> > >>fine.
+> > >>Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and
+> > >>the lsusb output is empty, so USB host support is not working. When
+> > >>I apply the following patch, USB host support starts working again,
+> > >>so I guess
+> > >>3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+> > >>Do you have an idea how to fix it more appropriately?
+> > >>
+> > >>Thanks,
+> > >>  M. Braun
+> > >>
+> > >>--- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
+> > >>+0200
+> > >>+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
+> > >>+0200
+> > >>@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
+> > >>                 if (!spin_event_timeout(in_be32(non_ehci +
+> > >>FSL_SOC_USB_CTRL) &
+> > >>                                 PHY_CLK_VALID,
+> > >>FSL_USB_PHY_CLK_TIMEOUT,
+> > >>0)) {
+> > >>                         printk(KERN_WARNING "fsl-ehci: USB PHY
+> > >>clock invalid\n");
+> > >>-                       return -EINVAL;
+> > >>                 }
+> > >>         }
+> > >>
+
 
