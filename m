@@ -1,72 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab3ETOi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:38:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756972Ab3ETOik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:38:40 -0400
-Date: Mon, 20 May 2013 15:38:33 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Alexey Lyahkov <alexey.lyashkov@gmail.com>,
-        Andrew Perepechko <anserper@ya.ru>, Robin Dong <sanbai@taobao.com>,
-        Theodore Tso <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Bernd Schubert <bernd.schubert@fastmail.fm>,
-        David Howells <dhowells@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux-ext4 <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/5] mm: Remove lru parameter from __pagevec_lru_add and
- remove parts of pagevec API
-Message-ID: <20130520143833.GS11497@suse.de>
-References: <1368784087-956-1-git-send-email-mgorman@suse.de>
- <1368784087-956-5-git-send-email-mgorman@suse.de>
- <20130517204452.GC15721@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130517204452.GC15721@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757082Ab3ETOiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:38:55 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41276 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757000Ab3ETOim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 10:38:42 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/8] rcu: Move code to apply callback-numbering simplifications
+Date: Mon, 20 May 2013 07:38:08 -0700
+Message-Id: <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130520143739.GA29365@linux.vnet.ibm.com>
+References: <20130520143739.GA29365@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052014-5518-0000-0000-00000ED05309
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 04:44:52PM -0400, Johannes Weiner wrote:
-> On Fri, May 17, 2013 at 10:48:06AM +0100, Mel Gorman wrote:
-> > Now that the LRU to add a page to is decided at LRU-add time, remove the
-> > misleading lru parameter from __pagevec_lru_add. A consequence of this is
-> > that the pagevec_lru_add_file, pagevec_lru_add_anon and similar helpers
-> > are misleading as the caller no longer has direct control over what LRU
-> > the page is added to. Unused helpers are removed by this patch and existing
-> > users of pagevec_lru_add_file() are converted to use lru_cache_add_file()
-> > directly and use the per-cpu pagevecs instead of creating their own pagevec.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > Reviewed-by: Jan Kara <jack@suse.cz>
-> > Reviewed-by: Rik van Riel <riel@redhat.com>
-> 
-> > @@ -452,8 +448,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
-> >  	if (block) {
-> >  		/* submit the apparently valid page to the backing fs to be
-> >  		 * read from disk */
-> > -		ret = cachefiles_read_backing_file_one(object, op, page,
-> > -						       &pagevec);
-> > +		ret = cachefiles_read_backing_file_one(object, op, page);
-> 
-> Also remove the declaration and pagevec_init a few lines up?  Minor
-> detail, though.
-> 
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-It's still used and passed to fscache_mark_pages_cached
+The addition of callback numbering allows combining the detection of the
+ends of old grace periods and the beginnings of new grace periods.  This
+commit moves code to set the stage for this combining.
 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutree.c | 118 +++++++++++++++++++++++++++----------------------------
+ 1 file changed, 59 insertions(+), 59 deletions(-)
 
-Thanks
-
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 302eadf..9b6df03 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -985,65 +985,6 @@ void rcu_cpu_stall_reset(void)
+ }
+ 
+ /*
+- * Update CPU-local rcu_data state to record the newly noticed grace period.
+- * This is used both when we started the grace period and when we notice
+- * that someone else started the grace period.  The caller must hold the
+- * ->lock of the leaf rcu_node structure corresponding to the current CPU,
+- *  and must have irqs disabled.
+- */
+-static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+-{
+-	if (rdp->gpnum != rnp->gpnum) {
+-		/*
+-		 * If the current grace period is waiting for this CPU,
+-		 * set up to detect a quiescent state, otherwise don't
+-		 * go looking for one.
+-		 */
+-		rdp->gpnum = rnp->gpnum;
+-		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
+-		rdp->passed_quiesce = 0;
+-		rdp->qs_pending = !!(rnp->qsmask & rdp->grpmask);
+-		zero_cpu_stall_ticks(rdp);
+-	}
+-}
+-
+-static void note_new_gpnum(struct rcu_state *rsp, struct rcu_data *rdp)
+-{
+-	unsigned long flags;
+-	struct rcu_node *rnp;
+-
+-	local_irq_save(flags);
+-	rnp = rdp->mynode;
+-	if (rdp->gpnum == ACCESS_ONCE(rnp->gpnum) || /* outside lock. */
+-	    !raw_spin_trylock(&rnp->lock)) { /* irqs already off, so later. */
+-		local_irq_restore(flags);
+-		return;
+-	}
+-	__note_new_gpnum(rsp, rnp, rdp);
+-	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+-}
+-
+-/*
+- * Did someone else start a new RCU grace period start since we last
+- * checked?  Update local state appropriately if so.  Must be called
+- * on the CPU corresponding to rdp.
+- */
+-static int
+-check_for_new_grace_period(struct rcu_state *rsp, struct rcu_data *rdp)
+-{
+-	unsigned long flags;
+-	int ret = 0;
+-
+-	local_irq_save(flags);
+-	if (rdp->gpnum != rsp->gpnum) {
+-		note_new_gpnum(rsp, rdp);
+-		ret = 1;
+-	}
+-	local_irq_restore(flags);
+-	return ret;
+-}
+-
+-/*
+  * Initialize the specified rcu_data structure's callback list to empty.
+  */
+ static void init_callback_list(struct rcu_data *rdp)
+@@ -1360,6 +1301,45 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ }
+ 
+ /*
++ * Update CPU-local rcu_data state to record the newly noticed grace period.
++ * This is used both when we started the grace period and when we notice
++ * that someone else started the grace period.  The caller must hold the
++ * ->lock of the leaf rcu_node structure corresponding to the current CPU,
++ *  and must have irqs disabled.
++ */
++static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
++{
++	if (rdp->gpnum != rnp->gpnum) {
++		/*
++		 * If the current grace period is waiting for this CPU,
++		 * set up to detect a quiescent state, otherwise don't
++		 * go looking for one.
++		 */
++		rdp->gpnum = rnp->gpnum;
++		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpustart");
++		rdp->passed_quiesce = 0;
++		rdp->qs_pending = !!(rnp->qsmask & rdp->grpmask);
++		zero_cpu_stall_ticks(rdp);
++	}
++}
++
++static void note_new_gpnum(struct rcu_state *rsp, struct rcu_data *rdp)
++{
++	unsigned long flags;
++	struct rcu_node *rnp;
++
++	local_irq_save(flags);
++	rnp = rdp->mynode;
++	if (rdp->gpnum == ACCESS_ONCE(rnp->gpnum) || /* outside lock. */
++	    !raw_spin_trylock(&rnp->lock)) { /* irqs already off, so later. */
++		local_irq_restore(flags);
++		return;
++	}
++	__note_new_gpnum(rsp, rnp, rdp);
++	raw_spin_unlock_irqrestore(&rnp->lock, flags);
++}
++
++/*
+  * Advance this CPU's callbacks, but only if the current grace period
+  * has ended.  This may be called only from the CPU to whom the rdp
+  * belongs.
+@@ -1382,6 +1362,26 @@ rcu_process_gp_end(struct rcu_state *rsp, struct rcu_data *rdp)
+ }
+ 
+ /*
++ * Did someone else start a new RCU grace period start since we last
++ * checked?  Update local state appropriately if so.  Must be called
++ * on the CPU corresponding to rdp.
++ */
++static int
++check_for_new_grace_period(struct rcu_state *rsp, struct rcu_data *rdp)
++{
++	unsigned long flags;
++	int ret = 0;
++
++	local_irq_save(flags);
++	if (rdp->gpnum != rsp->gpnum) {
++		note_new_gpnum(rsp, rdp);
++		ret = 1;
++	}
++	local_irq_restore(flags);
++	return ret;
++}
++
++/*
+  * Do per-CPU grace-period initialization for running CPU.  The caller
+  * must hold the lock of the leaf rcu_node structure corresponding to
+  * this CPU.
 -- 
-Mel Gorman
-SUSE Labs
+1.8.1.5
+
