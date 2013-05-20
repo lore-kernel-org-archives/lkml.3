@@ -1,437 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab3ETMOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 08:14:20 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:42114 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752673Ab3ETMOQ (ORCPT
+	id S1755983Ab3ETMP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 08:15:26 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:52486 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab3ETMPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 08:14:16 -0400
-Date: Mon, 20 May 2013 20:14:05 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Xiong Zhou <jencce.kernel@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: linux-next: Tree for May 15 (crypto /crct10dif)
-Message-ID: <20130520121405.GA1487@gondor.apana.org.au>
-References: <20130515132627.817585a3d9fb3a3e502eb586@canb.auug.org.au>
- <5193CCEC.7070909@infradead.org>
- <alpine.DEB.2.02.1305161152530.31865@M2420>
- <CAMuHMdUmD2DMNeezetHNbe9DgQXpTN4BEfEmJSztyzCivQpyXQ@mail.gmail.com>
- <1368723552.27102.286.camel@schen9-DESK>
- <1368727412.27102.289.camel@schen9-DESK>
- <20130520114707.GA1187@gondor.apana.org.au>
+	Mon, 20 May 2013 08:15:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130520114707.GA1187@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1368611522-9984-19-git-send-email-lee.jones@linaro.org>
+References: <1368611522-9984-1-git-send-email-lee.jones@linaro.org>
+	<1368611522-9984-19-git-send-email-lee.jones@linaro.org>
+Date: Mon, 20 May 2013 14:15:23 +0200
+Message-ID: <CACRpkdYUAFm4G1R=0u_c8rFH1ke5n67E_POf0wysQKVmX2pD7Q@mail.gmail.com>
+Subject: Re: [PATCH 18/39] crypto: ux500/[cryp|hash] - Show successful
+ start-up in the bootlog
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Andreas Westin <andreas.westin@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 07:47:07PM +0800, Herbert Xu wrote:
-> On Thu, May 16, 2013 at 11:03:32AM -0700, Tim Chen wrote:
-> >
-> > Need to also add select CRYPTO for CRC_T10DIF.  Updated fix below:
-> > 
-> > 
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> > ---
-> > diff --git a/crypto/Kconfig b/crypto/Kconfig
-> > index d1ca631..015df24 100644
-> > --- a/crypto/Kconfig
-> > +++ b/crypto/Kconfig
-> > @@ -379,6 +379,7 @@ config CRYPTO_CRC32_PCLMUL
-> >  config CRYPTO_CRCT10DIF
-> >  	tristate "CRCT10DIF algorithm"
-> >  	select CRYPTO_HASH
-> > +	depends on CRC_T10DIF
-> >  	help
-> >  	  CRC T10 Data Integrity Field computation is being cast as
-> >  	  a crypto transform.  This allows for faster crc t10 diff
-> > diff --git a/lib/Kconfig b/lib/Kconfig
-> > index 0cee056..6407793 100644
-> > --- a/lib/Kconfig
-> > +++ b/lib/Kconfig
-> > @@ -63,7 +63,8 @@ config CRC16
-> >  
-> >  config CRC_T10DIF
-> >  	tristate "CRC calculation for the T10 Data Integrity Field"
-> > -	select CRYPTO_CRCT10DIF
-> > +	select CRYPTO
-> > +	select CRYPTO_HASH
-> >  	help
-> >  	  This option is only needed if a module that's not in the
-> >  	  kernel tree needs to calculate CRC checks for use with the
-> 
-> Nope this is still broken.  We need to move the actual crct10dif
-> code into crypto/.  I'll fix up the patch in the tree.
-> 
-> Also I'm going to get rid of crc_t10dif_update_lib function.  If you
-> still want to maintain the ordering you should do so using the
-> *_init constructs.
+On Wed, May 15, 2013 at 11:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Here is the updated patch in question:
+> The Cryp driver is currently silent and the Hash driver prints the
+> name of its probe function unnecessarily. Let's just put a nice
+> descriptive one-liner there instead.
+>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Andreas Westin <andreas.westin@stericsson.com>
+> Cc: linux-crypto@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-commit 2d31e518a42828df7877bca23a958627d60408bc
-Author: Tim Chen <tim.c.chen@linux.intel.com>
-Date:   Wed May 1 12:52:48 2013 -0700
+Patch applied with Herbert's ACK.
 
-    crypto: crct10dif - Wrap crc_t10dif function all to use crypto transform framework
-    
-    When CRC T10 DIF is calculated using the crypto transform framework, we
-    wrap the crc_t10dif function call to utilize it.  This allows us to
-    take advantage of any accelerated CRC T10 DIF transform that is
-    plugged into the crypto framework.
-    
-    Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 622d8a4..ceb3611 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -376,6 +376,14 @@ config CRYPTO_CRC32_PCLMUL
- 	  which will enable any routine to use the CRC-32-IEEE 802.3 checksum
- 	  and gain better performance as compared with the table implementation.
- 
-+config CRYPTO_CRCT10DIF
-+	tristate "CRCT10DIF algorithm"
-+	select CRYPTO_HASH
-+	help
-+	  CRC T10 Data Integrity Field computation is being cast as
-+	  a crypto transform.  This allows for faster crc t10 diff
-+	  transforms to be used if they are available.
-+
- config CRYPTO_GHASH
- 	tristate "GHASH digest algorithm"
- 	select CRYPTO_GF128MUL
-diff --git a/crypto/Makefile b/crypto/Makefile
-index a8e9b0f..62af87d 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -83,6 +83,7 @@ obj-$(CONFIG_CRYPTO_ZLIB) += zlib.o
- obj-$(CONFIG_CRYPTO_MICHAEL_MIC) += michael_mic.o
- obj-$(CONFIG_CRYPTO_CRC32C) += crc32c.o
- obj-$(CONFIG_CRYPTO_CRC32) += crc32.o
-+obj-$(CONFIG_CRYPTO_CRCT10DIF) += crct10dif.o
- obj-$(CONFIG_CRYPTO_AUTHENC) += authenc.o authencesn.o
- obj-$(CONFIG_CRYPTO_LZO) += lzo.o
- obj-$(CONFIG_CRYPTO_842) += 842.o
-diff --git a/crypto/crct10dif.c b/crypto/crct10dif.c
-new file mode 100644
-index 0000000..92aca96
---- /dev/null
-+++ b/crypto/crct10dif.c
-@@ -0,0 +1,178 @@
-+/*
-+ * Cryptographic API.
-+ *
-+ * T10 Data Integrity Field CRC16 Crypto Transform
-+ *
-+ * Copyright (c) 2007 Oracle Corporation.  All rights reserved.
-+ * Written by Martin K. Petersen <martin.petersen@oracle.com>
-+ * Copyright (C) 2013 Intel Corporation
-+ * Author: Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+ * SOFTWARE.
-+ *
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/crc-t10dif.h>
-+#include <crypto/internal/hash.h>
-+#include <linux/init.h>
-+#include <linux/string.h>
-+#include <linux/kernel.h>
-+
-+struct chksum_desc_ctx {
-+	__u16 crc;
-+};
-+
-+/* Table generated using the following polynomium:
-+ * x^16 + x^15 + x^11 + x^9 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
-+ * gt: 0x8bb7
-+ */
-+static const __u16 t10_dif_crc_table[256] = {
-+	0x0000, 0x8BB7, 0x9CD9, 0x176E, 0xB205, 0x39B2, 0x2EDC, 0xA56B,
-+	0xEFBD, 0x640A, 0x7364, 0xF8D3, 0x5DB8, 0xD60F, 0xC161, 0x4AD6,
-+	0x54CD, 0xDF7A, 0xC814, 0x43A3, 0xE6C8, 0x6D7F, 0x7A11, 0xF1A6,
-+	0xBB70, 0x30C7, 0x27A9, 0xAC1E, 0x0975, 0x82C2, 0x95AC, 0x1E1B,
-+	0xA99A, 0x222D, 0x3543, 0xBEF4, 0x1B9F, 0x9028, 0x8746, 0x0CF1,
-+	0x4627, 0xCD90, 0xDAFE, 0x5149, 0xF422, 0x7F95, 0x68FB, 0xE34C,
-+	0xFD57, 0x76E0, 0x618E, 0xEA39, 0x4F52, 0xC4E5, 0xD38B, 0x583C,
-+	0x12EA, 0x995D, 0x8E33, 0x0584, 0xA0EF, 0x2B58, 0x3C36, 0xB781,
-+	0xD883, 0x5334, 0x445A, 0xCFED, 0x6A86, 0xE131, 0xF65F, 0x7DE8,
-+	0x373E, 0xBC89, 0xABE7, 0x2050, 0x853B, 0x0E8C, 0x19E2, 0x9255,
-+	0x8C4E, 0x07F9, 0x1097, 0x9B20, 0x3E4B, 0xB5FC, 0xA292, 0x2925,
-+	0x63F3, 0xE844, 0xFF2A, 0x749D, 0xD1F6, 0x5A41, 0x4D2F, 0xC698,
-+	0x7119, 0xFAAE, 0xEDC0, 0x6677, 0xC31C, 0x48AB, 0x5FC5, 0xD472,
-+	0x9EA4, 0x1513, 0x027D, 0x89CA, 0x2CA1, 0xA716, 0xB078, 0x3BCF,
-+	0x25D4, 0xAE63, 0xB90D, 0x32BA, 0x97D1, 0x1C66, 0x0B08, 0x80BF,
-+	0xCA69, 0x41DE, 0x56B0, 0xDD07, 0x786C, 0xF3DB, 0xE4B5, 0x6F02,
-+	0x3AB1, 0xB106, 0xA668, 0x2DDF, 0x88B4, 0x0303, 0x146D, 0x9FDA,
-+	0xD50C, 0x5EBB, 0x49D5, 0xC262, 0x6709, 0xECBE, 0xFBD0, 0x7067,
-+	0x6E7C, 0xE5CB, 0xF2A5, 0x7912, 0xDC79, 0x57CE, 0x40A0, 0xCB17,
-+	0x81C1, 0x0A76, 0x1D18, 0x96AF, 0x33C4, 0xB873, 0xAF1D, 0x24AA,
-+	0x932B, 0x189C, 0x0FF2, 0x8445, 0x212E, 0xAA99, 0xBDF7, 0x3640,
-+	0x7C96, 0xF721, 0xE04F, 0x6BF8, 0xCE93, 0x4524, 0x524A, 0xD9FD,
-+	0xC7E6, 0x4C51, 0x5B3F, 0xD088, 0x75E3, 0xFE54, 0xE93A, 0x628D,
-+	0x285B, 0xA3EC, 0xB482, 0x3F35, 0x9A5E, 0x11E9, 0x0687, 0x8D30,
-+	0xE232, 0x6985, 0x7EEB, 0xF55C, 0x5037, 0xDB80, 0xCCEE, 0x4759,
-+	0x0D8F, 0x8638, 0x9156, 0x1AE1, 0xBF8A, 0x343D, 0x2353, 0xA8E4,
-+	0xB6FF, 0x3D48, 0x2A26, 0xA191, 0x04FA, 0x8F4D, 0x9823, 0x1394,
-+	0x5942, 0xD2F5, 0xC59B, 0x4E2C, 0xEB47, 0x60F0, 0x779E, 0xFC29,
-+	0x4BA8, 0xC01F, 0xD771, 0x5CC6, 0xF9AD, 0x721A, 0x6574, 0xEEC3,
-+	0xA415, 0x2FA2, 0x38CC, 0xB37B, 0x1610, 0x9DA7, 0x8AC9, 0x017E,
-+	0x1F65, 0x94D2, 0x83BC, 0x080B, 0xAD60, 0x26D7, 0x31B9, 0xBA0E,
-+	0xF0D8, 0x7B6F, 0x6C01, 0xE7B6, 0x42DD, 0xC96A, 0xDE04, 0x55B3
-+};
-+
-+__u16 crc_t10dif_generic(__u16 crc, const unsigned char *buffer, size_t len)
-+{
-+	unsigned int i;
-+
-+	for (i = 0 ; i < len ; i++)
-+		crc = (crc << 8) ^ t10_dif_crc_table[((crc >> 8) ^ buffer[i]) & 0xff];
-+
-+	return crc;
-+}
-+EXPORT_SYMBOL(crc_t10dif_generic);
-+
-+/*
-+ * Steps through buffer one byte at at time, calculates reflected
-+ * crc using table.
-+ */
-+
-+static int chksum_init(struct shash_desc *desc)
-+{
-+	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
-+
-+	ctx->crc = 0;
-+
-+	return 0;
-+}
-+
-+static int chksum_update(struct shash_desc *desc, const u8 *data,
-+			 unsigned int length)
-+{
-+	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
-+
-+	ctx->crc = crc_t10dif_generic(ctx->crc, data, length);
-+	return 0;
-+}
-+
-+static int chksum_final(struct shash_desc *desc, u8 *out)
-+{
-+	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
-+
-+	*(__u16 *)out = ctx->crc;
-+	return 0;
-+}
-+
-+static int __chksum_finup(__u16 *crcp, const u8 *data, unsigned int len,
-+			u8 *out)
-+{
-+	*(__u16 *)out = crc_t10dif_generic(*crcp, data, len);
-+	return 0;
-+}
-+
-+static int chksum_finup(struct shash_desc *desc, const u8 *data,
-+			unsigned int len, u8 *out)
-+{
-+	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
-+
-+	return __chksum_finup(&ctx->crc, data, len, out);
-+}
-+
-+static int chksum_digest(struct shash_desc *desc, const u8 *data,
-+			 unsigned int length, u8 *out)
-+{
-+	struct chksum_desc_ctx *ctx = shash_desc_ctx(desc);
-+
-+	return __chksum_finup(&ctx->crc, data, length, out);
-+}
-+
-+static struct shash_alg alg = {
-+	.digestsize		=	CRC_T10DIF_DIGEST_SIZE,
-+	.init		=	chksum_init,
-+	.update		=	chksum_update,
-+	.final		=	chksum_final,
-+	.finup		=	chksum_finup,
-+	.digest		=	chksum_digest,
-+	.descsize		=	sizeof(struct chksum_desc_ctx),
-+	.base			=	{
-+		.cra_name		=	"crct10dif",
-+		.cra_driver_name	=	"crct10dif-generic",
-+		.cra_priority		=	100,
-+		.cra_blocksize		=	CRC_T10DIF_BLOCK_SIZE,
-+		.cra_module		=	THIS_MODULE,
-+	}
-+};
-+
-+static int __init crct10dif_mod_init(void)
-+{
-+	int ret;
-+
-+	ret = crypto_register_shash(&alg);
-+	return ret;
-+}
-+
-+static void __exit crct10dif_mod_fini(void)
-+{
-+	crypto_unregister_shash(&alg);
-+}
-+
-+module_init(crct10dif_mod_init);
-+module_exit(crct10dif_mod_fini);
-+
-+MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
-+MODULE_DESCRIPTION("T10 DIF CRC calculation.");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/crc-t10dif.h b/include/linux/crc-t10dif.h
-index a9c96d8..b3cb71f 100644
---- a/include/linux/crc-t10dif.h
-+++ b/include/linux/crc-t10dif.h
-@@ -3,6 +3,10 @@
- 
- #include <linux/types.h>
- 
-+#define CRC_T10DIF_DIGEST_SIZE 2
-+#define CRC_T10DIF_BLOCK_SIZE 1
-+
-+__u16 crc_t10dif_generic(__u16 crc, const unsigned char *buffer, size_t len);
- __u16 crc_t10dif(unsigned char const *, size_t);
- 
- #endif
-diff --git a/lib/Kconfig b/lib/Kconfig
-index fe01d41..339d5a4 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -63,6 +63,8 @@ config CRC16
- 
- config CRC_T10DIF
- 	tristate "CRC calculation for the T10 Data Integrity Field"
-+	select CRYPTO
-+	select CRYPTO_CRCT10DIF
- 	help
- 	  This option is only needed if a module that's not in the
- 	  kernel tree needs to calculate CRC checks for use with the
-diff --git a/lib/crc-t10dif.c b/lib/crc-t10dif.c
-index fbbd66e..0cb6463 100644
---- a/lib/crc-t10dif.c
-+++ b/lib/crc-t10dif.c
-@@ -11,57 +11,46 @@
- #include <linux/types.h>
- #include <linux/module.h>
- #include <linux/crc-t10dif.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <crypto/hash.h>
- 
--/* Table generated using the following polynomium:
-- * x^16 + x^15 + x^11 + x^9 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
-- * gt: 0x8bb7
-- */
--static const __u16 t10_dif_crc_table[256] = {
--	0x0000, 0x8BB7, 0x9CD9, 0x176E, 0xB205, 0x39B2, 0x2EDC, 0xA56B,
--	0xEFBD, 0x640A, 0x7364, 0xF8D3, 0x5DB8, 0xD60F, 0xC161, 0x4AD6,
--	0x54CD, 0xDF7A, 0xC814, 0x43A3, 0xE6C8, 0x6D7F, 0x7A11, 0xF1A6,
--	0xBB70, 0x30C7, 0x27A9, 0xAC1E, 0x0975, 0x82C2, 0x95AC, 0x1E1B,
--	0xA99A, 0x222D, 0x3543, 0xBEF4, 0x1B9F, 0x9028, 0x8746, 0x0CF1,
--	0x4627, 0xCD90, 0xDAFE, 0x5149, 0xF422, 0x7F95, 0x68FB, 0xE34C,
--	0xFD57, 0x76E0, 0x618E, 0xEA39, 0x4F52, 0xC4E5, 0xD38B, 0x583C,
--	0x12EA, 0x995D, 0x8E33, 0x0584, 0xA0EF, 0x2B58, 0x3C36, 0xB781,
--	0xD883, 0x5334, 0x445A, 0xCFED, 0x6A86, 0xE131, 0xF65F, 0x7DE8,
--	0x373E, 0xBC89, 0xABE7, 0x2050, 0x853B, 0x0E8C, 0x19E2, 0x9255,
--	0x8C4E, 0x07F9, 0x1097, 0x9B20, 0x3E4B, 0xB5FC, 0xA292, 0x2925,
--	0x63F3, 0xE844, 0xFF2A, 0x749D, 0xD1F6, 0x5A41, 0x4D2F, 0xC698,
--	0x7119, 0xFAAE, 0xEDC0, 0x6677, 0xC31C, 0x48AB, 0x5FC5, 0xD472,
--	0x9EA4, 0x1513, 0x027D, 0x89CA, 0x2CA1, 0xA716, 0xB078, 0x3BCF,
--	0x25D4, 0xAE63, 0xB90D, 0x32BA, 0x97D1, 0x1C66, 0x0B08, 0x80BF,
--	0xCA69, 0x41DE, 0x56B0, 0xDD07, 0x786C, 0xF3DB, 0xE4B5, 0x6F02,
--	0x3AB1, 0xB106, 0xA668, 0x2DDF, 0x88B4, 0x0303, 0x146D, 0x9FDA,
--	0xD50C, 0x5EBB, 0x49D5, 0xC262, 0x6709, 0xECBE, 0xFBD0, 0x7067,
--	0x6E7C, 0xE5CB, 0xF2A5, 0x7912, 0xDC79, 0x57CE, 0x40A0, 0xCB17,
--	0x81C1, 0x0A76, 0x1D18, 0x96AF, 0x33C4, 0xB873, 0xAF1D, 0x24AA,
--	0x932B, 0x189C, 0x0FF2, 0x8445, 0x212E, 0xAA99, 0xBDF7, 0x3640,
--	0x7C96, 0xF721, 0xE04F, 0x6BF8, 0xCE93, 0x4524, 0x524A, 0xD9FD,
--	0xC7E6, 0x4C51, 0x5B3F, 0xD088, 0x75E3, 0xFE54, 0xE93A, 0x628D,
--	0x285B, 0xA3EC, 0xB482, 0x3F35, 0x9A5E, 0x11E9, 0x0687, 0x8D30,
--	0xE232, 0x6985, 0x7EEB, 0xF55C, 0x5037, 0xDB80, 0xCCEE, 0x4759,
--	0x0D8F, 0x8638, 0x9156, 0x1AE1, 0xBF8A, 0x343D, 0x2353, 0xA8E4,
--	0xB6FF, 0x3D48, 0x2A26, 0xA191, 0x04FA, 0x8F4D, 0x9823, 0x1394,
--	0x5942, 0xD2F5, 0xC59B, 0x4E2C, 0xEB47, 0x60F0, 0x779E, 0xFC29,
--	0x4BA8, 0xC01F, 0xD771, 0x5CC6, 0xF9AD, 0x721A, 0x6574, 0xEEC3,
--	0xA415, 0x2FA2, 0x38CC, 0xB37B, 0x1610, 0x9DA7, 0x8AC9, 0x017E,
--	0x1F65, 0x94D2, 0x83BC, 0x080B, 0xAD60, 0x26D7, 0x31B9, 0xBA0E,
--	0xF0D8, 0x7B6F, 0x6C01, 0xE7B6, 0x42DD, 0xC96A, 0xDE04, 0x55B3
--};
-+static struct crypto_shash *crct10dif_tfm;
- 
- __u16 crc_t10dif(const unsigned char *buffer, size_t len)
- {
--	__u16 crc = 0;
--	unsigned int i;
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[2];
-+	} desc;
-+	int err;
-+
-+	desc.shash.tfm = crct10dif_tfm;
-+	desc.shash.flags = 0;
-+	*(__u16 *)desc.ctx = 0;
- 
--	for (i = 0 ; i < len ; i++)
--		crc = (crc << 8) ^ t10_dif_crc_table[((crc >> 8) ^ buffer[i]) & 0xff];
-+	err = crypto_shash_update(&desc.shash, buffer, len);
-+	BUG_ON(err);
- 
--	return crc;
-+	return *(__u16 *)desc.ctx;
- }
- EXPORT_SYMBOL(crc_t10dif);
- 
-+static int __init crc_t10dif_mod_init(void)
-+{
-+	crct10dif_tfm = crypto_alloc_shash("crct10dif", 0, 0);
-+	if (IS_ERR(crct10dif_tfm))
-+		return PTR_ERR(crct10dif_tfm);
-+	return 0;
-+}
-+
-+static void __exit crc_t10dif_mod_fini(void)
-+{
-+	crypto_free_shash(crct10dif_tfm);
-+}
-+
-+module_init(crc_t10dif_mod_init);
-+module_exit(crc_t10dif_mod_fini);
-+
- MODULE_DESCRIPTION("T10 DIF CRC calculation");
- MODULE_LICENSE("GPL");
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks,
+Linus Walleij
