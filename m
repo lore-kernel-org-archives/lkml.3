@@ -1,218 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3ETJJB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:09:01 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:49235 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751667Ab3ETJI7 (ORCPT
+	id S1754788Ab3ETJJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:09:25 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55473 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab3ETJJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:08:59 -0400
-Date: Mon, 20 May 2013 12:08:47 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: David Miller <davem@davemloft.net>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Francois Romieu <romieu@fr.zoreil.com>
-Subject: [PATCH] drivers: net: usb: rtl8150: concurrent URB bugfix
-Message-ID: <alpine.DEB.2.02.1305201152001.11943@fry.nucleusys.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 20 May 2013 05:09:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5199E54D.7030407@linux.vnet.ibm.com>
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
+	<20130509125040.GF27333@pd.tnic>
+	<20130509125859.GG27333@pd.tnic>
+	<20130515184528.GO4442@linux.vnet.ibm.com>
+	<20130515224358.GF11783@pd.tnic>
+	<20130515235512.GT4442@linux.vnet.ibm.com>
+	<20130517135641.GF23035@pd.tnic>
+	<51999591.8030401@linux.vnet.ibm.com>
+	<20130520045023.GA12690@pd.tnic>
+	<5199C169.7060504@linux.vnet.ibm.com>
+	<20130520064727.GD12690@pd.tnic>
+	<5199C990.3020602@linux.vnet.ibm.com>
+	<5199CB59.1020309@linux.vnet.ibm.com>
+	<CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com>
+	<5199CFD0.9030101@linux.vnet.ibm.com>
+	<5199E54D.7030407@linux.vnet.ibm.com>
+Date: Mon, 20 May 2013 14:39:22 +0530
+Message-ID: <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com>
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
+ round 2
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petko Manolov <petkan@nucleusys.com>
+On 20 May 2013 14:26, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+> On 05/20/2013 03:25 PM, Michael Wang wrote:
+>> Yeah, that's right, I guess the issue is, although the policy->cpus is
+>> correct at a given time, after get cpu from it, it's possible to be
+>> changed, unless we disabled preempt or irq, or hotplug before we use it...
+>>
+>> Like such issue cases:
+>>                               get x from policy->cpus
+>>       DOWN notifier
+>>       change policy->cpus
+>>       do offline x
+>>                               send ipi to x
+>>
+>> Will that happen?
 
-This patch fixes a potential race with concurrently running asynchronous 
-write requests.  The values for device's RX control register are now 
-stored in dynamically allocated buffers so each URB submission has it's 
-own copy.  Doing it the old way is data clobbering prone.
+Sorry I am not sure. :(
 
-This patch is against latest 'net' tree.
+I can see mutex being used in cpufreq_governor.c which should take care
+of race conditions...
 
-Signed-off-by: Petko Manolov <petkan@nucleusys.com>
----
- drivers/net/usb/rtl8150.c |  100 ++++++++++++++++-------------------
- 1 file changed, 46 insertions(+), 54 deletions(-)
+> May be we could do some test to confirm it?
+>
+> diff --git a/drivers/cpufreq/cpufreq_governor.c
+> b/drivers/cpufreq/cpufreq_governor.c
+> index 443442d..449be88 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/tick.h>
+>  #include <linux/types.h>
+>  #include <linux/workqueue.h>
+> +#include <linux/cpu.h>
+>
+>  #include "cpufreq_governor.h"
+>
+> @@ -180,8 +181,10 @@ void gov_queue_work(struct dbs_data *dbs_data,
+> struct cpufreq_policy *policy,
+>         if (!all_cpus) {
+>                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
+>         } else {
+> +               get_online_cpus();
+>                 for_each_cpu(i, policy->cpus)
+>                         __gov_queue_work(i, dbs_data, delay);
+> +               put_online_cpus();
+>         }
+>  }
+>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>
+> This is supposed to make WARN disappear, if it works, then BINGO :)
 
-diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
-index a491d3a..6cbdac6 100644
---- a/drivers/net/usb/rtl8150.c
-+++ b/drivers/net/usb/rtl8150.c
-@@ -130,19 +130,23 @@ struct rtl8150 {
- 	struct usb_device *udev;
- 	struct tasklet_struct tl;
- 	struct net_device *netdev;
--	struct urb *rx_urb, *tx_urb, *intr_urb, *ctrl_urb;
-+	struct urb *rx_urb, *tx_urb, *intr_urb;
- 	struct sk_buff *tx_skb, *rx_skb;
- 	struct sk_buff *rx_skb_pool[RX_SKB_POOL_SIZE];
- 	spinlock_t rx_pool_lock;
- 	struct usb_ctrlrequest dr;
- 	int intr_interval;
--	__le16 rx_creg;
- 	u8 *intr_buff;
- 	u8 phy;
- };
- 
- typedef struct rtl8150 rtl8150_t;
- 
-+struct async_req {
-+	struct usb_ctrlrequest dr;
-+	u16 rx_creg;
-+};
-+
- static const char driver_name [] = "rtl8150";
- 
- /*
-@@ -164,51 +168,47 @@ static int set_registers(rtl8150_t * dev, u16 indx, u16 size, void *data)
- 			       indx, 0, data, size, 500);
- }
- 
--static void ctrl_callback(struct urb *urb)
-+static void async_set_reg_cb(struct urb *urb)
- {
--	rtl8150_t *dev;
-+	struct async_req *req = (struct async_req *)urb->context;
- 	int status = urb->status;
- 
--	switch (status) {
--	case 0:
--		break;
--	case -EINPROGRESS:
--		break;
--	case -ENOENT:
--		break;
--	default:
--		if (printk_ratelimit())
--			dev_warn(&urb->dev->dev, "ctrl urb status %d\n", status);
--	}
--	dev = urb->context;
--	clear_bit(RX_REG_SET, &dev->flags);
-+	if (status < 0)
-+		dev_dbg(&urb->dev->dev, "%s failed with %d", __func__, status);
-+	kfree(req);
-+	usb_free_urb(urb);
- }
- 
--static int async_set_registers(rtl8150_t * dev, u16 indx, u16 size)
-+static int async_set_registers(rtl8150_t *dev, u16 indx, u16 size, u16 reg)
- {
--	int ret;
--
--	if (test_bit(RX_REG_SET, &dev->flags))
--		return -EAGAIN;
-+	int res = -ENOMEM;
-+	struct urb *async_urb;
-+	struct async_req *req;
- 
--	dev->dr.bRequestType = RTL8150_REQT_WRITE;
--	dev->dr.bRequest = RTL8150_REQ_SET_REGS;
--	dev->dr.wValue = cpu_to_le16(indx);
--	dev->dr.wIndex = 0;
--	dev->dr.wLength = cpu_to_le16(size);
--	dev->ctrl_urb->transfer_buffer_length = size;
--	usb_fill_control_urb(dev->ctrl_urb, dev->udev,
--			 usb_sndctrlpipe(dev->udev, 0), (char *) &dev->dr,
--			 &dev->rx_creg, size, ctrl_callback, dev);
--	if ((ret = usb_submit_urb(dev->ctrl_urb, GFP_ATOMIC))) {
--		if (ret == -ENODEV)
-+	req = kmalloc(sizeof(struct async_req), GFP_ATOMIC);
-+	if (req == NULL)
-+		return res;
-+	async_urb = usb_alloc_urb(0, GFP_ATOMIC);
-+	if (async_urb == NULL) {
-+		kfree(req);
-+		return res;
-+	}
-+	req->rx_creg = cpu_to_le16(reg);
-+	req->dr.bRequestType = RTL8150_REQT_WRITE;
-+	req->dr.bRequest = RTL8150_REQ_SET_REGS;
-+	req->dr.wIndex = 0;
-+	req->dr.wValue = cpu_to_le16(indx);
-+	req->dr.wLength = cpu_to_le16(size);
-+	usb_fill_control_urb(async_urb, dev->udev,
-+	                     usb_sndctrlpipe(dev->udev, 0), (void *)&req->dr,
-+			     &req->rx_creg, size, async_set_reg_cb, req);
-+	res = usb_submit_urb(async_urb, GFP_ATOMIC);
-+	if (res) {
-+		if (res == -ENODEV)
- 			netif_device_detach(dev->netdev);
--		dev_err(&dev->udev->dev,
--			"control request submission failed: %d\n", ret);
--	} else
--		set_bit(RX_REG_SET, &dev->flags);
--
--	return ret;
-+		dev_err(&dev->udev->dev, "%s failed with %d\n", __func__, res);
-+	}
-+	return res;
- }
- 
- static int read_mii_word(rtl8150_t * dev, u8 phy, __u8 indx, u16 * reg)
-@@ -330,13 +330,6 @@ static int alloc_all_urbs(rtl8150_t * dev)
- 		usb_free_urb(dev->tx_urb);
- 		return 0;
- 	}
--	dev->ctrl_urb = usb_alloc_urb(0, GFP_KERNEL);
--	if (!dev->ctrl_urb) {
--		usb_free_urb(dev->rx_urb);
--		usb_free_urb(dev->tx_urb);
--		usb_free_urb(dev->intr_urb);
--		return 0;
--	}
- 
- 	return 1;
- }
-@@ -346,7 +339,6 @@ static void free_all_urbs(rtl8150_t * dev)
- 	usb_free_urb(dev->rx_urb);
- 	usb_free_urb(dev->tx_urb);
- 	usb_free_urb(dev->intr_urb);
--	usb_free_urb(dev->ctrl_urb);
- }
- 
- static void unlink_all_urbs(rtl8150_t * dev)
-@@ -354,7 +346,6 @@ static void unlink_all_urbs(rtl8150_t * dev)
- 	usb_kill_urb(dev->rx_urb);
- 	usb_kill_urb(dev->tx_urb);
- 	usb_kill_urb(dev->intr_urb);
--	usb_kill_urb(dev->ctrl_urb);
- }
- 
- static inline struct sk_buff *pull_skb(rtl8150_t *dev)
-@@ -629,7 +620,6 @@ static int enable_net_traffic(rtl8150_t * dev)
- 	}
- 	/* RCR bit7=1 attach Rx info at the end;  =0 HW CRC (which is broken) */
- 	rcr = 0x9e;
--	dev->rx_creg = cpu_to_le16(rcr);
- 	tcr = 0xd8;
- 	cr = 0x0c;
- 	if (!(rcr & 0x80))
-@@ -662,20 +652,22 @@ static void rtl8150_tx_timeout(struct net_device *netdev)
- static void rtl8150_set_multicast(struct net_device *netdev)
- {
- 	rtl8150_t *dev = netdev_priv(netdev);
-+	u16 rx_creg = 0x9e;
-+
- 	netif_stop_queue(netdev);
- 	if (netdev->flags & IFF_PROMISC) {
--		dev->rx_creg |= cpu_to_le16(0x0001);
-+		rx_creg |= 0x0001;
- 		dev_info(&netdev->dev, "%s: promiscuous mode\n", netdev->name);
- 	} else if (!netdev_mc_empty(netdev) ||
- 		   (netdev->flags & IFF_ALLMULTI)) {
--		dev->rx_creg &= cpu_to_le16(0xfffe);
--		dev->rx_creg |= cpu_to_le16(0x0002);
-+		rx_creg &= 0xfffe;
-+		rx_creg |= 0x0002;
- 		dev_info(&netdev->dev, "%s: allmulti set\n", netdev->name);
- 	} else {
- 		/* ~RX_MULTICAST, ~RX_PROMISCUOUS */
--		dev->rx_creg &= cpu_to_le16(0x00fc);
-+		rx_creg &= 0x00fc;
- 	}
--	async_set_registers(dev, RCR, 2);
-+	async_set_registers(dev, RCR, sizeof(rx_creg), rx_creg);
- 	netif_wake_queue(netdev);
- }
- 
+Let people test it and then we can talk :)
