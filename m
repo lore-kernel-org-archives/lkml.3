@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3ETK7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:59:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56392 "EHLO
+	id S1756590Ab3ETLAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:00:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56377 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756436Ab3ETKx6 (ORCPT
+	with ESMTP id S1756577Ab3ETKxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:58 -0400
+	Mon, 20 May 2013 06:53:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 097/115] ipv6: do not clear pinet6 field
-Date: Mon, 20 May 2013 11:51:37 +0100
-Message-Id: <1369047116-9378-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 094/115] 3c59x: fix PCI resource management
+Date: Mon, 20 May 2013 11:51:34 +0100
+Message-Id: <1369047116-9378-95-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,175 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit f77d602124d865c38705df7fa25c03de9c284ad2 upstream.
+commit 4b264a1676e70dc656ba53a8cac690f2d4b65f4e upstream.
 
-We have seen multiple NULL dereferences in __inet6_lookup_established()
+The driver wrongly claimed I/O ports at an address returned by pci_iomap() --
+even if it was passed an MMIO address.  Fix this by claiming/releasing all PCI
+resources in the PCI driver's probe()/remove() methods instead and get rid of
+'must_free_region' flag weirdness (why would Cardbus claim anything for us?).
 
-After analysis, I found that inet6_sk() could be NULL while the
-check for sk_family == AF_INET6 was true.
-
-Bug was added in linux-2.6.29 when RCU lookups were introduced in UDP
-and TCP stacks.
-
-Once an IPv6 socket, using SLAB_DESTROY_BY_RCU is inserted in a hash
-table, we no longer can clear pinet6 field.
-
-This patch extends logic used in commit fcbdf09d9652c891
-("net: fix nulls list corruptions in sk_prot_alloc")
-
-TCP/UDP/UDPLite IPv6 protocols provide their own .clear_sk() method
-to make sure we do not clear pinet6 field.
-
-At socket clone phase, we do not really care, as cloning the parent (non
-NULL) pinet6 is not adding a fatal race.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/sock.h  | 12 ++++++++++++
- net/core/sock.c     | 12 ------------
- net/ipv6/tcp_ipv6.c | 12 ++++++++++++
- net/ipv6/udp.c      | 13 ++++++++++++-
- net/ipv6/udp_impl.h |  2 ++
- net/ipv6/udplite.c  |  2 +-
- 6 files changed, 39 insertions(+), 14 deletions(-)
+ drivers/net/ethernet/3com/3c59x.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 5e904e6..2a3d405 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -807,6 +807,18 @@ struct inet_hashinfo;
- struct raw_hashinfo;
- struct module;
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index ccfc86f..5673d6e 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -632,7 +632,6 @@ struct vortex_private {
+ 		pm_state_valid:1,				/* pci_dev->saved_config_space has sane contents */
+ 		open:1,
+ 		medialock:1,
+-		must_free_region:1,				/* Flag: if zero, Cardbus owns the I/O region */
+ 		large_frames:1,			/* accept large frames */
+ 		handling_irq:1;			/* private in_irq indicator */
+ 	/* {get|set}_wol operations are already serialized by rtnl.
+@@ -1012,6 +1011,12 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 	if (rc < 0)
+ 		goto out;
  
-+/*
-+ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
-+ * un-modified. Special care is taken when initializing object to zero.
-+ */
-+static inline void sk_prot_clear_nulls(struct sock *sk, int size)
-+{
-+	if (offsetof(struct sock, sk_node.next) != 0)
-+		memset(sk, 0, offsetof(struct sock, sk_node.next));
-+	memset(&sk->sk_node.pprev, 0,
-+	       size - offsetof(struct sock, sk_node.pprev));
-+}
++	rc = pci_request_regions(pdev, DRV_NAME);
++	if (rc < 0) {
++		pci_disable_device(pdev);
++		goto out;
++	}
 +
- /* Networking protocol blocks we attach to sockets.
-  * socket layer -> transport layer interface
-  * transport -> network interface is defined by struct inet_proto
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 5d30122..457ae99 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1085,18 +1085,6 @@ static void sock_copy(struct sock *nsk, const struct sock *osk)
- #endif
- }
+ 	unit = vortex_cards_found;
  
--/*
-- * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
-- * un-modified. Special care is taken when initializing object to zero.
-- */
--static inline void sk_prot_clear_nulls(struct sock *sk, int size)
--{
--	if (offsetof(struct sock, sk_node.next) != 0)
--		memset(sk, 0, offsetof(struct sock, sk_node.next));
--	memset(&sk->sk_node.pprev, 0,
--	       size - offsetof(struct sock, sk_node.pprev));
--}
+ 	if (global_use_mmio < 0 && (unit >= MAX_UNITS || use_mmio[unit] < 0)) {
+@@ -1027,6 +1032,7 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 	if (!ioaddr) /* If mapping fails, fall-back to BAR 0... */
+ 		ioaddr = pci_iomap(pdev, 0, 0);
+ 	if (!ioaddr) {
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		rc = -ENOMEM;
+ 		goto out;
+@@ -1036,6 +1042,7 @@ static int __devinit vortex_init_one(struct pci_dev *pdev,
+ 			   ent->driver_data, unit);
+ 	if (rc < 0) {
+ 		pci_iounmap(pdev, ioaddr);
++		pci_release_regions(pdev);
+ 		pci_disable_device(pdev);
+ 		goto out;
+ 	}
+@@ -1179,11 +1186,6 @@ static int __devinit vortex_probe1(struct device *gendev,
+ 
+ 	/* PCI-only startup logic */
+ 	if (pdev) {
+-		/* EISA resources already marked, so only PCI needs to do this here */
+-		/* Ignore return value, because Cardbus drivers already allocate for us */
+-		if (request_region(dev->base_addr, vci->io_size, print_name) != NULL)
+-			vp->must_free_region = 1;
 -
- void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
- {
- 	unsigned long nulls1, nulls2;
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 5d10b81..989c024 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -2034,6 +2034,17 @@ void tcp6_proc_exit(struct net *net)
+ 		/* enable bus-mastering if necessary */
+ 		if (vci->flags & PCI_USES_MASTER)
+ 			pci_set_master(pdev);
+@@ -1221,7 +1223,7 @@ static int __devinit vortex_probe1(struct device *gendev,
+ 					   &vp->rx_ring_dma);
+ 	retval = -ENOMEM;
+ 	if (!vp->rx_ring)
+-		goto free_region;
++		goto free_device;
+ 
+ 	vp->tx_ring = (struct boom_tx_desc *)(vp->rx_ring + RX_RING_SIZE);
+ 	vp->tx_ring_dma = vp->rx_ring_dma + sizeof(struct boom_rx_desc) * RX_RING_SIZE;
+@@ -1486,9 +1488,7 @@ free_ring:
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-free_region:
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vci->io_size);
++free_device:
+ 	free_netdev(dev);
+ 	pr_err(PFX "vortex_probe1 fails.  Returns %d\n", retval);
+ out:
+@@ -3256,8 +3256,9 @@ static void __devexit vortex_remove_one(struct pci_dev *pdev)
+ 							+ sizeof(struct boom_tx_desc) * TX_RING_SIZE,
+ 						vp->rx_ring,
+ 						vp->rx_ring_dma);
+-	if (vp->must_free_region)
+-		release_region(dev->base_addr, vp->io_size);
++
++	pci_release_regions(pdev);
++
+ 	free_netdev(dev);
  }
- #endif
  
-+static void tcp_v6_clear_sk(struct sock *sk, int size)
-+{
-+	struct inet_sock *inet = inet_sk(sk);
-+
-+	/* we do not want to clear pinet6 field, because of RCU lookups */
-+	sk_prot_clear_nulls(sk, offsetof(struct inet_sock, pinet6));
-+
-+	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
-+	memset(&inet->pinet6 + 1, 0, size);
-+}
-+
- struct proto tcpv6_prot = {
- 	.name			= "TCPv6",
- 	.owner			= THIS_MODULE,
-@@ -2075,6 +2086,7 @@ struct proto tcpv6_prot = {
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
- 	.proto_cgroup		= tcp_proto_cgroup,
- #endif
-+	.clear_sk		= tcp_v6_clear_sk,
- };
- 
- static const struct inet6_protocol tcpv6_protocol = {
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index f05099f..3a5491d 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1499,6 +1499,17 @@ void udp6_proc_exit(struct net *net) {
- }
- #endif /* CONFIG_PROC_FS */
- 
-+void udp_v6_clear_sk(struct sock *sk, int size)
-+{
-+	struct inet_sock *inet = inet_sk(sk);
-+
-+	/* we do not want to clear pinet6 field, because of RCU lookups */
-+	sk_prot_clear_portaddr_nulls(sk, offsetof(struct inet_sock, pinet6));
-+
-+	size -= offsetof(struct inet_sock, pinet6) + sizeof(inet->pinet6);
-+	memset(&inet->pinet6 + 1, 0, size);
-+}
-+
- /* ------------------------------------------------------------------------ */
- 
- struct proto udpv6_prot = {
-@@ -1529,7 +1540,7 @@ struct proto udpv6_prot = {
- 	.compat_setsockopt = compat_udpv6_setsockopt,
- 	.compat_getsockopt = compat_udpv6_getsockopt,
- #endif
--	.clear_sk	   = sk_prot_clear_portaddr_nulls,
-+	.clear_sk	   = udp_v6_clear_sk,
- };
- 
- static struct inet_protosw udpv6_protosw = {
-diff --git a/net/ipv6/udp_impl.h b/net/ipv6/udp_impl.h
-index d757104..4691ed5 100644
---- a/net/ipv6/udp_impl.h
-+++ b/net/ipv6/udp_impl.h
-@@ -31,6 +31,8 @@ extern int	udpv6_recvmsg(struct kiocb *iocb, struct sock *sk,
- extern int	udpv6_queue_rcv_skb(struct sock * sk, struct sk_buff *skb);
- extern void	udpv6_destroy_sock(struct sock *sk);
- 
-+extern void udp_v6_clear_sk(struct sock *sk, int size);
-+
- #ifdef CONFIG_PROC_FS
- extern int	udp6_seq_show(struct seq_file *seq, void *v);
- #endif
-diff --git a/net/ipv6/udplite.c b/net/ipv6/udplite.c
-index 1d08e21..dfcc4be 100644
---- a/net/ipv6/udplite.c
-+++ b/net/ipv6/udplite.c
-@@ -56,7 +56,7 @@ struct proto udplitev6_prot = {
- 	.compat_setsockopt = compat_udpv6_setsockopt,
- 	.compat_getsockopt = compat_udpv6_getsockopt,
- #endif
--	.clear_sk	   = sk_prot_clear_portaddr_nulls,
-+	.clear_sk	   = udp_v6_clear_sk,
- };
- 
- static struct inet_protosw udplite6_protosw = {
 -- 
 1.8.1.2
 
