@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3ETLWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:22:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56017 "EHLO
+	id S1755458Ab3ETKwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:52:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55932 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab3ETKwd (ORCPT
+	with ESMTP id S1754762Ab3ETKwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:33 -0400
+	Mon, 20 May 2013 06:52:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Philip Rakity <prakity@yahoo.com>, Chris Ball <cjb@laptop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 024/115] ALSA: snd-usb: try harder to find USB_DT_CS_ENDPOINT
-Date: Mon, 20 May 2013 11:50:24 +0100
-Message-Id: <1369047116-9378-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 005/115] mmc: core: Fix bit width test failing on old eMMC cards
+Date: Mon, 20 May 2013 11:50:05 +0100
+Message-Id: <1369047116-9378-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Philip Rakity <prakity@yahoo.com>
 
-commit ebfc594c02148b6a85c2f178cf167a44a3c3ce10 upstream.
+commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
 
-The USB_DT_CS_ENDPOINT class-specific endpoint descriptor is usually
-stuffed directly after the standard USB endpoint descriptor, and this is
-where the driver currently expects it to be.
+PARTITION_SUPPORT needs to be set before doing the compare on version
+number so the bit width test does not get invalid data.  Before this
+patch, a Sandisk iNAND eMMC card would detect 1-bit width although
+the hardware supports 4-bit.
 
-There are, however, devices in the wild that have it the other way
-around in their descriptor sets, so the USB_DT_CS_ENDPOINT comes
-*before* the standard enpoint. Devices known to implement it that way
-are "Sennheiser BTD-500" and Plantronics USB headsets.
+Only affects old emmc devices - pre 4.4 devices.
 
-When the driver can't find the USB_DT_CS_ENDPOINT, it won't be able to
-change sample rates, as the bitmask for the validity of this command is
-storen in bmAttributes of that descriptor.
-
-Fix this by searching the entire interface instead of just the extra
-bytes of the first endpoint, in case the latter fails.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Torstein Hegge <hegge@resisty.net>
-Reported-and-tested-by: Yves G <alsa-user@vivigatt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Elad Yi <elad.yi@gmail.com>
+Signed-off-by: Philip Rakity <prakity@yahoo.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/stream.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/mmc/core/mmc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/usb/stream.c b/sound/usb/stream.c
-index 2025205..1891e49b 100644
---- a/sound/usb/stream.c
-+++ b/sound/usb/stream.c
-@@ -194,6 +194,14 @@ static int parse_uac_endpoint_attributes(struct snd_usb_audio *chip,
- 	if (!csep && altsd->bNumEndpoints >= 2)
- 		csep = snd_usb_find_desc(alts->endpoint[1].extra, alts->endpoint[1].extralen, NULL, USB_DT_CS_ENDPOINT);
- 
-+	/*
-+	 * If we can't locate the USB_DT_CS_ENDPOINT descriptor in the extra
-+	 * bytes after the first endpoint, go search the entire interface.
-+	 * Some devices have it directly *before* the standard endpoint.
-+	 */
-+	if (!csep)
-+		csep = snd_usb_find_desc(alts->extra, alts->extralen, NULL, USB_DT_CS_ENDPOINT);
-+
- 	if (!csep || csep->bLength < 7 ||
- 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
- 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 4f4489a..bb9e81d 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -368,13 +368,13 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
+ 	card->ext_csd.raw_trim_mult =
+ 		ext_csd[EXT_CSD_TRIM_MULT];
++	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 	if (card->ext_csd.rev >= 4) {
+ 		/*
+ 		 * Enhanced area feature support -- check whether the eMMC
+ 		 * card has the Enhanced area enabled.  If so, export enhanced
+ 		 * area offset and size to user by adding sysfs interface.
+ 		 */
+-		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
+ 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+ 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+ 			hc_erase_grp_sz =
 -- 
 1.8.1.2
 
