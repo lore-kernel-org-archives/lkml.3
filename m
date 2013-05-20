@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3ETAF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 20:05:29 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:53355 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754739Ab3ETAF1 (ORCPT
+	id S1754923Ab3ETAWK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 20:22:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44969 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823Ab3ETAWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 20:05:27 -0400
-X-Sasl-enc: b9SYf6YHdiUashNpixyDGfbr+dO1QwNzGVwn2lqIlSAB 1369008319
-From: Alan Ott <alan@signal11.us>
-To: david@hauweele.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net, Alan Ott <alan@signal11.us>
-Subject: [PATCH testing] mrf24j40: Move INIT_COMPLETION to before the packet is sent
-Date: Sun, 19 May 2013 20:05:16 -0400
-Message-Id: <1369008316-16850-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
-References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
+	Sun, 19 May 2013 20:22:08 -0400
+Date: Mon, 20 May 2013 10:21:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Libo Chen <clbchenlibo.chen@huawei.com>
+Subject: linux-next: manual merge of the usb.current tree with Linus' tree
+Message-Id: <20130520102159.18f2f976cb4000e48b45731e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__20_May_2013_10_21_59_+1000_HZwVN/Oi/lUBq=0M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids a race condition where the tx_complete interrupt could happen
-before the completion is initialized.
+--Signature=_Mon__20_May_2013_10_21_59_+1000_HZwVN/Oi/lUBq=0M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
+Hi Greg,
 
-David H,
+Today's linux-next merge of the usb.current tree got a conflict in
+drivers/usb/host/ohci-nxp.c between commit bb522812a1a6
+("drivers/usb/host: don't check resource with devm_ioremap_resource")
+from Linus' tree and commit b3517d5de80e ("usb: ohci: fix goto wrong tag
+in err case") from the usb.current tree.
 
-Try this out and see if it changes anything for you. I put a bunch of
-schedule_timeout()s in mrf24j40_tx() to basically guarantee that a reception
-will happen during mrf24j40_tx(), and it seems to work. It would not work
-before with said schedule_timeout() calls.
+The former remove a bit of code modified by the latter, so I did that and
+can carry the fix as necessary (no action is required).
 
-Alan.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
----
- drivers/net/ieee802154/mrf24j40.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+--Signature=_Mon__20_May_2013_10_21_59_+1000_HZwVN/Oi/lUBq=0M
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 556151d..0ea2a5a 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -345,6 +345,8 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
- 	if (ret)
- 		goto err;
- 
-+	INIT_COMPLETION(devrec->tx_complete);
-+
- 	/* Set TXNTRIG bit of TXNCON to send packet */
- 	ret = read_short_reg(devrec, REG_TXNCON, &val);
- 	if (ret)
-@@ -355,8 +357,6 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
- 		val |= 0x4;
- 	write_short_reg(devrec, REG_TXNCON, val);
- 
--	INIT_COMPLETION(devrec->tx_complete);
--
- 	/* Wait for the device to send the TX complete interrupt. */
- 	ret = wait_for_completion_interruptible_timeout(
- 						&devrec->tx_complete,
--- 
-1.7.11.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRmWynAAoJEECxmPOUX5FEohkP/i/pIKJ5KEp1ekF0DHGCxnI+
+3xJW3PQjZCDFfgW/KVy8xB8PFEnN6IUzYGiCH9CgKWaVsacQlsPuvCCDFrYhlL/P
+iMoM3k1IKIEPUexahYOS20t1HgBu7X8nDwmZ2nr7K3E1qi5RzSfros72/ghPDtDP
+kKXX5ZU2lTY1Bhr0PyLKjS1hu0dXyKJkutcwrPOa71AOlqbQV407fQE2Y22IVQPQ
+/c4U2qxzYkgIlfppRbDu1BBJKugeV0eOcXknOv49CaBtnDYRNf264EACJmoyzciV
+jIMLMHaKIm3+PnUihuzFH9tbcPzJ+6ZOAw0XnNWiNtjAuFiUK+b7zgz6ZgQN9BsO
+uIoB3H86PeYVkFcIKjB58e7VV1swWQjUDp7BzJWz8NVlDZg14s1oydBOB0JRGNgE
+09MEDMhzqADOXXMhxrezt97L8D984rRoAIAJVyWy68Ji+Wuq0BaYNA7etA3Cvdwi
+w2dmoEE87RocwjsZbgBpdbBghItVPCDWcYtGm8DpS90VAg/UMlFZpoGkYtfX8oIK
+uJy2WRTWzedHYcn2Rn/PR3ryvSXgmkur31kPMaJ1XjFvejDpBe9PZQc+Udy9cfDz
+SYghFOqqWumVvTdtmzNCFbPwrj4r1y9sFkNZDWZUNOmhkRqQWXQYvdmGtY00765H
+rbNqA1ODlmc6Od9AMa88
+=R27y
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__20_May_2013_10_21_59_+1000_HZwVN/Oi/lUBq=0M--
