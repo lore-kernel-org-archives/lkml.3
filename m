@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab3ETKxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56174 "EHLO
+	id S1756303Ab3ETLK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:10:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3ETKxK (ORCPT
+	with ESMTP id S1756166Ab3ETKxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:10 -0400
+	Mon, 20 May 2013 06:53:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Jens Axboe <axboe@kernel.dk>, Jonghwan Choi <jhbird.choi@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 055/115] s390: move dummy io_remap_pfn_range() to asm/pgtable.h
-Date: Mon, 20 May 2013 11:50:55 +0100
-Message-Id: <1369047116-9378-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 057/115] drbd: fix for deadlock when using automatic split-brain-recovery
+Date: Mon, 20 May 2013 11:50:57 +0100
+Message-Id: <1369047116-9378-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit 4f2e29031e6c67802e7370292dd050fd62f337ee upstream.
+commit 7c689e63a847316c1b2500f86891b0a574ce7e69 upstream.
 
-Commit b4cbb197c7e7 ("vm: add vm_iomap_memory() helper function") added
-a helper function wrapper around io_remap_pfn_range(), and every other
-architecture defined it in <asm/pgtable.h>.
+With an automatic after split-brain recovery policy of
+"after-sb-1pri call-pri-lost-after-sb",
+when trying to drbd_set_role() to R_SECONDARY,
+we run into a deadlock.
 
-The s390 choice of <asm/io.h> may make sense, but is not very convenient
-for this case, and gratuitous differences like that cause unexpected errors like this:
+This was first recognized and supposedly fixed by
+2009-06-10 "Fixed a deadlock when using automatic split brain recovery when both nodes are"
+replacing drbd_set_role() with drbd_change_state() in that code-path,
+but the first hunk of that patch forgets to remove the drbd_set_role().
 
-   mm/memory.c: In function 'vm_iomap_memory':
-   mm/memory.c:2439:2: error: implicit declaration of function 'io_remap_pfn_range' [-Werror=implicit-function-declaration]
+We apparently only ever tested the "two primaries" case.
 
-Glory be the kbuild test robot who noticed this, bisected it, and
-reported it to the guilty parties (ie me).
-
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5:
-  - Took the patch 2nd hunk only, as the io_remap_pfn_range wasn't defined ]
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/include/asm/pgtable.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/block/drbd/drbd_receiver.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index b322741..0d6400e 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -67,6 +67,10 @@ static inline int is_zero_pfn(unsigned long pfn)
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index ea4836e..e81cc53 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2260,7 +2260,6 @@ static int drbd_asb_recover_1p(struct drbd_conf *mdev) __must_hold(local)
+ 		if (hg == -1 && mdev->state.role == R_PRIMARY) {
+ 			enum drbd_state_rv rv2;
  
- #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
- 
-+/* TODO: s390 cannot support io_remap_pfn_range... */
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) 	       \
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
-+
- #endif /* !__ASSEMBLY__ */
- 
- /*
+-			drbd_set_role(mdev, R_SECONDARY, 0);
+ 			 /* drbd_change_state() does not sleep while in SS_IN_TRANSIENT_STATE,
+ 			  * we might be here in C_WF_REPORT_PARAMS which is transient.
+ 			  * we do not need to wait for the after state change work either. */
 -- 
 1.8.1.2
 
