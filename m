@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3ETJTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:19:41 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:33078 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab3ETJTj (ORCPT
+	id S1753583Ab3ETJYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:24:21 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:56872 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab3ETJYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:19:39 -0400
-Message-ID: <5199EA9E.3010909@linux.vnet.ibm.com>
-Date: Mon, 20 May 2013 17:19:26 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 20 May 2013 05:24:19 -0400
+Message-ID: <5199EBB5.7060209@linux.vnet.ibm.com>
+Date: Mon, 20 May 2013 17:24:05 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v6 2/7] KVM: MMU: delete shadow page from hash list in
- kvm_mmu_prepare_zap_page
-References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1368738782-18649-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130519104713.GE4725@redhat.com>
-In-Reply-To: <20130519104713.GE4725@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
+ round 2
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130509125040.GF27333@pd.tnic>	<20130509125859.GG27333@pd.tnic> <20130515184528.GO4442@linux.vnet.ibm.com>	<20130515224358.GF11783@pd.tnic> <20130515235512.GT4442@linux.vnet.ibm.com>	<20130517135641.GF23035@pd.tnic> <51999591.8030401@linux.vnet.ibm.com>	<20130520045023.GA12690@pd.tnic> <5199C169.7060504@linux.vnet.ibm.com>	<20130520064727.GD12690@pd.tnic> <5199C990.3020602@linux.vnet.ibm.com>	<5199CB59.1020309@linux.vnet.ibm.com> <CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com> <5199CFD0.9030101@linux.vnet.ibm.com>	<5199E54D.7030407@linux.vnet.ibm.com> <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com>
+In-Reply-To: <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052009-2000-0000-0000-00000C2DD4F7
+x-cbid: 13052009-8256-0000-0000-000007925F99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2013 06:47 PM, Gleb Natapov wrote:
-> On Fri, May 17, 2013 at 05:12:57AM +0800, Xiao Guangrong wrote:
->> Move deletion shadow page from the hash list from kvm_mmu_commit_zap_page to
->> kvm_mmu_prepare_zap_page so that we can call kvm_mmu_commit_zap_page
->> once for multiple kvm_mmu_prepare_zap_page that can help us to avoid
->> unnecessary TLB flush
+On 05/20/2013 05:09 PM, Viresh Kumar wrote:
+> On 20 May 2013 14:26, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+>> On 05/20/2013 03:25 PM, Michael Wang wrote:
+>>> Yeah, that's right, I guess the issue is, although the policy->cpus is
+>>> correct at a given time, after get cpu from it, it's possible to be
+>>> changed, unless we disabled preempt or irq, or hotplug before we use it...
+>>>
+>>> Like such issue cases:
+>>>                               get x from policy->cpus
+>>>       DOWN notifier
+>>>       change policy->cpus
+>>>       do offline x
+>>>                               send ipi to x
+>>>
+>>> Will that happen?
+> 
+> Sorry I am not sure. :(
+> 
+> I can see mutex being used in cpufreq_governor.c which should take care
+> of race conditions...
+> 
+>> May be we could do some test to confirm it?
 >>
-> Don't we call kvm_mmu_commit_zap_page() once for multiple
-> kvm_mmu_prepare_zap_page() now when possible? kvm_mmu_commit_zap_page()
-> gets a list as a parameter. I am not against the change, but wish to
-> understand it better.
+>> diff --git a/drivers/cpufreq/cpufreq_governor.c
+>> b/drivers/cpufreq/cpufreq_governor.c
+>> index 443442d..449be88 100644
+>> --- a/drivers/cpufreq/cpufreq_governor.c
+>> +++ b/drivers/cpufreq/cpufreq_governor.c
+>> @@ -26,6 +26,7 @@
+>>  #include <linux/tick.h>
+>>  #include <linux/types.h>
+>>  #include <linux/workqueue.h>
+>> +#include <linux/cpu.h>
+>>
+>>  #include "cpufreq_governor.h"
+>>
+>> @@ -180,8 +181,10 @@ void gov_queue_work(struct dbs_data *dbs_data,
+>> struct cpufreq_policy *policy,
+>>         if (!all_cpus) {
+>>                 __gov_queue_work(smp_processor_id(), dbs_data, delay);
+>>         } else {
+>> +               get_online_cpus();
+>>                 for_each_cpu(i, policy->cpus)
+>>                         __gov_queue_work(i, dbs_data, delay);
+>> +               put_online_cpus();
+>>         }
+>>  }
+>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+>>
+>> This is supposed to make WARN disappear, if it works, then BINGO :)
+> 
+> Let people test it and then we can talk :)
 
-The changelong is not clear enough, i mean we can "call
-kvm_mmu_commit_zap_page once for multiple kvm_mmu_prepare_zap_page" when
-we use lock-break technique. If we do not do this, the page can be found
-in hashtable but they are linked on the invalid_list on other thread.
+Agree :)
+
+Borislav, would you like to take a try?
+
+If this fix cause other troubles, you could try get_cpu() or disable irq
+also.
+
+Regards,
+Michael Wang
 
 > 
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |    8 ++++++--
->>  1 files changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 40d7b2d..682ecb4 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
->>  {
->>  	ASSERT(is_empty_shadow_page(sp->spt));
->> -	hlist_del(&sp->hash_link);
->> +
->>  	list_del(&sp->link);
->>  	free_page((unsigned long)sp->spt);
->>  	if (!sp->role.direct)
->> @@ -1655,7 +1655,8 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->>  
->>  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
->>  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
->> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
->> +		if ((_sp)->role.direct ||				\
->> +		      ((_sp)->role.invalid && WARN_ON(1))) {} else
->>  
->>  /* @sp->gfn should be write-protected at the call site */
->>  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->> @@ -2074,6 +2075,9 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->>  		unaccount_shadowed(kvm, sp->gfn);
->>  	if (sp->unsync)
->>  		kvm_unlink_unsync_page(kvm, sp);
->> +
->> +	hlist_del_init(&sp->hash_link);
->> +
-> What about moving this inside if() bellow and making it hlist_del()?
-> Leave the page on the hash if root_count is non zero.
-> 
-
-It's a good idea. will update.
-
 
