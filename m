@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab3ETT1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:27:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46112 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3ETT1i (ORCPT
+	id S1757780Ab3ETT3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:29:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31039 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab3ETT3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:27:38 -0400
-Date: Mon, 20 May 2013 12:27:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Wang YanQing <udknight@gmail.com>, jslaby@suse.cz, alan@linux.intel.com,
-        airlied@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] Convert all to the caller hold lock version
-Message-ID: <20130520192737.GA20961@kroah.com>
-References: <20130508181304.GA12344@udknight>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130508181304.GA12344@udknight>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 May 2013 15:29:13 -0400
+X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=WLnIJqwzAAAA:8 a=MOXeESKK23jMz4u-a18A:9 a=QEXdDO2ut3YA:10 a=TdfvHmimR9IA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1369078151.6828.118.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.45-rt60
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Mon, 20 May 2013 15:29:11 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 09, 2013 at 02:13:04AM +0800, Wang YanQing wrote:
-> After commit 50e244cc793d511b86adea24972f3a7264cae114 
->      (fb: rework locking to fix lock ordering on takeover)
-> and 
->      commit e93a9a868792ad71cdd09d75e5a02d8067473c4e
->      (fb: Yet another band-aid for fixing lockdep mess)
-> 
-> We have two version functions implement almost the same function,
-> except the caller/callee hold lock.
-> 
-> fbcon_takeover vs do_fbcon_takeover
-> register_con_driver vs do_register_con_driver
-> take_over_console vs do_take_over_console
-> unbind_con_driver vs do_unbind_con_driver
-> bind_con_driver vs do_bind_con_driver
-> unregister_con_driver vs do_unregister_con_driver
-> 
-> This issue bring us much code duplication,
-> like do_fbcon_takeover and fbcon_takeover,
-> they have almost the same.
-> 
-> Although some of them had been re-written 
-> as a wrapper for another, but the wrapper
-> is so trivial, we can just throw them away.
-> 
-> Also those two versions of almost the same
-> functions will confuse API's user.
-> 
-> After all, I think this issue is not good
-> for long time maintain.
-> 
-> This series patch convert all to the
-> new version which caller hold the lock,
-> and then delete the old version away.
 
-Can you also send a patch fixing up the documentation to use the new
-functions as well?
+Dear RT Folks,
 
-thanks,
+I'm pleased to announce the 3.4.45-rt60 stable release.
 
-greg k-h
+
+This release is just an update to the new stable 3.4.45 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.4-rt
+  Head SHA1: b9d0069b1e69ea4e5f45ff9e9482aff97669d069
+
+
+Or to build 3.4.45-rt60 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.45.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.45-rt60.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
