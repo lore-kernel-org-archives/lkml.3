@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3ETQCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:02:02 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:39075 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3ETQB7 (ORCPT
+	id S1757444Ab3ETQCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:02:06 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53003 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3ETQCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:01:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <519A1DFD.5080809@linux.intel.com>
-References: <1368586102-17661-1-git-send-email-yinghai@kernel.org>
-	<20130515091248.00002fe3@unknown>
-	<CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
-	<519A1DFD.5080809@linux.intel.com>
-Date: Mon, 20 May 2013 09:01:58 -0700
-X-Google-Sender-Auth: 5OUPIMsWPGT8fCU7ggH89RNIirs
-Message-ID: <CAE9FiQWXQhbWObM=8wq+D84sbDakChyvuze9SS0SJxuxOUeQBQ@mail.gmail.com>
-Subject: Re: [PATCH v2 6/7] PCI: Make sure VF's driver get attached after PF's
-From: Yinghai Lu <yinghai@kernel.org>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Or Gerlitz <or.gerlitz@gmail.com>, Greg Rose <gregory.v.rose@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Yan Burman <yanb@mellanox.com>, Sathya Perla <Sathya.Perla@emulex.com>,
-        NetDev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 20 May 2013 12:02:03 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Kevin Hilman <khilman@linaro.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 0/8] nohz: Random fixes
+Date: Mon, 20 May 2013 18:01:48 +0200
+Message-Id: <1369065716-22801-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 5:58 AM, Eliezer Tamir
-<eliezer.tamir@linux.intel.com> wrote:
->>
-> Maybe do the following:
-> 1. split the VF PCI IDs into a separate PCI_ID device table.
-> 2. have two pci_driver structs, one for all of the PF IDS and one with the
-> VF IDS.
-> 3. only register the first pci_driver struct from mlx4_init().
-> 4. register the one for the VFs once your PFs are all up and ready.
+Hi,
 
-that may help booting path that have driver built-in, or first time
-load driver path.
+A few fixes for nohz against -rc1. I'll likely send the non-rfc
+part to Ingo tomorrow, unless anybody has concerns.
 
-For driver already loaded, and hotadd path, the problem is still there.
+Thanks.
 
-Yinghai
+---
+Frederic Weisbecker (6):
+  vtime: Use consistent clocks among nohz accounting
+  watchdog: Boot-disable by default on full dynticks
+  kvm: Move guest entry/exit APIs to context_tracking
+  kthread: Enable parking requests from setup() and unpark() callbacks
+  watchdog: Rename confusing state variable
+  watchdog: Fix internal state with boot user disabled watchdog
+
+Li Zhong (1):
+  nohz: Fix notifier return val that enforce timekeeping
+
+Steven Rostedt (1):
+  nohz: Warn if the machine can not perform nohz_full
+
+ include/linux/context_tracking.h |   35 +++++++++++++++++++++++++++++++++++
+ include/linux/kvm_host.h         |   37 +------------------------------------
+ include/linux/nmi.h              |    2 +-
+ include/linux/vtime.h            |    4 ++--
+ kernel/context_tracking.c        |    1 -
+ kernel/sched/core.c              |    2 +-
+ kernel/sched/cputime.c           |    6 +++---
+ kernel/smpboot.c                 |    6 ++++++
+ kernel/sysctl.c                  |    4 ++--
+ kernel/time/tick-sched.c         |    7 ++++++-
+ kernel/watchdog.c                |   34 ++++++++++++++++++++--------------
+ 11 files changed, 77 insertions(+), 61 deletions(-)
+
+-- 
+1.7.5.4
+
