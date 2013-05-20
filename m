@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab3ETKyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:54:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56460 "EHLO
+	id S1756762Ab3ETKyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:54:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56486 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab3ETKyN (ORCPT
+	with ESMTP id S1756712Ab3ETKyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:13 -0400
+	Mon, 20 May 2013 06:54:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 110/115] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
-Date: Mon, 20 May 2013 11:51:50 +0100
-Message-Id: <1369047116-9378-111-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 115/115] watchdog: Fix race condition in registration code
+Date: Mon, 20 May 2013 11:51:55 +0100
+Message-Id: <1369047116-9378-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
+commit 60403f7a4d9368d187f79cba5e4672d01df37574 upstream.
 
-When a 32 bit version of ipmitool is used on a 64 bit kernel, the
-ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
-incomplete data being retrieved in some cases, or other possible failures.
-Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
+A race condition exists when registering the first watchdog device.
+Sequence of events:
 
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+- watchdog_register_device calls watchdog_dev_register
+- watchdog_dev_register creates the watchdog misc device by calling
+  misc_register.
+  At that time, the matching character device (/dev/watchdog0) does not yet
+  exist, and old_wdd is not set either.
+- Userspace gets an event and opens /dev/watchdog
+- watchdog_open is called and sets wdd = old_wdd, which is still NULL,
+  and tries to dereference it. This causes the kernel to panic.
+
+Seen with systemd trying to open /dev/watchdog immediately after
+it was created.
+
+Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/ipmi/ipmi_devintf.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/watchdog/watchdog_dev.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-index 9eb360f..d5a5f02 100644
---- a/drivers/char/ipmi/ipmi_devintf.c
-+++ b/drivers/char/ipmi/ipmi_devintf.c
-@@ -837,13 +837,25 @@ static long compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
- 		return ipmi_ioctl(filep, cmd, arg);
- 	}
- }
-+
-+static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
-+				       unsigned long arg)
-+{
-+	int ret;
-+
-+	mutex_lock(&ipmi_mutex);
-+	ret = compat_ipmi_ioctl(filep, cmd, arg);
-+	mutex_unlock(&ipmi_mutex);
-+
-+	return ret;
-+}
- #endif
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index ef8edec..05a5310 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -524,6 +524,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 	int err, devno;
  
- static const struct file_operations ipmi_fops = {
- 	.owner		= THIS_MODULE,
- 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
--	.compat_ioctl   = compat_ipmi_ioctl,
-+	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
- #endif
- 	.open		= ipmi_open,
- 	.release	= ipmi_release,
+ 	if (watchdog->id == 0) {
++		old_wdd = watchdog;
+ 		watchdog_miscdev.parent = watchdog->parent;
+ 		err = misc_register(&watchdog_miscdev);
+ 		if (err != 0) {
+@@ -532,9 +533,9 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 			if (err == -EBUSY)
+ 				pr_err("%s: a legacy watchdog module is probably present.\n",
+ 					watchdog->info->identity);
++			old_wdd = NULL;
+ 			return err;
+ 		}
+-		old_wdd = watchdog;
+ 	}
+ 
+ 	/* Fill in the data structures */
 -- 
 1.8.1.2
 
