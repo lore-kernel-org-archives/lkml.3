@@ -1,196 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab3ETKQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:16:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38062 "EHLO mga11.intel.com"
+	id S1753917Ab3ETKVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:21:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12222 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab3ETKQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:16:36 -0400
+	id S1752024Ab3ETKVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:21:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,707,1363158000"; 
-   d="scan'208";a="340439340"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v3 net-next 4/4] ixgbe: add extra stats for ndo_ll_poll
-To: Dave Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 20 May 2013 13:16:31 +0300
-Message-ID: <20130520101631.14133.63784.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+   d="scan'208";a="340441431"
+Date: Mon, 20 May 2013 13:25:30 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: implement acpi_os_get_timer() according the spec
+Message-ID: <20130520102530.GG11878@intel.com>
+References: <1368440871-27552-1-git-send-email-mika.westerberg@linux.intel.com>
+ <9521576.ePuIMg9qsX@vostro.rjw.lan>
+ <20130513114432.GK20562@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130513114432.GK20562@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional statistics to the ixgbe driver for ndo_ll_poll
-Defined under LL_EXTENDED_STATS
+On Mon, May 13, 2013 at 02:44:32PM +0300, Mika Westerberg wrote:
+> On Mon, May 13, 2013 at 01:38:46PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, May 13, 2013 01:27:51 PM Mika Westerberg wrote:
+> > > ACPI Timer() opcode should return monotonically increasing clock with 100ns
+> > > granularity. Implement this with the help of ktime_get().
+> > > 
+> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > 
+> > That looks reasobable.  Have you tested it?
+> 
+> Very lightly. Basically I added some debug printks() between two
+> successsive calls of Timer() and it seemed like it returned correct time.
+> 
+> It is certainly better than returning t+1 every time Timer() is called :)
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+I did somewhat better test for this. I added following ASL code:
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
- 3 files changed, 60 insertions(+), 0 deletions(-)
+	...
+	Store(Timer, Local1)
+	Sleep(10)
+	Divide(Subtract(Timer, Local1), 10000,, Local1)
+	Sleep(Local1)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index 72be661..2a7de7c 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -52,6 +52,9 @@
- #include <linux/dca.h>
- #endif
- 
-+#ifdef CONFIG_INET_LL_RX_POLL
-+#define LL_EXTENDED_STATS
-+#endif  /* CONFIG_INET_LL_RX_POLL */
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -182,6 +185,11 @@ struct ixgbe_rx_buffer {
- struct ixgbe_queue_stats {
- 	u64 packets;
- 	u64 bytes;
-+#ifdef LL_EXTENDED_STATS
-+	u64 yields;
-+	u64 misses;
-+	u64 cleaned;
-+#endif  /* LL_EXTENDED_STATS */
- };
- 
- struct ixgbe_tx_queue_stats {
-@@ -389,6 +397,9 @@ static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->tx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
-@@ -419,6 +430,9 @@ static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
- 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
- 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->rx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* preserve yield marks */
- 		q_vector->state |= IXGBE_QV_STATE_POLL;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index d375472..24e2e7a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
- 		ring = adapter->rx_ring[j];
-@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 
- 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
-@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "tx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "tx_q_%u_napi_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
- 			sprintf(p, "rx_queue_%u_packets", i);
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "rx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "rx_q_%u_ll_poll_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
- 			sprintf(p, "tx_pb_%u_pxon", i);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 628b7b1..1b2214b 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2033,6 +2033,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
- 
- 	ixgbe_for_each_ring(ring, q_vector->rx) {
- 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+#ifdef LL_EXTENDED_STATS
-+		if (found)
-+			ring->stats.cleaned += found;
-+		else
-+			ring->stats.misses++;
-+#endif
- 		if (found)
- 			break;
- 	}
+	Store(Timer, Local1)
+	Sleep(200)
+	Divide(Subtract(Timer, Local1), 10000,, Local1)
+	Sleep(Local1)
 
+	Store(Timer, Local1)
+	Sleep(1300)
+	Divide(Subtract(Timer, Local1), 10000,, Local1)
+	Sleep(Local1)
+
+The second sleep should be pretty close to the first one.
+
+Without this patch I get:
+
+[   11.488100] ACPI: acpi_os_get_timer() TBD
+[   11.492150] ACPI: Sleep(10)
+[   11.502993] ACPI: Sleep(0)
+[   11.506315] ACPI: Sleep(200)
+[   11.706237] ACPI: Sleep(0)
+[   11.709550] ACPI: Sleep(1300)
+[   13.008929] ACPI: Sleep(0)
+
+With the patch applied I get:
+
+[   11.486786] ACPI: Sleep(10)
+[   11.499029] ACPI: Sleep(12)
+[   11.512350] ACPI: Sleep(200)
+[   11.712282] ACPI: Sleep(200)
+[   11.912170] ACPI: Sleep(1300)
+[   13.211577] ACPI: Sleep(1300)
+
+The above looks much more correct to me.
