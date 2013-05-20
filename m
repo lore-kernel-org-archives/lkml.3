@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab3ETO3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:29:14 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56955 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756298Ab3ETO3J (ORCPT
+	id S1756917Ab3ETO3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:29:22 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40889 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab3ETO3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:29:09 -0400
+	Mon, 20 May 2013 10:29:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,60 +16,83 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 1/6] rcu: Convert rcutree.c printk calls
-Date: Mon, 20 May 2013 07:28:44 -0700
-Message-Id: <1369060129-28173-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 3/6] rcu: Remove "Experimental" flags
+Date: Mon, 20 May 2013 07:28:46 -0700
+Message-Id: <1369060129-28173-3-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20130520142819.GA27123@linux.vnet.ibm.com>
+In-Reply-To: <1369060129-28173-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130520142819.GA27123@linux.vnet.ibm.com>
+ <1369060129-28173-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-7408-0000-0000-00001061EA8C
+x-cbid: 13052014-5406-0000-0000-000008A72BE4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit converts printk() calls to the corresponding pr_*() calls.
+After a release or two, features are no longer experimental.  Therefore,
+this commit removes the "Experimental" tag from them.
 
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- kernel/rcutree.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ init/Kconfig            |  2 +-
+ kernel/rcutree_plugin.h | 10 +++++-----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 16ea679..302eadf 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -866,7 +866,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
- 	 * RCU CPU stall warnings.
- 	 */
--	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks:",
-+	pr_err("INFO: %s detected stalls on CPUs/tasks:",
- 	       rsp->name);
- 	print_cpu_stall_info_begin();
- 	rcu_for_each_leaf_node(rsp, rnp) {
-@@ -899,7 +899,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	       smp_processor_id(), (long)(jiffies - rsp->gp_start),
- 	       rsp->gpnum, rsp->completed, totqlen);
- 	if (ndetected == 0)
--		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
-+		pr_err("INFO: Stall ended before state dump start\n");
- 	else if (!trigger_all_cpu_backtrace())
- 		rcu_dump_cpu_stacks(rsp);
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d3a788..09ab5c2 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -655,7 +655,7 @@ config RCU_BOOST_DELAY
+ 	  Accept the default if unsure.
  
-@@ -922,7 +922,7 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 	 * See Documentation/RCU/stallwarn.txt for info on how to debug
- 	 * RCU CPU stall warnings.
- 	 */
--	printk(KERN_ERR "INFO: %s self-detected stall on CPU", rsp->name);
-+	pr_err("INFO: %s self-detected stall on CPU", rsp->name);
- 	print_cpu_stall_info_begin();
- 	print_cpu_stall_info(rsp, smp_processor_id());
- 	print_cpu_stall_info_end();
+ config RCU_NOCB_CPU
+-	bool "Offload RCU callback processing from boot-selected CPUs (EXPERIMENTAL"
++	bool "Offload RCU callback processing from boot-selected CPUs"
+ 	depends on TREE_RCU || TREE_PREEMPT_RCU
+ 	default n
+ 	help
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 207844e..6b3ccaa 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -81,7 +81,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ 	pr_info("\tFour-level hierarchy is enabled.\n");
+ #endif
+ 	if (rcu_fanout_leaf != CONFIG_RCU_FANOUT_LEAF)
+-		pr_info("\tExperimental boot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
++		pr_info("\tBoot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
+ 	if (nr_cpu_ids != NR_CPUS)
+ 		pr_info("\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
+ #ifdef CONFIG_RCU_NOCB_CPU
+@@ -91,19 +91,19 @@ static void __init rcu_bootup_announce_oddness(void)
+ 		have_rcu_nocb_mask = true;
+ 	}
+ #ifdef CONFIG_RCU_NOCB_CPU_ZERO
+-	pr_info("\tExperimental no-CBs CPU 0\n");
++	pr_info("\tOffload RCU callbacks from CPU 0\n");
+ 	cpumask_set_cpu(0, rcu_nocb_mask);
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ZERO */
+ #ifdef CONFIG_RCU_NOCB_CPU_ALL
+-	pr_info("\tExperimental no-CBs for all CPUs\n");
++	pr_info("\tOffload RCU callbacks from all CPUs\n");
+ 	cpumask_setall(rcu_nocb_mask);
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
+ #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
+ 	if (have_rcu_nocb_mask) {
+ 		cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+-		pr_info("\tExperimental no-CBs CPUs: %s.\n", nocb_buf);
++		pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+ 		if (rcu_nocb_poll)
+-			pr_info("\tExperimental polled no-CBs CPUs.\n");
++			pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+ 	}
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ }
 -- 
 1.8.1.5
 
