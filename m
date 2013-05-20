@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab3ETSub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 14:50:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59041 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab3ETSua (ORCPT
+	id S1757492Ab3ETS4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 14:56:36 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:58834 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756068Ab3ETS4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 14:50:30 -0400
-Date: Mon, 20 May 2013 11:50:12 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, mhocko@suse.cz,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com,
-        mhocko@suse.cz
-In-Reply-To: <20130520182306.GA5348@dhcp22.suse.cz>
-References: <20130520182306.GA5348@dhcp22.suse.cz>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64: Make early_pmd_flags __cpuinitdata
-Git-Commit-ID: 3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 20 May 2013 14:56:35 -0400
+Message-ID: <519A71D0.7090103@free-electrons.com>
+Date: Mon, 20 May 2013 20:56:16 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 00/10] clk: mvebu: restructure SoC clock drivers
+References: <1368234490-31416-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130516184658.0650f838@skate> <20130520175827.GC31290@titan.lakedaemon.net> <20130520201549.475e50d0@skate>
+In-Reply-To: <20130520201549.475e50d0@skate>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
-Gitweb:     http://git.kernel.org/tip/3a6a27dbe46298ee78a4135fa43c11f6bb3f8a6c
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Mon, 20 May 2013 11:30:16 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 20 May 2013 11:44:52 -0700
+On 05/20/2013 08:15 PM, Thomas Petazzoni wrote:
+> Dear Jason Cooper,
+> 
+> On Mon, 20 May 2013 13:58:27 -0400, Jason Cooper wrote:
+> 
+>>> I've tested on Armada 370 DB (after reverting the ARM core patch
+>>> that prevents this platform from booting) and the Armada XP DB.
+>>> Both boards boot fine, and detect PCIe devices as they should.
+>>>
+>>> There is some conflict between this set of commits and the two
+>>> commits that modify the PCIe clocks in my PCIe series. I've pushed
+>>> a branch at
+>>> https://github.com/MISL-EBU-System-SW/mainline-public/tree/marvell-pcie-v10-and-seb-clks
+>>> which has the mvebu PCIe stuff + Sebastian patches on top of it,
+>>> with the conflicts resolved. The tricky thing is that since
+>>> Sebastian is adding new clock files, and then removing the old
+>>> ones, it's pretty easy to "loose" the changes the two PCIe clock
+>>> patches are doing. The branch above works on Armada 370/XP, so you
+>>> can compare the clock files if needed.
+>>
+>> hmm, in my haste yesterday, I did this in the opposite order (clk,
+>> then pcie on top).  I'm going to reshuffle them because I don't want
+>> pcie depending on and waiting for this clock series to be ready :)
+> 
+> Ok. Either way is fine with me, but it's true that chronologically, the
+> PCIe stuff has been around for way more time than the clk
+> restructure patches.
+> 
+>> The good news is everything (except kirkwood-pcie, ran out of time)
+>> made it through linux-next!  Also, kisskb is now building
+>> mvebu_defconfig in addition to all the other ones.
+> 
+> Ok. Gregory can give more details, but I believe we are also building
+> daily linux-next and Linus master for the mvebu_defconfig.
 
-x86-64: Make early_pmd_flags __cpuinitdata
+Indeed every day we build linux-next for the mvebu_defconfig and for
+multi_v7_defconfig (as mvebu is part of it). You can see the status here:
 
-Although early_pmd_flags is not actually *used* except at init time, it
-is *set* in secondary_startup_64, which is executed on any CPU
-startup, including hotplug and S3 resume.
+http://jenkins.free-electrons.com/job/linux-next/
 
-Originally-by: Michal Hocko <mhocko@suse.cz>
-Reported-and-tested-by: Michal Hocko <mhocko@suse.cz>
-Debugged-by: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20130520182306.GA5348@dhcp22.suse.cz
-Cc: <stable@vger.kernel.org> v3.9
----
- arch/x86/kernel/head64.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+However we don't build Linus master but we could add it.
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index dab95a8..aa67bdd 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -34,7 +34,8 @@
- extern pgd_t early_level4_pgt[PTRS_PER_PGD];
- extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
- static unsigned int __initdata next_early_pgt = 2;
--pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
-+pmdval_t __cpuinitdata early_pmd_flags =
-+	__PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
- 
- /* Wipe all early page tables except for the kernel symbol map */
- static void __init reset_early_page_tables(void)
+
+> 
+> Best regards,
+> 
+> Thomas
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
