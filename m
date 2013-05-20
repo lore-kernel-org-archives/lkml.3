@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab3ETPKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:10:55 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44730 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab3ETPKu (ORCPT
+	id S1757373Ab3ETPLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:11:21 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:55113 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3ETPLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:10:50 -0400
-From: zwu.kernel@gmail.com
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC PATCH v1 1/5] BTRFS hot reloc, vfs: add one list_head field
-Date: Mon, 20 May 2013 23:11:23 +0800
-Message-Id: <1369062687-23544-2-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
-References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052015-3620-0000-0000-000002943440
+	Mon, 20 May 2013 11:11:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <519A3A5D.6090703@digi.com>
+References: <5196375A.1070308@digi.com>
+	<519639A5.9070807@freescale.com>
+	<519A3A5D.6090703@digi.com>
+Date: Mon, 20 May 2013 12:11:18 -0300
+Message-ID: <CAOMZO5BaHRDjomihd-_4-5g8peEwLGkQh0MtqEKqDfV-YnDk+g@mail.gmail.com>
+Subject: Re: mxsfb on i.MX28 uses bypassed ref_xtal 24MHz clock for LCD
+From: Fabio Estevam <festevam@gmail.com>
+To: Hector Palacios <hector.palacios@digi.com>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Mon, May 20, 2013 at 11:59 AM, Hector Palacios
+<hector.palacios@digi.com> wrote:
 
-  Add one list_head field 'reloc_list' to accommodate
-hot relocation support.
+> Agh. Now it works on the EVK. I had something wrong with the backlight
+> (maybe a bad DTB).
+>
+> Do you have any comment on the fact that the lcdif clock is bypassed to the
+> 24MHz ref clock? Doesn't this make useless the definition of pixelclk for
+> the different displays in mach-mxs.c?
+> You can only obtain whole divisors of this frequency (24, 12, 6, 4), which
+> may not be accurate enough to fit some displays.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/hot_tracking.c            | 1 +
- include/linux/hot_tracking.h | 1 +
- 2 files changed, 2 insertions(+)
+I haven't had a chance to look at it yet, but feel free to submit
+patches if you think you can improve the driver.
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 46d2f7d..2a59b09 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -41,6 +41,7 @@ static void hot_comm_item_init(struct hot_comm_item *ci, int type)
- 	clear_bit(HOT_IN_LIST, &ci->delete_flag);
- 	clear_bit(HOT_DELETING, &ci->delete_flag);
- 	INIT_LIST_HEAD(&ci->track_list);
-+	INIT_LIST_HEAD(&ci->reloc_list);
- 	memset(&ci->hot_freq_data, 0, sizeof(struct hot_freq_data));
- 	ci->hot_freq_data.avg_delta_reads = (u64) -1;
- 	ci->hot_freq_data.avg_delta_writes = (u64) -1;
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 008a5c1..faf1acc 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -74,6 +74,7 @@ struct hot_comm_item {
- 	unsigned long delete_flag;
- 	struct rcu_head c_rcu;
- 	struct list_head track_list;		/* link to *_map[] */
-+	struct list_head reloc_list;		/* used in hot relocation*/
- };
- 
- /* An item representing an inode and its access frequency */
--- 
-1.7.11.7
+Thanks,
 
+Fabio Estevam
