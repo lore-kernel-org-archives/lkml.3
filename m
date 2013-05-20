@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab3ETQG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:06:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43968 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab3ETQGz (ORCPT
+	id S1757406Ab3ETQHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:07:22 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:19183 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab3ETQHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:06:55 -0400
-Message-ID: <519A4A00.8000109@pengutronix.de>
-Date: Mon, 20 May 2013 18:06:24 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 20 May 2013 12:07:19 -0400
+Message-ID: <1369066035.4616.6.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v2 6/7] PCI: Make sure VF's driver get attached after
+ PF's
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Or Gerlitz <or.gerlitz@gmail.com>
+CC: Greg Rose <gregory.v.rose@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yan Burman <yanb@mellanox.com>, Sathya Perla <Sathya.Perla@emulex.com>,
+        <netdev@vger.kernel.org>
+Date: Mon, 20 May 2013 17:07:15 +0100
+In-Reply-To: <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
+References: <1368586102-17661-1-git-send-email-yinghai@kernel.org>
+	 <20130515091248.00002fe3@unknown>
+	 <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        U Bhaskar-B22300 <B22300@freescale.com>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2] can: flexcan: remove HAVE_CAN_FLEXCAN Kconfig symbol
-References: <1368781157-4646-1-git-send-email-mkl@pengutronix.de> <20130517090949.GI8607@S2101-09.ap.freescale.net>
-In-Reply-To: <20130517090949.GI8607@S2101-09.ap.freescale.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2LNJKRDFSKBTBRHDHOKQV"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19878.004
+X-TM-AS-Result: No--21.917800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2LNJKRDFSKBTBRHDHOKQV
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-05-20 at 15:28 +0300, Or Gerlitz wrote:
+> On Wed, May 15, 2013 at 7:12 PM, Greg Rose <gregory.v.rose@intel.com> wrote:
+> 
+> 
+> > I'm really not a fan of this.  Seems to me the tail is wagging the dog
+> > here.  Fix the driver to work without a PF driver being present.
+> 
+> Greg, Alex,
+> 
+> As I wrote over the V1 thread, currently we can't go and patch mlx4 to
+> use the sysfs API nor defer the call from within our probe function to
+> enable sriov since  this requires some firmware change to allow
+> enabling SRIOV after some  resources are initialized/provisioned.
+> Hence the patch suggested here or any other patch we can agree on
+> which will make sure that VF probing is done only once the PF is ready
+> is preferred, I think.
+> 
+> I wasn't sure to totally follow on the argument that things need to
+> work when the PF is absent in the sense there's no driver instance
+> around over which the PF is probed, if you can explain little better,
+> that would help.
 
-On 05/17/2013 11:09 AM, Shawn Guo wrote:
-> On Fri, May 17, 2013 at 10:59:17AM +0200, Marc Kleine-Budde wrote:
->> This patch removes the Kconfig symbol HAVE_CAN_FLEXCAN from arch/{arm,=
-powerpc}
->> and allowing compilation unconditionally on all arm and powerpc platfo=
-rms.
->>
->> This brings a bigger compile time coverage and removes the following d=
-ependency
->> warning found by Arnd Bergmann:
->>
->>     warning: (SOC_IMX28 && SOC_IMX25 && SOC_IMX35 && IMX_HAVE_PLATFORM=
-_FLEXCAN &&
->>         SOC_IMX53 && SOC_IMX6Q) selects HAVE_CAN_FLEXCAN
->>     which has unmet direct dependencies (NET && CAN && CAN_DEV)
->>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->=20
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+It might be sufficient to return -EPROBE_DEFER from the VF probe
+function when the PF is not yet ready, if you can easily detect that.
 
-Thanks.
+Ben.
 
-An Acked-by by the powerpc people would be fine. However, if nobody
-doesn't object, I'm sending this patch via linux-can and net-next upstrea=
-m.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-regards,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
-------enig2LNJKRDFSKBTBRHDHOKQV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlGaSgAACgkQjTAFq1RaXHPbDwCgk97qatZ4r84KYI1L6zCJRWrf
-ECcAn0ydqy6yQnEKnxiTWViJ/p+wR2Wt
-=J2Zm
------END PGP SIGNATURE-----
-
-------enig2LNJKRDFSKBTBRHDHOKQV--
