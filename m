@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3ETO0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:26:38 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:54361 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756318Ab3ETO0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:26:34 -0400
-Message-ID: <1369059993.3301.174.camel@edumazet-glaptop>
-Subject: Re: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against
- spraying attacks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 20 May 2013 07:26:33 -0700
-In-Reply-To: <20130520141941.GA16412@breakpoint.cc>
-References: <1368844623.3301.142.camel@edumazet-glaptop>
-	 <20130520141941.GA16412@breakpoint.cc>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756765Ab3ETO3G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:29:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42005 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756278Ab3ETO3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 10:29:03 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 5/6] rcu: Merge adjacent identical ifdefs
+Date: Mon, 20 May 2013 07:28:48 -0700
+Message-Id: <1369060129-28173-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369060129-28173-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130520142819.GA27123@linux.vnet.ibm.com>
+ <1369060129-28173-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052014-7182-0000-0000-000006CA4C45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-20 at 16:19 +0200, Florian Westphal wrote:
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-> What about emitting additional instructions at random locations in the
-> generated code itself?
-> 
-> Eg., after every instruction, have random chance to insert
-> 'xor $0xcc,%al; xor $0xcc,%al', etc?
+Two ifdefs in kernel/rcupdate.c now have identical conditions with
+nothing between them, so the commit merges them into a single ifdef.
 
-This will be the latest thing I'll do.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcupdate.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-Frankly, whole point of BPF JIT is speed.
-
-If we have slow code, just use the interpretor instead.
-
-
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 48ab703..faeea98 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -145,9 +145,6 @@ static struct lock_class_key rcu_sched_lock_key;
+ struct lockdep_map rcu_sched_lock_map =
+ 	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock_sched", &rcu_sched_lock_key);
+ EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
+-#endif
+-
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+ int debug_lockdep_rcu_enabled(void)
+ {
+-- 
+1.8.1.5
 
