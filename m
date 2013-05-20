@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab3ETQ0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:26:41 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58956 "EHLO e7.ny.us.ibm.com"
+	id S1757451Ab3ETQ0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:26:45 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58962 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab3ETQ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:26:35 -0400
+	id S1757339Ab3ETQ0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 12:26:36 -0400
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -24,105 +24,140 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
         Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv12 4/4] zswap: add documentation
-Date: Mon, 20 May 2013 11:26:08 -0500
-Message-Id: <1369067168-12291-5-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCHv12 1/4] debugfs: add get/set for atomic types
+Date: Mon, 20 May 2013 11:26:05 -0500
+Message-Id: <1369067168-12291-2-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1369067168-12291-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052016-5806-0000-0000-00002139F0CF
+x-cbid: 13052016-5806-0000-0000-00002139F0B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the documentation file for the zswap functionality
+debugfs currently lack the ability to create attributes
+that set/get atomic_t values.
+
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
 
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
 ---
- Documentation/vm/zswap.txt | 68 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/vm/zswap.txt
+ fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |  2 ++
+ lib/fault-inject.c      | 21 ---------------------
+ 3 files changed, 44 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
-new file mode 100644
-index 0000000..7e492d8
---- /dev/null
-+++ b/Documentation/vm/zswap.txt
-@@ -0,0 +1,68 @@
-+Overview:
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..ff64bcd 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%lld\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%lld\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%lld\n");
 +
-+Zswap is a lightweight compressed cache for swap pages. It takes pages that are
-+in the process of being swapped out and attempts to compress them into a
-+dynamically allocated RAM-based memory pool.  zswap basically trades CPU cycles
-+for potentially reduced swap I/O.  This trade-off can also result in a
-+significant performance improvement if reads from the compressed cache are
-+faster than reads from a swap device.
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
 +
-+NOTE: Zswap is a new feature as of v3.11 and interacts heavily with memory
-+reclaim.  This interaction has not be fully explored on the large set of
-+potential configurations and workloads that exist.  For this reason, zswap
-+is a work in progress and should be considered experimental.
-+
-+Some potential benefits:
-+* Desktop/laptop users with limited RAM capacities can mitigate the
-+    performance impact of swapping.
-+* Overcommitted guests that share a common I/O resource can
-+    dramatically reduce their swap I/O pressure, avoiding heavy handed I/O
-+    throttling by the hypervisor. This allows more work to get done with less
-+    impact to the guest workload and guests sharing the I/O subsystem
-+* Users with SSDs as swap devices can extend the life of the device by
-+    drastically reducing life-shortening writes.
-+
-+Zswap evicts pages from compressed cache on an LRU basis to the backing swap
-+device when the compressed pool reaches it size limit.  This requirement had
-+been identified in prior community discussions.
-+
-+To enabled zswap, the "enabled" attribute must be set to 1 at boot time.  e.g.
-+zswap.enabled=1
-+
-+Design:
-+
-+Zswap receives pages for compression through the Frontswap API and is able to
-+evict pages from its own compressed pool on an LRU basis and write them back to
-+the backing swap device in the case that the compressed pool is full.
-+
-+Zswap makes use of zbud for the managing the compressed memory pool.  Each
-+allocation in zbud is not directly accessible by address.  Rather, a handle is
-+return by the allocation routine and that handle must be mapped before being
-+accessed.  The compressed memory pool grows on demand and shrinks as compressed
-+pages are freed.  The pool is not preallocated.
-+
-+When a swap page is passed from frontswap to zswap, zswap maintains a mapping
-+of the swap entry, a combination of the swap type and swap offset, to the zbud
-+handle that references that compressed swap page.  This mapping is achieved
-+with a red-black tree per swap type.  The swap offset is the search key for the
-+tree nodes.
-+
-+During a page fault on a PTE that is a swap entry, frontswap calls the zswap
-+load function to decompress the page into the page allocated by the page fault
-+handler.
-+
-+Once there are no PTEs referencing a swap page stored in zswap (i.e. the count
-+in the swap_map goes to 0) the swap code calls the zswap invalidate function,
-+via frontswap, to free the compressed entry.
-+
-+Zswap seeks to be simple in its policies.  Sysfs attributes allow for one user
-+controlled policies:
-+* max_pool_percent - The maximum percentage of memory that the compressed
-+    pool can occupy.
-+
-+Zswap allows the compressor to be selected at kernel boot time by setting the
-+“compressor” attribute.  The default compressor is lzo.  e.g.
-+zswap.compressor=deflate
-+
-+A debugfs interface is provided for various statistic about pool size, number
-+of pages stored, and various counters for the reasons pages are rejected.
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 63f2465..d68b4ea 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
+diff --git a/lib/fault-inject.c b/lib/fault-inject.c
+index c5c7a76..d7d501e 100644
+--- a/lib/fault-inject.c
++++ b/lib/fault-inject.c
+@@ -182,27 +182,6 @@ static struct dentry *debugfs_create_stacktrace_depth(
+ 
+ #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
+ 
+-static int debugfs_atomic_t_set(void *data, u64 val)
+-{
+-	atomic_set((atomic_t *)data, val);
+-	return 0;
+-}
+-
+-static int debugfs_atomic_t_get(void *data, u64 *val)
+-{
+-	*val = atomic_read((atomic_t *)data);
+-	return 0;
+-}
+-
+-DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
+-			debugfs_atomic_t_set, "%lld\n");
+-
+-static struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
+-				struct dentry *parent, atomic_t *value)
+-{
+-	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
+-}
+-
+ struct dentry *fault_create_debugfs_attr(const char *name,
+ 			struct dentry *parent, struct fault_attr *attr)
+ {
 -- 
 1.8.2.3
 
