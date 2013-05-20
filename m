@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab3ETOkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:40:41 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44937 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757036Ab3ETOkh convert rfc822-to-8bit (ORCPT
+	id S1757166Ab3ETOlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:41:21 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:37261 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756660Ab3ETOlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:40:37 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5199DBE2.5080707@asianux.com>
-References: <5199DBE2.5080707@asianux.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 20 May 2013 07:40:24 -0700
-To: Chen Gang <gang.chen@asianux.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <97dada79-cd78-4799-8f18-ed2bf8eee508@email.android.com>
-X-XM-AID: U2FsdGVkX1+lIJS1jkuB43Rl0b/22SHQZtM4I3Ax2dg=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0043]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_05 8+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Chen Gang <gang.chen@asianux.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] include/linux/posix_acl.h: need 'return NULL' when BUG(), if neither CONFIG_BUG nor HAVE_ARCH_BUG is defined.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 20 May 2013 10:41:18 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 3/8] rcu: Rename note_new_gpnum() to note_gp_changes()
+Date: Mon, 20 May 2013 07:38:10 -0700
+Message-Id: <1369060695-29679-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130520143739.GA29365@linux.vnet.ibm.com>
+ <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052014-7606-0000-0000-00000B91DEFC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
+Because note_new_gpnum() now also checks for the ends of old grace periods,
+this commit changes its name to note_gp_changes().  Later commits will merge
+rcu_process_gp_end() into note_gp_changes().
 
-Chen Gang <gang.chen@asianux.com> wrote:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutree.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
->
->If neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, the BUG() will
->defined as empty (e.g. randconfig with MMU for arm s5pv210)
->
->In this case, need 'return NULL' to let upper caller knows the failure.
-
-Seriously?  The correct fix it would seem is to give a useful default BUG definition.  Say *NULL.
-
-Further we should never hit that code in the first place if it calls BUG.  So upper callers should never get there.
-
-If it is ever possible to get there the callers need to be fixed.
-
-Eric
-
->Signed-off-by: Chen Gang <gang.chen@asianux.com>
->---
-> include/linux/posix_acl.h |    1 +
-> 1 files changed, 1 insertions(+), 0 deletions(-)
->
->diff --git a/include/linux/posix_acl.h b/include/linux/posix_acl.h
->index 7931efe..2c48d06 100644
->--- a/include/linux/posix_acl.h
->+++ b/include/linux/posix_acl.h
->@@ -104,6 +104,7 @@ static inline struct posix_acl **acl_by_type(struct
->inode *inode, int type)
-> 		return &inode->i_default_acl;
-> 	default:
-> 		BUG();
->+		return NULL;
-> 	}
-> }
-> 
->-- 
->1.7.7.6
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 46f3062..2f40b4d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1307,7 +1307,7 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+  * ->lock of the leaf rcu_node structure corresponding to the current CPU,
+  *  and must have irqs disabled.
+  */
+-static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
++static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
+ {
+ 	/* Handle the ends of any preceding grace periods first. */
+ 	__rcu_process_gp_end(rsp, rnp, rdp);
+@@ -1326,19 +1326,20 @@ static void __note_new_gpnum(struct rcu_state *rsp, struct rcu_node *rnp, struct
+ 	}
+ }
+ 
+-static void note_new_gpnum(struct rcu_state *rsp, struct rcu_data *rdp)
++static void note_gp_changes(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ 	unsigned long flags;
+ 	struct rcu_node *rnp;
+ 
+ 	local_irq_save(flags);
+ 	rnp = rdp->mynode;
+-	if (rdp->gpnum == ACCESS_ONCE(rnp->gpnum) || /* outside lock. */
++	if ((rdp->gpnum == ACCESS_ONCE(rnp->gpnum) &&
++	     rdp->completed == ACCESS_ONCE(rnp->completed)) || /* w/out lock. */
+ 	    !raw_spin_trylock(&rnp->lock)) { /* irqs already off, so later. */
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+-	__note_new_gpnum(rsp, rnp, rdp);
++	__note_gp_changes(rsp, rnp, rdp);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
+ 
+@@ -1377,7 +1378,7 @@ check_for_new_grace_period(struct rcu_state *rsp, struct rcu_data *rdp)
+ 
+ 	local_irq_save(flags);
+ 	if (rdp->gpnum != rsp->gpnum) {
+-		note_new_gpnum(rsp, rdp);
++		note_gp_changes(rsp, rdp);
+ 		ret = 1;
+ 	}
+ 	local_irq_restore(flags);
+@@ -1396,7 +1397,7 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
+ 	__rcu_process_gp_end(rsp, rnp, rdp);
+ 
+ 	/* Set state so that this CPU will detect the next quiescent state. */
+-	__note_new_gpnum(rsp, rnp, rdp);
++	__note_gp_changes(rsp, rnp, rdp);
+ }
+ 
+ /*
+-- 
+1.8.1.5
 
