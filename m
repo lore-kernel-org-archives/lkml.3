@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3ETPyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:54:05 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:12387 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757069Ab3ETPyC (ORCPT
+	id S1757456Ab3ETPzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:55:07 -0400
+Received: from smtp-out-223.synserver.de ([212.40.185.223]:1043 "EHLO
+	smtp-out-219.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755340Ab3ETPzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:54:02 -0400
-Message-ID: <519A4716.7000001@emulex.com>
-Date: Mon, 20 May 2013 11:53:58 -0400
-From: James Smart <James.Smart@emulex.com>
-Reply-To: <James.Smart@emulex.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Ren Mingxin <renmx@cn.fujitsu.com>
-CC: <James.Bottomley@HansenPartnership.com>, <Nagalakshmi.Nandigama@lsi.com>,
-        <Sreekanth.Reddy@lsi.com>, <michaelc@cs.wisc.edu>,
-        <robert.w.love@intel.com>, <dgilbert@interlog.com>, <hare@suse.de>,
-        <bprakash@broadcom.com>, <agk@redhat.com>, <neilb@suse.de>,
-        <gregkh@linuxfoundation.org>, <axboe@kernel.dk>, <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 0/5] scsi: Allow fast io fail without waiting through
- timeout
-References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
-In-Reply-To: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 20 May 2013 11:55:04 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 11574
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] spi: topcliff-pch: Pass correct pointer to free_irq()
+Date: Mon, 20 May 2013 17:54:35 +0200
+Message-Id: <1369065275-32323-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ren,
+free_irq() expects the same pointer that was passed to request_irq(), otherwise
+the IRQ is not freed.
 
-Based on the discussion recently held at LSF 2013, we are reworking the 
-error recovery path to address all the issues you are mentioning.   That 
-work contradicts these patches. So for now, these should be held off.
+The issue was found using the following coccinelle script:
 
--- james s
+<smpl>
+@r1@
+type T;
+T devid;
+@@
+request_irq(..., devid)
 
+@r2@
+type r1.T;
+T devid;
+position p;
+@@
+free_irq@p(..., devid)
 
+@@
+position p != r2.p;
+@@
+*free_irq@p(...)
+</smpl>
 
-On 5/20/2013 3:14 AM, Ren Mingxin wrote:
-> When there is a scsi command timed-out or failed, the scsi eh
-> tries a thorugh recovery, which is necessary for non-redundant
-> systems. However, the thorugh recovery usually takes much time,
-> which is not acceptable for misson critical systems. To improve
-> this latency, if we are working on a redundant system, we should
-> avoid the scsi eh for its long time failing recovery, and quick
-> failover to another path.
->
-> This set of patches is trying to implement above.
->
-> NOTE: the userland tools need to eusure the environment
-> restriction, which will be implemented later.
->
-> Thanks,
-> Ren
->
-> Ren Mingxin (5):
->    scsi: rename return code FAST_IO_FAIL to FAST_IO
->    FC transport: Add interface to specify fast io level for timed-out cmds
->    SAS transport: Add interface to specify fast io level for timed-out cmds
->    lpfc: Allow fast timed-out io recovery
->    mptfusion: Allow fast timed-out io recovery
->
->   drivers/message/fusion/mptscsih.c   |   29 ++++++++-
->   drivers/scsi/lpfc/lpfc_scsi.c       |   34 ++++++++++
->   drivers/scsi/scsi_error.c           |   18 ++---
->   drivers/scsi/scsi_sas_internal.h    |    4 -
->   drivers/scsi/scsi_transport_fc.c    |  112 ++++++++++++++++++++++++++++++++++--
->   drivers/scsi/scsi_transport_iscsi.c |    6 -
->   drivers/scsi/scsi_transport_sas.c   |  103 ++++++++++++++++++++++++++++++++-
->   include/scsi/scsi.h                 |    2
->   include/scsi/scsi_transport_fc.h    |   11 +++
->   include/scsi/scsi_transport_sas.h   |    8 ++
->   10 files changed, 303 insertions(+), 24 deletions(-)
->
->
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/spi/spi-topcliff-pch.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 35f60bd..963e0f3 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -1487,7 +1487,7 @@ static int pch_spi_pd_probe(struct platform_device *plat_dev)
+ 	return 0;
+ 
+ err_spi_register_master:
+-	free_irq(board_dat->pdev->irq, board_dat);
++	free_irq(board_dat->pdev->irq, data);
+ err_request_irq:
+ 	pch_spi_free_resources(board_dat, data);
+ err_spi_get_resources:
+-- 
+1.8.0
 
