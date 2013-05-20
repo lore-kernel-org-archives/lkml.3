@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3ETKxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56297 "EHLO
+	id S1756681Ab3ETLCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:02:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56324 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756397Ab3ETKxi (ORCPT
+	with ESMTP id S1756471Ab3ETKxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:38 -0400
+	Mon, 20 May 2013 06:53:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Harvey <charvey@matrox.com>,
-        Mathieu Larouche <mathieu.larouche@matrox.com>,
-        Dave Airlie <airlied@redhat.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 079/115] drm/mgag200: Fix framebuffer base address programming
-Date: Mon, 20 May 2013 11:51:19 +0100
-Message-Id: <1369047116-9378-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 084/115] net: qmi_wwan: prevent duplicate mac address on link (firmware bug workaround)
+Date: Mon, 20 May 2013 11:51:24 +0100
+Message-Id: <1369047116-9378-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,76 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 9f1d036648c1c5ed81b0e98d7a06d55df972701e upstream.
+commit cc6ba5fdaabea7a7b28de3ba1e0fe54d92232fe5 upstream.
 
-Higher bits of the base address of framebuffers weren't being
-programmed properly. This caused framebuffers that didn't happen to be
-allocated at a low enough address to not be displayed properly.
+We normally trust and use the CDC functional descriptors provided by a
+number of devices.  But some of these will erroneously list the address
+reserved for the device end of the link.  Attempting to use this on
+both the device and host side will naturally not work.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Mathieu Larouche <mathieu.larouche@matrox.com>
-Acked-by: Julia Lemire <jlemire@matrox.com>
-Tested-by: Julia Lemire <jlemire@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Work around this bug by ignoring the functional descriptor and assign a
+random address instead in this case.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c | 27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ drivers/net/usb/qmi_wwan.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index a9a81d8..4860c35 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -658,12 +658,26 @@ static void mga_g200wb_commit(struct drm_crtc *crtc)
- 	WREG_DAC(MGA1064_GEN_IO_DATA, tmp);
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 83a2a14..7589509 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -175,6 +175,9 @@ err:
+ 	return status;
  }
  
--
-+/*
-+   This is how the framebuffer base address is stored in g200 cards:
-+   * Assume @offset is the gpu_addr variable of the framebuffer object
-+   * Then addr is the number of _pixels_ (not bytes) from the start of
-+     VRAM to the first pixel we want to display. (divided by 2 for 32bit
-+     framebuffers)
-+   * addr is stored in the CRTCEXT0, CRTCC and CRTCD registers
-+   addr<20> -> CRTCEXT0<6>
-+   addr<19-16> -> CRTCEXT0<3-0>
-+   addr<15-8> -> CRTCC<7-0>
-+   addr<7-0> -> CRTCD<7-0>
-+   CRTCEXT0 has to be programmed last to trigger an update and make the
-+   new addr variable take effect.
-+ */
- void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
- {
- 	struct mga_device *mdev = crtc->dev->dev_private;
- 	u32 addr;
- 	int count;
-+	u8 crtcext0;
++/* default ethernet address used by the modem */
++static const u8 default_modem_addr[ETH_ALEN] = {0x02, 0x50, 0xf3};
++
+ /* Make up an ethernet header if the packet doesn't have one.
+  *
+  * A firmware bug common among several devices cause them to send raw
+@@ -342,6 +345,12 @@ static int qmi_wwan_bind_shared(struct usbnet *dev, struct usb_interface *intf)
+ 	/* save subdriver struct for suspend/resume wrappers */
+ 	dev->data[0] = (unsigned long)subdriver;
  
- 	while (RREG8(0x1fda) & 0x08);
- 	while (!(RREG8(0x1fda) & 0x08));
-@@ -671,10 +685,17 @@ void mga_set_start_address(struct drm_crtc *crtc, unsigned offset)
- 	count = RREG8(MGAREG_VCOUNT) + 2;
- 	while (RREG8(MGAREG_VCOUNT) < count);
- 
--	addr = offset >> 2;
-+	WREG8(MGAREG_CRTCEXT_INDEX, 0);
-+	crtcext0 = RREG8(MGAREG_CRTCEXT_DATA);
-+	crtcext0 &= 0xB0;
-+	addr = offset / 8;
-+	/* Can't store addresses any higher than that...
-+	   but we also don't have more than 16MB of memory, so it should be fine. */
-+	WARN_ON(addr > 0x1fffff);
-+	crtcext0 |= (!!(addr & (1<<20)))<<6;
- 	WREG_CRT(0x0d, (u8)(addr & 0xff));
- 	WREG_CRT(0x0c, (u8)(addr >> 8) & 0xff);
--	WREG_CRT(0xaf, (u8)(addr >> 16) & 0xf);
-+	WREG_ECRT(0x0, ((u8)(addr >> 16) & 0xf) | crtcext0);
- }
- 
- 
++	/* Never use the same address on both ends of the link, even
++	 * if the buggy firmware told us to.
++	 */
++	if (!compare_ether_addr(dev->net->dev_addr, default_modem_addr))
++		eth_hw_addr_random(dev->net);
++
+ 	/* make MAC addr easily distinguishable from an IP header */
+ 	if (possibly_iphdr(dev->net->dev_addr)) {
+ 		dev->net->dev_addr[0] |= 0x02;	/* set local assignment bit */
 -- 
 1.8.1.2
 
