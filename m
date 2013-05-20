@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab3ETTIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:08:50 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:49271 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754154Ab3ETTIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:08:48 -0400
-Date: Mon, 20 May 2013 22:08:32 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: moving constant and
- structure definitions out of rtl8150.c
-In-Reply-To: <1369061360.4616.0.camel@bwh-desktop.uk.solarflarecom.com>
-Message-ID: <alpine.DEB.2.02.1305202158520.3400@fry.nucleusys.com>
-References: <alpine.DEB.2.02.1305182306550.16874@fry.nucleusys.com> <1369061360.4616.0.camel@bwh-desktop.uk.solarflarecom.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757743Ab3ETTJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:09:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756294Ab3ETTJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 15:09:42 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Cc: sfr@canb.auug.org.au, ebiederm@xmission.com, eparis@redhat.com,
+        viresh.kumar@linaro.org, linux-audit@redhat.com,
+        Richard Guy Briggs <rgb@redhat.com>, stable@vger.kernel.org.#.v3.9
+Subject: [PATCH] audit: cast decimal constant for invalid uid to unsigned
+Date: Mon, 20 May 2013 15:08:18 -0400
+Message-Id: <1369076898-17265-1-git-send-email-rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 May 2013, Ben Hutchings wrote:
+SFR reported this 2013-05-15:
 
-> Now how is this driver going to compile, when rtl8150.h is only added by
-> the next patch?!
+> After merging the final tree, today's linux-next build (i386 defconfig)
+> produced this warning:
+>
+> kernel/auditfilter.c: In function 'audit_data_to_entry':
+> kernel/auditfilter.c:426:3: warning: this decimal constant is unsigned only
+> in ISO C90 [enabled by default]
+>
+> Introduced by commit 780a7654cee8 ("audit: Make testing for a valid
+> loginuid explicit") from Linus' tree.
 
-I got carried away by the desire to make each patch smaller and to the 
-point.  Sacrificing build-ability of the tree, however, does not justify 
-it.  My bad.
+Replace this decimal constant in the code with a macro to make it more readable
+and add an unsigned cast to quiet the warning.
 
-> You need to squash these first 2 together, so that the driver can be
-> compiled after each step.
+Cc: stable@vger.kernel.org # v3.9
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/uapi/linux/audit.h |    2 ++
+ kernel/auditfilter.c       |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-Will do once David merge 'net' into 'net-next'.
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 75cef3f..b7cb978 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -374,6 +374,8 @@ struct audit_tty_status {
+ 	__u32		log_passwd;	/* 1 = enabled, 0 = disabled */
+ };
+ 
++#define AUDIT_UID_UNSET (unsigned int)-1
++
+ /* audit_rule_data supports filter rules with both integer and string
+  * fields.  It corresponds with AUDIT_ADD_RULE, AUDIT_DEL_RULE and
+  * AUDIT_LIST_RULES requests.
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index bc6595f..0d40b51 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -423,7 +423,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 		f->lsm_rule = NULL;
+ 
+ 		/* Support legacy tests for a valid loginuid */
+-		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
++		if ((f->type == AUDIT_LOGINUID) && (f->val == AUDIT_UID_UNSET)) {
+ 			f->type = AUDIT_LOGINUID_SET;
+ 			f->val = 0;
+ 		}
+-- 
+1.7.1
 
-
-		Petko
