@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3ETIRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 04:17:24 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:53897 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab3ETIRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 04:17:23 -0400
-X-Spam-Score: -100.8
-Message-ID: <5199DBE2.5080707@asianux.com>
-Date: Mon, 20 May 2013 16:16:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1755425Ab3ETIR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 04:17:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37208 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755141Ab3ETIR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 04:17:56 -0400
+Date: Mon, 20 May 2013 10:17:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lcapitulino@redhat.com,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] kbuild fix for v3.10-rc2
+Message-ID: <20130520081754.GA25645@sepie.suse.cz>
+References: <20130517193658.GA32023@pobox.suse.cz>
+ <CA+55aFzYf6aCXcCE8=M53OumqvXj_TYb5z7vibe9UDf79xaehw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH] include/linux/posix_acl.h: need 'return NULL' when BUG(),
- if neither CONFIG_BUG nor HAVE_ARCH_BUG is defined.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzYf6aCXcCE8=M53OumqvXj_TYb5z7vibe9UDf79xaehw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 18, 2013 at 10:35:40AM -0700, Linus Torvalds wrote:
+> On Fri, May 17, 2013 at 12:36 PM, Michal Marek <mmarek@suse.cz> wrote:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git for-next
+> >
+> > Luiz Capitulino (1):
+> >       package: Makefile: unbreak binrpm-pkg target
+> >
+> >  scripts/package/Makefile |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> Hmm. That's not at all what I get. I also get a merge and another
+> patch ("kbuild: fix make headers_install when path is too long") and
 
-If neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, the BUG() will
-defined as empty (e.g. randconfig with MMU for arm s5pv210)
+Sorry, I was on the wrong branch, which happened to be identical to the
+rc-fixes branch when I sent the pull request, but not when you read it.
+Here is the correct pull request:
 
-In this case, need 'return NULL' to let upper caller knows the failure.
 
+In an attempt to improve make rpm-pkg, I broke make binrpm-pkg. Please
+pull the fix below.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/linux/posix_acl.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-diff --git a/include/linux/posix_acl.h b/include/linux/posix_acl.h
-index 7931efe..2c48d06 100644
---- a/include/linux/posix_acl.h
-+++ b/include/linux/posix_acl.h
-@@ -104,6 +104,7 @@ static inline struct posix_acl **acl_by_type(struct inode *inode, int type)
- 		return &inode->i_default_acl;
- 	default:
- 		BUG();
-+		return NULL;
- 	}
- }
- 
--- 
-1.7.7.6
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+
+for you to fetch changes up to f66ba560943ae21f5d1e505bad0a3591823b2b37:
+
+  package: Makefile: unbreak binrpm-pkg target (2013-05-16 09:46:45 +0200)
+
+----------------------------------------------------------------
+Luiz Capitulino (1):
+      package: Makefile: unbreak binrpm-pkg target
+
+ scripts/package/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
