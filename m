@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab3ETM2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 08:28:42 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:56039 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3ETM2k (ORCPT
+	id S1756038Ab3ETM32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 08:29:28 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:49915 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3ETM30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 08:28:40 -0400
+	Mon, 20 May 2013 08:29:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130515091248.00002fe3@unknown>
-References: <1368586102-17661-1-git-send-email-yinghai@kernel.org>
-	<20130515091248.00002fe3@unknown>
-Date: Mon, 20 May 2013 15:28:39 +0300
-Message-ID: <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
-Subject: Re: [PATCH v2 6/7] PCI: Make sure VF's driver get attached after PF's
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: Greg Rose <gregory.v.rose@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Yan Burman <yanb@mellanox.com>, Sathya Perla <Sathya.Perla@emulex.com>,
-        netdev@vger.kernel.org
+In-Reply-To: <1367591569-32197-24-git-send-email-lee.jones@linaro.org>
+References: <1367591569-32197-1-git-send-email-lee.jones@linaro.org>
+	<1367591569-32197-24-git-send-email-lee.jones@linaro.org>
+Date: Mon, 20 May 2013 14:29:26 +0200
+Message-ID: <CACRpkdZQityADLQTcyLBzDsTNA18ij3c94qiFYFXKBQDQNFasQ@mail.gmail.com>
+Subject: Re: [PATCH 23/63] dmaengine: ste_dma40: Also report the number of
+ logical channels
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 7:12 PM, Greg Rose <gregory.v.rose@intel.com> wrote:
+On Fri, May 3, 2013 at 4:32 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
+> Now we know the total of physical and logical channels, we may as
+> well report them within the information log.
+>
+> Before:
+> dma40 dma40.0: hardware revision: 3 @ 0x801c0000 with 8 physical channels
+>
+> After:
+> <as above ...> and 256 logical channels
+>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> I'm really not a fan of this.  Seems to me the tail is wagging the dog
-> here.  Fix the driver to work without a PF driver being present.
+I'm missing Vinod's ACK on this before I can proceed with my
+branch to ARM SoC.
 
-Greg, Alex,
+Vinod?
 
-As I wrote over the V1 thread, currently we can't go and patch mlx4 to
-use the sysfs API nor defer the call from within our probe function to
-enable sriov since  this requires some firmware change to allow
-enabling SRIOV after some  resources are initialized/provisioned.
-Hence the patch suggested here or any other patch we can agree on
-which will make sure that VF probing is done only once the PF is ready
-is preferred, I think.
-
-I wasn't sure to totally follow on the argument that things need to
-work when the PF is absent in the sense there's no driver instance
-around over which the PF is probed, if you can explain little better,
-that would help.
-
-Or.
+Yours,
+Linus Walleij
