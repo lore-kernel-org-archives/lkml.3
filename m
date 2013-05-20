@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab3ETKzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:55:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56475 "EHLO
+	id S1756686Ab3ETK4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:56:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56448 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3ETKyQ (ORCPT
+	with ESMTP id S1756657Ab3ETKyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:16 -0400
+	Mon, 20 May 2013 06:54:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 112/115] drivers/rtc/rtc-pcf2123.c: fix error return code in pcf2123_probe()
-Date: Mon, 20 May 2013 11:51:52 +0100
-Message-Id: <1369047116-9378-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 108/115] usermodehelper: check subprocess_info->path != NULL
+Date: Mon, 20 May 2013 11:51:48 +0100
+Message-Id: <1369047116-9378-109-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -30,33 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 35623715818dfa720cccf99cd280dcbb4b78da23 upstream.
+commit 264b83c07a84223f0efd0d1db9ccc66d6f88288f upstream.
 
-Fix to return -ENODEV in the chip not found error handling
-case instead of 0, as done elsewhere in this function.
+argv_split(empty_or_all_spaces) happily succeeds, it simply returns
+argc == 0 and argv[0] == NULL. Change call_usermodehelper_exec() to
+check sub_info->path != NULL to avoid the crash.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+This is the minimal fix, todo:
+
+ - perhaps we should change argv_split() to return NULL or change the
+   callers.
+
+ - kill or justify ->path[0] check
+
+ - narrow the scope of helper_lock()
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/rtc/rtc-pcf2123.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/kmod.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/rtc/rtc-pcf2123.c b/drivers/rtc/rtc-pcf2123.c
-index 8361187..9ea2555 100644
---- a/drivers/rtc/rtc-pcf2123.c
-+++ b/drivers/rtc/rtc-pcf2123.c
-@@ -264,6 +264,7 @@ static int __devinit pcf2123_probe(struct spi_device *spi)
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index ff2c7cb..cc76ad6 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -541,6 +541,11 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	int retval = 0;
  
- 	if (!(rxbuf[0] & 0x20)) {
- 		dev_err(&spi->dev, "chip not found\n");
-+		ret = -ENODEV;
- 		goto kfree_exit;
- 	}
+ 	helper_lock();
++	if (!sub_info->path) {
++		retval = -EINVAL;
++		goto out;
++	}
++
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
  
 -- 
 1.8.1.2
