@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab3ETUwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 16:52:45 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:36960 "EHLO Ishtar.hs"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756327Ab3ETUwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 16:52:44 -0400
-Message-ID: <519A8D0D.7090604@tlinx.org>
-Date: Mon, 20 May 2013 13:52:29 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Thunderbird
+	id S1757124Ab3ETU5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 16:57:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59925 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756298Ab3ETU5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 16:57:07 -0400
+Date: Mon, 20 May 2013 22:57:03 +0200
+From: Jan Kara <jack@suse.cz>
+To: Javier Domingo <javierdo1@gmail.com>
+Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel OOPS using auditd Debian 3.2 on a /sys file audit
+Message-ID: <20130520205703.GA26992@quack.suse.cz>
+References: <CALZVapkH9KN=w_+zVNc2Bgza_HqojA8xt8R+iTeas9x7s5R06Q@mail.gmail.com>
+ <CALZVapn-3CLWeScaMcB9kmao_OfSR6_SvRm9_zCgxR7p3sygqQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: new mount is broken w/regard to devnames in /etc/fstab
-References: <1369078758.2776.2@driftwood>
-In-Reply-To: <1369078758.2776.2@driftwood>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZVapn-3CLWeScaMcB9kmao_OfSR6_SvRm9_zCgxR7p3sygqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 14-05-13 20:36:59, Javier Domingo wrote:
+> I didn't get any reply, is this mailing list still valid, or should I
+> ask elsewhere? (this is a ping message)
+  This is a high traffic list so your message is likely to just go
+unnoticed. It is good to find maintainers of the subsystem (MAINTAINERS
+file in kernel sources) and CC them as well - in this case these are
+Al Viro <viro@zeniv.linux.org.uk> and Eric Paris <eparis@redhat.com>.
 
+  Also searching in the archives shows that the first message likely didn't
+even get it into the list (too large attachment?). Finally, kernel 3.2 is
+rather old which reduces the enthusiasm of people here to look into the
+problem (although you still might be lucky). So you might have better luck
+with reporting this in Debian bug tracking system...
 
-
-
-Rob Landley wrote:
-> On 05/19/2013 12:01:18 AM, Linda Walsh wrote:
->> 1) How is one supposed to get the real root device?
->> It's not /dev/root -- and on my system /dev/root doesn't even exist.
-> There was a thread on this a couple months ago:
->   https://lkml.org/lkml/2013/3/20/315
->
-> You can get the major/minor of a filesystem with the stat() system
-> call, or even the stat command line utility. That gives you the
-> major/minor of the device the filesystem was mounted from.
->
-> Note that there's only a major/minor when the filesystem _has_ a
-> backing block device. If it's initramfs or tmpfs: there isn't one. If
-> it's nfs, smbfs, or v9fs: there isn't one.
-----
-    Indeed.
-
-    Just that having to go through the extra stat call breaks
-*scripts* that relied on previous behavior.  I mean why the kernel
-can't put /dev/sdc1 in /proc/mounts instead of /dev/root when it
-was specifically passed root=/dev/sdc1 on it's command line
-seems a bit puzzling.
-
-    The thing is -- while there is a /dev/root in '/proc/mounts', there
-is no '/dev/root' in '/dev/ NOR is there a "root" or "rootfs" listed
-in '/proc/devices'.  I.e. saying the boot occurred from /dev/root when
-/dev/root doesn't exist is a bit obfuscating, at best.
-
-    That said, it's also incredibly non-portable to have to ...
-call 'stat' on '/', get back a hex device, then use the
-major/minor to find the device name -- a bit more hairy
-if a devmapper was involved.  While that's not my
-situation, to force a shell script to scan devices in /dev/block
-to find a reverse mapping seems like a huge jump in work-involved
-from the previous "df <dirname>|cut..." approach.
-
-
-As for the boot from ramfs, it's odd that it doesn't list
-dev/ramdisk or /dev/mem as the major. 
-
-Thanks for the archive pointer, BTW...
-
-
-
-
-
-
-
-
-
+								Honza
+> 2013/5/2 Javier Domingo <javierdo1@gmail.com>:
+> > Hi,
+> >
+> > I am currently having problems with the cpu scaling (something is
+> > touching the /sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq),
+> > and I decided to use inotify to seek if something was being changed or
+> > not.
+> >
+> > This gave no problems to me, but something is writing just before me,
+> > and I can't know from the inotifywait cmd who. Then, I found auditdl,
+> > so I put this command onto it:
+> >
+> > # auditctl -w /sys/devices/system/cpu/cpu?/cpufreq/scaling_max_freq
+> >
+> > And just after this, this totally blocking OOPS was triggered:
+> > [ 5072.685483] BUG: unable to handle kernel NULL pointer dereference
+> > at 0000000000000038
+> > [ 5072.714302] IP: [<ffffffff8114f06c>] sysfs_dentry_revalidate+0x9/0xa2
+> > [ 5072.741249] PGD 12eca4067 PUD 12ec62067 PMD 0
+> > [ 5072.768102] Oops: 0000 [#1] SMP
+> >
+> > I tried to make sysrq, but didn't work. I have repeated several times
+> > this and it always crashes. I am attaching the photo of the second
+> > time because it is much longer than the second one.
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
