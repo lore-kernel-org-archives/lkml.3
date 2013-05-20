@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab3ETPxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:53:45 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:58640 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418Ab3ETPxn (ORCPT
+	id S932109Ab3ETPyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:54:05 -0400
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:12387 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757069Ab3ETPyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:53:43 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [pull request] Pull request for branch yem-kconfig-rc-fixes
-Date: Mon, 20 May 2013 17:48:01 +0200
-Message-Id: <cover.1369064712.git.yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 20 May 2013 11:54:02 -0400
+Message-ID: <519A4716.7000001@emulex.com>
+Date: Mon, 20 May 2013 11:53:58 -0400
+From: James Smart <James.Smart@emulex.com>
+Reply-To: <James.Smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+CC: <James.Bottomley@HansenPartnership.com>, <Nagalakshmi.Nandigama@lsi.com>,
+        <Sreekanth.Reddy@lsi.com>, <michaelc@cs.wisc.edu>,
+        <robert.w.love@intel.com>, <dgilbert@interlog.com>, <hare@suse.de>,
+        <bprakash@broadcom.com>, <agk@redhat.com>, <neilb@suse.de>,
+        <gregkh@linuxfoundation.org>, <axboe@kernel.dk>, <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 0/5] scsi: Allow fast io fail without waiting through
+ timeout
+References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
+In-Reply-To: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Ren,
 
-Hello Michal, All,
+Based on the discussion recently held at LSF 2013, we are reworking the 
+error recovery path to address all the issues you are mentioning.   That 
+work contradicts these patches. So for now, these should be held off.
 
-Please pull these two rc-fixes:
-  - fix key handling in empty menus in mconf
-  - fix scripts/config wrt short --*-after options
-
-Regards,
-Yann E. MORIN
+-- james s
 
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+On 5/20/2013 3:14 AM, Ren Mingxin wrote:
+> When there is a scsi command timed-out or failed, the scsi eh
+> tries a thorugh recovery, which is necessary for non-redundant
+> systems. However, the thorugh recovery usually takes much time,
+> which is not acceptable for misson critical systems. To improve
+> this latency, if we are working on a redundant system, we should
+> avoid the scsi eh for its long time failing recovery, and quick
+> failover to another path.
+>
+> This set of patches is trying to implement above.
+>
+> NOTE: the userland tools need to eusure the environment
+> restriction, which will be implemented later.
+>
+> Thanks,
+> Ren
+>
+> Ren Mingxin (5):
+>    scsi: rename return code FAST_IO_FAIL to FAST_IO
+>    FC transport: Add interface to specify fast io level for timed-out cmds
+>    SAS transport: Add interface to specify fast io level for timed-out cmds
+>    lpfc: Allow fast timed-out io recovery
+>    mptfusion: Allow fast timed-out io recovery
+>
+>   drivers/message/fusion/mptscsih.c   |   29 ++++++++-
+>   drivers/scsi/lpfc/lpfc_scsi.c       |   34 ++++++++++
+>   drivers/scsi/scsi_error.c           |   18 ++---
+>   drivers/scsi/scsi_sas_internal.h    |    4 -
+>   drivers/scsi/scsi_transport_fc.c    |  112 ++++++++++++++++++++++++++++++++++--
+>   drivers/scsi/scsi_transport_iscsi.c |    6 -
+>   drivers/scsi/scsi_transport_sas.c   |  103 ++++++++++++++++++++++++++++++++-
+>   include/scsi/scsi.h                 |    2
+>   include/scsi/scsi_transport_fc.h    |   11 +++
+>   include/scsi/scsi_transport_sas.h   |    8 ++
+>   10 files changed, 303 insertions(+), 24 deletions(-)
+>
+>
 
-are available in the git repository at:
-
-  git://gitorious.org/linux-kconfig/linux-kconfig.git yem-kconfig-rc-fixes
-
-for you to fetch changes up to 8f9c6f75f603132869375a203d22e5b445f6294f:
-
-  mconf: handle keys in empty dialogs (2013-05-20 14:15:27 +0200)
-
-----------------------------------------------------------------
-Clement Chauplannaz (1):
-      scripts/config: fix assignment of parameters for short version of --*-after options
-
-Dirk Gouders (1):
-      mconf: handle keys in empty dialogs
-
- scripts/config                     |  2 +-
- scripts/kconfig/lxdialog/menubox.c |  8 ++++----
- scripts/kconfig/mconf.c            | 11 ++++++-----
- 3 files changed, 11 insertions(+), 10 deletions(-)
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
