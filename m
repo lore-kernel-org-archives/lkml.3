@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab3ETKwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:52:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55956 "EHLO
+	id S1755935Ab3ETLTD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:19:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56058 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab3ETKwR (ORCPT
+	with ESMTP id S1755157Ab3ETKwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:17 -0400
+	Mon, 20 May 2013 06:52:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 010/115] drm/radeon/dce6: add missing display reg for tiling setup
-Date: Mon, 20 May 2013 11:50:10 +0100
-Message-Id: <1369047116-9378-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 032/115] drm/ast: deal with bo reserve fail in dirty update path
+Date: Mon, 20 May 2013 11:50:32 +0100
+Message-Id: <1369047116-9378-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,80 +27,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 7c1c7c18fc752b2a1d07597286467ef186312463 upstream.
+commit 306373b645d80625335b8e684fa09b14ba460cec upstream.
 
-A new tiling config register for the display blocks was
-added on DCE6.
+Port over the mgag200 fix to ast as it suffers the same issue.
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=62889
-https://bugs.freedesktop.org/show_bug.cgi?id=57919
+    On F19 testing, it was noticed we get a lot of errors in dmesg
+    about being unable to reserve the buffer when plymouth starts,
+    this is due to the buffer being in the process of migrating,
+    so it makes sense we can't reserve it.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: adjust context ]
+    In order to deal with it, this adds delayed updates for the dirty
+    updates, when the bo is unreservable, in the normal console case
+    this shouldn't ever happen, its just when plymouth or X is
+    pushing the console bo to system memory.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni.c  | 2 ++
- drivers/gpu/drm/radeon/nid.h | 4 ++++
- drivers/gpu/drm/radeon/si.c  | 1 +
- drivers/gpu/drm/radeon/sid.h | 2 ++
- 4 files changed, 9 insertions(+)
+ drivers/gpu/drm/ast/ast_drv.h |  2 ++
+ drivers/gpu/drm/ast/ast_fb.c  | 43 ++++++++++++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/ast/ast_ttm.c |  2 +-
+ 3 files changed, 43 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index 0aa705e..09853ac 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -619,6 +619,8 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+diff --git a/drivers/gpu/drm/ast/ast_drv.h b/drivers/gpu/drm/ast/ast_drv.h
+index d4af9ed..85a6eeb 100644
+--- a/drivers/gpu/drm/ast/ast_drv.h
++++ b/drivers/gpu/drm/ast/ast_drv.h
+@@ -240,6 +240,8 @@ struct ast_fbdev {
+ 	void *sysram;
+ 	int size;
+ 	struct ttm_bo_kmap_obj mapping;
++	int x1, y1, x2, y2; /* dirty rect */
++	spinlock_t dirty_lock;
+ };
  
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	if (ASIC_IS_DCE6(rdev))
-+		WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
+ #define to_ast_crtc(x) container_of(x, struct ast_crtc, base)
+diff --git a/drivers/gpu/drm/ast/ast_fb.c b/drivers/gpu/drm/ast/ast_fb.c
+index 2fc8e9e..853f831 100644
+--- a/drivers/gpu/drm/ast/ast_fb.c
++++ b/drivers/gpu/drm/ast/ast_fb.c
+@@ -53,16 +53,52 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
+ 	int bpp = (afbdev->afb.base.bits_per_pixel + 7)/8;
+ 	int ret;
+ 	bool unmap = false;
++	bool store_for_later = false;
++	int x2, y2;
++	unsigned long flags;
  
- 	if ((rdev->config.cayman.max_backends_per_se == 1) &&
-diff --git a/drivers/gpu/drm/radeon/nid.h b/drivers/gpu/drm/radeon/nid.h
-index 5e76c2f5..dd334a2 100644
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -45,6 +45,10 @@
- #define ARUBA_GB_ADDR_CONFIG_GOLDEN        0x12010001
+ 	obj = afbdev->afb.obj;
+ 	bo = gem_to_ast_bo(obj);
  
- #define DMIF_ADDR_CONFIG  				0xBD4
++	/*
++	 * try and reserve the BO, if we fail with busy
++	 * then the BO is being moved and we should
++	 * store up the damage until later.
++	 */
+ 	ret = ast_bo_reserve(bo, true);
+ 	if (ret) {
+-		DRM_ERROR("failed to reserve fb bo\n");
++		if (ret != -EBUSY)
++			return;
 +
-+/* DCE6 only */
-+#define DMIF_ADDR_CALC  				0xC00
++		store_for_later = true;
++	}
 +
- #define	SRBM_GFX_CNTL				        0x0E44
- #define		RINGID(x)					(((x) & 0x3) << 0)
- #define		VMID(x)						(((x) & 0x7) << 0)
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index 29e42de..bc044f5 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1659,6 +1659,7 @@ static void si_gpu_init(struct radeon_device *rdev)
- 
- 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
- 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
-+	WREG32(DMIF_ADDR_CALC, gb_addr_config);
- 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
- 
- 	si_tiling_mode_table_init(rdev);
-diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
-index 06b17e6..916e13f 100644
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -60,6 +60,8 @@
- 
- #define DMIF_ADDR_CONFIG  				0xBD4
- 
-+#define DMIF_ADDR_CALC  				0xC00
++	x2 = x + width - 1;
++	y2 = y + height - 1;
++	spin_lock_irqsave(&afbdev->dirty_lock, flags);
 +
- #define	SRBM_STATUS				        0xE50
++	if (afbdev->y1 < y)
++		y = afbdev->y1;
++	if (afbdev->y2 > y2)
++		y2 = afbdev->y2;
++	if (afbdev->x1 < x)
++		x = afbdev->x1;
++	if (afbdev->x2 > x2)
++		x2 = afbdev->x2;
++
++	if (store_for_later) {
++		afbdev->x1 = x;
++		afbdev->x2 = x2;
++		afbdev->y1 = y;
++		afbdev->y2 = y2;
++		spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
+ 		return;
+ 	}
  
- #define	CC_SYS_RB_BACKEND_DISABLE			0xe80
++	afbdev->x1 = afbdev->y1 = INT_MAX;
++	afbdev->x2 = afbdev->y2 = 0;
++	spin_unlock_irqrestore(&afbdev->dirty_lock, flags);
++
+ 	if (!bo->kmap.virtual) {
+ 		ret = ttm_bo_kmap(&bo->bo, 0, bo->bo.num_pages, &bo->kmap);
+ 		if (ret) {
+@@ -72,10 +108,10 @@ static void ast_dirty_update(struct ast_fbdev *afbdev,
+ 		}
+ 		unmap = true;
+ 	}
+-	for (i = y; i < y + height; i++) {
++	for (i = y; i <= y2; i++) {
+ 		/* assume equal stride for now */
+ 		src_offset = dst_offset = i * afbdev->afb.base.pitches[0] + (x * bpp);
+-		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, width * bpp);
++		memcpy_toio(bo->kmap.virtual + src_offset, afbdev->sysram + src_offset, (x2 - x + 1) * bpp);
+ 
+ 	}
+ 	if (unmap)
+@@ -306,6 +342,7 @@ int ast_fbdev_init(struct drm_device *dev)
+ 
+ 	ast->fbdev = afbdev;
+ 	afbdev->helper.funcs = &ast_fb_helper_funcs;
++	spin_lock_init(&afbdev->dirty_lock);
+ 	ret = drm_fb_helper_init(dev, &afbdev->helper,
+ 				 1, 1);
+ 	if (ret) {
+diff --git a/drivers/gpu/drm/ast/ast_ttm.c b/drivers/gpu/drm/ast/ast_ttm.c
+index 6cf2ade..2a6027c 100644
+--- a/drivers/gpu/drm/ast/ast_ttm.c
++++ b/drivers/gpu/drm/ast/ast_ttm.c
+@@ -316,7 +316,7 @@ int ast_bo_reserve(struct ast_bo *bo, bool no_wait)
+ 
+ 	ret = ttm_bo_reserve(&bo->bo, true, no_wait, false, 0);
+ 	if (ret) {
+-		if (ret != -ERESTARTSYS)
++		if (ret != -ERESTARTSYS && ret != -EBUSY)
+ 			DRM_ERROR("reserve failed %p\n", bo);
+ 		return ret;
+ 	}
 -- 
 1.8.1.2
 
