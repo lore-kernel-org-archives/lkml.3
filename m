@@ -1,94 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab3ETTfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:35:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21041 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835Ab3ETTfw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:35:52 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZSTTxNyh34AA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=7TU8zCdB22MA:10 a=6rqHouBjAAAA:8 a=QyXUC8HyAAAA:8 a=Cjt9h6emqCp7LdGQ2vsA:9 a=QEXdDO2ut3YA:10 a=TAmEwCHjoHMA:10 a=dGJ0OcVc7YAA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369078550.6828.121.camel@gandalf.local.home>
-Subject: Re: [ 094/136 ] e1000e: fix runtime power management transitions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: jeffrey.t.kirsher@intel.com
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Borislav Petkov <bp@suse.de>, Aaron Brown <aaron.f.brown@intel.com>
-Date: Mon, 20 May 2013 15:35:50 -0400
-In-Reply-To: <1368855636.2235.136.camel@jtkirshe-mobl>
-References: <20130518021557.139113314@goodmis.org>
-	 <20130518021656.829696669@goodmis.org> <5197132A.5030308@openvz.org>
-	 <1368855636.2235.136.camel@jtkirshe-mobl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757904Ab3ETTiu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:38:50 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40932 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756441Ab3ETTir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 15:38:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 5/5] ACPI / memhotplug: Drop unnecessary code
+Date: Mon, 20 May 2013 21:47:25 +0200
+Message-ID: <1726699.Z30ifEcQDQ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1369070876.5673.51.camel@misato.fc.hp.com>
+References: <2250271.rGYN6WlBxf@vostro.rjw.lan> <2228904.eTtCrFuSan@vostro.rjw.lan> <1369070876.5673.51.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-05-17 at 22:40 -0700, Jeff Kirsher wrote:
-> On Sat, 2013-05-18 at 09:35 +0400, Konstantin Khlebnikov wrote:
-> > Steven Rostedt wrote:
-> > > 3.6.11.4 stable review patch.
-> > > If anyone has any objections, please let me know.
+On Monday, May 20, 2013 11:27:56 AM Toshi Kani wrote:
+> On Sun, 2013-05-19 at 01:34 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > > 
-> > I don't think that 3.6.y needs this. That was fix for problem which appeared
-> > in 3.8 after some changes in PCI power management code. Probably it depends
-> > on these changes. If no one complains about problems we should leave it as is.
+> > Now that the memory offlining should be taken care of by the
+> > companion device offlining code in acpi_scan_hot_remove(), the
+> > ACPI memory hotplug driver doesn't need to offline it in
+> > acpi_memory_remove_memory() any more.  Consequently, it doesn't
+> > need to call remove_memory() any more, which means that that
+> > funtion may be dropped entirely, because acpi_memory_remove_memory()
+> > is the only user of it.
 > 
-> My thoughts are the same as Konstantin, but I would like Bruce Allan to
-> weigh in on this since he is the e1000e maintainer.  Since it is late
-> Friday night, Bruce probably won't see this until Monday to respond.
+> The off-lining part of remove_memory() can be removed, but not the
+> hot-delete part.  Please see my comments below.
+> 
+> > Make the changes described above to get rid of the dead code.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/acpi_memhotplug.c |   15 ------
+> >  include/linux/memory_hotplug.h |    1 
+> >  mm/memory_hotplug.c            |  102 -----------------------------------------
+> >  3 files changed, 2 insertions(+), 116 deletions(-)
+> > 
+> > Index: linux-pm/drivers/acpi/acpi_memhotplug.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
+> > +++ linux-pm/drivers/acpi/acpi_memhotplug.c
+> > @@ -271,31 +271,20 @@ static int acpi_memory_enable_device(str
+> >  	return 0;
+> >  }
+> >  
+> > -static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+> > +static void acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+> >  {
+> >  	acpi_handle handle = mem_device->device->handle;
+> > -	int result = 0, nid;
+> >  	struct acpi_memory_info *info, *n;
+> >  
+> > -	nid = acpi_get_node(handle);
+> > -
+> >  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+> >  		if (!info->enabled)
+> >  			continue;
+> >  
+> > -		if (nid < 0)
+> > -			nid = memory_add_physaddr_to_nid(info->start_addr);
+> > -
+> > +		/* All of the memory blocks are offline at this point. */
+> >  		acpi_unbind_memory_blocks(info, handle);
+> > -		result = remove_memory(nid, info->start_addr, info->length);
+> 
+> We still need to call remove_memory().
+> 
+> > -		if (result)
+> > -			return result;
+> > -
+> >  		list_del(&info->list);
+> >  		kfree(info);
+> >  	}
+> > -
+> > -	return result;
+> >  }
+> >  
+> >  static void acpi_memory_device_free(struct acpi_memory_device *mem_device)
+> > Index: linux-pm/include/linux/memory_hotplug.h
+> > ===================================================================
+> > --- linux-pm.orig/include/linux/memory_hotplug.h
+> > +++ linux-pm/include/linux/memory_hotplug.h
+> > @@ -252,7 +252,6 @@ extern int add_memory(int nid, u64 start
+> >  extern int arch_add_memory(int nid, u64 start, u64 size);
+> >  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+> >  extern bool is_memblock_offlined(struct memory_block *mem);
+> > -extern int remove_memory(int nid, u64 start, u64 size);
+> >  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+> >  								int nr_pages);
+> >  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> > Index: linux-pm/mm/memory_hotplug.c
+> > ===================================================================
+> > --- linux-pm.orig/mm/memory_hotplug.c
+> > +++ linux-pm/mm/memory_hotplug.c
+> > @@ -1670,41 +1670,6 @@ int walk_memory_range(unsigned long star
+> >  }
+> 
+>  :
+> 
+> > -
+> > -int __ref remove_memory(int nid, u64 start, u64 size)
+> > -{
+> > -	unsigned long start_pfn, end_pfn;
+> > -	int ret = 0;
+> > -	int retry = 1;
+> > -
+> > -	start_pfn = PFN_DOWN(start);
+> > -	end_pfn = PFN_UP(start + size - 1);
+> > -
+> > -	/*
+> > -	 * When CONFIG_MEMCG is on, one memory block may be used by other
+> > -	 * blocks to store page cgroup when onlining pages. But we don't know
+> > -	 * in what order pages are onlined. So we iterate twice to offline
+> > -	 * memory:
+> > -	 * 1st iterate: offline every non primary memory block.
+> > -	 * 2nd iterate: offline primary (i.e. first added) memory block.
+> > -	 */
+> > -repeat:
+> > -	walk_memory_range(start_pfn, end_pfn, &ret,
+> > -			  offline_memory_block_cb);
+> > -	if (ret) {
+> > -		if (!retry)
+> > -			return ret;
+> > -
+> > -		retry = 0;
+> > -		ret = 0;
+> > -		goto repeat;
+> > -	}
+> 
+> The above procedure can be removed as it is for off-lining.
+> 
+> > -	lock_memory_hotplug();
+> > -
+> > -	/*
+> > -	 * we have offlined all memory blocks like this:
+> > -	 *   1. lock memory hotplug
+> > -	 *   2. offline a memory block
+> > -	 *   3. unlock memory hotplug
+> > -	 *
+> > -	 * repeat step1-3 to offline the memory block. All memory blocks
+> > -	 * must be offlined before removing memory. But we don't hold the
+> > -	 * lock in the whole operation. So we should check whether all
+> > -	 * memory blocks are offlined.
+> > -	 */
+> > -
+> > -	ret = walk_memory_range(start_pfn, end_pfn, NULL,
+> > -				is_memblock_offlined_cb);
+> > -	if (ret) {
+> > -		unlock_memory_hotplug();
+> > -		return ret;
+> > -	}
+> > -
+> 
+> I think the above procedure is still useful for safe guard.
 
-Any word on this? I'll wait till tomorrow to do the release. If I don't
-hear anything, then I may just remove it.
+But then it shoud to BUG_ON() instead of returning an error (which isn't very
+useful for anything now).
+
+> > -	/* remove memmap entry */
+> > -	firmware_map_remove(start, start + size, "System RAM");
+> > -
+> > -	arch_remove_memory(start, size);
+> > -
+> > -	try_offline_node(nid);
+> 
+> The above procedure performs memory hot-delete specific operations and
+> is necessary.
+
+OK, I see.  I'll replace this patch with something simpler, then.
+
+What about the other patches in the series?
 
 Thanks,
-
--- Steve
-
-> 
-> > >
-> > > ------------------
-> > >
-> > > From: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > >
-> > > [ Upstream commit 66148babe728f3e00e13c56f6b0ecf325abd80da ]
-> > >
-> > > This patch removes redundant actions from driver and fixes its interaction
-> > > with actions in pci-bus runtime power management code.
-> > >
-> > > It removes pci_save_state() from __e1000_shutdown() for normal adapters,
-> > > PCI bus callbacks pci_pm_*() will do all this for us. Now __e1000_shutdown()
-> > > switches to D3-state only quad-port adapters, because they needs quirk for
-> > > clearing false-positive error from downsteam pci-e port.
-> > >
-> > > pci_save_state() now called after clearing bus-master bit, thus __e1000_resume()
-> > > and e1000_io_slot_reset() must set it back after restoring configuration space.
-> > >
-> > > This patch set get_link_status before calling pm_runtime_put() in e1000_open()
-> > > to allow e1000_idle() get real link status and schedule first runtime suspend.
-> > >
-> > > This patch also enables wakeup for device if management mode is enabled
-> > > (like for WoL) as result pci_prepare_to_sleep() would setup wakeup without
-> > > special actions like custom 'enable_wakeup' sign.
-> > >
-> > > Cc: Bruce Allan<bruce.w.allan@intel.com>
-> > > Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> > > Acked-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
-> > > Tested-by: Borislav Petkov<bp@suse.de>
-> > > Tested-by: Aaron Brown<aaron.f.brown@intel.com>
-> > > Signed-off-by: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
-> > > Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
-> > 
-> 
-> 
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
