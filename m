@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab3ETKxC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55994 "EHLO
+	id S1756198Ab3ETLM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:12:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56134 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab3ETKw0 (ORCPT
+	with ESMTP id S1756054Ab3ETKxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:26 -0400
+	Mon, 20 May 2013 06:53:01 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 018/115] drm/radeon: fix hdmi mode enable on RS600/RS690/RS740
-Date: Mon, 20 May 2013 11:50:18 +0100
-Message-Id: <1369047116-9378-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 048/115] cpufreq: exynos: Get booting freq value in exynos_cpufreq_init
+Date: Mon, 20 May 2013 11:50:48 +0100
+Message-Id: <1369047116-9378-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-commit dcb852905772416e322536ced5cb3c796d176af5 upstream.
+commit 6e45eb12fd1c741d556bf264ee98853b5f3104e5 upstream.
 
-These chips were previously skipped since they are
-pre-R600.
+Boot_freq is for saving booting freq. But exynos_cpufreq_cpu_init
+is called in hotplug. If boot_freq is existed in exynos_cpufreq_cpu_init,
+boot_freq could be changed.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: adjust context ]
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c | 4 ++--
+ drivers/cpufreq/exynos-cpufreq.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 851a477..26ce6c1 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -489,7 +489,7 @@ void r600_hdmi_enable(struct drm_encoder *encoder)
- 	offset = dig->afmt->offset;
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index b243a7e..0a28dc3 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -210,8 +210,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
  
- 	/* Older chipsets require setting HDMI and routing manually */
--	if (rdev->family >= CHIP_R600 && !ASIC_IS_DCE3(rdev)) {
-+	if (ASIC_IS_DCE2(rdev) && !ASIC_IS_DCE3(rdev)) {
- 		hdmi = HDMI0_ERROR_ACK | HDMI0_ENABLE;
- 		switch (radeon_encoder->encoder_id) {
- 		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_TMDS1:
-@@ -559,7 +559,7 @@ void r600_hdmi_disable(struct drm_encoder *encoder)
- 	radeon_irq_set(rdev);
+ 	cpufreq_frequency_table_get_attr(exynos_info->freq_table, policy->cpu);
  
- 	/* Older chipsets not handled by AtomBIOS */
--	if (rdev->family >= CHIP_R600 && !ASIC_IS_DCE3(rdev)) {
-+	if (ASIC_IS_DCE2(rdev) && !ASIC_IS_DCE3(rdev)) {
- 		switch (radeon_encoder->encoder_id) {
- 		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_TMDS1:
- 			WREG32_P(AVIVO_TMDSA_CNTL, 0,
+-	locking_frequency = exynos_getspeed(0);
+-
+ 	/* set the transition latency value */
+ 	policy->cpuinfo.transition_latency = 100000;
+ 
+@@ -275,6 +273,8 @@ static int __init exynos_cpufreq_init(void)
+ 		goto err_vdd_arm;
+ 	}
+ 
++	locking_frequency = exynos_getspeed(0);
++
+ 	register_pm_notifier(&exynos_cpufreq_nb);
+ 
+ 	if (cpufreq_register_driver(&exynos_driver)) {
 -- 
 1.8.1.2
 
