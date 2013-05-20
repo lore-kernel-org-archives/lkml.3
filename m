@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3ETN4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 09:56:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44579 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087Ab3ETN4R (ORCPT
+	id S932107Ab3ETN4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 09:56:07 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:41087
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932081Ab3ETN4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 09:56:17 -0400
-Date: Mon, 20 May 2013 06:56:35 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@openvz.org>, Dave Chinner <dchinner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: vmscan: add BUG_ON on illegal return values from
- scan_objects
-Message-ID: <20130520135635.GA18693@kroah.com>
-References: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
+	Mon, 20 May 2013 09:56:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <kernel@pengutronix.de>, <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH 1/3] imx-drm: imx-tve: Check the return value of 'regulator_enable()'
+Date: Mon, 20 May 2013 10:55:49 -0300
+Message-ID: <1369058151-24986-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:14:27AM +0200, Oskar Andero wrote:
-> Add a BUG_ON to catch any illegal value from the shrinkers. This fixes a
-> potential bug if scan_objects returns a negative other than -1, which
-> would lead to undefined behaviour.
+Check the return value of 'regulator_enable()' to fix the following build error:
 
-So it's better to crash a machine and keep anyone from using it?
-Instead of recovering from an error you found?  Not good.
+drivers/staging/imx-drm/imx-tve.c: In function 'imx_tve_probe':
+drivers/staging/imx-drm/imx-tve.c:671:19: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
 
-greg k-h
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/staging/imx-drm/imx-tve.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
+index a6efa8f6..ce65ad3 100644
+--- a/drivers/staging/imx-drm/imx-tve.c
++++ b/drivers/staging/imx-drm/imx-tve.c
+@@ -668,7 +668,9 @@ static int imx_tve_probe(struct platform_device *pdev)
+ 	tve->dac_reg = devm_regulator_get(&pdev->dev, "dac");
+ 	if (!IS_ERR(tve->dac_reg)) {
+ 		regulator_set_voltage(tve->dac_reg, 2750000, 2750000);
+-		regulator_enable(tve->dac_reg);
++		ret = regulator_enable(tve->dac_reg);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	tve->clk = devm_clk_get(&pdev->dev, "tve");
+-- 
+1.8.1.2
+
+
