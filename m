@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3ETLO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:14:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56110 "EHLO
+	id S1756119Ab3ETLPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:15:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56106 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755948Ab3ETKwz (ORCPT
+	with ESMTP id S1755936Ab3ETKwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 06:52:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 043/115] drm/radeon: properly lock disp in mc_stop/resume for evergreen+
-Date: Mon, 20 May 2013 11:50:43 +0100
-Message-Id: <1369047116-9378-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 041/115] net/eth/ibmveth: Fixup retrieval of MAC address
+Date: Mon, 20 May 2013 11:50:41 +0100
+Message-Id: <1369047116-9378-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,113 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 968c01664ccbe0e46c19a1af662c4c266a904203 upstream.
+commit 13f85203e1060da83d9ec1c1c5a63343eaab8de4 upstream.
 
-Need to wait for the new addresses to take affect before
-re-enabling the MC.
+Some ancient pHyp versions used to create a 8 bytes local-mac-address
+property in the device-tree instead of a 6 bytes one for veth.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The Linux driver code to deal with that is an insane hack which also
+happens to break with some choices of MAC addresses in qemu by testing
+for a bit in the address rather than just looking at the size of the
+property.
+
+Sanitize this by doing the latter instead.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c     | 47 +++++++++++++++++++++++++++++++---
- drivers/gpu/drm/radeon/evergreen_reg.h |  2 ++
- 2 files changed, 45 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/ibm/ibmveth.c | 23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 9cf8f35..1ed051e 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1157,18 +1157,14 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
- 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
--					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			}
- 			/* wait for the next frame */
-@@ -1195,6 +1191,22 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
+diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
+index b68d28a..33a1760 100644
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -1327,7 +1327,7 @@ static const struct net_device_ops ibmveth_netdev_ops = {
+ static int __devinit ibmveth_probe(struct vio_dev *dev,
+ 				   const struct vio_device_id *id)
+ {
+-	int rc, i;
++	int rc, i, mac_len;
+ 	struct net_device *netdev;
+ 	struct ibmveth_adapter *adapter;
+ 	unsigned char *mac_addr_p;
+@@ -1337,11 +1337,19 @@ static int __devinit ibmveth_probe(struct vio_dev *dev,
+ 		dev->unit_address);
+ 
+ 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
+-							NULL);
++							&mac_len);
+ 	if (!mac_addr_p) {
+ 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
+ 		return -EINVAL;
  	}
- 	/* wait for the MC to settle */
- 	udelay(100);
-+
-+	/* lock double buffered regs */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+			if (!(tmp & EVERGREEN_GRPH_UPDATE_LOCK)) {
-+				tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
-+				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (!(tmp & 1)) {
-+				tmp |= 1;
-+				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+		}
++	/* Workaround for old/broken pHyp */
++	if (mac_len == 8)
++		mac_addr_p += 2;
++	else if (mac_len != 6) {
++		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
++			mac_len);
++		return -EINVAL;
 +	}
- }
  
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
-@@ -1216,6 +1228,33 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS_HIGH, upper_32_bits(rdev->mc.vram_start));
- 	WREG32(EVERGREEN_VGA_MEMORY_BASE_ADDRESS, (u32)rdev->mc.vram_start);
+ 	mcastFilterSize_p = (unsigned int *)vio_get_attribute(dev,
+ 						VETH_MCAST_FILTER_SIZE, NULL);
+@@ -1366,17 +1374,6 @@ static int __devinit ibmveth_probe(struct vio_dev *dev,
  
-+	/* unlock regs and wait for update */
-+	for (i = 0; i < rdev->num_crtc; i++) {
-+		if (save->crtc_enabled[i]) {
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i]);
-+			if ((tmp & 0x3) != 0) {
-+				tmp &= ~0x3;
-+				WREG32(EVERGREEN_MASTER_UPDATE_MODE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+			if (tmp & EVERGREEN_GRPH_UPDATE_LOCK) {
-+				tmp &= ~EVERGREEN_GRPH_UPDATE_LOCK;
-+				WREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i], tmp);
-+			}
-+			tmp = RREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i]);
-+			if (tmp & 1) {
-+				tmp &= ~1;
-+				WREG32(EVERGREEN_MASTER_UPDATE_LOCK + crtc_offsets[i], tmp);
-+			}
-+			for (j = 0; j < rdev->usec_timeout; j++) {
-+				tmp = RREG32(EVERGREEN_GRPH_UPDATE + crtc_offsets[i]);
-+				if ((tmp & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING) == 0)
-+					break;
-+				udelay(1);
-+			}
-+		}
-+	}
-+
- 	/* unblackout the MC */
- 	tmp = RREG32(MC_SHARED_BLACKOUT_CNTL);
- 	tmp &= ~BLACKOUT_MODE_MASK;
-diff --git a/drivers/gpu/drm/radeon/evergreen_reg.h b/drivers/gpu/drm/radeon/evergreen_reg.h
-index 034f4c2..3e9773a 100644
---- a/drivers/gpu/drm/radeon/evergreen_reg.h
-+++ b/drivers/gpu/drm/radeon/evergreen_reg.h
-@@ -225,6 +225,8 @@
- #define EVERGREEN_CRTC_STATUS_POSITION                  0x6e90
- #define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
- #define EVERGREEN_CRTC_UPDATE_LOCK                      0x6ed4
-+#define EVERGREEN_MASTER_UPDATE_LOCK                    0x6ef4
-+#define EVERGREEN_MASTER_UPDATE_MODE                    0x6ef8
+ 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
  
- #define EVERGREEN_DC_GPIO_HPD_MASK                      0x64b0
- #define EVERGREEN_DC_GPIO_HPD_A                         0x64b4
+-	/*
+-	 * Some older boxes running PHYP non-natively have an OF that returns
+-	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
+-	 * ignored) while newer boxes' OF return a 6-byte field. Note that
+-	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
+-	 * The RPA doc specifies that the first byte must be 10b, so we'll
+-	 * just look for it to solve this 8 vs. 6 byte field issue
+-	 */
+-	if ((*mac_addr_p & 0x3) != 0x02)
+-		mac_addr_p += 2;
+-
+ 	adapter->mac_addr = 0;
+ 	memcpy(&adapter->mac_addr, mac_addr_p, 6);
+ 
 -- 
 1.8.1.2
 
