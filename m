@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab3ETUI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 16:08:28 -0400
-Received: from avasout03.plus.net ([84.93.230.244]:35372 "EHLO
-	avasout03.plus.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755733Ab3ETUI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 16:08:26 -0400
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 May 2013 16:08:26 EDT
-X-CM-Score: 0.00
-X-CNFS-Analysis: v=2.1 cv=Wq0Sb7vv c=1 sm=1 tr=0
- a=/q3kRMlYFX0Q8ZQTxlcwmA==:117 a=/q3kRMlYFX0Q8ZQTxlcwmA==:17 a=0Bzu9jTXAAAA:8
- a=_iRu-ZNsktkA:10 a=jLF5jyXfaKQA:10 a=8nJEP1OIZ-IA:10 a=GS055jfFAAAA:8
- a=mux_Gf2z7sEA:10 a=Jt44_EUB8d0rMNsl84cA:9 a=wPNLvfGTeEIA:10
-Message-ID: <519A8144.8070005@Hendrik.org.uk>
-Date: Mon, 20 May 2013 21:02:12 +0100
-From: John Harrison <LKML@Hendrik.org.uk>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1758033Ab3ETUIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 16:08:38 -0400
+Received: from mout.gmx.net ([212.227.17.21]:50360 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757931Ab3ETUIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 16:08:36 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18DosZqCRMDqpXklC8iOzHez1WKjnUCmZjGSNi3YU
+	98FIYxeF6ycpBd
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb/misc/usb3503: Use module_i2c_driver to register driver
+Date: Mon, 20 May 2013 22:13:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8.11; KDE/4.9.5; x86_64; ; )
+Cc: Dongjin Kim <tobetter@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1369078317-30210-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1369078317-30210-1-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: System hang running 'smartctl -l xerror'
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305202213.46282.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-I have a very reproducible problem such that running 'smartctl -l 
-xerror,1 /dev/sd#' while other disk activity is occurring will cause a 
-complete system hang. The access light for the disk being queried 
-remains lit (the others are off) and there is no response on the 
-keyboard. No messages are printed to the console. The only thing I can 
-do is power cycle the system.
-
-This is on an Intel Atom D945GCLF2 motherboard with an add in SiI 3124 
-SATA controller. Both of the motherboard channels and three of the SiI 
-channels have disks attached (one Samsung, four WD). Three of the WD 
-disks are an MD raid set. The system is running Debian 'testing'. It was 
-kernel version 3.2.23 but I have just upgraded to 3.2.41 (the latest 
-Debian kernel source package) and the problem still occurs.
-
-I have searched the mailing list but can't spot anything that looks 
-similar. Note that the system is running fine in other respects. The 
-hang only happens when querying the SMART log during a period of high 
-disk activity.
+Am Montag, 20. Mai 2013, 21:31:57 schrieb Peter Huewe:
+> Removing some boilerplate by using module_i2c_driver instead of calling
+> register and unregister in the otherwise empty init/exit functions
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+Sorry for the noise 
+ already exists in 3.10-rc1 by Lars-Peter Clausen
+8244ac0 USB: misc: usb3503: use module_i2c_driver to simplify the code
 
 
-Thanks,
-John.
+I was working on an stale tree - sorry.
+Please ignore this patch.
+
+Peter
 
