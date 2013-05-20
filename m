@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab3ETLPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:15:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56101 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3ETKwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755918Ab3ETKwx (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 May 2013 06:52:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55974 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab3ETKwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:52:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <ak@linux.intel.com>,
-        eranian@google.com, Ingo Molnar <mingo@kernel.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 040/115] perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-Date: Mon, 20 May 2013 11:50:40 +0100
-Message-Id: <1369047116-9378-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 014/115] drm/radeon: cleanup properly if mmio mapping fails
+Date: Mon, 20 May 2013 11:50:14 +0100
+Message-Id: <1369047116-9378-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,71 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7cc23cd6c0c7d7f4bee057607e7ce01568925717 upstream.
+commit 0cd9cb76ae26a19df21abc6f94f5fff141e689c7 upstream.
 
-We should always have proper privileges when requesting kernel
-data.
+If we fail to map the mmio BAR, skip driver tear down
+that requires mmio.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/20130503121256.230745028@chello.nl
-[ Fix build error reported by fengguang.wu@intel.com, propagate error code back. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
+Should fix:
+https://bugzilla.kernel.org/show_bug.cgi?id=56541
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_kms.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 62a93a4..fd1a099 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
-  * - in case there is no HW filter
-  * - in case the HW filter has errata or limitations
-  */
--static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- {
- 	u64 br_type = event->attr.branch_sample_type;
- 	int mask = 0;
-@@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	if (br_type & PERF_SAMPLE_BRANCH_USER)
- 		mask |= X86_BR_USER;
+diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
+index 5c58d7d..c574139 100644
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -39,8 +39,12 @@ int radeon_driver_unload_kms(struct drm_device *dev)
  
--	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-+	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
-+		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+			return -EACCES;
- 		mask |= X86_BR_KERNEL;
-+	}
- 
- 	/* we ignore BRANCH_HV here */
- 
-@@ -339,6 +342,8 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	 * be used by fixup code for some CPU
- 	 */
- 	event->hw.branch_reg.reg = mask;
+ 	if (rdev == NULL)
+ 		return 0;
++	if (rdev->rmmio == NULL)
++		goto done_free;
+ 	radeon_modeset_fini(rdev);
+ 	radeon_device_fini(rdev);
 +
-+	return 0;
- }
- 
- /*
-@@ -386,7 +391,9 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * setup SW LBR filter
- 	 */
--	intel_pmu_setup_sw_lbr_filter(event);
-+	ret = intel_pmu_setup_sw_lbr_filter(event);
-+	if (ret)
-+		return ret;
- 
- 	/*
- 	 * setup HW LBR filter, if any
++done_free:
+ 	kfree(rdev);
+ 	dev->dev_private = NULL;
+ 	return 0;
 -- 
 1.8.1.2
 
