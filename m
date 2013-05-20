@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab3ETK0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:26:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45533 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108Ab3ETK0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:26:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,707,1363158000"; 
-   d="scan'208";a="340443125"
-Message-ID: <5199FA39.9090001@linux.intel.com>
-Date: Mon, 20 May 2013 13:26:01 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1754846Ab3ETK0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:26:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3154 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab3ETK0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:26:53 -0400
+X-Spam-Score: -100.8
+Message-ID: <5199FA3B.7060201@asianux.com>
+Date: Mon, 20 May 2013 18:26:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v2 net-next 0/4] net: low latency Ethernet device polling
-References: <20130519102525.12527.83301.stgit@ladj378.jer.intel.com> <CAJZOPZJzVykmBH5FFQBVuztAFGRMOPT-GKABiewG6b4pnKVUeA@mail.gmail.com> <51992713.30705@linux.intel.com> <CAJZOPZ+8zKfuuUhOwzz6WKm6do6N25B1DAmv+aOipSLbvdh6LA@mail.gmail.com>
-In-Reply-To: <CAJZOPZ+8zKfuuUhOwzz6WKm6do6N25B1DAmv+aOipSLbvdh6LA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Howells <dhowells@redhat.com>
+CC: james.l.morris@oracle.com, Rusty Russell <rusty@rustcorp.com.au>,
+        dmitry.kasatkin@intel.com, andriy.shevchenko@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib/mpi/mpicoder.c: looping issue, need stop when equal
+ to zero, found by 'EXTRA_FLAGS=-W'.
+References: <5199AFC9.8050607@asianux.com> <14484.1369044797@warthog.procyon.org.uk>
+In-Reply-To: <14484.1369044797@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/05/2013 22:56, Or Gerlitz wrote:
-> On Sun, May 19, 2013 at 10:25 PM, Eliezer Tamir <
-> eliezer.tamir@linux.intel.com> wrote:
->
->> On 19/05/2013 22:06, Or Gerlitz wrote:
->>
->>> Last time you've placed a copy of the patchset in the rfc branch of
->>> git://github.com/jbrandeb/lls.**git <http://github.com/jbrandeb/lls.git> - can you repost there V2 too?
->>>
->>> Or.
->>>
->>>   BTW did you try the last version on your HW?
->>
->
->
-> nope, you didn't provide mlx4 patch :( we will look into that ...
+On 05/20/2013 06:13 PM, David Howells wrote:
+> Chen Gang <gang.chen@asianux.com> wrote:
+> 
+>> > For 'while' looping, need stop when 'nbytes == 0', or will cause issue.
+>> > ('nbytes' is size_t which is always bigger or equal than zero).
+>> > 
+>> > The related warning: (with EXTRA_CFLAGS=-W)
+>> >   lib/mpi/mpicoder.c:40:2: warning: comparison of unsigned expression >= 0 is always true [-Wtype-limits]
+> Acked-by: David Howells <dhowells@redhat.com>
+> 
+> 
 
-I would never risk compromising your job security like that
+Thank you very much.
+
+
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
