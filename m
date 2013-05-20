@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3ETJvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:51:19 -0400
-Received: from ns.fbmi.cvut.cz ([147.32.229.10]:49207 "EHLO ns.fbmi.cvut.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766Ab3ETJvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:51:18 -0400
-X-Greylist: delayed 3294 seconds by postgrey-1.27 at vger.kernel.org; Mon, 20 May 2013 05:51:18 EDT
-Message-ID: <d6969549150ba59a7089996e4863264e.squirrel@mail.fbmi.cvut.cz>
-Date: Mon, 20 May 2013 10:54:48 +0200
-From: "Help Desk" <info@kk.com>
-User-Agent: SquirrelMail/1.4.22
+	id S1754839Ab3ETJxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:53:44 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51287 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab3ETJxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 05:53:43 -0400
+Message-ID: <5199F1E9.2080002@linux.vnet.ibm.com>
+Date: Mon, 20 May 2013 15:20:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Antivirus-Scanner: Clamav
-X-SA-Exim-Connect-IP: 147.32.229.9
-X-SA-Exim-Mail-From: info@kk.com
-Subject: CHECK.
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on ns.fbmi.cvut.cz)
-To: unlisted-recipients:; (no To-header on input)
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC PATCH nohz] return NOTIFY_BAD in cpu down call back to stop
+ offlining the cpu
+References: <1368780244.2813.14.camel@ThinkPad-T5421>
+In-Reply-To: <1368780244.2813.14.camel@ThinkPad-T5421>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052009-5140-0000-0000-0000033C9529
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/17/2013 02:14 PM, Li Zhong wrote:
+> In tick_nohz_cpu_down_callback() if the cpu is the one handling
+> timekeeping , it seems that we should return something that could stop
+> notify CPU_DOWN_PREPARE, and then start notify CPU_DOWN_FAILED on the
+> already called notifier call backs.
+> 
+> -EINVAL will be converted to 0 by notifier_to_errno(),
 
+This above line is not relevant here, because notifier_call_chain()
+doesn't use notifier_to/from_errno(). It simply uses a straight-forward
+check like this:
 
-Attention,
+if ((ret & NOTIFY_STOP_MASK) == NOTIFY_STOP_MASK)
+	break;
 
-Important message from ADMIN- Please confirm your email address by
-clicking this link:
+> then the cpu
+> would be taken down with part of the DOWN_PREPARE notifier callbacks
+> called, and something bad could happen after that.
+> 
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> ---
 
-http://feedbck.jimdo.com/
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Webmaster
-
+>  kernel/time/tick-sched.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index bc67d42..17b8155 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -306,7 +306,7 @@ static int __cpuinit tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+>  		 * we can't safely shutdown that CPU.
+>  		 */
+>  		if (have_nohz_full_mask && tick_do_timer_cpu == cpu)
+> -			return -EINVAL;
+> +			return NOTIFY_BAD;
+>  		break;
+>  	}
+>  	return NOTIFY_OK;
+> 
+ 
+Regards,
+Srivatsa S. Bhat
 
