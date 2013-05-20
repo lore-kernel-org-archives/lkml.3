@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503Ab3ETXe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 19:34:56 -0400
-Received: from mx2.sisa.samsung.com ([63.166.156.250]:46663 "EHLO
-	mx2.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab3ETXey (ORCPT
+	id S1758494Ab3ETXjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 19:39:03 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:37894 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755974Ab3ETXjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 19:34:54 -0400
-X-ASG-Debug-ID: 1369092892-05112928472d6b0001-xx1T2L
-X-Barracuda-Envelope-From: shuah.kh@samsung.com
-X-Barracuda-Apparent-Source-IP: 105.144.21.115
-X-ASG-Whitelist: Client
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Gustavo Padovan <gustavo@padovan.org>
-CC: "marcel@holtmann.org" <marcel@holtmann.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH] Bluetooth: Add missing reset_resume dev_pm_ops
-Thread-Topic: [PATCH] Bluetooth: Add missing reset_resume dev_pm_ops
-X-ASG-Orig-Subj: Re: [PATCH] Bluetooth: Add missing reset_resume dev_pm_ops
-Thread-Index: AQHORPCWYn5rgwEVikOQkuKYXOozt5kPSVwAgAAHWoA=
-Date: Mon, 20 May 2013 23:34:51 +0000
-Message-ID: <1369092891.8079.5.camel@lorien>
-References: <1367250333.4938.20.camel@lorien> <20130520230832.GF17712@joana>
-In-Reply-To: <20130520230832.GF17712@joana>
-Reply-To: Shuah Khan <shuah.kh@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [105.144.34.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <9812F29E36D93C4282B78399EE07FA12@sisa.samsung.com>
+	Mon, 20 May 2013 19:39:00 -0400
+Message-ID: <519AB411.7000807@hurleysoftware.com>
+Date: Mon, 20 May 2013 19:38:57 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-Barracuda-Connect: UNKNOWN[105.144.21.115]
-X-Barracuda-Start-Time: 1369092892
-X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] tty: Add lock/unlock ldisc pair functions
+References: <20130415201411.GA27360@kroah.com> <1366107356-7699-1-git-send-email-peter@hurleysoftware.com> <1366107356-7699-2-git-send-email-peter@hurleysoftware.com> <20130520193403.GA14340@kroah.com> <519A9920.3010702@hurleysoftware.com> <20130520230657.GA21500@kroah.com>
+In-Reply-To: <20130520230657.GA21500@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4KNZ286016630
 
-On Mon, 2013-05-20 at 20:08 -0300, Gustavo Padovan wrote:
-> Hi Shuah,
-> 
-> * Shuah Khan <shuah.kh@samsung.com> [2013-04-29 15:45:34 +0000]:
-> 
-> > Add missing reset_resume dev_pm_ops. Missing reset_resume results in the
-> > following message after power management device test. This change sets
-> > reset_resume to btusb_resume().
-> > 
-> > [ 2506.936134] btusb 1-1.5:1.0: no reset_resume for driver btusb?
-> > [ 2506.936137] btusb 1-1.5:1.1: no reset_resume for driver btusb?
-> > 
-> > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> > ---
-> >  drivers/bluetooth/btusb.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> 
-> This patch needs rebase on latest bluetooth-next. It doesn't apply anymore.
-> Please re-send it.
-> 
-> 	Gustavo
+On 05/20/2013 07:06 PM, Greg Kroah-Hartman wrote:
+> On Mon, May 20, 2013 at 05:44:00PM -0400, Peter Hurley wrote:
+>> On 05/20/2013 03:34 PM, Greg Kroah-Hartman wrote:
+>>> On Tue, Apr 16, 2013 at 06:15:51AM -0400, Peter Hurley wrote:
+>>>> Just as the tty pair must be locked in a stable sequence
+>>>> (ie, independent of which is consider the 'other' tty), so must
+>>>> the ldisc pair be locked in a stable sequence as well.
+>>>>
+>>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>>> ---
+>>>>   drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>   1 file changed, 87 insertions(+)
+>>>
+>>> This patch breaks the build :(
+>>
+>> Sorry about that.
+>>
+>>> I've taken the first one, care to mush this one with the 7/7 patch, so
+>>> there are no build breaks, and resend the 5 resulting patches so I can
+>>> apply these?
+>>
+>> Maybe it would be better to reorder 7/7 to be 1/6, if that's ok?
+>> More work for me but the history will be cleaner.
+>
+> Sure, that works for me as well, care to just resend them?  Or, I can
+> dig them out of my archive if needed.
 
-Hi Gustavo,
+I'll resend them because the rebase will require some re-editing.
 
-Yes. I will rebase and resend it you shortly.
+Thanks,
+Peter
 
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group 
-Samsung Research America (Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
