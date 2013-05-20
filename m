@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab3ETLAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:00:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56362 "EHLO
+	id S1756649Ab3ETLAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:00:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56372 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756556Ab3ETKxv (ORCPT
+	with ESMTP id S1756528Ab3ETKxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:51 -0400
+	Mon, 20 May 2013 06:53:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/115] bridge: fix race with topology change timer
-Date: Mon, 20 May 2013 11:51:31 +0100
-Message-Id: <1369047116-9378-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 093/115] 3c59x: fix freeing nonexistent resource on driver unload
+Date: Mon, 20 May 2013 11:51:33 +0100
+Message-Id: <1369047116-9378-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 83401eb4990ff6af55aeed8f49681558544192e6 upstream.
+commit c81400be716aa4c76f6ebf339ba94358dbbf6da6 upstream.
 
-A bridge should only send topology change notice if it is not
-the root bridge. It is possible for message age timer to elect itself
-as a new root bridge, and still have a topology change timer running
-but waiting for bridge lock on other CPU.
+When unloading the driver that drives an EISA board, a message similar to the
+following one is displayed:
 
-Solve the race by checking if we are root bridge before continuing.
-This was the root cause of the cases where br_send_tcn_bpdu would OOPS.
+Trying to free nonexistent resource <0000000000013000-000000000001301f>
 
-Reported-by: JerryKang <jerry.kang@samsung.com>
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Then an user is unable to reload the driver because the resource it requested in
+the previous load hasn't been freed. This happens most probably due to a typo in
+vortex_eisa_remove() which calls release_region() with 'dev->base_addr'  instead
+of 'edev->base_addr'...
+
+Reported-by: Matthew Whitehead <tedheadster@gmail.com>
+Tested-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/br_stp_timer.c | 2 +-
+ drivers/net/ethernet/3com/3c59x.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/bridge/br_stp_timer.c b/net/bridge/br_stp_timer.c
-index a6747e6..acc63a4 100644
---- a/net/bridge/br_stp_timer.c
-+++ b/net/bridge/br_stp_timer.c
-@@ -107,7 +107,7 @@ static void br_tcn_timer_expired(unsigned long arg)
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index e463d10..ccfc86f 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -951,7 +951,7 @@ static int __devexit vortex_eisa_remove(struct device *device)
  
- 	br_debug(br, "tcn timer expired\n");
- 	spin_lock(&br->lock);
--	if (br->dev->flags & IFF_UP) {
-+	if (!br_is_root_bridge(br) && (br->dev->flags & IFF_UP)) {
- 		br_transmit_tcn(br);
+ 	unregister_netdev(dev);
+ 	iowrite16(TotalReset|0x14, ioaddr + EL3_CMD);
+-	release_region(dev->base_addr, VORTEX_TOTAL_SIZE);
++	release_region(edev->base_addr, VORTEX_TOTAL_SIZE);
  
- 		mod_timer(&br->tcn_timer,jiffies + br->bridge_hello_time);
+ 	free_netdev(dev);
+ 	return 0;
 -- 
 1.8.1.2
 
