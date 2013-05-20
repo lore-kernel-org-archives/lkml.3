@@ -1,149 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab3ETKYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:24:17 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21189 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab3ETKYP (ORCPT
+	id S1754573Ab3ETKYi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:24:38 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:63547 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab3ETKYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:24:15 -0400
-X-IronPort-AV: E=Sophos;i="4.87,707,1363132800"; 
-   d="scan'208";a="24919010"
-Date: Mon, 20 May 2013 11:24:04 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yuval Shaia <yuval.shaia@oracle.com>,
-        Feng Jin <joe.jin@oracle.com>, Chien Yen <chien.yen@oracle.com>
-Subject: Re: [PATCH] xen: reuse the same pirq allocated when driver load
- first time
-In-Reply-To: <5195944A.3050608@oracle.com>
-Message-ID: <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
-References: <518A0A50.1020705@oracle.com> <20130510185339.GD2562@phenom.dumpdata.com> <alpine.DEB.2.02.1305131136020.4799@kaball.uk.xensource.com> <20130513140749.GQ6811@phenom.dumpdata.com> <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>
- <20130513161714.GC10401@phenom.dumpdata.com> <alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com> <20130513182055.GC14177@phenom.dumpdata.com> <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 20 May 2013 06:24:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <CAKohpomjuv6G6Qj2YLv=j=pjASx=6vAaUOzd6gJ-NA2PBhOZAg@mail.gmail.com>
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz>
+	<20130509125040.GF27333@pd.tnic>
+	<20130509125859.GG27333@pd.tnic>
+	<20130515184528.GO4442@linux.vnet.ibm.com>
+	<20130515224358.GF11783@pd.tnic>
+	<20130515235512.GT4442@linux.vnet.ibm.com>
+	<20130517135641.GF23035@pd.tnic>
+	<51999591.8030401@linux.vnet.ibm.com>
+	<20130520045023.GA12690@pd.tnic>
+	<CAFTL4hwm4Cox=ynVcO-oLG=Jt_1Lro+hbcpEE5hiAYEJGipaLA@mail.gmail.com>
+	<5199ED83.5040804@linux.vnet.ibm.com>
+	<CAKohpomjuv6G6Qj2YLv=j=pjASx=6vAaUOzd6gJ-NA2PBhOZAg@mail.gmail.com>
+Date: Mon, 20 May 2013 15:54:35 +0530
+Message-ID: <CAKohponAkh4ZHSp_NwCSK8B0bS_sh3ttUugDQwboo98p6unWnw@mail.gmail.com>
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
+ round 2
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 17 May 2013, Zhenzhong Duan wrote:
-> On 2013-05-15 17:41, Stefano Stabellini wrote:
-> > On Tue, 14 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Tue, May 14, 2013 at 02:49:50PM +0100, Stefano Stabellini wrote:
-> > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > On Mon, May 13, 2013 at 06:24:46PM +0100, Stefano Stabellini wrote:
-> > > > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > On Mon, May 13, 2013 at 03:50:52PM +0100, Stefano Stabellini
-> > > > > > > wrote:
-> > > > > > > > On Mon, 13 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > > > On Mon, May 13, 2013 at 12:06:43PM +0100, Stefano Stabellini
-> > > > > > > > > wrote:
-> > > > > > > > > > On Fri, 10 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > > > > > > > On Wed, May 08, 2013 at 04:18:24PM +0800, Zhenzhong Duan
-> > > > > > > > > > > wrote:
-> > > > > > > > > > > > When driver load and unload in a loop, pirq will exhaust
-> > > > > > > > > > > > finally.
-> > > > > > > > > > > > Try to use the same pirq which was already mapped and
-> > > > > > > > > > > > binded at first time
-> > > > > > > > > > > So what happens if I unload and reload two drivers in
-> > > > > > > > > > > random order?
-> > > > > > > > > > > 
-> > > > > > > > > > > > when driver loaded.
-> > > > > > > > > > > > 
-> > > > > > > > > > > > Read pirq from msix entry and test if data is
-> > > > > > > > > > > > XEN_PIRQ_MSI_DATA
-> > > > > > > > > > > > xen_irq_from_pirq(pirq) < 0 checking is wrong as irq
-> > > > > > > > > > > > will be freed
-> > > > > > > > > > > > when driver unload, it's always true in second load.
-> > > > > > > > > > > If my understanding is right the issue at hand is that the
-> > > > > > > > > > > caching
-> > > > > > > > > > > information about the pirq disappears once the driver has
-> > > > > > > > > > > been
-> > > > > > > > > > > unloaded b/c the event's irq-info is removed (as the
-> > > > > > > > > > > driver is
-> > > > > > > > > > > unloaded and free_irq is called).
-> > > > > > > > > > > 
-> > > > > > > > > > > Stefano,
-> > > > > > > > > > > Is there a specific write to the MSI structure that would
-> > > > > > > > > > > cause the
-> > > > > > > > > > > hypervisor to drop the PIRQ? Or a nice hypercall to "free"
-> > > > > > > > > > > an
-> > > > > > > > > > > PIRQ in usage?
-> > > > > > > > > > We already have a "free PIRQ" hypercall, it's called
-> > > > > > > > > > PHYSDEVOP_unmap_pirq and should be called by QEMU.
-> > > > > > > > > Considering that we call function that allocates
-> > > > > > > > > (PHYSDEVOP_get_free_pirq)
-> > > > > > > > > it in the Linux kernel (and not in QEMU), perhaps that should
-> > > > > > > > > be done in the
-> > > > > > > > > Linux kernel as part of xen_destroy_irq()? Or would that
-> > > > > > > > > confuse QEMU?
-> > > > > > > > I think it would confuse QEMU. It is probably better to let the
-> > > > > > > > unmap
-> > > > > > > > being handled by it.
-> > > > > > > > 
-> > > > > > > > 
-> > > > > > > > > It looks like QEMU only does that hypercall (via
-> > > > > > > > > xc_physdev_unmap_pirq)
-> > > > > > > > > unregister_real_device which is only called during pci unplug?
-> > > > > > > > You are right! I would think that this behaviour is erroneous
-> > > > > > > > unless it
-> > > > > > > > was done on purpose to avoid allocating MSIs twice.
-> > > > > > > > If that is the case we would need to do something similar in
-> > > > > > > > Linux too.
-> > > > > > > > 
-> > > > > > > > I think that the issue is the mismatch between QEMU's and
-> > > > > > > > Linux's
-> > > > > > > > behaviours: either both should be allocating MSIs once, or they
-> > > > > > > > should
-> > > > > > > > both be allocating and deallocating MSIs every time the driver
-> > > > > > > > is loaded
-> > > > > > > > and unloaded.
-> > > > > > > Right. But we also have the scenario that QEMU and Linux are going
-> > > > > > > to
-> > > > > > > be out of sync. So we need fixes in both places - I think.
-> > > > > > QEMU is the owner of the pirq, in fact it is the one that creates
-> > > > > > and
-> > > > > > destroys the mapping. I think that the right place to fix this
-> > > > > > problem
-> > > > > > is in QEMU, the ABI would be much cleaner as a result. As a side
-> > > > > > effect
-> > > > > > we don't need to make any changes in Linux.
-> > > > > You do. You need to remove the PHYSDEVOP_get_free_pirq call in that
-> > > > > case.
-> > > >   PHYSDEVOP_get_free_pirq needs to stay, because Linux needs to know the
-> > > > pirq that QEMU is going to use.
-> > > That looks like an API violation. We have an hypercall that
-> > > allocates the PIRQ in the Linux, then two hypercalls in the QEMU
-> > > layer - one to map, and the other to unmap and free.
-> > > 
-> > > > However I would let QEMU handle the mapping (it already does that in
-> > > > pt_msi_setup calling xc_physdev_map_pirq_msi) and unmapping (that is
-> > > > done by calling xc_domain_unbind_msi_irq from pt_msi_disable).
-> > > > I think the problem is that pt_msi_disable is only called on
-> > > > unregister_real_device and pt_reset_interrupt_and_io_mapping, not when
-> > > > the guest disables MSIs.
-> > > Sure, I am not disputing that. I think the fix in QEMU to call the
-> > > unmap is correct.
-> > > 
-> > > But I am also wondering whether it makes sense to do that in the Linux
-> > > kernel - as it does the alloc in the first place. Seems like a bit of
-> > > duct-tape has been used to connect this plumbing together.
-> > 
-> > I admit that it is not a great interface.
-> > I would be open to options that move the entire setup/freeing in Linux,
-> > but keep in mind that we need to retain the pirq code in QEMU for pure
-> > HVM guests.
-> Hi Stefano,
-> 
-> do you work out a patch for me to test?
+On 20 May 2013 15:10, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 20 May 2013 15:01, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> And Viresh, in the regular hotplug paths, the call to gov_cancel_work() is
+>> supposed to kill any pending workqueue functions pertaining to offline CPUs
+>> right?
+>
+> Yes.. It will cancel work for all cpus first and will start again for
+> online cpus again.
+>
+>> Could there be a synchronization bug somewhere due to which this
+>> might not be happening properly?
+>
+> Not sure.. I have seen mutex's are used well in cpufreq_governor.. don't know
+> if I missed something.
 
-I'll be traveling/busy for a few weeks, maybe it's best if someone else
-picks up this work item.
+Borislav,
+
+Can you try below change to see if the issue is still present? (Untested)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.c
+b/drivers/cpufreq/cpufreq_governor.c
+index 7532570..b9ae5f6 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -359,7 +359,9 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+                if (dbs_data->cdata->governor == GOV_CONSERVATIVE)
+                        cs_dbs_info->enable = 0;
+
++               mutex_lock(&cpu_cdbs->timer_mutex);
+                gov_cancel_work(dbs_data, policy);
++               mutex_unlock(&cpu_cdbs->timer_mutex);
+
+                mutex_lock(&dbs_data->mutex);
+                mutex_destroy(&cpu_cdbs->timer_mutex);
