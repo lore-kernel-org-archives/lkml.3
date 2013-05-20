@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab3ETQi3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:38:29 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:63270 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab3ETQi1 (ORCPT
+	id S1757497Ab3ETQix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:38:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45325 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab3ETQiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:38:27 -0400
-Message-ID: <519A517F.5020003@samsung.com>
-Date: Tue, 21 May 2013 01:38:23 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 20 May 2013 12:38:51 -0400
+Date: Mon, 20 May 2013 09:38:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jon Mason <jon.mason@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH 3.9-stable] ntb: off by one sanity checks
+Message-ID: <20130520163850.GA28172@kroah.com>
+References: <1368844538-3841-1-git-send-email-jhbird.choi@samsung.com>
+ <20130518144709.GA29066@jonmason-lab>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH 30/33] arch/arm/plat-samsung: don't check resource with
- devm_ioremap_resource
-References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de> <1368702961-4325-31-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1368702961-4325-31-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130518144709.GA29066@jonmason-lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/13 20:15, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->
-> Signed-off-by: Wolfram Sang<wsa@the-dreams.de>
+On Sat, May 18, 2013 at 07:47:09AM -0700, Jon Mason wrote:
+> On Sat, May 18, 2013 at 11:35:38AM +0900, Jonghwan Choi wrote:
+> > From: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > This patch looks like it should be in the 3.9-stable tree, should we apply
+> > it?
+> 
+> Yes, please do.  I'll respond to each of the patch series, but please
+> apply them all.  Also, one patch was omitted from these, titled 
+> NTB: variable dereferenced before check
+> 
+> Please include that patch in 3.9 stable as well.
 
-Looks good to me, applied into Samsung tree.
+Can you just send me the git commit ids of the patches you wish to see
+applied to the stable tree, and the order in which they need to go in?
 
-Wolfram, if you want to take this into your tree, let me know.
+Also, in the future, please tag the patches you want in the stable
+releases with the proper "Cc: Stable <stable@vger.kernel.org>" line in
+the signed-off-by: area of the patch, so I can pick it up automagically.
 
-Thanks.
+thanks,
 
-- Kukjin
-
-> ---
->   arch/arm/plat-samsung/adc.c |    5 -----
->   1 file changed, 5 deletions(-)
->
-> diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
-> index ca07cb1..79690f2 100644
-> --- a/arch/arm/plat-samsung/adc.c
-> +++ b/arch/arm/plat-samsung/adc.c
-> @@ -381,11 +381,6 @@ static int s3c_adc_probe(struct platform_device *pdev)
->   	}
->
->   	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!regs) {
-> -		dev_err(dev, "failed to find registers\n");
-> -		return -ENXIO;
-> -	}
-> -
->   	adc->regs = devm_ioremap_resource(dev, regs);
->   	if (IS_ERR(adc->regs))
->   		return PTR_ERR(adc->regs);
-
+greg k-h
