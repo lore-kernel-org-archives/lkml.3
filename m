@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab3ETK5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:57:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56418 "EHLO
+	id S1756751Ab3ETK6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:58:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56417 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616Ab3ETKyD (ORCPT
+	with ESMTP id S1756614Ab3ETKyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 06:54:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 102/115] ACPI / EC: Restart transaction even when the IBF flag set
-Date: Mon, 20 May 2013 11:51:42 +0100
-Message-Id: <1369047116-9378-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 098/115] xfrm6: release dev before returning error
+Date: Mon, 20 May 2013 11:51:38 +0100
+Message-Id: <1369047116-9378-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Cong Wang <amwang@redhat.com>
 
-commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
+commit 84c4a9dfbf430861e7588d95ae3ff61535dca351 upstream.
 
-The EC driver works abnormally with IBF flag always set.
-IBF means "The host has written a byte of data to the command
-or data port, but the embedded controller has not yet read it".
-If IBF is set in the EC status and not cleared, this will cause
-all subsequent EC requests to fail with a timeout error.
+We forget to call dev_put() on error path in xfrm6_fill_dst(),
+its caller doesn't handle this.
 
-Change the EC driver so that it doesn't refuse to restart a
-transaction if IBF is set in the status.  Also increase the
-number of transaction restarts to 5, as it turns out that 2
-is not sufficient in some cases.
-
-This bug happens on several different machines (Asus V1S,
-Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
-Sony Vaio SR19VN and others).
-
-[rjw: Changelog]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
-References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
-References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
-References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[ luis: adjust context ]
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/ec.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/ipv6/xfrm6_policy.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index a51df96..f9914e5 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -217,7 +217,7 @@ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- static int ec_poll(struct acpi_ec *ec)
- {
- 	unsigned long flags;
--	int repeat = 2; /* number of command restarts */
-+	int repeat = 5; /* number of command restarts */
- 	while (repeat--) {
- 		unsigned long delay = jiffies +
- 			msecs_to_jiffies(ec_delay);
-@@ -235,8 +235,6 @@ static int ec_poll(struct acpi_ec *ec)
- 			}
- 			advance_transaction(ec, acpi_ec_read_status(ec));
- 		} while (time_before(jiffies, delay));
--		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
--			break;
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
- 		spin_lock_irqsave(&ec->curr_lock, flags);
- 		start_transaction(ec);
+diff --git a/net/ipv6/xfrm6_policy.c b/net/ipv6/xfrm6_policy.c
+index 8625fba..1cfb9a4 100644
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -96,8 +96,10 @@ static int xfrm6_fill_dst(struct xfrm_dst *xdst, struct net_device *dev,
+ 	dev_hold(dev);
+ 
+ 	xdst->u.rt6.rt6i_idev = in6_dev_get(dev);
+-	if (!xdst->u.rt6.rt6i_idev)
++	if (!xdst->u.rt6.rt6i_idev) {
++		dev_put(dev);
+ 		return -ENODEV;
++	}
+ 
+ 	xdst->u.rt6.rt6i_peer = rt->rt6i_peer;
+ 	if (rt->rt6i_peer)
 -- 
 1.8.1.2
 
