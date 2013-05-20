@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab3ETJOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:14:39 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13332 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996Ab3ETJOi (ORCPT
+	id S1754197Ab3ETJQS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:16:18 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:56005 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab3ETJQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:14:38 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-CC: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>,
-        Glauber Costa <glommer@openvz.org>, Dave Chinner <dchinner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] mm: vmscan: add BUG_ON on illegal return values from scan_objects
-Date: Mon, 20 May 2013 11:14:27 +0200
-Message-ID: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 20 May 2013 05:16:17 -0400
+Date: Mon, 20 May 2013 02:16:14 -0700 (PDT)
+Message-Id: <20130520.021614.1748558994745374855.davem@davemloft.net>
+To: joe@perches.com
+Cc: eliezer.tamir@linux.intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+        donanld.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH v2 net-next 1/4] net: implement support for low latency
+ socket polling
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369038587.2143.12.camel@joe-AO722>
+References: <20130519102533.12527.12991.stgit@ladj378.jer.intel.com>
+	<20130520.005447.972811583292360876.davem@davemloft.net>
+	<1369038587.2143.12.camel@joe-AO722>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 20 May 2013 02:16:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a BUG_ON to catch any illegal value from the shrinkers. This fixes a
-potential bug if scan_objects returns a negative other than -1, which
-would lead to undefined behaviour.
+From: Joe Perches <joe@perches.com>
+Date: Mon, 20 May 2013 01:29:47 -0700
 
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- mm/vmscan.c | 1 +
- 1 file changed, 1 insertion(+)
+> On Mon, 2013-05-20 at 00:54 -0700, David Miller wrote:
+>> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> []
+>> >  {
+>> >       struct socket *sock;
+>> > +     unsigned int poll_result;
+>> 
+>> Please order local variable declarations from longest line to
+>> shortest line.
+> 
+> reverse christmas tree doesn't seem especially valuable or
+> sensible for automatics.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6bac41e..fbe6742 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -293,6 +293,7 @@ shrink_slab_one(struct shrinker *shrinker, struct shrink_control *shrinkctl,
- 		ret = shrinker->scan_objects(shrinker, shrinkctl);
- 		if (ret == -1)
- 			break;
-+		BUG_ON(ret < -1);
- 		freed += ret;
- 
- 		count_vm_events(SLABS_SCANNED, nr_to_scan);
--- 
-1.8.1.5
-
+It looks nicer to the eyes and provides a predictable pattern
+to look at.
