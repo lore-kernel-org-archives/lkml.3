@@ -1,76 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab3ETEk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 00:40:58 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:45615 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab3ETEk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 00:40:56 -0400
+	id S1752059Ab3ETEm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 00:42:28 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:30232 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750798Ab3ETEm1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 00:42:27 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015I1447Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
+From: Mehresh Ramneek-B31383 <B31383@freescale.com>
+To: Liu Shengzhou-B36685 <B36685@freescale.com>,
+        Michael Braun <michael.braun@fem.tu-ilmenau.de>
+CC: "projekt-wlan@fem.tu-ilmenau.de" <projekt-wlan@fem.tu-ilmenau.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Topic: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Index: AQHOVKTSiXz81n6B2US5GiElb3ltIJkNbU8AgAAP+IA=
+Date: Mon, 20 May 2013 04:43:00 +0000
+Message-ID: <75A6930FC6B2FE479E2BC468C9240CE0D7C3A9@039-SN1MPN1-005.039d.mgd.msft.net>
+References: <20130417100809.GA8855@dynamic.fami-braun.de>
+ <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
+ <751900163975fc8d055bd2414c76d59b@fami-braun.de>
+ <20130519152230.GA2938@dynamic.fami-braun.de>
+ <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
+In-Reply-To: <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.134.130]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAKohponBfXsy21RTik+jWMukL_VnDNXOL7xmj4sEBF3HEBXqpQ@mail.gmail.com>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-	<CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
-	<CAKohpokpiw3zS32oDL+T09ToOQxc28w=2R2up5T3h3c2Agc0wg@mail.gmail.com>
-	<CAKohpo=SFauMyczEnxO_p_KQVQeznL+0V-FmLDtGmzL1Uv2iuA@mail.gmail.com>
-	<CAKohponBfXsy21RTik+jWMukL_VnDNXOL7xmj4sEBF3HEBXqpQ@mail.gmail.com>
-Date: Mon, 20 May 2013 10:10:56 +0530
-Message-ID: <CAKohpo=DoWB+E-bgWCUVec5Y8wsfEu0V43Pg5mHzqep8yn0_JA@mail.gmail.com>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        deepthi@linux.vnet.ibm.com
-Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 May 2013 11:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 22 April 2013 12:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 9 April 2013 14:05, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> On 5 April 2013 12:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>> On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>>> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
->>>>>
->>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>>> Cc: Paul Mackerras <paulus@samba.org>
->>>>> Cc: Olof Johansson <olof@lixom.net>
->>>>> Cc: linuxppc-dev@lists.ozlabs.org
->>>>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>>>> ---
->>>>> Compile Tested only.
->>>>>
->>>>>  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
->>>>>  arch/powerpc/platforms/pasemi/Makefile             |  1 -
->>>>>  arch/powerpc/platforms/powermac/Makefile           |  2 --
->>>>>  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
->>>>>  drivers/cpufreq/Makefile                           |  3 +++
->>>>>  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
->>>>>  .../cpufreq/pmac32-cpufreq.c                       |  0
->>>>>  .../cpufreq/pmac64-cpufreq.c                       |  0
->>>>>  8 files changed, 29 insertions(+), 34 deletions(-)
->>>>>  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->>>>>  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->>>>>  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
->>>>
->>>> Hi Deepthi,
->>>>
->>>> Can you help testing this please?
->>>
->>> Ping!!
->>
->> Ping!!
->
-> Hi Benjamin,
->
-> Hope you are back from your vacations. Can you give it a try now?
+Hi Shengzhou/Braun,
 
-Ping!!
+We changed the controller init sequence to make this work. I'll submit the patch upstream soon.
+
+Regards,
+Ramneek
+
+-----Original Message-----
+From: Liu Shengzhou-B36685 
+Sent: Monday, May 20, 2013 9:07 AM
+To: Michael Braun; Mehresh Ramneek-B31383
+Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux-usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
+Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with Freescale P1020
+
+Hi Braun,
+
+At that time I had an P4080DS board which had the same issue and had been fixed with this patch.
+I didn't test it on P1020 due to the absence of P1020. I think P1020 will need a new patch besides this one.
+Later Ramneek took this issue on P1020 for more investigation.
+
+Hello Ramneek, any update for the PHY_CLK_VALID issue?
+
+Regards,
+Shengzhou
+
+
+> -----Original Message-----
+> From: Michael Braun [mailto:michael.braun@fem.tu-ilmenau.de]
+> Sent: Sunday, May 19, 2013 11:23 PM
+> To: Liu Shengzhou-B36685
+> Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux- 
+> usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
+> Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 
+> with Freescale P1020
+> 
+> Hi,
+> 
+> I've got hardware here to test with, so if there any changes to test, 
+> I'm willing to support.
+> Meanwhile, might it be a good idea to make that check optional - i.e. 
+> add a module parameter or something like this around it?
+> 
+> Regards,
+>  M. Braun
+> 
+> On Thu, Apr 18, 2013 at 05:13:39PM +0200, michael-dev wrote:
+> > Hi,
+> >
+> > thanks for the quick reply.
+> >
+> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> > I applied it, but it does not make any difference on my platform.
+> >
+> > Regards,
+> >  M. Braun
+> >
+> > Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
+> > >Hi Braun,
+> > >
+> > >It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit 
+> > >unstable, introduced by patch "EHCI: centralize controller 
+> > >initialization".
+> > >I submitted a patch to fix it.
+> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> > >
+> > >Regards,
+> > >Shengzhou
+> > >
+> > >
+> > >>-----Original Message-----
+> > >>From: Michael Braun [mailto:michael-dev@fami-braun.de]
+> > >>Sent: Wednesday, April 17, 2013 6:08 PM
+> > >>To: Liu Shengzhou-B36685
+> > >>Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg 
+> > >>Kroah-Hartman; linux-usb@vger.kernel.org; 
+> > >>linux-kernel@vger.kernel.org
+> > >>Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 
+> > >>with Freescale P1020
+> > >>
+> > >>Hi,
+> > >>
+> > >>I'm running OpenWRT Kernel 3.8.3 (which already has 
+> > >>f66dea709cd9309b2ee9f715697818001fb518de and
+> > >>5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN 
+> > >>(QorlQ,
+> > >>PPC) device.
+> > >>Before updating the kernel from 3.3.0, USB host support was 
+> > >>working fine.
+> > >>Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and 
+> > >>the lsusb output is empty, so USB host support is not working. 
+> > >>When I apply the following patch, USB host support starts working 
+> > >>again, so I guess
+> > >>3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+> > >>Do you have an idea how to fix it more appropriately?
+> > >>
+> > >>Thanks,
+> > >>  M. Braun
+> > >>
+> > >>--- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
+> > >>+0200
+> > >>+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
+> > >>+0200
+> > >>@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
+> > >>                 if (!spin_event_timeout(in_be32(non_ehci +
+> > >>FSL_SOC_USB_CTRL) &
+> > >>                                 PHY_CLK_VALID, 
+> > >>FSL_USB_PHY_CLK_TIMEOUT,
+> > >>0)) {
+> > >>                         printk(KERN_WARNING "fsl-ehci: USB PHY 
+> > >>clock invalid\n");
+> > >>-                       return -EINVAL;
+> > >>                 }
+> > >>         }
+> > >>
+
+
