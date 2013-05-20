@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab3ETPDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:03:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49620 "EHLO mx2.suse.de"
+	id S1756993Ab3ETPIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:08:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54455 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab3ETPDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:03:31 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
-	<fernando@oss.ntt.co.jp>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, x86@kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Revert "x86-64, init: Do not set NX bits on non-NX capable hardware"
-Date: Mon, 20 May 2013 17:03:12 +0200
-Message-Id: <1369062192-7066-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130514160108.GA5055@dhcp22.suse.cz>
-References: <20130514160108.GA5055@dhcp22.suse.cz>
+	id S1756158Ab3ETPIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:08:12 -0400
+Date: Mon, 20 May 2013 17:08:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
+ native_smp_send_reschedule, round 2
+Message-ID: <20130520150809.GG12690@pd.tnic>
+References: <20130520064727.GD12690@pd.tnic>
+ <5199C990.3020602@linux.vnet.ibm.com>
+ <5199CB59.1020309@linux.vnet.ibm.com>
+ <CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com>
+ <5199CFD0.9030101@linux.vnet.ibm.com>
+ <5199E54D.7030407@linux.vnet.ibm.com>
+ <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com>
+ <5199EBB5.7060209@linux.vnet.ibm.com>
+ <20130520132355.GF12690@pd.tnic>
+ <CAKohpokEdnmR4wsAqZgxnLOd5MAn6RNEFYwJQ8Xv1EdRbX1tkQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAKohpokEdnmR4wsAqZgxnLOd5MAn6RNEFYwJQ8Xv1EdRbX1tkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 78d77df71510a96e042de7ba6dbd7998103642cb because
-it breaks resume from suspend to ram. Git bisect pointed to this patch
-and the revert fixes the problem.
+On Mon, May 20, 2013 at 07:13:08PM +0530, Viresh Kumar wrote:
+> Hmm, so for sure there is some locking issue there. ave you tried my
+> Hpatch?
 
-There are no error messages neither during suspend not on resume when
-the machine simply starts booting as if it wasn't suspended in RAM at
-all.
+No, not yet. Pretty busy ATM. Btw, you could try reproducing it too, in
+the meantime - simply enable
 
-References: https://lkml.org/lkml/2013/5/14/398
-Cc: stable@vger.kernel.org # 3.9
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- arch/x86/kernel/head64.c  |    3 +--
- arch/x86/kernel/head_64.S |    1 -
- 2 files changed, 1 insertion(+), 3 deletions(-)
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_NO_HZ_IDLE is not set
+CONFIG_NO_HZ_FULL=y
+CONFIG_NO_HZ_FULL_ALL=y
+CONFIG_NO_HZ=y
+CONFIG_RCU_FAST_NO_HZ=y
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index dab95a8..101ac1a9 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -34,7 +34,6 @@
- extern pgd_t early_level4_pgt[PTRS_PER_PGD];
- extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
- static unsigned int __initdata next_early_pgt = 2;
--pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
- 
- /* Wipe all early page tables except for the kernel symbol map */
- static void __init reset_early_page_tables(void)
-@@ -100,7 +99,7 @@ again:
- 			pmd_p[i] = 0;
- 		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
- 	}
--	pmd = (physaddr & PMD_MASK) + early_pmd_flags;
-+	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
- 	pmd_p[pmd_index(address)] = pmd;
- 
- 	return 0;
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 08f7e80..6859e96 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -200,7 +200,6 @@ ENTRY(secondary_startup_64)
- 	btl	$20,%edi		/* No Execute supported? */
- 	jnc     1f
- 	btsl	$_EFER_NX, %eax
--	btsq	$_PAGE_BIT_NX,early_pmd_flags(%rip)
- 1:	wrmsr				/* Make changes effective */
- 
- 	/* Setup cr0 */
+and halt the box. I don't know whether !x86 boxen support NO_HZ_FULL yet
+though.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
