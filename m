@@ -1,36 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3ETPvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:51:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9852 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab3ETPvO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:51:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,707,1363158000"; 
-   d="scan'208";a="337074544"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eduardo Valentin" <eduardo.valentin@ti.com>,
-        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: RE: [PATCH 1/3] Thermal: core: Ask .get_trip_temp() to register
- thermal zone device.
-Thread-Topic: [PATCH 1/3] Thermal: core: Ask .get_trip_temp() to register
- thermal zone device.
-Thread-Index: AQHOU60xTwmQ0mr0IEud3GqBv44jgpkOPERw
-Date: Mon, 20 May 2013 15:51:10 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B909263011023E6@SHSMSX101.ccr.corp.intel.com>
-References: <1368870627-1143-1-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1368870627-1143-1-git-send-email-jonghwa3.lee@samsung.com>
+	id S1757271Ab3ETPvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:51:24 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.202]:53041 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757154Ab3ETPvU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:51:20 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-131.messagelabs.com!1369065073!25919344!12
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 20 May 2013 10:49:00 -0500
+Subject: RE: [PATCH 1/7] input: ep93xx_keypad: Pass correct pointer to
+ free_irq()
+Thread-Topic: [PATCH 1/7] input: ep93xx_keypad: Pass correct pointer to
+ free_irq()
+Thread-Index: Ac5VaZUXSeFrpYn2RX+6d5ye+vrcggAB8VtQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DA656F56D@AUSP01VMBX24.collaborationhost.net>
+References: <1369061486-28226-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1369061486-28226-1-git-send-email-lars@metafoo.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -38,48 +39,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, May 20, 2013 7:51 AM, Lars-Peter Clausen wrote:
+> free_irq() expects the same pointer that was passed to request_irq(), otherwise
+> the IRQ is not freed.
 
+<snip>
 
-> -----Original Message-----
-> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
-> Sent: Saturday, May 18, 2013 5:50 PM
-> To: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Zhang, Rui; Eduardo Valentin; Amit
-> Dinel Kachhap; Jonghwa Lee; MyungJoo Ham
-> Subject: [PATCH 1/3] Thermal: core: Ask .get_trip_temp() to register
-> thermal zone device.
-> Importance: High
-> 
-> This patch adds a requirement needing .get_trip_temp() callback
-> function for registering thermal zone device. This function is used
-> when thermal zone is updated and essential where thermal core handles
-> thermal trip based only polling way not hw interrupt.
-> 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-Applied to thermal -next.
+> Cc: H Hartley Sweeten <hartleys@visionengravers.com>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  drivers/input/keyboard/ep93xx_keypad.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
 Thanks,
-rui
-> ---
->  drivers/thermal/thermal_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/thermal_core.c
-> b/drivers/thermal/thermal_core.c index d755440..f753f48 100644
-> --- a/drivers/thermal/thermal_core.c
-> +++ b/drivers/thermal/thermal_core.c
-> @@ -1624,7 +1624,7 @@ struct thermal_zone_device
-> *thermal_zone_device_register(const char *type,
->  	if (!ops || !ops->get_temp)
->  		return ERR_PTR(-EINVAL);
-> 
-> -	if (trips > 0 && !ops->get_trip_type)
-> +	if (trips > 0 && (!ops->get_trip_type || !ops->get_trip_temp))
->  		return ERR_PTR(-EINVAL);
-> 
->  	tz = kzalloc(sizeof(struct thermal_zone_device), GFP_KERNEL);
-> --
-> 1.7.9.5
+
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
