@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3ETM01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 08:26:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54330 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab3ETM00 (ORCPT
+	id S1755794Ab3ETM2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 08:28:42 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:56039 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab3ETM2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 08:26:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [RFC PATCHv3 3/6] clk: Add TI-Nspire clock drivers
-Date: Mon, 20 May 2013 14:26:30 +0200
-Message-ID: <4603632.xLpXUpmrfP@wuerfel>
-User-Agent: KMail/4.10.2 (Linux/3.8.0-17-generic; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <C574C0B3-194E-451A-8584-A351D85C5792@gmail.com>
-References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <201305192148.46398.arnd@arndb.de> <C574C0B3-194E-451A-8584-A351D85C5792@gmail.com>
+	Mon, 20 May 2013 08:28:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:nUvrCxbcAj/2021xrRm+7WL9YvC+8gH1Atn9kkxOUUx
- /bkdwpW+8AgRo43TTGrO0BkuOIRHIjlA8KwGMHL6yf0ejg1ARZ
- e5HDu+zKvYQ6McYx0PxQErk1pCK45xG5tFNH2+8ENl1ZKOFe52
- IoesFQMBPBIZ11G8Q6FgbIXaahpTThO4Uis/syX2xnpYFjoh8/
- wkWQU4XcEI76tFb4qcCfMS6R7PoJ6zjcr6L2eJ7TgfkRM7IMiZ
- 9RCnlCAmGP76E4JZY8FgM7D/dSKDNUnmpqwVcVfxf9yggx9t1Z
- rHCm4Vz046I1N85U+w5mmpsZWjjbDRyL9TPmqSjmw9PyL9Qcyh
- 6evixL7rYYsnp94KJzRk=
+In-Reply-To: <20130515091248.00002fe3@unknown>
+References: <1368586102-17661-1-git-send-email-yinghai@kernel.org>
+	<20130515091248.00002fe3@unknown>
+Date: Mon, 20 May 2013 15:28:39 +0300
+Message-ID: <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
+Subject: Re: [PATCH v2 6/7] PCI: Make sure VF's driver get attached after PF's
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Greg Rose <gregory.v.rose@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yan Burman <yanb@mellanox.com>, Sathya Perla <Sathya.Perla@emulex.com>,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 20 May 2013 21:19:33 Daniel Tang wrote:
-> On 20/05/2013, at 5:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Sunday 19 May 2013, Daniel Tang wrote:
-> >> If the vendors for the on-SOC components are unknown, should we just
-> >> leave the compatible strings as is (i.e. "nspire-XXX")?
-> > 
-> > In that case, I would use the name of the company that made the SoC.
-> > I believe someone mentioned it was made by LSI logic.
-> 
-> Yep, that's right. So "lsi,nspire-XXX" should be fine?
+On Wed, May 15, 2013 at 7:12 PM, Greg Rose <gregory.v.rose@intel.com> wrote:
 
-I wouldn't use that combination, since lsi did not make the nspire.
-For anything on the LSI chip, "lsi,zevio-XXX" would be correct,
-or maybe "lsi,zevio1020-XXX" for something specific to a particular
-SoC variant. For off-SoC parts, "ti,nspire-XXX" would be right,
-or "ti,nspire-cx-XXX" if you care about the model.
 
-	Arnd
+> I'm really not a fan of this.  Seems to me the tail is wagging the dog
+> here.  Fix the driver to work without a PF driver being present.
+
+Greg, Alex,
+
+As I wrote over the V1 thread, currently we can't go and patch mlx4 to
+use the sysfs API nor defer the call from within our probe function to
+enable sriov since  this requires some firmware change to allow
+enabling SRIOV after some  resources are initialized/provisioned.
+Hence the patch suggested here or any other patch we can agree on
+which will make sure that VF probing is done only once the PF is ready
+is preferred, I think.
+
+I wasn't sure to totally follow on the argument that things need to
+work when the PF is absent in the sense there's no driver instance
+around over which the PF is probed, if you can explain little better,
+that would help.
+
+Or.
