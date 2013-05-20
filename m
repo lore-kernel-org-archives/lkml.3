@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab3ETTpZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:45:25 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36905 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab3ETTpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:45:22 -0400
-Date: Mon, 20 May 2013 12:45:21 -0700 (PDT)
-Message-Id: <20130520.124521.830734947343814495.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: romieu@fr.zoreil.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        stefan.bader@canonical.com, hayeswang@realtek.com,
-        gregkh@linuxfoundation.org, ben@decadent.org.uk
-Subject: Re: [ 104/136 ] r8169: fix 8168evl frame padding.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1369078844.6828.124.camel@gandalf.local.home>
-References: <20130518021658.398536101@goodmis.org>
-	<20130518100224.GA20930@electric-eye.fr.zoreil.com>
-	<1369078844.6828.124.camel@gandalf.local.home>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 20 May 2013 12:45:21 -0700 (PDT)
+	id S1757944Ab3ETTre (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:47:34 -0400
+Received: from mout.gmx.net ([212.227.15.18]:50092 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756421Ab3ETTrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 15:47:33 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+twQVVDhKtvVZjV3/IJ3KVob8GIXLGKvAttGNsFc
+	RdWtBbe/BP6ybP
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Luciano Coelho <coelho@ti.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, Felipe Balbi <balbi@ti.com>,
+        Ido Yariv <ido@wizery.com>, Arik Nemtsov <arik@wizery.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] net/wireless/ti/wlcore/spi: Use module_spi_driver to register driver
+Date: Mon, 20 May 2013 21:52:40 +0200
+Message-Id: <1369079560-6101-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Mon, 20 May 2013 15:40:44 -0400
+Removing some boilerplate by using module_spi_driver instead of calling
+register and unregister in the otherwise empty init/exit functions
 
-> On Sat, 2013-05-18 at 12:02 +0200, Francois Romieu wrote:
->> Steven Rostedt <rostedt@goodmis.org> :
->> > 3.6.11.4 stable review patch.
->> > If anyone has any objections, please let me know.
->> 
->> You should postpone it until the fix for a regression it induces when
->> user enable Tx checksumming is merged.
->> 
-> 
-> What do you mean? This has already been incorporated into 3.2, 3.4, 3.8,
-> and 3.9 stable trees. Or has it just been recently found that this
-> introduces a regression?
-> 
-> I can pull this out for this release.
-> 
-> (this was upstream commit: e5195c1f31f399289347e043d6abf3ffa80f0005)
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/net/wireless/ti/wlcore/spi.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-This patch causes a new regression, which is only fixed in my 'net'
-tree at this time.
+diff --git a/drivers/net/wireless/ti/wlcore/spi.c b/drivers/net/wireless/ti/wlcore/spi.c
+index e264478..1b0cd98 100644
+--- a/drivers/net/wireless/ti/wlcore/spi.c
++++ b/drivers/net/wireless/ti/wlcore/spi.c
+@@ -434,19 +434,7 @@ static struct spi_driver wl1271_spi_driver = {
+ 	.remove		= wl1271_remove,
+ };
+ 
+-static int __init wl1271_init(void)
+-{
+-	return spi_register_driver(&wl1271_spi_driver);
+-}
+-
+-static void __exit wl1271_exit(void)
+-{
+-	spi_unregister_driver(&wl1271_spi_driver);
+-}
+-
+-module_init(wl1271_init);
+-module_exit(wl1271_exit);
+-
++module_spi_driver(wl1271_spi_driver);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Luciano Coelho <coelho@ti.com>");
+ MODULE_AUTHOR("Juuso Oikarinen <juuso.oikarinen@nokia.com>");
+-- 
+1.8.1.5
+
