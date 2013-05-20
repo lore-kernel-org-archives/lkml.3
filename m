@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab3ETTks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:40:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19556 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab3ETTkq (ORCPT
+	id S1757864Ab3ETTmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:42:22 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:28709 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab3ETTmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:40:46 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=iT4cs34EYqoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=8r7ovOuLwwQA:10 a=lFrOgUbu9s9JONRuDYAA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369078844.6828.124.camel@gandalf.local.home>
-Subject: Re: [ 104/136 ] r8169: fix 8168evl frame padding.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Stefan Bader <stefan.bader@canonical.com>,
-        hayeswang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Date: Mon, 20 May 2013 15:40:44 -0400
-In-Reply-To: <20130518100224.GA20930@electric-eye.fr.zoreil.com>
-References: <20130518021557.139113314@goodmis.org>
-	 <20130518021658.398536101@goodmis.org>
-	 <20130518100224.GA20930@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Mon, 20 May 2013 15:42:20 -0400
+Date: Mon, 20 May 2013 21:42:06 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video/matrox/matroxfb_maven: Use module_i2c_driver to
+ register driver
+Message-ID: <20130520214206.078bc580@endymion.delvare>
+In-Reply-To: <1369078578-3138-1-git-send-email-peterhuewe@gmx.de>
+References: <1369078578-3138-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-05-18 at 12:02 +0200, Francois Romieu wrote:
-> Steven Rostedt <rostedt@goodmis.org> :
-> > 3.6.11.4 stable review patch.
-> > If anyone has any objections, please let me know.
+On Mon, 20 May 2013 21:36:18 +0200, Peter Huewe wrote:
+> Removing some boilerplate by using module_i2c_driver instead of calling
+> register and unregister in the otherwise empty init/exit functions
 > 
-> You should postpone it until the fix for a regression it induces when
-> user enable Tx checksumming is merged.
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+>  drivers/video/matrox/matroxfb_maven.c | 13 +------------
+>  1 file changed, 1 insertion(+), 12 deletions(-)
 > 
+> diff --git a/drivers/video/matrox/matroxfb_maven.c b/drivers/video/matrox/matroxfb_maven.c
+> index 217678e..fd4b64e 100644
+> --- a/drivers/video/matrox/matroxfb_maven.c
+> +++ b/drivers/video/matrox/matroxfb_maven.c
+> @@ -1283,19 +1283,8 @@ static struct i2c_driver maven_driver={
+>  	.id_table	= maven_id,
+>  };
+>  
+> -static int __init matroxfb_maven_init(void)
+> -{
+> -	return i2c_add_driver(&maven_driver);
+> -}
+> -
+> -static void __exit matroxfb_maven_exit(void)
+> -{
+> -	i2c_del_driver(&maven_driver);
+> -}
+> -
+> +module_i2c_driver(maven_driver);
+>  MODULE_AUTHOR("(c) 1999-2002 Petr Vandrovec <vandrove@vc.cvut.cz>");
+>  MODULE_DESCRIPTION("Matrox G200/G400 Matrox MGA-TVO driver");
+>  MODULE_LICENSE("GPL");
+> -module_init(matroxfb_maven_init);
+> -module_exit(matroxfb_maven_exit);
+>  /* we do not have __setup() yet */
 
-What do you mean? This has already been incorporated into 3.2, 3.4, 3.8,
-and 3.9 stable trees. Or has it just been recently found that this
-introduces a regression?
+This last comment could certainly go away as well, AFAICT it's a now
+meaningless relic.
 
-I can pull this out for this release.
+Other than this:
 
-(this was upstream commit: e5195c1f31f399289347e043d6abf3ffa80f0005)
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
 
-Thanks,
-
--- Steve
-
-
+-- 
+Jean Delvare
