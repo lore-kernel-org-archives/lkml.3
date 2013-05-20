@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3ETKwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:52:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55932 "EHLO
+	id S1756216Ab3ETLXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:23:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56010 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab3ETKwN (ORCPT
+	with ESMTP id S1755450Ab3ETKwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:13 -0400
+	Mon, 20 May 2013 06:52:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Philip Rakity <prakity@yahoo.com>, Chris Ball <cjb@laptop.org>,
+Cc: Bryan Schumaker <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 005/115] mmc: core: Fix bit width test failing on old eMMC cards
-Date: Mon, 20 May 2013 11:50:05 +0100
-Message-Id: <1369047116-9378-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 020/115] nfsd: Decode and send 64bit time values
+Date: Mon, 20 May 2013 11:50:20 +0100
+Message-Id: <1369047116-9378-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philip Rakity <prakity@yahoo.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 836dc2fe89c968c10cada87e0dfae6626f8f9da3 upstream.
+commit bf8d909705e9d9bac31d9b8eac6734d2b51332a7 upstream.
 
-PARTITION_SUPPORT needs to be set before doing the compare on version
-number so the bit width test does not get invalid data.  Before this
-patch, a Sandisk iNAND eMMC card would detect 1-bit width although
-the hardware supports 4-bit.
+The seconds field of an nfstime4 structure is 64bit, but we are assuming
+that the first 32bits are zero-filled.  So if the client tries to set
+atime to a value before the epoch (touch -t 196001010101), then the
+server will save the wrong value on disk.
 
-Only affects old emmc devices - pre 4.4 devices.
-
-Reported-by: Elad Yi <elad.yi@gmail.com>
-Signed-off-by: Philip Rakity <prakity@yahoo.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/core/mmc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4xdr.c | 19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 4f4489a..bb9e81d 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -368,13 +368,13 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- 		ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT];
- 	card->ext_csd.raw_trim_mult =
- 		ext_csd[EXT_CSD_TRIM_MULT];
-+	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 	if (card->ext_csd.rev >= 4) {
- 		/*
- 		 * Enhanced area feature support -- check whether the eMMC
- 		 * card has the Enhanced area enabled.  If so, export enhanced
- 		 * area offset and size to user by adding sysfs interface.
- 		 */
--		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
- 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
- 			hc_erase_grp_sz =
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 4684514..b2ae2da 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -343,10 +343,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_atime.tv_sec);
++			READ64(iattr->ia_atime.tv_sec);
+ 			READ32(iattr->ia_atime.tv_nsec);
+ 			if (iattr->ia_atime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -369,10 +366,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 			   all 32 bits of 'nseconds'. */
+ 			READ_BUF(12);
+ 			len += 12;
+-			READ32(dummy32);
+-			if (dummy32)
+-				return nfserr_inval;
+-			READ32(iattr->ia_mtime.tv_sec);
++			READ64(iattr->ia_mtime.tv_sec);
+ 			READ32(iattr->ia_mtime.tv_nsec);
+ 			if (iattr->ia_mtime.tv_nsec >= (u32)1000000000)
+ 				return nfserr_inval;
+@@ -2397,8 +2391,7 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_ACCESS) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.atime.tv_sec);
++		WRITE64((s64)stat.atime.tv_sec);
+ 		WRITE32(stat.atime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_DELTA) {
+@@ -2411,15 +2404,13 @@ out_acl:
+ 	if (bmval1 & FATTR4_WORD1_TIME_METADATA) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.ctime.tv_sec);
++		WRITE64((s64)stat.ctime.tv_sec);
+ 		WRITE32(stat.ctime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_TIME_MODIFY) {
+ 		if ((buflen -= 12) < 0)
+ 			goto out_resource;
+-		WRITE32(0);
+-		WRITE32(stat.mtime.tv_sec);
++		WRITE64((s64)stat.mtime.tv_sec);
+ 		WRITE32(stat.mtime.tv_nsec);
+ 	}
+ 	if (bmval1 & FATTR4_WORD1_MOUNTED_ON_FILEID) {
 -- 
 1.8.1.2
 
