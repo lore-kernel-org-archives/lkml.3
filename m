@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3ETGs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 02:48:56 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:7627 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab3ETGsz (ORCPT
+	id S1753608Ab3ETGvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 02:51:08 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56483 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3ETGvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 02:48:55 -0400
-X-Spam-Score: -100.8
-Message-ID: <5199C725.8050102@asianux.com>
-Date: Mon, 20 May 2013 14:48:05 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, marc.zyngier@arm.com,
-        Tony Lindgren <tony@atomide.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm64: kernel: compiling issue, need 'EXPORT_SYMBOL_GPL(read_current_timer)'
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 20 May 2013 02:51:06 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] net/9p: Make 9P2000.L the default protocol for 9p file system
+Date: Mon, 20 May 2013 12:20:54 +0530
+Message-Id: <1369032655-22648-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.2
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052006-5564-0000-0000-000007FF8420
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with allmodconfig.
+If we dont' specify a protocol version default to 9P2000.L. 9P2000.L
+have better support for posix semantic and is where all the recent development
+is happening.
 
-The related error:
-  ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
-  ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
-  ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
-  ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/arm64/kernel/time.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/9p/client.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
-index a551f88..7fcba80 100644
---- a/arch/arm64/kernel/time.c
-+++ b/arch/arm64/kernel/time.c
-@@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
- 	*timer_value = arch_timer_read_counter();
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(read_current_timer);
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 8eb7542..812a4cd 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -127,7 +127,7 @@ static int parse_opts(char *opts, struct p9_client *clnt)
+ 	char *s;
+ 	int ret = 0;
  
- void __init time_init(void)
- {
+-	clnt->proto_version = p9_proto_2000u;
++	clnt->proto_version = p9_proto_2000L;
+ 	clnt->msize = 8192;
+ 
+ 	if (!opts)
 -- 
-1.7.7.6
+1.8.1.2
+
