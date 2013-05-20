@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3ETRKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:10:00 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:52892 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab3ETRJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:09:57 -0400
+	id S1755842Ab3ETRLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:11:34 -0400
+Received: from sauhun.de ([89.238.76.85]:60674 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754043Ab3ETRLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 13:11:33 -0400
+Date: Mon, 20 May 2013 19:13:07 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/33] drivers/pinctrl: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20130520171304.GA5797@katana>
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de>
+ <1368702961-4325-15-git-send-email-wsa@the-dreams.de>
+ <CACRpkda3NM0S_SSkm6aqyx=_i1GOFvJE6rCp29Wnmbo527itPQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1369031689-23189-1-git-send-email-ch.naveen@samsung.com>
-References: <1369031689-23189-1-git-send-email-ch.naveen@samsung.com>
-Date: Mon, 20 May 2013 10:09:55 -0700
-X-Google-Sender-Auth: Y6alZ14APWTHQZ9BWLChN-iZuCU
-Message-ID: <CAD=FV=Xppyb+Y0atygnwA8oBHmGHDx7Bit2fN12GX5Tt-Y9H1A@mail.gmail.com>
-Subject: Re: [PATCH] iio: exynos_adc: fix wrong structure extration in suspend
- and resume
-From: Doug Anderson <dianders@chromium.org>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkda3NM0S_SSkm6aqyx=_i1GOFvJE6rCp29Wnmbo527itPQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naveen,
+On Mon, May 20, 2013 at 01:39:28PM +0200, Linus Walleij wrote:
+> On Thu, May 16, 2013 at 1:15 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> 
+> > devm_ioremap_resource does sanity checks on the given resource. No need to
+> > duplicate this in the driver.
+> >
+> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> 
+> I think I have already applied this?
 
-On Sun, May 19, 2013 at 11:34 PM, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> The exynos_adc device structure was wrongly extracted from the dev*
-> correcting the same.
->
-> Using the regular conversion of
-> struct device* -> struct platform_device* -> struct exynos_adc* seems wrong.
-> Instead we should be doing
-> struct device* -> struct iio_dev* -> struct exynos_adc*
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
->  drivers/iio/adc/exynos_adc.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+Ah, you already applied the RFC? Shouldn't matter. Linus pulled this
+series meanwhile, too.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
