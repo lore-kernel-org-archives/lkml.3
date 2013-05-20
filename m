@@ -1,162 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab3ETEm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 00:42:28 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:30232 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798Ab3ETEm1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 00:42:27 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015I1447Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
-From: Mehresh Ramneek-B31383 <B31383@freescale.com>
-To: Liu Shengzhou-B36685 <B36685@freescale.com>,
-        Michael Braun <michael.braun@fem.tu-ilmenau.de>
-CC: "projekt-wlan@fem.tu-ilmenau.de" <projekt-wlan@fem.tu-ilmenau.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Thread-Topic: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Thread-Index: AQHOVKTSiXz81n6B2US5GiElb3ltIJkNbU8AgAAP+IA=
-Date: Mon, 20 May 2013 04:43:00 +0000
-Message-ID: <75A6930FC6B2FE479E2BC468C9240CE0D7C3A9@039-SN1MPN1-005.039d.mgd.msft.net>
-References: <20130417100809.GA8855@dynamic.fami-braun.de>
- <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
- <751900163975fc8d055bd2414c76d59b@fami-braun.de>
- <20130519152230.GA2938@dynamic.fami-braun.de>
- <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
-In-Reply-To: <3F453DDFF675A64A89321A1F352810219ECBD5@039-SN1MPN1-004.039d.mgd.msft.net>
+	id S1752583Ab3ETEpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 00:45:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59701 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab3ETEp2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 00:45:28 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "zonque@gmail.com" <zonque@gmail.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [v2, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+ am335x-evm
+Thread-Topic: [v2, 3/3] ARM: dts: AM33XX: Add NAND flash device tree data to
+ am335x-evm
+Thread-Index: AQHORK8kYV+CfdNudU6r5StSMMOqvpjtsT8AgA3N7ACAAM1UcIARUSiw
+Date: Mon, 20 May 2013 04:44:31 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73E9C5629@DBDE04.ent.ti.com>
+References: <ebfab3e9123b3e50b9a9678c1480191addd86d59.1359007746.git.avinashphilip@ti.com>
+ <517F5126.5000509@ti.com> <20130508235404.GX32546@atomide.com>
+ <20980858CB6D3A4BAE95CA194937D5E73E9C320D@DBDE04.ent.ti.com>
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9C320D@DBDE04.ent.ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.134.130]
+x-originating-ip: [172.24.170.142]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shengzhou/Braun,
-
-We changed the controller init sequence to make this work. I'll submit the patch upstream soon.
-
-Regards,
-Ramneek
-
------Original Message-----
-From: Liu Shengzhou-B36685 
-Sent: Monday, May 20, 2013 9:07 AM
-To: Michael Braun; Mehresh Ramneek-B31383
-Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux-usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
-Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with Freescale P1020
-
-Hi Braun,
-
-At that time I had an P4080DS board which had the same issue and had been fixed with this patch.
-I didn't test it on P1020 due to the absence of P1020. I think P1020 will need a new patch besides this one.
-Later Ramneek took this issue on P1020 for more investigation.
-
-Hello Ramneek, any update for the PHY_CLK_VALID issue?
-
-Regards,
-Shengzhou
-
-
-> -----Original Message-----
-> From: Michael Braun [mailto:michael.braun@fem.tu-ilmenau.de]
-> Sent: Sunday, May 19, 2013 11:23 PM
-> To: Liu Shengzhou-B36685
-> Cc: projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman; linux- 
-> usb@vger.kernel.org; Alan Stern; linux-kernel@vger.kernel.org
-> Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 
-> with Freescale P1020
-> 
-> Hi,
-> 
-> I've got hardware here to test with, so if there any changes to test, 
-> I'm willing to support.
-> Meanwhile, might it be a good idea to make that check optional - i.e. 
-> add a module parameter or something like this around it?
-> 
-> Regards,
->  M. Braun
-> 
-> On Thu, Apr 18, 2013 at 05:13:39PM +0200, michael-dev wrote:
-> > Hi,
-> >
-> > thanks for the quick reply.
-> >
-> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
-> > I applied it, but it does not make any difference on my platform.
-> >
-> > Regards,
-> >  M. Braun
-> >
-> > Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
-> > >Hi Braun,
+ 
+> > > >
+> > > >  	am33xx_pinmux: pinmux@44e10800 {
+> > > >  		pinctrl-names = "default";
+> > > > -		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0>;
+> > > > +		pinctrl-0 = <&matrix_keypad_s0 &volume_keys_s0
+> > > > +			&nandflash_pins_s0>;
 > > >
-> > >It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit 
-> > >unstable, introduced by patch "EHCI: centralize controller 
-> > >initialization".
-> > >I submitted a patch to fix it.
-> > >Please review the patch http://patchwork.ozlabs.org/patch/237201/
-> > >
-> > >Regards,
-> > >Shengzhou
-> > >
-> > >
-> > >>-----Original Message-----
-> > >>From: Michael Braun [mailto:michael-dev@fami-braun.de]
-> > >>Sent: Wednesday, April 17, 2013 6:08 PM
-> > >>To: Liu Shengzhou-B36685
-> > >>Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg 
-> > >>Kroah-Hartman; linux-usb@vger.kernel.org; 
-> > >>linux-kernel@vger.kernel.org
-> > >>Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 
-> > >>with Freescale P1020
-> > >>
-> > >>Hi,
-> > >>
-> > >>I'm running OpenWRT Kernel 3.8.3 (which already has 
-> > >>f66dea709cd9309b2ee9f715697818001fb518de and
-> > >>5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN 
-> > >>(QorlQ,
-> > >>PPC) device.
-> > >>Before updating the kernel from 3.3.0, USB host support was 
-> > >>working fine.
-> > >>Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and 
-> > >>the lsusb output is empty, so USB host support is not working. 
-> > >>When I apply the following patch, USB host support starts working 
-> > >>again, so I guess
-> > >>3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
-> > >>Do you have an idea how to fix it more appropriately?
-> > >>
-> > >>Thanks,
-> > >>  M. Braun
-> > >>
-> > >>--- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
-> > >>+0200
-> > >>+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
-> > >>+0200
-> > >>@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
-> > >>                 if (!spin_event_timeout(in_be32(non_ehci +
-> > >>FSL_SOC_USB_CTRL) &
-> > >>                                 PHY_CLK_VALID, 
-> > >>FSL_USB_PHY_CLK_TIMEOUT,
-> > >>0)) {
-> > >>                         printk(KERN_WARNING "fsl-ehci: USB PHY 
-> > >>clock invalid\n");
-> > >>-                       return -EINVAL;
-> > >>                 }
-> > >>         }
-> > >>
+> > > Why add this to the board level fallback (called pinctrl hogs, I think)?
+> > > This can be part of nand node you added below so that the pinctrl will
+> > > take effect when nand gets probed instead of all the time.
+> >
+> > Yes we should have all the pinctrl entries under the related drivers.
+> > This makes it easy remux pins during runtime if needed, and also
+> > allows unloading pinctrl-single.ko for development.
+> >
+> Yes, accepted. This has been already fixed in v3 of this patch set.
+> If all fine, then please pull this for next merge..
+> 
+> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046712.html
+> 
+> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046814.html
+> 
+> http://lists.infradead.org/pipermail/linux-mtd/2013-May/046710.html
+> 
+> 
+> with regards, pekon
 
+Request you to please accept | provide feedbacks on this patch series.
+These are waiting acceptance since Jan-2013, and are necessary for 
+DT based configs for board having NAND support.
 
+with regards, pekon
