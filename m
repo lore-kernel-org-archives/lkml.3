@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3ETLH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:07:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56228 "EHLO
+	id S1756279Ab3ETKxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:53:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56167 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab3ETKxW (ORCPT
+	with ESMTP id S1756122Ab3ETKxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:22 -0400
+	Mon, 20 May 2013 06:53:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Francois Romieu <romieu@fr.zoreil.com>, Hayes Wang <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 066/115] nfsd4: don't allow owner override on 4.1 CLAIM_FH opens
-Date: Mon, 20 May 2013 11:51:06 +0100
-Message-Id: <1369047116-9378-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 053/115] r8169: honor jumbo settings when chipset is requested to start.
+Date: Mon, 20 May 2013 11:50:53 +0100
+Message-Id: <1369047116-9378-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,68 +28,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: =?UTF-8?q?fran=C3=A7ois=20romieu?= <romieu@fr.zoreil.com>
 
-commit 9f415eb25574db4b73a9a712a4438e41dc284922 upstream.
+commit faf1e7857a1b87cd8baf48c3e962142e21ad417c upstream.
 
-The Linux client is using CLAIM_FH to implement regular opens, not just
-recovery cases, so it depends on the server to check permissions
-correctly.
+Some hardware start settings implicitely assume an usual 1500 bytes mtu
+that can't be guaranteed because changes of mtu may be requested both
+before and after the hardware is started.
 
-Therefore the owner override, which may make sense in the delegation
-recovery case, isn't right in the CLAIM_FH case.
-
-Symptoms: on a client with 49f9a0fafd844c32f2abada047c0b9a5ba0d6255
-"NFSv4.1: Enable open-by-filehandle", Bryan noticed this:
-
-	touch test.txt
-	chmod 000 test.txt
-	echo test > test.txt
-
-succeeding.
-
-Reported-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ luis: adjust context ]
+Reported-by: Tomi Orava <tomimo@ncircle.nullnet.fi>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4proc.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 7e97d93..372eece 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -270,6 +270,7 @@ static __be32
- do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
- {
- 	__be32 status;
-+	int accmode = 0;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 6c595f9..f250232 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -4574,8 +4574,10 @@ static void rtl_hw_start_8168bb(struct rtl8169_private *tp)
  
- 	/* We don't know the target directory, and therefore can not
- 	* set the change info
-@@ -283,9 +284,19 @@ do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_
+ 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
  
- 	open->op_truncate = (open->op_iattr.ia_valid & ATTR_SIZE) &&
- 		(open->op_iattr.ia_size == 0);
-+	/*
-+	 * In the delegation case, the client is telling us about an
-+	 * open that it *already* performed locally, some time ago.  We
-+	 * should let it succeed now if possible.
-+	 *
-+	 * In the case of a CLAIM_FH open, on the other hand, the client
-+	 * may be counting on us to enforce permissions (the Linux 4.1
-+	 * client uses this for normal opens, for example).
-+	 */
-+	if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEG_CUR_FH)
-+		accmode = NFSD_MAY_OWNER_OVERRIDE;
- 
--	status = do_open_permission(rqstp, current_fh, open,
--				    NFSD_MAY_OWNER_OVERRIDE);
-+	status = do_open_permission(rqstp, current_fh, open, accmode);
- 
- 	return status;
+-	rtl_tx_performance_tweak(pdev,
+-		(0x5 << MAX_READ_REQUEST_SHIFT) | PCI_EXP_DEVCTL_NOSNOOP_EN);
++	if (tp->dev->mtu <= ETH_DATA_LEN) {
++		rtl_tx_performance_tweak(pdev, (0x5 << MAX_READ_REQUEST_SHIFT) |
++					 PCI_EXP_DEVCTL_NOSNOOP_EN);
++	}
  }
+ 
+ static void rtl_hw_start_8168bef(struct rtl8169_private *tp)
+@@ -4598,7 +4600,8 @@ static void __rtl_hw_start_8168cp(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(Config3, RTL_R8(Config3) & ~Beacon_en);
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	rtl_disable_clock_request(pdev);
+ 
+@@ -4632,7 +4635,8 @@ static void rtl_hw_start_8168cp_2(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(Config3, RTL_R8(Config3) & ~Beacon_en);
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
+ }
+@@ -4651,7 +4655,8 @@ static void rtl_hw_start_8168cp_3(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, TxPacketMax);
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
+ }
+@@ -4712,7 +4717,8 @@ static void rtl_hw_start_8168d(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, TxPacketMax);
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	RTL_W16(CPlusCmd, RTL_R16(CPlusCmd) & ~R8168_CPCMD_QUIRK_MASK);
+ }
+@@ -4724,7 +4730,8 @@ static void rtl_hw_start_8168dp(struct rtl8169_private *tp)
+ 
+ 	rtl_csi_access_enable_1(tp);
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	RTL_W8(MaxTxPacketSize, TxPacketMax);
+ 
+@@ -4783,7 +4790,8 @@ static void rtl_hw_start_8168e_1(struct rtl8169_private *tp)
+ 
+ 	rtl_ephy_init(ioaddr, e_info_8168e_1, ARRAY_SIZE(e_info_8168e_1));
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	RTL_W8(MaxTxPacketSize, TxPacketMax);
+ 
+@@ -4809,7 +4817,8 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 
+ 	rtl_ephy_init(ioaddr, e_info_8168e_2, ARRAY_SIZE(e_info_8168e_2));
+ 
+-	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++	if (tp->dev->mtu <= ETH_DATA_LEN)
++		rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+ 	rtl_eri_write(ioaddr, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(ioaddr, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
 -- 
 1.8.1.2
 
