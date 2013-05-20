@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3ETLTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:19:46 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58994 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab3ETLTo (ORCPT
+	id S1755664Ab3ETKwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:52:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55942 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab3ETKwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 07:19:44 -0400
-Content-Type: text/plain; charset=iso-8859-1
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [RFC PATCHv3 3/6] clk: Add TI-Nspire clock drivers
-From: Daniel Tang <dt.tangr@gmail.com>
-In-Reply-To: <201305192148.46398.arnd@arndb.de>
-Date: Mon, 20 May 2013 21:19:33 +1000
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <C574C0B3-194E-451A-8584-A351D85C5792@gmail.com>
-References: <1368332581-94691-1-git-send-email-dt.tangr@gmail.com> <201305161417.28133.arnd@arndb.de> <F8915E01-0FCA-4C9F-8440-63B5A73B349B@gmail.com> <201305192148.46398.arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.1503)
+	Mon, 20 May 2013 06:52:15 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 007/115] mfd: adp5520: Restore mode bits on resume
+Date: Mon, 20 May 2013 11:50:07 +0100
+Message-Id: <1369047116-9378-8-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
+References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.13 -stable review patch.  If anyone has any objections, please let me know.
 
-On 20/05/2013, at 5:48 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+------------------
 
-> On Sunday 19 May 2013, Daniel Tang wrote:
->> If the vendors for the on-SOC components are unknown, should we just
->> leave the compatible strings as is (i.e. "nspire-XXX")?
-> 
-> In that case, I would use the name of the company that made the SoC.
-> I believe someone mentioned it was made by LSI logic.
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Yep, that's right. So "lsi,nspire-XXX" should be fine?
+commit c6cc25fda58da8685ecef3f179adc7b99c8253b2 upstream.
 
-> 
-> 	Arnd
+The adp5520 unfortunately also clears the BL_EN bit when the nSTNDBY bit is
+cleared. So we need to make sure to restore it during resume if it was set
+before suspend.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/mfd/adp5520.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
+index 8d816cc..105f820 100644
+--- a/drivers/mfd/adp5520.c
++++ b/drivers/mfd/adp5520.c
+@@ -36,6 +36,7 @@ struct adp5520_chip {
+ 	struct blocking_notifier_head notifier_list;
+ 	int irq;
+ 	unsigned long id;
++	uint8_t mode;
+ };
+ 
+ static int __adp5520_read(struct i2c_client *client,
+@@ -326,7 +327,10 @@ static int adp5520_suspend(struct device *dev)
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_clr_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_read(chip->dev, ADP5520_MODE_STATUS, &chip->mode);
++	/* All other bits are W1C */
++	chip->mode &= ADP5520_BL_EN | ADP5520_DIM_EN | ADP5520_nSTNBY;
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, 0);
+ 	return 0;
+ }
+ 
+@@ -335,7 +339,7 @@ static int adp5520_resume(struct device *dev)
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct adp5520_chip *chip = dev_get_drvdata(&client->dev);
+ 
+-	adp5520_set_bits(chip->dev, ADP5520_MODE_STATUS, ADP5520_nSTNBY);
++	adp5520_write(chip->dev, ADP5520_MODE_STATUS, chip->mode);
+ 	return 0;
+ }
+ #endif
+-- 
+1.8.1.2
 
