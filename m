@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab3ETPln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:41:43 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:1068
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756276Ab3ETPli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:41:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MN3SX2-02-5DP-02
-X-M-MSG: 
-Message-ID: <519A4429.30405@amd.com>
-Date: Mon, 20 May 2013 10:41:29 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1756397Ab3ETPmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:42:38 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:50303 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab3ETPmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:42:36 -0400
+Date: Mon, 20 May 2013 10:42:25 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 2/4] zbud: add to mm/
+Message-ID: <20130520154225.GA25536@cerebellum>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130517154837.GN11497@suse.de>
+ <20130519205219.GA3252@cerebellum>
+ <20130520135439.GR11497@suse.de>
 MIME-Version: 1.0
-To: <suravee.suthikulpanit@amd.com>
-CC: <linux-kernel@vger.kernel.org>, <a.p.zijlstra@chello.nl>,
-        <mingo@redhat.com>, <iommu@lists.linux-foundation.org>,
-        <joro@8bytes.org>
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130520135439.GR11497@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052015-5806-0000-0000-00002139C946
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Mon, May 20, 2013 at 02:54:39PM +0100, Mel Gorman wrote:
+> On Sun, May 19, 2013 at 03:52:19PM -0500, Seth Jennings wrote:
+> > My first guess is that the external fragmentation situation you are referring to
+> > is a workload in which all pages compress to greater than half a page.  If so,
+> > then it doesn't matter what NCHUCNKS_ORDER is, there won't be any pages the
+> > compress enough to fit in the < PAGE_SIZE/2 free space that remains in the
+> > unbuddied zbud pages.
+> > 
+> 
+> There are numerous aspects to this, too many to write them all down.
+> Modelling the external fragmentation one and how it affects swap IO
+> would be a complete pain in the ass so lets consider the following
+> example instead as it's a bit clearer.
+> 
+> Three processes. Process A compresses by 75%, Process B compresses to 15%,
+> Process C pages compress to 15%. They are all adding to zswap in lockstep.
+> Lets say that zswap can hold 100 physical pages.
+> 
+> NCHUNKS == 2
+> 	All Process A pages get rejected.
 
-Please let me know if you have any questions/concerns regarding the PMU 
-implementation.
+Ah, I think this is our disconnect.  Process A pages will not be rejected.
+They will be stored in a zbud page, and that zbud page will be added
+to the 0th unbuddied list.  This list maintains a list of zbud pages
+that will never be buddied because there are no free chunks.
 
-Joerg,
-Please let me know if you have any questions/concerns regarding the 
-changes in the IOMMU driver.
+In other words, changing NCHUNKS has no effect on the acceptable size
+of allocations.
 
-Thank you,
-
-Suravee
-
-On 5/17/2013 2:43 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->
-> These patches implement the AMD IOMMU Performance Counter functionality
-> via custom perf PMU and implement static counting for various IOMMU
-> translations.
->
->      1) Extend the AMD IOMMU initialization to include performance
->         counter enablement.
->
->      2) The perf AMD IOMMU PMU to manage performance counters, which
->         interface with the AMD IOMMU core driver.
->
-> Steven L Kinney (1):
->    perf/x86/amd: Adding IOMMU PC resource management
->
-> Suravee Suthikulpanit (1):
->    perf/x86/amd: AMD IOMMU PC PERF uncore PMU implementation
->
->   arch/x86/kernel/cpu/Makefile               |    2 +-
->   arch/x86/kernel/cpu/perf_event_amd_iommu.c |  500 ++++++++++++++++++++++++++++
->   arch/x86/kernel/cpu/perf_event_amd_iommu.h |   40 +++
->   drivers/iommu/amd_iommu_init.c             |  121 ++++++-
->   drivers/iommu/amd_iommu_proto.h            |    7 +
->   drivers/iommu/amd_iommu_types.h            |   12 +-
->   6 files changed, 675 insertions(+), 7 deletions(-)
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.c
->   create mode 100644 arch/x86/kernel/cpu/perf_event_amd_iommu.h
->
-
+Seth
 
