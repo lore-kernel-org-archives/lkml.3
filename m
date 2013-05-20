@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3ETO6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:58:45 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45930 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755549Ab3ETO6g (ORCPT
+	id S1757256Ab3ETO6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:58:54 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50374 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757220Ab3ETO6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:58:36 -0400
+	Mon, 20 May 2013 10:58:51 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,177 +16,54 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/13] rcu: Simplify RCU_TINY RCU callback invocation
-Date: Mon, 20 May 2013 07:58:13 -0700
-Message-Id: <1369061900-546-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 09/13] rcu: Remove rcu_preempt_note_context_switch()
+Date: Mon, 20 May 2013 07:58:16 -0700
+Message-Id: <1369061900-546-9-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130520145751.GA32218@linux.vnet.ibm.com>
  <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-3620-0000-0000-0000029426A8
+x-cbid: 13052014-5406-0000-0000-000008A744AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-TINY_PREEMPT_RCU could use a kthread to handle RCU callback invocation,
-which required an API to abstract kthread vs. softirq invocation.
-Now that TINY_PREEMPT_RCU is no longer with us, this commit retires
-this API in favor of direct use of the relevant softirq primitives.
+With the removal of CONFIG_TINY_PREEMPT_RCU, rcu_preempt_note_context_switch()
+is now an empty function.  This commit therefore eliminates it by inlining it.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/rcupdate.h |  1 +
- include/linux/rcutiny.h  |  4 ----
- include/linux/rcutree.h  |  1 -
- kernel/rcutiny.c         | 14 +++++++++-----
- kernel/rcutiny_plugin.h  | 33 ---------------------------------
- 5 files changed, 10 insertions(+), 43 deletions(-)
+ include/linux/rcutiny.h | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index b6dc04d..cfb02ee 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -216,6 +216,7 @@ static inline int rcu_preempt_depth(void)
- #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
- 
- /* Internal to kernel */
-+extern void rcu_init(void);
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
- extern void rcu_check_callbacks(int cpu, int user);
 diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index d3c094f..e756251 100644
+index 07b5aff..51230b6 100644
 --- a/include/linux/rcutiny.h
 +++ b/include/linux/rcutiny.h
-@@ -27,10 +27,6 @@
+@@ -68,10 +68,6 @@ static inline void kfree_call_rcu(struct rcu_head *head,
+ 	call_rcu(head, func);
+ }
  
- #include <linux/cache.h>
- 
--static inline void rcu_init(void)
+-static inline void rcu_preempt_note_context_switch(void)
 -{
 -}
 -
- static inline void rcu_barrier_bh(void)
+ static inline int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
  {
- 	wait_rcu_gp(call_rcu_bh);
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 952b793..3f1aa8f 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -30,7 +30,6 @@
- #ifndef __LINUX_RCUTREE_H
- #define __LINUX_RCUTREE_H
- 
--extern void rcu_init(void);
- extern void rcu_note_context_switch(int cpu);
- extern int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies);
- extern void rcu_cpu_stall_reset(void);
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 7fc2339..4adc9e2 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -44,7 +44,6 @@
- 
- /* Forward declarations for rcutiny_plugin.h. */
- struct rcu_ctrlblk;
--static void invoke_rcu_callbacks(void);
- static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp);
- static void rcu_process_callbacks(struct softirq_action *unused);
- static void __call_rcu(struct rcu_head *head,
-@@ -227,7 +226,7 @@ void rcu_sched_qs(int cpu)
- 	local_irq_save(flags);
- 	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
- 	    rcu_qsctr_help(&rcu_bh_ctrlblk))
--		invoke_rcu_callbacks();
-+		raise_softirq(RCU_SOFTIRQ);
- 	local_irq_restore(flags);
+ 	*delta_jiffies = ULONG_MAX;
+@@ -81,7 +77,6 @@ static inline int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
+ static inline void rcu_note_context_switch(int cpu)
+ {
+ 	rcu_sched_qs(cpu);
+-	rcu_preempt_note_context_switch();
  }
  
-@@ -240,7 +239,7 @@ void rcu_bh_qs(int cpu)
- 
- 	local_irq_save(flags);
- 	if (rcu_qsctr_help(&rcu_bh_ctrlblk))
--		invoke_rcu_callbacks();
-+		raise_softirq(RCU_SOFTIRQ);
- 	local_irq_restore(flags);
- }
- 
-@@ -277,7 +276,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
- 					      ACCESS_ONCE(rcp->rcucblist),
- 					      need_resched(),
- 					      is_idle_task(current),
--					      rcu_is_callbacks_kthread()));
-+					      false));
- 		return;
- 	}
- 
-@@ -307,7 +306,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
- 	RCU_TRACE(rcu_trace_sub_qlen(rcp, cb_count));
- 	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count, 0, need_resched(),
- 				      is_idle_task(current),
--				      rcu_is_callbacks_kthread()));
-+				      false));
- }
- 
- static void rcu_process_callbacks(struct softirq_action *unused)
-@@ -379,3 +378,8 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
- 	__call_rcu(head, func, &rcu_bh_ctrlblk);
- }
- EXPORT_SYMBOL_GPL(call_rcu_bh);
-+
-+void rcu_init(void)
-+{
-+	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
-+}
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index bfe9924..36fd83c 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -102,39 +102,6 @@ static void check_cpu_stalls(void)
- 	RCU_TRACE(check_cpu_stall_preempt());
- }
- 
--/* Hold off callback invocation until early_initcall() time. */
--static int rcu_scheduler_fully_active __read_mostly;
--
--/*
-- * Start up softirq processing of callbacks.
-- */
--void invoke_rcu_callbacks(void)
--{
--	if (rcu_scheduler_fully_active)
--		raise_softirq(RCU_SOFTIRQ);
--}
--
--#ifdef CONFIG_RCU_TRACE
--
--/*
-- * There is no callback kthread, so this thread is never it.
-- */
--static bool rcu_is_callbacks_kthread(void)
--{
--	return false;
--}
--
--#endif /* #ifdef CONFIG_RCU_TRACE */
--
--static int __init rcu_scheduler_really_started(void)
--{
--	rcu_scheduler_fully_active = 1;
--	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
--	raise_softirq(RCU_SOFTIRQ);  /* Invoke any callbacks from early boot. */
--	return 0;
--}
--early_initcall(rcu_scheduler_really_started);
--
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- #include <linux/kernel_stat.h>
- 
+ /*
 -- 
 1.8.1.5
 
