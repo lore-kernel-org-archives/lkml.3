@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab3ETLQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:16:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56094 "EHLO
+	id S1755890Ab3ETKwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:52:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897Ab3ETKww (ORCPT
+	with ESMTP id S1755331Ab3ETKwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:52 -0400
+	Mon, 20 May 2013 06:52:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@google.com,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 039/115] perf/x86/intel/lbr: Fix LBR filter
-Date: Mon, 20 May 2013 11:50:39 +0100
-Message-Id: <1369047116-9378-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 013/115] drm/radeon/evergreen+: don't enable HPD interrupts on eDP/LVDS
+Date: Mon, 20 May 2013 11:50:13 +0100
+Message-Id: <1369047116-9378-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6e15eb3ba6c0249c9e8c783517d131b47db995ca upstream.
+commit 2e97be73e5f74a317232740ae82eb8f95326a660 upstream.
 
-The LBR 'from' adddress is under full userspace control; ensure
-we validate it before reading from it.
+Avoids potential interrupt storms when the display is disabled.
 
-Note: is_module_text_address() can potentially be quite
-expensive; for those running into that with high overhead
-in modules optimize it using an RCU backed rb-tree.
+May fix:
+https://bugzilla.kernel.org/show_bug.cgi?id=56041
 
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: eranian@google.com
-Link: http://lkml.kernel.org/r/20130503121256.158211806@chello.nl
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/n/tip-mk8i82ffzax01cnqo829iy1q@git.kernel.org
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 520b426..62a93a4 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -442,8 +442,18 @@ static int branch_type(unsigned long from, unsigned long to)
- 			return X86_BR_NONE;
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index ccac010..9cf8f35 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -445,6 +445,16 @@ void evergreen_hpd_init(struct radeon_device *rdev)
  
- 		addr = buf;
--	} else
--		addr = (void *)from;
-+	} else {
-+		/*
-+		 * The LBR logs any address in the IP, even if the IP just
-+		 * faulted. This means userspace can control the from address.
-+		 * Ensure we don't blindy read any address by validating it is
-+		 * a known text address.
-+		 */
-+		if (kernel_text_address(from))
-+			addr = (void *)from;
-+		else
-+			return X86_BR_NONE;
-+	}
- 
- 	/*
- 	 * decoder needs to know the ABI especially
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+ 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
++
++		if (connector->connector_type == DRM_MODE_CONNECTOR_eDP ||
++		    connector->connector_type == DRM_MODE_CONNECTOR_LVDS) {
++			/* don't try to enable hpd on eDP or LVDS avoid breaking the
++			 * aux dp channel on imac and help (but not completely fix)
++			 * https://bugzilla.redhat.com/show_bug.cgi?id=726143
++			 * also avoid interrupt storms during dpms.
++			 */
++			continue;
++		}
+ 		switch (radeon_connector->hpd.hpd) {
+ 		case RADEON_HPD_1:
+ 			WREG32(DC_HPD1_CONTROL, tmp);
 -- 
 1.8.1.2
 
