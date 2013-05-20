@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3ETKws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:52:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55966 "EHLO
+	id S1755792Ab3ETKwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:52:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55922 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3ETKwU (ORCPT
+	with ESMTP id S1753119Ab3ETKwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:20 -0400
+	Mon, 20 May 2013 06:52:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 012/115] ALSA: usb-audio: disable autopm for MIDI devices
-Date: Mon, 20 May 2013 11:50:12 +0100
-Message-Id: <1369047116-9378-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 002/115] ARM: at91: Fix typo in restart code panic message
+Date: Mon, 20 May 2013 11:50:02 +0100
+Message-Id: <1369047116-9378-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,89 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
+commit e7619459d47a673af3433208a42f583af920e9db upstream.
 
-Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
-introduced autopm for all USB audio/MIDI devices.  However, many MIDI
-devices, such as synthesizers, do not merely transmit MIDI messages but
-use their MIDI inputs to control other functions.  With autopm, these
-devices would get powered down as soon as the last MIDI port device is
-closed on the host.
-
-Even some plain MIDI interfaces could get broken: they automatically
-send Active Sensing messages while powered up, but as soon as these
-messages cease, the receiving device would interpret this as an
-accidental disconnection.
-
-Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
-introduced another regression: some devices (e.g. the Roland GAIA SH-01)
-are self-powered but do a reset whenever the USB interface's power state
-changes.
-
-To work around all this, just disable autopm for all USB MIDI devices.
-
-Reported-by: Laurens Holst
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/midi.c | 13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ arch/arm/mach-at91/setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/usb/midi.c b/sound/usb/midi.c
-index 34b9bb7..e5fee18 100644
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -126,7 +126,6 @@ struct snd_usb_midi {
- 		struct snd_usb_midi_in_endpoint *in;
- 	} endpoints[MIDI_MAX_ENDPOINTS];
- 	unsigned long input_triggered;
--	bool autopm_reference;
- 	unsigned int opened[2];
- 	unsigned char disconnected;
- 	unsigned char input_running;
-@@ -1040,7 +1039,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
--	int err;
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 98c07d3..7c4edff 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -332,7 +332,7 @@ static void at91_dt_rstc(void)
  
- 	down_read(&umidi->disc_rwsem);
- 	if (umidi->disconnected) {
-@@ -1051,13 +1049,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
- 		if (!umidi->opened[0] && !umidi->opened[1]) {
--			err = usb_autopm_get_interface(umidi->iface);
--			umidi->autopm_reference = err >= 0;
--			if (err < 0 && err != -EACCES) {
--				mutex_unlock(&umidi->mutex);
--				up_read(&umidi->disc_rwsem);
--				return -EIO;
--			}
- 			if (umidi->roland_load_ctl) {
- 				ctl = umidi->roland_load_ctl;
- 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-@@ -1080,8 +1071,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
- 				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
- 			}
--			if (umidi->autopm_reference)
--				usb_autopm_put_interface(umidi->iface);
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
-@@ -2256,6 +2245,8 @@ int snd_usbmidi_create(struct snd_card *card,
- 		return err;
- 	}
+ 	of_id = of_match_node(rstc_ids, np);
+ 	if (!of_id)
+-		panic("AT91: rtsc no restart function availlable\n");
++		panic("AT91: rtsc no restart function available\n");
  
-+	usb_autopm_get_interface_no_resume(umidi->iface);
-+
- 	list_add_tail(&umidi->list, midi_list);
- 	return 0;
- }
+ 	arm_pm_restart = of_id->data;
+ 
 -- 
 1.8.1.2
 
