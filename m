@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3ETHuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 03:50:00 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:49231 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755230Ab3ETHt7 (ORCPT
+	id S1755246Ab3ETHwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 03:52:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36376 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754240Ab3ETHwn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 03:49:59 -0400
-Date: Mon, 20 May 2013 10:49:46 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: David Miller <davem@davemloft.net>
-cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: bug fixing and cleanup
-In-Reply-To: <20130520.004324.1700573748194578434.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1305201049210.3374@fry.nucleusys.com>
-References: <alpine.DEB.2.02.1305201008190.4719@fry.nucleusys.com> <20130520.001252.838327096610376306.davem@davemloft.net> <alpine.DEB.2.02.1305201014220.4719@fry.nucleusys.com> <20130520.004324.1700573748194578434.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 20 May 2013 03:52:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,706,1363158000"; 
+   d="scan'208";a="340382411"
+Message-ID: <1369036354.29283.115.camel@smile>
+Subject: Re: dmatest regression in 3.10-rc1
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, "djbw@fb.com" <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "andriy.shevchenko@linux.intel.com" 
+	<andriy.shevchenko@linux.jf.intel.com>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
+Date: Mon, 20 May 2013 10:52:34 +0300
+In-Reply-To: <20130517141857.GM23112@mudshark.cambridge.arm.com>
+References: <20130515152803.GL23869@mudshark.cambridge.arm.com>
+	 <20130516153553.GI11706@mudshark.cambridge.arm.com>
+	 <20130517123423.GR14863@intel.com>
+	 <20130517141857.GM23112@mudshark.cambridge.arm.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 May 2013, David Miller wrote:
+On Fri, 2013-05-17 at 15:18 +0100, Will Deacon wrote: 
+> On Fri, May 17, 2013 at 01:34:23PM +0100, Vinod Koul wrote:
+> > On Thu, May 16, 2013 at 04:35:53PM +0100, Will Deacon wrote:
+> > > Right, so I think I understand what's causing this, but I'll leave it to
+> > > Andriy to suggest a fix.
 
-> From: Petko Manolov <petkan@nucleusys.com>
-> Date: Mon, 20 May 2013 10:18:17 +0300 (EEST)
-> 
-> > On Mon, 20 May 2013, David Miller wrote:
-> > 
-> >> From: Petko Manolov <petkan@nucleusys.com>
-> >> Date: Mon, 20 May 2013 10:09:00 +0300 (EEST)
-> >> 
-> >> > What about the .c/.h split?
-> >> 
-> >> I have no strong opinion either way.
-> > 
-> > OK, so i'll prepare new patch series that coalesce my original patch #1 
-> > and #2, and apply the Francois suggestion about using the generic 
-> > netdev_alloc_skb_ip_align() in the interrupt path.
-> > 
-> > Which tree would you want me to diff against?
-> 
-> As has been explained to you already, cleanups belong in 'net-next',
-> bug fixes belong in 'net'.
-> 
-> If you series has both, you have to submit them separately.  Submit
-> the bug fixes to 'net', then the next time I merge 'net' into 'net-next'
-> you can submit the cleanups on top against 'net-next'.
+Thanks for the report.
 
-Got it.  Thanks.
+Unfortunately neither me nor other guys in the team could not reproduce
+mentioned issue on our hardware.
+Nevertheless I will try to allocate time and suggest possible fix if any
+comes to my mind. So, your testing and analysis is appreciated.
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
