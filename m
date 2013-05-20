@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3ETGsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 02:48:20 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:47545 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3ETGsT (ORCPT
+	id S1753798Ab3ETGs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 02:48:56 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:7627 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab3ETGsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 02:48:19 -0400
-Date: Mon, 20 May 2013 08:50:58 +0200
-From: Alexander Aring <alex.aring@gmail.com>
-To: David Hauweele <david@hauweele.net>
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] 6lowpan: Fix fragmentation with link-local
- compressed addresses
-Message-ID: <20130520065057.GA1393@x61s.Speedport_W_921V_1_21_000>
-References: <1368987211-19826-1-git-send-email-david@hauweele.net>
- <20130519195809.GA3237@x61s.Speedport_W_921V_1_21_000>
- <CAO+c-UW6MAK5TQrsn6NFnkvsm7QOTk+tUDM4OHGUb+E0KxvJgQ@mail.gmail.com>
+	Mon, 20 May 2013 02:48:55 -0400
+X-Spam-Score: -100.8
+Message-ID: <5199C725.8050102@asianux.com>
+Date: Mon, 20 May 2013 14:48:05 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAO+c-UW6MAK5TQrsn6NFnkvsm7QOTk+tUDM4OHGUb+E0KxvJgQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, marc.zyngier@arm.com,
+        Tony Lindgren <tony@atomide.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm64: kernel: compiling issue, need 'EXPORT_SYMBOL_GPL(read_current_timer)'
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
 
-I will try to figure out why link-layer address doesn't work on my
-setup.
+Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with allmodconfig.
 
-On Mon, May 20, 2013 at 12:14:48AM +0200, David Hauweele wrote:
-> Hello,
-> 
-> There is a patch which fixes link-local address uncompression:
-> 
-> http://permalink.gmane.org/gmane.linux.network.zigbee.devel/1717
-> 
-> I came across a similar solution but didn't submit it as another patch
-> already existed.
-> This patch instead focus on fragmented packet with link-local address
-> compression,
-> which is related but a different bug.
-> 
-> 2013/5/19 Alexander Aring <alex.aring@gmail.com>:
-> > Hi David,
-> >
-> > can you use a link-layer address on the current net-next kernel?
-> >
-> > I am asking because I can't use a link-layer address currently.
-> > Your patch doesn't help to solve my problem with link-layer addresses.
-> >
-> >
-> > To your patch:
-> >
-> > We get the link-layer addresses from skb not from the allocated
-> > frame->skb.
-> >
-> > Here is the code:
-> >
-> > _saddr = mac_cb(skb)->sa.hwaddr;
-> > _daddr = mac_cb(skb)->da.hwaddr;
-> >
-> > Here is skb != frame->skb so we don't need to copy it to frame->skb->cb
-> > because we already the link-layer addresses from skb->cb.
-> >
-> > Is there another place in the code where we get the link-layer addresses
-> > from allocated "frame" structure?
-> 
-> frame->skb is used to reassemble the 6lowpan packet when new fragments
-> are received.
-> This is the 'fragments assembling' switch at the beginning of
-> lowpan_process_data().
-> It will reassemble fragments until the packet is successfully reassembled.
-> Once it is, skb is replaced:
-> 
-> dev_kfree_skb(skb);
-> skb = frame->skb;
-> kfree(frame);
-> 
+The related error:
+  ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
+  ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
+  ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+  ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
 
-ah ok.
-> And the process continues as with other 6lowpan packets.
-> 
-> In particular:
-> 
-> _saddr = mac_cb(skb)->sa.hwaddr;
-> _daddr = mac_cb(skb)->da.hwaddr;
-> 
-> Several lines later there are:
-> 
-> err = lowpan_uncompress_addr(skb, &hdr.saddr, lowpan_llprefix,
-> lowpan_unc_llconf[tmp], skb->data);
-> err = lowpan_uncompress_addr(skb, &hdr.daddr, lowpan_llprefix,
-> lowpan_unc_llconf[tmp], skb->data);
 
-I think you mean uncompress and compress here.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/kernel/time.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> 
-> These two lines should use _saddr/_daddr instead of skb->data, which
-I agree with that.
-
-Regards
-Alex
+diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+index a551f88..7fcba80 100644
+--- a/arch/arm64/kernel/time.c
++++ b/arch/arm64/kernel/time.c
+@@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
+ 	*timer_value = arch_timer_read_counter();
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(read_current_timer);
+ 
+ void __init time_init(void)
+ {
+-- 
+1.7.7.6
