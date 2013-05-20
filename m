@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3ETKxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56347 "EHLO
+	id S1756513Ab3ETKxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:53:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56326 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3ETKxs (ORCPT
+	with ESMTP id S1756478Ab3ETKxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:48 -0400
+	Mon, 20 May 2013 06:53:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 088/115] net_sched: act_ipt forward compat with xtables
-Date: Mon, 20 May 2013 11:51:28 +0100
-Message-Id: <1369047116-9378-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 085/115] tcp: force a dst refcount when prequeue packet
+Date: Mon, 20 May 2013 11:51:25 +0100
+Message-Id: <1369047116-9378-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jamal Hadi Salim <jhs@mojatatu.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c upstream.
+commit 093162553c33e9479283e107b4431378271c735d upstream.
 
-Deal with changes in newer xtables while maintaining backward
-compatibility. Thanks to Jan Engelhardt for suggestions.
+Before escaping RCU protected section and adding packet into
+prequeue, make sure the dst is refcounted.
 
-Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
+Reported-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sched/act_ipt.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ include/net/tcp.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/sched/act_ipt.c b/net/sched/act_ipt.c
-index 60e281a..bfba52f 100644
---- a/net/sched/act_ipt.c
-+++ b/net/sched/act_ipt.c
-@@ -8,7 +8,7 @@
-  *		as published by the Free Software Foundation; either version
-  *		2 of the License, or (at your option) any later version.
-  *
-- * Copyright:	Jamal Hadi Salim (2002-4)
-+ * Copyright:	Jamal Hadi Salim (2002-13)
-  */
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 851f8fa..4857dce 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -982,6 +982,7 @@ static inline bool tcp_prequeue(struct sock *sk, struct sk_buff *skb)
+ 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
+ 		return false;
  
- #include <linux/types.h>
-@@ -300,17 +300,44 @@ static struct tc_action_ops act_ipt_ops = {
- 	.walk		=	tcf_generic_walker
- };
- 
--MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
-+static struct tc_action_ops act_xt_ops = {
-+	.kind		=	"xt",
-+	.hinfo		=	&ipt_hash_info,
-+	.type		=	TCA_ACT_IPT,
-+	.capab		=	TCA_CAP_NONE,
-+	.owner		=	THIS_MODULE,
-+	.act		=	tcf_ipt,
-+	.dump		=	tcf_ipt_dump,
-+	.cleanup	=	tcf_ipt_cleanup,
-+	.lookup		=	tcf_hash_search,
-+	.init		=	tcf_ipt_init,
-+	.walk		=	tcf_generic_walker
-+};
-+
-+MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
- MODULE_DESCRIPTION("Iptables target actions");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("act_xt");
- 
- static int __init ipt_init_module(void)
- {
--	return tcf_register_action(&act_ipt_ops);
-+	int ret1, ret2;
-+	ret1 = tcf_register_action(&act_xt_ops);
-+	if (ret1 < 0)
-+		printk("Failed to load xt action\n");
-+	ret2 = tcf_register_action(&act_ipt_ops);
-+	if (ret2 < 0)
-+		printk("Failed to load ipt action\n");
-+
-+	if (ret1 < 0 && ret2 < 0)
-+		return ret1;
-+	else
-+		return 0;
- }
- 
- static void __exit ipt_cleanup_module(void)
- {
-+	tcf_unregister_action(&act_xt_ops);
- 	tcf_unregister_action(&act_ipt_ops);
- }
- 
++	skb_dst_force(skb);
+ 	__skb_queue_tail(&tp->ucopy.prequeue, skb);
+ 	tp->ucopy.memory += skb->truesize;
+ 	if (tp->ucopy.memory > sk->sk_rcvbuf) {
 -- 
 1.8.1.2
 
