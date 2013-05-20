@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3ETRc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:32:28 -0400
-Received: from smtp-out-242.synserver.de ([212.40.185.242]:1027 "EHLO
-	smtp-out-240.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750887Ab3ETRc1 (ORCPT
+	id S1757523Ab3ETRfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:35:33 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54477 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab3ETRfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:32:27 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25794
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Inki Dae <inki.dae@samsung.com>, Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] drm/exynos: exynos_hdmi: Pass correct pointer to free_irq()
-Date: Mon, 20 May 2013 19:32:06 +0200
-Message-Id: <1369071126-7020-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Mon, 20 May 2013 13:35:32 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] net/9p: Handle error in zero copy request correctly for 9p2000.u
+Date: Mon, 20 May 2013 23:05:15 +0530
+Message-Id: <1369071315-26047-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052017-9264-0000-0000-000003C7E761
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_irq() expects the same pointer that was passed to request_threaded_irq(),
-otherwise the IRQ is not freed.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-The issue was found using the following coccinelle script:
+For zero copy request, error will be encoded in the user space buffer.
+So copy the error code correctly using copy_from_user. Here we use the
+extra bytes we allocate for zero copy request. If total error details
+are more than P9_ZC_HDR_SZ - 7 bytes, we return -EFAULT. The patch also
+avoid a memory allocation in the error path.
 
-<smpl>
-@r1@
-type T;
-T devid;
-@@
-request_threaded_irq(..., devid)
-
-@r2@
-type r1.T;
-T devid;
-position p;
-@@
-free_irq@p(..., devid)
-
-@@
-position p != r2.p;
-@@
-*free_irq@p(...)
-</smpl>
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- drivers/gpu/drm/exynos/exynos_hdmi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/9p/client.c | 55 ++++++++++++++++++-------------------------------------
+ 1 file changed, 18 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index bbfc384..7e99853 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -2082,7 +2082,7 @@ static int hdmi_remove(struct platform_device *pdev)
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 5e94dab..01f1779 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -562,36 +562,19 @@ static int p9_check_zc_errors(struct p9_client *c, struct p9_req_t *req,
  
- 	pm_runtime_disable(dev);
+ 	if (!p9_is_proto_dotl(c)) {
+ 		/* Error is reported in string format */
+-		uint16_t len;
+-		/* 7 = header size for RERROR, 2 is the size of string len; */
+-		int inline_len = in_hdrlen - (7 + 2);
++		int len;
++		/* 7 = header size for RERROR; */
++		int inline_len = in_hdrlen - 7;
  
--	free_irq(hdata->irq, hdata);
-+	free_irq(hdata->irq, ctx);
+-		/* Read the size of error string */
+-		err = p9pdu_readf(req->rc, c->proto_version, "w", &len);
+-		if (err)
+-			goto out_err;
+-
+-		ename = kmalloc(len + 1, GFP_NOFS);
+-		if (!ename) {
+-			err = -ENOMEM;
++		len =  req->rc->size - req->rc->offset;
++		if (len > (P9_ZC_HDR_SZ - 7)) {
++			err = -EFAULT;
+ 			goto out_err;
+ 		}
+-		if (len <= inline_len) {
+-			/* We have error in protocol buffer itself */
+-			if (pdu_read(req->rc, ename, len)) {
+-				err = -EFAULT;
+-				goto out_free;
  
+-			}
+-		} else {
+-			/*
+-			 *  Part of the data is in user space buffer.
+-			 */
+-			if (pdu_read(req->rc, ename, inline_len)) {
+-				err = -EFAULT;
+-				goto out_free;
+-
+-			}
++		ename = &req->rc->sdata[req->rc->offset];
++		if (len > inline_len) {
++			/* We have error in external buffer */
+ 			if (kern_buf) {
+ 				memcpy(ename + inline_len, uidata,
+ 				       len - inline_len);
+@@ -600,19 +583,19 @@ static int p9_check_zc_errors(struct p9_client *c, struct p9_req_t *req,
+ 						     uidata, len - inline_len);
+ 				if (err) {
+ 					err = -EFAULT;
+-					goto out_free;
++					goto out_err;
+ 				}
+ 			}
+ 		}
+-		ename[len] = 0;
+-		if (p9_is_proto_dotu(c)) {
+-			/* For dotu we also have error code */
+-			err = p9pdu_readf(req->rc,
+-					  c->proto_version, "d", &ecode);
+-			if (err)
+-				goto out_free;
++		ename = NULL;
++		err = p9pdu_readf(req->rc, c->proto_version, "s?d",
++				  &ename, &ecode);
++		if (err)
++			goto out_err;
++
++		if (p9_is_proto_dotu(c))
+ 			err = -ecode;
+-		}
++
+ 		if (!err || !IS_ERR_VALUE(err)) {
+ 			err = p9_errstr2errno(ename, strlen(ename));
  
- 	/* hdmiphy i2c driver */
+@@ -628,8 +611,6 @@ static int p9_check_zc_errors(struct p9_client *c, struct p9_req_t *req,
+ 	}
+ 	return err;
+ 
+-out_free:
+-	kfree(ename);
+ out_err:
+ 	p9_debug(P9_DEBUG_ERROR, "couldn't parse error%d\n", err);
+ 	return err;
 -- 
-1.8.0
+1.8.1.2
 
