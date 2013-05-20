@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab3ETOwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:52:00 -0400
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1108 "EHLO
-	smtp-out-206.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757143Ab3ETOv5 (ORCPT
+	id S1757240Ab3ETOwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:52:23 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:42480 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756947Ab3ETOwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:51:57 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 6266
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Alessandro Zummo <alessandro.zummo@towertech.it>
-Subject: [PATCH 5/7] input: ixp4xx-beeper: Pass correct pointer to free_irq()
-Date: Mon, 20 May 2013 16:51:24 +0200
-Message-Id: <1369061486-28226-5-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1369061486-28226-1-git-send-email-lars@metafoo.de>
-References: <1369061486-28226-1-git-send-email-lars@metafoo.de>
+	Mon, 20 May 2013 10:52:18 -0400
+Message-ID: <1369061535.4616.2.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH 5/5] drivers: net: usb: rtl8150: making the code a bit
+ better looking
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Petko Manolov <petkan@nucleusys.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Mon, 20 May 2013 15:52:15 +0100
+In-Reply-To: <alpine.DEB.2.02.1305182314500.16874@fry.nucleusys.com>
+References: <alpine.DEB.2.02.1305182314500.16874@fry.nucleusys.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19878.004
+X-TM-AS-Result: No--9.855400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_irq() expects the same pointer that was passed to request_irq(), otherwise
-the IRQ is not freed.
+On Sat, 2013-05-18 at 23:21 +0300, Petko Manolov wrote:
+[...]
+> @@ -681,16 +681,15 @@ static int rtl8150_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+>  }
+>  
+>  static const struct net_device_ops rtl8150_netdev_ops = {
+> -	.ndo_open		= rtl8150_open,
+> -	.ndo_stop		= rtl8150_close,
+> -	.ndo_do_ioctl		= rtl8150_ioctl,
+> -	.ndo_start_xmit		= rtl8150_start_xmit,
+> -	.ndo_tx_timeout		= rtl8150_tx_timeout,
+> -	.ndo_set_rx_mode	= rtl8150_set_multicast,
+> -	.ndo_set_mac_address	= rtl8150_set_mac_address,
+> -
+> -	.ndo_change_mtu		= eth_change_mtu,
+> -	.ndo_validate_addr	= eth_validate_addr,
+> +	.ndo_open = rtl8150_open,
+> +	.ndo_stop = rtl8150_close,
+> +	.ndo_do_ioctl = rtl8150_ioctl,
+> +	.ndo_start_xmit = rtl8150_start_xmit,
+> +	.ndo_tx_timeout = rtl8150_tx_timeout,
+> +	.ndo_set_rx_mode = rtl8150_set_multicast,
+> +	.ndo_set_mac_address = rtl8150_set_mac_address,
+> +	.ndo_change_mtu	= eth_change_mtu,
+> +	.ndo_validate_addr = eth_validate_addr,
+>  };
+>  
+>  static int rtl8150_probe(struct usb_interface *intf,
+[...]
+> @@ -771,12 +770,12 @@ static void rtl8150_disconnect(struct usb_interface *intf)
+>  }
+>  
+>  static struct usb_driver rtl8150_driver = {
+> -	.name		= driver_name,
+> -	.probe		= rtl8150_probe,
+> -	.disconnect	= rtl8150_disconnect,
+> -	.id_table	= rtl8150_table,
+> -	.suspend	= rtl8150_suspend,
+> -	.resume		= rtl8150_resume,
+> +	.name = driver_name,
+> +	.probe = rtl8150_probe,
+> +	.disconnect = rtl8150_disconnect,
+> +	.id_table = rtl8150_table,
+> +	.suspend = rtl8150_suspend,
+> +	.resume = rtl8150_resume,
+>  	.disable_hub_initiated_lpm = 1,
+>  };
 
-The issue was found using the following coccinelle script:
+These looked better before.  Lining up initialisers in a structure
+definition is good style.
 
-<smpl>
-@r1@
-type T;
-T devid;
-@@
-request_irq(..., devid)
+Ben.
 
-@r2@
-type r1.T;
-T devid;
-position p;
-@@
-free_irq@p(..., devid)
-
-@@
-position p != r2.p;
-@@
-*free_irq@p(...)
-</smpl>
-
-Cc: Alessandro Zummo <alessandro.zummo@towertech.it>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/input/misc/ixp4xx-beeper.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/input/misc/ixp4xx-beeper.c b/drivers/input/misc/ixp4xx-beeper.c
-index 6ab3dec..deab4a11 100644
---- a/drivers/input/misc/ixp4xx-beeper.c
-+++ b/drivers/input/misc/ixp4xx-beeper.c
-@@ -125,7 +125,7 @@ static int ixp4xx_spkr_probe(struct platform_device *dev)
- 	return 0;
- 
-  err_free_irq:
--	free_irq(IRQ_IXP4XX_TIMER2, dev);
-+	free_irq(IRQ_IXP4XX_TIMER2, (void *)dev->id);
-  err_free_device:
- 	input_free_device(input_dev);
- 
-@@ -144,7 +144,7 @@ static int ixp4xx_spkr_remove(struct platform_device *dev)
- 	disable_irq(IRQ_IXP4XX_TIMER2);
- 	ixp4xx_spkr_control(pin, 0);
- 
--	free_irq(IRQ_IXP4XX_TIMER2, dev);
-+	free_irq(IRQ_IXP4XX_TIMER2, (void *)dev->id);
- 
- 	return 0;
- }
 -- 
-1.8.0
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
