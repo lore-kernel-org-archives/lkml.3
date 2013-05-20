@@ -1,157 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3ETJpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:45:00 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:53837 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab3ETJo6 (ORCPT
+	id S1754420Ab3ETJqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:46:37 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44814 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750928Ab3ETJqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:44:58 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k: Remove inline strcpy() and strcat() implementations
-Date: Mon, 20 May 2013 11:44:37 +0200
-Message-Id: <1369043077-31375-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 20 May 2013 05:46:36 -0400
+Date: Mon, 20 May 2013 10:46:04 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "david.daney@cavium.com" <david.daney@cavium.com>
+Subject: Re: [PATCH] arm64: extable: sort the exception table at build time
+Message-ID: <20130520094604.GF31359@mudshark.cambridge.arm.com>
+References: <1368809021-25130-1-git-send-email-will.deacon@arm.com>
+ <51967811.7090709@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51967811.7090709@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gcc may replace calls to standard string functions by open code and/or
-calls to other standard string functions. If the replacement function is
-not available out-of-line, link errors will happen.
+Hi David,
 
-To avoid this, the out-of-line versions were provided by
-arch/m68k/lib/string.c, but they were usually not linked in anymore as
-typically none of its symbols are referenced by built-in code.
-However, if any module would need them, they would not be available.
+On Fri, May 17, 2013 at 07:33:53PM +0100, David Daney wrote:
+> On 05/17/2013 09:43 AM, Will Deacon wrote:
+> > As is done for other architectures, sort the exception table at
+> > build-time rather than during boot.
+> >
+> > Since sortextable appears to be a standalone C program relying on the
+> > host elf.h to provide EM_AARCH64, I've had to add a conditional check in
+> > order to allow cross-compilation on machines that aren't running a
+> > bleeding-edge libc-dev.
+> >
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > ---
+> >   arch/arm64/Kconfig              |  1 +
+> >   arch/arm64/kernel/vmlinux.lds.S | 15 +++++++--------
+> >   scripts/sortextable.c           |  5 +++++
+> >   3 files changed, 13 insertions(+), 8 deletions(-)
+> >
+> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> > index 48347dc..fb8fd90 100644
+> > --- a/arch/arm64/Kconfig
+> > +++ b/arch/arm64/Kconfig
+> > @@ -7,6 +7,7 @@ config ARM64
+> >   	select ARM_AMBA
+> >   	select ARM_ARCH_TIMER
+> >   	select ARM_GIC
+> > +	select BUILDTIME_EXTABLE_SORT
+> >   	select CLONE_BACKWARDS
+> >   	select COMMON_CLK
+> >   	select GENERIC_CLOCKEVENTS
+> > diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+> > index 3fae2be..3d527726 100644
+> > --- a/arch/arm64/kernel/vmlinux.lds.S
+> > +++ b/arch/arm64/kernel/vmlinux.lds.S
+> > @@ -57,6 +57,13 @@ SECTIONS
+> >
+> >   	RO_DATA(PAGE_SIZE)
+> >
+> > +	. = ALIGN(8);
+> > +	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
+> > +		__start___ex_table = .;
+> > +		*(__ex_table)
+> > +		__stop___ex_table = .;
+> > +	}
+> > +
+> >   	_etext = .;			/* End of text and rodata section */
+> 
+> 
+> You have moved this to rodata.
 
-Hence remove the inline strcpy() and strcat() implementations, remove
-arch/m68k/lib/string.c, and let the generic string library code handle it.
+I don't think I have moved this to rodata. The RO_DATA macro expands to a
+bunch of sections, but it doesn't leave any of them open at the end.
 
-Impact on a typical kernel build seems minimal or nonexistent:
+> o Will the runtime sort still work like this?
+> 
+> o Do we care?  Maybe not.
 
--      .text : 0x00001000 - 0x002aac74   (2728 KiB)
--      .data : 0x002ada48 - 0x00392148   ( 914 KiB)
-+      .text : 0x00001000 - 0x002aacf4   (2728 KiB)
-+      .data : 0x002adac8 - 0x00392148   ( 914 KiB)
+For arm64 we'd be moving exclusively to build-time sorting, so I guess we
+*could* stick the thing in rodata if we wanted to. Not sure it's worth the
+linker script munging though.
 
-See also commit e00c73ee05dc38ecaccced55d4f5fc58b0b769f7 ("m68k: Remove
-inline strlen() implementation").
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/string.h |   32 --------------------------------
- arch/m68k/lib/Makefile         |    2 +-
- arch/m68k/lib/string.c         |   22 ----------------------
- 3 files changed, 1 insertions(+), 55 deletions(-)
- delete mode 100644 arch/m68k/lib/string.c
-
-diff --git a/arch/m68k/include/asm/string.h b/arch/m68k/include/asm/string.h
-index 9aea9f1..c30c03d 100644
---- a/arch/m68k/include/asm/string.h
-+++ b/arch/m68k/include/asm/string.h
-@@ -4,20 +4,6 @@
- #include <linux/types.h>
- #include <linux/compiler.h>
- 
--static inline char *__kernel_strcpy(char *dest, const char *src)
--{
--	char *xdest = dest;
--
--	asm volatile ("\n"
--		"1:	move.b	(%1)+,(%0)+\n"
--		"	jne	1b"
--		: "+a" (dest), "+a" (src)
--		: : "memory");
--	return xdest;
--}
--
--#ifndef __IN_STRING_C
--
- #define __HAVE_ARCH_STRNLEN
- static inline size_t strnlen(const char *s, size_t count)
- {
-@@ -34,16 +20,6 @@ static inline size_t strnlen(const char *s, size_t count)
- 	return sc - s;
- }
- 
--#define __HAVE_ARCH_STRCPY
--#if __GNUC__ >= 4
--#define strcpy(d, s)	(__builtin_constant_p(s) &&	\
--			 __builtin_strlen(s) <= 32 ?	\
--			 __builtin_strcpy(d, s) :	\
--			 __kernel_strcpy(d, s))
--#else
--#define strcpy(d, s)	__kernel_strcpy(d, s)
--#endif
--
- #define __HAVE_ARCH_STRNCPY
- static inline char *strncpy(char *dest, const char *src, size_t n)
- {
-@@ -61,12 +37,6 @@ static inline char *strncpy(char *dest, const char *src, size_t n)
- 	return xdest;
- }
- 
--#define __HAVE_ARCH_STRCAT
--#define strcat(d, s)	({			\
--	char *__d = (d);			\
--	strcpy(__d + strlen(__d), (s));		\
--})
--
- #ifndef CONFIG_COLDFIRE
- #define __HAVE_ARCH_STRCMP
- static inline int strcmp(const char *cs, const char *ct)
-@@ -100,6 +70,4 @@ extern void *memset(void *, int, __kernel_size_t);
- extern void *memcpy(void *, const void *, __kernel_size_t);
- #define memcpy(d, s, n) __builtin_memcpy(d, s, n)
- 
--#endif
--
- #endif /* _M68K_STRING_H_ */
-diff --git a/arch/m68k/lib/Makefile b/arch/m68k/lib/Makefile
-index a9d782d..fcd8eb1 100644
---- a/arch/m68k/lib/Makefile
-+++ b/arch/m68k/lib/Makefile
-@@ -6,7 +6,7 @@
- lib-y	:= ashldi3.o ashrdi3.o lshrdi3.o muldi3.o \
- 	   memcpy.o memset.o memmove.o
- 
--lib-$(CONFIG_MMU) += string.o uaccess.o
-+lib-$(CONFIG_MMU) += uaccess.o
- lib-$(CONFIG_CPU_HAS_NO_MULDIV64) += mulsi3.o divsi3.o udivsi3.o
- lib-$(CONFIG_CPU_HAS_NO_MULDIV64) += modsi3.o umodsi3.o
- 
-diff --git a/arch/m68k/lib/string.c b/arch/m68k/lib/string.c
-deleted file mode 100644
-index 4d61fa8..0000000
---- a/arch/m68k/lib/string.c
-+++ /dev/null
-@@ -1,22 +0,0 @@
--/*
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file COPYING in the main directory of this archive
-- * for more details.
-- */
--
--#define __IN_STRING_C
--
--#include <linux/module.h>
--#include <linux/string.h>
--
--char *strcpy(char *dest, const char *src)
--{
--	return __kernel_strcpy(dest, src);
--}
--EXPORT_SYMBOL(strcpy);
--
--char *strcat(char *dest, const char *src)
--{
--	return __kernel_strcpy(dest + strlen(dest), src);
--}
--EXPORT_SYMBOL(strcat);
--- 
-1.7.0.4
-
+Will
