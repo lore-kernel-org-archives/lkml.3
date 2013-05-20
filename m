@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3ETRwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:52:41 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:37848 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab3ETRwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:52:40 -0400
+	id S1757578Ab3ETRxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:53:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab3ETRxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 13:53:16 -0400
+Date: Mon, 20 May 2013 13:52:29 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/8] watchdog: Boot-disable by default on full dynticks
+Message-ID: <20130520175229.GI133453@redhat.com>
+References: <1369065716-22801-1-git-send-email-fweisbec@gmail.com>
+ <1369065716-22801-4-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <CAErSpo7TvCfQLkMD+zL1W6dNEqMpHYbLtAAHqXf==zbxhE2tcQ@mail.gmail.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com>
- <5683193.Vsmy0DmceS@vostro.rjw.lan> <CAErSpo7TvCfQLkMD+zL1W6dNEqMpHYbLtAAHqXf==zbxhE2tcQ@mail.gmail.com>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Mon, 20 May 2013 12:52:19 -0500
-Message-ID: <CAHrUA34CoQziRYgLyYJc5TtGw_nGL+QFLzrktDjcZ6gxsxEZ8A@mail.gmail.com>
-Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "Zhang, LongX" <longx.zhang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369065716-22801-4-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 May 2013 12:21, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, May 17, 2013 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Friday, May 17, 2013 05:43:33 PM Bjorn Helgaas wrote:
->>> On Fri, Apr 26, 2013 at 12:28 AM, Zhang, LongX <longx.zhang@intel.com> wrote:
->
->>> > +       /* restore cfg space for possible link reset at upstream */
->>> > +       dev->state_saved = true;
->>>
->>> "dev->state_saved == true" means that the dev->saved_config_space
->>> contains valid data.  Why do we know that's the case here?  I see that
->>> pcie_portdrv_probe() calls pci_save_state() when we first claim the
->>> port, and I guess we're assuming the state saved then is still valid.
+On Mon, May 20, 2013 at 06:01:51PM +0200, Frederic Weisbecker wrote:
+> When the watchdog runs, it prevents the full dynticks
+> CPUs from stopping their tick because the hard lockup
+> detector uses perf events internally, which in turn
+> rely on the periodic tick.
+> 
+> Since this is a rather confusing behaviour that is not
+> easy to track down and identify for those who want to
+> test CONFIG_NO_HZ_FULL, let's default disable the
+> watchdog on boot time when full dynticks is enabled.
+> 
+> The user can still enable it later on runtime using
+> proc or sysctl.
 
-Yes, see below.
+I thought Peter committed a patch to perf so that this isn't needed any
+more?
 
->>> But why do we need to actually set dev->state_saved here?  Shouldn't
->>> it be already set to true anyway?
->>
->> This is a dirty trick to make pci_restore_state(dev) always work here
->> (because it checks dev->state_saved and does nothing if it isn't set).
->> I suppose.
->
-> Yes, I did investigate enough to see that this is a dirty trick.  My
-> question is how we know it's safe to do this dirty trick.
->
->>> > +       pci_restore_state(dev);
->>> > +       pcie_portdrv_restore_config(dev);
+Cheers,
+Don
 
-Lets review what is supposed to happen:
-
--- poweron
--- BIOS/firmware/bootloader maybe fiddles with PCI config space
--- kernel fiddles with PCI config space during boot
--- device driver sets up PCI config space correctly for normal i/o
--- PCI error occurs
--- PCI port/link is reset
-
-At this point, we want to set the PCI config space to something
-resembling what it was just before the device driver first touched it
-after poweron.  Why?  Because the device driver will typically set up
-DMA segments, and tweak other settings as it initializes the card.  It
-needs to do almost exactly the same things again, when re-initializing
-the device after the error reset.  Thus, the PCI config needs to be
-appropriate for a fresh initialization of the card.
-
-If  some other variant of PCI config was loaded here, it might contain
-incorrect DMA mappings or other settings.  In particular, while the
-driver is initializing the card, you risk having the card run away and
-start doing things based on these incorrect settings -- provoking
-another error or maybe just silently corrupting data.   The config
-that you want to load should be more-or-less the same one that was
-there during kernel boot, before the device-driver started touching
-things.
-
-The "dirty hack" is weird:  either there's valid data, and the flag is
-set, or the data is garbage and the flag isn't set ... how could it be
-otherwise?
-
--- Linas
+> 
+> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> ---
+>  kernel/watchdog.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 05039e3..7e1a021 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -543,6 +543,12 @@ static struct smp_hotplug_thread watchdog_threads = {
+>  
+>  void __init lockup_detector_init(void)
+>  {
+> +#ifdef CONFIG_NO_HZ_FULL
+> +	watchdog_enabled = 0;
+> +	watchdog_disabled = 1;
+> +	pr_warning("Disabled lockup detectors by default because of full dynticks\n");
+> +	pr_warning("You can overwrite that with 'sysctl -w kernel.watchdog=1'\n");
+> +#endif
+>  	set_sample_period();
+>  	if (smpboot_register_percpu_thread(&watchdog_threads)) {
+>  		pr_err("Failed to create watchdog threads, disabled\n");
+> -- 
+> 1.7.5.4
+> 
