@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab3ETKxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56085 "EHLO
+	id S1756220Ab3ETLLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:11:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56151 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3ETKwt (ORCPT
+	with ESMTP id S1756100Ab3ETKxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:49 -0400
+	Mon, 20 May 2013 06:53:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 038/115] drm/radeon: fix handling of v6 power tables
-Date: Mon, 20 May 2013 11:50:38 +0100
-Message-Id: <1369047116-9378-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 049/115] ARM: 7692/1: iop3xx: move IOP3XX_PERIPHERAL_VIRT_BASE
+Date: Mon, 20 May 2013 11:50:49 +0100
+Message-Id: <1369047116-9378-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 441e76ca83ac604eaf0f046def96d8e3a27eea28 upstream.
+commit f5d6a1441a5045824f36ff7c6b6bbae0373472a6 upstream.
 
-The code was mis-handling variable sized arrays.
+Currently IOP3XX_PERIPHERAL_VIRT_BASE conflicts with PCI_IO_VIRT_BASE:
 
-Reported-by: Sylvain BERTRAND <sylware@legeek.net>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+					address         size
+	PCI_IO_VIRT_BASE                0xfee00000      0x200000
+	IOP3XX_PERIPHERAL_VIRT_BASE     0xfeffe000      0x2000
+
+Fix by moving IOP3XX_PERIPHERAL_VIRT_BASE below PCI_IO_VIRT_BASE.
+
+The patch fixes the following kernel panic with 3.9-rc1 on iop3xx boards:
+
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Linux version 3.9.0-rc1-iop32x (aaro@blackmetal) (gcc version 4.7.2 (GCC) ) #20 PREEMPT Tue Mar 5 16:44:36 EET 2013
+[    0.000000] bootconsole [earlycon0] enabled
+[    0.000000] ------------[ cut here ]------------
+[    0.000000] kernel BUG at mm/vmalloc.c:1145!
+[    0.000000] Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+[    0.000000] Modules linked in:
+[    0.000000] CPU: 0    Not tainted  (3.9.0-rc1-iop32x #20)
+[    0.000000] PC is at vm_area_add_early+0x4c/0x88
+[    0.000000] LR is at add_static_vm_early+0x14/0x68
+[    0.000000] pc : [<c03e74a8>]    lr : [<c03e1c40>]    psr: 800000d3
+[    0.000000] sp : c03ffee4  ip : dfffdf88  fp : c03ffef4
+[    0.000000] r10: 00000002  r9 : 000000cf  r8 : 00000653
+[    0.000000] r7 : c040eca8  r6 : c03e2408  r5 : dfffdf60  r4 : 00200000
+[    0.000000] r3 : dfffdfd8  r2 : feffe000  r1 : ff000000  r0 : dfffdf60
+[    0.000000] Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+[    0.000000] Control: 0000397f  Table: a0004000  DAC: 00000017
+[    0.000000] Process swapper (pid: 0, stack limit = 0xc03fe1b8)
+[    0.000000] Stack: (0xc03ffee4 to 0xc0400000)
+[    0.000000] fee0:          00200000 c03fff0c c03ffef8 c03e1c40 c03e7468 00200000 fee00000
+[    0.000000] ff00: c03fff2c c03fff10 c03e23e4 c03e1c38 feffe000 c0408ee4 ff000000 c0408f04
+[    0.000000] ff20: c03fff3c c03fff30 c03e2434 c03e23b4 c03fff84 c03fff40 c03e2c94 c03e2414
+[    0.000000] ff40: c03f8878 c03f6410 ffff0000 000bffff 00001000 00000008 c03fff84 c03f6410
+[    0.000000] ff60: c04227e8 c03fffd4 a0008000 c03f8878 69052e30 c02f96eb c03fffbc c03fff88
+[    0.000000] ff80: c03e044c c03e268c 00000000 0000397f c0385130 00000001 ffffffff c03f8874
+[    0.000000] ffa0: dfffffff a0004000 69052e30 a03f61a0 c03ffff4 c03fffc0 c03dd5cc c03e0184
+[    0.000000] ffc0: 00000000 00000000 00000000 00000000 00000000 c03f8878 0000397d c040601c
+[    0.000000] ffe0: c03f8874 c0408674 00000000 c03ffff8 a0008040 c03dd558 00000000 00000000
+[    0.000000] Backtrace:
+[    0.000000] [<c03e745c>] (vm_area_add_early+0x0/0x88) from [<c03e1c40>] (add_static_vm_early+0x14/0x68)
+
+Tested-by: Mikael Pettersson <mikpe@it.uu.se>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ arch/arm/include/asm/hardware/iop3xx.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index 78d584e..38d87e1 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2482,6 +2482,7 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
- 	int index = GetIndexIntoMasterTable(DATA, PowerPlayInfo);
-         u16 data_offset;
- 	u8 frev, crev;
-+	u8 *power_state_offset;
- 
- 	if (!atom_parse_data_header(mode_info->atom_context, index, NULL,
- 				   &frev, &crev, &data_offset))
-@@ -2504,11 +2505,11 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
- 				       state_array->ucNumEntries, GFP_KERNEL);
- 	if (!rdev->pm.power_state)
- 		return state_index;
-+	power_state_offset = (u8 *)state_array->states;
- 	for (i = 0; i < state_array->ucNumEntries; i++) {
- 		mode_index = 0;
--		power_state = (union pplib_power_state *)&state_array->states[i];
--		/* XXX this might be an inagua bug... */
--		non_clock_array_index = i; /* power_state->v2.nonClockInfoIndex */
-+		power_state = (union pplib_power_state *)power_state_offset;
-+		non_clock_array_index = power_state->v2.nonClockInfoIndex;
- 		non_clock_info = (struct _ATOM_PPLIB_NONCLOCK_INFO *)
- 			&non_clock_info_array->nonClockInfo[non_clock_array_index];
- 		rdev->pm.power_state[i].clock_info = kzalloc(sizeof(struct radeon_pm_clock_info) *
-@@ -2520,9 +2521,6 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
- 		if (power_state->v2.ucNumDPMLevels) {
- 			for (j = 0; j < power_state->v2.ucNumDPMLevels; j++) {
- 				clock_array_index = power_state->v2.clockInfoIndex[j];
--				/* XXX this might be an inagua bug... */
--				if (clock_array_index >= clock_info_array->ucNumEntries)
--					continue;
- 				clock_info = (union pplib_clock_info *)
- 					&clock_info_array->clockInfo[clock_array_index * clock_info_array->ucEntrySize];
- 				valid = radeon_atombios_parse_pplib_clock_info(rdev,
-@@ -2544,6 +2542,7 @@ static int radeon_atombios_parse_power_table_6(struct radeon_device *rdev)
- 								   non_clock_info);
- 			state_index++;
- 		}
-+		power_state_offset += 2 + power_state->v2.ucNumDPMLevels;
- 	}
- 	/* if multiple clock modes, mark the lowest as no display */
- 	for (i = 0; i < state_index; i++) {
+diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
+index 2ff2c75..7e2507f 100644
+--- a/arch/arm/include/asm/hardware/iop3xx.h
++++ b/arch/arm/include/asm/hardware/iop3xx.h
+@@ -37,7 +37,7 @@ extern int iop3xx_get_init_atu(void);
+  * IOP3XX processor registers
+  */
+ #define IOP3XX_PERIPHERAL_PHYS_BASE	0xffffe000
+-#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfeffe000
++#define IOP3XX_PERIPHERAL_VIRT_BASE	0xfedfe000
+ #define IOP3XX_PERIPHERAL_SIZE		0x00002000
+ #define IOP3XX_PERIPHERAL_UPPER_PA (IOP3XX_PERIPHERAL_PHYS_BASE +\
+ 					IOP3XX_PERIPHERAL_SIZE - 1)
 -- 
 1.8.1.2
 
