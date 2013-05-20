@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab3ETVN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 17:13:59 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:57626 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758201Ab3ETVMB (ORCPT
+	id S1758330Ab3ETVQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:16:47 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57512 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758172Ab3ETVQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 17:12:01 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v3 4/5] mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in kvm_arch_vcpu_ioctl_{s,g}et_regs
-Date: Mon, 20 May 2013 14:01:25 -0700
-Message-Id: <1369083686-27524-5-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
+	Mon, 20 May 2013 17:16:43 -0400
+X-IronPort-AV: E=Sophos;i="4.87,709,1363158000"; 
+   d="scan'208";a="49068405"
+Message-ID: <519A92BA.1090702@codeaurora.org>
+Date: Mon, 20 May 2013 14:16:42 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: James Hogan <james.hogan@imgtec.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: Re: [PATCH v4 2/5] clk: move some parent related functions upwards
+References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com> <1369056507-32521-3-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1369056507-32521-3-git-send-email-james.hogan@imgtec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On 05/20/13 06:28, James Hogan wrote:
+> Move some parent related functions up in clk.c so they can be used by
+> the modifications in the following patch which enables clock reparenting
+> during set_rate. No other changes are made so this patch makes no
+> functional difference in isolation. This is separate from the following
+> patch primarily to ease readability of that patch.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: linux-arm-kernel@lists.infradead.org
 
-Also we cannot set special zero register, so force it to zero.
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/kvm/kvm_mips.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index 93da750..71a1fc1 100644
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -677,9 +677,9 @@ int kvm_arch_vcpu_ioctl_set_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
- {
- 	int i;
- 
--	for (i = 0; i < 32; i++)
-+	for (i = 1; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
- 		vcpu->arch.gprs[i] = regs->gpr[i];
--
-+	vcpu->arch.gprs[0] = 0; /* zero is special, and cannot be set. */
- 	vcpu->arch.hi = regs->hi;
- 	vcpu->arch.lo = regs->lo;
- 	vcpu->arch.pc = regs->pc;
-@@ -691,7 +691,7 @@ int kvm_arch_vcpu_ioctl_get_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
- {
- 	int i;
- 
--	for (i = 0; i < 32; i++)
-+	for (i = 0; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
- 		regs->gpr[i] = vcpu->arch.gprs[i];
- 
- 	regs->hi = vcpu->arch.hi;
 -- 
-1.7.11.7
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
