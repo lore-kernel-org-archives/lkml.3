@@ -1,92 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab3ETU7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 16:59:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33945 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab3ETU7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 16:59:06 -0400
-Date: Mon, 20 May 2013 16:59:00 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] (xen) stable/for-linus-3.10-rc1-tag
-Message-ID: <20130520205900.GA31892@phenom.dumpdata.com>
+	id S1758142Ab3ETVAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:00:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60082 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756446Ab3ETVAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 17:00:37 -0400
+Date: Mon, 20 May 2013 23:00:28 +0200
+From: Jan Kara <jack@suse.cz>
+To: Vinson Lee <vlee@freedesktop.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        selinux@tycho.nsa.gov, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>
+Subject: Re: NULL pointer dereference in inode_has_perm on 3.4
+Message-ID: <20130520210028.GB26992@quack.suse.cz>
+References: <CACKvgLFPNktU6OHfMnrn0do7ZjnLkYhU-oQBXGQRjgeWXNLsrw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CACKvgLFPNktU6OHfMnrn0do7ZjnLkYhU-oQBXGQRjgeWXNLsrw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 14-05-13 18:11:14, Vinson Lee wrote:
+> Hi.
+> 
+> I'm seeing a NULL pointer deference in inode_has_perm with Linux
+> kernel 3.4.27. Does anyone have any ideas what this issue might be? As
+> another point of reference, I've also seen this on 2.6.39.4.
+  CCed relevant SELinux guys. But I suspect they'll need more details about
+your SELinux config.
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+								Honza
 
-Hey Linus,
-
-Please git pull the following tag:
-
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.10-rc1-tag
-
-which is nicely documented in the signed tag. Reproducing it here:
-<tag>
-Fixes:
- * Regression fix in xen privcmd fixing a memory leak.
- * Add Documentation for tmem driver.
- * Simplify and remove code in the tmem driver.
- * Cleanups.
-</tag>
-What is nice is that there are more deletions :-)
-
-
- Documentation/kernel-parameters.txt     | 21 ++++++++
- drivers/xen/Kconfig                     |  7 ++-
- drivers/xen/balloon.c                   |  3 +-
- drivers/xen/privcmd.c                   |  2 +-
- drivers/xen/tmem.c                      | 87 +++++++++++++++------------------
- drivers/xen/xen-selfballoon.c           | 47 +++---------------
- drivers/xen/xenbus/xenbus_dev_backend.c | 21 ++++----
- 7 files changed, 82 insertions(+), 106 deletions(-)
-
-Dan Carpenter (1):
-      xen/privcmd: fix condition in privcmd_close()
-
-Konrad Rzeszutek Wilk (9):
-      xen/tmem: Cleanup. Remove the parts that say temporary.
-      xen/tmem: Move all of the boot and module parameters to the top of the file.
-      xen/tmem: Split out the different module/boot options.
-      xen/tmem: Fix compile warning.
-      xen/tmem: s/disable_// and change the logic.
-      xen/tmem: Remove the boot options and fold them in the tmem.X parameters.
-      xen/tmem: Remove the usage of 'noselfshrink' and use 'tmem.selfshrink' bool instead.
-      xen/tmem: Remove the usage of '[no|]selfballoon' and use 'tmem.selfballooning' bool instead.
-      xen/tmem: Don't use self[ballooning|shrinking] if frontswap is off.
-
-Lisa Nguyen (3):
-      xen/xenbus: Fixed indentation error in switch case
-      xen/xenbus: Fixed over 80 character limit issue
-      xen: Fixed assignment error in if statement
-
-
---45Z9DzgjV8m4Oswq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQEcBAEBAgAGBQJRmo6OAAoJEFjIrFwIi8fJTtYIAMfGea1CFrQ32dUwRt+rKFHQ
-e+Z/bh5xvhA2y1KuO4Rc4JjjDSmMAR+TLb9yZkf0fzKCIIOh7VsGzm1AzBKCRtH3
-sSVUviC6Q4/0UbcWsPtUbFfYb6IWuICE4wEKpA+YveSNmJDlQt+907cqcGm0JQMv
-wlw+Mi0uMlQooYbiy1lwaLdyHnNCBsN52o87oWgANyndGibw8c8gwGZj0Pp3y7B9
-iuLIwRemqUj1/B5mozxEl6Nka53tneFapPgNAr/xlPFLPdImCthO5K8OOnCCiqPu
-xVO8s2l4rE0SUGHizYVclsItJPuVsDpTorupTYuqdOzmFScCN41GW8/pOgoD2oQ=
-=dXsI
------END PGP SIGNATURE-----
-
---45Z9DzgjV8m4Oswq--
+> 
+> [63314.399998] BUG: unable to handle kernel NULL pointer dereference
+> at 0000000000000020
+> [63314.400270] IP: [<ffffffff8121f3f6>] inode_has_perm+0x1b/0x36
+> [63314.400471] PGD 610cad067 PUD 610cae067 PMD 0
+> [63314.400635] Oops: 0000 [#1] SMP
+> [63314.400756] CPU 7
+> [63314.400821] Modules linked in: ipv6 dm_multipath video sbs sbshc
+> hed acpi_pad acpi_memhotplug acpi_ipmi parport_pc lp parport tcp_diag
+> inet_diag ipmi_si ipmi_devintf ipmi_msghandler dell_rbu snd_seq_dummy
+> snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss
+> snd_mixer_oss joydev snd_pcm ioatdma snd_timer snd soundcore
+> snd_page_alloc igb pcspkr dca dcdbas i2c_i801 shpchp i2c_core iTCO_wdt
+> i7core_edac iTCO_vendor_support edac_core microcode
+> [63314.402381]
+> [63314.402435] Pid: 15274, comm: python2.6 Not tainted 3.4.27 #1 Dell
+>    C6100       /0D61XP
+> [63314.402740] RIP: 0010:[<ffffffff8121f3f6>]  [<ffffffff8121f3f6>]
+> inode_has_perm+0x1b/0x36
+> [63314.403012] RSP: 0018:ffff88032cba1ba8  EFLAGS: 00010246
+> [63314.403187] RAX: 0000000000000000 RBX: ffff8805d621ca20 RCX: ffff88032cba1bb8
+> [63314.403418] RDX: 0000000000800000 RSI: ffff8805d621ca20 RDI: ffff8805ee9c1500
+> [63314.403649] RBP: ffff88032cba1ba8 R08: 0000000000000080 R09: 0000000000000080
+> [63314.403880] R10: 0000000000800000 R11: ffff88032cba1b48 R12: ffff8805ee9c1500
+> [63314.404111] R13: 0000000000000081 R14: 0000000000000000 R15: ffff880183945b40
+> [63314.404343] FS:  0000000049bb5940(0063) GS:ffff88063fc60000(0000)
+> knlGS:0000000000000000
+> [63314.404604] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [63314.404791] CR2: 0000000000000020 CR3: 0000000610cac000 CR4: 00000000000007e0
+> [63314.405022] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [63314.405253] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [63314.405484] Process python2.6 (pid: 15274, threadinfo
+> ffff88032cba0000, task ffff880183945b40)
+> [63314.405762] Stack:
+> [63314.405831]  ffff88032cba1c18 ffffffff81220631 0000000000000009
+> 0000000000000000
+> [63314.406096]  ffff8805d621ca20 0000000000000000 ffff88032cba1be8
+> 0000000000000010
+> [63314.406359]  0000000000000000 0000000000000000 ffff88032cba1c48
+> ffff8805d621ca20
+> [63314.406623] Call Trace:
+> [63314.406710]  [<ffffffff81220631>] selinux_inode_permission+0x85/0x90
+> [63314.406920]  [<ffffffff8121ccf0>] security_inode_permission+0x1e/0x20
+> [63314.407133]  [<ffffffff81146d82>] inode_permission+0xd3/0xdf
+> [63314.407318]  [<ffffffff81146dfa>] link_path_walk+0x6c/0x4b4
+> [63314.407503]  [<ffffffff8114ecce>] ? dput+0x2f/0xe2
+> [63314.407661]  [<ffffffff811473cf>] ? path_init+0xd4/0x2ea
+> [63314.407836]  [<ffffffff8114763e>] path_lookupat+0x59/0x330
+> [63314.408019]  [<ffffffff8112cb73>] ? kmem_cache_alloc+0x31/0x103
+> [63314.408212]  [<ffffffff8114793d>] do_path_lookup+0x28/0xa4
+> [63314.408393]  [<ffffffff81149a3a>] user_path_at_empty+0x55/0x94
+> [63314.408586]  [<ffffffff81073878>] ? wake_up_state+0x10/0x12
+> [63314.408772]  [<ffffffff8108f727>] ? wake_futex+0x64/0x69
+> [63314.408947]  [<ffffffff8108f81c>] ? futex_wake+0xf0/0x102
+> [63314.409124]  [<ffffffff81149a8a>] user_path_at+0x11/0x13
+> [63314.409301]  [<ffffffff81140ab3>] vfs_fstatat+0x42/0x6d
+> [63314.409473]  [<ffffffff81140bd0>] vfs_stat+0x1b/0x1d
+> [63314.409636]  [<ffffffff81140bf1>] sys_newstat+0x1f/0x3d
+> [63314.409812]  [<ffffffff814e2f69>] system_call_fastpath+0x16/0x1b
+> [63314.410007] Code: fe 48 c7 40 68 07 00 00 00 e8 6c d8 f0 ff c9 c3
+> 55 48 89 e5 66 66 66 66 90 31 c0 41 89 d2 f6 46 0d 02 75 20 48 8b 46
+> 38 45 89 c1 <0f> b7 50 20 8b 70 1c 49 89 c8 48 8b 47 68 44 89 d1 8b 78
+> 04 e8
+> [63314.410998] RIP  [<ffffffff8121f3f6>] inode_has_perm+0x1b/0x36
+> [63314.411195]  RSP <ffff88032cba1ba8>
+> [63314.411310] CR2: 0000000000000020
+> [63314.411846] ---[ end trace fa4043a7d7cc37e7 ]---
+> 
+> Cheers,
+> Vinson
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
