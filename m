@@ -1,93 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3ETJmb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:42:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754458Ab3ETJma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:42:30 -0400
-Date: Mon, 20 May 2013 12:42:23 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v6 2/7] KVM: MMU: delete shadow page from hash list in
- kvm_mmu_prepare_zap_page
-Message-ID: <20130520094223.GB12034@redhat.com>
-References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1368738782-18649-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130519104713.GE4725@redhat.com>
- <5199EA9E.3010909@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5199EA9E.3010909@linux.vnet.ibm.com>
+	id S1754747Ab3ETJpA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:45:00 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:53837 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab3ETJo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 05:44:58 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Remove inline strcpy() and strcat() implementations
+Date: Mon, 20 May 2013 11:44:37 +0200
+Message-Id: <1369043077-31375-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 05:19:26PM +0800, Xiao Guangrong wrote:
-> On 05/19/2013 06:47 PM, Gleb Natapov wrote:
-> > On Fri, May 17, 2013 at 05:12:57AM +0800, Xiao Guangrong wrote:
-> >> Move deletion shadow page from the hash list from kvm_mmu_commit_zap_page to
-> >> kvm_mmu_prepare_zap_page so that we can call kvm_mmu_commit_zap_page
-> >> once for multiple kvm_mmu_prepare_zap_page that can help us to avoid
-> >> unnecessary TLB flush
-> >>
-> > Don't we call kvm_mmu_commit_zap_page() once for multiple
-> > kvm_mmu_prepare_zap_page() now when possible? kvm_mmu_commit_zap_page()
-> > gets a list as a parameter. I am not against the change, but wish to
-> > understand it better.
-> 
-> The changelong is not clear enough, i mean we can "call
-> kvm_mmu_commit_zap_page once for multiple kvm_mmu_prepare_zap_page" when
-> we use lock-break technique. If we do not do this, the page can be found
-> in hashtable but they are linked on the invalid_list on other thread.
-> 
-Got it. Make sense.
+Gcc may replace calls to standard string functions by open code and/or
+calls to other standard string functions. If the replacement function is
+not available out-of-line, link errors will happen.
 
-> > 
-> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >> ---
-> >>  arch/x86/kvm/mmu.c |    8 ++++++--
-> >>  1 files changed, 6 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >> index 40d7b2d..682ecb4 100644
-> >> --- a/arch/x86/kvm/mmu.c
-> >> +++ b/arch/x86/kvm/mmu.c
-> >> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
-> >>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
-> >>  {
-> >>  	ASSERT(is_empty_shadow_page(sp->spt));
-> >> -	hlist_del(&sp->hash_link);
-> >> +
-> >>  	list_del(&sp->link);
-> >>  	free_page((unsigned long)sp->spt);
-> >>  	if (!sp->role.direct)
-> >> @@ -1655,7 +1655,8 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
-> >>  
-> >>  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
-> >>  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
-> >> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
-> >> +		if ((_sp)->role.direct ||				\
-> >> +		      ((_sp)->role.invalid && WARN_ON(1))) {} else
-> >>  
-> >>  /* @sp->gfn should be write-protected at the call site */
-> >>  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> >> @@ -2074,6 +2075,9 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> >>  		unaccount_shadowed(kvm, sp->gfn);
-> >>  	if (sp->unsync)
-> >>  		kvm_unlink_unsync_page(kvm, sp);
-> >> +
-> >> +	hlist_del_init(&sp->hash_link);
-> >> +
-> > What about moving this inside if() bellow and making it hlist_del()?
-> > Leave the page on the hash if root_count is non zero.
-> > 
-> 
-> It's a good idea. will update.
-> 
+To avoid this, the out-of-line versions were provided by
+arch/m68k/lib/string.c, but they were usually not linked in anymore as
+typically none of its symbols are referenced by built-in code.
+However, if any module would need them, they would not be available.
 
---
-			Gleb.
+Hence remove the inline strcpy() and strcat() implementations, remove
+arch/m68k/lib/string.c, and let the generic string library code handle it.
+
+Impact on a typical kernel build seems minimal or nonexistent:
+
+-      .text : 0x00001000 - 0x002aac74   (2728 KiB)
+-      .data : 0x002ada48 - 0x00392148   ( 914 KiB)
++      .text : 0x00001000 - 0x002aacf4   (2728 KiB)
++      .data : 0x002adac8 - 0x00392148   ( 914 KiB)
+
+See also commit e00c73ee05dc38ecaccced55d4f5fc58b0b769f7 ("m68k: Remove
+inline strlen() implementation").
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/string.h |   32 --------------------------------
+ arch/m68k/lib/Makefile         |    2 +-
+ arch/m68k/lib/string.c         |   22 ----------------------
+ 3 files changed, 1 insertions(+), 55 deletions(-)
+ delete mode 100644 arch/m68k/lib/string.c
+
+diff --git a/arch/m68k/include/asm/string.h b/arch/m68k/include/asm/string.h
+index 9aea9f1..c30c03d 100644
+--- a/arch/m68k/include/asm/string.h
++++ b/arch/m68k/include/asm/string.h
+@@ -4,20 +4,6 @@
+ #include <linux/types.h>
+ #include <linux/compiler.h>
+ 
+-static inline char *__kernel_strcpy(char *dest, const char *src)
+-{
+-	char *xdest = dest;
+-
+-	asm volatile ("\n"
+-		"1:	move.b	(%1)+,(%0)+\n"
+-		"	jne	1b"
+-		: "+a" (dest), "+a" (src)
+-		: : "memory");
+-	return xdest;
+-}
+-
+-#ifndef __IN_STRING_C
+-
+ #define __HAVE_ARCH_STRNLEN
+ static inline size_t strnlen(const char *s, size_t count)
+ {
+@@ -34,16 +20,6 @@ static inline size_t strnlen(const char *s, size_t count)
+ 	return sc - s;
+ }
+ 
+-#define __HAVE_ARCH_STRCPY
+-#if __GNUC__ >= 4
+-#define strcpy(d, s)	(__builtin_constant_p(s) &&	\
+-			 __builtin_strlen(s) <= 32 ?	\
+-			 __builtin_strcpy(d, s) :	\
+-			 __kernel_strcpy(d, s))
+-#else
+-#define strcpy(d, s)	__kernel_strcpy(d, s)
+-#endif
+-
+ #define __HAVE_ARCH_STRNCPY
+ static inline char *strncpy(char *dest, const char *src, size_t n)
+ {
+@@ -61,12 +37,6 @@ static inline char *strncpy(char *dest, const char *src, size_t n)
+ 	return xdest;
+ }
+ 
+-#define __HAVE_ARCH_STRCAT
+-#define strcat(d, s)	({			\
+-	char *__d = (d);			\
+-	strcpy(__d + strlen(__d), (s));		\
+-})
+-
+ #ifndef CONFIG_COLDFIRE
+ #define __HAVE_ARCH_STRCMP
+ static inline int strcmp(const char *cs, const char *ct)
+@@ -100,6 +70,4 @@ extern void *memset(void *, int, __kernel_size_t);
+ extern void *memcpy(void *, const void *, __kernel_size_t);
+ #define memcpy(d, s, n) __builtin_memcpy(d, s, n)
+ 
+-#endif
+-
+ #endif /* _M68K_STRING_H_ */
+diff --git a/arch/m68k/lib/Makefile b/arch/m68k/lib/Makefile
+index a9d782d..fcd8eb1 100644
+--- a/arch/m68k/lib/Makefile
++++ b/arch/m68k/lib/Makefile
+@@ -6,7 +6,7 @@
+ lib-y	:= ashldi3.o ashrdi3.o lshrdi3.o muldi3.o \
+ 	   memcpy.o memset.o memmove.o
+ 
+-lib-$(CONFIG_MMU) += string.o uaccess.o
++lib-$(CONFIG_MMU) += uaccess.o
+ lib-$(CONFIG_CPU_HAS_NO_MULDIV64) += mulsi3.o divsi3.o udivsi3.o
+ lib-$(CONFIG_CPU_HAS_NO_MULDIV64) += modsi3.o umodsi3.o
+ 
+diff --git a/arch/m68k/lib/string.c b/arch/m68k/lib/string.c
+deleted file mode 100644
+index 4d61fa8..0000000
+--- a/arch/m68k/lib/string.c
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/*
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file COPYING in the main directory of this archive
+- * for more details.
+- */
+-
+-#define __IN_STRING_C
+-
+-#include <linux/module.h>
+-#include <linux/string.h>
+-
+-char *strcpy(char *dest, const char *src)
+-{
+-	return __kernel_strcpy(dest, src);
+-}
+-EXPORT_SYMBOL(strcpy);
+-
+-char *strcat(char *dest, const char *src)
+-{
+-	return __kernel_strcpy(dest + strlen(dest), src);
+-}
+-EXPORT_SYMBOL(strcat);
+-- 
+1.7.0.4
+
