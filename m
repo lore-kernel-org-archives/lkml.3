@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab3ETSjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 14:39:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab3ETSjm (ORCPT
+	id S1757689Ab3ETSm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 14:42:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58984 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab3ETSm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 14:39:42 -0400
-Date: Mon, 20 May 2013 11:39:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] stallion: final cleanup
-Message-ID: <20130520183941.GB14851@kroah.com>
-References: <1363871896.1390.138.camel@x61.thuisdomein>
- <201303211429.29502.arnd@arndb.de>
- <1368736525.1350.214.camel@x61.thuisdomein>
+	Mon, 20 May 2013 14:42:27 -0400
+Date: Mon, 20 May 2013 11:42:05 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-03762e92774e216bfad2e0c0e2f1cb581cfab632@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, mhocko@suse.cz,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, hpa@linux.intel.com,
+        mhocko@suse.cz
+In-Reply-To: <20130520182306.GA5348@dhcp22.suse.cz>
+References: <20130520182306.GA5348@dhcp22.suse.cz>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-64: Make early_pmd_flags __cpuinitdata
+Git-Commit-ID: 03762e92774e216bfad2e0c0e2f1cb581cfab632
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1368736525.1350.214.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 10:35:25PM +0200, Paul Bolle wrote:
-> On Thu, 2013-03-21 at 14:29 +0000, Arnd Bergmann wrote:
-> > On Thursday 21 March 2013, Paul Bolle wrote:
-> > > Support for the Stallion multiport serial drivers was removed in v3.1.
-> > > Clean up their last references in the tree: mainly an outdated Kconfig
-> > > entry and unneeded documentation.
-> > > 
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> I don't think this patch is queued somewhere. Greg? Arnd?
+Commit-ID:  03762e92774e216bfad2e0c0e2f1cb581cfab632
+Gitweb:     http://git.kernel.org/tip/03762e92774e216bfad2e0c0e2f1cb581cfab632
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 20 May 2013 11:30:16 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 20 May 2013 11:36:46 -0700
 
-I don't seem to have it, can someone please resend it?
+x86-64: Make early_pmd_flags __cpuinitdata
 
-thanks,
+Although early_pmd_flags is not actually *used* except at init time, it
+is *set* in secondary_startup_64, which is executed on any CPU
+startup, including hotplug and S3 resume.
 
-greg k-h
+Reported-and-tested-by: Michal Hocko <mhocko@suse.cz>
+Debugged-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20130520182306.GA5348@dhcp22.suse.cz
+Cc: <stable@vger.kernel.org> v3.9
+---
+ arch/x86/kernel/head64.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index dab95a8..aa67bdd 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -34,7 +34,8 @@
+ extern pgd_t early_level4_pgt[PTRS_PER_PGD];
+ extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
+ static unsigned int __initdata next_early_pgt = 2;
+-pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
++pmdval_t __cpuinitdata early_pmd_flags =
++	__PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
+ 
+ /* Wipe all early page tables except for the kernel symbol map */
+ static void __init reset_early_page_tables(void)
