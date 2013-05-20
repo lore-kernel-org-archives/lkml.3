@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab3ETOwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:52:49 -0400
-Received: from smtp-out-212.synserver.de ([212.40.185.212]:1080 "EHLO
-	smtp-out-206.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757180Ab3ETOv6 (ORCPT
+	id S932089Ab3ETOxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:53:05 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33433 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab3ETOw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:51:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 6266
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Trilok Soni <tsoni@codeaurora.org>
-Subject: [PATCH 6/7] input: pmic8xxx-pwrkey: Pass correct pointer to free_irq()
-Date: Mon, 20 May 2013 16:51:25 +0200
-Message-Id: <1369061486-28226-6-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1369061486-28226-1-git-send-email-lars@metafoo.de>
-References: <1369061486-28226-1-git-send-email-lars@metafoo.de>
+	Mon, 20 May 2013 10:52:58 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/2] nohz_full: Update based on Sedat Dilek review
+Date: Mon, 20 May 2013 07:50:00 -0700
+Message-Id: <1369061402-31334-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130520144934.GA29947@linux.vnet.ibm.com>
+References: <20130520144934.GA29947@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052014-7606-0000-0000-00000B91F88F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_irq() expects the same pointer that was passed to request_irq(), otherwise
-the IRQ is not freed.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The issue was found using the following coccinelle script:
+Make it more clear that there are three options, and give hints as
+to which of the three is most likely to be useful in different
+situations.
 
-<smpl>
-@r1@
-type T;
-T devid;
-@@
-request_irq(..., devid)
-
-@r2@
-type r1.T;
-T devid;
-position p;
-@@
-free_irq@p(..., devid)
-
-@@
-position p != r2.p;
-@@
-*free_irq@p(...)
-</smpl>
-
-Cc: Trilok Soni <tsoni@codeaurora.org>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/input/misc/pmic8xxx-pwrkey.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/timers/NO_HZ.txt | 58 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 49 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/input/misc/pmic8xxx-pwrkey.c b/drivers/input/misc/pmic8xxx-pwrkey.c
-index afd0af9..b49b738 100644
---- a/drivers/input/misc/pmic8xxx-pwrkey.c
-+++ b/drivers/input/misc/pmic8xxx-pwrkey.c
-@@ -175,7 +175,7 @@ static int pmic8xxx_pwrkey_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+index 5b53220..d5323e0 100644
+--- a/Documentation/timers/NO_HZ.txt
++++ b/Documentation/timers/NO_HZ.txt
+@@ -7,21 +7,59 @@ efficiency and reducing OS jitter.  Reducing OS jitter is important for
+ some types of computationally intensive high-performance computing (HPC)
+ applications and for real-time applications.
  
- free_press_irq:
--	free_irq(key_press_irq, NULL);
-+	free_irq(key_press_irq, pwrkey);
- unreg_input_dev:
- 	input_unregister_device(pwr);
- 	pwr = NULL;
+-There are two main contexts in which the number of scheduling-clock
+-interrupts can be reduced compared to the old-school approach of sending
+-a scheduling-clock interrupt to all CPUs every jiffy whether they need
+-it or not (CONFIG_HZ_PERIODIC=y or CONFIG_NO_HZ=n for older kernels):
++There are three main ways of managing scheduling-clock interrupts
++(also known as "scheduling-clock ticks" or simply "ticks"):
+ 
+-1.	Idle CPUs (CONFIG_NO_HZ_IDLE=y or CONFIG_NO_HZ=y for older kernels).
++1.	Never omit scheduling-clock ticks (CONFIG_HZ_PERIODIC=y or
++	CONFIG_NO_HZ=n for older kernels).  You normally will -not-
++	want to choose this option.
+ 
+-2.	CPUs having only one runnable task (CONFIG_NO_HZ_FULL=y).
++2.	Omit scheduling-clock ticks on idle CPUs (CONFIG_NO_HZ_IDLE=y or
++	CONFIG_NO_HZ=y for older kernels).  This is the most common
++	approach, and should be the default.
+ 
+-These two cases are described in the following two sections, followed
++3.	Omit scheduling-clock ticks on CPUs that are either idle or that
++	have only one runnable task (CONFIG_NO_HZ_FULL=y).  Unless you
++	are running realtime applications or certain types of HPC
++	workloads, you will normally -not- want this option.
++
++These three cases are described in the following three sections, followed
+ by a third section on RCU-specific considerations and a fourth and final
+ section listing known issues.
+ 
+ 
+-IDLE CPUs
++NEVER OMIT SCHEDULING-CLOCK TICKS
++
++Very old versions of Linux from the 1990s and the very early 2000s
++are incapable of omitting scheduling-clock ticks.  It turns out that
++there are some situations where this old-school approach is still the
++right approach, for example, in heavy workloads with lots of tasks
++that use short bursts of CPU, where there are very frequent idle
++periods, but where these idle periods are also quite short (tens or
++hundreds of microseconds).  For these types of workloads, scheduling
++clock interrupts will normally be delivered any way because there
++will frequently be multiple runnable tasks per CPU.  In these cases,
++attempting to turn off the scheduling clock interrupt will have no effect
++other than increasing the overhead of switching to and from idle and
++transitioning between user and kernel execution.
++
++This mode of operation can be selected using CONFIG_HZ_PERIODIC=y (or
++CONFIG_NO_HZ=n for older kernels).
++
++However, if you are instead running a light workload with long idle
++periods, failing to omit scheduling-clock interrupts will result in
++excessive power consumption.  This is especially bad on battery-powered
++devices, where it results in extremely short battery lifetimes.  If you
++are running light workloads, you should therefore read the following
++section.
++
++In addition, if you are running either a real-time workload or an HPC
++workload with short iterations, the scheduling-clock interrupts can
++degrade your applications performance.  If this describes your workload,
++you should read the following two sections.
++
++
++OMIT SCHEDULING-CLOCK TICKS FOR IDLE CPUs
+ 
+ If a CPU is idle, there is little point in sending it a scheduling-clock
+ interrupt.  After all, the primary purpose of a scheduling-clock interrupt
+@@ -59,10 +97,12 @@ By default, CONFIG_NO_HZ_IDLE=y kernels boot with "nohz=on", enabling
+ dyntick-idle mode.
+ 
+ 
+-CPUs WITH ONLY ONE RUNNABLE TASK
++OMIT SCHEDULING-CLOCK TICKS FOR CPUs WITH ONLY ONE RUNNABLE TASK
+ 
+ If a CPU has only one runnable task, there is little point in sending it
+ a scheduling-clock interrupt because there is no other task to switch to.
++Note that omitting scheduling-clock ticks for CPUs with only one runnable
++task implies also omitting them for idle CPUs.
+ 
+ The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to avoid
+ sending scheduling-clock interrupts to CPUs with a single runnable task,
 -- 
-1.8.0
+1.8.1.5
 
