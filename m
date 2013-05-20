@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758485Ab3ETXMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 19:12:09 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52240 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756021Ab3ETXMH (ORCPT
+	id S1758483Ab3ETXVm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 19:21:42 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:44003 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755974Ab3ETXVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 19:12:07 -0400
-X-Sasl-enc: HwtnbVfCumlNjnE6wY2a9QHR/usuF7KLQMv1rowDd7t3 1369091525
-Date: Mon, 20 May 2013 16:12:03 -0700
-From: Greg KH <greg@kroah.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-arch <linux-arch@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Get rid of cpuinit?
-Message-ID: <20130520231203.GA21682@kroah.com>
-References: <519AA53F.1020107@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519AA53F.1020107@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 May 2013 19:21:40 -0400
+From: Sergey Yanovich <ynvich@gmail.com>
+To: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Cc: Sergey Yanovich <ynvich@gmail.com>, Marc Zyngier <maz@misterjones.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH] rtc-ds1302: handle write protection
+Date: Tue, 21 May 2013 03:21:30 +0400
+Message-Id: <1369092090-5384-1-git-send-email-ynvich@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 03:35:43PM -0700, H. Peter Anvin wrote:
-> We have gotten rid of devinit markup.  A recent patch of Linus' makes me
-> wonder if we similarly should get rid of cpuinit markup?
-> 
-> Just as with devices, the CPU hotplug machinery has been leveraged to
-> support a number of pieces of functionality such as suspend, which means
-> that on anything but the most embedded systems this functionality is
-> likely needed anyway.
-> 
-> On x86-64, for an "allyesconfig" build, the total amount of space in all
-> the .cpu* sections combined is 100K.
+This chip has a control register and can prevent altering saved clock.
+Without this patch we could have:
+----8<----
+(arm)root@pac14:~# date
+Tue May 21 03:08:27 MSK 2013
+(arm)root@pac14:~# /etc/init.d/hwclock.sh show
+Tue May 21 11:13:58 2013  -0.067322 seconds
+(arm)root@pac14:~# /etc/init.d/hwclock.sh stop
+[info] Saving the system clock.
+[info] Hardware Clock updated to Tue May 21 03:09:01 MSK 2013.
+(arm)root@pac14:~# /etc/init.d/hwclock.sh show
+Tue May 21 11:14:15 2013  -0.624272 seconds
+----8<----
 
-No objection from me on removing it, it just causes problems from what I
-can tell.
+Signed-off-by: Sergey Yanovich <ynvich@gmail.com>
+---
+ drivers/rtc/rtc-ds1302.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-thanks,
+diff --git a/drivers/rtc/rtc-ds1302.c b/drivers/rtc/rtc-ds1302.c
+index 73eafb9..626aec2 100644
+--- a/drivers/rtc/rtc-ds1302.c
++++ b/drivers/rtc/rtc-ds1302.c
+@@ -23,8 +23,12 @@
+ #define	RTC_CMD_READ	0x81		/* Read command */
+ #define	RTC_CMD_WRITE	0x80		/* Write command */
+ 
++#define	RTC_CMD_WRITE_ENABLE	0x00		/* Write enable */
++#define	RTC_CMD_WRITE_DISABLE	0x80		/* Write disable */
++
+ #define RTC_ADDR_RAM0	0x20		/* Address of RAM0 */
+ #define RTC_ADDR_TCR	0x08		/* Address of trickle charge register */
++#define	RTC_ADDR_CTRL	0x07		/* Address of control register */
+ #define	RTC_ADDR_YEAR	0x06		/* Address of year register */
+ #define	RTC_ADDR_DAY	0x05		/* Address of day of week register */
+ #define	RTC_ADDR_MON	0x04		/* Address of month register */
+@@ -313,6 +317,7 @@ static int __init ds1302_rtc_probe(struct platform_device *pdev)
+ 		return PTR_ERR(rtc);
+ 
+ 	platform_set_drvdata(pdev, rtc);
++	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_ENABLE);
+ 
+ 	return 0;
+ }
+@@ -321,6 +326,7 @@ static int ds1302_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct rtc_device *rtc = platform_get_drvdata(pdev);
+ 
++	ds1302_writebyte(RTC_ADDR_CTRL, RTC_CMD_WRITE_DISABLE);
+ 	rtc_device_unregister(rtc);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-- 
+1.7.10.4
 
-greg k-h
