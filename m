@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab3ETO6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:58:01 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46556 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab3ETO6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:58:00 -0400
-Date: Mon, 20 May 2013 07:57:51 -0700
+	id S1756603Ab3ETO6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:58:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42808 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755549Ab3ETO6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 10:58:34 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/13] v2 TINY_RCU changes for 3.11
-Message-ID: <20130520145751.GA32218@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/13] rcu: Remove rcu_preempt_process_callbacks()
+Date: Mon, 20 May 2013 07:58:12 -0700
+Message-Id: <1369061900-546-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130520145751.GA32218@linux.vnet.ibm.com>
+ <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-7282-0000-0000-000017651CA4
+x-cbid: 13052014-9360-0000-0000-000012433E09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series removes TINY_PREEMPT_RCU, as promised/threatened at
-http://lwn.net/Articles/541037/ and https://lkml.org/lkml/2012/11/12/545.
+With the removal of CONFIG_TINY_PREEMPT_RCU, rcu_preempt_process_callbacks()
+is now an empty function.  This commit therefore eliminates it by
+inlining it.
 
-1.	Remove TINY_PREEMPT_RCU.  This is a straight syntactic removal,
-	with no attempt at cleanup.  The remaining patches do the cleanup.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/rcutiny.c        | 1 -
+ kernel/rcutiny_plugin.h | 8 --------
+ 2 files changed, 9 deletions(-)
 
-2.	Inline the now-empty show_tiny_preempt_stats() function.
-
-3.	Inline the now-empty rcu_preempt_check_callbacks() function.
-
-4.	Inline the now-empty rcu_preempt_remove_callbacks() function.
-
-5.	Inline the now-empty rcu_preempt_process_callbacks() function.
-
-6.	Because TINY_RCU no longer has kthreads, remove the code that
-	used to abstract away kthread vs. softirq invocation.
-
-7.	Inline the now-empty check_cpu_stall_preempt() function.
-
-8.	Remove CONFIG_TINY_RCU ifdefs from include/linux/rcutiny.h
-
-9.	Inline the now-empty rcu_preempt_note_context_switch() function.
-
-10.	Move code to allow consolidating ifdefs in kernel/rcutiny_plugin.h.
-
-11.	Remove TINY_PREEMPT_RCU's tracing formats from documentation.
-
-12.	Shrink TINY_RCU a bit by moving exit_rcu() to TREE_RCU, leaving
-	TINY_RCU with a static inline empty function.
-
-13.	Shrink TINY_RCU a bit more by making reset_cpu_stall_ticks() and
-	check_cpu_stalls() inlineable.
-
-Changes from v1: Add Reviewed-bys and add the 13th patch.
-
-							Thanx, Paul
-
- b/Documentation/RCU/trace.txt |  100 ----
- b/include/linux/hardirq.h     |    2 
- b/include/linux/rcupdate.h    |    5 
- b/include/linux/rcutiny.h     |   45 -
- b/include/linux/rcutree.h     |    3 
- b/init/Kconfig                |   10 
- b/kernel/rcupdate.c           |   26 -
- b/kernel/rcutiny.c            |   21 
- b/kernel/rcutiny_plugin.h     | 1023 +-----------------------------------------
- b/kernel/rcutree_plugin.h     |   26 +
- 10 files changed, 96 insertions(+), 1165 deletions(-)
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 6f5a2a6..7fc2339 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -314,7 +314,6 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+ {
+ 	__rcu_process_callbacks(&rcu_sched_ctrlblk);
+ 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
+-	rcu_preempt_process_callbacks();
+ }
+ 
+ /*
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 8b835b9..bfe9924 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -102,14 +102,6 @@ static void check_cpu_stalls(void)
+ 	RCU_TRACE(check_cpu_stall_preempt());
+ }
+ 
+-/*
+- * Because preemptible RCU does not exist, it never has any callbacks
+- * to process.
+- */
+-static void rcu_preempt_process_callbacks(void)
+-{
+-}
+-
+ /* Hold off callback invocation until early_initcall() time. */
+ static int rcu_scheduler_fully_active __read_mostly;
+ 
+-- 
+1.8.1.5
 
