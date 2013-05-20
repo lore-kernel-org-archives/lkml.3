@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab3ETJDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:03:19 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:38669 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751139Ab3ETJDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:03:17 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1753251Ab3ETJGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:06:15 -0400
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:15767
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751393Ab3ETJGO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 05:06:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(zcb8kzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <grant.likely@linaro.org>
+CC: <rob.herring@calxeda.com>, <arnd@arndb.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <shawn.guo@linaro.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: [PATCH 0/6] ARM: imx6q{dl}: add the WEIM driver
+Date: Mon, 20 May 2013 16:48:56 +0800
+Message-ID: <1369039742-10893-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against spraying attacks
-Date: Mon, 20 May 2013 09:51:59 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B723E@saturn3.aculab.com>
-In-Reply-To: <1368844623.3301.142.camel@edumazet-glaptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against spraying attacks
-Thread-Index: Ac5TcHIh5J54lOyxRzS7a/3lTwWoQABxcg5g
-References: <1368844623.3301.142.camel@edumazet-glaptop>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "David Miller" <davem@davemloft.net>
-Cc: "netdev" <netdev@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4K93R3J010652
 
-> hpa bringed into my attention some security related issues
-> with BPF JIT on x86.
-> 
-> This patch makes sure the bpf generated code is marked read only,
-> as other kernel text sections.
-> 
-> It also splits the unused space (we vmalloc() and only use a fraction of
-> the page) in two parts, so that the generated bpf code not starts at a
-> known offset in the page, but a pseudo random one.
-...
-> +static struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
-> +						  u8 **image_ptr)
-...
-> +	/* insert a random number of int3 instructions before BPF code */
-> +	*image_ptr = &header->image[prandom_u32() % hole];
-> +	return header;
-> +}
+This patch set adds a new driver for WEIM in the imx6q{dl}-sabreauto boards.
 
-Hmmm.... anyone looking to overwrite kernel code will then start
-looking for blocks of 0xcc bytes and know that what follows
-is the beginning of a function.
-That isn't any harder than random writes.
+The WEIM(Wireless External Interface Module) works like a bus.
+You can attach many different devices on it, such as NOR, onenand.
 
-Copying a random part of .rodata might be better - especially
-if you can find part of .rodata.str*.
+In the case of i.MX6q-sabreauto, only the NOR is connected to WEIM.
 
-	David
+Huang Shijie (6):
+  drivers: bus: add a new driver for WEIM
+  ARM: dts: imx6q{dl}: fix the pin conflict between SPI and WEIM
+  ARM: dts: imx6qdl: add more information for WEIM
+  ARM: dts: imx6q: add pinctrl for WEIM NOR
+  ARM: dts: imx6ql: add a pinctrl for WEIM NOR
+  ARM: dts: imx6qdl: enable the WEIM NOR
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ Documentation/devicetree/bindings/bus/imx-weim.txt |   69 +++++++++
+ arch/arm/boot/dts/imx6dl-sabreauto.dts             |    9 +-
+ arch/arm/boot/dts/imx6dl.dtsi                      |   57 ++++++++
+ arch/arm/boot/dts/imx6q-sabreauto.dts              |    9 +-
+ arch/arm/boot/dts/imx6q.dtsi                       |   58 ++++++++
+ arch/arm/boot/dts/imx6qdl-sabreauto.dtsi           |   23 +++-
+ arch/arm/boot/dts/imx6qdl.dtsi                     |    4 +-
+ drivers/bus/Kconfig                                |    9 ++
+ drivers/bus/Makefile                               |    1 +
+ drivers/bus/imx-weim.c                             |  145 ++++++++++++++++++++
+ 10 files changed, 380 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/bus/imx-weim.txt
+ create mode 100644 drivers/bus/imx-weim.c
+
+
