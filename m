@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab3ETTvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:51:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22493 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989Ab3ETTvU (ORCPT
+	id S1758005Ab3ETTxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:53:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48105 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756899Ab3ETTxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:51:20 -0400
-X-Authority-Analysis: v=2.0 cv=L+efspv8 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=iT4cs34EYqoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=8r7ovOuLwwQA:10 a=l7tcQsvpVlmC4ucDAc0A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369079478.6828.125.camel@gandalf.local.home>
-Subject: Re: [ 104/136 ] r8169: fix 8168evl frame padding.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: romieu@fr.zoreil.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        stefan.bader@canonical.com, hayeswang@realtek.com,
-        gregkh@linuxfoundation.org, ben@decadent.org.uk
-Date: Mon, 20 May 2013 15:51:18 -0400
-In-Reply-To: <20130520.124521.830734947343814495.davem@davemloft.net>
-References: <20130518021658.398536101@goodmis.org>
-	 <20130518100224.GA20930@electric-eye.fr.zoreil.com>
-	 <1369078844.6828.124.camel@gandalf.local.home>
-	 <20130520.124521.830734947343814495.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 20 May 2013 15:53:38 -0400
+Message-ID: <519A7F3B.1000105@pengutronix.de>
+Date: Mon, 20 May 2013 21:53:31 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/can/mcp251x: Use module_spi_driver to register driver
+References: <1369079399-6031-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1369079399-6031-1-git-send-email-peterhuewe@gmx.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2BHRVFPFOJSVBFLSSESXQ"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-20 at 12:45 -0700, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Mon, 20 May 2013 15:40:44 -0400
-> 
-> > On Sat, 2013-05-18 at 12:02 +0200, Francois Romieu wrote:
-> >> Steven Rostedt <rostedt@goodmis.org> :
-> >> > 3.6.11.4 stable review patch.
-> >> > If anyone has any objections, please let me know.
-> >> 
-> >> You should postpone it until the fix for a regression it induces when
-> >> user enable Tx checksumming is merged.
-> >> 
-> > 
-> > What do you mean? This has already been incorporated into 3.2, 3.4, 3.8,
-> > and 3.9 stable trees. Or has it just been recently found that this
-> > introduces a regression?
-> > 
-> > I can pull this out for this release.
-> > 
-> > (this was upstream commit: e5195c1f31f399289347e043d6abf3ffa80f0005)
-> 
-> This patch causes a new regression, which is only fixed in my 'net'
-> tree at this time.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2BHRVFPFOJSVBFLSSESXQ
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the quick response. I'll drop it from 3.6.11.4.
+On 05/20/2013 09:49 PM, Peter Huewe wrote:
+> Removing some boilerplate by using module_spi_driver instead of calling=
 
--- Steve
+> register and unregister in the otherwise empty init/exit functions
+>=20
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+
+A similar patch [1] by Lars-Peter Clausen hit mainline in v3.10-rc1.
+
+thanks, Marc
+
+[1] 01b8807 can: mcp251x: Use module_spi_driver
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+------enig2BHRVFPFOJSVBFLSSESXQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlGafz8ACgkQjTAFq1RaXHOnPwCeKYOEOM+NtswjyjF5CbgMibLV
+2u4An1Bhk6PVqz1Ll+Q7S0tXhATsksSd
+=8K45
+-----END PGP SIGNATURE-----
+
+------enig2BHRVFPFOJSVBFLSSESXQ--
