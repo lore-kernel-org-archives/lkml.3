@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3ETKxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:53:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56295 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756391Ab3ETKxh (ORCPT
+	id S1756634Ab3ETLDw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:03:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:39938 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab3ETLDu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:53:37 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 077/115] dm snapshot: fix error return code in snapshot_ctr
-Date: Mon, 20 May 2013 11:51:17 +0100
-Message-Id: <1369047116-9378-78-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
-References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 20 May 2013 07:03:50 -0400
+Message-ID: <519A030D.1030809@arm.com>
+Date: Mon, 20 May 2013 12:03:41 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCHv4] arm: Preserve the user r/w register TPIDRURW on context
+ switch and fork
+References: <518AA19B.2020209@dawncrow.de> <51979801.7010903@dawncrow.de>
+In-Reply-To: <51979801.7010903@dawncrow.de>
+X-OriginalArrivalTime: 20 May 2013 11:03:44.0634 (UTC) FILETIME=[B1EC25A0:01CE5549]
+X-MC-Unique: 113052012034700101
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.13 -stable review patch.  If anyone has any objections, please let me know.
+Hi André
 
-------------------
+On 18/05/13 16:02, André Hentschel wrote:
+> Am 08.05.2013 21:03, schrieb André Hentschel:
+>> From: =?UTF-8?q?Andr=C3=A9=20Hentschel?= <nerv@dawncrow.de>
+>>
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+This is strangely formatted for me too, and I use a different client 
+from Will so I'm not sure that the problem is just at our end...
 
-commit 09e8b813897a0f85bb401435d009228644c81214 upstream.
+(Also see that the list archive has weird formatting:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-May/167325.html )
 
-Return -ENOMEM instead of success if unable to allocate pending
-exception mempool in snapshot_ctr.
+Your first couple of patches didn't come out strangely formatted, so I'm 
+not really sure what's going on.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/md/dm-snap.c | 1 +
- 1 file changed, 1 insertion(+)
+>> Since commit 6a1c53124aa1 the user writeable TLS register was zeroed to
+>> prevent it from being used as a covert channel between two tasks.
+>>
+>> There are more and more applications coming to WinRT, Wine could support them,
+>> but mostly they expect to have the thread environment block (TEB) in TPIDRURW.
+>>
+>> This patch preserves that register per thread instead of clearing it.
+>> Unlike the TPIDRURO, which is already switched, the TPIDRURW
+>> can be updated from userspace so needs careful treatment in the case that we
+>> modify TPIDRURW and call fork(). To avoid this we must always read
+>> TPIDRURW in copy_thread.
+>>
+>> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+>> Signed-off-by: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Jonathan Austin <jonathan.austin@arm.com>
+>>
+>
+> Hi,
+> I'm not yet very familiar with the development process here,
+> am i getting no feedback on v4 because of the mergewindow being closed?
+> Or is there another reason? Sry for being impatient.
+>
 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index 5f4659e..8bd2d5f 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -1117,6 +1117,7 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	s->pending_pool = mempool_create_slab_pool(MIN_IOS, pending_cache);
- 	if (!s->pending_pool) {
- 		ti->error = "Could not allocate mempool for pending exceptions";
-+		r = -ENOMEM;
- 		goto bad_pending_pool;
- 	}
- 
--- 
-1.8.1.2
+This is a feature, not a fix, so most likely it'll be included at the 
+next merge window. For that to happen it should be in Russell's tree 
+around the middle of this cycle.
+
+Can you please rebase on 3.10-rc2 (when it happens) and post one more 
+version? After that, assuming nobody else has any final comments, you 
+could put it in to Russell's patch system...
+
+Just as a hint - one thing you might have done to increase the chances 
+of getting comments to clarify what's different between v3 and v4 - as a 
+way to make life easier for reviewers you can highlight the differences 
+between versions after the "---" (where you currently have the 
+description of why there are so many S-o-Bs).
+
+Hope that helps,
+Jonny
+
+
 
