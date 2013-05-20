@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab3ETKyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:54:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56486 "EHLO
+	id S1756706Ab3ETKyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:54:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56454 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756712Ab3ETKyU (ORCPT
+	with ESMTP id S1756632Ab3ETKyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:20 -0400
+	Mon, 20 May 2013 06:54:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+Cc: Chen Gang <gang.chen@asianux.com>, Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 115/115] watchdog: Fix race condition in registration code
-Date: Mon, 20 May 2013 11:51:55 +0100
-Message-Id: <1369047116-9378-116-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 109/115] drivers/char/ipmi: memcpy, need additional 2 bytes to avoid memory overflow
+Date: Mon, 20 May 2013 11:51:49 +0100
+Message-Id: <1369047116-9378-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit 60403f7a4d9368d187f79cba5e4672d01df37574 upstream.
+commit a5f2b3d6a738e7d4180012fe7b541172f8c8dcea upstream.
 
-A race condition exists when registering the first watchdog device.
-Sequence of events:
+When calling memcpy, read_data and write_data need additional 2 bytes.
 
-- watchdog_register_device calls watchdog_dev_register
-- watchdog_dev_register creates the watchdog misc device by calling
-  misc_register.
-  At that time, the matching character device (/dev/watchdog0) does not yet
-  exist, and old_wdd is not set either.
-- Userspace gets an event and opens /dev/watchdog
-- watchdog_open is called and sets wdd = old_wdd, which is still NULL,
-  and tries to dereference it. This causes the kernel to panic.
+  write_data:
+    for checking:  "if (size > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(bt->write_data + 3, data + 1, size - 1)"
 
-Seen with systemd trying to open /dev/watchdog immediately after
-it was created.
+  read_data:
+    for checking:  "if (msg_len < 3 || msg_len > IPMI_MAX_MSG_LENGTH)"
+    for operating: "memcpy(data + 2, bt->read_data + 4, msg_len - 2)"
 
-Reported-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Arkadiusz Miskiewicz <arekm@maven.pl>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/watchdog/watchdog_dev.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/char/ipmi/ipmi_bt_sm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index ef8edec..05a5310 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -524,6 +524,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 	int err, devno;
- 
- 	if (watchdog->id == 0) {
-+		old_wdd = watchdog;
- 		watchdog_miscdev.parent = watchdog->parent;
- 		err = misc_register(&watchdog_miscdev);
- 		if (err != 0) {
-@@ -532,9 +533,9 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 			if (err == -EBUSY)
- 				pr_err("%s: a legacy watchdog module is probably present.\n",
- 					watchdog->info->identity);
-+			old_wdd = NULL;
- 			return err;
- 		}
--		old_wdd = watchdog;
- 	}
- 
- 	/* Fill in the data structures */
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index cdd4c09f..a22a7a5 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -95,9 +95,9 @@ struct si_sm_data {
+ 	enum bt_states	state;
+ 	unsigned char	seq;		/* BT sequence number */
+ 	struct si_sm_io	*io;
+-	unsigned char	write_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	write_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		write_count;
+-	unsigned char	read_data[IPMI_MAX_MSG_LENGTH];
++	unsigned char	read_data[IPMI_MAX_MSG_LENGTH + 2]; /* +2 for memcpy */
+ 	int		read_count;
+ 	int		truncated;
+ 	long		timeout;	/* microseconds countdown */
 -- 
 1.8.1.2
 
