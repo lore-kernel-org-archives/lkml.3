@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab3ETLU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:20:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56039 "EHLO
+	id S1755577Ab3ETKwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:52:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55935 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab3ETKwi (ORCPT
+	with ESMTP id S1754856Ab3ETKwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:52:38 -0400
+	Mon, 20 May 2013 06:52:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Walleij <linus.walleij@linaro.org>, Olof Johansson <olof@lixom.net>,
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 028/115] ARM: u300: fix ages old copy/paste bug
-Date: Mon, 20 May 2013 11:50:28 +0100
-Message-Id: <1369047116-9378-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 006/115] drm/i915: Add no-lvds quirk for Fujitsu Esprimo Q900
+Date: Mon, 20 May 2013 11:50:06 +0100
+Message-Id: <1369047116-9378-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 0259d9eb30d003af305626db2d8332805696e60d upstream.
+commit 9e9dd0e889c76c786e8f2e164c825c3c06dea30c upstream.
 
-The UART1 is on the fast AHB bridge, not on the slow bus.
+The "Mobile Sandy Bridge CPUs" in the Fujitsu Esprimo Q900
+mini desktop PCs are probably misleading the LVDS detection
+code in intel_lvds_supported. Nothing is connected to the
+LVDS ports in these systems.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-[ luis: adjust context ]
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-u300/include/mach/u300-regs.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_lvds.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/mach-u300/include/mach/u300-regs.h b/arch/arm/mach-u300/include/mach/u300-regs.h
-index 65f87c5..cacb2af 100644
---- a/arch/arm/mach-u300/include/mach/u300-regs.h
-+++ b/arch/arm/mach-u300/include/mach/u300-regs.h
-@@ -101,7 +101,7 @@
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index 183a8d0..2aff20f 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -794,6 +794,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Fujitsu Esprimo Q900",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "ESPRIMO Q900"),
++		},
++	},
  
- #ifdef CONFIG_MACH_U300_BS335
- /* Fast UART1 on U335 only */
--#define U300_UART1_BASE			(U300_SLOW_PER_PHYS_BASE+0x7000)
-+#define U300_UART1_BASE			(U300_FAST_PER_PHYS_BASE+0x7000)
- #endif
- 
- /*
+ 	{ }	/* terminating entry */
+ };
 -- 
 1.8.1.2
 
