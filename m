@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab3ETQvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:51:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11002 "EHLO mga03.intel.com"
+	id S1755034Ab3ETQ7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755901Ab3ETQvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:51:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,709,1363158000"; 
-   d="scan'208";a="337105589"
-Date: Mon, 20 May 2013 09:51:29 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH 3.9-stable] ntb: off by one sanity checks
-Message-ID: <20130520165129.GD31363@jonmason-lab>
-References: <1368844538-3841-1-git-send-email-jhbird.choi@samsung.com>
- <20130518144709.GA29066@jonmason-lab>
- <20130520163850.GA28172@kroah.com>
+	id S1750887Ab3ETQ7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 12:59:32 -0400
+Date: Mon, 20 May 2013 18:55:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <greg@kroah.com>, Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: [PATCH] usermodehelper: kill the sub_info->path[0] check
+Message-ID: <20130520165559.GA19645@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130520163850.GA28172@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 09:38:50AM -0700, Greg KH wrote:
-> On Sat, May 18, 2013 at 07:47:09AM -0700, Jon Mason wrote:
-> > On Sat, May 18, 2013 at 11:35:38AM +0900, Jonghwan Choi wrote:
-> > > From: Dan Carpenter <dan.carpenter@oracle.com>
-> > > 
-> > > This patch looks like it should be in the 3.9-stable tree, should we apply
-> > > it?
-> > 
-> > Yes, please do.  I'll respond to each of the patch series, but please
-> > apply them all.  Also, one patch was omitted from these, titled 
-> > NTB: variable dereferenced before check
-> > 
-> > Please include that patch in 3.9 stable as well.
-> 
-> Can you just send me the git commit ids of the patches you wish to see
-> applied to the stable tree, and the order in which they need to go in?
+call_usermodehelper_exec() does nothing but returns success if
+path[0] == 0. The only user which needs this strange feature is
+request_module(), it can check modprobe_path[0] itself like other
+users do if they want to detect the "disabled by admin" case.
 
-My apologies.  All the commits to Linus' tree were bug fixes, so all
-of them should be pulled.  You can get them at:
+Kill it. Not only it looks strange, it can confuse other callers.
+And this allows us to revert 264b83c0 "usermodehelper: check
+subprocess_info->path != NULL", do_execve(NULL) is safe.
 
-git://github.com/jonmason/ntb.git tags/ntb-bugfixes-3.10
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/kmod.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-or, if you just want the commit ids (in order of oldest to newest)
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 8241906..fb32636 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -147,6 +147,9 @@ int __request_module(bool wait, const char *fmt, ...)
+ 	 */
+ 	WARN_ON_ONCE(wait && current_is_async());
+ 
++	if (!modprobe_path[0])
++		return 0;
++
+ 	va_start(args, fmt);
+ 	ret = vsnprintf(module_name, MODULE_NAME_LEN, fmt, args);
+ 	va_end(args);
+@@ -569,14 +572,6 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	int retval = 0;
+ 
+ 	helper_lock();
+-	if (!sub_info->path) {
+-		retval = -EINVAL;
+-		goto out;
+-	}
+-
+-	if (sub_info->path[0] == '\0')
+-		goto out;
+-
+ 	if (!khelper_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
+ 		goto out;
+-- 
+1.5.5.1
 
-186f27ff9f9ec5c110739ced88ce9f8fca053882
-ad3e2751e7c546ae678be1f8d86e898506b42cef
-cc0f868d8adef7bdc12cda132654870086d766bc
-113fc505b83b2d16e820ca74fa07f99a34877b1d
-b77b2637b39ecc380bb08992380d7d48452b0872
-90f9e934647e652a69396e18c779215a493271cf
-c9d534c8cbaedbb522a1d2cb037c6c394f610317
-c336acd3331dcc191a97dbc66a557d47741657c7
-904435cf76a9bdd5eb41b1c4e049d5a64f3a8400
-8b19d450ad188d402a183ff4a4d40f31c3916fbf
 
-> Also, in the future, please tag the patches you want in the stable
-> releases with the proper "Cc: Stable <stable@vger.kernel.org>" line in
-> the signed-off-by: area of the patch, so I can pick it up automagically.
-
-Will do.
-
-Thanks,
-Jon
-
-> thanks,
-> 
-> greg k-h
