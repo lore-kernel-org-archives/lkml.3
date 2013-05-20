@@ -1,104 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3ETJH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 05:07:56 -0400
-Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:11297
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752108Ab3ETJGV (ORCPT
+	id S1754540Ab3ETJJB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 05:09:01 -0400
+Received: from lan.nucleusys.com ([92.247.61.126]:49235 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751667Ab3ETJI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 05:06:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(zcb8kzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <grant.likely@linaro.org>
-CC: <rob.herring@calxeda.com>, <arnd@arndb.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <shawn.guo@linaro.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH 2/6] ARM: dts: imx6q{dl}: fix the pin conflict between SPI and WEIM
-Date: Mon, 20 May 2013 16:48:58 +0800
-Message-ID: <1369039742-10893-3-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1369039742-10893-1-git-send-email-b32955@freescale.com>
-References: <1369039742-10893-1-git-send-email-b32955@freescale.com>
+	Mon, 20 May 2013 05:08:59 -0400
+Date: Mon, 20 May 2013 12:08:47 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+To: David Miller <davem@davemloft.net>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Francois Romieu <romieu@fr.zoreil.com>
+Subject: [PATCH] drivers: net: usb: rtl8150: concurrent URB bugfix
+Message-ID: <alpine.DEB.2.02.1305201152001.11943@fry.nucleusys.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the imx6q-sabreauto and imx6dl-sabreauto boards,
-the pin MX6Q{DL}_PAD_EIM_D19 is used as a GPIO for SPI NOR, but
-it is used as a data pin for the WEIM NOR.
+From: Petko Manolov <petkan@nucleusys.com>
 
-In order to fix the conflict, this patch removes the pin from the hog,
-and adds a new pinctrl item: pinctrl_ecspi1_2.
+This patch fixes a potential race with concurrently running asynchronous 
+write requests.  The values for device's RX control register are now 
+stored in dynamically allocated buffers so each URB submission has it's 
+own copy.  Doing it the old way is data clobbering prone.
 
-The SPI NOR selects this pinctrl_ecspi1_2 when it is enabled.
+This patch is against latest 'net' tree.
 
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Petko Manolov <petkan@nucleusys.com>
 ---
- arch/arm/boot/dts/imx6dl-sabreauto.dts   |    9 ++++++++-
- arch/arm/boot/dts/imx6q-sabreauto.dts    |    9 ++++++++-
- arch/arm/boot/dts/imx6qdl-sabreauto.dtsi |    2 +-
- 3 files changed, 17 insertions(+), 3 deletions(-)
+ drivers/net/usb/rtl8150.c |  100 ++++++++++++++++-------------------
+ 1 file changed, 46 insertions(+), 54 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx6dl-sabreauto.dts b/arch/arm/boot/dts/imx6dl-sabreauto.dts
-index 60f3038..7695f70 100644
---- a/arch/arm/boot/dts/imx6dl-sabreauto.dts
-+++ b/arch/arm/boot/dts/imx6dl-sabreauto.dts
-@@ -25,7 +25,14 @@
- 			fsl,pins = <
- 				MX6DL_PAD_NANDF_CS2__GPIO6_IO15 0x80000000
- 				MX6DL_PAD_SD2_DAT2__GPIO1_IO13  0x80000000
--				MX6DL_PAD_EIM_D19__GPIO3_IO19 	0x80000000
-+			>;
-+		};
-+	};
-+
-+	ecspi1 {
-+		pinctrl_ecspi1_2: ecspi1grp-2 {
-+			fsl,pins = <
-+				MX6DL_PAD_EIM_D19__GPIO3_IO19  0x80000000
- 			>;
- 		};
- 	};
-diff --git a/arch/arm/boot/dts/imx6q-sabreauto.dts b/arch/arm/boot/dts/imx6q-sabreauto.dts
-index 9fb3e99..67a3a6b 100644
---- a/arch/arm/boot/dts/imx6q-sabreauto.dts
-+++ b/arch/arm/boot/dts/imx6q-sabreauto.dts
-@@ -29,7 +29,14 @@
- 			fsl,pins = <
- 				MX6Q_PAD_NANDF_CS2__GPIO6_IO15 0x80000000
- 				MX6Q_PAD_SD2_DAT2__GPIO1_IO13  0x80000000
--				MX6Q_PAD_EIM_D19__GPIO3_IO19   0x80000000
-+			>;
-+		};
-+	};
-+
-+	ecspi1 {
-+		pinctrl_ecspi1_2: ecspi1grp-2 {
-+			fsl,pins = <
-+				MX6Q_PAD_EIM_D19__GPIO3_IO19  0x80000000
- 			>;
- 		};
- 	};
-diff --git a/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi b/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi
-index d6baa51..eb293f5 100644
---- a/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-sabreauto.dtsi
-@@ -20,7 +20,7 @@
- 	fsl,spi-num-chipselects = <1>;
- 	cs-gpios = <&gpio3 19 0>;
- 	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_ecspi1_1>;
-+	pinctrl-0 = <&pinctrl_ecspi1_1 &pinctrl_ecspi1_2>;
- 	status = "disabled"; /* pin conflict with WEIM NOR */
+diff --git a/drivers/net/usb/rtl8150.c b/drivers/net/usb/rtl8150.c
+index a491d3a..6cbdac6 100644
+--- a/drivers/net/usb/rtl8150.c
++++ b/drivers/net/usb/rtl8150.c
+@@ -130,19 +130,23 @@ struct rtl8150 {
+ 	struct usb_device *udev;
+ 	struct tasklet_struct tl;
+ 	struct net_device *netdev;
+-	struct urb *rx_urb, *tx_urb, *intr_urb, *ctrl_urb;
++	struct urb *rx_urb, *tx_urb, *intr_urb;
+ 	struct sk_buff *tx_skb, *rx_skb;
+ 	struct sk_buff *rx_skb_pool[RX_SKB_POOL_SIZE];
+ 	spinlock_t rx_pool_lock;
+ 	struct usb_ctrlrequest dr;
+ 	int intr_interval;
+-	__le16 rx_creg;
+ 	u8 *intr_buff;
+ 	u8 phy;
+ };
  
- 	flash: m25p80@0 {
--- 
-1.7.1
-
-
+ typedef struct rtl8150 rtl8150_t;
+ 
++struct async_req {
++	struct usb_ctrlrequest dr;
++	u16 rx_creg;
++};
++
+ static const char driver_name [] = "rtl8150";
+ 
+ /*
+@@ -164,51 +168,47 @@ static int set_registers(rtl8150_t * dev, u16 indx, u16 size, void *data)
+ 			       indx, 0, data, size, 500);
+ }
+ 
+-static void ctrl_callback(struct urb *urb)
++static void async_set_reg_cb(struct urb *urb)
+ {
+-	rtl8150_t *dev;
++	struct async_req *req = (struct async_req *)urb->context;
+ 	int status = urb->status;
+ 
+-	switch (status) {
+-	case 0:
+-		break;
+-	case -EINPROGRESS:
+-		break;
+-	case -ENOENT:
+-		break;
+-	default:
+-		if (printk_ratelimit())
+-			dev_warn(&urb->dev->dev, "ctrl urb status %d\n", status);
+-	}
+-	dev = urb->context;
+-	clear_bit(RX_REG_SET, &dev->flags);
++	if (status < 0)
++		dev_dbg(&urb->dev->dev, "%s failed with %d", __func__, status);
++	kfree(req);
++	usb_free_urb(urb);
+ }
+ 
+-static int async_set_registers(rtl8150_t * dev, u16 indx, u16 size)
++static int async_set_registers(rtl8150_t *dev, u16 indx, u16 size, u16 reg)
+ {
+-	int ret;
+-
+-	if (test_bit(RX_REG_SET, &dev->flags))
+-		return -EAGAIN;
++	int res = -ENOMEM;
++	struct urb *async_urb;
++	struct async_req *req;
+ 
+-	dev->dr.bRequestType = RTL8150_REQT_WRITE;
+-	dev->dr.bRequest = RTL8150_REQ_SET_REGS;
+-	dev->dr.wValue = cpu_to_le16(indx);
+-	dev->dr.wIndex = 0;
+-	dev->dr.wLength = cpu_to_le16(size);
+-	dev->ctrl_urb->transfer_buffer_length = size;
+-	usb_fill_control_urb(dev->ctrl_urb, dev->udev,
+-			 usb_sndctrlpipe(dev->udev, 0), (char *) &dev->dr,
+-			 &dev->rx_creg, size, ctrl_callback, dev);
+-	if ((ret = usb_submit_urb(dev->ctrl_urb, GFP_ATOMIC))) {
+-		if (ret == -ENODEV)
++	req = kmalloc(sizeof(struct async_req), GFP_ATOMIC);
++	if (req == NULL)
++		return res;
++	async_urb = usb_alloc_urb(0, GFP_ATOMIC);
++	if (async_urb == NULL) {
++		kfree(req);
++		return res;
++	}
++	req->rx_creg = cpu_to_le16(reg);
++	req->dr.bRequestType = RTL8150_REQT_WRITE;
++	req->dr.bRequest = RTL8150_REQ_SET_REGS;
++	req->dr.wIndex = 0;
++	req->dr.wValue = cpu_to_le16(indx);
++	req->dr.wLength = cpu_to_le16(size);
++	usb_fill_control_urb(async_urb, dev->udev,
++	                     usb_sndctrlpipe(dev->udev, 0), (void *)&req->dr,
++			     &req->rx_creg, size, async_set_reg_cb, req);
++	res = usb_submit_urb(async_urb, GFP_ATOMIC);
++	if (res) {
++		if (res == -ENODEV)
+ 			netif_device_detach(dev->netdev);
+-		dev_err(&dev->udev->dev,
+-			"control request submission failed: %d\n", ret);
+-	} else
+-		set_bit(RX_REG_SET, &dev->flags);
+-
+-	return ret;
++		dev_err(&dev->udev->dev, "%s failed with %d\n", __func__, res);
++	}
++	return res;
+ }
+ 
+ static int read_mii_word(rtl8150_t * dev, u8 phy, __u8 indx, u16 * reg)
+@@ -330,13 +330,6 @@ static int alloc_all_urbs(rtl8150_t * dev)
+ 		usb_free_urb(dev->tx_urb);
+ 		return 0;
+ 	}
+-	dev->ctrl_urb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!dev->ctrl_urb) {
+-		usb_free_urb(dev->rx_urb);
+-		usb_free_urb(dev->tx_urb);
+-		usb_free_urb(dev->intr_urb);
+-		return 0;
+-	}
+ 
+ 	return 1;
+ }
+@@ -346,7 +339,6 @@ static void free_all_urbs(rtl8150_t * dev)
+ 	usb_free_urb(dev->rx_urb);
+ 	usb_free_urb(dev->tx_urb);
+ 	usb_free_urb(dev->intr_urb);
+-	usb_free_urb(dev->ctrl_urb);
+ }
+ 
+ static void unlink_all_urbs(rtl8150_t * dev)
+@@ -354,7 +346,6 @@ static void unlink_all_urbs(rtl8150_t * dev)
+ 	usb_kill_urb(dev->rx_urb);
+ 	usb_kill_urb(dev->tx_urb);
+ 	usb_kill_urb(dev->intr_urb);
+-	usb_kill_urb(dev->ctrl_urb);
+ }
+ 
+ static inline struct sk_buff *pull_skb(rtl8150_t *dev)
+@@ -629,7 +620,6 @@ static int enable_net_traffic(rtl8150_t * dev)
+ 	}
+ 	/* RCR bit7=1 attach Rx info at the end;  =0 HW CRC (which is broken) */
+ 	rcr = 0x9e;
+-	dev->rx_creg = cpu_to_le16(rcr);
+ 	tcr = 0xd8;
+ 	cr = 0x0c;
+ 	if (!(rcr & 0x80))
+@@ -662,20 +652,22 @@ static void rtl8150_tx_timeout(struct net_device *netdev)
+ static void rtl8150_set_multicast(struct net_device *netdev)
+ {
+ 	rtl8150_t *dev = netdev_priv(netdev);
++	u16 rx_creg = 0x9e;
++
+ 	netif_stop_queue(netdev);
+ 	if (netdev->flags & IFF_PROMISC) {
+-		dev->rx_creg |= cpu_to_le16(0x0001);
++		rx_creg |= 0x0001;
+ 		dev_info(&netdev->dev, "%s: promiscuous mode\n", netdev->name);
+ 	} else if (!netdev_mc_empty(netdev) ||
+ 		   (netdev->flags & IFF_ALLMULTI)) {
+-		dev->rx_creg &= cpu_to_le16(0xfffe);
+-		dev->rx_creg |= cpu_to_le16(0x0002);
++		rx_creg &= 0xfffe;
++		rx_creg |= 0x0002;
+ 		dev_info(&netdev->dev, "%s: allmulti set\n", netdev->name);
+ 	} else {
+ 		/* ~RX_MULTICAST, ~RX_PROMISCUOUS */
+-		dev->rx_creg &= cpu_to_le16(0x00fc);
++		rx_creg &= 0x00fc;
+ 	}
+-	async_set_registers(dev, RCR, 2);
++	async_set_registers(dev, RCR, sizeof(rx_creg), rx_creg);
+ 	netif_wake_queue(netdev);
+ }
+ 
