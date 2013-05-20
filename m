@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3ETIR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 04:17:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37208 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755141Ab3ETIR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 04:17:56 -0400
-Date: Mon, 20 May 2013 10:17:54 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lcapitulino@redhat.com,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] kbuild fix for v3.10-rc2
-Message-ID: <20130520081754.GA25645@sepie.suse.cz>
-References: <20130517193658.GA32023@pobox.suse.cz>
- <CA+55aFzYf6aCXcCE8=M53OumqvXj_TYb5z7vibe9UDf79xaehw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzYf6aCXcCE8=M53OumqvXj_TYb5z7vibe9UDf79xaehw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755404Ab3ETI3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 04:29:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42500 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752110Ab3ETI3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 04:29:49 -0400
+Message-ID: <1369038587.2143.12.camel@joe-AO722>
+Subject: Re: [PATCH v2 net-next 1/4] net: implement support for low latency
+ socket polling
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: eliezer.tamir@linux.intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+        donanld.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Date: Mon, 20 May 2013 01:29:47 -0700
+In-Reply-To: <20130520.005447.972811583292360876.davem@davemloft.net>
+References: <20130519102525.12527.83301.stgit@ladj378.jer.intel.com>
+	 <20130519102533.12527.12991.stgit@ladj378.jer.intel.com>
+	 <20130520.005447.972811583292360876.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 18, 2013 at 10:35:40AM -0700, Linus Torvalds wrote:
-> On Fri, May 17, 2013 at 12:36 PM, Michal Marek <mmarek@suse.cz> wrote:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git for-next
-> >
-> > Luiz Capitulino (1):
-> >       package: Makefile: unbreak binrpm-pkg target
-> >
-> >  scripts/package/Makefile |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, 2013-05-20 at 00:54 -0700, David Miller wrote:
+> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+[]
+> >  {
+> >       struct socket *sock;
+> > +     unsigned int poll_result;
 > 
-> Hmm. That's not at all what I get. I also get a merge and another
-> patch ("kbuild: fix make headers_install when path is too long") and
+> Please order local variable declarations from longest line to
+> shortest line.
 
-Sorry, I was on the wrong branch, which happened to be identical to the
-rc-fixes branch when I sent the pull request, but not when you read it.
-Here is the correct pull request:
+reverse christmas tree doesn't seem especially valuable or
+sensible for automatics.
+
+I'd rather order by first use or even alphabetical, especially
+with long lists of automatics.
 
 
-In an attempt to improve make rpm-pkg, I broke make binrpm-pkg. Please
-pull the fix below.
-
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
-
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
-
-for you to fetch changes up to f66ba560943ae21f5d1e505bad0a3591823b2b37:
-
-  package: Makefile: unbreak binrpm-pkg target (2013-05-16 09:46:45 +0200)
-
-----------------------------------------------------------------
-Luiz Capitulino (1):
-      package: Makefile: unbreak binrpm-pkg target
-
- scripts/package/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
