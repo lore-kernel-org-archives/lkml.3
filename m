@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab3ETTjX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:39:23 -0400
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:56798 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3ETTjV convert rfc822-to-8bit (ORCPT
+	id S1757920Ab3ETTkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:40:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36848 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756441Ab3ETTke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:39:21 -0400
-Date: Mon, 20 May 2013 14:39:18 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: new mount is broken w/regard to devnames in /etc/fstab
-To: Linda Walsh <lkml@tlinx.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <51985C9E.3020106@tlinx.org> (from lkml@tlinx.org on Sun May 19
-	00:01:18 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1369078758.2776.2@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Mon, 20 May 2013 15:40:34 -0400
+Date: Mon, 20 May 2013 12:40:33 -0700 (PDT)
+Message-Id: <20130520.124033.768310591871485191.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: eliezer.tamir@linux.intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, jesse.brandeburg@intel.com,
+        donald.c.skidmore@intel.com, e1000-devel@lists.sourceforge.net,
+        willemb@google.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1369063764.3301.182.camel@edumazet-glaptop>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	<20130520101601.14133.874.stgit@ladj378.jer.intel.com>
+	<1369063764.3301.182.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 20 May 2013 12:40:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2013 12:01:18 AM, Linda Walsh wrote:
-> 1) How is one supposed to get the real root device?
-> It's not /dev/root -- and on my system /dev/root doesn't even exist.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 20 May 2013 08:29:24 -0700
 
-There was a thread on this a couple months ago:
-   https://lkml.org/lkml/2013/3/20/315
+> Part of this information was in your 0/4 text, but it wont be included
+> in the git tree.
 
-You can get the major/minor of a filesystem with the stat() system  
-call, or even the stat command line utility. That gives you the  
-major/minor of the device the filesystem was mounted from.
-
-Note that there's only a major/minor when the filesystem _has_ a  
-backing block device. If it's initramfs or tmpfs: there isn't one. If  
-it's nfs, smbfs, or v9fs: there isn't one.
-
-Rob
+Yes it will, in the merge commit I make when I merge this stuff in.
