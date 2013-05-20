@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab3ETQQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:16:36 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:59719 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3ETQQf (ORCPT
+	id S1756950Ab3ETQWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:22:39 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:41052 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3ETQWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:16:35 -0400
-Message-ID: <519A4C5E.1030905@samsung.com>
-Date: Tue, 21 May 2013 01:16:30 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 20 May 2013 12:22:30 -0400
+Date: Mon, 20 May 2013 18:22:27 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donanld.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v2 net-next 1/4] net: implement support for low latency
+ socket polling
+Message-ID: <20130520162227.GD24555@two.firstfloor.org>
+References: <20130519102525.12527.83301.stgit@ladj378.jer.intel.com>
+ <20130519102533.12527.12991.stgit@ladj378.jer.intel.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Prathyush K <prathyush.k@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] pinctrl: samsung: fix suspend/resume functionality
-References: <1368746388-20194-1-git-send-email-dianders@chromium.org>	<1368765198-25550-1-git-send-email-dianders@chromium.org>	<CACRpkdZ1zBrp+jpgw8o_PVd_bcQMpkFXvRAwfJH6KCztT4jx+w@mail.gmail.com> <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130519102533.12527.12991.stgit@ladj378.jer.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/13 23:59, Doug Anderson wrote:
-> Linus,
->
-> On Mon, May 20, 2013 at 4:47 AM, Linus Walleij<linus.walleij@linaro.org>  wrote:
->> Looks good to me.
->> Acked-by: Linus Walleij<linus.walleij@linaro.org>
->>
->> How are you going to merge this?
->>
->> Samsung tree?
->>
->> My pinctrl development tree?
->>
->> Or my fixes tree, if it's a regression for v3.10?
->
-> It is a regression for v3.10 so it would be nice to get it in there
-> (Tomasz's patches, too).
->
-> It looks like the majority of recent commits to this file went through
-> your tree and that seems fine to me unless anyone else on this thread
-> has objections.
->
-Linus, I'm fine on this. Please take this into your fixes tree with my 
-ack, if you want:
+> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+> index f98ca63..cfcf0ea 100644
+> --- a/Documentation/networking/ip-sysctl.txt
+> +++ b/Documentation/networking/ip-sysctl.txt
+> @@ -19,6 +19,11 @@ ip_no_pmtu_disc - BOOLEAN
+>  	Disable Path MTU Discovery.
+>  	default FALSE
+>  
+> +ip_low_latency_poll - INTEGER
+> +	Low latency busy poll timeout. (needs CONFIG_INET_LL_RX_POLL)
+> +	Approximate time in ms to spin waiting for packets on the device queue.
+> +	default 0
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Can you document the suggested value here?
 
-Thanks.
+Also I would add something like "may increase power usage"
 
-- Kukjin
+The other thing I would add is a linuxmib statistic counter so that
+we can see the polling happens.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
