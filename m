@@ -1,32 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab3EUR10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 13:27:26 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45891 "EHLO
+	id S1755352Ab3EUR1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 13:27:35 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45933 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab3EUR1X (ORCPT
+	with ESMTP id S1755333Ab3EUR1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 13:27:23 -0400
-Date: Tue, 21 May 2013 11:39:45 -0500
+	Tue, 21 May 2013 13:27:33 -0400
+Date: Mon, 20 May 2013 18:15:04 -0500
 From: Mark Brown <broonie@kernel.org>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Message-ID: <20130521163945.GA1196@sirena.org.uk>
-References: <1369130649-15179-1-git-send-email-fabio.baltieri@linaro.org>
- <1369130649-15179-3-git-send-email-fabio.baltieri@linaro.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130520231504.GA1627@sirena.org.uk>
+References: <A874F61F95741C4A9BA573A70FE3998F82E5F679@DQHE06.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+	protocol="application/pgp-signature"; boundary="McORcswOES2gGXLb"
 Content-Disposition: inline
-In-Reply-To: <1369130649-15179-3-git-send-email-fabio.baltieri@linaro.org>
-X-Cookie: You will be married within a year.
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E5F679@DQHE06.ent.ti.com>
+X-Cookie: You will have long and healthy life.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 144.188.69.1
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] ASoC: ab8500-codec: Set rx dai slots from rx_mask
+Subject: Re: [PATCH v3] regulator: lp872x: support the device tree feature
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,36 +31,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---OgqxwSJOaUobr8KG
+--McORcswOES2gGXLb
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, May 21, 2013 at 12:04:09PM +0200, Fabio Baltieri wrote:
-> Replace hard coded rx slot numbers from ab8500_codec_set_dai_tdm_slot
-> using the ones requested by the machine driver in rx_mask instead.
+On Mon, May 20, 2013 at 12:36:07PM +0000, Kim, Milo wrote:
+> This patch enables the DT structure of the LP8720 and LP8725 device.
+> The LP872x platform data is generated when the device tree is configured.
+> Even if the platform data is NULL, it is no issue at all because the driver is
+> configured with the default mode.
 
 Applied, thanks.
 
---OgqxwSJOaUobr8KG
+--McORcswOES2gGXLb
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRm6NNAAoJELSic+t+oim9X78P/jq/09NFFLm/GpkDECSyymfe
-bXWnrF/uHPM/V5mMh6WUVcnlXqwwR3JksbMpxdMrlmE69pQpa+v6iHVYqHacUEFZ
-2l9E0Flvt6L9Fi8JTRXQctY7zB5EVJ/kp1xL2hytjreBjqwrXNPvVb0UJrT3ozek
-cmeb1iGwfa94FFwEVedQYbZ4WQ1jMoktjJh2i/gExML44Jq74h5BroE7kpeufgc0
-uL7BFtGyH/lnFXv+REXp/MUCZz1r4LXkmSao1mtLMh287YsSYc8x1DvDZ12+8c7/
-7YYBbL6qncu9qMPFPoSMg4vD+Cw9FZ5YhD6OX9rFPuB8DjlpYUSvZ+/Ba8GlnFGx
-xW72dgGoqqHY1SjEzs2LMLLRMBC15p8OU0nCOKjZwHMeJ7ugy+e9CtTLLmukrHQl
-zuuhvaMwqYdWuqDUe0Bd9fGrhlsRL4RMTndJN6bGKGG8sKOwIIoUAkfZCvm6BxAm
-h22k9ZJMMrFB9VAFltD6GKl2adt05yln+P2U/H69ZqVSciKhToldjTs8tExgNseT
-e2p08nWyTWBSj6xBykgoFXm9kjuZbvTrTG950SZKgPV8ar6SPpy49J7zxlIhiyGU
-vhElQCupTFAKB0jjtTfil/rMmwD/00fUNYwe6ZnpIdblIm4ffO8K9AWoQ+mnDky1
-TMeaL4NtXMOHrJ1D1dIC
-=gR24
+iQIcBAEBAgAGBQJRmq51AAoJELSic+t+oim98ccP/RRmWIGdSXLl0R3Zan1KPUkU
+bkr1qW7pLgp0t+VeT1Z5Cg34ZbhW97A10uVYJoF9ElvG6oZpQSFBLsu60q3PosAm
+xKmD3G11EdIs9vofdGc6DA9eQX7j+3kbEo/i0/IP1N1sIfkVhjF221AFrfeihAmS
+eR5gjO0ZZr1SVnGSormTN7PqElTLdMc6RyDGt04088lTqOhHWECIL6QyiWEKGbqA
+prPNes9N6hbMyx3X3Qon264G/IQ4DV2INJPNi+zqoYlRICL4s1wbMNSlhYQMdcxq
+7eJP/+sc/e7UHT6mV983XYPkjqO8/oXuUvaHxxXxJfUskVt/CbLqbhmgcpsoaLub
+XxQlB0M5bCGjh+4uC2iSoXSZUpg3Xy8qLLuq876yoNli8K1DwYlqprjB/ht5JebY
+P3RfFlL75Ltp6IhRsWxsYIx3HDbc3cIj4E6MdqZZCNu+XUos5YOMzEIbjl/nnY4q
+CDx6FhBszv+6rsBWEzp/BLBchy0c9WcRIZJ5/uOMQyDyA0S9HGOoNA3mZWs400NA
+9eMpWeBm+7lOyFywH3uLtbTIlqFe/L/QRBb5rUWp7ruUlpIiFwW1NZiIm7VNMzKs
+M3M2YNYwbUPDMObzSwgT8o379t0gphKv69OtSeH1RFHjpk3eLmTuQBbkbuY7gZic
+lMHpOEM3l9PKmXt3jqZh
+=JUyM
 -----END PGP SIGNATURE-----
 
---OgqxwSJOaUobr8KG--
+--McORcswOES2gGXLb--
