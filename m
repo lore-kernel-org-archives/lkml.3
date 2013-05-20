@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab3ETNwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 09:52:17 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:36909 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab3ETNwO (ORCPT
+	id S1756872Ab3ETNx6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 09:53:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53704 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756270Ab3ETNx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 09:52:14 -0400
-Message-ID: <1369057932.3301.171.camel@edumazet-glaptop>
-Subject: Re: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against
- spraying attacks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: David Laight <David.Laight@ACULAB.COM>, David Miller <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Mon, 20 May 2013 09:53:57 -0400
+Date: Mon, 20 May 2013 14:53:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sanjay Singh Rawat <sanjay.rawat@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 20 May 2013 06:52:12 -0700
-In-Reply-To: <5199F1E3.1020109@redhat.com>
-References: <1368844623.3301.142.camel@edumazet-glaptop>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B723E@saturn3.aculab.com>
-	 <5199F1E3.1020109@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: Re: [RFC PATCH 2/6] ARM: imx: use the core cpu hotplug functions
+Message-ID: <20130520135321.GW18614@n2100.arm.linux.org.uk>
+References: <1369031608-27347-1-git-send-email-sanjay.rawat@linaro.org> <1369031608-27347-3-git-send-email-sanjay.rawat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369031608-27347-3-git-send-email-sanjay.rawat@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-20 at 11:50 +0200, Daniel Borkmann wrote:
+Please read back on this list for my comments about such moves of this
+very code.  You're not the first.
 
-> Here seems also to be another approach ...
+On Mon, May 20, 2013 at 12:03:24PM +0530, Sanjay Singh Rawat wrote:
+> Generic arm cpu hotplug related functions are moved to core hotplug code,
+> remove the functions from the platform code.
 > 
->    http://grsecurity.net/~spender/jit_prot.diff
+> Signed-off-by: Sanjay Singh Rawat <sanjay.rawat@linaro.org>
+> ---
+>  arch/arm/mach-imx/hotplug.c |   22 +---------------------
+>  1 file changed, 1 insertion(+), 21 deletions(-)
 > 
-> via: http://www.reddit.com/r/netsec/comments/13dzhx/linux_kernel_jit_spray_for_smep_kernexec_bypass/
-
-
-Well, there are many approaches, and I have another one as well provided
-by H. Peter Anvin.
-
-Idea was to allow the code being relocated outside of the 2GB space that
-we use for kernel code (including module_alloc())
-
-So every call helper, coded in "e8 xx xx xx xx" was replaced by
-
-"48 c7 c0 yy yy yy yy   mov $foo,%rax"
-"ff d0          call *%rax"
-
-The RO protection + random holes idea was a solution with no performance
-impact.
-
-Another idea is to limit BPF JIT to root users. I do not think BPF JIT
-is mandatory at all, as tcpdump is already restricted.
-
-
-
+> diff --git a/arch/arm/mach-imx/hotplug.c b/arch/arm/mach-imx/hotplug.c
+> index 3daf1ed..280c6f3 100644
+> --- a/arch/arm/mach-imx/hotplug.c
+> +++ b/arch/arm/mach-imx/hotplug.c
+> @@ -14,30 +14,10 @@
+>  #include <linux/jiffies.h>
+>  #include <asm/cp15.h>
+>  #include <asm/proc-fns.h>
+> +#include <asm/hotplug.h>
+>  
+>  #include "common.h"
+>  
+> -static inline void cpu_enter_lowpower(void)
+> -{
+> -	unsigned int v;
+> -
+> -	asm volatile(
+> -		"mcr	p15, 0, %1, c7, c5, 0\n"
+> -	"	mcr	p15, 0, %1, c7, c10, 4\n"
+> -	/*
+> -	 * Turn off coherency
+> -	 */
+> -	"	mrc	p15, 0, %0, c1, c0, 1\n"
+> -	"	bic	%0, %0, %3\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 1\n"
+> -	"	mrc	p15, 0, %0, c1, c0, 0\n"
+> -	"	bic	%0, %0, %2\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 0\n"
+> -	  : "=&r" (v)
+> -	  : "r" (0), "Ir" (CR_C), "Ir" (0x40)
+> -	  : "cc");
+> -}
+> -
+>  /*
+>   * platform-specific code to shutdown a CPU
+>   *
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
