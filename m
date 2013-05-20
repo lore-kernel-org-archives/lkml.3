@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3ETOuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:50:24 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:35483 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab3ETOuW (ORCPT
+	id S1757076Ab3ETOvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:51:32 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:46306 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab3ETOvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:50:22 -0400
+	Mon, 20 May 2013 10:51:31 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,90 +16,70 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 1/1] kthread: Add kworker kthreads to OS-jitter documentation
-Date: Mon, 20 May 2013 07:50:02 -0700
-Message-Id: <1369061402-31334-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/2] nohz_full: Document additional restrictions
+Date: Mon, 20 May 2013 07:50:01 -0700
+Message-Id: <1369061402-31334-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369061402-31334-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130520144934.GA29947@linux.vnet.ibm.com>
  <1369061402-31334-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-5518-0000-0000-00000ED06EA7
+x-cbid: 13052014-4834-0000-0000-0000072850B8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The kworker workqueue kthreads can also contribute to OS jitter.
-The amount of jitter depends on their use, so this commit adds
-documentation on avoiding OS jitter due to workqueue use.
+This commit calls out the potential for slowing the tick even when there
+are multiple runnable processes per CPU,  It also points out that current
+mainlined version keeps the tick going on at least one CPU even when all
+CPUs are otherwise idle.  Finally, it notes the need for a 1-HZ tick in
+order to calculate CPU load, maintain sched average, compute CFS entity
+vruntime, compute avenrun, and carry out load balancing.
 
-Reported-by: Jonathan Clairembault <jonathan.clairembault@novasparks.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/kernel-per-CPU-kthreads.txt | 47 +++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+ Documentation/timers/NO_HZ.txt | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/kernel-per-CPU-kthreads.txt b/Documentation/kernel-per-CPU-kthreads.txt
-index cbf7ae4..5f39ef5 100644
---- a/Documentation/kernel-per-CPU-kthreads.txt
-+++ b/Documentation/kernel-per-CPU-kthreads.txt
-@@ -157,6 +157,53 @@ RCU_SOFTIRQ:  Do at least one of the following:
- 		calls and by forcing both kernel threads and interrupts
- 		to execute elsewhere.
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+index d5323e0..8869758 100644
+--- a/Documentation/timers/NO_HZ.txt
++++ b/Documentation/timers/NO_HZ.txt
+@@ -278,6 +278,11 @@ o	Adaptive-ticks does not do anything unless there is only one
+ 	single runnable SCHED_FIFO task and multiple runnable SCHED_OTHER
+ 	tasks, even though these interrupts are unnecessary.
  
-+Name: kworker/%u:%d%s (cpu, id, priority)
-+Purpose: Execute workqueue requests
-+To reduce its OS jitter, do any of the following:
-+1.	Run your workload at a real-time priority, which will allow
-+	preempting the kworker daemons.
-+2.	Do any of the following needed to avoid jitter that your
-+	application cannot tolerate:
-+	a.	Build your kernel with CONFIG_SLUB=y rather than
-+		CONFIG_SLAB=y, thus avoiding the slab allocator's periodic
-+		use of each CPU's workqueues to run its cache_reap()
-+		function.
-+	b.	Avoid using oprofile, thus avoiding OS jitter from
-+		wq_sync_buffer().
-+	c.	Limit your CPU frequency so that a CPU-frequency
-+		governor is not required, possibly enlisting the aid of
-+		special heatsinks or other cooling technologies.  If done
-+		correctly, and if you CPU architecture permits, you should
-+		be able to build your kernel with CONFIG_CPU_FREQ=n to
-+		avoid the CPU-frequency governor periodically running
-+		on each CPU, including cs_dbs_timer() and od_dbs_timer().
-+		WARNING:  Please check your CPU specifications to
-+		make sure that this is safe on your particular system.
-+	d.	It is not possible to entirely get rid of OS jitter
-+		from vmstat_update() on CONFIG_SMP=y systems, but you
-+		can decrease its frequency by writing a large value to
-+		/proc/sys/vm/stat_interval.  The default value is HZ,
-+		for an interval of one second.  Of course, larger values
-+		will make your virtual-memory statistics update more
-+		slowly.  Of course, you can also run your workload at
-+		a real-time priority, thus preempting vmstat_update().
-+	e.	If running on high-end powerpc servers, build with
-+		CONFIG_PPC_RTAS_DAEMON=n.  This prevents the RTAS
-+		daemon from running on each CPU every second or so.
-+		(This will require editing Kconfig files and will defeat
-+		this platform's RAS functionality.)  This avoids jitter
-+		due to the rtas_event_scan() function.
-+		WARNING:  Please check your CPU specifications to
-+		make sure that this is safe on your particular system.
-+	f.	If running on Cell Processor, build your kernel with
-+		CBE_CPUFREQ_SPU_GOVERNOR=n to avoid OS jitter from
-+		spu_gov_work().
-+		WARNING:  Please check your CPU specifications to
-+		make sure that this is safe on your particular system.
-+	g.	If running on PowerMAC, build your kernel with
-+		CONFIG_PMAC_RACKMETER=n to disable the CPU-meter,
-+		avoiding OS jitter from rackmeter_do_timer().
++	And even when there are multiple runnable tasks on a given CPU,
++	there is little point in interrupting that CPU until the current
++	running task's timeslice expires, which is almost always way
++	longer than the time of the next scheduling-clock interrupt.
 +
- Name: rcuc/%u
- Purpose: Execute RCU callbacks in CONFIG_RCU_BOOST=y kernels.
- To reduce its OS jitter, do at least one of the following:
+ 	Better handling of these sorts of situations is future work.
+ 
+ o	A reboot is required to reconfigure both adaptive idle and RCU
+@@ -308,6 +313,16 @@ o	Unless all CPUs are idle, at least one CPU must keep the
+ 	scheduling-clock interrupt going in order to support accurate
+ 	timekeeping.
+ 
+-o	If there are adaptive-ticks CPUs, there will be at least one
+-	CPU keeping the scheduling-clock interrupt going, even if all
+-	CPUs are otherwise idle.
++o	If there might potentially be some adaptive-ticks CPUs, there
++	will be at least one CPU keeping the scheduling-clock interrupt
++	going, even if all CPUs are otherwise idle.
++
++	Better handling of this situation is ongoing work.
++
++o	Some process-handling operations still require the occasional
++	scheduling-clock tick.	These operations include calculating CPU
++	load, maintaining sched average, computing CFS entity vruntime,
++	computing avenrun, and carrying out load balancing.  They are
++	currently accommodated by scheduling-clock tick every second
++	or so.	On-going work will eliminate the need even for these
++	infrequent scheduling-clock ticks.
 -- 
 1.8.1.5
 
