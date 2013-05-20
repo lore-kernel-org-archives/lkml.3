@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3ETLBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:01:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56357 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756542Ab3ETKxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756541Ab3ETKxu (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 May 2013 06:53:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56347 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab3ETKxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:53:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 090/115] net: vlan,ethtool: netdev_features_t is more than 32 bit
-Date: Mon, 20 May 2013 11:51:30 +0100
-Message-Id: <1369047116-9378-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 088/115] net_sched: act_ipt forward compat with xtables
+Date: Mon, 20 May 2013 11:51:28 +0100
+Message-Id: <1369047116-9378-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,44 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Jamal Hadi Salim <jhs@mojatatu.com>
 
-commit b29d3145183da4e07d4b570fa8acdd3ac4a5c572 upstream.
+commit 0dcffd09641f3abb21ac5cabc61542ab289d1a3c upstream.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Deal with changes in newer xtables while maintaining backward
+compatibility. Thanks to Jan Engelhardt for suggestions.
+
+Signed-off-by: Jamal Hadi Salim <jhs@mojatatu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/8021q/vlan_dev.c | 2 +-
- net/core/ethtool.c   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/sched/act_ipt.c | 33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index da1bc9c..7005e08 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -598,7 +598,7 @@ static netdev_features_t vlan_dev_fix_features(struct net_device *dev,
- 	netdev_features_t features)
+diff --git a/net/sched/act_ipt.c b/net/sched/act_ipt.c
+index 60e281a..bfba52f 100644
+--- a/net/sched/act_ipt.c
++++ b/net/sched/act_ipt.c
+@@ -8,7 +8,7 @@
+  *		as published by the Free Software Foundation; either version
+  *		2 of the License, or (at your option) any later version.
+  *
+- * Copyright:	Jamal Hadi Salim (2002-4)
++ * Copyright:	Jamal Hadi Salim (2002-13)
+  */
+ 
+ #include <linux/types.h>
+@@ -300,17 +300,44 @@ static struct tc_action_ops act_ipt_ops = {
+ 	.walk		=	tcf_generic_walker
+ };
+ 
+-MODULE_AUTHOR("Jamal Hadi Salim(2002-4)");
++static struct tc_action_ops act_xt_ops = {
++	.kind		=	"xt",
++	.hinfo		=	&ipt_hash_info,
++	.type		=	TCA_ACT_IPT,
++	.capab		=	TCA_CAP_NONE,
++	.owner		=	THIS_MODULE,
++	.act		=	tcf_ipt,
++	.dump		=	tcf_ipt_dump,
++	.cleanup	=	tcf_ipt_cleanup,
++	.lookup		=	tcf_hash_search,
++	.init		=	tcf_ipt_init,
++	.walk		=	tcf_generic_walker
++};
++
++MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
+ MODULE_DESCRIPTION("Iptables target actions");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("act_xt");
+ 
+ static int __init ipt_init_module(void)
  {
- 	struct net_device *real_dev = vlan_dev_priv(dev)->real_dev;
--	u32 old_features = features;
-+	netdev_features_t old_features = features;
+-	return tcf_register_action(&act_ipt_ops);
++	int ret1, ret2;
++	ret1 = tcf_register_action(&act_xt_ops);
++	if (ret1 < 0)
++		printk("Failed to load xt action\n");
++	ret2 = tcf_register_action(&act_ipt_ops);
++	if (ret2 < 0)
++		printk("Failed to load ipt action\n");
++
++	if (ret1 < 0 && ret2 < 0)
++		return ret1;
++	else
++		return 0;
+ }
  
- 	features &= real_dev->vlan_features;
- 	features |= NETIF_F_RXCSUM;
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 9c2afb4..86253eb 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1384,7 +1384,7 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
- 	void __user *useraddr = ifr->ifr_data;
- 	u32 ethcmd;
- 	int rc;
--	u32 old_features;
-+	netdev_features_t old_features;
+ static void __exit ipt_cleanup_module(void)
+ {
++	tcf_unregister_action(&act_xt_ops);
+ 	tcf_unregister_action(&act_ipt_ops);
+ }
  
- 	if (!dev || !netif_device_present(dev))
- 		return -ENODEV;
 -- 
 1.8.1.2
 
