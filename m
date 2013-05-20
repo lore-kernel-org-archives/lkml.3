@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757907Ab3ETTeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:34:09 -0400
-Received: from mout.gmx.net ([212.227.17.22]:51820 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710Ab3ETTeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757890Ab3ETTeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:34:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46141 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab3ETTeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 15:34:04 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19TWCYaEbpTsD31T2a1aTb7LKU2NyUl8y0JKfvOSn
-	SrHuAYWUWfvC0G
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] powerpc/platforms/83xx/mcu_mpc8349emitx: Use module_i2c_driver to register driver
-Date: Mon, 20 May 2013 21:39:09 +0200
-Message-Id: <1369078749-3197-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-X-Y-GMX-Trusted: 0
+Date: Mon, 20 May 2013 12:34:03 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] tty: Add lock/unlock ldisc pair functions
+Message-ID: <20130520193403.GA14340@kroah.com>
+References: <20130415201411.GA27360@kroah.com>
+ <1366107356-7699-1-git-send-email-peter@hurleysoftware.com>
+ <1366107356-7699-2-git-send-email-peter@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366107356-7699-2-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing some boilerplate by using module_i2c_driver instead of calling
-register and unregister in the otherwise empty init/exit functions
+On Tue, Apr 16, 2013 at 06:15:51AM -0400, Peter Hurley wrote:
+> Just as the tty pair must be locked in a stable sequence
+> (ie, independent of which is consider the 'other' tty), so must
+> the ldisc pair be locked in a stable sequence as well.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 87 insertions(+)
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+This patch breaks the build :(
 
-diff --git a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-index 624cb51..4b8ea95 100644
---- a/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-+++ b/arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c
-@@ -231,18 +231,7 @@ static struct i2c_driver mcu_driver = {
- 	.id_table = mcu_ids,
- };
- 
--static int __init mcu_init(void)
--{
--	return i2c_add_driver(&mcu_driver);
--}
--module_init(mcu_init);
--
--static void __exit mcu_exit(void)
--{
--	i2c_del_driver(&mcu_driver);
--}
--module_exit(mcu_exit);
--
-+module_i2c_driver(mcu_driver);
- MODULE_DESCRIPTION("Power Management and GPIO expander driver for "
- 		   "MPC8349E-mITX-compatible MCU");
- MODULE_AUTHOR("Anton Vorontsov <avorontsov@ru.mvista.com>");
--- 
-1.8.1.5
+I've taken the first one, care to mush this one with the 7/7 patch, so
+there are no build breaks, and resend the 5 resulting patches so I can
+apply these?
 
+thanks,
+
+greg k-h
