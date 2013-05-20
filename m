@@ -1,198 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3ETHMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 03:12:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:41640 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754859Ab3ETHM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 03:12:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,706,1363104000"; 
-   d="scan'208";a="7310998"
-From: Ren Mingxin <renmx@cn.fujitsu.com>
-To: James.Bottomley@HansenPartnership.com, james.smart@emulex.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        michaelc@cs.wisc.edu
-Cc: robert.w.love@intel.com, dgilbert@interlog.com, hare@suse.de,
-        bprakash@broadcom.com, agk@redhat.com, neilb@suse.de,
-        gregkh@linuxfoundation.org, axboe@kernel.dk, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Ren Mingxin <renmx@cn.fujitsu.com>
-Subject: [PATCH 4/5] lpfc: Allow fast timed-out io recovery
-Date: Mon, 20 May 2013 15:15:02 +0800
-Message-Id: <1369034103-31644-5-git-send-email-renmx@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
-References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/20 15:11:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/20 15:11:05,
-	Serialize complete at 2013/05/20 15:11:05
+	id S1755086Ab3ETHM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 03:12:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54534 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab3ETHMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 03:12:53 -0400
+Date: Mon, 20 May 2013 00:12:52 -0700 (PDT)
+Message-Id: <20130520.001252.838327096610376306.davem@davemloft.net>
+To: petkan@nucleusys.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: bug fixing and cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1305201008190.4719@fry.nucleusys.com>
+References: <alpine.DEB.2.02.1305200941260.4719@fry.nucleusys.com>
+	<20130520.000046.631828458050532836.davem@davemloft.net>
+	<alpine.DEB.2.02.1305201008190.4719@fry.nucleusys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 20 May 2013 00:12:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements fast timed-out io recovery in LLDD(lpfc) by
-checking the corresponding bit fields specified in the new added
-interface "fast_io_tmo_flags" and returning "FAST_IO" to avoid the
-scsi_eh recovery actions on corresponding levels.
+From: Petko Manolov <petkan@nucleusys.com>
+Date: Mon, 20 May 2013 10:09:00 +0300 (EEST)
 
-This is mainly for redundant configurations. To non-redundant
-systems, the thorough recovery is necessary.
+> What about the .c/.h split?
 
-Furthermore, userland tools such as multipath-tools should ensure
-that this policy is available only if there are more than one path
-active, which will be implemented later.
-
-Here is an example which can show the improvement of this patch:
-
-  before:
-    - takes about 3s to write 800MB normally
-    # dd if=/dev/zero of=/dev/mapper/mpathb bs=4k count=200000
-    200000+0 records in
-    200000+0 records out
-    819200000 bytes (819 MB) copied, 3.10581 s, 264 MB/s
-
-    - takes about 105s to write 800MB when I/Os timed out
-    # grep lpfc_template /proc/kallsyms
-    ffffffffa00f83a0 d lpfc_template    [lpfc]
-    # insmod scsi_timeout.ko param=0xffffffffa00f83a0,2:0:0:1[*]
-    # dd if=/dev/zero of=/dev/mapper/mpathb bs=4k count=200000
-    200000+0 records in
-    200000+0 records out
-    819200000 bytes (819 MB) copied, 104.91 s, 7.8 MB/s
-
-  after:
-    - takes about 34s to write 800MB by using this patch when I/Os
-      timed out
-    # echo 0x1f > /sys/devices/pci0000:00/0000:00:03.0/\
-                   0000:01:00.0/0000:02:01.0/0000:0a:00.0/\
-                   0000:0b:01.0/0000:0d:00.0/host2/rport-2:0-2/\
-                   fc_remote_ports/rport-2:0-2/fast_io_tmo_flags
-    # insmod scsi_timeout.ko param=0xffffffffa00f83a0,2:0:0:1
-    # dd if=/dev/zero of=/dev/mapper/mpathb bs=4k count=200000
-    200000+0 records in
-    200000+0 records out
-    819200000 bytes (819 MB) copied, 33.7718 s, 24.3 MB/s
-
-  * scsi_timeout.ko is a self-made module which wraps the scsi
-    queuecommand handler and ignores I/Os to the specified device
-    and any I/Os are not passed to LLDD.
-    Reference:
-      http://www.spinics.net/lists/linux-scsi/msg35091.html
-
-So with this patch, we just spend time writing(about 3s) and
-waiting through timeout(30s), and save about 71s in scsi eh.
-
-Signed-off-by: Ren Mingxin <renmx@cn.fujitsu.com>
----
- drivers/scsi/lpfc/lpfc_scsi.c |   34 ++++++++++++++++++++++++++++++++--
- 1 files changed, 32 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
-index 8523b27..796893b 100644
---- a/drivers/scsi/lpfc/lpfc_scsi.c
-+++ b/drivers/scsi/lpfc/lpfc_scsi.c
-@@ -4798,6 +4798,7 @@ lpfc_abort_handler(struct scsi_cmnd *cmnd)
- {
- 	struct Scsi_Host  *shost = cmnd->device->host;
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
-+	struct fc_rport   *rport = starget_to_rport(scsi_target(cmnd->device));
- 	struct lpfc_hba   *phba = vport->phba;
- 	struct lpfc_iocbq *iocb;
- 	struct lpfc_iocbq *abtsiocb;
-@@ -4811,6 +4812,11 @@ lpfc_abort_handler(struct scsi_cmnd *cmnd)
- 	if (status != 0 && status != SUCCESS)
- 		return status;
- 
-+	if (rport->fast_io_tmo_flags & FC_RPORT_IGN_ABORT_CMDS) {
-+		scsi_device_set_state(cmnd->device, SDEV_OFFLINE);
-+		return FAST_IO;
-+	}
-+
- 	spin_lock_irqsave(&phba->hbalock, flags);
- 	/* driver queued commands are in process of being flushed */
- 	if (phba->hba_flag & HBA_FCP_IOQ_FLUSH) {
-@@ -5150,6 +5156,7 @@ lpfc_device_reset_handler(struct scsi_cmnd *cmnd)
- {
- 	struct Scsi_Host  *shost = cmnd->device->host;
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
-+	struct fc_rport   *rport = starget_to_rport(scsi_target(cmnd->device));
- 	struct lpfc_rport_data *rdata = cmnd->device->hostdata;
- 	struct lpfc_nodelist *pnode;
- 	unsigned tgt_id = cmnd->device->id;
-@@ -5167,6 +5174,11 @@ lpfc_device_reset_handler(struct scsi_cmnd *cmnd)
- 	if (status != 0 && status != SUCCESS)
- 		return status;
- 
-+	if (rport->fast_io_tmo_flags & FC_RPORT_IGN_DEVICE_RESET) {
-+		scsi_device_set_state(cmnd->device, SDEV_OFFLINE);
-+		return FAST_IO;
-+	}
-+
- 	status = lpfc_chk_tgt_mapped(vport, cmnd);
- 	if (status == FAILED) {
- 		lpfc_printf_vlog(vport, KERN_ERR, LOG_FCP,
-@@ -5217,6 +5229,7 @@ lpfc_target_reset_handler(struct scsi_cmnd *cmnd)
- {
- 	struct Scsi_Host  *shost = cmnd->device->host;
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
-+	struct fc_rport   *rport = starget_to_rport(scsi_target(cmnd->device));
- 	struct lpfc_rport_data *rdata = cmnd->device->hostdata;
- 	struct lpfc_nodelist *pnode;
- 	unsigned tgt_id = cmnd->device->id;
-@@ -5234,6 +5247,11 @@ lpfc_target_reset_handler(struct scsi_cmnd *cmnd)
- 	if (status != 0 && status != SUCCESS)
- 		return status;
- 
-+	if (rport->fast_io_tmo_flags & FC_RPORT_IGN_TARGET_RESET) {
-+		scsi_device_set_state(cmnd->device, SDEV_OFFLINE);
-+		return FAST_IO;
-+	}
-+
- 	status = lpfc_chk_tgt_mapped(vport, cmnd);
- 	if (status == FAILED) {
- 		lpfc_printf_vlog(vport, KERN_ERR, LOG_FCP,
-@@ -5284,6 +5302,7 @@ lpfc_bus_reset_handler(struct scsi_cmnd *cmnd)
- {
- 	struct Scsi_Host  *shost = cmnd->device->host;
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
-+	struct fc_rport   *rport = starget_to_rport(scsi_target(cmnd->device));
- 	struct lpfc_nodelist *ndlp = NULL;
- 	struct lpfc_scsi_event_header scsi_event;
- 	int match;
-@@ -5302,6 +5321,11 @@ lpfc_bus_reset_handler(struct scsi_cmnd *cmnd)
- 	if (status != 0 && status != SUCCESS)
- 		return status;
- 
-+	if (rport->fast_io_tmo_flags & FC_RPORT_IGN_BUS_RESET) {
-+		scsi_device_set_state(cmnd->device, SDEV_OFFLINE);
-+		return FAST_IO;
-+	}
-+
- 	/*
- 	 * Since the driver manages a single bus device, reset all
- 	 * targets known to the driver.  Should any target reset
-@@ -5373,11 +5397,17 @@ lpfc_bus_reset_handler(struct scsi_cmnd *cmnd)
- static int
- lpfc_host_reset_handler(struct scsi_cmnd *cmnd)
- {
--	struct Scsi_Host *shost = cmnd->device->host;
-+	struct Scsi_Host  *shost = cmnd->device->host;
- 	struct lpfc_vport *vport = (struct lpfc_vport *) shost->hostdata;
--	struct lpfc_hba *phba = vport->phba;
-+	struct fc_rport   *rport = starget_to_rport(scsi_target(cmnd->device));
-+	struct lpfc_hba   *phba = vport->phba;
- 	int rc, ret = SUCCESS;
- 
-+	if (rport->fast_io_tmo_flags & FC_RPORT_IGN_HOST_RESET) {
-+		scsi_device_set_state(cmnd->device, SDEV_OFFLINE);
-+		return FAST_IO;
-+	}
-+
- 	lpfc_printf_vlog(vport, KERN_ERR, LOG_FCP,
- 			 "3172 SCSI layer issued Host Reset Data:\n");
- 
--- 
-1.7.1
-
+I have no strong opinion either way.
