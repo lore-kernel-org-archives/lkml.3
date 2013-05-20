@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3ETLN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:13:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56129 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab3ETKxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756030Ab3ETKxA (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 May 2013 06:53:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55992 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab3ETKw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:52:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Jon Bloomfield <jon.bloomfield@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/115] powerpc: fix numa distance for form0 device tree
-Date: Mon, 20 May 2013 11:50:45 +0100
-Message-Id: <1369047116-9378-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 016/115] drm/i915: Workaround incoherence between fences and LLC across multiple CPUs
+Date: Mon, 20 May 2013 11:50:16 +0100
+Message-Id: <1369047116-9378-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 7122beeee7bc1757682049780179d7c216dd1c83 upstream.
+commit 25ff1195f8a0b3724541ae7bbe331b4296de9c06 upstream.
 
-The following commit breaks numa distance setup for old powerpc
-systems that use form0 encoding in device tree.
+In order to fully serialize access to the fenced region and the update
+to the fence register we need to take extreme measures on SNB+, and
+manually flush writes to memory prior to writing the fence register in
+conjunction with the memory barriers placed around the register write.
 
-commit 41eab6f88f24124df89e38067b3766b7bef06ddb
-powerpc/numa: Use form 1 affinity to setup node distance
+Fixes i-g-t/gem_fence_thrash
 
-Device tree node /rtas/ibm,associativity-reference-points would
-index into /cpus/PowerPCxxxx/ibm,associativity based on form0 or
-form1 encoding detected by ibm,architecture-vec-5 property.
+v2: Bring a bigger gun
+v3: Switch the bigger gun for heavier bullets (Arjan van de Ven)
+v4: Remove changes for working generations.
+v5: Reduce to a per-cpu wbinvd() call prior to updating the fences.
+v6: Rewrite comments to ellide forgotten history.
 
-All modern systems use form1 and current kernel code is correct.
-However, on older systems with form0 encoding, the numa distance
-will get hard coded as LOCAL_DISTANCE for all nodes.  This causes
-task scheduling anomaly since scheduler will skip building numa
-level domain (topmost domain with all cpus) if all numa distances
-are same.  (value of 'level' in sched_init_numa() will remain 0)
-
-Prior to the above commit:
-((from) == (to) ? LOCAL_DISTANCE : REMOTE_DISTANCE)
-
-Restoring compatible behavior with this patch for old powerpc systems
-with device tree where numa distance are encoded as form0.
-
-Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62191
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jon Bloomfield <jon.bloomfield@intel.com>
+Tested-by: Jon Bloomfield <jon.bloomfield@intel.com> (v2)
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/mm/numa.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 1e95556..4ec32a6 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -201,7 +201,7 @@ int __node_distance(int a, int b)
- 	int distance = LOCAL_DISTANCE;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 7605f40..19e9f33 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2332,17 +2332,35 @@ static inline int fence_number(struct drm_i915_private *dev_priv,
+ 	return fence - dev_priv->fence_regs;
+ }
  
- 	if (!form1_affinity)
--		return distance;
-+		return ((a == b) ? LOCAL_DISTANCE : REMOTE_DISTANCE);
++static void i915_gem_write_fence__ipi(void *data)
++{
++	wbinvd();
++}
++
+ static void i915_gem_object_update_fence(struct drm_i915_gem_object *obj,
+ 					 struct drm_i915_fence_reg *fence,
+ 					 bool enable)
+ {
+-	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+-	int reg = fence_number(dev_priv, fence);
+-
+-	i915_gem_write_fence(obj->base.dev, reg, enable ? obj : NULL);
++	struct drm_device *dev = obj->base.dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int fence_reg = fence_number(dev_priv, fence);
++
++	/* In order to fully serialize access to the fenced region and
++	 * the update to the fence register we need to take extreme
++	 * measures on SNB+. In theory, the write to the fence register
++	 * flushes all memory transactions before, and coupled with the
++	 * mb() placed around the register write we serialise all memory
++	 * operations with respect to the changes in the tiler. Yet, on
++	 * SNB+ we need to take a step further and emit an explicit wbinvd()
++	 * on each processor in order to manually flush all memory
++	 * transactions before updating the fence register.
++	 */
++	if (HAS_LLC(obj->base.dev))
++		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
++	i915_gem_write_fence(dev, fence_reg, enable ? obj : NULL);
  
- 	for (i = 0; i < distance_ref_points_depth; i++) {
- 		if (distance_lookup_table[a][i] == distance_lookup_table[b][i])
+ 	if (enable) {
+-		obj->fence_reg = reg;
++		obj->fence_reg = fence_reg;
+ 		fence->obj = obj;
+ 		list_move_tail(&fence->lru_list, &dev_priv->mm.fence_list);
+ 	} else {
 -- 
 1.8.1.2
 
