@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515Ab3ETGGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 02:06:54 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48874 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab3ETGGx (ORCPT
+	id S1752515Ab3ETGXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 02:23:52 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:36083 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab3ETGXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 02:06:53 -0400
-Message-ID: <5199BD45.5090100@gmail.com>
-Date: Sun, 19 May 2013 23:05:57 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 20 May 2013 02:23:51 -0400
+Message-ID: <5199C169.7060504@linux.vnet.ibm.com>
+Date: Mon, 20 May 2013 14:23:37 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Huang Shijie <b32955@freescale.com>, vikram186@gmail.com
-CC: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 05/10 fix] mtd: get the ECC info from the Extended
- Parameter Page
-References: <51966AA7.7050007@gmail.com> <1369015705-4720-1-git-send-email-b32955@freescale.com>
-In-Reply-To: <1369015705-4720-1-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Borislav Petkov <bp@alien8.de>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
+ round 2
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130509125040.GF27333@pd.tnic> <20130509125859.GG27333@pd.tnic> <20130515184528.GO4442@linux.vnet.ibm.com> <20130515224358.GF11783@pd.tnic> <20130515235512.GT4442@linux.vnet.ibm.com> <20130517135641.GF23035@pd.tnic> <51999591.8030401@linux.vnet.ibm.com> <20130520045023.GA12690@pd.tnic>
+In-Reply-To: <20130520045023.GA12690@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052006-2674-0000-0000-00000908A762
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang, Vikram,
+On 05/20/2013 12:50 PM, Borislav Petkov wrote:
+> On Mon, May 20, 2013 at 11:16:33AM +0800, Michael Wang wrote:
+>> I suppose the reason is that the cpu we passed to
+>> mod_delayed_work_on() has a chance to become offline before we
+>> disabled irq, what about check it before send resched ipi? like:
+> 
+> I think this is only addressing the symptoms - what we should be doing
+> instead is asking ourselves why are we even scheduling work on a cpu if
+> the machine goes offline?
+> 
+> I don't know though who should be responsible for killing all that
+> work - the workqueue itself or the guy who created it, i.e. cpufreq
+> governor...
 
-On 05/19/2013 07:08 PM, Huang Shijie wrote:
-...
-> +	/*
-> +	 * From section 5.7.2.2, we know that the Extened Param Page is valid
-> +	 * when two or more bytes of the signatrue are valid.
+So there are two questions here:
+1. Is gov_queue_work() want to queue the work on offline cpu?
+2. Is mod_delayed_work_on() allow offline cpu?
 
-s/signatrue/signature
+I guess both should be false?
 
-> +	 * So we only check the first two bytes here.
-> +	 */
-> +	if (strncmp(ep->sig, "EP", 2)) {
-> +		pr_debug("The signatrue is invalid.\n");
+Regards,
+Michael Wang
 
-Ditto.
+> 
+> Hmmm.
+> 
 
-> +		goto ext_out;
-> +	}
-
-What's the reasoning about this whole "only check 2 bytes" thing? I 
-understand that this is technically what spec *says* (although you're 
-actually not checking the other 5 combinations that are valid: 'ExPx' 
-'ExxS' 'xPPx' 'xPxS' 'xxPS'). But *why* does the spec say this? To 
-tolerate errors or to tolerate changes in the spec (e.g., new types of 
-parameter pages that say 'QPPS' [1], for instance)? The former doesn't 
-really sound plausible, since if we're going to have 2 whole bytes of 
-errors in the signature, then we really shouldn't trust the whole 
-(extended) parameter page. And the latter doesn't really make sense to 
-me; any future backwards-compatible modifications should just use the 
-same signature string.
-
-Anyway, my point is that there has to be some logic to strictly 
-following the letter of the specification. Shortening the check to just 
-the 2-byte "EP" string does not actually cover *exactly* what the spec 
-might allow (e.g., it doesn't allow "QPPS" [1]). But it also doesn't 
-make any sense why we want to check anything besides "EPPS". So my 
-natural inclination is to be strict in what we accept (i.e., exactly the 
-"EPPS" string) until we find a reason otherwise.
-
-Or, if you're gonna pull the strict compliance card, check all 6 
-combinations, not just 1 of them.
-
-Brian
-
-[1] This is a totally made-up example. I do not understand at all why 
-ONFI would allow anything besides exactly "EPPS".
