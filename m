@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab3ETK5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:57:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56428 "EHLO
+	id S1756708Ab3ETK5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:57:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab3ETKyF (ORCPT
+	with ESMTP id S1756616Ab3ETKyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 06:54:05 -0400
+	Mon, 20 May 2013 06:54:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 104/115] ARM: 7720/1: ARM v6/v7 cmpxchg64 shouldn't clear upper 32 bits of the old/new value
-Date: Mon, 20 May 2013 11:51:44 +0100
-Message-Id: <1369047116-9378-105-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 102/115] ACPI / EC: Restart transaction even when the IBF flag set
+Date: Mon, 20 May 2013 11:51:42 +0100
+Message-Id: <1369047116-9378-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 6eabb3301b1facee669d9938f7c5a0295c21d71d upstream.
+commit 28fe5c825f8e15744d04c7c1b8df197950923ecd upstream.
 
-The implementation of cmpxchg64() for the ARM v6 and v7 architecture
-casts parameter 2 and 3 (the old and new 64bit values) to an unsigned
-long before calling the atomic_cmpxchg64() function. This clears
-the top 32 bits of the old and new values, resulting in the wrong
-values being compare-exchanged. Luckily, this only appears to be used
-for 64-bit sched_clock, which we don't (yet) have on ARM.
+The EC driver works abnormally with IBF flag always set.
+IBF means "The host has written a byte of data to the command
+or data port, but the embedded controller has not yet read it".
+If IBF is set in the EC status and not cleared, this will cause
+all subsequent EC requests to fail with a timeout error.
 
-This bug was introduced by commit 3e0f5a15f500 ("ARM: 7404/1: cmpxchg64:
-use atomic64 and local64 routines for cmpxchg64").
+Change the EC driver so that it doesn't refuse to restart a
+transaction if IBF is set in the status.  Also increase the
+number of transaction restarts to 5, as it turns out that 2
+is not sufficient in some cases.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This bug happens on several different machines (Asus V1S,
+Dell Latitude E6530, Samsung R719, Acer Aspire 5930G,
+Sony Vaio SR19VN and others).
+
+[rjw: Changelog]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=14733
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15560
+References: https://bugzilla.kernel.org/show_bug.cgi?id=15946
+References: https://bugzilla.kernel.org/show_bug.cgi?id=42945
+References: https://bugzilla.kernel.org/show_bug.cgi?id=48221
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/include/asm/cmpxchg.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/acpi/ec.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
-index 7eb18c1..4f009c1 100644
---- a/arch/arm/include/asm/cmpxchg.h
-+++ b/arch/arm/include/asm/cmpxchg.h
-@@ -233,15 +233,15 @@ static inline unsigned long __cmpxchg_local(volatile void *ptr,
- 	((__typeof__(*(ptr)))atomic64_cmpxchg(container_of((ptr),	\
- 						atomic64_t,		\
- 						counter),		\
--					      (unsigned long)(o),	\
--					      (unsigned long)(n)))
-+					      (unsigned long long)(o),	\
-+					      (unsigned long long)(n)))
- 
- #define cmpxchg64_local(ptr, o, n)					\
- 	((__typeof__(*(ptr)))local64_cmpxchg(container_of((ptr),	\
- 						local64_t,		\
- 						a),			\
--					     (unsigned long)(o),	\
--					     (unsigned long)(n)))
-+					     (unsigned long long)(o),	\
-+					     (unsigned long long)(n)))
- 
- #endif	/* __LINUX_ARM_ARCH__ >= 6 */
- 
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index a51df96..f9914e5 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -217,7 +217,7 @@ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
+ static int ec_poll(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+-	int repeat = 2; /* number of command restarts */
++	int repeat = 5; /* number of command restarts */
+ 	while (repeat--) {
+ 		unsigned long delay = jiffies +
+ 			msecs_to_jiffies(ec_delay);
+@@ -235,8 +235,6 @@ static int ec_poll(struct acpi_ec *ec)
+ 			}
+ 			advance_transaction(ec, acpi_ec_read_status(ec));
+ 		} while (time_before(jiffies, delay));
+-		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+-			break;
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+ 		spin_lock_irqsave(&ec->curr_lock, flags);
+ 		start_transaction(ec);
 -- 
 1.8.1.2
 
