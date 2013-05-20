@@ -1,218 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab3ETPLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:11:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57769 "EHLO e8.ny.us.ibm.com"
+	id S1757268Ab3ETPNk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:13:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24130 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab3ETPKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:10:52 -0400
-From: zwu.kernel@gmail.com
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC PATCH v1 4/5] BTRFS hot reloc, procfs: add three proc interfaces
-Date: Mon, 20 May 2013 23:11:26 +0800
-Message-Id: <1369062687-23544-5-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
-References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052015-9360-0000-0000-00001243555D
+	id S1755400Ab3ETPNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:13:39 -0400
+Date: Mon, 20 May 2013 17:10:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: akpm@linux-foundation.org, jlayton@redhat.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, bfields@fieldses.org,
+        viro@zeniv.linux.org.uk, bharrosh@panasas.com, devel@openvz.org
+Subject: Re: [RFC PATCH] kmod: add ability to swap root in usermode helper
+Message-ID: <20130520151001.GA13173@redhat.com>
+References: <20130520070017.7957.9224.stgit@localhost.localdomain> <20130520135716.GA10084@redhat.com> <519A3693.8020006@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <519A3693.8020006@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 05/20, Stanislav Kinsbursky wrote:
+>
+> 20.05.2013 17:57, Oleg Nesterov пишет:
+>>
+>> Why do we need the new member/arguments?
+>>
+>>> @@ -215,6 +216,9 @@ static int ____call_usermodehelper(void *data)
+>>>   	 */
+>>>   	set_user_nice(current, 0);
+>>>
+>>> +	if (sub_info->root)
+>>> +		set_fs_root(current->fs, sub_info->root);
+>>
+>> Can't subprocess_info->init() do this? You can pass root as ->data.
+>>
+>> IOW, unless I missed something, nfs can do this without any changes
+>> in kmod.c.
+>>
+>> Oleg.
+>>
+>
+> Thanks for the comment.
+> Yes, it definitely can. But, NFS server in the the only place. Usermode helper in
+> called from NFS client code and thus the same functionality is required there as well.
 
-  Add three proc interfaces hot-reloc-interval, hot-reloc-threshold,
-and hot-reloc-max-items under the dir /proc/sys/fs/ in order to
-turn HOT_RELOC_INTERVAL, HOT_RELOC_THRESHOLD, and HOT_RELOC_MAX_ITEMS
-into be tunable.
+Not sure I understand... OK, and why NFS client can't use the same
+functionality?
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/btrfs/hot_relocate.c | 26 +++++++++++++++++---------
- fs/btrfs/hot_relocate.h |  5 -----
- include/linux/btrfs.h   |  4 ++++
- kernel/sysctl.c         | 22 ++++++++++++++++++++++
- 4 files changed, 43 insertions(+), 14 deletions(-)
+> Moreover, set_fs_root() is not exported.
 
-diff --git a/fs/btrfs/hot_relocate.c b/fs/btrfs/hot_relocate.c
-index ae28b86..3a18555 100644
---- a/fs/btrfs/hot_relocate.c
-+++ b/fs/btrfs/hot_relocate.c
-@@ -25,7 +25,7 @@
-  * The relocation code below operates on the heat map lists to identify
-  * hot or cold data logical file ranges that are candidates for relocation.
-  * The triggering mechanism for relocation is controlled by a global heat
-- * threshold integer value (HOT_RELOC_THRESHOLD). Ranges are
-+ * threshold integer value (sysctl_hot_reloc_threshold). Ranges are
-  * queued for relocation by the periodically executing relocate kthread,
-  * which updates the global heat threshold and responds to space pressure
-  * on the nonrotating disks.
-@@ -53,6 +53,15 @@
-  * (assuming, critically, the HOT_MOVE option is set at mount time).
-  */
- 
-+int sysctl_hot_reloc_threshold = 150;
-+EXPORT_SYMBOL_GPL(sysctl_hot_reloc_threshold);
-+
-+int sysctl_hot_reloc_interval __read_mostly = 120;
-+EXPORT_SYMBOL_GPL(sysctl_hot_reloc_interval);
-+
-+int sysctl_hot_reloc_max_items __read_mostly = 250;
-+EXPORT_SYMBOL_GPL(sysctl_hot_reloc_max_items);
-+
- /*
-  * Returns the ratio of nonrotating disks that are full.
-  * If no nonrotating disk is found, returns THRESH_MAX_VALUE + 1.
-@@ -103,7 +112,7 @@ static int hot_calc_nonrot_ratio(struct hot_reloc *hot_reloc)
- static int hot_update_threshold(struct hot_reloc *hot_reloc,
- 				int update)
- {
--	int thresh = hot_reloc->thresh;
-+	int thresh = sysctl_hot_reloc_threshold;
- 	int ratio = hot_calc_nonrot_ratio(hot_reloc);
- 
- 	/* Sometimes update global threshold, others not */
-@@ -127,7 +136,7 @@ static int hot_update_threshold(struct hot_reloc *hot_reloc,
- 			thresh = 0;
- 	}
- 
--	hot_reloc->thresh = thresh;
-+	sysctl_hot_reloc_threshold = thresh;
- 	return ratio;
- }
- 
-@@ -215,7 +224,7 @@ static int hot_queue_extent(struct hot_reloc *hot_reloc,
- 			*counter = *counter + 1;
- 		}
- 
--		if (*counter >= HOT_RELOC_MAX_ITEMS)
-+		if (*counter >= sysctl_hot_reloc_max_items)
- 			break;
- 
- 		if (kthread_should_stop()) {
-@@ -293,7 +302,7 @@ again:
- 		while (1) {
- 			lock_extent(tree, page_start, page_end);
- 			ordered = btrfs_lookup_ordered_extent(inode,
--							page_start);
-+							      page_start);
- 			unlock_extent(tree, page_start, page_end);
- 			if (!ordered)
- 				break;
-@@ -559,7 +568,7 @@ void hot_do_relocate(struct hot_reloc *hot_reloc)
- 
- 	run++;
- 	ratio = hot_update_threshold(hot_reloc, !(run % 15));
--	thresh = hot_reloc->thresh;
-+	thresh = sysctl_hot_reloc_threshold;
- 
- 	INIT_LIST_HEAD(&hot_reloc->hot_relocq[TYPE_NONROT]);
- 
-@@ -569,7 +578,7 @@ void hot_do_relocate(struct hot_reloc *hot_reloc)
- 	if (count_to_hot == 0)
- 		return;
- 
--	count_to_cold = HOT_RELOC_MAX_ITEMS;
-+	count_to_cold = sysctl_hot_reloc_max_items;
- 
- 	/* Don't move cold data to HDD unless there's space pressure */
- 	if (ratio < HIGH_WATER_LEVEL)
-@@ -653,7 +662,7 @@ static int hot_relocate_kthread(void *arg)
- 	unsigned long delay;
- 
- 	do {
--		delay = HZ * HOT_RELOC_INTERVAL;
-+		delay = HZ * sysctl_hot_reloc_interval;
- 		if (mutex_trylock(&hot_reloc->hot_reloc_mutex)) {
- 			hot_do_relocate(hot_reloc);
- 			mutex_unlock(&hot_reloc->hot_reloc_mutex);
-@@ -685,7 +694,6 @@ int hot_relocate_init(struct btrfs_fs_info *fs_info)
- 
- 	fs_info->hot_reloc = hot_reloc;
- 	hot_reloc->fs_info = fs_info;
--	hot_reloc->thresh = HOT_RELOC_THRESHOLD;
- 	for (i = 0; i < MAX_RELOC_TYPES; i++)
- 		INIT_LIST_HEAD(&hot_reloc->hot_relocq[i]);
- 	mutex_init(&hot_reloc->hot_reloc_mutex);
-diff --git a/fs/btrfs/hot_relocate.h b/fs/btrfs/hot_relocate.h
-index 1b1cfb5..94defe6 100644
---- a/fs/btrfs/hot_relocate.h
-+++ b/fs/btrfs/hot_relocate.h
-@@ -18,10 +18,6 @@
- #include "btrfs_inode.h"
- #include "volumes.h"
- 
--#define HOT_RELOC_INTERVAL  120
--#define HOT_RELOC_THRESHOLD 150
--#define HOT_RELOC_MAX_ITEMS 250
--
- #define HEAT_MAX_VALUE    (MAP_SIZE - 1)
- #define HIGH_WATER_LEVEL  75 /* when to raise the threshold */
- #define LOW_WATER_LEVEL   50 /* when to lower the threshold */
-@@ -32,7 +28,6 @@
- struct hot_reloc {
- 	struct btrfs_fs_info *fs_info;
- 	struct list_head hot_relocq[MAX_RELOC_TYPES];
--	int thresh;
- 	struct task_struct *hot_reloc_kthread;
- 	struct mutex hot_reloc_mutex;
- };
-diff --git a/include/linux/btrfs.h b/include/linux/btrfs.h
-index 22d7991..7179819 100644
---- a/include/linux/btrfs.h
-+++ b/include/linux/btrfs.h
-@@ -3,4 +3,8 @@
- 
- #include <uapi/linux/btrfs.h>
- 
-+extern int sysctl_hot_reloc_threshold;
-+extern int sysctl_hot_reloc_interval;
-+extern int sysctl_hot_reloc_max_items;
-+
- #endif /* _LINUX_BTRFS_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 6ee4338..3ab1a68 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -62,6 +62,7 @@
- #include <linux/capability.h>
- #include <linux/binfmts.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/btrfs.h>
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -1630,6 +1631,27 @@ static struct ctl_table fs_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+	{
-+		.procname	= "hot-reloc-threshold",
-+		.data		= &sysctl_hot_reloc_threshold,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "hot-reloc-interval",
-+		.data		= &sysctl_hot_reloc_interval,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "hot-reloc-max-items",
-+		.data		= &sysctl_hot_reloc_max_items,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- 	{ }
- };
- 
--- 
-1.7.11.7
+Then it should be exported, I think ;)
+
+Or you can export the new helper.
+
+> And adding an ability of a root swap to usermode helper looks quite logical. At least from the
+> "containers" point of view, which usually have it's own root.
+
+But it is not logical to uglify the code, imho.
+
+OK, why nfs can't simply use this code
+
+	static int umh_set_fs_root(struct subprocess_info *info, struct cred *new)
+	{
+		set_fs_root(current->fs, sub_info->data);
+		return 0;
+	}
+
+	int call_usermodehelper_root(char *path, char **argv, char **envp, int wait,
+				     struct path *root)
+	{
+
+		struct subprocess_info *info;
+
+		info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
+							umh_set_fs_root, NULL, root);
+		if (info == NULL)
+			return -ENOMEM;
+		return call_usermodehelper_exec(info, wait);
+	}
+
+? Why do you want to add the new member, the new arguments, the new helpers?
+
+Oleg.
 
