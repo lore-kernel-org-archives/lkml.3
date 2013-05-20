@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab3ETLBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:01:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56341 "EHLO
+	id S1756522Ab3ETLC3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:02:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56338 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756503Ab3ETKxq (ORCPT
+	with ESMTP id S1756493Ab3ETKxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 06:53:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Steven Truelove <steven.truelove@utoronto.ca>,
-        Jianguo Wu <wujianguo@huawei.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Matthew Whitehead <tedheadster@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 081/115] hugetlbfs: fix mmap failure in unaligned size request
-Date: Mon, 20 May 2013 11:51:21 +0100
-Message-Id: <1369047116-9378-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 087/115] 3c509.c: call SET_NETDEV_DEV for all device types (ISA/ISAPnP/EISA)
+Date: Mon, 20 May 2013 11:51:27 +0100
+Message-Id: <1369047116-9378-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -32,168 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Matthew Whitehead <tedheadster@gmail.com>
 
-commit af73e4d9506d3b797509f3c030e7dcd554f7d9c4 upstream.
+commit 3b54912f9cd167641b91d4a697bd742f70e534fe upstream.
 
-The current kernel returns -EINVAL unless a given mmap length is
-"almost" hugepage aligned.  This is because in sys_mmap_pgoff() the
-given length is passed to vm_mmap_pgoff() as it is without being aligned
-with hugepage boundary.
+The venerable 3c509 driver only sets its device parent in one case, the ISAPnP one.
+It does this with the SET_NETDEV_DEV function. It should register with the device
+hierarchy in two additional cases: standard (non-PnP) ISA and EISA.
 
-This is a regression introduced in commit 40716e29243d ("hugetlbfs: fix
-alignment of huge page requests"), where alignment code is pushed into
-hugetlb_file_setup() and the variable len in caller side is not changed.
+- Currently they appear here:
+/sys/devices/virtual/net/eth0 (standard ISA)
+/sys/devices/virtual/net/eth1 (EISA)
 
-To fix this, this patch partially reverts that commit, and adds
-alignment code in caller side.  And it also introduces hstate_sizelog()
-in order to get proper hstate to specified hugepage size.
+- Rather, they should instead be here:
+/sys/devices/isa/3c509.0/net/eth0 (standard ISA)
+/sys/devices/pci0000:00/0000:00:07.0/00:04/net/eth1 (EISA)
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=56881
+Tested on ISA and EISA boards.
 
-[akpm@linux-foundation.org: fix warning when CONFIG_HUGETLB_PAGE=n]
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: <iceman_dvd@yahoo.com>
-Cc: Steven Truelove <steven.truelove@utoronto.ca>
-Cc: Jianguo Wu <wujianguo@huawei.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ wujianguo: remove hstate_sizelog(), as 3.4 only support default
-  hugepagesize for MAP_HUGETLB/SHM_HUGETLB. ]
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Luis Henriques<luis.henriques@canonical.com>
+Signed-off-by: Matthew Whitehead <tedheadster@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/hugetlbfs/inode.c    | 20 ++++++++++----------
- include/linux/hugetlb.h |  9 ++++-----
- ipc/shm.c               |  4 +++-
- mm/mmap.c               |  6 +++++-
- 4 files changed, 22 insertions(+), 17 deletions(-)
+ drivers/net/ethernet/3com/3c509.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index cc9281b..c24fe37 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -927,9 +927,13 @@ static int can_do_hugetlb_shm(void)
- 	return capable(CAP_IPC_LOCK) || in_group_p(sysctl_hugetlb_shm_group);
- }
+diff --git a/drivers/net/ethernet/3com/3c509.c b/drivers/net/ethernet/3com/3c509.c
+index 1a8eef2..ce8fb21 100644
+--- a/drivers/net/ethernet/3com/3c509.c
++++ b/drivers/net/ethernet/3com/3c509.c
+@@ -308,6 +308,7 @@ static int __devinit el3_isa_match(struct device *pdev,
+ 	if (!dev)
+ 		return -ENOMEM;
  
--struct file *hugetlb_file_setup(const char *name, unsigned long addr,
--				size_t size, vm_flags_t acctflag,
--				struct user_struct **user, int creat_flags)
-+/*
-+ * Note that size should be aligned to proper hugepage size in caller side,
-+ * otherwise hugetlb_reserve_pages reserves one less hugepages than intended.
-+ */
-+struct file *hugetlb_file_setup(const char *name, size_t size,
-+				vm_flags_t acctflag, struct user_struct **user,
-+				int creat_flags)
- {
- 	int error = -ENOMEM;
- 	struct file *file;
-@@ -937,8 +941,6 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
- 	struct path path;
- 	struct dentry *root;
- 	struct qstr quick_string;
--	struct hstate *hstate;
--	unsigned long num_pages;
++	SET_NETDEV_DEV(dev, pdev);
+ 	netdev_boot_setup_check(dev);
  
- 	*user = NULL;
- 	if (!hugetlbfs_vfsmount)
-@@ -972,12 +974,10 @@ struct file *hugetlb_file_setup(const char *name, unsigned long addr,
- 	if (!inode)
- 		goto out_dentry;
+ 	if (!request_region(ioaddr, EL3_IO_EXTENT, "3c509-isa")) {
+@@ -598,6 +599,7 @@ static int __init el3_eisa_probe (struct device *device)
+ 		return -ENOMEM;
+ 	}
  
--	hstate = hstate_inode(inode);
--	size += addr & ~huge_page_mask(hstate);
--	num_pages = ALIGN(size, huge_page_size(hstate)) >>
--			huge_page_shift(hstate);
- 	error = -ENOMEM;
--	if (hugetlb_reserve_pages(inode, 0, num_pages, NULL, acctflag))
-+	if (hugetlb_reserve_pages(inode, 0,
-+			size >> huge_page_shift(hstate_inode(inode)), NULL,
-+			acctflag))
- 		goto out_inode;
++	SET_NETDEV_DEV(dev, device);
+ 	netdev_boot_setup_check(dev);
  
- 	d_instantiate(path.dentry, inode);
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index d5d6bbe..b8cdad6 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -152,8 +152,7 @@ static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
- 
- extern const struct file_operations hugetlbfs_file_operations;
- extern const struct vm_operations_struct hugetlb_vm_ops;
--struct file *hugetlb_file_setup(const char *name, unsigned long addr,
--				size_t size, vm_flags_t acct,
-+struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
- 				struct user_struct **user, int creat_flags);
- 
- static inline int is_file_hugepages(struct file *file)
-@@ -170,8 +169,8 @@ static inline int is_file_hugepages(struct file *file)
- 
- #define is_file_hugepages(file)			0
- static inline struct file *
--hugetlb_file_setup(const char *name, unsigned long addr, size_t size,
--		vm_flags_t acctflag, struct user_struct **user, int creat_flags)
-+hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
-+		struct user_struct **user, int creat_flags)
- {
- 	return ERR_PTR(-ENOSYS);
- }
-@@ -302,7 +301,7 @@ static inline unsigned hstate_index_to_shift(unsigned index)
- 	return hstates[index].order + PAGE_SHIFT;
- }
- 
--#else
-+#else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
- #define alloc_bootmem_huge_page(h) NULL
-diff --git a/ipc/shm.c b/ipc/shm.c
-index f5ba6ac..54e17db 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -491,10 +491,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 
- 	sprintf (name, "SYSV%08x", key);
- 	if (shmflg & SHM_HUGETLB) {
-+		size_t hugesize = ALIGN(size, huge_page_size(&default_hstate));
-+
- 		/* hugetlb_file_setup applies strict accounting */
- 		if (shmflg & SHM_NORESERVE)
- 			acctflag = VM_NORESERVE;
--		file = hugetlb_file_setup(name, 0, size, acctflag,
-+		file = hugetlb_file_setup(name, hugesize, acctflag,
- 					&shp->mlock_user, HUGETLB_SHMFS_INODE);
- 	} else {
- 		/*
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 76b70c9..f1a9a72 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1116,15 +1116,19 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
- 		file = fget(fd);
- 		if (!file)
- 			goto out;
-+		if (is_file_hugepages(file))
-+			len = ALIGN(len, huge_page_size(hstate_file(file)));
- 	} else if (flags & MAP_HUGETLB) {
- 		struct user_struct *user = NULL;
-+
-+		len = ALIGN(len, huge_page_size(&default_hstate));
- 		/*
- 		 * VM_NORESERVE is used because the reservations will be
- 		 * taken when vm_ops->mmap() is called
- 		 * A dummy user value is used because we are not locking
- 		 * memory so no accounting is necessary
- 		 */
--		file = hugetlb_file_setup(HUGETLB_ANON_FILE, addr, len,
-+		file = hugetlb_file_setup(HUGETLB_ANON_FILE, len,
- 						VM_NORESERVE, &user,
- 						HUGETLB_ANONHUGE_INODE);
- 		if (IS_ERR(file))
+ 	el3_dev_fill(dev, phys_addr, ioaddr, irq, if_port, EL3_EISA);
 -- 
 1.8.1.2
 
