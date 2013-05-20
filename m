@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab3ETQPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:15:02 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:41695 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3ETQO5 (ORCPT
+	id S1756072Ab3ETQQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:16:36 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:59719 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab3ETQQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:14:57 -0400
-Date: Mon, 20 May 2013 12:19:17 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: WARN_ONCE in arch/x86/kernel/hw_breakpoint.c
-Message-ID: <alpine.DEB.2.02.1305201206480.29892@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 20 May 2013 12:16:35 -0400
+Message-ID: <519A4C5E.1030905@samsung.com>
+Date: Tue, 21 May 2013 01:16:30 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Doug Anderson <dianders@chromium.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Prathyush K <prathyush.k@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] pinctrl: samsung: fix suspend/resume functionality
+References: <1368746388-20194-1-git-send-email-dianders@chromium.org>	<1368765198-25550-1-git-send-email-dianders@chromium.org>	<CACRpkdZ1zBrp+jpgw8o_PVd_bcQMpkFXvRAwfJH6KCztT4jx+w@mail.gmail.com> <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
+In-Reply-To: <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On 05/20/13 23:59, Doug Anderson wrote:
+> Linus,
+>
+> On Mon, May 20, 2013 at 4:47 AM, Linus Walleij<linus.walleij@linaro.org>  wrote:
+>> Looks good to me.
+>> Acked-by: Linus Walleij<linus.walleij@linaro.org>
+>>
+>> How are you going to merge this?
+>>
+>> Samsung tree?
+>>
+>> My pinctrl development tree?
+>>
+>> Or my fixes tree, if it's a regression for v3.10?
+>
+> It is a regression for v3.10 so it would be nice to get it in there
+> (Tomasz's patches, too).
+>
+> It looks like the majority of recent commits to this file went through
+> your tree and that seems fine to me unless anyone else on this thread
+> has objections.
+>
+Linus, I'm fine on this. Please take this into your fixes tree with my 
+ack, if you want:
 
-on 3.10-rc1 with the trinity fuzzer patched to exercise the 
-perf_event_open() syscall I am triggering this WARN_ONCE:
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-[   75.864822] ------------[ cut here ]------------
-[   75.864830] WARNING: at arch/x86/kernel/hw_breakpoint.c:121 arch_install_hw_breakpoint+0x5b/0xcb()
-[   75.864832] Can't find any breakpoint slot
-[   75.864833] Modules linked in: dn_rtmsg can_raw nfnetlink can_bcm can xfrm_user xfrm_algo nfc rfkill ax25 scsi_transport_iscsi atm ipt_ULOG x_tables ipx p8023 p8022 irda crc_ccitt appletalk psnap llc nfsd auth_rpcgss oid_registry nfs_acl nfs lockd dns_resolver fscache sunrpc loop fuse snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel kvm evdev nouveau mxm_wmi ttm drm_kms_helper video wmi drm i2c_algo_bit microcode snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer snd acpi_cpufreq mperf processor thermal_sys psmouse serio_raw pcspkr button soundcore shpchp i2c_nforce2 i2c_core ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ata_generic ahci libahci ehci_pci ohci_hcd ehci_hcd libata r8169 mii scsi_mod usbcore usb_common
-[   75.864890] CPU: 0 PID: 3136 Comm: trinity-child0 Not tainted 3.10.0-rc1 #1
-[   75.864892] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[   75.864894]  0000000000000000 ffffffff8102e205 ffff880119b01c98 ffff880119abac00
-[   75.864897]  ffff880119b01ce8 ffff88011fc15b28 0000000ed19e90a3 ffffffff8102e2b0
-[   75.864900]  ffffffff814db382 0000000200000018 ffff880119b01cf8 ffff880119b01cb8
-[   75.864903] Call Trace:
-[   75.864907]  [<ffffffff8102e205>] ? warn_slowpath_common+0x5b/0x70
-[   75.864910]  [<ffffffff8102e2b0>] ? warn_slowpath_fmt+0x47/0x49
-[   75.864913]  [<ffffffff81055d08>] ? sched_clock_local+0xc/0x6d
-[   75.864916]  [<ffffffff81006fff>] ? arch_install_hw_breakpoint+0x5b/0xcb
-[   75.864919]  [<ffffffff810ab5a1>] ? event_sched_in+0x68/0x11c
-[   75.864921]  [<ffffffff810ab69b>] ? group_sched_in+0x46/0x120
-[   75.864923]  [<ffffffff810ab898>] ? ctx_sched_in+0x123/0x141
-[   75.864926]  [<ffffffff810abdf1>] ? __perf_install_in_context+0xcb/0xea
-[   75.864929]  [<ffffffff810a88b2>] ? perf_swevent_add+0xb8/0xb8
-[   75.864932]  [<ffffffff810a88c5>] ? remote_function+0x13/0x3b
-[   75.864934]  [<ffffffff8106fd87>] ? smp_call_function_single+0x76/0xf1
-[   75.864937]  [<ffffffff810a803a>] ? task_function_call+0x42/0x4c
-[   75.864939]  [<ffffffff810abd26>] ? perf_event_sched_in+0x69/0x69
-[   75.864942]  [<ffffffff810aa018>] ? perf_install_in_context+0x5b/0x97
-[   75.864945]  [<ffffffff810aecf0>] ? SYSC_perf_event_open+0x65f/0x7d4
-[   75.864949]  [<ffffffff81369792>] ? system_call_fastpath+0x16/0x1b
-[   75.864951] ---[ end trace 250def16d8853b8c ]---
+Thanks.
 
-Is this condition really drastic enough to deserve a WARNing?
-
-Vince Weaver
-vincent.weaver@maine.edu
-http://www.eece.maine.edu/~vweaver/
+- Kukjin
