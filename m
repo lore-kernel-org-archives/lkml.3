@@ -1,53 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab3ETRVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 13:21:43 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:58652 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3ETRVl (ORCPT
+	id S1755489Ab3ETR2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 13:28:07 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:2962 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3ETR2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 13:21:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <5683193.Vsmy0DmceS@vostro.rjw.lan>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com> <5683193.Vsmy0DmceS@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 20 May 2013 11:21:17 -0600
-Message-ID: <CAErSpo7TvCfQLkMD+zL1W6dNEqMpHYbLtAAHqXf==zbxhE2tcQ@mail.gmail.com>
-Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+	Mon, 20 May 2013 13:28:05 -0400
+Message-ID: <1369070876.5673.51.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 5/5] ACPI / memhotplug: Drop unnecessary code
+From: Toshi Kani <toshi.kani@hp.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Zhang, LongX" <longx.zhang@intel.com>,
-        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-mm@kvack.org
+Date: Mon, 20 May 2013 11:27:56 -0600
+In-Reply-To: <2228904.eTtCrFuSan@vostro.rjw.lan>
+References: <2250271.rGYN6WlBxf@vostro.rjw.lan>
+	 <2228904.eTtCrFuSan@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 5:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, May 17, 2013 05:43:33 PM Bjorn Helgaas wrote:
->> On Fri, Apr 26, 2013 at 12:28 AM, Zhang, LongX <longx.zhang@intel.com> wrote:
+On Sun, 2013-05-19 at 01:34 +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Now that the memory offlining should be taken care of by the
+> companion device offlining code in acpi_scan_hot_remove(), the
+> ACPI memory hotplug driver doesn't need to offline it in
+> acpi_memory_remove_memory() any more.  Consequently, it doesn't
+> need to call remove_memory() any more, which means that that
+> funtion may be dropped entirely, because acpi_memory_remove_memory()
+> is the only user of it.
 
->> > +       /* restore cfg space for possible link reset at upstream */
->> > +       dev->state_saved = true;
->>
->> "dev->state_saved == true" means that the dev->saved_config_space
->> contains valid data.  Why do we know that's the case here?  I see that
->> pcie_portdrv_probe() calls pci_save_state() when we first claim the
->> port, and I guess we're assuming the state saved then is still valid.
->> But why do we need to actually set dev->state_saved here?  Shouldn't
->> it be already set to true anyway?
->
-> This is a dirty trick to make pci_restore_state(dev) always work here
-> (because it checks dev->state_saved and does nothing if it isn't set).
-> I suppose.
+The off-lining part of remove_memory() can be removed, but not the
+hot-delete part.  Please see my comments below.
 
-Yes, I did investigate enough to see that this is a dirty trick.  My
-question is how we know it's safe to do this dirty trick.
+> Make the changes described above to get rid of the dead code.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |   15 ------
+>  include/linux/memory_hotplug.h |    1 
+>  mm/memory_hotplug.c            |  102 -----------------------------------------
+>  3 files changed, 2 insertions(+), 116 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
+> +++ linux-pm/drivers/acpi/acpi_memhotplug.c
+> @@ -271,31 +271,20 @@ static int acpi_memory_enable_device(str
+>  	return 0;
+>  }
+>  
+> -static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+> +static void acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>  {
+>  	acpi_handle handle = mem_device->device->handle;
+> -	int result = 0, nid;
+>  	struct acpi_memory_info *info, *n;
+>  
+> -	nid = acpi_get_node(handle);
+> -
+>  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>  		if (!info->enabled)
+>  			continue;
+>  
+> -		if (nid < 0)
+> -			nid = memory_add_physaddr_to_nid(info->start_addr);
+> -
+> +		/* All of the memory blocks are offline at this point. */
+>  		acpi_unbind_memory_blocks(info, handle);
+> -		result = remove_memory(nid, info->start_addr, info->length);
 
->> > +       pci_restore_state(dev);
->> > +       pcie_portdrv_restore_config(dev);
->> > +       pci_enable_pcie_error_reporting(dev);
+We still need to call remove_memory().
+
+> -		if (result)
+> -			return result;
+> -
+>  		list_del(&info->list);
+>  		kfree(info);
+>  	}
+> -
+> -	return result;
+>  }
+>  
+>  static void acpi_memory_device_free(struct acpi_memory_device *mem_device)
+> Index: linux-pm/include/linux/memory_hotplug.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/memory_hotplug.h
+> +++ linux-pm/include/linux/memory_hotplug.h
+> @@ -252,7 +252,6 @@ extern int add_memory(int nid, u64 start
+>  extern int arch_add_memory(int nid, u64 start, u64 size);
+>  extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+>  extern bool is_memblock_offlined(struct memory_block *mem);
+> -extern int remove_memory(int nid, u64 start, u64 size);
+>  extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+>  								int nr_pages);
+>  extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+> Index: linux-pm/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-pm.orig/mm/memory_hotplug.c
+> +++ linux-pm/mm/memory_hotplug.c
+> @@ -1670,41 +1670,6 @@ int walk_memory_range(unsigned long star
+>  }
+
+ :
+
+> -
+> -int __ref remove_memory(int nid, u64 start, u64 size)
+> -{
+> -	unsigned long start_pfn, end_pfn;
+> -	int ret = 0;
+> -	int retry = 1;
+> -
+> -	start_pfn = PFN_DOWN(start);
+> -	end_pfn = PFN_UP(start + size - 1);
+> -
+> -	/*
+> -	 * When CONFIG_MEMCG is on, one memory block may be used by other
+> -	 * blocks to store page cgroup when onlining pages. But we don't know
+> -	 * in what order pages are onlined. So we iterate twice to offline
+> -	 * memory:
+> -	 * 1st iterate: offline every non primary memory block.
+> -	 * 2nd iterate: offline primary (i.e. first added) memory block.
+> -	 */
+> -repeat:
+> -	walk_memory_range(start_pfn, end_pfn, &ret,
+> -			  offline_memory_block_cb);
+> -	if (ret) {
+> -		if (!retry)
+> -			return ret;
+> -
+> -		retry = 0;
+> -		ret = 0;
+> -		goto repeat;
+> -	}
+
+The above procedure can be removed as it is for off-lining.
+
+> -	lock_memory_hotplug();
+> -
+> -	/*
+> -	 * we have offlined all memory blocks like this:
+> -	 *   1. lock memory hotplug
+> -	 *   2. offline a memory block
+> -	 *   3. unlock memory hotplug
+> -	 *
+> -	 * repeat step1-3 to offline the memory block. All memory blocks
+> -	 * must be offlined before removing memory. But we don't hold the
+> -	 * lock in the whole operation. So we should check whether all
+> -	 * memory blocks are offlined.
+> -	 */
+> -
+> -	ret = walk_memory_range(start_pfn, end_pfn, NULL,
+> -				is_memblock_offlined_cb);
+> -	if (ret) {
+> -		unlock_memory_hotplug();
+> -		return ret;
+> -	}
+> -
+
+I think the above procedure is still useful for safe guard.
+
+> -	/* remove memmap entry */
+> -	firmware_map_remove(start, start + size, "System RAM");
+> -
+> -	arch_remove_memory(start, size);
+> -
+> -	try_offline_node(nid);
+
+The above procedure performs memory hot-delete specific operations and
+is necessary.
+
+Thanks,
+-Toshi
+
+> -	unlock_memory_hotplug();
+> -
+> -	return 0;
+> -}
+
+
