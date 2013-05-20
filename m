@@ -1,117 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab3ETOkf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 10:40:35 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:41188 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab3ETOif (ORCPT
+	id S1757186Ab3ETOkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 10:40:41 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44937 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab3ETOkh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:38:35 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/8] rcu: Merge __rcu_process_gp_end() into __note_gp_changes()
-Date: Mon, 20 May 2013 07:38:12 -0700
-Message-Id: <1369060695-29679-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130520143739.GA29365@linux.vnet.ibm.com>
- <1369060695-29679-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-5518-0000-0000-00000ED052B2
+	Mon, 20 May 2013 10:40:37 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5199DBE2.5080707@asianux.com>
+References: <5199DBE2.5080707@asianux.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 20 May 2013 07:40:24 -0700
+To: Chen Gang <gang.chen@asianux.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <97dada79-cd78-4799-8f18-ed2bf8eee508@email.android.com>
+X-XM-AID: U2FsdGVkX1+lIJS1jkuB43Rl0b/22SHQZtM4I3Ax2dg=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0043]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_05 8+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Chen Gang <gang.chen@asianux.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] include/linux/posix_acl.h: need 'return NULL' when BUG(), if neither CONFIG_BUG nor HAVE_ARCH_BUG is defined.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit eliminates some duplicated code by merging
-__rcu_process_gp_end() into __note_gp_changes().
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree.c | 48 ++++++------------------------------------------
- 1 file changed, 6 insertions(+), 42 deletions(-)
+Chen Gang <gang.chen@asianux.com> wrote:
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 89d1978..26befd0 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1254,18 +1254,16 @@ static void rcu_advance_cbs(struct rcu_state *rsp, struct rcu_node *rnp,
- }
- 
- /*
-- * Advance this CPU's callbacks, but only if the current grace period
-- * has ended.  This may be called only from the CPU to whom the rdp
-- * belongs.  In addition, the corresponding leaf rcu_node structure's
-- * ->lock must be held by the caller, with irqs disabled.
-+ * Update CPU-local rcu_data state to record the beginnings and ends of
-+ * grace periods.  The caller must hold the ->lock of the leaf rcu_node
-+ * structure corresponding to the current CPU, and must have irqs disabled.
-  */
--static void
--__rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
-+static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
- {
--	/* Did another grace period end? */
-+	/* Handle the ends of any preceding grace periods first. */
- 	if (rdp->completed == rnp->completed) {
- 
--		/* No, so just accelerate recent callbacks. */
-+		/* No grace period end, so just accelerate recent callbacks. */
- 		rcu_accelerate_cbs(rsp, rnp, rdp);
- 
- 	} else {
-@@ -1276,41 +1274,7 @@ __rcu_process_gp_end(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
- 		/* Remember that we saw this grace-period completion. */
- 		rdp->completed = rnp->completed;
- 		trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuend");
--
--		/*
--		 * If we were in an extended quiescent state, we may have
--		 * missed some grace periods that others CPUs handled on
--		 * our behalf. Catch up with this state to avoid noting
--		 * spurious new grace periods.  If another grace period
--		 * has started, then rnp->gpnum will have advanced, so
--		 * we will detect this later on.  Of course, any quiescent
--		 * states we found for the old GP are now invalid.
--		 */
--		if (ULONG_CMP_LT(rdp->gpnum, rdp->completed)) {
--			rdp->gpnum = rdp->completed;
--			rdp->passed_quiesce = 0;
--		}
--
--		/*
--		 * If RCU does not need a quiescent state from this CPU,
--		 * then make sure that this CPU doesn't go looking for one.
--		 */
--		if ((rnp->qsmask & rdp->grpmask) == 0)
--			rdp->qs_pending = 0;
- 	}
--}
--
--/*
-- * Update CPU-local rcu_data state to record the newly noticed grace period.
-- * This is used both when we started the grace period and when we notice
-- * that someone else started the grace period.  The caller must hold the
-- * ->lock of the leaf rcu_node structure corresponding to the current CPU,
-- *  and must have irqs disabled.
-- */
--static void __note_gp_changes(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_data *rdp)
--{
--	/* Handle the ends of any preceding grace periods first. */
--	__rcu_process_gp_end(rsp, rnp, rdp);
- 
- 	if (rdp->gpnum != rnp->gpnum) {
- 		/*
--- 
-1.8.1.5
+>
+>If neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, the BUG() will
+>defined as empty (e.g. randconfig with MMU for arm s5pv210)
+>
+>In this case, need 'return NULL' to let upper caller knows the failure.
+
+Seriously?  The correct fix it would seem is to give a useful default BUG definition.  Say *NULL.
+
+Further we should never hit that code in the first place if it calls BUG.  So upper callers should never get there.
+
+If it is ever possible to get there the callers need to be fixed.
+
+Eric
+
+>Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>---
+> include/linux/posix_acl.h |    1 +
+> 1 files changed, 1 insertions(+), 0 deletions(-)
+>
+>diff --git a/include/linux/posix_acl.h b/include/linux/posix_acl.h
+>index 7931efe..2c48d06 100644
+>--- a/include/linux/posix_acl.h
+>+++ b/include/linux/posix_acl.h
+>@@ -104,6 +104,7 @@ static inline struct posix_acl **acl_by_type(struct
+>inode *inode, int type)
+> 		return &inode->i_default_acl;
+> 	default:
+> 		BUG();
+>+		return NULL;
+> 	}
+> }
+> 
+>-- 
+>1.7.7.6
 
