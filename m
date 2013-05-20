@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3ETLIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:08:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56213 "EHLO
+	id S1756495Ab3ETLIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 07:08:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56215 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756145Ab3ETKxT (ORCPT
+	with ESMTP id S1756258Ab3ETKxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 06:53:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 063/115] tile: support new Tilera hypervisor
-Date: Mon, 20 May 2013 11:51:03 +0100
-Message-Id: <1369047116-9378-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 060/115] powerpc: Emulate non privileged DSCR read and write
+Date: Mon, 20 May 2013 11:51:00 +0100
+Message-Id: <1369047116-9378-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,170 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit c539914dcd9a68c63305e055b14115a6a19578a8 upstream.
+commit 73d2fb758e678c93bc76d40876c2359f0729b0ef upstream.
 
-The Tilera hypervisor shipped in releases up through MDE 4.1 launches
-the client operating system (i.e. Linux) at privilege level 1 (PL1).
-Starting with MDE 4.2, as part of the work to enable KVM, the
-Tilera hypervisor launches Linux at PL2 instead.
+POWER8 allows read and write of the DSCR in userspace. We added
+kernel emulation so applications could always use the instructions
+regardless of the CPU type.
 
-This commit makes the KERNEL_PL option default to 2 for tilegx, while
-still saying at 1 for tilepro, which doesn't have an updated hypervisor.
-It also explains how and when you might want to choose another value.
-In addition, we change a small buglet in the on-chip Ethernet driver,
-where we were failing to use the KERNEL_PL constant in an API call.
+Unfortunately there are two SPRs for the DSCR and we only added
+emulation for the privileged one. Add code to match the non
+privileged one.
 
-To make the transition cleaner, this change also provides the updated
-hv_init() API for the new hypervisor that supports announcing Linux's
-compiled-in PL, so the hypervisor can generate a suitable error in the
-case of a mismatched hypervisor and Linux binary.
+A simple test was created to verify the fix:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-[ luis: adjust context ]
+http://ozlabs.org/~anton/junkcode/user_dscr_test.c
+
+Without the patch we get a SIGILL and it passes with the patch.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/tile/Kconfig                  | 14 ++++++++++----
- arch/tile/include/hv/hypervisor.h  | 27 ++++++++++++++++++++++++---
- arch/tile/kernel/head_32.S         |  2 +-
- arch/tile/kernel/head_64.S         | 12 +++++++++---
- drivers/net/ethernet/tile/tilegx.c |  2 +-
- 5 files changed, 45 insertions(+), 12 deletions(-)
+ arch/powerpc/include/asm/ppc-opcode.h |  4 ++++
+ arch/powerpc/kernel/traps.c           | 10 ++++++++--
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index fe12881..68c9a958 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -339,11 +339,17 @@ config HARDWALL
- config KERNEL_PL
- 	int "Processor protection level for kernel"
- 	range 1 2
--	default "1"
-+	default 2 if TILEGX
-+	default 1 if !TILEGX
- 	---help---
--	  This setting determines the processor protection level the
--	  kernel will be built to run at.  Generally you should use
--	  the default value here.
-+	  Since MDE 4.2, the Tilera hypervisor runs the kernel
-+	  at PL2 by default.  If running under an older hypervisor,
-+	  or as a KVM guest, you must run at PL1.  (The current
-+	  hypervisor may also be recompiled with "make HV_PL=2" to
-+	  allow it to run a kernel at PL1, but clients running at PL1
-+	  are not expected to be supported indefinitely.)
-+
-+	  If you're not sure, don't change the default.
+diff --git a/arch/powerpc/include/asm/ppc-opcode.h b/arch/powerpc/include/asm/ppc-opcode.h
+index d81f994..762f7a6 100644
+--- a/arch/powerpc/include/asm/ppc-opcode.h
++++ b/arch/powerpc/include/asm/ppc-opcode.h
+@@ -45,6 +45,10 @@
+ #define PPC_INST_MFSPR_DSCR_MASK	0xfc1fffff
+ #define PPC_INST_MTSPR_DSCR		0x7c1103a6
+ #define PPC_INST_MTSPR_DSCR_MASK	0xfc1fffff
++#define PPC_INST_MFSPR_DSCR_USER	0x7c0302a6
++#define PPC_INST_MFSPR_DSCR_USER_MASK	0xfc1fffff
++#define PPC_INST_MTSPR_DSCR_USER	0x7c0303a6
++#define PPC_INST_MTSPR_DSCR_USER_MASK	0xfc1fffff
+ #define PPC_INST_SLBFEE			0x7c0007a7
  
- endmenu  # Tilera-specific configuration
+ #define PPC_INST_STRING			0x7c00042a
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index ae0843f..3bb7197 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -960,7 +960,10 @@ static int emulate_instruction(struct pt_regs *regs)
  
-diff --git a/arch/tile/include/hv/hypervisor.h b/arch/tile/include/hv/hypervisor.h
-index ccd847e..837dca5 100644
---- a/arch/tile/include/hv/hypervisor.h
-+++ b/arch/tile/include/hv/hypervisor.h
-@@ -107,7 +107,22 @@
- #define HV_DISPATCH_ENTRY_SIZE 32
- 
- /** Version of the hypervisor interface defined by this file */
--#define _HV_VERSION 11
-+#define _HV_VERSION 13
-+
-+/** Last version of the hypervisor interface with old hv_init() ABI.
-+ *
-+ * The change from version 12 to version 13 corresponds to launching
-+ * the client by default at PL2 instead of PL1 (corresponding to the
-+ * hv itself running at PL3 instead of PL2).  To make this explicit,
-+ * the hv_init() API was also extended so the client can report its
-+ * desired PL, resulting in a more helpful failure diagnostic.  If you
-+ * call hv_init() with _HV_VERSION_OLD_HV_INIT and omit the client_pl
-+ * argument, the hypervisor will assume client_pl = 1.
-+ *
-+ * Note that this is a deprecated solution and we do not expect to
-+ * support clients of the Tilera hypervisor running at PL1 indefinitely.
-+ */
-+#define _HV_VERSION_OLD_HV_INIT 12
- 
- /* Index into hypervisor interface dispatch code blocks.
-  *
-@@ -377,7 +392,11 @@ typedef int HV_Errno;
- #ifndef __ASSEMBLER__
- 
- /** Pass HV_VERSION to hv_init to request this version of the interface. */
--typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-+typedef enum {
-+  HV_VERSION = _HV_VERSION,
-+  HV_VERSION_OLD_HV_INIT = _HV_VERSION_OLD_HV_INIT,
-+
-+} HV_VersionNumber;
- 
- /** Initializes the hypervisor.
-  *
-@@ -385,9 +404,11 @@ typedef enum { HV_VERSION = _HV_VERSION } HV_VersionNumber;
-  * that this program expects, typically HV_VERSION.
-  * @param chip_num Architecture number of the chip the client was built for.
-  * @param chip_rev_num Revision number of the chip the client was built for.
-+ * @param client_pl Privilege level the client is built for
-+ *   (not required if interface_version_number == HV_VERSION_OLD_HV_INIT).
-  */
- void hv_init(HV_VersionNumber interface_version_number,
--             int chip_num, int chip_rev_num);
-+             int chip_num, int chip_rev_num, int client_pl);
- 
- 
- /** Queries we can make for hv_sysconf().
-diff --git a/arch/tile/kernel/head_32.S b/arch/tile/kernel/head_32.S
-index f71bfee..ac11530 100644
---- a/arch/tile/kernel/head_32.S
-+++ b/arch/tile/kernel/head_32.S
-@@ -38,7 +38,7 @@ ENTRY(_start)
- 	  movei r2, TILE_CHIP_REV
+ #ifdef CONFIG_PPC64
+ 	/* Emulate the mfspr rD, DSCR. */
+-	if (((instword & PPC_INST_MFSPR_DSCR_MASK) == PPC_INST_MFSPR_DSCR) &&
++	if ((((instword & PPC_INST_MFSPR_DSCR_USER_MASK) ==
++		PPC_INST_MFSPR_DSCR_USER) ||
++	     ((instword & PPC_INST_MFSPR_DSCR_MASK) ==
++		PPC_INST_MFSPR_DSCR)) &&
+ 			cpu_has_feature(CPU_FTR_DSCR)) {
+ 		PPC_WARN_EMULATED(mfdscr, regs);
+ 		rd = (instword >> 21) & 0x1f;
+@@ -968,7 +971,10 @@ static int emulate_instruction(struct pt_regs *regs)
+ 		return 0;
  	}
- 	{
--	  moveli r0, _HV_VERSION
-+	  moveli r0, _HV_VERSION_OLD_HV_INIT
- 	  jal hv_init
- 	}
- 	/* Get a reasonable default ASID in r0 */
-diff --git a/arch/tile/kernel/head_64.S b/arch/tile/kernel/head_64.S
-index f9a2734..6093964 100644
---- a/arch/tile/kernel/head_64.S
-+++ b/arch/tile/kernel/head_64.S
-@@ -34,13 +34,19 @@
- ENTRY(_start)
- 	/* Notify the hypervisor of what version of the API we want */
- 	{
-+#if KERNEL_PL == 1 && _HV_VERSION == 13
-+	  /* Support older hypervisors by asking for API version 12. */
-+	  movei r0, _HV_VERSION_OLD_HV_INIT
-+#else
-+	  movei r0, _HV_VERSION
-+#endif
- 	  movei r1, TILE_CHIP
--	  movei r2, TILE_CHIP_REV
- 	}
- 	{
--	  moveli r0, _HV_VERSION
--	  jal hv_init
-+	  movei r2, TILE_CHIP_REV
-+	  movei r3, KERNEL_PL
- 	}
-+	jal hv_init
- 	/* Get a reasonable default ASID in r0 */
- 	{
- 	  move r0, zero
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 83b4b38..c93004a 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -927,7 +927,7 @@ static int tile_net_setup_interrupts(struct net_device *dev)
- 		if (info->has_iqueue) {
- 			gxio_mpipe_request_notif_ring_interrupt(
- 				&context, cpu_x(cpu), cpu_y(cpu),
--				1, ingress_irq, info->iqueue.ring);
-+				KERNEL_PL, ingress_irq, info->iqueue.ring);
- 		}
- 	}
- 
+ 	/* Emulate the mtspr DSCR, rD. */
+-	if (((instword & PPC_INST_MTSPR_DSCR_MASK) == PPC_INST_MTSPR_DSCR) &&
++	if ((((instword & PPC_INST_MTSPR_DSCR_USER_MASK) ==
++		PPC_INST_MTSPR_DSCR_USER) ||
++	     ((instword & PPC_INST_MTSPR_DSCR_MASK) ==
++		PPC_INST_MTSPR_DSCR)) &&
+ 			cpu_has_feature(CPU_FTR_DSCR)) {
+ 		PPC_WARN_EMULATED(mtdscr, regs);
+ 		rd = (instword >> 21) & 0x1f;
 -- 
 1.8.1.2
 
