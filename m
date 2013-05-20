@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab3ETWsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 18:48:30 -0400
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:53837 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758024Ab3ETWs2 (ORCPT
+	id S1758139Ab3ETXHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 19:07:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45074 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756026Ab3ETXG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 18:48:28 -0400
-Date: Mon, 20 May 2013 16:48:24 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: "Zhang, LongX" <longx.zhang@intel.com>
-Cc: "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@Emulex.Com>
-Subject: Re: Subject : [ PATCH ]
- pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-Message-ID: <20130520224824.GA31740@google.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+	Mon, 20 May 2013 19:06:59 -0400
+Date: Mon, 20 May 2013 16:06:57 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] tty: Add lock/unlock ldisc pair functions
+Message-ID: <20130520230657.GA21500@kroah.com>
+References: <20130415201411.GA27360@kroah.com>
+ <1366107356-7699-1-git-send-email-peter@hurleysoftware.com>
+ <1366107356-7699-2-git-send-email-peter@hurleysoftware.com>
+ <20130520193403.GA14340@kroah.com>
+ <519A9920.3010702@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <519A9920.3010702@hurleysoftware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 06:28:59AM +0000, Zhang, LongX wrote:
-> From: Zhang Long <longx.zhang@intel.com>
+On Mon, May 20, 2013 at 05:44:00PM -0400, Peter Hurley wrote:
+> On 05/20/2013 03:34 PM, Greg Kroah-Hartman wrote:
+> >On Tue, Apr 16, 2013 at 06:15:51AM -0400, Peter Hurley wrote:
+> >>Just as the tty pair must be locked in a stable sequence
+> >>(ie, independent of which is consider the 'other' tty), so must
+> >>the ldisc pair be locked in a stable sequence as well.
+> >>
+> >>Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> >>---
+> >>  drivers/tty/tty_ldisc.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 87 insertions(+)
+> >
+> >This patch breaks the build :(
 > 
-> Specific pci device drivers might have many functions to call
-> pci_channel_offline to check device states. When slot_reset happens,
-> drivers' slot_reset callback might call such functions and eventually
-> abort the reset.
+> Sorry about that.
 > 
-> The patch resets pdev->error_state to pci_channel_io_normal at
-> the begining of report_slot_reset.
+> >I've taken the first one, care to mush this one with the 7/7 patch, so
+> >there are no build breaks, and resend the 5 resulting patches so I can
+> >apply these?
 > 
-> Thank Liu Joseph for pointing it out.
-> 
-> Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-> Signed-off-by: Zhang Long <longx.zhang@intel.com>
-> ---
->  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
->  drivers/pci/pcie/portdrv_pci.c     |   12 +++++-------
->  2 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-> index 564d97f..c61fd44 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> @@ -286,6 +286,7 @@ static int report_slot_reset(struct pci_dev *dev, void *data)
->  	result_data = (struct aer_broadcast_data *) data;
->  
->  	device_lock(&dev->dev);
-> +	dev->error_state = pci_channel_io_normal;
->  	if (!dev->driver ||
->  		!dev->driver->err_handler ||
->  		!dev->driver->err_handler->slot_reset)
-> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-> index ed4d094..7abefd9 100644
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
->  	pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
->  	int retval;
->  
-> -	/* If fatal, restore cfg space for possible link reset at upstream */
-> -	if (dev->error_state == pci_channel_io_frozen) {
-> -		dev->state_saved = true;
-> -		pci_restore_state(dev);
-> -		pcie_portdrv_restore_config(dev);
-> -		pci_enable_pcie_error_reporting(dev);
-> -	}
-> +	/* restore cfg space for possible link reset at upstream */
-> +	dev->state_saved = true;
-> +	pci_restore_state(dev);
-> +	pcie_portdrv_restore_config(dev);
-> +	pci_enable_pcie_error_reporting(dev);
->  
->  	/* get true return value from &status */
->  	retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
+> Maybe it would be better to reorder 7/7 to be 1/6, if that's ok?
+> More work for me but the history will be cleaner.
 
-I think this patch changes the behavior in the case of a non-fatal error
-where one of the .error_detected() methods returned
-PCI_ERS_RESULT_NEED_RESET.  In that case, pcie_portdrv_slot_reset()
-previously did not restore config space, but after your patch, it *will*
-restore it.  We need an explanation of why this is safe.
+Sure, that works for me as well, care to just resend them?  Or, I can
+dig them out of my archive if needed.
 
-I think you should split this into two patches: the first would remove the
-"if (dev->error_state == pci_channel_io_frozen)" test from portdrv_pci.c
-and explain the reason, and the second would make the aerdrv_core.c change.
+thanks,
 
-I'm also concerned that in that same case (a non-fatal error where one of
-the .error_detected() methods returned PCI_ERS_RESULT_NEED_RESET), I don't
-think we actually *do* any kind of device reset.  This isn't related to
-your patch, of course, so if you resolve the config space restore question,
-we can deal with the reset question later.
-
-Bjorn
+greg k-h
