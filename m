@@ -1,428 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3ETD3X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 23:29:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59340 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754190Ab3ETD3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 23:29:21 -0400
-Message-ID: <5199987B.2090405@redhat.com>
-Date: Mon, 20 May 2013 11:28:59 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Narasimhan, Sriram" <sriram.narasimhan@hp.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics
- through ethtool
-References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com> <20130519112800.GG19883@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF133@G9W0717.americas.hpqcorp.net> <20130519200320.GA27407@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF195@G9W0717.americas.hpqcorp.net>
-In-Reply-To: <228BD1969E90E94D8805535E22CE8EFF063CF195@G9W0717.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755476Ab3ETDdp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 23:33:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41635 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab3ETDdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 23:33:41 -0400
+X-AuditID: cbfee690-b7efc6d000006d92-16-5199998e25ae
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 07/15] f2fs: change get_new_data_page to pass a locked node page
+Date: Mon, 20 May 2013 12:32:21 +0900
+Message-id: <1369020743-18520-7-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.1.3.566.gaa39828
+In-reply-to: <1369020743-18520-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1369020743-18520-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zA92+mTMDDTZeN7S4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2PRX4eCFVIVu963
+	MDUwXhXtYuTgkBAwkZh20raLkRPIFJO4cG89WxcjF4eQwDJGiY9/v7JDJEwkLl9+BZVYxCgx
+	Z8V0ZginjUliY8MRNpBJbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAEsICARK7np1i
+	BbFZBFQllm/8B7aBV8Bd4seBTWwQ23QlVv9/DhbnFPCQ2Hr3FCPIfCGgmtfnSkBmSgh8ZpN4
+	0juJHWKOgMS3yYdYIL6Rldh0gBlijKTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKJXnJhbXJqX
+	rpecn7uJERKuE3Yw3jtgfYgxGWjcRGYp0eR8YLjnlcQbGpsZWZiamBobmVuakSasJM6r3mId
+	KCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRa9ZhT7M137Z9zJ0a9GZWZ3Kf7d5PMwXylF+V
+	Pf15+Mk9g7xDPzf8V/G5P7Wqctf7PxVy3DszsluXHpzae3V1pN6mL1L3g/Ymz2Pr+2b9PphH
+	geGzGy9fZInTpZev3Z8wlC6UetPzYPl+9aP3TdKfCzw9EvH0pFDRo6zAXUwywmsztu2b8X6l
+	khJLcUaioRZzUXEiAFYk3V9tAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAd2+mTMDDZbf0LW4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
+	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
+	kCC4HiMDNJCwjjFj0V+HghVSFbvetzA1MF4V7WLk5JAQMJG4fPkVG4QtJnHh3nogm4tDSGAR
+	o8ScFdOZIZw2JomNDUeAMhwcbALaEpv3G4A0iAgwSyyYep4RpIZZYAKjxP9F71lAEsICARK7
+	np1iBbFZBFQllm/8xw5i8wq4S/w4sAlqm67E6v/PweKcAh4SW++eYgSZLwRU8/pcyQRG3gWM
+	DKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguPhmfQOxlUNFocYBTgYlXh4BQJmBgqxJpYV
+	V+YeYpTgYFYS4Y3uBgrxpiRWVqUW5ccXleakFh9iTAY6aiKzlGhyPjBW80riDY1NzIwsjcws
+	jEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB0e1e0IQlgd2xbbe2tD/esErvk+g0
+	XcFK373Fua2ySWEeEXfXtD88arTthLamnZQib35cKEtodI7I2YlPQmfti71olqPWENdudyD8
+	oYSPwbbNW31jtv45zM9bp1/NYrLV5PPZBWtjj1xccnXth8DN91bMnRr+7JbQC5tM5S/FF7Sn
+	Pu/mPp/2WYmlOCPRUIu5qDgRAGECmHfLAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2013 06:56 AM, Narasimhan, Sriram wrote:
-> Hi Michael,
->
-> Comments inline...
->
-> -----Original Message-----
-> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
-> Sent: Sunday, May 19, 2013 1:03 PM
-> To: Narasimhan, Sriram
-> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
-> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
->
-> On Sun, May 19, 2013 at 04:09:48PM +0000, Narasimhan, Sriram wrote:
->> Hi Michael,
->>
->> I was getting all packets on the same inbound queue which
->> is why I added this support to virtio-net (and some more
->> instrumentation at tun as well).  But, it turned out to be
->> my misconfiguration - I did not enable IFF_MULTI_QUEUE on
->> the tap device, so the real_num_tx_queues on tap netdev was 
->> always 1 (no tx distribution at tap).
-> Interesting that qemu didn't fail.
->
-> [Sriram] void tun_set_real_num_tx_queues() does not return 
-> the EINVAL return from netif_set_real_num_tx_queues() for 
-> txq > dev->num_tx_queues (which would be the case if the
-> tap device were not created with IFF_MULTI_QUEUE).  I think
-> it would be better to fix the code to disable the new 
-> queue and fail tun_attach() in this scenario.  If you 
-> agree, I can go ahead and create a separate patch for that.
->    
+This patch is for passing a locked node page to get_dnode_of_data.
 
-But tun_attach() check the TUN_TAP_MQ flags before, so it should fail?
-How was the tap created?
->> I am thinking about 
->> adding a -q option to tunctl to specify multi-queue flag on
->> the tap device.
-> Absolutely.
->
-> [Sriram] OK, let me do that.
->
->> Yes, number of exits will be most useful.  I will look into
->> adding the other statistics you mention.
->>
->> Sriram  
-> Pls note you'll need to switch to virtqueue_kick_prepare
-> to detect exits: virtqueue_kick doesn't let you know
-> whether there was an exit.
->
-> Also, it's best to make this a separate patch from the one
-> adding per-queue stats.
->
-> [Sriram] OK, I will cover only the per-queue statistics in
-> this patch. Also, I will address the indentation/data 
-> structure name points that you mentioned in your earlier
-> email and send a new revision for this patch.
->
-> Sriram
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/data.c | 12 +++++++-----
+ fs/f2fs/dir.c  |  4 ++--
+ fs/f2fs/f2fs.h |  2 +-
+ fs/f2fs/file.c |  2 +-
+ 4 files changed, 11 insertions(+), 9 deletions(-)
 
-Better have some performance numbers to make sure nothing was slowed down.
-
-Thanks
->
->> -----Original Message-----
->> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
->> Sent: Sunday, May 19, 2013 4:28 AM
->> To: Narasimhan, Sriram
->> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
->>
->> On Thu, May 16, 2013 at 01:24:29PM -0700, Sriram Narasimhan wrote:
->>> This patch allows virtio-net driver to report traffic distribution
->>> to inbound/outbound queues through ethtool -S.  The per_cpu
->>> virtnet_stats is split into receive and transmit stats and are
->>> maintained on a per receive_queue and send_queue basis.
->>> virtnet_stats() is modified to aggregate interface level statistics
->>> from per-queue statistics.  Sample output below:
->>>
->> Thanks for the patch. The idea itself looks OK to me.
->> Ben Hutchings already sent some comments
->> so I won't repeat them. Some minor more comments
->> and questions below.
->>
->>> NIC statistics:
->>>      rxq0: rx_packets: 4357802
->>>      rxq0: rx_bytes: 292642052
->>>      txq0: tx_packets: 824540
->>>      txq0: tx_bytes: 55256404
->>>      rxq1: rx_packets: 0
->>>      rxq1: rx_bytes: 0
->>>      txq1: tx_packets: 1094268
->>>      txq1: tx_bytes: 73328316
->>>      rxq2: rx_packets: 0
->>>      rxq2: rx_bytes: 0
->>>      txq2: tx_packets: 1091466
->>>      txq2: tx_bytes: 73140566
->>>      rxq3: rx_packets: 0
->>>      rxq3: rx_bytes: 0
->>>      txq3: tx_packets: 1093043
->>>      txq3: tx_bytes: 73246142
->> Interesting. This example implies that all packets are coming in
->> through the same RX queue - is this right?
->> If yes that's worth exploring - could be a tun bug -
->> and shows how this patch is useful.
->>
->>> Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
->> BTW, while you are looking at the stats, one other interesting
->> thing to add could be checking more types of stats: number of exits,
->> queue full errors, etc.
->>
->>> ---
->>>  drivers/net/virtio_net.c |  157 +++++++++++++++++++++++++++++++++++++---------
->>>  1 files changed, 128 insertions(+), 29 deletions(-)
->>>
->>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->>> index 3c23fdc..3c58c52 100644
->>> --- a/drivers/net/virtio_net.c
->>> +++ b/drivers/net/virtio_net.c
->>> @@ -41,15 +41,46 @@ module_param(gso, bool, 0444);
->>>  
->>>  #define VIRTNET_DRIVER_VERSION "1.0.0"
->>>  
->>> -struct virtnet_stats {
->>> -	struct u64_stats_sync tx_syncp;
->>> +struct virtnet_rx_stats {
->>>  	struct u64_stats_sync rx_syncp;
->>> -	u64 tx_bytes;
->>> +	u64 rx_packets;
->>> +	u64 rx_bytes;
->>> +};
->>> +
->>> +struct virtnet_tx_stats {
->>> +	struct u64_stats_sync tx_syncp;
->>>  	u64 tx_packets;
->>> +	u64 tx_bytes;
->>> +};
->>>  
->>> -	u64 rx_bytes;
->>> -	u64 rx_packets;
->> I think maintaining the stats in a per-queue data structure like this is
->> fine.  if # of CPUs == # of queues which is typical, we use same amount
->> of memory.  And each queue access is under a lock,
->> or from napi thread, so no races either.
->>
->>> +struct virtnet_ethtool_stats {
->>> +	char desc[ETH_GSTRING_LEN];
->>> +	int type;
->>> +	int size;
->>> +	int offset;
->>> +};
->>> +
->>> +enum {VIRTNET_STATS_TX, VIRTNET_STATS_RX};
->>> +
->>> +#define VIRTNET_RX_STATS_INFO(_struct, _field) \
->>> +	{#_field, VIRTNET_STATS_RX, FIELD_SIZEOF(_struct, _field), \
->>> +	offsetof(_struct, _field)}
->>> +
->>> +#define VIRTNET_TX_STATS_INFO(_struct, _field) \
->>> +	{#_field, VIRTNET_STATS_TX, FIELD_SIZEOF(_struct, _field), \
->>> +	offsetof(_struct, _field)}
->>> +
->>> +static const struct virtnet_ethtool_stats virtnet_et_rx_stats[] = {
->>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_packets),
->>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_bytes)
->>> +};
->>> +#define VIRTNET_RX_STATS_NUM (ARRAY_SIZE(virtnet_et_rx_stats))
->>> +
->>> +static const struct virtnet_ethtool_stats virtnet_et_tx_stats[] = {
->>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_packets),
->>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_bytes)
->>>  };
->>> +#define VIRTNET_TX_STATS_NUM (ARRAY_SIZE(virtnet_et_tx_stats))
->> I'd prefer a full name: virtnet_ethtool_tx_stats, or
->> just virtnet_tx_stats.
->>
->>>  
->>>  /* Internal representation of a send virtqueue */
->>>  struct send_queue {
->>> @@ -61,6 +92,9 @@ struct send_queue {
->>>  
->>>  	/* Name of the send queue: output.$index */
->>>  	char name[40];
->>> +
->>> +	/* Active send queue statistics */
->>> +	struct virtnet_tx_stats stats;
->>>  };
->>>  
->>>  /* Internal representation of a receive virtqueue */
->>> @@ -81,6 +115,9 @@ struct receive_queue {
->>>  
->>>  	/* Name of this receive queue: input.$index */
->>>  	char name[40];
->>> +
->>> +	/* Active receive queue statistics */
->>> +	struct virtnet_rx_stats stats;
->>>  };
->>>  
->>>  struct virtnet_info {
->>> @@ -109,9 +146,6 @@ struct virtnet_info {
->>>  	/* enable config space updates */
->>>  	bool config_enable;
->>>  
->>> -	/* Active statistics */
->>> -	struct virtnet_stats __percpu *stats;
->>> -
->>>  	/* Work struct for refilling if we run low on memory. */
->>>  	struct delayed_work refill;
->>>  
->>> @@ -330,7 +364,7 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->>>  {
->>>  	struct virtnet_info *vi = rq->vq->vdev->priv;
->>>  	struct net_device *dev = vi->dev;
->>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>> +	struct virtnet_rx_stats *stats = &rq->stats;
->>>  	struct sk_buff *skb;
->>>  	struct page *page;
->>>  	struct skb_vnet_hdr *hdr;
->>> @@ -650,8 +684,7 @@ static void free_old_xmit_skbs(struct send_queue *sq)
->>>  {
->>>  	struct sk_buff *skb;
->>>  	unsigned int len;
->>> -	struct virtnet_info *vi = sq->vq->vdev->priv;
->>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>> +	struct virtnet_tx_stats *stats = &sq->stats;
->>>  
->>>  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
->>>  		pr_debug("Sent skb %p\n", skb);
->>> @@ -841,24 +874,25 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->>>  					       struct rtnl_link_stats64 *tot)
->>>  {
->>>  	struct virtnet_info *vi = netdev_priv(dev);
->>> -	int cpu;
->>> +	int i;
->>>  	unsigned int start;
->>>  
->>> -	for_each_possible_cpu(cpu) {
->>> -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
->>> +	for (i = 0; i < vi->max_queue_pairs; i++) {
->>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
->>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
->>>  		u64 tpackets, tbytes, rpackets, rbytes;
->>>  
->>>  		do {
->>> -			start = u64_stats_fetch_begin_bh(&stats->tx_syncp);
->>> -			tpackets = stats->tx_packets;
->>> -			tbytes   = stats->tx_bytes;
->>> -		} while (u64_stats_fetch_retry_bh(&stats->tx_syncp, start));
->>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
->>> +			tpackets = tstats->tx_packets;
->>> +			tbytes   = tstats->tx_bytes;
->>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
->>>  
->>>  		do {
->>> -			start = u64_stats_fetch_begin_bh(&stats->rx_syncp);
->>> -			rpackets = stats->rx_packets;
->>> -			rbytes   = stats->rx_bytes;
->>> -		} while (u64_stats_fetch_retry_bh(&stats->rx_syncp, start));
->>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
->>> +			rpackets = rstats->rx_packets;
->>> +			rbytes   = rstats->rx_bytes;
->>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
->>>  
->>>  		tot->rx_packets += rpackets;
->>>  		tot->tx_packets += tpackets;
->>> @@ -1177,12 +1211,83 @@ static void virtnet_get_channels(struct net_device *dev,
->>>  	channels->other_count = 0;
->>>  }
->>>  
->>> +static void virtnet_get_stat_strings(struct net_device *dev,
->>> +					u32 stringset,
->>> +					u8 *data)
->>> +{
->>> +	struct virtnet_info *vi = netdev_priv(dev);
->>> +	int i, j;
->>> +
->>> +	switch (stringset) {
->>> +	case ETH_SS_STATS:
->>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
->>> +			for (j = 0; j < VIRTNET_RX_STATS_NUM; j++) {
->>> +				sprintf(data, "rxq%d: %s", i,
->>> +					virtnet_et_rx_stats[j].desc);
->>> +				data += ETH_GSTRING_LEN;
->>> +			}
->>> +			for (j = 0; j < VIRTNET_TX_STATS_NUM; j++) {
->>> +				sprintf(data, "txq%d: %s", i,
->>> +					virtnet_et_tx_stats[j].desc);
->>> +				data += ETH_GSTRING_LEN;
->>> +			}
->>> +		}
->>> +		break;
->>> +	}
->>> +}
->>> +
->>> +static int virtnet_get_sset_count(struct net_device *dev, int stringset)
->>> +{
->>> +	struct virtnet_info *vi = netdev_priv(dev);
->>> +	switch (stringset) {
->>> +	case ETH_SS_STATS:
->>> +		return vi->max_queue_pairs *
->>> +			(VIRTNET_RX_STATS_NUM + VIRTNET_TX_STATS_NUM);
->>> +	default:
->>> +		return -EINVAL;
->>> +	}
->>> +}
->>> +
->>> +static void virtnet_get_ethtool_stats(struct net_device *dev,
->>> +					struct ethtool_stats *stats,
->>> +					u64 *data)
->>> +{
->>> +	struct virtnet_info *vi = netdev_priv(dev);
->>> +	unsigned int i, base;
->>> +	unsigned int start;
->>> +
->>> +	for (i = 0, base = 0; i < vi->max_queue_pairs; i++) {
->>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
->>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
->>> +
->>> +		do {
->>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
->>> +			data[base] = rstats->rx_packets;
->>> +			data[base+1] = rstats->rx_bytes;
->> nitpicking:
->> We normally has spaces around +, like this:
->> 			data[base + 1] = rstats->rx_bytes;
->>
->>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
->>> +
->>> +		base += VIRTNET_RX_STATS_NUM;
->>> +
->>> +		do {
->>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
->>> +			data[base] = tstats->tx_packets;
->>> +			data[base+1]   = tstats->tx_bytes;
->>
->> nitpicking:
->> Here, something strange happened to indentation.
->>
->>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
->>> +
->>> +		base += VIRTNET_TX_STATS_NUM;
->>> +	}
->>> +}
->>> +
->>> +
->>>  static const struct ethtool_ops virtnet_ethtool_ops = {
->>>  	.get_drvinfo = virtnet_get_drvinfo,
->>>  	.get_link = ethtool_op_get_link,
->>>  	.get_ringparam = virtnet_get_ringparam,
->>>  	.set_channels = virtnet_set_channels,
->>>  	.get_channels = virtnet_get_channels,
->>> +	.get_strings = virtnet_get_stat_strings,
->>> +	.get_sset_count = virtnet_get_sset_count,
->>> +	.get_ethtool_stats = virtnet_get_ethtool_stats,
->>>  };
->>>  
->>>  #define MIN_MTU 68
->>> @@ -1531,14 +1636,11 @@ static int virtnet_probe(struct virtio_device *vdev)
->>>  	vi->dev = dev;
->>>  	vi->vdev = vdev;
->>>  	vdev->priv = vi;
->>> -	vi->stats = alloc_percpu(struct virtnet_stats);
->>>  	err = -ENOMEM;
->>> -	if (vi->stats == NULL)
->>> -		goto free;
->>>  
->>>  	vi->vq_index = alloc_percpu(int);
->>>  	if (vi->vq_index == NULL)
->>> -		goto free_stats;
->>> +		goto free;
->>>  
->>>  	mutex_init(&vi->config_lock);
->>>  	vi->config_enable = true;
->>> @@ -1616,8 +1718,6 @@ free_vqs:
->>>  	virtnet_del_vqs(vi);
->>>  free_index:
->>>  	free_percpu(vi->vq_index);
->>> -free_stats:
->>> -	free_percpu(vi->stats);
->>>  free:
->>>  	free_netdev(dev);
->>>  	return err;
->>> @@ -1653,7 +1753,6 @@ static void virtnet_remove(struct virtio_device *vdev)
->>>  	flush_work(&vi->config_work);
->>>  
->>>  	free_percpu(vi->vq_index);
->>> -	free_percpu(vi->stats);
->>>  	free_netdev(vi->dev);
->>>  }
->> Thanks!
->>
->>> -- 
->>> 1.7.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 05fb5c6..af74549 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -280,8 +280,8 @@ repeat:
+  * Also, caller should grab and release a mutex by calling mutex_lock_op() and
+  * mutex_unlock_op().
+  */
+-struct page *get_new_data_page(struct inode *inode, pgoff_t index,
+-						bool new_i_size)
++struct page *get_new_data_page(struct inode *inode,
++		struct page *npage, pgoff_t index, bool new_i_size)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+ 	struct address_space *mapping = inode->i_mapping;
+@@ -289,18 +289,20 @@ struct page *get_new_data_page(struct inode *inode, pgoff_t index,
+ 	struct dnode_of_data dn;
+ 	int err;
+ 
+-	set_new_dnode(&dn, inode, NULL, NULL, 0);
++	set_new_dnode(&dn, inode, npage, npage, 0);
+ 	err = get_dnode_of_data(&dn, index, ALLOC_NODE);
+ 	if (err)
+ 		return ERR_PTR(err);
+ 
+ 	if (dn.data_blkaddr == NULL_ADDR) {
+ 		if (reserve_new_block(&dn)) {
+-			f2fs_put_dnode(&dn);
++			if (!npage)
++				f2fs_put_dnode(&dn);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
+ 	}
+-	f2fs_put_dnode(&dn);
++	if (!npage)
++		f2fs_put_dnode(&dn);
+ repeat:
+ 	page = grab_cache_page(mapping, index);
+ 	if (!page)
+diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+index 1ac6b93..7db6e58 100644
+--- a/fs/f2fs/dir.c
++++ b/fs/f2fs/dir.c
+@@ -287,7 +287,7 @@ static int make_empty_dir(struct inode *inode, struct inode *parent)
+ 	struct f2fs_dir_entry *de;
+ 	void *kaddr;
+ 
+-	dentry_page = get_new_data_page(inode, 0, true);
++	dentry_page = get_new_data_page(inode, NULL, 0, true);
+ 	if (IS_ERR(dentry_page))
+ 		return PTR_ERR(dentry_page);
+ 
+@@ -448,7 +448,7 @@ start:
+ 	bidx = dir_block_index(level, (le32_to_cpu(dentry_hash) % nbucket));
+ 
+ 	for (block = bidx; block <= (bidx + nblock - 1); block++) {
+-		dentry_page = get_new_data_page(dir, block, true);
++		dentry_page = get_new_data_page(dir, NULL, block, true);
+ 		if (IS_ERR(dentry_page))
+ 			return PTR_ERR(dentry_page);
+ 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index ef6cac8..cbae2b6 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1027,7 +1027,7 @@ int reserve_new_block(struct dnode_of_data *);
+ void update_extent_cache(block_t, struct dnode_of_data *);
+ struct page *find_data_page(struct inode *, pgoff_t, bool);
+ struct page *get_lock_data_page(struct inode *, pgoff_t);
+-struct page *get_new_data_page(struct inode *, pgoff_t, bool);
++struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
+ int f2fs_readpage(struct f2fs_sb_info *, struct page *, block_t, int);
+ int do_write_data_page(struct page *);
+ 
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 1cae864..b8e34db 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -387,7 +387,7 @@ static void fill_zero(struct inode *inode, pgoff_t index,
+ 	f2fs_balance_fs(sbi);
+ 
+ 	ilock = mutex_lock_op(sbi);
+-	page = get_new_data_page(inode, index, false);
++	page = get_new_data_page(inode, NULL, index, false);
+ 	mutex_unlock_op(sbi, ilock);
+ 
+ 	if (!IS_ERR(page)) {
+-- 
+1.8.1.3.566.gaa39828
 
