@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab3ETLQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 07:16:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56081 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab3ETKws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755829Ab3ETKws (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 20 May 2013 06:52:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55966 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3ETKwU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 06:52:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/115] drm/radeon: add new richland pci ids
-Date: Mon, 20 May 2013 11:50:37 +0100
-Message-Id: <1369047116-9378-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 012/115] ALSA: usb-audio: disable autopm for MIDI devices
+Date: Mon, 20 May 2013 11:50:12 +0100
+Message-Id: <1369047116-9378-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 62d1f92e06aef9665d71ca7e986b3047ecf0b3c7 upstream.
+commit cbc200bca4b51a8e2406d4b654d978f8503d430b upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend)
+introduced autopm for all USB audio/MIDI devices.  However, many MIDI
+devices, such as synthesizers, do not merely transmit MIDI messages but
+use their MIDI inputs to control other functions.  With autopm, these
+devices would get powered down as soon as the last MIDI port device is
+closed on the host.
+
+Even some plain MIDI interfaces could get broken: they automatically
+send Active Sensing messages while powered up, but as soon as these
+messages cease, the receiving device would interpret this as an
+accidental disconnection.
+
+Commit f5f165418cab (ALSA: usb-audio: Fix missing autopm for MIDI input)
+introduced another regression: some devices (e.g. the Roland GAIA SH-01)
+are self-powered but do a reset whenever the USB interface's power state
+changes.
+
+To work around all this, just disable autopm for all USB MIDI devices.
+
+Reported-by: Laurens Holst
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni.c | 6 ++++--
- include/drm/drm_pciids.h    | 2 ++
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ sound/usb/midi.c | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index 09853ac..137b1f5 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -471,7 +471,8 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		    (rdev->pdev->device == 0x990F) ||
- 		    (rdev->pdev->device == 0x9910) ||
- 		    (rdev->pdev->device == 0x9917) ||
--		    (rdev->pdev->device == 0x9999)) {
-+		    (rdev->pdev->device == 0x9999) ||
-+		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9903) ||
-@@ -480,7 +481,8 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x990D) ||
- 			   (rdev->pdev->device == 0x990E) ||
- 			   (rdev->pdev->device == 0x9913) ||
--			   (rdev->pdev->device == 0x9918)) {
-+			   (rdev->pdev->device == 0x9918) ||
-+			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
- 		} else if ((rdev->pdev->device == 0x9919) ||
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 481825a..56650b7 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -593,6 +593,8 @@
- 	{0x1002, 0x9999, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x999B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
-+	{0x1002, 0x999D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x99A4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_ARUBA|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+diff --git a/sound/usb/midi.c b/sound/usb/midi.c
+index 34b9bb7..e5fee18 100644
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -126,7 +126,6 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	bool autopm_reference;
+ 	unsigned int opened[2];
+ 	unsigned char disconnected;
+ 	unsigned char input_running;
+@@ -1040,7 +1039,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
+-	int err;
+ 
+ 	down_read(&umidi->disc_rwsem);
+ 	if (umidi->disconnected) {
+@@ -1051,13 +1049,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+ 		if (!umidi->opened[0] && !umidi->opened[1]) {
+-			err = usb_autopm_get_interface(umidi->iface);
+-			umidi->autopm_reference = err >= 0;
+-			if (err < 0 && err != -EACCES) {
+-				mutex_unlock(&umidi->mutex);
+-				up_read(&umidi->disc_rwsem);
+-				return -EIO;
+-			}
+ 			if (umidi->roland_load_ctl) {
+ 				ctl = umidi->roland_load_ctl;
+ 				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+@@ -1080,8 +1071,6 @@ static int substream_open(struct snd_rawmidi_substream *substream, int dir,
+ 				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+ 			}
+-			if (umidi->autopm_reference)
+-				usb_autopm_put_interface(umidi->iface);
+ 		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
+@@ -2256,6 +2245,8 @@ int snd_usbmidi_create(struct snd_card *card,
+ 		return err;
+ 	}
+ 
++	usb_autopm_get_interface_no_resume(umidi->iface);
++
+ 	list_add_tail(&umidi->list, midi_list);
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
