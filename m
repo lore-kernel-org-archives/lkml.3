@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab3ETTIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:08:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48264 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3ETTIH (ORCPT
+	id S1757734Ab3ETTIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:08:50 -0400
+Received: from lan.nucleusys.com ([92.247.61.126]:49271 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754154Ab3ETTIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:08:07 -0400
-Message-ID: <519A7494.1050206@wwwdotorg.org>
-Date: Mon, 20 May 2013 13:08:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 20 May 2013 15:08:48 -0400
+Date: Mon, 20 May 2013 22:08:32 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] drivers: net: usb: rtl8150: moving constant and
+ structure definitions out of rtl8150.c
+In-Reply-To: <1369061360.4616.0.camel@bwh-desktop.uk.solarflarecom.com>
+Message-ID: <alpine.DEB.2.02.1305202158520.3400@fry.nucleusys.com>
+References: <alpine.DEB.2.02.1305182306550.16874@fry.nucleusys.com> <1369061360.4616.0.camel@bwh-desktop.uk.solarflarecom.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH] ARM: tegra: enable host1x support by default
-References: <1368868666-24754-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1368868666-24754-1-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2013 03:17 AM, Alexandre Courbot wrote:
-> Tegra DRM support used to be enabled in the default Tegra configuration,
-> but it now depends on CONFIG_TEGRA_HOST1X which is disabled by default.
-> Enable CONFIG_TEGRA_HOST1X so that DRM support is compiled in again.
+On Mon, 20 May 2013, Ben Hutchings wrote:
 
-I've forwarded this to arm@kernel.org in the hope it can be pulled into
-3.10. If not, I'll apply it to the Tegra tree once I hear back.
+> Now how is this driver going to compile, when rtl8150.h is only added by
+> the next patch?!
+
+I got carried away by the desire to make each patch smaller and to the 
+point.  Sacrificing build-ability of the tree, however, does not justify 
+it.  My bad.
+
+> You need to squash these first 2 together, so that the driver can be
+> compiled after each step.
+
+Will do once David merge 'net' into 'net-next'.
+
+
+		Petko
