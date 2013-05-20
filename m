@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab3ETT0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:26:52 -0400
-Received: from mout.gmx.net ([212.227.15.19]:58943 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756704Ab3ETT0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:26:50 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18psxd3N88p23/vhED0sAMkNwrgtua2oR5kHsfVZu
-	Ln97M218J3PnGc
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dongjin Kim <tobetter@gmail.com>, Peter Huewe <peterhuewe@gmx.de>,
-        Fengguang Wu <fengguang.wu@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb/misc/usb3503: Use module_i2c_driver to register driver
-Date: Mon, 20 May 2013 21:31:57 +0200
-Message-Id: <1369078317-30210-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-X-Y-GMX-Trusted: 0
+	id S1757819Ab3ETT1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:27:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46112 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3ETT1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 15:27:38 -0400
+Date: Mon, 20 May 2013 12:27:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wang YanQing <udknight@gmail.com>, jslaby@suse.cz, alan@linux.intel.com,
+        airlied@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] Convert all to the caller hold lock version
+Message-ID: <20130520192737.GA20961@kroah.com>
+References: <20130508181304.GA12344@udknight>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130508181304.GA12344@udknight>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing some boilerplate by using module_i2c_driver instead of calling
-register and unregister in the otherwise empty init/exit functions
+On Thu, May 09, 2013 at 02:13:04AM +0800, Wang YanQing wrote:
+> After commit 50e244cc793d511b86adea24972f3a7264cae114 
+>      (fb: rework locking to fix lock ordering on takeover)
+> and 
+>      commit e93a9a868792ad71cdd09d75e5a02d8067473c4e
+>      (fb: Yet another band-aid for fixing lockdep mess)
+> 
+> We have two version functions implement almost the same function,
+> except the caller/callee hold lock.
+> 
+> fbcon_takeover vs do_fbcon_takeover
+> register_con_driver vs do_register_con_driver
+> take_over_console vs do_take_over_console
+> unbind_con_driver vs do_unbind_con_driver
+> bind_con_driver vs do_bind_con_driver
+> unregister_con_driver vs do_unregister_con_driver
+> 
+> This issue bring us much code duplication,
+> like do_fbcon_takeover and fbcon_takeover,
+> they have almost the same.
+> 
+> Although some of them had been re-written 
+> as a wrapper for another, but the wrapper
+> is so trivial, we can just throw them away.
+> 
+> Also those two versions of almost the same
+> functions will confuse API's user.
+> 
+> After all, I think this issue is not good
+> for long time maintain.
+> 
+> This series patch convert all to the
+> new version which caller hold the lock,
+> and then delete the old version away.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/usb/misc/usb3503.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+Can you also send a patch fixing up the documentation to use the new
+functions as well?
 
-diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-index f713f6a..72d1771 100644
---- a/drivers/usb/misc/usb3503.c
-+++ b/drivers/usb/misc/usb3503.c
-@@ -307,19 +307,7 @@ static struct i2c_driver usb3503_driver = {
- 	.id_table	= usb3503_id,
- };
- 
--static int __init usb3503_init(void)
--{
--	return i2c_add_driver(&usb3503_driver);
--}
--
--static void __exit usb3503_exit(void)
--{
--	i2c_del_driver(&usb3503_driver);
--}
--
--module_init(usb3503_init);
--module_exit(usb3503_exit);
--
-+module_i2c_driver(usb3503_driver);
- MODULE_AUTHOR("Dongjin Kim <tobetter@gmail.com>");
- MODULE_DESCRIPTION("USB3503 USB HUB driver");
- MODULE_LICENSE("GPL");
--- 
-1.8.1.5
+thanks,
 
+greg k-h
