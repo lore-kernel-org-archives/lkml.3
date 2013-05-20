@@ -1,126 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3ETQoD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:44:03 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45729 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757103Ab3ETQn6 (ORCPT
+	id S1757542Ab3ETQow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:44:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54576 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756097Ab3ETQou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:43:58 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Asias He <asias@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Randy Dunlap <rdunlap@infradead.org>, Joe Perches <joe@perches.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, George Zhang <georgezhang@vmware.com>
-Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
-Date: Mon, 20 May 2013 09:43:57 -0700
-Message-ID: <4256914.YOKOpFu49M@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.10.2 (Linux/3.8.11-200.fc18.x86_64; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130520020714.GA1386@hj.localdomain>
-References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au> <87ppwq858q.fsf@rustcorp.com.au> <20130520020714.GA1386@hj.localdomain>
+	Mon, 20 May 2013 12:44:50 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 20 May 2013 09:44:57 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.10-rc2
+Message-ID: <20130520164457.GA3918@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, May 20, 2013 10:07:14 AM Asias He wrote:
-> On Fri, May 17, 2013 at 04:25:49PM +0930, Rusty Russell wrote:
-> > Randy Dunlap <rdunlap@infradead.org> writes:
-> > > On 05/16/13 16:42, Rusty Russell wrote:
-> > >> Joe Perches <joe@perches.com> writes:
-> > >>> On Thu, 2013-05-16 at 13:04 +0930, Rusty Russell wrote:
-> > >>>> Asias He <asias@redhat.com> writes:
-> > >>>>> On Wed, May 15, 2013 at 02:47:53PM +0930, Rusty Russell wrote:
-> > >>> []
-> > >>> 
-> > >>>>> Other users are using memcpy_fromiovec and friends outside net. It
-> > >>>>> seems
-> > >>>>> a good idea to put it in a util library. e.g. 
-> > >>>>> crypto/algif_skcipher.c
-> > >>>>> which also depends on NET for it.
-> > >>> 
-> > >>> []
-> > >>> 
-> > >>>> Subject: Hoist memcpy_fromiovec into lib/
-> > >>> 
-> > >>> You'll need the "friends" memcpy_toiovec too.
-> > >>> 
-> > >>> $ git grep -E \bmemcpy\w+iovec\w*"
-> > >>> crypto/algif_hash.c:    err = memcpy_toiovec(msg->msg_iov,
-> > >>> ctx->result, len); crypto/algif_skcipher.c:                       
-> > >>> err = memcpy_fromiovec(page_address(sg_page(sg)) +
-> > >>> crypto/algif_skcipher.c:                        err =
-> > >>> memcpy_fromiovec(page_address(sg_page(sg + i)),
-> > >>> drivers/dma/iovlock.c:#include <net/tcp.h> /* for memcpy_toiovec */
-> > >>> drivers/dma/iovlock.c:          return memcpy_toiovec(iov, kdata,
-> > >>> len); drivers/dma/iovlock.c:          err = memcpy_toiovec(iov, vaddr
-> > >>> + offset, len); drivers/isdn/mISDN/socket.c:    if
-> > >>> (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
-> > >>> drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err =
-> > >>> memcpy_fromiovec((u8 *)va + page_o
-> > >>> drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err =
-> > >>> memcpy_toiovec(iov, (u8 *)va + pag> >> 
-> > >> Fascinating.  These all indirectly depend on NET, so there's no problem
-> > >> at the moment.  But it is a bit weird...
-> > >> 
-> > >> crypto/algif_hash.c: depends on CRYPTO_USER_API_HASH -> NET
-> > >> crypto/algif_skcipher.c: depends on CRYPTO_USER_API_SKCIPHER -> NET
-> > >> drivers/dma/iovlock.c: depends on NET_DMA -> NET
-> > >> drivers/isdn/mISDN/socket.c: depends on MISDN -> ISDN -> NET
-> > >> drivers/misc/vmw_vmci/vmci_queue_pair.c: depends on VMCI -> NET
-> > >> 
-> > >> Patch welcome.
-> > >> 
-> > >> Meanwhile, to avoid more bikeshedding I've put the patch I posted with
-> > >> all acks in my fixes branch.  One cycle through linux-next, then
-> > >> straight to Linus.
-> > > 
-> > > I agree with whoever suggested that more be moved into /lib.
-> > > E.g., drivers/misc/vmw_vmci/Kconfig uses "depends on NET" because the
-> > > code there uses both memcpy_toiovec() and memcpy_fromiovec().
-> > > See commit ID 6d4f0139d642c45411a47879325891ce2a7c164a.
-> > 
-> > (CC's trimmed).
-> > 
-> > You Acked that commit :(
-> > 
-> > At a glance, the only way to drive the vmw_vmci device is through
-> > net/vmw_vsock/vmci_transport.c, so without NET it's useless?  But let's
-> > keep it neat anyway.  This was compiletested with CONFIG_VMCI,
-> > CONFIG_DMA_ENGINE and !CONFIG_NET.
-> > 
-> > Thanks,
-> > Rusty.
-> > 
-> > From: Rusty Russell <rusty@rustcorp.com.au>
-> > Subject: [PATCH] Hoist memcpy_fromiovec/memcpy_toiovec into lib/
-> > 
-> > ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
-> > 
-> > That function is only present with CONFIG_NET.  Turns out that
-> > crypto/algif_skcipher.c also uses that outside net, but it actually
-> > needs sockets anyway.
-> > 
-> > In addition, commit 6d4f0139d642c45411a47879325891ce2a7c164a added
-> > CONFIG_NET dependency to CONFIG_VMCI for memcpy_toiovec, so hoist
-> > that function and revert that commit too.
-> > 
-> > socket.h already include uio.h, so no callers *need* updating,
-> > though I update the obvious ones.
-> > 
-> > Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> > Acked-by: David S. Miller <davem@davemloft.net>
-> > Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> Acked-by: Asias He <asias@redhat.com>
 
-Acked-by: Dmitry Torokhov <dtor@vmware.com>
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Linus,
+
+Please pull hwmon fixes for Linux 3.10-rc2 from signed tag:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+This pull request adds two more patches to the request I sent out last week.
+If there is a reason for not accepting it, I would appreciate if you would
+let me know to give me a chance to correct it.
 
 Thanks,
-Dmitry
+Guenter
+------
+
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 917cc4e6b25c655264e8ea903eb77db25994ac24:
+
+  MAINTAINERS: Add myself as maintainer for LM95234 and TMP401 drivers (2013-05-20 06:29:25 -0700)
+
+----------------------------------------------------------------
+Error path fixes for abituguru and iio_hwmon drivers.
+Drop erroneously created attributes from nct6775 driver.
+Drop redundant safety on cache lifetime for tmp401 driver.
+Add explicit maintainer for LM95234 and TMP401 drivers.
+
+----------------------------------------------------------------
+Axel Lin (2):
+      hwmon: (iio_hwmon) Fix missing iio_channel_release_all call if devm_kzalloc fail
+      hwmon: (iio_hwmon) Fix null pointer dereference
+
+Guenter Roeck (2):
+      hwmon: (nct6775) Do not create non-existing attributes
+      MAINTAINERS: Add myself as maintainer for LM95234 and TMP401 drivers
+
+Jean Delvare (1):
+      hwmon: (tmp401) Drop redundant safety on cache lifetime
+
+Wei Yongjun (1):
+      hwmon: fix error return code in abituguru_probe()
+
+ MAINTAINERS               |   14 ++++++++++++++
+ drivers/hwmon/abituguru.c |   16 ++++++++++------
+ drivers/hwmon/iio_hwmon.c |    8 +++++---
+ drivers/hwmon/nct6775.c   |    6 ++++--
+ drivers/hwmon/tmp401.c    |    2 +-
+ 5 files changed, 34 insertions(+), 12 deletions(-)
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRmlMJAAoJEMsfJm/On5mBDcoP/Aig+RAOOOmFKHIu1hNFXYzZ
+d+smq8k66xMyapZiBkoZXP4NSgS4ohwAt4u1R11KkM2SuTf+Gr50pkozEo+uvh3N
+2PwK2TKRsVfGWnoTjay72SWi3BGokHSHY2CZypW4R0mRIBNjzg5DX6kPo+eHFXE7
+XdcYL1JZIcyjqJ8Sih5LKWF9U4fSq3UGYwApQOS0Yqx8wD9R3IhpAQ8/E1An95VZ
+57o4YZrYYxG9dF0mo60KIMLS/plnFuREhDM2tEYweXphU/NVXcft3CsQzlMlh2kK
+u2XvHUfEi11xM5+aHVhi4oskAT7+0I6aQ/lWPQ+g3QqmRHV9CLQcvjkiCrSwBvvq
+mmUPF91XoqZd2AtwpsDEqjmgKtYl+tLit4LsSejhUxwT1jZHg7LfJ3KnpDU/xvBO
+kPO0NuD1/rxVLqiVyYN2bgC0Ro52tiUcNbL2CIXiiHsYYfEVmvmPPPjLlVJOg6O5
+tUa9eKKs9lDdhAa1wFDGMc3fD80gY4h+lB958r94vGpHVl3q5ikY4dVYcu2wiKSG
++LpFbGvXQ/CMi6wKpogoO8tEIA/MXqF535PC2ak7kDvhq31Yt4P9ziDgexcrA6qD
+X/rgHNftWRNxtviHEawAlv3jUww+/hwL1tB5zTcCkFy1/dCDMcG9hcWkO0VkxkIf
+ihuJkK3+kOHzKpGmGmMY
+=sRIC
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
