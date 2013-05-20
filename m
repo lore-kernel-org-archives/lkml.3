@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3ETPCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:02:34 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:42810 "EHLO e8.ny.us.ibm.com"
+	id S1756979Ab3ETPDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:03:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49620 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755608Ab3ETO6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 10:58:35 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/13] rcu: Shrink TINY_RCU by reworking CPU-stall ifdefs
-Date: Mon, 20 May 2013 07:58:20 -0700
-Message-Id: <1369061900-546-13-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130520145751.GA32218@linux.vnet.ibm.com>
- <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052014-9360-0000-0000-000012433E0E
+	id S1755608Ab3ETPDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 11:03:31 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
+	<fernando@oss.ntt.co.jp>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, x86@kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Revert "x86-64, init: Do not set NX bits on non-NX capable hardware"
+Date: Mon, 20 May 2013 17:03:12 +0200
+Message-Id: <1369062192-7066-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20130514160108.GA5055@dhcp22.suse.cz>
+References: <20130514160108.GA5055@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+This reverts commit 78d77df71510a96e042de7ba6dbd7998103642cb because
+it breaks resume from suspend to ram. Git bisect pointed to this patch
+and the revert fixes the problem.
 
-TINY_RCU's reset_cpu_stall_ticks() and check_cpu_stalls() functions
-are defined unconditionally, and are empty functions if CONFIG_RCU_TRACE
-is disabled (which in turns disables detection of RCU CPU stalls).
-These empty functions can add a bit of bloat to TINY_RCU, so this
-commit reworks the ifdefs so that these functions are defined only
-if they actually do something.
+There are no error messages neither during suspend not on resume when
+the machine simply starts booting as if it wasn't suspended in RAM at
+all.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+References: https://lkml.org/lkml/2013/5/14/398
+Cc: stable@vger.kernel.org # 3.9
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- kernel/rcutiny.c        | 4 ++--
- kernel/rcutiny_plugin.h | 6 ++----
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ arch/x86/kernel/head64.c  |    3 +--
+ arch/x86/kernel/head_64.S |    1 -
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 4adc9e2..aa34411 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -204,7 +204,7 @@ static int rcu_is_cpu_rrupt_from_idle(void)
-  */
- static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
- {
--	reset_cpu_stall_ticks(rcp);
-+	RCU_TRACE(reset_cpu_stall_ticks(rcp));
- 	if (rcp->rcucblist != NULL &&
- 	    rcp->donetail != rcp->curtail) {
- 		rcp->donetail = rcp->curtail;
-@@ -251,7 +251,7 @@ void rcu_bh_qs(int cpu)
-  */
- void rcu_check_callbacks(int cpu, int user)
- {
--	check_cpu_stalls();
-+	RCU_TRACE(check_cpu_stalls());
- 	if (user || rcu_is_cpu_rrupt_from_idle())
- 		rcu_sched_qs(cpu);
- 	else if (!in_softirq())
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 65ef180..0cd385a 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -158,15 +158,11 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
- }
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index dab95a8..101ac1a9 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -34,7 +34,6 @@
+ extern pgd_t early_level4_pgt[PTRS_PER_PGD];
+ extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
+ static unsigned int __initdata next_early_pgt = 2;
+-pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
  
--#endif /* #ifdef CONFIG_RCU_TRACE */
--
- static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
- {
--#ifdef CONFIG_RCU_TRACE
- 	rcp->ticks_this_gp = 0;
- 	rcp->gp_start = jiffies;
- 	rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
--#endif /* #ifdef CONFIG_RCU_TRACE */
- }
+ /* Wipe all early page tables except for the kernel symbol map */
+ static void __init reset_early_page_tables(void)
+@@ -100,7 +99,7 @@ again:
+ 			pmd_p[i] = 0;
+ 		*pud_p = (pudval_t)pmd_p - __START_KERNEL_map + phys_base + _KERNPG_TABLE;
+ 	}
+-	pmd = (physaddr & PMD_MASK) + early_pmd_flags;
++	pmd = (physaddr & PMD_MASK) + (__PAGE_KERNEL_LARGE & ~_PAGE_GLOBAL);
+ 	pmd_p[pmd_index(address)] = pmd;
  
- static void check_cpu_stalls(void)
-@@ -174,3 +170,5 @@ static void check_cpu_stalls(void)
- 	RCU_TRACE(check_cpu_stall(&rcu_bh_ctrlblk));
- 	RCU_TRACE(check_cpu_stall(&rcu_sched_ctrlblk));
- }
-+
-+#endif /* #ifdef CONFIG_RCU_TRACE */
+ 	return 0;
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 08f7e80..6859e96 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -200,7 +200,6 @@ ENTRY(secondary_startup_64)
+ 	btl	$20,%edi		/* No Execute supported? */
+ 	jnc     1f
+ 	btsl	$_EFER_NX, %eax
+-	btsq	$_PAGE_BIT_NX,early_pmd_flags(%rip)
+ 1:	wrmsr				/* Make changes effective */
+ 
+ 	/* Setup cr0 */
 -- 
-1.8.1.5
+1.7.10.4
 
