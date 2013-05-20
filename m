@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab3ETKyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 06:54:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56464 "EHLO
+	id S1756730Ab3ETKyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 06:54:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56460 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3ETKyN (ORCPT
+	with ESMTP id S1756673Ab3ETKyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 20 May 2013 06:54:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>,
+Cc: Benjamin LaHaise <bcrl@kvack.org>, Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 111/115] dm thin: do not set discard_zeroes_data
-Date: Mon, 20 May 2013 11:51:51 +0100
-Message-Id: <1369047116-9378-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 110/115] ipmi: ipmi_devintf: compat_ioctl method fails to take ipmi_mutex
+Date: Mon, 20 May 2013 11:51:50 +0100
+Message-Id: <1369047116-9378-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
 References: <1369047116-9378-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 307615a26e95406c42c95916a66ba50434567e0f upstream.
+commit 6368087e851e697679af059b4247aca33a69cef3 upstream.
 
-The dm thin pool target claims to support the zeroing of discarded
-data areas.  This turns out to be incorrect when processing discards
-that do not exactly cover a complete number of blocks, so the target
-must always set discard_zeroes_data_unsupported.
+When a 32 bit version of ipmitool is used on a 64 bit kernel, the
+ipmi_devintf code fails to correctly acquire ipmi_mutex.  This results in
+incomplete data being retrieved in some cases, or other possible failures.
+Add a wrapper around compat_ipmi_ioctl() to take ipmi_mutex to fix this.
 
-The thin pool target will zero blocks when they are allocated if the
-skip_block_zeroing feature is not specified.  The block layer
-may send a discard that only partly covers a block.  If a thin pool
-block is partially discarded then there is no guarantee that the
-discarded data will get zeroed before it is accessed again.
-Due to this, thin devices cannot claim discards will always zero data.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-[ luis: adjust context ]
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/ipmi/ipmi_devintf.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 5f52a9a..1307ba8 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2035,6 +2035,7 @@ static int pool_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 		 * thin devices' discard limits consistent).
- 		 */
- 		ti->discards_supported = 1;
-+		ti->discard_zeroes_data_unsupported = 1;
+diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+index 9eb360f..d5a5f02 100644
+--- a/drivers/char/ipmi/ipmi_devintf.c
++++ b/drivers/char/ipmi/ipmi_devintf.c
+@@ -837,13 +837,25 @@ static long compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
+ 		return ipmi_ioctl(filep, cmd, arg);
  	}
- 	ti->private = pt;
- 
-@@ -2496,7 +2497,6 @@ static void set_discard_limits(struct pool *pool, struct queue_limits *limits)
- 	 * bios that overlap 2 blocks.
- 	 */
- 	limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
--	limits->discard_zeroes_data = pool->pf.zero_new_blocks;
  }
++
++static long unlocked_compat_ipmi_ioctl(struct file *filep, unsigned int cmd,
++				       unsigned long arg)
++{
++	int ret;
++
++	mutex_lock(&ipmi_mutex);
++	ret = compat_ipmi_ioctl(filep, cmd, arg);
++	mutex_unlock(&ipmi_mutex);
++
++	return ret;
++}
+ #endif
  
- static void pool_io_hints(struct dm_target *ti, struct queue_limits *limits)
+ static const struct file_operations ipmi_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.unlocked_ioctl	= ipmi_unlocked_ioctl,
+ #ifdef CONFIG_COMPAT
+-	.compat_ioctl   = compat_ipmi_ioctl,
++	.compat_ioctl   = unlocked_compat_ipmi_ioctl,
+ #endif
+ 	.open		= ipmi_open,
+ 	.release	= ipmi_release,
 -- 
 1.8.1.2
 
