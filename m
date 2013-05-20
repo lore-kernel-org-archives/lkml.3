@@ -1,86 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab3ETDIX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 23:08:23 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:22680
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755086Ab3ETDIW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 23:08:22 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I103dK542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fhbe9i1155h)
-From: Lu Jingchang-B35083 <B35083@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-Subject: RE: [PATCH v3] clocksource: add MVF600 pit timer support
-Thread-Topic: [PATCH v3] clocksource: add MVF600 pit timer support
-Thread-Index: AQHOUgLKkKGGf9R2n0eRY3h+AwTdH5kNXziAgAAGZuA=
-Date: Mon, 20 May 2013 03:08:54 +0000
-Message-ID: <B56CDBE15CE27145A4B77D2D24263E851CB223@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1368684924-1560-1-git-send-email-b35083@freescale.com>
- <20130520022747.GA25113@S2101-09.ap.freescale.net>
-In-Reply-To: <20130520022747.GA25113@S2101-09.ap.freescale.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.27]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755283Ab3ETDQr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 23:16:47 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:59101 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab3ETDQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 19 May 2013 23:16:45 -0400
+Message-ID: <51999591.8030401@linux.vnet.ibm.com>
+Date: Mon, 20 May 2013 11:16:33 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Borislav Petkov <bp@alien8.de>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
+ round 2
+References: <alpine.LNX.2.00.1305091423460.23038@pobox.suse.cz> <20130509125040.GF27333@pd.tnic> <20130509125859.GG27333@pd.tnic> <20130515184528.GO4442@linux.vnet.ibm.com> <20130515224358.GF11783@pd.tnic> <20130515235512.GT4442@linux.vnet.ibm.com> <20130517135641.GF23035@pd.tnic>
+In-Reply-To: <20130517135641.GF23035@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052003-2000-0000-0000-00000C2CDF3A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Borislav
+
+On 05/17/2013 09:56 PM, Borislav Petkov wrote:
+[snip]
+> [   51.737378]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   51.744013]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+
+I suppose the reason is that the cpu we passed to mod_delayed_work_on()
+has a chance to become offline before we disabled irq, what about check
+it before send resched ipi? like:
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index bfa7e77..d0e8f15 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -626,7 +626,7 @@ static bool wake_up_full_nohz_cpu(int cpu)
+
+ void wake_up_nohz_cpu(int cpu)
+ {
+-       if (!wake_up_full_nohz_cpu(cpu))
++       if (cpu_online(cpu) && !wake_up_full_nohz_cpu(cpu))
+                wake_up_idle_cpu(cpu);
+ }
+
+Regards,
+Michael Wang
 
 
->-----Original Message-----
->From: Shawn Guo [mailto:shawn.guo@linaro.org]
->Sent: Monday, May 20, 2013 10:28 AM
->To: Lu Jingchang-B35083
->Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
->john.stultz@linaro.org; tglx@linutronix.de; s.hauer@pengutronix.de
->Subject: Re: [PATCH v3] clocksource: add MVF600 pit timer support
->
->On Thu, May 16, 2013 at 02:15:24PM +0800, Jingchang Lu wrote:
->> Add Freescale Vybrid MVF600 period interrupt timer support.
->>
->> Signed-off-by: Jingchang Lu <b35083@freescale.com>
->> ---
->> v3:
->>   move the pit driver to drivers/clocksource.
->>
->>  drivers/clocksource/Kconfig            |   5 +
->>  drivers/clocksource/Makefile           |   1 +
->>  drivers/clocksource/mvf600_pit_timer.c | 224
->> +++++++++++++++++++++++++++++++++
->
->This is a driver for PIT, a timer IP block found on mvf family.  Even
->though we prefer to use particular SoC name to specify the compatibility
->and version of the block, all the versions of the IP block should be
->ideally supported by single PIT driver.  This is just like we have drivers
->spi-imx and i2c-imx support all SPI and I2C controllers found on IMX SoCs.
->That said, I suggest you use family name "mvf" to name the driver, Kconfig
->symbol etc. and use "mvf600" only in compatible string.
->
-[Lu Jingchang-B35083] 
-  I am not sure MVF5xx and MVF7xx have the same PIT block, if you have information that it is the same on other Vybrid SoCs, it is ok to change the driver name to mvf. Thanks!
->>  3 files changed, 230 insertions(+)
->> +
->> +	/* choose PIT2 as clocksource, PIT3 as clockevent dev */
->
->Reading the comment, I have a natural question - what PIT0 and PIT1 are
->used for?
->
-[Lu Jingchang-B35083] 
-PIT0 and PIT1 can be chained to build a 64-bit timer, so PIT2 and PIT3 are selected as the clocksource and clockevent device, and leave PIT0 and PIT1 unused for anyone else who needs them. Thanks!
->
-
+> [   51.749745]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   51.755214]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   51.761470]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   51.767724]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   51.773719]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   51.779271]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   51.784734]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   51.790634]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   51.796711]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   51.802350]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   51.808264]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   51.813200]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.819644]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   51.918165] nouveau E[     DRM] GPU lockup - switching to software fbcon
+> [   51.930505]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.936994] ---[ end trace f419538ada83b5c5 ]---
+> [   51.942915] ------------[ cut here ]------------
+> [   51.942928] ------------[ cut here ]------------
+> [   51.942936] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   51.942974] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   51.942978] CPU: 5 PID: 740 Comm: kworker/3:2 Tainted: G        W    3.10.0-rc1+ #10
+> [   51.942979] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   51.942985] Workqueue: events od_dbs_timer
+> [   51.942990]  0000000000000009 ffff88043ab0db68 ffffffff8161441c ffff88043ab0dba8
+> [   51.942994]  ffffffff8103e540 000000003ab0dbf8 0000000000000003 ffff88043d708000
+> [   51.942998]  00000000ffff0d32 0000000000000003 ffff88044fccfc08 ffff88043ab0dbb8
+> [   51.942999] Call Trace:
+> [   51.943005]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   51.943010]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   51.943014]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   51.943017]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   51.943021]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   51.943027]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   51.943031]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   51.943035]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   51.943038]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   51.943043]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   51.943046]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   51.943050]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   51.943053]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   51.943057]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   51.943060]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   51.943063]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   51.943068]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.943071]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   51.943074]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   51.943076] ---[ end trace f419538ada83b5c6 ]---
+> [   52.178461] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   52.188097] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   52.238477] CPU: 0 PID: 85 Comm: kworker/2:1 Tainted: G        W    3.10.0-rc1+ #10
+> [   52.247669] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   52.256604] Workqueue: events od_dbs_timer
+> [   52.262219]  0000000000000009 ffff88043b62db68 ffffffff8161441c ffff88043b62dba8
+> [   52.271194]  ffffffff8103e540 0000000000000033 0000000000000002 ffff88043d6dc000
+> [   52.280163]  00000000ffff0d32 0000000000000002 ffff88044fc8fc08 ffff88043b62dbb8
+> [   52.289141] Call Trace:
+> [   52.293066]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   52.299704]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   52.307213]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   52.314540]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   52.322592]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   52.329763]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   52.336660]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   52.344349]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   52.352031]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   52.359458]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   52.366438]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   52.373338]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   52.380670]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   52.388176]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   52.395247]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   52.402588]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   52.408954]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.416830]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   52.423722]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.431588] ---[ end trace f419538ada83b5c7 ]---
+> [   52.460411] ------------[ cut here ]------------
+> [   52.467744] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   52.478684] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   52.533573] CPU: 5 PID: 740 Comm: kworker/3:2 Tainted: G        W    3.10.0-rc1+ #10
+> [   52.544303] ------------[ cut here ]------------
+> [   52.544305] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   52.544317] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   52.544318] CPU: 0 PID: 71 Comm: kworker/4:1 Tainted: G        W    3.10.0-rc1+ #10
+> [   52.544318] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   52.544322] Workqueue: events od_dbs_timer
+> [   52.544324]  0000000000000009 ffff88043c271b68 ffffffff8161441c ffff88043c271ba8
+> [   52.544325]  ffffffff8103e540 0000000000000033 0000000000000004 ffff88043d738000
+> [   52.544326]  00000000ffff0dc8 0000000000000004 ffff88044fd0fc08 ffff88043c271bb8
+> [   52.544327] Call Trace:
+> [   52.544330]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   52.544333]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   52.544334]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   52.544335]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   52.544337]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   52.544340]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   52.544342]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   52.544343]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   52.544344]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   52.544346]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   52.544347]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   52.544348]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   52.544349]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   52.544350]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   52.544351]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   52.544353]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   52.544354]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.544356]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   52.544357]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.544357] ---[ end trace f419538ada83b5c8 ]---
+> [   52.798038] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   52.806551] Workqueue: events od_dbs_timer
+> [   52.811736]  0000000000000009 ffff88043ab0db68 ffffffff8161441c ffff88043ab0dba8
+> [   52.820284]  ffffffff8103e540 0000000000000033 0000000000000003 ffff88043d708000
+> [   52.828828]  00000000ffff0db3 0000000000000003 ffff88044fccfc08 ffff88043ab0dbb8
+> [   52.837372] Call Trace:
+> [   52.840874]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   52.847090]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   52.854176]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   52.861086]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   52.868694]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   52.875432]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   52.881902]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   52.889160]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   52.896416]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   52.903409]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   52.909966]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   52.916434]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   52.923342]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   52.930427]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   52.937074]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   52.943983]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   52.949926]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.957370]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   52.963841]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   52.971275] ---[ end trace f419538ada83b5c9 ]---
+> [   52.976979] nouveau W[   PFIFO][0000:03:00.0] unknown intr 0x00400000, ch 1
+> [   53.092122] ------------[ cut here ]------------
+> [   53.099585] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x58/0x60()
+> [   53.110571] Modules linked in: ext2 vfat fat loop snd_hda_codec_hdmi usbhid snd_hda_codec_realtek coretemp kvm_intel kvm snd_hda_intel snd_hda_codec crc32_pclmul crc32c_intel ghash_clmulni_intel snd_hwdep snd_pcm aesni_intel sb_edac aes_x86_64 ehci_pci snd_page_alloc glue_helper snd_timer xhci_hcd snd iTCO_wdt iTCO_vendor_support ehci_hcd edac_core lpc_ich acpi_cpufreq lrw gf128mul ablk_helper cryptd mperf usbcore usb_common soundcore mfd_core dcdbas evdev pcspkr processor i2c_i801 button microcode
+> [   53.165267] CPU: 0 PID: 123 Comm: kworker/5:1 Tainted: G        W    3.10.0-rc1+ #10
+> [   53.175902] Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+> [   53.186190] Workqueue: events od_dbs_timer
+> [   53.193136]  0000000000000009 ffff88043b277b68 ffffffff8161441c ffff88043b277ba8
+> [   53.203477]  ffffffff8103e540 000000003b277bb8 0000000000000005 ffff88043d764000
+> [   53.213727]  00000000ffff0e52 0000000000000005 ffff88044fd4fc08 ffff88043b277bb8
+> [   53.223894] Call Trace:
+> [   53.228887]  [<ffffffff8161441c>] dump_stack+0x19/0x1b
+> [   53.236593]  [<ffffffff8103e540>] warn_slowpath_common+0x70/0xa0
+> [   53.245160]  [<ffffffff8103e58a>] warn_slowpath_null+0x1a/0x20
+> [   53.253519]  [<ffffffff81025628>] native_smp_send_reschedule+0x58/0x60
+> [   53.262582]  [<ffffffff81072cfd>] wake_up_nohz_cpu+0x2d/0xa0
+> [   53.270756]  [<ffffffff8104f6bf>] add_timer_on+0x8f/0x110
+> [   53.278654]  [<ffffffff8105f6fe>] __queue_delayed_work+0x16e/0x1a0
+> [   53.287335]  [<ffffffff8105f251>] ? try_to_grab_pending+0xd1/0x1a0
+> [   53.296002]  [<ffffffff8105f78a>] mod_delayed_work_on+0x5a/0xa0
+> [   53.304412]  [<ffffffff814f6b5d>] gov_queue_work+0x4d/0xc0
+> [   53.312388]  [<ffffffff814f60cb>] od_dbs_timer+0xcb/0x170
+> [   53.320267]  [<ffffffff8105e75d>] process_one_work+0x1fd/0x540
+> [   53.328584]  [<ffffffff8105e6f2>] ? process_one_work+0x192/0x540
+> [   53.337083]  [<ffffffff8105ef22>] worker_thread+0x122/0x380
+> [   53.345142]  [<ffffffff8105ee00>] ? rescuer_thread+0x320/0x320
+> [   53.353484]  [<ffffffff8106634a>] kthread+0xea/0xf0
+> [   53.360847]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   53.369709]  [<ffffffff81623d5c>] ret_from_fork+0x7c/0xb0
+> [   53.377603]  [<ffffffff81066260>] ? flush_kthread_worker+0x150/0x150
+> [   53.386474] ---[ end trace f419538ada83b5ca ]---
+> [   53.395276] Power down.
+> [   53.399033] acpi_power_off called
+> 
 
