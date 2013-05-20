@@ -1,159 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab3ETCZY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 19 May 2013 22:25:24 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:54287
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755086Ab3ETCZX (ORCPT
+	id S1755208Ab3ETC1i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 19 May 2013 22:27:38 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:34988
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755099Ab3ETC1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 19 May 2013 22:25:23 -0400
+	Sun, 19 May 2013 22:27:37 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <vikram186@gmail.com>,
-        <computersforpeace@gmail.com>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 05/10 fix] mtd: get the ECC info from the Extended Parameter Page
-Date: Mon, 20 May 2013 10:08:25 +0800
-Message-ID: <1369015705-4720-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <51966AA7.7050007@gmail.com>
-References: <51966AA7.7050007@gmail.com>
+X-SpamScore: 12
+X-BigFish: VS12(zz98dI1432Ic8kzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh11f642sz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 20 May 2013 10:27:49 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Jingchang Lu <b35083@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <john.stultz@linaro.org>, <tglx@linutronix.de>,
+        <s.hauer@pengutronix.de>
+Subject: Re: [PATCH v3] clocksource: add MVF600 pit timer support
+Message-ID: <20130520022747.GA25113@S2101-09.ap.freescale.net>
+References: <1368684924-1560-1-git-send-email-b35083@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1368684924-1560-1-git-send-email-b35083@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
+On Thu, May 16, 2013 at 02:15:24PM +0800, Jingchang Lu wrote:
+> Add Freescale Vybrid MVF600 period interrupt timer support.
+> 
+> Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> ---
+> v3:
+>   move the pit driver to drivers/clocksource.
+> 
+>  drivers/clocksource/Kconfig            |   5 +
+>  drivers/clocksource/Makefile           |   1 +
+>  drivers/clocksource/mvf600_pit_timer.c | 224 +++++++++++++++++++++++++++++++++
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
+This is a driver for PIT, a timer IP block found on mvf family.  Even
+though we prefer to use particular SoC name to specify the compatibility
+and version of the block, all the versions of the IP block should be
+ideally supported by single PIT driver.  This is just like we have
+drivers spi-imx and i2c-imx support all SPI and I2C controllers found on
+IMX SoCs.
 
-This patch implement the reading of the Extended Parameter Page, and parses
-the sections for ECC type, and get the ECC info from the ECC section.
+That said, I suggest you use family name "mvf" to name the driver,
+Kconfig symbol etc. and use "mvf600" only in compatible string.
 
-Tested this patch with Micron MT29F64G08CBABAWP.
+>  3 files changed, 230 insertions(+)
+>  create mode 100644 drivers/clocksource/mvf600_pit_timer.c
+> 
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index f151c6c..2808a76 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -85,3 +85,8 @@ config CLKSRC_SAMSUNG_PWM
+>  	  Samsung S3C, S5P and Exynos SoCs, replacing an earlier driver
+>  	  for all devicetree enabled platforms. This driver will be
+>  	  needed only on systems that do not have the Exynos MCT available.
+> +
+> +config MVF600_PIT_TIMER
+> +	bool
+> +	help
+> +	  Support for Period Interrupt Timer on Freescale Vybrid MVF600 SoC.
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 8d979c7..f471ca3 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -26,6 +26,7 @@ obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+>  obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
+>  obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+>  obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+> +obj-$(CONFIG_MVF600_PIT_TIMER)	+= mvf600_pit_timer.o
+>  
+>  obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+>  obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
+> diff --git a/drivers/clocksource/mvf600_pit_timer.c b/drivers/clocksource/mvf600_pit_timer.c
+> new file mode 100644
+> index 0000000..74f7963
+> --- /dev/null
+> +++ b/drivers/clocksource/mvf600_pit_timer.c
+> @@ -0,0 +1,224 @@
+> +/*
+> + *  Copyright 2012-2013 Freescale Semiconductor, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + */
+> +
+> +#include <linux/interrupt.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/clk.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <asm/sched_clock.h>
+> +
+> +/*
+> + * 8 timers: pit0 - pit7,
+> + * Each takes 0x10 Bytes register sapce
 
-Acked-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Huang Shijie <b32955@freescale.com>
----
- drivers/mtd/nand/nand_base.c |   88 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 88 insertions(+), 0 deletions(-)
+s/sapce/space
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index b63b731..3edf825 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2835,6 +2835,79 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
- 	return crc;
- }
- 
-+/* Parse the Extended Parameter Page. */
-+static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-+		struct nand_chip *chip, struct nand_onfi_params *p)
-+{
-+	struct onfi_ext_param_page *ep;
-+	struct onfi_ext_section *s;
-+	struct onfi_ext_ecc_info *ecc;
-+	uint8_t *cursor;
-+	int ret = -EINVAL;
-+	int len;
-+	int i;
-+
-+	len = le16_to_cpu(p->ext_param_page_length) * 16;
-+	ep = kmalloc(len, GFP_KERNEL);
-+	if (!ep) {
-+		ret = -ENOMEM;
-+		goto ext_out;
-+	}
-+
-+	/* Send our own NAND_CMD_PARAM. */
-+	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-+
-+	/* Use the Change Read Column command to skip the ONFI param pages. */
-+	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
-+			sizeof(*p) * p->num_of_param_pages , -1);
-+
-+	/* Read out the Extended Parameter Page. */
-+	chip->read_buf(mtd, (uint8_t *)ep, len);
-+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-+		!= le16_to_cpu(ep->crc))) {
-+		pr_debug("fail in the CRC.\n");
-+		goto ext_out;
-+	}
-+
-+	/*
-+	 * From section 5.7.2.2, we know that the Extened Param Page is valid
-+	 * when two or more bytes of the signatrue are valid.
-+	 * So we only check the first two bytes here.
-+	 */
-+	if (strncmp(ep->sig, "EP", 2)) {
-+		pr_debug("The signatrue is invalid.\n");
-+		goto ext_out;
-+	}
-+
-+	/* find the ECC section. */
-+	cursor = (uint8_t *)(ep + 1);
-+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
-+		s = ep->sections + i;
-+		if (s->type == ONFI_SECTION_TYPE_2)
-+			break;
-+		cursor += s->length * 16;
-+	}
-+	if (i == ONFI_EXT_SECTION_MAX) {
-+		pr_debug("We can not find the ECC section.\n");
-+		goto ext_out;
-+	}
-+
-+	/* get the info we want. */
-+	ecc = (struct onfi_ext_ecc_info *)cursor;
-+
-+	if (ecc->codeword_size) {
-+		chip->ecc_strength_ds = ecc->ecc_bits;
-+		chip->ecc_step_ds = 1 << ecc->codeword_size;
-+	}
-+
-+	pr_info("ONFI extended param page detected.\n");
-+	return 0;
-+
-+ext_out:
-+	kfree(ep);
-+	return ret;
-+}
-+
- /*
-  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
-  */
-@@ -2903,6 +2976,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (p->ecc_bits != 0xff) {
- 		chip->ecc_strength_ds = p->ecc_bits;
- 		chip->ecc_step_ds = 512;
-+	} else if (chip->onfi_version >= 21 &&
-+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
-+
-+		/*
-+		 * The nand_flash_detect_ext_param_page() uses the
-+		 * Change Read Column command which maybe not supported
-+		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
-+		 * now. We do not replace user supplied command function.
-+		 */
-+		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
-+			chip->cmdfunc = nand_command_lp;
-+
-+		/* The Extended Parameter Page is supported since ONFI 2.1. */
-+		if (nand_flash_detect_ext_param_page(mtd, chip, p))
-+			pr_info("Failed to detect the extended param page.\n");
- 	}
- 
- 	pr_info("ONFI flash detected\n");
--- 
-1.7.1
+> + */
+> +#define PITMCR		0x00
+> +#define PIT0_OFFSET	0x100
+> +#define PITn_OFFSET(n)	(PIT0_OFFSET + 0x10 * (n))
+> +#define PITLDVAL	0x00
+> +#define PITCVAL		0x04
+> +#define PITTCTRL	0x08
+> +#define PITTFLG		0x0c
+> +
+> +#define PITTCTRL_TEN		(0x1 << 0)
+> +#define PITTCTRL_TIE		(0x1 << 1)
+> +#define	PITCTRL_CHN		(0x1 << 2)
 
+Use space than tab between "#define" and macro name.
+
+> +
+> +#define PITTFLG_TIF		0x1
+> +
+> +static struct clock_event_device clockevent_pit;
+> +static enum clock_event_mode clockevent_mode = CLOCK_EVT_MODE_UNUSED;
+> +
+> +static void __iomem *clksrc_base;
+> +static void __iomem *clkevt_base;
+> +static void __iomem *sched_clock_reg;
+> +static unsigned long pit_cycle_per_jiffy;
+> +
+> +static inline void pit_timer_enable(void)
+> +{
+> +	__raw_writel(PITTCTRL_TEN | PITTCTRL_TIE, clkevt_base + PITTCTRL);
+> +}
+> +
+> +static inline void pit_timer_disable(void)
+> +{
+> +	__raw_writel(0, clkevt_base + PITTCTRL);
+> +}
+> +
+> +static inline void pit_irq_disable(void)
+> +{
+> +	unsigned long val;
+> +
+> +	val = __raw_readl(clkevt_base + PITTCTRL);
+> +	val &= ~PITTCTRL_TIE;
+> +	__raw_writel(val, clkevt_base + PITTCTRL);
+> +}
+> +
+> +static inline void pit_irq_enable(void)
+> +{
+> +	unsigned long val;
+> +
+> +	val = __raw_readl(clkevt_base + PITTCTRL);
+> +	val |= PITTCTRL_TIE;
+> +	__raw_writel(val, clkevt_base + PITTCTRL);
+> +}
+> +
+> +static void pit_irq_acknowledge(void)
+> +{
+> +	__raw_writel(PITTFLG_TIF, clkevt_base + PITTFLG);
+> +}
+> +
+> +static unsigned int pit_read_sched_clock(void)
+> +{
+> +	return __raw_readl(sched_clock_reg);
+> +}
+> +
+> +
+> +static int __init pit_clocksource_init(struct clk *pit_clk)
+> +{
+> +	unsigned int c = clk_get_rate(pit_clk);
+> +
+> +	sched_clock_reg = clksrc_base + PITCVAL;
+> +
+> +	setup_sched_clock(pit_read_sched_clock, 32, c);
+> +	return clocksource_mmio_init(clksrc_base + PITCVAL, "mvf600-pit", c,
+> +			300, 32, clocksource_mmio_readl_down);
+> +}
+> +
+> +/* set clock event */
+> +static int pit_set_next_event(unsigned long delta,
+> +				struct clock_event_device *unused)
+> +{
+> +	pit_timer_disable();
+> +	__raw_writel(delta - 1, clkevt_base + PITLDVAL);
+> +	pit_irq_acknowledge();
+> +	pit_timer_enable();
+> +
+> +	return 0;
+> +}
+> +
+> +static void pit_set_mode(enum clock_event_mode mode,
+> +				struct clock_event_device *evt)
+> +{
+> +	unsigned long flags;
+> +
+> +	local_irq_save(flags);
+> +
+> +	pit_timer_disable();
+> +	pit_irq_acknowledge();
+> +
+> +	/* Remember timer mode */
+> +	clockevent_mode = mode;
+> +	local_irq_restore(flags);
+> +
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +
+Nit: remove this blank line.
+
+> +		__raw_writel(pit_cycle_per_jiffy - 1, clkevt_base + PITLDVAL);
+> +		pit_timer_enable();
+> +
+Ditto
+
+> +		break;
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +
+> +		break;
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +	case CLOCK_EVT_MODE_RESUME:
+> +
+Ditto
+
+> +		break;
+> +	default:
+> +		WARN(1, "%s: unhandled event mode %d\n", __func__, mode);
+> +		break;
+> +	}
+> +}
+> +
+> +static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
+> +{
+> +	struct clock_event_device *evt = &clockevent_pit;
+> +
+> +	pit_irq_acknowledge();
+> +
+> +	if (clockevent_mode == CLOCK_EVT_MODE_ONESHOT)
+> +		pit_timer_disable();
+> +
+> +	evt->event_handler(evt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static struct irqaction pit_timer_irq = {
+> +	.name		= "MVF600 pit timer",
+> +	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+> +	.handler	= pit_timer_interrupt,
+> +};
+> +
+> +static struct clock_event_device clockevent_pit = {
+> +	.name		= "MVF600 pit timer",
+> +	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+> +	.set_mode	= pit_set_mode,
+> +	.set_next_event	= pit_set_next_event,
+> +	.rating		= 300,
+> +};
+> +
+> +static int __init pit_clockevent_init(struct clk *pit_clk)
+> +{
+> +	unsigned int c = clk_get_rate(pit_clk);
+> +
+> +	clockevent_pit.cpumask = cpumask_of(0);
+> +	clockevents_config_and_register(&clockevent_pit, c, 0x100, 0xffffff00);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __init pit_timer_init(struct device_node *np)
+> +{
+> +	struct clk *pit_clk;
+> +	void __iomem *timer_base;
+> +	int irq;
+> +
+> +	if (!np) {
+> +		pr_err("Failed to find MVF600 pit DT node\n");
+> +		BUG();
+> +	}
+> +
+> +	timer_base = of_iomap(np, 0);
+> +	WARN_ON(!timer_base);
+> +
+> +	/* choose PIT2 as clocksource, PIT3 as clockevent dev */
+
+Reading the comment, I have a natural question - what PIT0 and PIT1 are
+used for?
+
+Shawn
+
+> +	clksrc_base = timer_base + PITn_OFFSET(2);
+> +	clkevt_base = timer_base + PITn_OFFSET(3);
+> +
+> +	irq = irq_of_parse_and_map(np, 0);
+> +
+> +	pit_clk = of_clk_get(np, 0);
+> +	if (IS_ERR(pit_clk)) {
+> +		pr_err("Vybrid MVF600 pit timer: unable to get clk\n");
+> +		return;
+> +	}
+> +
+> +	clk_prepare_enable(pit_clk);
+> +
+> +	pit_cycle_per_jiffy = clk_get_rate(pit_clk)/(HZ);
+> +
+> +	__raw_writel(0x0, timer_base + PITMCR);
+> +
+> +	__raw_writel(0, clkevt_base + PITTCTRL);
+> +	__raw_writel(0xffffffff, clkevt_base + PITLDVAL);
+> +
+> +	__raw_writel(0, clksrc_base + PITTCTRL);
+> +	__raw_writel(0xffffffff, clksrc_base + PITLDVAL);
+> +	__raw_writel(PITTCTRL_TEN, clksrc_base + PITTCTRL);
+> +
+> +	pit_clocksource_init(pit_clk);
+> +
+> +	setup_irq(irq, &pit_timer_irq);
+> +
+> +	pit_clockevent_init(pit_clk);
+> +}
+> +
+> +CLOCKSOURCE_OF_DECLARE(mvf600, "fsl,mvf600-pit", pit_timer_init);
+> -- 
+> 1.8.0
+> 
+> 
 
