@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab3ETQhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 12:37:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23753 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755157Ab3ETQh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 12:37:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,709,1363158000"; 
-   d="scan'208";a="337096606"
-Message-ID: <519A5146.4020606@intel.com>
-Date: Mon, 20 May 2013 09:37:26 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757472Ab3ETQi3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 12:38:29 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:63270 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755663Ab3ETQi1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 12:38:27 -0400
+Message-ID: <519A517F.5020003@samsung.com>
+Date: Tue, 21 May 2013 01:38:23 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Greg Rose <gregory.v.rose@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yan Burman <yanb@mellanox.com>,
-        Sathya Perla <Sathya.Perla@emulex.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] PCI: Make sure VF's driver get attached after
- PF's
-References: <1368586102-17661-1-git-send-email-yinghai@kernel.org> <20130515091248.00002fe3@unknown> <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
-In-Reply-To: <CAJZOPZ+L1QJdHePd_x9RAoqZKyJAKHo+hA8T1UZoe8=ozT98RA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 30/33] arch/arm/plat-samsung: don't check resource with
+ devm_ioremap_resource
+References: <1368702961-4325-1-git-send-email-wsa@the-dreams.de> <1368702961-4325-31-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1368702961-4325-31-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2013 05:28 AM, Or Gerlitz wrote:
-> On Wed, May 15, 2013 at 7:12 PM, Greg Rose <gregory.v.rose@intel.com> wrote:
+On 05/16/13 20:15, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
 >
+> Signed-off-by: Wolfram Sang<wsa@the-dreams.de>
+
+Looks good to me, applied into Samsung tree.
+
+Wolfram, if you want to take this into your tree, let me know.
+
+Thanks.
+
+- Kukjin
+
+> ---
+>   arch/arm/plat-samsung/adc.c |    5 -----
+>   1 file changed, 5 deletions(-)
 >
->> I'm really not a fan of this.  Seems to me the tail is wagging the dog
->> here.  Fix the driver to work without a PF driver being present.
-> Greg, Alex,
+> diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
+> index ca07cb1..79690f2 100644
+> --- a/arch/arm/plat-samsung/adc.c
+> +++ b/arch/arm/plat-samsung/adc.c
+> @@ -381,11 +381,6 @@ static int s3c_adc_probe(struct platform_device *pdev)
+>   	}
 >
-> As I wrote over the V1 thread, currently we can't go and patch mlx4 to
-> use the sysfs API nor defer the call from within our probe function to
-> enable sriov since  this requires some firmware change to allow
-> enabling SRIOV after some  resources are initialized/provisioned.
-> Hence the patch suggested here or any other patch we can agree on
-> which will make sure that VF probing is done only once the PF is ready
-> is preferred, I think.
+>   	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!regs) {
+> -		dev_err(dev, "failed to find registers\n");
+> -		return -ENXIO;
+> -	}
+> -
+>   	adc->regs = devm_ioremap_resource(dev, regs);
+>   	if (IS_ERR(adc->regs))
+>   		return PTR_ERR(adc->regs);
 
-I guess I am not understanding.  Are you saying you have to enable
-SR-IOV, then allocate some resources, and then wait for firmware to
-complete, and then load VFs?  Is it not possible to do whatever it is
-you need to do in firmware first, and then enable SR-IOV?
-
-Would it be possible for the VFs to detect this state?  If so you could
-probably work around it by either delaying probe as Ben suggested with
-EPROBE_DEFER, or by using something such as the igbvf/ixgbevf approach
-which will treat the lack of a PF and resources as a link down condition
-until the PF and resources become available.
-
-> I wasn't sure to totally follow on the argument that things need to
-> work when the PF is absent in the sense there's no driver instance
-> around over which the PF is probed, if you can explain little better,
-> that would help.
->
-> Or.
-
-The problem I was referring to was the case where the PF is loaded, the
-VFs are then assigned to guests, and then someone attempts to unload the
-PF driver.  The problem in that case is that disabling SR-IOV will cause
-all of the guests with assigned VFs to crash so the solution is to leave
-the VFs loaded when the PF is unloaded or we would have to block PF
-driver unload.  As such the Intel VFs have to deal with a PF that can be
-unloaded while they are present.
-
-If you take a look at the code for the igb/igbvf drivers it is a bit
-easier to tell what is going on in terms of how we handle the unloaded
-PF state.  Basically what happens is that the mailbox we use goes dead
-so we just report link down until we can get the PF to come back on the
-other end of the mailbox.
-
-Thanks,
-
-Alex
