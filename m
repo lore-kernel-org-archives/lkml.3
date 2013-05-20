@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3ETVz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 17:55:57 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17762 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756566Ab3ETVzz (ORCPT
+	id S1758443Ab3ETV4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 17:56:22 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:41192 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757185Ab3ETV4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 17:55:55 -0400
-X-IronPort-AV: E=Sophos;i="4.87,709,1363158000"; 
-   d="scan'208";a="49077607"
-Message-ID: <519A9BEA.1010404@codeaurora.org>
-Date: Mon, 20 May 2013 14:55:54 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Mon, 20 May 2013 17:56:21 -0400
+Date: Mon, 20 May 2013 16:55:42 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mgorman@suse.de, tim.c.chen@linux.intel.com
+Subject: Re: [RFCv2][PATCH 0/5] mm: Batch page reclamation under
+ shink_page_list
+Message-ID: <20130520215542.GC25536@cerebellum>
+References: <20130516203427.E3386936@viggo.jf.intel.com>
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv6 03/11] ARM: smp: Remove duplicate dummy timer implementation
-References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org> <1368473175-4841-4-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1368473175-4841-4-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130516203427.E3386936@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052021-7408-0000-0000-00001066408E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/13 12:26, Stephen Boyd wrote:
-> Drop ARM's version of the dummy timer now that we have a generic
-> implementation in drivers/clocksource.
+On Thu, May 16, 2013 at 01:34:27PM -0700, Dave Hansen wrote:
+> These are an update of Tim Chen's earlier work:
+> 
+> 	http://lkml.kernel.org/r/1347293960.9977.70.camel@schen9-DESK
+> 
+> I broke the patches up a bit more, and tried to incorporate some
+> changes based on some feedback from Mel and Andrew.
+> 
+> Changes for v2:
+>  * use page_mapping() accessor instead of direct access
+>    to page->mapping (could cause crashes when running in
+>    to swap cache pages.
+>  * group the batch function's introduction patch with
+>    its first use
+>  * rename a few functions as suggested by Mel
+>  * Ran some single-threaded tests to look for regressions
+>    caused by the batching.  If there is overhead, it is only
+>    in the worst-case scenarios, and then only in hundreths of
+>    a percent of CPU time.
+> 
+> If you're curious how effective the batching is, I have a quick
+> and dirty patch to keep some stats:
+> 
+> 	https://www.sr71.net/~dave/intel/rmb-stats-only.patch
 >
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Russell, can you please ack this patch and patch #11?
+Didn't do any performance comparison but did a kernel build with 2 make threads
+per core in a memory constrained situation w/ zswap add got an average batch
+size of 6.6 pages with the batch being empty on ~10% of calls.
 
-> ---
->  arch/arm/kernel/smp.c | 22 ++--------------------
->  1 file changed, 2 insertions(+), 20 deletions(-)
->
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 47ab905..4dc883a 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -503,24 +503,6 @@ void tick_broadcast(const struct cpumask *mask)
->  }
->  #endif
->  
-> -static void broadcast_timer_set_mode(enum clock_event_mode mode,
-> -	struct clock_event_device *evt)
-> -{
-> -}
-> -
-> -static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
-> -{
-> -	evt->name	= "dummy_timer";
-> -	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
-> -			  CLOCK_EVT_FEAT_PERIODIC |
-> -			  CLOCK_EVT_FEAT_DUMMY;
-> -	evt->rating	= 100;
-> -	evt->mult	= 1;
-> -	evt->set_mode	= broadcast_timer_set_mode;
-> -
-> -	clockevents_register_device(evt);
-> -}
-> -
->  static struct local_timer_ops *lt_ops;
->  
->  #ifdef CONFIG_LOCAL_TIMERS
-> @@ -544,8 +526,8 @@ static void __cpuinit percpu_timer_setup(void)
->  
->  	evt->cpumask = cpumask_of(cpu);
->  
-> -	if (!lt_ops || lt_ops->setup(evt))
-> -		broadcast_timer_setup(evt);
-> +	if (lt_ops)
-> +		lt_ops->setup(evt);
->  }
->  
->  #ifdef CONFIG_HOTPLUG_CPU
+rmb call:   423464
+rmb pages:   2790332
+rmb empty:   41408
 
+The WARN_ONCE only gave me one stack for the first empty batch and, for what
+it's worth, it was from kswapd.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Tested-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
