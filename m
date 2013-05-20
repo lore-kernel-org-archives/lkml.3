@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab3ETTac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 15:30:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14310 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab3ETTab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 15:30:31 -0400
-X-Authority-Analysis: v=2.0 cv=UY7TuduN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=02UfJdeXTX86R_GbYH8A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369078229.6828.120.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.78-rt106
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Mon, 20 May 2013 15:30:29 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757857Ab3ETTbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 15:31:10 -0400
+Received: from mout.gmx.net ([212.227.15.18]:51370 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757755Ab3ETTbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 15:31:09 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19fviExVrpf2psweNxKOk/qZbr/ISa6bVUr+A7wZI
+	0GTLAjEF1jPbTU
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Jean Delvare <khali@linux-fr.org>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video/matrox/matroxfb_maven: Use module_i2c_driver to register driver
+Date: Mon, 20 May 2013 21:36:18 +0200
+Message-Id: <1369078578-3138-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removing some boilerplate by using module_i2c_driver instead of calling
+register and unregister in the otherwise empty init/exit functions
 
-Dear RT Folks,
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/video/matrox/matroxfb_maven.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-I'm pleased to announce the 3.0.78-rt106 stable release.
-
-
-This release is just an update to the new stable 3.0.78 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.0-rt
-  Head SHA1: 79da97aaddab79a5eeba84876af8619561bb6362
-
-
-Or to build 3.0.78-rt106 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.78.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.78-rt106.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/drivers/video/matrox/matroxfb_maven.c b/drivers/video/matrox/matroxfb_maven.c
+index 217678e..fd4b64e 100644
+--- a/drivers/video/matrox/matroxfb_maven.c
++++ b/drivers/video/matrox/matroxfb_maven.c
+@@ -1283,19 +1283,8 @@ static struct i2c_driver maven_driver={
+ 	.id_table	= maven_id,
+ };
+ 
+-static int __init matroxfb_maven_init(void)
+-{
+-	return i2c_add_driver(&maven_driver);
+-}
+-
+-static void __exit matroxfb_maven_exit(void)
+-{
+-	i2c_del_driver(&maven_driver);
+-}
+-
++module_i2c_driver(maven_driver);
+ MODULE_AUTHOR("(c) 1999-2002 Petr Vandrovec <vandrove@vc.cvut.cz>");
+ MODULE_DESCRIPTION("Matrox G200/G400 Matrox MGA-TVO driver");
+ MODULE_LICENSE("GPL");
+-module_init(matroxfb_maven_init);
+-module_exit(matroxfb_maven_exit);
+ /* we do not have __setup() yet */
+-- 
+1.8.1.5
 
