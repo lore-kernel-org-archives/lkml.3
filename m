@@ -1,73 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab3ETP3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 11:29:35 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:58157 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab3ETP3c (ORCPT
+	id S1757382Ab3ETPh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 11:37:56 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42006 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755774Ab3ETPhy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 11:29:32 -0400
-Message-ID: <1369063764.3301.182.camel@edumazet-glaptop>
-Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
- socket polling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 20 May 2013 08:29:24 -0700
-In-Reply-To: <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-	 <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 20 May 2013 11:37:54 -0400
+MIME-Version: 1.0
+Reply-To: linasvepstas@gmail.com
+In-Reply-To: <CF6E51640088844D9CADE5541A7C2FEB33EBC11D@CMEXMB1.ad.emulex.com>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+ <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com> <CF6E51640088844D9CADE5541A7C2FEB33EBC11D@CMEXMB1.ad.emulex.com>
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Mon, 20 May 2013 10:37:33 -0500
+Message-ID: <CAHrUA36OxKn1ucaA4-1jHU=4P+hCWOTVa2ECAwpxEoBWSRAv8A@mail.gmail.com>
+Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+To: "Liu, Joseph" <Joseph.Liu@emulex.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Zhang, LongX" <longx.zhang@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-05-20 at 13:16 +0300, Eliezer Tamir wrote:
-> Adds a new ndo_ll_poll method and the code that supports and uses it.
-> This method can be used by low latency applications to busy poll ethernet
-> device queues directly from the socket code. The ip_low_latency_poll sysctl
-> entry controls how many cycles to poll. Set to zero to disable.
-> 
+I think Joe Liu has it right.  I'm going to top-post because things
+are a bit tangled below.  I urge a review of
+/Documentation/PCI/pci-error-recovery.txt, as that gives the details.
 
-This changelog lacks a lot of information, see below.
+The intended sequence is that, after an error, the device driver gets
+a shot at running some diagnostics & dumps, and then the pci
+bridges/controllers/ports/links are reset (by platform code, viz. aer
+in this case) to a state resembling a fresh power-on.  Then the
+.slot_reset() callback is called on the device driver, to tell the
+driver "hey everything upstream is now working, go set yourself up for
+normal ops."  Thus, in particular, one should have pdev->error_state =
+pci_channel_io_normal; before .slot_reset() is called, and the PCI
+config space contents should resemble a fresh power-on state (and
+**NOT** some other saved state!)
 
-Part of this information was in your 0/4 text, but it wont be included
-in the git tree.
+If the device driver wanted to leave the card in a dead state, it had
+several opportunities to say so, earlier in the callback sequence.  If
+the driver wanted to fiddle with the card with the old PCI config
+space, it already had a chance to do that too, before the
+bridges/controllers/ports/links were fully reset by the platform.   By
+the time that .slot_reset() is being called, both the platform and the
+device driver are expecting smooth sailing ahead.
 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Tested-by: Willem de Bruijn <willemb@google.com>
-> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> ---
-> 
+So, looking at the original patch, it seems reasonable.  My impression
+is that maybe the AER driver had been doing not quite the right thing
+for a long time.
 
-> +
-> +static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
-> +{
-> +	skb->dev_ref = napi;
-> +}
-> +
-> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
-> +{
-> +	sk->dev_ref = skb->dev_ref;
-> +}
+-- Linas Vepstas
 
-I do not see why it's safe to keep a pointer to a napi object without
-taking a reference, or something to prevent object being removed.
-
-Using a genid might be enough. (some counter incremented every time a
-napi is dismantled)
-
-Alternatively, use a napi_id instead of a pointer.
-
-
-
+On 20 May 2013 09:38, Liu, Joseph <Joseph.Liu@emulex.com> wrote:
+> Bjorn,
+>
+> I have been working with the low level device drivers for supporting both EEH and AER and were involved in working with Yanmin for verifying this AER patch. Please see some of my responses to your questions inline, prefixed with [jzl].
+>
+>
+> Thanks,
+> Joe Liu, Ph.D.
+> Senior Principal Engineer
+> Emulex Corporation
+>
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Friday, May 17, 2013 7:44 PM
+> To: Zhang, LongX
+> Cc: linasvepstas@gmail.com; linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; yanmin_zhang@linux.intel.com; Liu, Joseph; Rafael J. Wysocki
+> Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+>
+> [+cc Rafael because he knows about dev->state_saved]
+>
+> Sorry, I'm not very familiar with AER, so please excuse some naive
+> questions below.
+>
+> On Fri, Apr 26, 2013 at 12:28 AM, Zhang, LongX <longx.zhang@intel.com> wrote:
+>> From: Zhang Long <longx.zhang@intel.com>
+>>
+>> Specific pci device drivers might have many functions to call
+>> pci_channel_offline to check device states. When slot_reset happens,
+>> drivers' slot_reset callback might call such functions and eventually
+>> abort the reset.
+>
+> |Where does this happen?  I looked at all the references to
+> |dev->error_state and all the callers of pci_channel_offline(), and I
+> |didn't see any in .slot_reset() methods.
+> |
+> |(There are *assignments* to dev->error_state in qlcnic_attach_func(),
+> |qlge_io_slot_reset(), and qla2xxx_pci_slot_reset().  You might be able
+> |to remove those assignments after this patch, but this patch wouldn't
+> |really change anything for those paths.)
+>
+> [jzl] Although low level driver might not call pci_channel_offline() directly in .slot_reset() method itself, it does not mean it will not call it during the device error recovery execution of .slot_reset() method. The .slot_reset() method needs to call some of its bottom layer routines interfacing with device PCI interface for preparing the PCI device from recovery of PCI error (EEH or AER). As a matter of fact, it seems that qla2xxx_pci_slot_reset() routine's assignments to dev->error was an attempt to work around this AER driver issue that this patch is trying to resolve. From upstream kernel 3.9.2's qla2xxx_pci_slot_reset(), it has the assignment and comment below:
+>
+> static pci_ers_result_t
+> qla2xxx_pci_slot_reset(struct pci_dev *pdev)
+> {
+>         pci_ers_result_t ret = PCI_ERS_RESULT_DISCONNECT;
+>         scsi_qla_host_t *base_vha = pci_get_drvdata(pdev);
+>         struct qla_hw_data *ha = base_vha->hw;
+>         struct rsp_que *rsp;
+>         int rc, retries = 10;
+>
+>         ql_dbg(ql_dbg_aer, base_vha, 0x9004,
+>             "Slot Reset.\n");
+>
+>         /* Workaround: qla2xxx driver which access hardware earlier
+>          * needs error state to be pci_channel_io_online.
+>          * Otherwise mailbox command timesout.
+>          */
+>         pdev->error_state = pci_channel_io_normal;
+>
+>
+>
+>> The patch resets pdev->error_state to pci_channel_io_normal at
+>> the begining of report_slot_reset.
+>
+>> Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+>> Signed-off-by: Zhang Long <longx.zhang@intel.com>
+>> ---
+>>  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+>>  drivers/pci/pcie/portdrv_pci.c     |   12 +++++-------
+>>  2 files changed, 6 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+>> index 564d97f..c61fd44 100644
+>> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+>> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+>> @@ -286,6 +286,7 @@ static int report_slot_reset(struct pci_dev *dev, void *data)
+>>         result_data = (struct aer_broadcast_data *) data;
+>>
+>>         device_lock(&dev->dev);
+>> +       dev->error_state = pci_channel_io_normal;
+>
+> |The device's error_state might be pci_channel_io_frozen when we get
+> |here.  We haven't touched anything in the hardware yet.  What makes
+> |the device unfrozen now?  Did anything actually change as far as the
+> |hardware device is concerned?
+>
+> [jzl] When the AER driver gets to invoking report_slot_reset(), it has already performed PCI slot reset. Currently, with PCIe, it is the PCIe link reset it has been performed. But with proper AER driver implementation, it should be either PCI slot hot reset or even fundamental reset that has already been performed. As such, after platform performing the PCI slot reset, it should move the device's error_state out of pci_channel_io_fronzen before calling report_slot_reset() to low level device drivers allows them to access the corresponding device's PCI function in preparation for recovery.
+>
+>
+> |I agree it looks like report_slot_reset() should be made more like
+> |eeh_report_reset().  I'm just wondering if the error_state should be
+> |changed *after* calling the .slot_reset() method instead of before.
+>
+> [jzl] No, you should not set the error_state after calling the .slot_reset() method because the AER driver calling the low level driver's .slot_reset() method is to "report" that the platform PCI slot reset has been done and "inform" the low level driver to prepare the PCI device for recovering, with which the low level driver might need to, for example, further perform reset on PCI functions with the deivice. The .slot_reset() is call by function, changing the error_state *after* calling the .slot_reset() method will be too late for the low level device to access PCI device from within the  .slot_reset() function call...
+>
+> [jzl] Also, this is not just the eeh_report_reset() behavior, it is PCI error recovery behavior. In the pci-error-recovery.txt, it stated the following under "STEP 4 Slot Reset":
+>
+> "...
+> This call gives drivers the chance to re-initialize the hardware
+> (re-download firmware, etc.).  At this point, the driver may assume
+> that the card is in a fresh state and is fully functional. The slot
+> is unfrozen and the driver has full access to PCI config space,
+> memory mapped I/O space and DMA. Interrupts (Legacy, MSI, or MSI-X)
+> will also be available.
+> ..."
+>
+>
+>>         if (!dev->driver ||
+>>                 !dev->driver->err_handler ||
+>>                 !dev->driver->err_handler->slot_reset)
+>> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+>> index ed4d094..7abefd9 100644
+>> --- a/drivers/pci/pcie/portdrv_pci.c
+>> +++ b/drivers/pci/pcie/portdrv_pci.c
+>> @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
+>>         pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
+>>         int retval;
+>>
+>> -       /* If fatal, restore cfg space for possible link reset at upstream */
+>> -       if (dev->error_state == pci_channel_io_frozen) {
+>> -               dev->state_saved = true;
+>> -               pci_restore_state(dev);
+>> -               pcie_portdrv_restore_config(dev);
+>> -               pci_enable_pcie_error_reporting(dev);
+>> -       }
+>
+> Previously we only restored state for the pci_channel_io_frozen state,
+> i.e., when handling an AER_FATAL error.  Now we restore it always.
+> Why?
+>
+>> +       /* restore cfg space for possible link reset at upstream */
+>> +       dev->state_saved = true;
+>
+> "dev->state_saved == true" means that the dev->saved_config_space
+> contains valid data.  Why do we know that's the case here?  I see that
+> pcie_portdrv_probe() calls pci_save_state() when we first claim the
+> port, and I guess we're assuming the state saved then is still valid.
+> But why do we need to actually set dev->state_saved here?  Shouldn't
+> it be already set to true anyway?
+>
+>> +       pci_restore_state(dev);
+>> +       pcie_portdrv_restore_config(dev);
+>> +       pci_enable_pcie_error_reporting(dev);
+>>
+>>         /* get true return value from &status */
+>>         retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
+>> --
+>> 1.7.4.1
+>>
+>>
+>>
