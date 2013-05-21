@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3EUNit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:38:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50012 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab3EUNis (ORCPT
+	id S1753178Ab3EUNjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:39:10 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:60201 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab3EUNjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:38:48 -0400
-Date: Tue, 21 May 2013 10:50:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: anshuman Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>
-Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for
- PERF_SAMPLE_BRANCH_KERNEL
-Message-ID: <20130521085010.GB26912@twins.programming.kicks-ass.net>
-References: <20130503121122.931661809@chello.nl>
- <20130503121256.230745028@chello.nl>
- <CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
- <20130516090916.GF19669@dyad.programming.kicks-ass.net>
- <8578.1368699317@ale.ozlabs.ibm.com>
- <20130516111634.GA15314@twins.programming.kicks-ass.net>
- <CABPqkBSCXJN7gLK_e_Q3YVVVFVGS78fo4j2z0+MmriqoXszH+w@mail.gmail.com>
- <20130517111232.GE5162@dyad.programming.kicks-ass.net>
- <10224.1369114895@ale.ozlabs.ibm.com>
+	Tue, 21 May 2013 09:39:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <10224.1369114895@ale.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Reply-To: linasvepstas@gmail.com
+In-Reply-To: <1369122596.4432.22.camel@ymzhang.sh.intel.com>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+ <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com>
+ <CF6E51640088844D9CADE5541A7C2FEB33EBC11D@CMEXMB1.ad.emulex.com>
+ <CAHrUA36OxKn1ucaA4-1jHU=4P+hCWOTVa2ECAwpxEoBWSRAv8A@mail.gmail.com> <1369122596.4432.22.camel@ymzhang.sh.intel.com>
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Tue, 21 May 2013 08:38:47 -0500
+Message-ID: <CAHrUA37hh9kZbheBi7oOuiM26wJOwNZX_R4TV8azoOv+Uo=eCA@mail.gmail.com>
+Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+To: yanmin_zhang <yanmin_zhang@linux.intel.com>
+Cc: "Liu, Joseph" <Joseph.Liu@emulex.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Zhang, LongX" <longx.zhang@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 03:41:35PM +1000, Michael Neuling wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> Can we add your signed-off-by on this?
-> 
-> We are cleaning up our series for conditional branches and would like to
-> add this as part of the post.
+Hi,
 
-Sure, but its completely untested.. I was hoping Stephane would say
-somnething about it since he wrote all that magic ;-)
+On 21 May 2013 02:49, Yanmin Zhang <yanmin_zhang@linux.intel.com> wrote:
+> On Mon, 2013-05-20 at 10:37 -0500, Linas Vepstas wrote:
 
-But yeah, feel free to add my SoB.
+>>  My impression
+>> is that maybe the AER driver had been doing not quite the right thing
+>> for a long time.
+> Pls. provide evidence/facts. The new patch is to facilitate device driver
+> implementation. It doesn't mean current AER driver is incorrect. We need
+> a tradeoff.
+>
+> Just like what Bjoin says, we shouldn't change error_state to pci_channel_io_normal
+> before we really recover the hardware. The patch changes it just because
+> drivers might call some functions to recover the devices, while such functions
+> need (error_state==pci_channel_io_normal).
+
+Perhaps we are talking past each other.  One needs to set error_state
+== pci_channel_io_normal before calling slot_reset().  If the aer
+driver wasn't doing this all along, then it seems like an old bug to
+me.   The error_state flag indicates the status of the PCI channel,
+and not the status of the attached device.  Once the channel has been
+reset, the error state is "normal" even if the card itself hasn't yet
+been brought up.
+
+Whatever it is that the aer driver is doing, it should be doing
+something similar to what the eeh driver is doing, in
+arch/powerpc/platforms/pseries/eeh_driver.c  -- This is the "reference
+implementation" -- Its known right, it was and continues to be heavily
+tested, has found its way into sriov, etc.
+
+The one thing that eeh does NOT do is to handle suspend/sleep states.
+The basic design assumption back then was that no one would ever
+suspend/sleep their server.  Since suspend/sleep messes with PCI
+config space, then, yes, one would need to somehow save a second,
+pristine copy of config space for device recovery.
+
+-- Linas
