@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab3EUNQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:16:35 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56513 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754439Ab3EUNQe (ORCPT
+	id S1754582Ab3EUNQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:16:55 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:53775 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753886Ab3EUNQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:16:34 -0400
-Date: Tue, 21 May 2013 14:15:40 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: need extern variable 'screen_info' for
- related driver using.
-Message-ID: <20130521131539.GC27002@arm.com>
-References: <5199B7D6.40907@asianux.com>
- <20130520091008.GB31359@mudshark.cambridge.arm.com>
- <519AE6D7.1090401@asianux.com>
- <CAMuHMdWNHPDkf35MYMKnxt5pn3a+dsT4jgYxuuHrp+mpZMckfw@mail.gmail.com>
- <519B278B.6030708@asianux.com>
- <20130521090336.GC10453@mudshark.cambridge.arm.com>
- <519B48B4.6050607@asianux.com>
+	Tue, 21 May 2013 09:16:53 -0400
+Message-ID: <519B7355.9090303@mellanox.com>
+Date: Tue, 21 May 2013 16:15:01 +0300
+From: Alex Rosenbaum <alexr@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519B48B4.6050607@asianux.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: Dave Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        <e1000-devel@lists.sourceforge.net>,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com> <519B632F.7040202@mellanox.com> <519B68A4.3010406@linux.intel.com>
+In-Reply-To: <519B68A4.3010406@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 11:13:08AM +0100, Chen Gang wrote:
-> On 05/21/2013 05:03 PM, Will Deacon wrote:
-> > On Tue, May 21, 2013 at 08:51:39AM +0100, Chen Gang wrote:
-> >> For me, I still recommend add 'ARM64' in the long list of architectures
-> >> for 'VGA_CONSOLE', I have 3 reasons, please check:
-> >>
-> >> a. current implementation only changes one area which only related with
-> >> arm64 and 'VGA_CONSOLE', but if use 'CONFIG_HAVE_VGA_CONSOLE', that will
-> >> touch many multiple platforms dependency, at least we need discuss about
-> >> it with multiple platforms guys for it, firstly.
-> > 
-> > That's a weak argument. You might as well propose the cleanup and see what
-> > people say.
-> 
-> Hmm.. I think at least, we need discuss it with the 'final applier'
-> firstly (and now, I even do not know who is the 'final applier').
+On 5/21/2013 3:29 PM, Eliezer Tamir wrote:
+> What benchmarks are you using to test poll/select/epoll?
+for epoll/select latency tests we are using sockperf as performance 
+latency tool: https://code.google.com/p/sockperf/
+It is a client-server based tool and it supported ping-pong, throughput, 
+and under-load test type.
+For epoll, you will need to define a 'feedfile' ("-f filepathname") 
+which has a list of TCP and/or UDP socket and defined your IO mux type 
+("-F epoll").
 
-Well, you can post the patch to linux-arch, cc'ing the arch maintainers
-whose Kconfig files you touch. If there are no comments, it will most
-likely be picked by Andrew Morton and sent to Linus (make sure you cc
-Andrew as well).
+thanks for all the clarifications.
 
--- 
-Catalin
+- Alex Rosenbaum
