@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab3EUJ3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:29:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10155 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005Ab3EUJ3o convert rfc822-to-8bit (ORCPT
+	id S1753081Ab3EUJq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:46:58 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19764 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3EUJq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:29:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
-   d="scan'208";a="317052530"
-Message-ID: <1369128579.29283.139.camel@smile>
-Subject: Re: [PATCH v3 0/2] dma: support Lynxpoint DMA
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Date: Tue, 21 May 2013 12:29:39 +0300
-In-Reply-To: <20130514045423.GC27639@intel.com>
-References: <1368003349-12204-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20130514045423.GC27639@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Tue, 21 May 2013 05:46:56 -0400
+X-Spam-Score: -100.8
+Message-ID: <519B425D.4030806@asianux.com>
+Date: Tue, 21 May 2013 17:46:05 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>, Marc Zyngier <Marc.Zyngier@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] arm64: kernel: compiling issue, need delete read_current_timer().
+References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com> <519AF2DC.2040200@asianux.com> <20130521085325.GB10453@mudshark.cambridge.arm.com>
+In-Reply-To: <20130521085325.GB10453@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-14 at 10:24 +0530, Vinod Koul wrote: 
-> On Wed, May 08, 2013 at 11:55:47AM +0300, Andy Shevchenko wrote:
-> > This is the rest of patch series related to ACPI DMA helpers and Lynxpoint DMAC.
-> > Patches are rebased against current Linus' tree and Vinod's branch for-linus.
-> > 
-> > Since v2:
-> >  - remove patches that are already in the Vinod's tree
-> >  - rebase on top of today's origin/master and Vinod's for-linus branch
-> >  - fix description in patch 2/2
-> Applied both, Thanks
 
-Thank you for applying them to next.
+Under arm64, we will calibrate the delay loop statically using a known
+timer frequency, so delete read_current_timer(), or it will cause
+compiling issue with allmodconfig.
 
-I'm just wondering if you are going to send pull request soon to get
-them in the v3.10-rcX.
+The related error:
+  ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
+  ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
+  ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+  ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
 
-Besides those two are really needed to support Haswell properly, there
-are people who are waiting for those patches, because patches touch ACPI
-subsystem.
 
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/include/asm/timex.h |    6 +++---
+ arch/arm64/kernel/time.c       |    6 ------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/include/asm/timex.h b/arch/arm64/include/asm/timex.h
+index b24a31a..81a076e 100644
+--- a/arch/arm64/include/asm/timex.h
++++ b/arch/arm64/include/asm/timex.h
+@@ -16,14 +16,14 @@
+ #ifndef __ASM_TIMEX_H
+ #define __ASM_TIMEX_H
+ 
++#include <asm/arch_timer.h>
++
+ /*
+  * Use the current timer as a cycle counter since this is what we use for
+  * the delay loop.
+  */
+-#define get_cycles()	({ cycles_t c; read_current_timer(&c); c; })
++#define get_cycles()	arch_counter_get_cntvct()
+ 
+ #include <asm-generic/timex.h>
+ 
+-#define ARCH_HAS_READ_CURRENT_TIMER
+-
+ #endif
+diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+index a551f88..03dc371 100644
+--- a/arch/arm64/kernel/time.c
++++ b/arch/arm64/kernel/time.c
+@@ -68,12 +68,6 @@ unsigned long long notrace sched_clock(void)
+ 	return arch_timer_read_counter() * sched_clock_mult;
+ }
+ 
+-int read_current_timer(unsigned long *timer_value)
+-{
+-	*timer_value = arch_timer_read_counter();
+-	return 0;
+-}
+-
+ void __init time_init(void)
+ {
+ 	u32 arch_timer_rate;
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.7.6
