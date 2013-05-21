@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3EUH1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:27:47 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:34457 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab3EUH1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:27:46 -0400
-Message-ID: <519B2224.50105@parallels.com>
-Date: Tue, 21 May 2013 11:28:36 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1756562Ab3EUH17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:27:59 -0400
+Received: from smtp2.macqel.be ([194.78.208.39]:28306 "EHLO smtp2.macqel.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756512Ab3EUH15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 03:27:57 -0400
+Date: Tue, 21 May 2013 09:27:54 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Karel Zak <kzak@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
+Message-ID: <20130521072754.GB19266@frolo.macqel>
+References: <1367270313-18871-1-git-send-email-phdm@macqel.be> <1367270313-18871-3-git-send-email-phdm@macqel.be> <20130520163927.8e4c2fe753b60a02c368ceb5@linux-foundation.org>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Oskar Andero <oskar.andero@sonymobile.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@openvz.org>, Dave Chinner <dchinner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] mm: vmscan: add VM_BUG_ON on illegal return values
- from scan_objects
-References: <1369120410-18180-1-git-send-email-oskar.andero@sonymobile.com> <CAOJsxLGivq0p1j4Axykdz-O8FtYfn=M1BfLEnc=q-fjxA2Yonw@mail.gmail.com>
-In-Reply-To: <CAOJsxLGivq0p1j4Axykdz-O8FtYfn=M1BfLEnc=q-fjxA2Yonw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130520163927.8e4c2fe753b60a02c368ceb5@linux-foundation.org>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 11:17 AM, Pekka Enberg wrote:
-> It seems to me relaxing the shrinker API restrictions and changing the
-> "ret == -1" to "ret < 0" would be a much more robust approach...
+Hi Andrew,
 
-Dave had already spoken against it, and I agree with him
-Anybody returning any negative value different than -1 is definitely
-doing something strange
+On Mon, May 20, 2013 at 04:39:27PM -0700, Andrew Morton wrote:
+> On Mon, 29 Apr 2013 23:18:30 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
+> 
+> > adding partitions/aix.h and partitions/aix.c
+> > 
+> > Partitions (called Logical Volumes in AIX) can be non-contiguous or
+> > even split on more than one disk.  Altough we detect such partitions,
+> > we cannot describe them to the Linux partitions layer, so we simply
+> > discard them and issue a diagnose message.
+> 
+> This description is rather hard to follow.
+> 
+> It appears that the new code permits Linux to access some types of AIX
+> partitions, but not other types, correct?  If so, can we please provide
+> a more explicit description of which typesw are and are not supported?
+> 
 
+AIX LVM permits to make "logical volumes" which are made of multiple slices
+of multiple disks.  The new code allows only access to the "logical volumes"
+which are made of one slice on the probed disk, a slice being a contiguous
+disk area.  The code also detects "logical volumes" made of multiple slices
+on the probed disk, but can not describe them to the partition layer, because
+the partition layer generic code does not support that.  When such
+non-contiguous "logical volumes" are detected, a diagnostic message is
+printed.
 
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
