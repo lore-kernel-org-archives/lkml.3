@@ -1,240 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3EUIww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:52:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47175 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab3EUIwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:52:36 -0400
-From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-CC: <grant.likely@secretlab.ca>, <dmitry.torokhov@gmail.com>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <manishv.b@ti.com>
-Subject: [PATCH V3 1/2] tps6507x-ts: Add DT support
-Date: Tue, 21 May 2013 14:24:17 +0530
-Message-ID: <1369126458-24872-2-git-send-email-manishv.b@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
-References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
+	id S1753949Ab3EUIxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:53:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:27681 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab3EUIxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:53:00 -0400
+X-IronPort-AV: E=Sophos;i="4.87,713,1363104000"; 
+   d="scan'208";a="7322401"
+Message-ID: <519B355E.8020505@cn.fujitsu.com>
+Date: Tue, 21 May 2013 16:50:38 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        David Miller <davem@davemloft.net>, libo.chen@huawei.com,
+        gregkh@linuxfoundation.org, samuel@sortiz.org,
+        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
+        balbi@ti.com, sarah.a.sharp@linux.intel.com,
+        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
+References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com> <20130520.232619.964940909999914694.davem@davemloft.net> <20130521084108.1a585f32@skate> <519B2993.4090409@cn.fujitsu.com> <519B2FC7.6000801@huawei.com>
+In-Reply-To: <519B2FC7.6000801@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 16:51:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 16:51:38,
+	Serialize complete at 2013/05/21 16:51:38
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree based support for TI's tps6507x touchscreen.
+On 05/21/2013 04:26 PM, Libo Chen wrote:
 
-Tested on da850-evm.
+> On 2013/5/21 16:00, Gu Zheng wrote:
+>> On 05/21/2013 02:41 PM, Thomas Petazzoni wrote:
+>>
+>>> Dear David Miller,
+>>>
+>>> On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
+>>>> From: Libo Chen <libo.chen@huawei.com>
+>>>> Date: Tue, 21 May 2013 10:42:00 +0800
+>>>>
+>>>>> I find a lot of mistakes using struct platform_driver without owner.
+>>>>> So I pick up some of them including usb and net modules
+>>>>
+>>>> Instead of doing it this way, which is obviously error prone and
+>>>> easy to forget, make platform_driver_register() be a macro which
+>>>> sets the module owner field then calls the real
+>>>> __platform_driver_register().
+>>>
+>>> Or, maybe make the existing module_platform_driver() macro do this?
+>>
+>>
+>> But not all the modules use module_platform_driver() macro to replace the module init/exit.
+>>
+>> Thanks,
+>> Gu
+>>
+> 
+> yes, there are many drivers register platform_driver by platform_driver_register manually.
+> 
+> make both platform_driver_register() and module_platform_driver()  to check and set the module owner field?
 
-Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
----
-Changes since V2:
- - Removed unnecessary code.
- - Updated Documentation to provide proper names of
-   devicetree properties.
 
-Changes since V1:
- - Updated documentation to specify tps6507x as multifunctional
-   device.
- - return proper error value in absence of platform and DT
-   data for touchscreen.
- - Updated commit message.
+No, module_platform_driver() will call platform_driver_register() to register platform_driver, just do it in
+platform_driver_register() is enough.
+As David mentioned, making platform_driver_register() be a macro and sets the module owner field in it, seems
+a good way.
 
-:100755 100755 8fffa3c... 65ee2cd... M	Documentation/devicetree/bindings/mfd/tps6507x.txt
-:100644 100644 65e0f9a... 89232ee... M	drivers/input/touchscreen/tps6507x-ts.c
- Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
- drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
- 2 files changed, 95 insertions(+), 31 deletions(-)
+Thanks,
+Gu
 
-diff --git a/Documentation/devicetree/bindings/mfd/tps6507x.txt b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-index 8fffa3c..65ee2cd 100755
---- a/Documentation/devicetree/bindings/mfd/tps6507x.txt
-+++ b/Documentation/devicetree/bindings/mfd/tps6507x.txt
-@@ -1,4 +1,8 @@
--TPS6507x Power Management Integrated Circuit
-+TPS6507x Multifunctional Device.
-+
-+Features provided by TPS6507x:
-+        1.Power Management Integrated Circuit.
-+        2.Touch-Screen.
- 
- Required properties:
- - compatible: "ti,tps6507x"
-@@ -23,6 +27,12 @@ Required properties:
-        vindcdc1_2-supply: VDCDC1 and VDCDC2 input.
-        vindcdc3-supply  : VDCDC3 input.
-        vldo1_2-supply   : VLDO1 and VLDO2 input.
-+- tsc: This node specifies touch screen data.
-+	ti,poll-period : Time at which touch input is getting sampled in ms.
-+	ti,min-pressure: Minimum pressure value to trigger touch.
-+	ti,vref	       : voltage reference for ADC.
-+		      0: Reference voltage for ADC is disabled.
-+		      1: Reference voltage for ADC is enabled.
- 
- Regulator Optional properties:
- - defdcdc_default: It's property of DCDC2 and DCDC3 regulators.
-@@ -30,6 +40,14 @@ Regulator Optional properties:
- 			1: If defdcdc pin of DCDC2/DCDC3 is driven HIGH.
-   If this property is not defined, it defaults to 0 (not enabled).
- 
-+Touchscreen Optional properties:
-+- ti,vendor : Touchscreen vendor id to populate
-+	      in sysclass interface.
-+- ti,product: Touchscreen product id to populate
-+	      in sysclass interface.
-+- ti,version: Touchscreen version id to populate
-+	      in sysclass interface.
-+
- Example:
- 
- 	pmu: tps6507x@48 {
-@@ -88,4 +106,12 @@ Example:
- 			};
- 		};
- 
-+		tsc {
-+			ti,poll-period = <30>;
-+			ti,min-pressure = <0x30>;
-+			ti,vref = <0>;
-+			ti,vendor = <0>;
-+			ti,product = <65070>;
-+			ti,version = <0x100>;
-+		};
- 	};
-diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
-index 65e0f9a..89232ee 100644
---- a/drivers/input/touchscreen/tps6507x-ts.c
-+++ b/drivers/input/touchscreen/tps6507x-ts.c
-@@ -21,6 +21,8 @@
- #include <linux/mfd/tps6507x.h>
- #include <linux/input/tps6507x-ts.h>
- #include <linux/delay.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
- #define TPS_DEFAULT_MIN_PRESSURE 0x30
-@@ -231,36 +233,76 @@ done:
- 	ret = tps6507x_adc_standby(tsc);
- }
- 
-+static int tsc_init_data(struct tps6507x_dev *tps6507x_dev,
-+		struct input_dev *input_dev)
-+{
-+	struct device_node *node = tps6507x_dev->dev->of_node;
-+	struct tps6507x_board *tps_board =
-+		(struct tps6507x_board *)tps6507x_dev->dev->platform_data;
-+	struct touchscreen_init_data *init_data = NULL;
-+	int err;
-+
-+	if (node)
-+		node = of_find_node_by_name(node, "tsc");
-+	if (tps_board)
-+		init_data = tps_board->tps6507x_ts_init_data;
-+
-+	if (node == NULL || init_data == NULL) {
-+		err = -EINVAL;
-+		goto error_ret;
-+	} else if (init_data) {
-+		tps6507x_dev->ts->poll_period = init_data->poll_period;
-+		tps6507x_dev->ts->min_pressure = init_data->min_pressure;
-+		tps6507x_dev->ts->vref = init_data->vref;
-+		input_dev->id.vendor = init_data->vendor;
-+		input_dev->id.product = init_data->product;
-+		input_dev->id.version = init_data->version;
-+	} else if (node) {
-+		err = of_property_read_u32(node, "ti,poll-period",
-+					(u32 *)&tps6507x_dev->ts->poll_period);
-+		if (err < 0)
-+			goto error_ret;
-+
-+		err = of_property_read_u16(node, "ti,min-pressure",
-+					&tps6507x_dev->ts->min_pressure);
-+		if (err < 0)
-+			goto error_ret;
-+
-+		err = of_property_read_u32(node, "ti,vref",
-+					&tps6507x_dev->ts->vref);
-+		if (err < 0)
-+			goto error_ret;
-+
-+		err = of_property_read_u16(node, "ti,vendor",
-+					&input_dev->id.vendor);
-+		if (err < 0)
-+			goto error_ret;
-+
-+		err = of_property_read_u16(node, "ti,product",
-+					&input_dev->id.product);
-+		if (err < 0)
-+			goto error_ret;
-+
-+		err = of_property_read_u16(node, "ti,version",
-+					&input_dev->id.version);
-+		if (err < 0)
-+			goto error_ret;
-+	}
-+
-+	return 0;
-+
-+error_ret:
-+	return err;
-+}
-+
- static int tps6507x_ts_probe(struct platform_device *pdev)
- {
- 	int error;
- 	struct tps6507x_ts *tsc;
- 	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
--	struct touchscreen_init_data *init_data;
- 	struct input_dev *input_dev;
--	struct tps6507x_board *tps_board;
- 	int schd;
- 
--	/**
--	 * tps_board points to pmic related constants
--	 * coming from the board-evm file.
--	 */
--
--	tps_board = (struct tps6507x_board *)tps6507x_dev->dev->platform_data;
--
--	if (!tps_board) {
--		dev_err(tps6507x_dev->dev,
--			"Could not find tps6507x platform data\n");
--		return -EIO;
--	}
--
--	/**
--	 * init_data points to array of regulator_init structures
--	 * coming from the board-evm file.
--	 */
--
--	init_data = tps_board->tps6507x_ts_init_data;
--
- 	tsc = devm_kzalloc(&pdev->dev, sizeof(struct tps6507x_ts), GFP_KERNEL);
- 	if (!tsc) {
- 		dev_err(tps6507x_dev->dev, "failed to allocate driver data\n");
-@@ -301,14 +343,10 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
- 
- 	INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
- 
--	if (init_data) {
--		tsc->poll_period = init_data->poll_period;
--		tsc->vref = init_data->vref;
--		tsc->min_pressure = init_data->min_pressure;
--		input_dev->id.vendor = init_data->vendor;
--		input_dev->id.product = init_data->product;
--		input_dev->id.version = init_data->version;
--	} else {
-+	error = tsc_init_data(tps6507x_dev, input_dev);
-+
-+	if (error) {
-+		dev_warn(&pdev->dev, "Use default platform data\n");
- 		tsc->poll_period = TSC_DEFAULT_POLL_PERIOD;
- 		tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
- 	}
--- 
-1.7.4.1
+> 
+> 
+> 
+>>>
+>>> Best regards,
+>>>
+>>> Thomas
+>>
+>>
+>>
+>> .
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
