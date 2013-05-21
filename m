@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab3EUN3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:29:52 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:16982
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753196Ab3EUN3v (ORCPT
+	id S1754508Ab3EUNbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:31:44 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:58935 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178Ab3EUNbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:29:51 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzzz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-X-WSS-ID: 0MN5HHK-02-99F-02
-X-M-MSG: 
-Message-ID: <519B76CB.1000208@amd.com>
-Date: Tue, 21 May 2013 08:29:47 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>,
-        <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com> <519A4429.30405@amd.com> <20130521091157.GD26912@twins.programming.kicks-ass.net>
-In-Reply-To: <20130521091157.GD26912@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 21 May 2013 09:31:41 -0400
+Message-ID: <1369143099.3301.216.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alex Rosenbaum <alexr@mellanox.com>
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 21 May 2013 06:31:39 -0700
+In-Reply-To: <519B7355.9090303@mellanox.com>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	 <519B632F.7040202@mellanox.com> <519B68A4.3010406@linux.intel.com>
+	 <519B7355.9090303@mellanox.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/21/2013 4:11 AM, Peter Zijlstra wrote:
-> On Mon, May 20, 2013 at 10:41:29AM -0500, Suravee Suthikulanit wrote:
->> Peter,
->>
->> Please let me know if you have any questions/concerns regarding the PMU
->> implementation.
-> Looks good, how would you like to go about merging this? Should I push
-> it through Ingo's tree or do you prefer it goes through some IOMMU tree?
->
-Thank you, Peter.  Since this is mostly PERF-related feature, I think it 
-would be appropriate to push this through Ingo's tree.
+On Tue, 2013-05-21 at 16:15 +0300, Alex Rosenbaum wrote:
+> On 5/21/2013 3:29 PM, Eliezer Tamir wrote:
+> > What benchmarks are you using to test poll/select/epoll?
+> for epoll/select latency tests we are using sockperf as performance 
+> latency tool: https://code.google.com/p/sockperf/
+> It is a client-server based tool and it supported ping-pong, throughput, 
+> and under-load test type.
+> For epoll, you will need to define a 'feedfile' ("-f filepathname") 
+> which has a list of TCP and/or UDP socket and defined your IO mux type 
+> ("-F epoll").
 
-Suravee
+I totally agree, most modern applications use poll/select/epoll,
+and a fair amount of sockets per task, sendfile()/vmsplice()/... and
+netperf is not using same paths.
+
+Thanks Alex !
+
+
 
