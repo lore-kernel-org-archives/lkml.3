@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3EUXXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:23:09 -0400
-Received: from www.sr71.net ([198.145.64.142]:46260 "EHLO blackbird.sr71.net"
+	id S1754116Ab3EUXX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:23:28 -0400
+Received: from www.sr71.net ([198.145.64.142]:46280 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab3EUXXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:23:07 -0400
-Message-ID: <519C01D8.4040301@sr71.net>
-Date: Tue, 21 May 2013 16:23:04 -0700
+	id S1753900Ab3EUXX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:23:26 -0400
+Message-ID: <519C01EC.5060909@sr71.net>
+Date: Tue, 21 May 2013 16:23:24 -0700
 From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -40,20 +40,5 @@ On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
 > Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
 > prototype to match mk_pte().
 
-Was there a motivation to do this beyond adding consistency?  Do you use
-this later or something?
+Oh, and please stick this in your queue of stuff to go upstream, first.
 
-> @@ -746,7 +745,8 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
->  		pte_free(mm, pgtable);
->  	} else {
->  		pmd_t entry;
-> -		entry = mk_huge_pmd(page, vma);
-> +		entry = mk_huge_pmd(page, vma->vm_page_prot);
-> +		entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
->  		page_add_new_anon_rmap(page, vma, haddr);
->  		set_pmd_at(mm, haddr, pmd, entry);
-
-I'm not the biggest fan since this does add lines of code, but I do
-appreciate the consistency it adds, so:
-
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
