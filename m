@@ -1,229 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3EUGrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:47:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40887 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007Ab3EUGrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:47:18 -0400
-X-IronPort-AV: E=Sophos;i="4.87,712,1363104000"; 
-   d="scan'208";a="7321188"
-Message-ID: <519B1923.6030107@cn.fujitsu.com>
-Date: Tue, 21 May 2013 14:50:11 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755974Ab3EUGrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:47:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28312 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab3EUGrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 02:47:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,712,1363158000"; 
+   d="scan'208";a="316989554"
+Message-ID: <519B187F.4070504@intel.com>
+Date: Tue, 21 May 2013 14:47:27 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2 v2, RFC] ACPI / memhotplug: Bind removable memory
- blocks to ACPI device nodes
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1583356.7oqZ7gBy2q@vostro.rjw.lan> <2376818.CRj1BTLk0Y@vostro.rjw.lan> <11495390.fLTYR4Utem@vostro.rjw.lan>
-In-Reply-To: <11495390.fLTYR4Utem@vostro.rjw.lan>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 14:45:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 14:46:00,
-	Serialize complete at 2013/05/21 14:46:00
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH v2] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <519AE7F2.706@linux.vnet.ibm.com>
+In-Reply-To: <519AE7F2.706@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On 05/21/2013 11:20 AM, Michael Wang wrote:
+> CC: Mike Galbraith <efault@gmx.de>
+> CC: Alex Shi <alex.shi@intel.com>
 
-Seems OK to me.
+You can change CC to
+Reviewed-by: Alex Shi <alex.shi@intel.com>
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-
-Thanks. :)
-
-On 05/04/2013 07:12 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
->
-> During ACPI memory hotplug configuration bind memory blocks residing
-> in modules removable through the standard ACPI mechanism to struct
-> acpi_device objects associated with ACPI namespace objects
-> representing those modules.  Accordingly, unbind those memory blocks
-> from the struct acpi_device objects when the memory modules in
-> question are being removed.
->
-> When "offline" operation for devices representing memory blocks is
-> introduced, this will allow the ACPI core's device hot-remove code to
-> use it to carry out remove_memory() for those memory blocks and check
-> the results of that before it actually removes the modules holding
-> them from the system.
->
-> Since walk_memory_range() is used for accessing all memory blocks
-> corresponding to a given ACPI namespace object, it is exported from
-> memory_hotplug.c so that the code in acpi_memhotplug.c can use it.
->
-> Signed-off-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
-> ---
->   drivers/acpi/acpi_memhotplug.c |   53 ++++++++++++++++++++++++++++++++++++++---
->   include/linux/memory_hotplug.h |    2 +
->   mm/memory_hotplug.c            |    4 ++-
->   3 files changed, 55 insertions(+), 4 deletions(-)
->
-> Index: linux-pm/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-pm.orig/mm/memory_hotplug.c
-> +++ linux-pm/mm/memory_hotplug.c
-> @@ -1618,6 +1618,7 @@ int offline_pages(unsigned long start_pf
->   {
->   	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
->   }
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->
->   /**
->    * walk_memory_range - walks through all mem sections in [start_pfn, end_pfn)
-> @@ -1631,7 +1632,7 @@ int offline_pages(unsigned long start_pf
->    *
->    * Returns the return value of func.
->    */
-> -static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
-> +int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
->   		void *arg, int (*func)(struct memory_block *, void *))
->   {
->   	struct memory_block *mem = NULL;
-> @@ -1668,6 +1669,7 @@ static int walk_memory_range(unsigned lo
->   	return 0;
->   }
->
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->   /**
->    * offline_memory_block_cb - callback function for offlining memory block
->    * @mem: the memory block to be offlined
-> Index: linux-pm/include/linux/memory_hotplug.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/memory_hotplug.h
-> +++ linux-pm/include/linux/memory_hotplug.h
-> @@ -245,6 +245,8 @@ static inline int is_mem_section_removab
->   static inline void try_offline_node(int nid) {}
->   #endif /* CONFIG_MEMORY_HOTREMOVE */
->
-> +extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
-> +		void *arg, int (*func)(struct memory_block *, void *));
->   extern int mem_online_node(int nid);
->   extern int add_memory(int nid, u64 start, u64 size);
->   extern int arch_add_memory(int nid, u64 start, u64 size);
-> Index: linux-pm/drivers/acpi/acpi_memhotplug.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
-> +++ linux-pm/drivers/acpi/acpi_memhotplug.c
-> @@ -28,6 +28,7 @@
->    */
->
->   #include<linux/acpi.h>
-> +#include<linux/memory.h>
->   #include<linux/memory_hotplug.h>
->
->   #include "internal.h"
-> @@ -166,13 +167,50 @@ static int acpi_memory_check_device(stru
->   	return 0;
->   }
->
-> +static unsigned long acpi_meminfo_start_pfn(struct acpi_memory_info *info)
-> +{
-> +	return PFN_DOWN(info->start_addr);
-> +}
-> +
-> +static unsigned long acpi_meminfo_end_pfn(struct acpi_memory_info *info)
-> +{
-> +	return PFN_UP(info->start_addr + info->length-1);
-> +}
-> +
-> +static int acpi_bind_memblk(struct memory_block *mem, void *arg)
-> +{
-> +	return acpi_bind_one(&mem->dev, (acpi_handle)arg);
-> +}
-> +
-> +static int acpi_bind_memory_blocks(struct acpi_memory_info *info,
-> +				   acpi_handle handle)
-> +{
-> +	return walk_memory_range(acpi_meminfo_start_pfn(info),
-> +				 acpi_meminfo_end_pfn(info), (void *)handle,
-> +				 acpi_bind_memblk);
-> +}
-> +
-> +static int acpi_unbind_memblk(struct memory_block *mem, void *arg)
-> +{
-> +	acpi_unbind_one(&mem->dev);
-> +	return 0;
-> +}
-> +
-> +static void acpi_unbind_memory_blocks(struct acpi_memory_info *info,
-> +				      acpi_handle handle)
-> +{
-> +	walk_memory_range(acpi_meminfo_start_pfn(info),
-> +			  acpi_meminfo_end_pfn(info), NULL, acpi_unbind_memblk);
-> +}
-> +
->   static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   {
-> +	acpi_handle handle = mem_device->device->handle;
->   	int result, num_enabled = 0;
->   	struct acpi_memory_info *info;
->   	int node;
->
-> -	node = acpi_get_node(mem_device->device->handle);
-> +	node = acpi_get_node(handle);
->   	/*
->   	 * Tell the VM there is more memory here...
->   	 * Note: Assume that this function returns zero on success
-> @@ -203,6 +241,12 @@ static int acpi_memory_enable_device(str
->   		if (result&&  result != -EEXIST)
->   			continue;
->
-> +		result = acpi_bind_memory_blocks(info, handle);
-> +		if (result) {
-> +			acpi_unbind_memory_blocks(info, handle);
-> +			return -ENODEV;
-> +		}
-> +
->   		info->enabled = 1;
->
->   		/*
-> @@ -229,10 +273,11 @@ static int acpi_memory_enable_device(str
->
->   static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->   {
-> +	acpi_handle handle = mem_device->device->handle;
->   	int result = 0, nid;
->   	struct acpi_memory_info *info, *n;
->
-> -	nid = acpi_get_node(mem_device->device->handle);
-> +	nid = acpi_get_node(handle);
->
->   	list_for_each_entry_safe(info, n,&mem_device->res_list, list) {
->   		if (!info->enabled)
-> @@ -240,6 +285,8 @@ static int acpi_memory_remove_memory(str
->
->   		if (nid<  0)
->   			nid = memory_add_physaddr_to_nid(info->start_addr);
-> +
-> +		acpi_unbind_memory_blocks(info, handle);
->   		result = remove_memory(nid, info->start_addr, info->length);
->   		if (result)
->   			return result;
-> @@ -300,7 +347,7 @@ static int acpi_memory_device_add(struct
->   	if (result) {
->   		dev_err(&device->dev, "acpi_memory_enable_device() error\n");
->   		acpi_memory_device_free(mem_device);
-> -		return -ENODEV;
-> +		return result;
->   	}
->
->   	dev_dbg(&device->dev, "Memory device configured by ACPI\n");
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-- 
+Thanks
+    Alex
