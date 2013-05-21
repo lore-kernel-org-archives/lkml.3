@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3EURYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 13:24:24 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:50771 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab3EURYU (ORCPT
+	id S1755281Ab3EUR1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 13:27:11 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45918 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890Ab3EUR1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 13:24:20 -0400
+	Tue, 21 May 2013 13:27:09 -0400
+Date: Tue, 21 May 2013 10:42:09 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20130521154209.GB1627@sirena.org.uk>
+References: <1369145047-26748-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <20130521151143.GH10453@mudshark.cambridge.arm.com>
-References: <20130516153553.GI11706@mudshark.cambridge.arm.com>
-	<1369139597-24446-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130521151143.GH10453@mudshark.cambridge.arm.com>
-Date: Tue, 21 May 2013 20:24:15 +0300
-Message-ID: <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: abort transfers immediately when asked for
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, "djbw @ fb . com" <djbw@fb.com>,
-        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel @ lists . infradead . org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tK3TaB1xs9ylLrl6"
+Content-Disposition: inline
+In-Reply-To: <1369145047-26748-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 144.188.69.1
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Correct spelling mistake in comment
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 6:11 PM, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Andy,
->
-> On Tue, May 21, 2013 at 01:33:17PM +0100, Andy Shevchenko wrote:
->> When thread is going to be stopped we have to unconditionally terminate all
->> ongoing transfers. Otherwise it would be possible that callback function will
->> be called on the next interrupt and will try to access to already freed
->> structures.
->>
->> The patch introduces specific error message for this, though it doesn't
->> increase the counter of the failed tests.
->>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Reported-by: Will Deacon <will.deacon@arm.com>
->
-> Thanks for persevering with this! Although this patch definitely fixes the
-> panic I was seeing, I now observe buffer verification failures in subsequent
-> test runs after an aborted run:
 
-I think the description to the commit adfa543e "dmatest: don't use
-set_freezable_with_signal()" may shed light on this.
+--tK3TaB1xs9ylLrl6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The background (if  I got it correctly) is in race with done flag. So,
-we got a callback call from the DMA engine, but we don't know which
-transfer triggers it.
-I might be wrong. This is just an assumption.
+On Tue, May 21, 2013 at 03:04:07PM +0100, Charles Keepax wrote:
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-Have you ever see such behaviour on pre v3.10-rc1 kernels? (I mean
-with old dmatest module)
+Applied, thanks.
 
---
-With Best Regards,
-Andy Shevchenko
+--tK3TaB1xs9ylLrl6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRm5XJAAoJELSic+t+oim9fjsQAJITP3fVKJlOED95fP6MXr3b
+m3PhnTylWatWGWMaSG3TPHYZTc01/L0SA3TjVkNpMAQ/IZ9nj+LdmAYaicMb6zw5
+mp3DuyYIbWwApPaoPpgcarcEpRRaXygEYXjur4/6iBPWuTQvpH+nUm4tENG7uAo9
+y0u7RUl8Nm2EaiijrfkaONI8NsNaSI90gHNzF8yQUGMPybCqLP32DkBQcQS0NFvH
+3R58q+RweFivhor54//4F29vq4lHyDNXxL83G0Vus8kvDRjxYSUaZy3B5PFjrSZc
+J3dWdP4BFtQEd6nSANDa9S2ya7iHyQ/so0XKLMY/3qi53XiRofD8eEGmfHsnlmhY
+Zf06PDR07sSTncQwcWrwCW04oz2mwifjDBgz+dymLXwMIiXUO4UiWXIHYKxcO8Ai
+6hMBMerLj6mMyQILHmzSbaQ3sG71e0WrSGXgv0i7HZb9IYFmKckv4I6q3qb9jNKV
+Y/gUMw60BIzEwh8ozl1OdaWKvUdHHygRNGNASTUcQ9wLGJO7NtnG3cPdGS/0ynLI
+i7UOfYzCk0E1swDCmAL60nJj5pSktFaAm0mPLTnMHKrm2ddKPcfFqXBDHY+Qkeq4
+IKn8oWu3mPj8Q11uZojqR1Xf1ohHHxhaV1ubvJqeKgt5TYzndaCvtQAI+cuqEiFm
+EtO7ByxQzroL8aezffHY
+=lN6h
+-----END PGP SIGNATURE-----
+
+--tK3TaB1xs9ylLrl6--
