@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab3EUPtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 11:49:07 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:32977 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753370Ab3EUPtE (ORCPT
+	id S1754643Ab3EUPvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:51:20 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:56667 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752246Ab3EUPvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 11:49:04 -0400
-X-Greylist: delayed 9505 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 11:49:04 EDT
-Message-ID: <519B976A.3050708@hurleysoftware.com>
-Date: Tue, 21 May 2013 11:48:58 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Tue, 21 May 2013 11:51:18 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <519B97EE.3030404@yandex-team.ru>
+Date: Tue, 21 May 2013 19:51:10 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>
-CC: gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to do_take_over_console
-References: <20130521051511.GA11435@udknight> <519B7249.2070207@hurleysoftware.com> <20130521144215.GA5302@udknight.homenetwork>
-In-Reply-To: <20130521144215.GA5302@udknight.homenetwork>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
+        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
+References: <519B38EC.90401@yandex-team.ru>   <20130521120906.GD3578@linux.vnet.ibm.com>  <1369143885.3301.221.camel@edumazet-glaptop>  <519B8908.9080007@yandex-team.ru> <1369149381.3301.228.camel@edumazet-glaptop>
+In-Reply-To: <1369149381.3301.228.camel@edumazet-glaptop>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 10:42 AM, Wang YanQing wrote:
-> On Tue, May 21, 2013 at 09:10:33AM -0400, Peter Hurley wrote:
->> I would rather revert dc9641895abb which purported to delete
->> _unneeded_ functions than have this. Obviously the functions
->> were needed.
+On 21.05.2013 19:16, Eric Dumazet wrote:
+> On Tue, 2013-05-21 at 18:47 +0400, Roman Gushchin wrote:
+>> On 21.05.2013 17:44, Eric Dumazet wrote:
+>>> On Tue, 2013-05-21 at 05:09 -0700, Paul E. McKenney wrote:
+>>>
+>>>>>
+>>>>> -#define hlist_nulls_first_rcu(head) \
+>>>>> -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+>>>>> +#define hlist_nulls_first_rcu(head)			\
+>>>>> +	(*((struct hlist_nulls_node __rcu __force **)	\
+>>>>> +	   &((volatile typeof(*head) *)head)->first))
+>>>>
+>>>> Why not use ACCESS_ONCE() or (better) rcu_dereference_raw() here?
+>>>
+>>> More exactly we have :
+>>>
+>>> #define list_entry_rcu(ptr, type, member) \
+>>>           ({typeof (*ptr) __rcu *__ptr = (typeof (*ptr) __rcu __force *)ptr; \
+>>>            container_of((typeof(ptr))rcu_dereference_raw(__ptr), type, member); \
+>>>           })
+>>>
+>>> #define list_for_each_entry_rcu(pos, head, member) \
+>>>           for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
+>>>                   &pos->member != (head); \
+>>>                   pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
+>>> << and >>
+>>>
+>>> #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                 \
+>>>           for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
+>>>                   (!is_a_nulls(pos)) &&                                           \
+>>>                   ({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+>>>                   pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+>>>
+>>> We need to change hlist_nulls_for_each_entry_rcu() to use same construct,
+>>> so that the rcu_dereference_raw() is performed at the right place.
 >>
+>> No.
+>>
+>> This code has the same mistake: it is rcu_dereference_raw(head->first),
+>> so there is nothing that prevents gcc to store the (head->first) value
+>> in a register.
 >
-> Hi Peter, this series patches' goal is to reduce codes'
-> redundance and function duplication. But if we keep take_over_console,
-> then we have to rewrite it as a trivial wrapper over do_take_over_console,
-> or we have to keep bind_con_driver and register_con_driver, and this
-> will bring use codes' redundance.
+> Please read again what I wrote, you misundertood.
 >
-> And if we rewrite take_over_console as a wrapper over
-> do_take_over_console, it is so trivial, delete it and let kernel
-> use the unified version of APIs will simplify the APIs.
+> hlist_nulls_for_each_entry_rcu() should use same construct than
+> list_for_each_entry_rcu(), and not use rcu_dereference_raw()
+>
+> Is that clear, or do you want me to send the patch ?
 
-Except now you're spreading the brokenness that is console_lock()
-over many more source files than the single-use case of
-do_take_over_console().
-
-The actual interface is take_over_console(); the _workaround_ is
-exposing do_take_over_console() for fbcon to wrap.
+If you think, that it will solve the problem, please, send a patch. I 
+think, you are wrong here.
+If you think only that it will look better, I agree.
 
 Regards,
-Peter Hurley
+Roman
 
