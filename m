@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3EUPbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 11:31:24 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:45032 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab3EUPbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 11:31:22 -0400
-Message-ID: <1369150280.3301.230.camel@edumazet-glaptop>
-Subject: Re: sk_page_frag_refill OOM killing spree
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Westphal <fw@strlen.de>
-Cc: netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 21 May 2013 08:31:20 -0700
-In-Reply-To: <20130521122845.GD16412@breakpoint.cc>
-References: <20130521122845.GD16412@breakpoint.cc>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754554Ab3EUPcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:32:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47629 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246Ab3EUPcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 11:32:16 -0400
+Date: Tue, 21 May 2013 17:28:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        akpm@linux-foundation.org, jlayton@redhat.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        bharrosh@panasas.com, devel@openvz.org
+Subject: Re: [RFC PATCH] kmod: add ability to swap root in usermode helper
+Message-ID: <20130521152836.GA13461@redhat.com>
+References: <20130520070017.7957.9224.stgit@localhost.localdomain> <20130520135716.GA10084@redhat.com> <519A3693.8020006@parallels.com> <20130520151001.GA13173@redhat.com> <20130520212412.GI14677@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130520212412.GI14677@fieldses.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 14:28 +0200, Florian Westphal wrote:
-> Hi Eric,
-> 
-> seems like sk_page_frag_refill() can cause oom-killer invocation:
-> 
-> postgres invoked oom-killer: gfp_mask=0x42d0, order=3, oom_score_adj=0
-> Pid: 10551, comm: postgres Tainted: G           O 3.8.6-5.g613ca40-smp #1
-> Call Trace:
->  [<c106dbd5>] ? dump_header+0x60/0x191
->  [<c1133d3a>] ? ___ratelimit+0xb2/0xc4
->  [<c106dfd3>] ? oom_kill_process+0x61/0x2d1
->  [<c1030042>] ? has_capability_noaudit+0x1c/0x23
->  [<c106df0f>] ? oom_badness+0x8c/0xef
->  [<c106e446>] ? out_of_memory+0x203/0x247
->  [<c107128a>] ? __alloc_pages_nodemask+0x42b/0x4c3
->  [<c11fa66a>] ? sk_page_frag_refill+0x6a/0xd2
->  [<c1233548>] ? tcp_sendmsg+0x3e8/0x7c6
->  [<c124f34b>] ? inet_sendmsg+0x6b/0x75
->  [<c11f74d8>] ? sock_sendmsg+0x8d/0xa6
->  [<c11f7b83>] ? sys_sendto+0x105/0x130
->  [<c1025927>] ? __kunmap_atomic+0x62/0x8a
->  [<c1025940>] ? __kunmap_atomic+0x7b/0x8a
->  [<c1073d78>] ? __lru_cache_add+0x18/0x47
->  [<c10812f9>] ? handle_pte_fault+0x745/0x751
->  [<c1025a2d>] ? kmap_atomic_prot+0xd3/0xf1
->  [<c10817da>] ? handle_mm_fault+0x112/0x121
->  [<c11f7be5>] ? sys_send+0x37/0x3b
-> 
-> The system is busy, so, order-3 alloc failure doesn't strike me as odd.
-> 
-> There are no allocation failures with order != 3.
-> 
-> Sometimes this can happen in very short sucession, i.e.
-> and oom-killer did end up zapping 30 processes or so.
-> 
-> My question is, should sk_page_frag_refill use __GFP_NORETRY, at least
-> for order 3 requests?
+You know, I am puzzled. Everything looks so clear that I can't
+understand what I could miss.
 
-Yes, you may be right, but I prefer some mm expertise here, so I CC lkml
+On 05/20, J. Bruce Fields wrote:
+>
+> On Mon, May 20, 2013 at 05:10:01PM +0200, Oleg Nesterov wrote:
+> > On 05/20, Stanislav Kinsbursky wrote:
+> > >
+> > OK, why nfs can't simply use this code
+> >
+> > 	static int umh_set_fs_root(struct subprocess_info *info, struct cred *new)
+> > 	{
+> > 		set_fs_root(current->fs, sub_info->data);
+> > 		return 0;
+> > 	}
+> >
+> > 	int call_usermodehelper_root(char *path, char **argv, char **envp, int wait,
+> > 				     struct path *root)
+> > 	{
+> >
+> > 		struct subprocess_info *info;
+> >
+> > 		info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
+> > 							umh_set_fs_root, NULL, root);
+> > 		if (info == NULL)
+> > 			return -ENOMEM;
+> > 		return call_usermodehelper_exec(info, wait);
+> > 	}
+>
+> Right, that's more or less what Stanislav proposed before:
+>
+> 	https://patchwork.kernel.org/patch/2449081/
+>
+> (though with an open-coded set_fs_root).  Jeff and I asked him to try
+> this approach instead.
 
+And I still can't understand why you do not like this.
 
+> > ? Why do you want to add the new member, the new arguments, the new helpers?
+>
+> 	- It's simpler for callers to be able to say "run this help in
+> 	  that namespace" in a single line.  We expect there will be
+> 	  more such callers, so the mild complication of the API seems
+> 	  worth it for the convenience.
+
+So call_usermodehelper_root() above doesn't look as a simple API for you?
+
+Add it into kmod.c (or another place) and use it everywhere, why do
+insist we should complicate the generic code?
+
+What if someone wants to, say, change "nice" before running the helper?
+Do you think that we need yet another change which turns
+call_usermodehelper_setup_root() added by this patch into
+call_usermodehelper_setup_root_nice()? And another member in sub_info?
+And the "if (sub_info->nice)" check into ____call_usermodehelper() ?
+
+> 	- set_fs_root looks like something that shouldn't really be used
+> 	  outside of a small number of well-known callers in core code.
+
+OK, so do not do this. Export the new helper.
+
+Oleg.
 
