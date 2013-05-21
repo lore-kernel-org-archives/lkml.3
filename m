@@ -1,72 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3EUVG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:06:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51732 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab3EUVG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:06:56 -0400
-Date: Tue, 21 May 2013 18:06:32 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
-        kzak@redhat.com, jmoyer@redhat.com, riel@redhat.com,
-        lwoodman@redhat.com, mgorman@suse.de
-Subject: Re: [RFC PATCH 01/02] swap: discard while swapping only if
- SWAP_FLAG_DISCARD_CLUSTER
-Message-ID: <20130521210628.GD20178@optiplex.redhat.com>
-References: <cover.1369092449.git.aquini@redhat.com>
- <e3ae11727f13e1580ae66ce80845e9002ec90ea6.1369092449.git.aquini@redhat.com>
- <519AC605.4070709@gmail.com>
+	id S1753769Ab3EUVKt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:10:49 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60265 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3EUVKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:10:48 -0400
+Date: Tue, 21 May 2013 14:09:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 13/13] rcu: Shrink TINY_RCU by reworking
+ CPU-stall ifdefs
+Message-ID: <20130521210957.GV3578@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130520145751.GA32218@linux.vnet.ibm.com>
+ <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1369061900-546-13-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130521173140.GA3878@jtriplet-mobl1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519AC605.4070709@gmail.com>
+In-Reply-To: <20130521173140.GA3878@jtriplet-mobl1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052121-5518-0000-0000-00000EE29E6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Kosaki-san,
-
-Thanks for your time over this one :)
-
-On Mon, May 20, 2013 at 08:55:33PM -0400, KOSAKI Motohiro wrote:
-> (5/20/13 8:04 PM), Rafael Aquini wrote:
-> > Intruduce a new flag to make page-cluster fine-grained discards while swapping
-> > conditional, as they can be considered detrimental to some setups. However,
-> > keep allowing batched discards at sys_swapon() time, when enabled by the
-> > system administrator. 
+On Tue, May 21, 2013 at 10:31:41AM -0700, Josh Triplett wrote:
+> On Mon, May 20, 2013 at 07:58:20AM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > > 
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > TINY_RCU's reset_cpu_stall_ticks() and check_cpu_stalls() functions
+> > are defined unconditionally, and are empty functions if CONFIG_RCU_TRACE
+> > is disabled (which in turns disables detection of RCU CPU stalls).
+> > These empty functions can add a bit of bloat to TINY_RCU, so this
+> > commit reworks the ifdefs so that these functions are defined only
+> > if they actually do something.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Strange.  Both of these functions are static, and called in only one
+> place, so shouldn't the compiler inline them (and thus throw them away
+> completely when empty)?  Why does it not do so?
+
+Good point for most architectures.  But given Tiny RCU's purpose, it
+should allow for stupid compilers.  And I do need to fix the commit
+message to call out the other benefit, namely saving a couple of
+lines of source code.
+
+							Thanx, Paul
+
+> - Josh Triplett
+> 
 > > ---
-> >  include/linux/swap.h |  8 +++++---
-> >  mm/swapfile.c        | 12 ++++++++----
-> >  2 files changed, 13 insertions(+), 7 deletions(-)
+> >  kernel/rcutiny.c        | 4 ++--
+> >  kernel/rcutiny_plugin.h | 6 ++----
+> >  2 files changed, 4 insertions(+), 6 deletions(-)
 > > 
-> > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > index 1701ce4..ab2e742 100644
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -19,10 +19,11 @@ struct bio;
-> >  #define SWAP_FLAG_PREFER	0x8000	/* set if swap priority specified */
-> >  #define SWAP_FLAG_PRIO_MASK	0x7fff
-> >  #define SWAP_FLAG_PRIO_SHIFT	0
-> > -#define SWAP_FLAG_DISCARD	0x10000 /* discard swap cluster after use */
-> > +#define SWAP_FLAG_DISCARD	0x10000 /* enable discard for swap areas */
-> > +#define SWAP_FLAG_DISCARD_CLUSTER 0x20000 /* discard swap clusters after use */
+> > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+> > index 4adc9e2..aa34411 100644
+> > --- a/kernel/rcutiny.c
+> > +++ b/kernel/rcutiny.c
+> > @@ -204,7 +204,7 @@ static int rcu_is_cpu_rrupt_from_idle(void)
+> >   */
+> >  static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
+> >  {
+> > -	reset_cpu_stall_ticks(rcp);
+> > +	RCU_TRACE(reset_cpu_stall_ticks(rcp));
+> >  	if (rcp->rcucblist != NULL &&
+> >  	    rcp->donetail != rcp->curtail) {
+> >  		rcp->donetail = rcp->curtail;
+> > @@ -251,7 +251,7 @@ void rcu_bh_qs(int cpu)
+> >   */
+> >  void rcu_check_callbacks(int cpu, int user)
+> >  {
+> > -	check_cpu_stalls();
+> > +	RCU_TRACE(check_cpu_stalls());
+> >  	if (user || rcu_is_cpu_rrupt_from_idle())
+> >  		rcu_sched_qs(cpu);
+> >  	else if (!in_softirq())
+> > diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+> > index 65ef180..0cd385a 100644
+> > --- a/kernel/rcutiny_plugin.h
+> > +++ b/kernel/rcutiny_plugin.h
+> > @@ -158,15 +158,11 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
+> >  		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
+> >  }
+> >  
+> > -#endif /* #ifdef CONFIG_RCU_TRACE */
+> > -
+> >  static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
+> >  {
+> > -#ifdef CONFIG_RCU_TRACE
+> >  	rcp->ticks_this_gp = 0;
+> >  	rcp->gp_start = jiffies;
+> >  	rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
+> > -#endif /* #ifdef CONFIG_RCU_TRACE */
+> >  }
+> >  
+> >  static void check_cpu_stalls(void)
+> > @@ -174,3 +170,5 @@ static void check_cpu_stalls(void)
+> >  	RCU_TRACE(check_cpu_stall(&rcu_bh_ctrlblk));
+> >  	RCU_TRACE(check_cpu_stall(&rcu_sched_ctrlblk));
+> >  }
+> > +
+> > +#endif /* #ifdef CONFIG_RCU_TRACE */
+> > -- 
+> > 1.8.1.5
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> From point of backward compatibility view, 0x10000 should be disable both discarding
-> when mount and when IO.
 
-I think you mean 0x10000 should be enable both here, then. That's a nice catch. I'll
-try to think a way to accomplish it in a simple fashion.
-
-
-> And, introducing new two flags, enable mount time discard and enable IO time discard.
-> 
-> IOW, Please consider newer kernel and older swapon(8) conbination.
-> Other than that, looks good to me.
-> 
-> 
