@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3EUNSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:18:12 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:59191 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751724Ab3EUNSL (ORCPT
+	id S1754305Ab3EUNTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:19:53 -0400
+Received: from canardo.mork.no ([148.122.252.1]:44897 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3EUNTv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:18:11 -0400
-Date: Tue, 21 May 2013 14:17:34 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: compiling issue for allmodconfig, need
- "asm/parport.h" by "drivers/parport/parport_pc.c"
-Message-ID: <20130521131734.GD27002@arm.com>
-References: <5177551D.8090007@asianux.com>
- <20130424082237.GA23397@arm.com>
- <5177B1F0.10106@asianux.com>
- <20130424102327.GF21850@mudshark.cambridge.arm.com>
- <5177BAD0.9000500@asianux.com>
- <20130424110511.GK23397@arm.com>
- <5199A453.4080402@asianux.com>
+	Tue, 21 May 2013 09:19:51 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: Schmiedl Christian <Christian.Schmiedl@gemalto.com>
+Cc: "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
+Subject: Re: [PATCH] qmi_wwan: Added support for Cinterion's PLxx WWAN Interface
+Organization: m
+References: <376FB829F3ECB542B825EAF4D8CA8A97013E8459E48B@CROEXCFWP03.gemalto.com>
+Date: Tue, 21 May 2013 15:19:43 +0200
+In-Reply-To: <376FB829F3ECB542B825EAF4D8CA8A97013E8459E48B@CROEXCFWP03.gemalto.com>
+	(Schmiedl Christian's message of "Tue, 21 May 2013 14:07:17 +0200")
+Message-ID: <877gislbbk.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5199A453.4080402@asianux.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 05:19:31AM +0100, Chen Gang wrote:
-> 
-> Need add the default file in 'asm/Kbuild' just like arm has done.
-> 
-> The build command is:
->   make EXTRA_CFLAGS=-W ARCH=arm64 allmodconfig
->   make EXTRA_CFLAGS=-W ARCH=arm64 menuconfig
->     set "aarch64-linux-gnu-" as cross compiling prefix.
->   make EXTRA_CFLAGS=-W ARCH=arm64
-> 
-> The related error:
->   drivers/parport/parport_pc.c:67:25: fatal error: asm/parport.h: No such file or directory
+Schmiedl Christian <Christian.Schmiedl@gemalto.com> writes:
 
-As I don't see when we'd need this driver, you can probably change the
-Kconfig entry (similar to the VGA_CONSOLE one).
+> From: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+>
+> Added support for Cinterion's PLxx WWAN Interface by adding QMI_FIXED_INTF with
+> Cinterion's Vendor ID as well as Product ID and WWAN Interface Number.
+>
+> Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+> Signed-off-by: Christian Schmiedl <christian.schmiedl@gemalto.com>
+> ---
+> patch is against linux-3.9
+> --- linux-3.9/drivers/net/usb/qmi_wwan.c.orig	2013-05-06 08:10:11.170034451 +0200
+> +++ linux-3.9/drivers/net/usb/qmi_wwan.c	2013-05-06 08:58:00.800264179 +0200
+> @@ -569,6 +569,7 @@ static const struct usb_device_id produc
+>  	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+>  	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
+>  	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+> +	{QMI_FIXED_INTF(0x1e2d, 0x12d1, 4)},	/* Cinterion PLxx */
+>
+>  	/* 4. Gobi 1000 devices */
+>  	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
 
-Thanks.
-
--- 
-Catalin
+Acked-by: Bjørn Mork <bjorn@mork.no>
