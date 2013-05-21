@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3EUOZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:25:30 -0400
-Received: from 8bytes.org ([85.214.48.195]:48052 "EHLO mail.8bytes.org"
+	id S1754001Ab3EUO0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:26:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16523 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753842Ab3EUOZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:25:27 -0400
-Date: Tue, 21 May 2013 16:25:23 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-kernel@vger.kernel.org, mingo@redhat.com,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-Message-ID: <20130521142523.GD7424@8bytes.org>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <519A4429.30405@amd.com>
- <20130521091157.GD26912@twins.programming.kicks-ass.net>
- <519B76CB.1000208@amd.com>
- <20130521135231.GK26912@twins.programming.kicks-ass.net>
+	id S1753114Ab3EUO0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 10:26:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,714,1363158000"; 
+   d="scan'208";a="341118674"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v4 net-next 0/4] net: low latency Ethernet device polling
+To: Dave Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 21 May 2013 17:26:41 +0300
+Message-ID: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521135231.GK26912@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue May 21 16:25:24 2013
-X-DSPAM-Confidence: 0.9987
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 519b83d423346511488930
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Hello Dave,
 
-On Tue, May 21, 2013 at 03:52:31PM +0200, Peter Zijlstra wrote:
-> OK, I'll take them and will push them to Ingo.
+I believe that I addressed the issues that were raised.
+Please look and see if you have more comments.
 
-Please wait with that until I had a look at the IOMMU pieces.
+Thank you all for your input.
+
+To prevent the use of a stale napi pointer, I implemented a global id
+that should be incremented whenever a napi is freed.
+I used the free space in skb's second bitfield (7 bits) since I did not
+want to increase the size of the structure. In an earlier attempt to do
+this I chopped the global id to seven bits but in testing, this would
+crash on the wrap-around. 
+Now if the seven bits that are in the skb match the global id, 
+we save the un-chopped id in the socket.
+(This removes the module parameter and the limit on unloading.)
+
+
+is this how you prefer the change log?
+
+change log
+v4
+- removed separate config option for TCP busy-polling as suggested Eric Dumazet.
+- added linux mib counter for packets received through the low latency path.
+- re-allow module unloading, remove module param, use a global generation id
+  instead to prevent the use of a stale napi pointer, as suggested
+  by Eric Dumazet
+- updated Documentation/networking/ip-sysctl.txt text
+
+v3
+- coding style changes suggested by Dave Miller
+
+v2
+- the sysctl knob is now in microseconds. The default value is now 0 (off).
+- for now the code depends at configure time on CONFIG_I86_TSC 
+- the napi reference in struct skb is now a union with the dma cookie
+  since the former is only used on RX and the latter on TX,
+  as suggested by Eric Dumazet.
+- we do a better job at honoring non-blocking operations.
+- removed busy-polling support for tcp_read_sock()
+- remove dynamic disabling of GRO
+- coding style fixes
+- disallow unloading the device module after the feature has been used
 
 Thanks,
-
-	Joerg
-
-
+Eliezer
