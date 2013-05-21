@@ -1,129 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab3EUQRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:17:23 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:45873 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3EUQRW (ORCPT
+	id S1754816Ab3EUQRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:17:37 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:51702 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab3EUQRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:17:22 -0400
+	Tue, 21 May 2013 12:17:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369122001.4432.14.camel@ymzhang.sh.intel.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <20130520224824.GA31740@google.com> <1369122001.4432.14.camel@ymzhang.sh.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 21 May 2013 10:17:01 -0600
-Message-ID: <CAErSpo5Ysg48TJMVRLZpEWuFy1q-Eu5hTJVhtOST9sEFZJoduA@mail.gmail.com>
-Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-To: "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
-Cc: "Zhang, LongX" <longx.zhang@intel.com>,
-        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Joseph.Liu@Emulex.Com" <Joseph.Liu@emulex.com>
+In-Reply-To: <51995A78.20207@signal11.us>
+References: <1368112788-25701-1-git-send-email-david@hauweele.net>
+	<1368112788-25701-2-git-send-email-david@hauweele.net>
+	<5191B5C4.2020609@signal11.us>
+	<CAO+c-UWi5UH-ZN5G0JiJCrCrScaYprKT7jLpFH0wEJecgoHgig@mail.gmail.com>
+	<51995A78.20207@signal11.us>
+Date: Tue, 21 May 2013 18:17:34 +0200
+X-Google-Sender-Auth: emZ5FKe03eZJu6WevS8APadui8o
+Message-ID: <CAO+c-UXymPjYysvh2kM36gcOsL3P51YWq+aYhEqX8oCySwBcaQ@mail.gmail.com>
+Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
+ line enabled
+From: David Hauweele <david@hauweele.net>
+To: Alan Ott <alan@signal11.us>
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 1:40 AM, Yanmin Zhang
-<yanmin_zhang@linux.intel.com> wrote:
-> On Mon, 2013-05-20 at 16:48 -0600, Bjorn Helgaas wrote:
->> On Fri, Apr 26, 2013 at 06:28:59AM +0000, Zhang, LongX wrote:
->> > From: Zhang Long <longx.zhang@intel.com>
->> >
->> > Specific pci device drivers might have many functions to call
->> > pci_channel_offline to check device states. When slot_reset happens,
->> > drivers' slot_reset callback might call such functions and eventually
->> > abort the reset.
->> >
->> > The patch resets pdev->error_state to pci_channel_io_normal at
->> > the begining of report_slot_reset.
->> >
->> > Thank Liu Joseph for pointing it out.
->> >
->> > Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
->> > Signed-off-by: Zhang Long <longx.zhang@intel.com>
->> > ---
->> >  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
->> >  drivers/pci/pcie/portdrv_pci.c     |   12 +++++-------
->> >  2 files changed, 6 insertions(+), 7 deletions(-)
-> Thank all for the kind comments.
+2013/5/20 Alan Ott <alan@signal11.us>:
+> On 05/16/2013 05:34 PM, David Hauweele wrote:
+>> I have seen the interrupt line going low forever with heavy traffic.
 >
->> >
->> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
->> > index 564d97f..c61fd44 100644
->> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
->> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
->> > @@ -286,6 +286,7 @@ static int report_slot_reset(struct pci_dev *dev, void *data)
->> >     result_data = (struct aer_broadcast_data *) data;
->> >
->> >     device_lock(&dev->dev);
->> > +   dev->error_state = pci_channel_io_normal;
->> >     if (!dev->driver ||
->> >             !dev->driver->err_handler ||
->> >             !dev->driver->err_handler->slot_reset)
->> > diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
->> > index ed4d094..7abefd9 100644
->> > --- a/drivers/pci/pcie/portdrv_pci.c
->> > +++ b/drivers/pci/pcie/portdrv_pci.c
->> > @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
->> >     pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
->> >     int retval;
->> >
->> > -   /* If fatal, restore cfg space for possible link reset at upstream */
->> > -   if (dev->error_state == pci_channel_io_frozen) {
->> > -           dev->state_saved = true;
->> > -           pci_restore_state(dev);
->> > -           pcie_portdrv_restore_config(dev);
->> > -           pci_enable_pcie_error_reporting(dev);
->> > -   }
->> > +   /* restore cfg space for possible link reset at upstream */
->> > +   dev->state_saved = true;
-> It's indeed a dirty trick to change it to true. The reason is suspend. The port would
-> suspend/resume at suspend-to-ram. When the port is suspended, PCI power framework calls
-> pci_save_state. When the port is resumed, PCI framework calls pci_restore_state and
-> dev->state_saved is set to false.
+> Hi David,
+>
+> I've been doing some testing today and I can reproduce your issue if I
+> ping -f both ways simultaneously (after about 3-4 minutes usually). I
+> think it has more to do with the tx/rx mutual exclusion that you
+> described in patch 1/1 than it does with the disable/enable IRQ. With
+> respect to enable/disable irq, I did some checking of other similar
+> drivers (non-ieee802154) and noticed that many of them use threaded
+> interrupts. I think this may be closer to the right way to do it.
 
-I can read the code as well as you can.  The above does nothing to
-explain why dev->saved_config_space is still valid even when
-state_saved is false.
+Hi Alan,
 
-But I want to drop this issue because it was there before your patch,
-and we're clearly not going to resolve it here.
+Indeed, threaded interrupts would be more appropriate.
+What about spi_async ? We could avoid using any working queue with this call.
+Although the driver would need a major rewrite and I've no clue about
+the benefits of doing so.
+I wonder how much additional latency is introduced by the working
+queue, I will try to measure this today.
 
-> A better solution is to add double space in pci_dev->saved_config_space/saved_cap_space,
-> which seems consume unnecessary resource.
 >
->> > +   pci_restore_state(dev);
->> > +   pcie_portdrv_restore_config(dev);
->> > +   pci_enable_pcie_error_reporting(dev);
->> >
->> >     /* get true return value from &status */
->> >     retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
->> I think this patch changes the behavior in the case of a non-fatal error
->> where one of the .error_detected() methods returned
->> PCI_ERS_RESULT_NEED_RESET.  In that case, pcie_portdrv_slot_reset()
->> previously did not restore config space, but after your patch, it *will*
->> restore it.  We need an explanation of why this is safe.
-> AER standard doesn't define such behavior like if we need reset a slot.
-> When we implemented the feature in kernel, we assumed at non-fatal error,
-> config space is still good.
+> Are you running a tickless kernel? What is your preemption model? What's
+> your hardware platform?
+
+This is a tickless kernel with CONFIG_PREEMPT on an RPi.
+
 >
-> With the new patch, we change the behavior a little.
->
+>> The at86rf230 driver has two isr, one for edge-triggered and another
+>> for level-triggered interrupt. The latter uses
+>> disable_irq_nosync/enable_irq which makes sense for level-triggered
+>> interrupt. Otherwise the interrupt would be triggered again and again
+>> until the scheduled work read the status register.
 >>
->> I think you should split this into two patches: the first would remove the
->> "if (dev->error_state == pci_channel_io_frozen)" test from portdrv_pci.c
-> The first patch would depend on the 2nd patch as 2nd patch resets error_state
-> to pci_channel_io_normal.
+>> However I don't see the use of disable_irq/enable_irq with an
+>> edge-triggered interrupt. Perhaps I'm missing something. Though I
+>> don't see any harm using it anyway.
+>
+> My understanding based on the datasheet is that the interrupt can be
+> asserted again as soon as INTSTAT is read (which is done in the
+> workqueue). I guess even if it happens while the workqueue is running,
+> it's ok.
 
-Not true.  The pcie_portdrv_slot_reset() change does not depend on the
-report_slot_reset() change.  If the first patch makes
-pcie_portdrv_slot_reset() do the restore without even looking at
-dev->error_state, there's no dependency on the report_slot_reset()
-change.
+You're right, as soon as INTSTAT is read, the line should be driven
+high again to assert another interrupt.
+So it shouldn't pose any problem if the interrupts are replayed by the
+kernel. What may happen however is
+an error in the spi transfer. This would result in the line staying
+low since the register hasn't really been read.
+This is what I observed at the hardware level.
 
->> and explain the reason, and the second would make the aerdrv_core.c change.
+If this is the case, then the problem should also occurs with and
+without disable/enable_irq. However this bug
+is a bit harder to reproduce as it may take several hours. The only
+solution I see would be to regularly poll the
+INTSTAT register for recovering. I know about other drivers which do
+this so I will look into this and work on a fix.
 
-Bjorn
+>
+> I think I had a flawed understanding of schedule_work() before, thinking
+> that it would not schedule a work_struct it if the work_struct was running.
+>
+>>  As you said the interrupt should
+>> be delayed until enable_irq() is called. In particular when
+>> CONFIG_HARDIRQS_SW_RESEND is set.
+>
+> I think I agree with you. I'll send you a patch to try with threaded
+> interrupts to try.
+>
+> I'm trying to determine exactly what's the cause of the interrupt line
+> being stuck low.
+>
+
+I tried your patch for INIT_COMPLETION. It doesn't fix the problem but
+I agree with you for the race condition.
+
+David
+
+>>
+>> 2013/5/14 Alan Ott <alan@signal11.us>:
+>>> On 5/9/13 11:19 AM, David Hauweele wrote:
+>>>> Disabling the interrupt line could miss an IRQ and leave the line into a
+>>>> low state hence locking the driver.
+>>>>
+>>> Have you observed this? My understanding is that the interrupt won't be lost
+>>> but instead delayed until enable_irq() is called.
+>>>
+>>> I got this pattern from the other 802.15.4 drivers. Perhaps my understanding
+>>> is wrong.
+>>>
+>>>
+>>>
+>>>> Signed-off-by: David Hauweele <david@hauweele.net>
+>>>> ---
+>>>>   drivers/net/ieee802154/mrf24j40.c |    7 +------
+>>>>   1 file changed, 1 insertion(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/drivers/net/ieee802154/mrf24j40.c
+>>>> b/drivers/net/ieee802154/mrf24j40.c
+>>>> index 1e3ddf3..6ef32f7 100644
+>>>> --- a/drivers/net/ieee802154/mrf24j40.c
+>>>> +++ b/drivers/net/ieee802154/mrf24j40.c
+>>>> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
+>>>>   {
+>>>>         struct mrf24j40 *devrec = data;
+>>>>
+>>>> -       disable_irq_nosync(irq);
+>>>> -
+>>>>         schedule_work(&devrec->irqwork);
+>>>>
+>>>>         return IRQ_HANDLED;
+>>>> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>>>>         /* Read the interrupt status */
+>>>>         ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
+>>>>         if (ret)
+>>>> -               goto out;
+>>>> +               return;
+>>>>
+>>>>         /* Check for TX complete */
+>>>>         if (intstat & 0x1)
+>>>> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
+>>>>         /* Check for Rx */
+>>>>         if (intstat & 0x8)
+>>>>                 schedule_work(&devrec->rxwork);
+>>>> -
+>>>> -out:
+>>>> -       enable_irq(devrec->spi->irq);
+>>>>   }
+>>>>
+>>>>   static void mrf24j40_rxwork(struct work_struct *work)
+>>>>
+>
+>
