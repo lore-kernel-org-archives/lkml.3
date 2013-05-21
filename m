@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab3EUWiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:38:51 -0400
-Received: from mout.gmx.net ([212.227.17.21]:53395 "EHLO mout.gmx.net"
+	id S1754093Ab3EUWi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:38:58 -0400
+Received: from mout.gmx.net ([212.227.15.15]:52926 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab3EUWit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:38:49 -0400
+	id S1752116Ab3EUWi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:38:56 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+eifY5tz+euQ9uXDj6bB8MZJmlB1WTus4mGiXC7m
-	itSc1E+KwHerlk
+X-Provags-ID: V01U2FsdGVkX1+QyEVk9auQvMN1d4m04kjGc2r+uV1pG77mA8olOO
+	lSqwq3tW1u2/my
 From: Peter Huewe <peterhuewe@gmx.de>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Peter Huewe <peterhuewe@gmx.de>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        netdev@vger.kernel.org (open list:TULIP NETWORK DRI...),
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Pirko <jiri@resnulli.us>, Bill Pemberton <wfp5p@virginia.edu>,
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 06/19] net/ethernet/dec/tulip/xircom_cb: Use module_pci_driver to register driver
-Date: Wed, 22 May 2013 00:42:11 +0200
-Message-Id: <1369176146-19383-6-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 07/19] net/ethernet/toshiba/tc35815: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 00:42:12 +0200
+Message-Id: <1369176146-19383-7-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
 References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
@@ -31,31 +32,33 @@ register and unregister in the otherwise empty init/exit functions.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/net/ethernet/dec/tulip/xircom_cb.c | 14 +-------------
+ drivers/net/ethernet/toshiba/tc35815.c | 14 +-------------
  1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/net/ethernet/dec/tulip/xircom_cb.c b/drivers/net/ethernet/dec/tulip/xircom_cb.c
-index cdbcd16..9b84cb0 100644
---- a/drivers/net/ethernet/dec/tulip/xircom_cb.c
-+++ b/drivers/net/ethernet/dec/tulip/xircom_cb.c
-@@ -1171,16 +1171,4 @@ investigate_write_descriptor(struct net_device *dev,
- 	}
- }
+diff --git a/drivers/net/ethernet/toshiba/tc35815.c b/drivers/net/ethernet/toshiba/tc35815.c
+index fe25609..a971b9c 100644
+--- a/drivers/net/ethernet/toshiba/tc35815.c
++++ b/drivers/net/ethernet/toshiba/tc35815.c
+@@ -2209,18 +2209,6 @@ MODULE_PARM_DESC(speed, "0:auto, 10:10Mbps, 100:100Mbps");
+ module_param_named(duplex, options.duplex, int, 0);
+ MODULE_PARM_DESC(duplex, "0:auto, 1:half, 2:full");
  
--static int __init xircom_init(void)
+-static int __init tc35815_init_module(void)
 -{
--	return pci_register_driver(&xircom_ops);
+-	return pci_register_driver(&tc35815_pci_driver);
 -}
 -
--static void __exit xircom_exit(void)
+-static void __exit tc35815_cleanup_module(void)
 -{
--	pci_unregister_driver(&xircom_ops);
+-	pci_unregister_driver(&tc35815_pci_driver);
 -}
 -
--module_init(xircom_init)
--module_exit(xircom_exit)
+-module_init(tc35815_init_module);
+-module_exit(tc35815_cleanup_module);
 -
-+module_pci_driver(xircom_ops);
++module_pci_driver(tc35815_pci_driver);
+ MODULE_DESCRIPTION("TOSHIBA TC35815 PCI 10M/100M Ethernet driver");
+ MODULE_LICENSE("GPL");
 -- 
 1.8.1.5
 
