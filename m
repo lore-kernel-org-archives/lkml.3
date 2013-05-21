@@ -1,123 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab3EUVGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:06:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24113 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab3EUVG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:06:29 -0400
-X-IronPort-AV: E=Sophos;i="4.87,716,1363158000"; 
-   d="scan'208";a="49437723"
-Date: Tue, 21 May 2013 14:06:27 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] gpio: msm: Add device tree and irqdomain support
- for gpio-msm-v2
-Message-ID: <20130521210627.GA599@codeaurora.org>
-References: <1369161163-6448-1-git-send-email-rvaswani@codeaurora.org>
- <1369161163-6448-4-git-send-email-rvaswani@codeaurora.org>
+	id S1753906Ab3EUVG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:06:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab3EUVG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:06:56 -0400
+Date: Tue, 21 May 2013 18:06:32 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
+        kzak@redhat.com, jmoyer@redhat.com, riel@redhat.com,
+        lwoodman@redhat.com, mgorman@suse.de
+Subject: Re: [RFC PATCH 01/02] swap: discard while swapping only if
+ SWAP_FLAG_DISCARD_CLUSTER
+Message-ID: <20130521210628.GD20178@optiplex.redhat.com>
+References: <cover.1369092449.git.aquini@redhat.com>
+ <e3ae11727f13e1580ae66ce80845e9002ec90ea6.1369092449.git.aquini@redhat.com>
+ <519AC605.4070709@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369161163-6448-4-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <519AC605.4070709@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 87d5670..f3c1978 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -165,7 +165,7 @@ config GPIO_MSM_V1
->  
->  config GPIO_MSM_V2
->  	tristate "Qualcomm MSM GPIO v2"
-> -	depends on GPIOLIB && ARCH_MSM
-> +	depends on GPIOLIB && ARCH_MSM && OF
+Howdy Kosaki-san,
 
-This doesn't actually rely on ARCH_MSM anymore so I think we can
-drop that dependency.
+Thanks for your time over this one :)
 
->  	help
->  	  Say yes here to support the GPIO interface on ARM v7 based
->  	  Qualcomm MSM chips.  Most of the pins on the MSM can be
-> @@ -222,7 +229,6 @@ static void msm_gpio_update_dual_edge_pos(unsigned gpio)
->  		else
->  			set_gpio_bits(BIT(INTR_POL_CTL), GPIO_INTR_CFG(gpio));
->  		val2 = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN);
-> -		intstat = readl(GPIO_INTR_STATUS(gpio)) & BIT(INTR_STATUS);
->  		if (intstat || val == val2)
+On Mon, May 20, 2013 at 08:55:33PM -0400, KOSAKI Motohiro wrote:
+> (5/20/13 8:04 PM), Rafael Aquini wrote:
+> > Intruduce a new flag to make page-cluster fine-grained discards while swapping
+> > conditional, as they can be considered detrimental to some setups. However,
+> > keep allowing batched discards at sys_swapon() time, when enabled by the
+> > system administrator. 
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> > ---
+> >  include/linux/swap.h |  8 +++++---
+> >  mm/swapfile.c        | 12 ++++++++----
+> >  2 files changed, 13 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index 1701ce4..ab2e742 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -19,10 +19,11 @@ struct bio;
+> >  #define SWAP_FLAG_PREFER	0x8000	/* set if swap priority specified */
+> >  #define SWAP_FLAG_PRIO_MASK	0x7fff
+> >  #define SWAP_FLAG_PRIO_SHIFT	0
+> > -#define SWAP_FLAG_DISCARD	0x10000 /* discard swap cluster after use */
+> > +#define SWAP_FLAG_DISCARD	0x10000 /* enable discard for swap areas */
+> > +#define SWAP_FLAG_DISCARD_CLUSTER 0x20000 /* discard swap clusters after use */
+> 
+> From point of backward compatibility view, 0x10000 should be disable both discarding
+> when mount and when IO.
 
-Looks like intstat is used uninitialized now?
+I think you mean 0x10000 should be enable both here, then. That's a nice catch. I'll
+try to think a way to accomplish it in a simple fashion.
 
-> +
-> +static int msm_gpio_probe(struct platform_device *pdev)
-> +{
-> +	int i, irq, ret, ngpio;
-> +	struct resource *res;
-> +
-> +	msm_gpio.gpio_chip.label = pdev->name;
-> +	msm_gpio.gpio_chip.dev = &pdev->dev;
-> +	of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio);
 
-Fail probe if the property isn't there?
-
-> +	msm_gpio.gpio_chip.ngpio = ngpio;
-> +
-> +	res = platform_get_resource(&pdev->dev, IORESOURCE_MEM, 0);
-> +	if (!res) {
-> +		dev_err(&pdev->dev, "%s: no mem resource\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
-> +	msm_tlmm_base = devm_ioremap_resource(pdev->dev, res);
-> +	if (!msm_tlmm_base) {
-> +		dev_err(&pdev->dev, "Couldn't allocate memory for msm tlmm base\n");
-> +		return -ENOMEM;
-> +	}
-
-devm_ioremap_resource() returns an ERR_PTR on failure, not NULL.
-Also, it already prints messages on errors so you can drop all the
-prints around this. Just do
-
-	res = platform_get_resource(&pdev->dev, IORESOURCE_MEM, 0);
-	msm_tlmm_base = devm_ioremap_resource(pdev->dev, res);
-	if (IS_ERR(msm_tlmm_base))
-		return ERR_PTR(msm_tlmm_base);
-  
-
->  static int __init msm_gpio_init(void)
->  {
-> -	int rc;
-> -
-> -	rc = platform_driver_register(&msm_gpio_driver);
-> -	if (!rc) {
-> -		rc = platform_device_register(&msm_device_gpio);
-> -		if (rc)
-> -			platform_driver_unregister(&msm_gpio_driver);
-> -	}
-> -
-> -	return rc;
-> +	return platform_driver_register(&msm_gpio_driver);
->  }
->  
->  static void __exit msm_gpio_exit(void)
->  {
-> -	platform_device_unregister(&msm_device_gpio);
->  	platform_driver_unregister(&msm_gpio_driver);
->  }
-
-You could use module_platform_driver here now too.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> And, introducing new two flags, enable mount time discard and enable IO time discard.
+> 
+> IOW, Please consider newer kernel and older swapon(8) conbination.
+> Other than that, looks good to me.
+> 
+> 
