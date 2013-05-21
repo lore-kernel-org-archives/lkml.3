@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab3EUJET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:04:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33140 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752467Ab3EUJER (ORCPT
+	id S1753042Ab3EUJE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:04:27 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.29]:36382 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab3EUJEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:04:17 -0400
-Date: Tue, 21 May 2013 10:03:36 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: need extern variable 'screen_info' for
- related driver using.
-Message-ID: <20130521090336.GC10453@mudshark.cambridge.arm.com>
-References: <5199B7D6.40907@asianux.com>
- <20130520091008.GB31359@mudshark.cambridge.arm.com>
- <519AE6D7.1090401@asianux.com>
- <CAMuHMdWNHPDkf35MYMKnxt5pn3a+dsT4jgYxuuHrp+mpZMckfw@mail.gmail.com>
- <519B278B.6030708@asianux.com>
+	Tue, 21 May 2013 05:04:24 -0400
+X-Greylist: delayed 497 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 05:04:24 EDT
+Message-ID: <519B3571.3070601@ladisch.de>
+Date: Tue, 21 May 2013 10:50:57 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519B278B.6030708@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: good1.2guy@gmail.com
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [Alsa-devel] add support for syba 7.1 surround sound card
+References: <51804394.a36cec0a.2c7d.291b@mx.google.com>
+In-Reply-To: <51804394.a36cec0a.2c7d.291b@mx.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 08:51:39AM +0100, Chen Gang wrote:
-> On 05/21/2013 02:57 PM, Geert Uytterhoeven wrote:
-> > On Tue, May 21, 2013 at 5:15 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> >>> >> I think it would be better if we added a something like
-> >>> >> CONFIG_HAVE_VGA_CONSOLE, which VGA_CONSOLE can then depend on. Architectures
-> >>> >> like x86 can then select the former, and we can remove the long list of
-> >>> >> architectures from the current option.
-> >> >
-> >> > I guess your meaning is:
-> >> >
-> >> >   under arm64, actually, need not support 'VGA_CONSOLE', and 'screen_info' is useless.
-> >> >   So better to define 'CONFIG_HAVE_VGA_CONSOLE' which 'VGA_CONSOLE' can depend on it, and in arm64, we do not define CONFIG_HAVE_VGA_CONSOLE.
-> >> >
-> >> > Is it correct ?
-> > No, you missed "and we can remove the long list of architectures from the
-> > current option".
-> > 
-> 
-> OK, thanks.
-> 
-> Is it correct: "it is unnecessary to add 'screen_info' to the code, for
-> arm64 will never support 'VGA_CONSOLE'" ?
+good1.2guy@gmail.com wrote:
+> Summary: add support for syba 7.1 surround sound card
+> Keywords: syba via VT1723 Tremor
+> Kernel: 3.8.8-203.fc18.x86_64
 
-We can add the screen_info if and when we need to support a VGA console. In
-the meantime, let's not add things on a whim.
+What are these three lines for?
 
-> >> > If so, I recommend to add depend item for VGA_CONSOLE directly:
-> > I strongly support CONFIG_HAVE_VGA_CONSOLE.
-> 
-> For me, I still recommend add 'ARM64' in the long list of architectures
-> for 'VGA_CONSOLE', I have 3 reasons, please check:
-> 
-> a. current implementation only changes one area which only related with
-> arm64 and 'VGA_CONSOLE', but if use 'CONFIG_HAVE_VGA_CONSOLE', that will
-> touch many multiple platforms dependency, at least we need discuss about
-> it with multiple platforms guys for it, firstly.
+> add support for syba 7.1 surround sound card
+> actually the card only has 6 dmas, so it is really only 5.1
 
-That's a weak argument. You might as well propose the cleanup and see what
-people say.
+The website shows a daughterboard.
 
-> b. We can find some cases to use CONFIG_HAVE_* as dpend on, but I can
-> not find any cases which let CONFIG_'samename' depend on
-> CONFIG_HAVE_'samename'.
+> added code to force_rate setting to not fail EBUSY when the dmas are running.
+> suggest using force_rate with pulseaudio to avoid loops with error logging.
 
-Erm. PERF_EVENTS, BPF_JIT, IDE, ...?
+This sounds as if it has nothing to do with this particular SYBA card
+but affects all VT1723 cards.  Please move it into a separate patch.
 
-> c. The original way still has effect, although it seems not quit
-> beautiful, but it is correct and still clear for readers, it is still
-> sustainable.
+And there should be no reason for a module parameter; if this is a bug
+in the driver and/or in PulseAudio, it should be just fixed.
 
-Sure, it works, but we're just contributing to the mess that's been built up
-ever time another architecture has done the same thing. It's not hard to try
-and clean it up.
+> Signed-off-by: psmith2004@yahoo.com
 
-Will
+Real names only.
+
+Please read Documentation/SubmittingPatches.
+
+> +static void syba_quirk_open(struct snd_ice1712 *ice)
+> +{
+> +	unsigned long flags;
+
+It's common to have an empty line here.
+
+> +	spin_lock_irqsave(&ice->reg_lock, flags);
+> +	outb(0xff, ICEREG1724(ice, AC97_CFG));
+> +	udelay(500);
+> +	outb(ice->eeprom.data[ICE_EEP2_ACLINK], ICEREG1724(ice, AC97_CFG));
+> +	spin_unlock_irqrestore(&ice->reg_lock, flags);
+> +}
+
+What is the reason for this quirk?
+Is it possible that this might be needed for other cards using a AC'97
+codec?
+
+
+Regards,
+Clemens
