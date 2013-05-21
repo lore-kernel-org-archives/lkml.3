@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab3EUHNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:13:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44638 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3EUHNT (ORCPT
+	id S1756235Ab3EUHNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:13:36 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1768 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756088Ab3EUHNf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:13:19 -0400
-Date: Tue, 21 May 2013 00:13:15 -0700 (PDT)
-Message-Id: <20130521.001315.148105250495357251.davem@davemloft.net>
-To: thomas.petazzoni@free-electrons.com
-Cc: libo.chen@huawei.com, gregkh@linuxfoundation.org, samuel@sortiz.org,
-        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com,
-        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130521084108.1a585f32@skate>
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com>
-	<20130520.232619.964940909999914694.davem@davemloft.net>
-	<20130521084108.1a585f32@skate>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 21 May 2013 00:13:18 -0700 (PDT)
+	Tue, 21 May 2013 03:13:35 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+CC: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
+        David Rientjes <rientjes@google.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>,
+        Glauber Costa <glommer@openvz.org>, Dave Chinner <dchinner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2] mm: vmscan: add VM_BUG_ON on illegal return values from scan_objects
+Date: Tue, 21 May 2013 09:13:30 +0200
+Message-ID: <1369120410-18180-1-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.8.1.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Date: Tue, 21 May 2013 08:41:08 +0200
+Add a VM_BUG_ON to catch any illegal value from the shrinkers. It's a
+potential bug if scan_objects returns a negative other than -1 and
+would lead to undefined behaviour.
 
-> Dear David Miller,
-> 
-> On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
->> From: Libo Chen <libo.chen@huawei.com>
->> Date: Tue, 21 May 2013 10:42:00 +0800
->> 
->> > I find a lot of mistakes using struct platform_driver without owner.
->> > So I pick up some of them including usb and net modules
->> 
->> Instead of doing it this way, which is obviously error prone and
->> easy to forget, make platform_driver_register() be a macro which
->> sets the module owner field then calls the real
->> __platform_driver_register().
-> 
-> Or, maybe make the existing module_platform_driver() macro do this?
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+---
+ mm/vmscan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Even better.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6bac41e..63fec86 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -293,6 +293,7 @@ shrink_slab_one(struct shrinker *shrinker, struct shrink_control *shrinkctl,
+ 		ret = shrinker->scan_objects(shrinker, shrinkctl);
+ 		if (ret == -1)
+ 			break;
++		VM_BUG_ON(ret < -1);
+ 		freed += ret;
+ 
+ 		count_vm_events(SLABS_SCANNED, nr_to_scan);
+-- 
+1.8.1.5
+
