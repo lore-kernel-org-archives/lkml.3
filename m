@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab3EUGRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:17:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:57966 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756030Ab3EUGRe (ORCPT
+	id S1756175Ab3EUGR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:17:57 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24775 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab3EUGRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:17:34 -0400
-X-AuditID: cbfee68e-b7f276d000002279-6b-519b117d9998
+	Tue, 21 May 2013 02:17:54 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-52-519b1190fef5
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 4/8] rtc: rtc-mpc5121: use devm_*() functions
-Date: Tue, 21 May 2013 15:17:33 +0900
-Message-id: <000701ce55ea$e18326a0$a48973e0$@samsung.com>
+Subject: [PATCH 5/8] rtc: rtc-pm8xxx: use devm_*() functions
+Date: Tue, 21 May 2013 15:17:52 +0900
+Message-id: <000801ce55ea$ecdba950$c692fbf0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5V6uBoS50WB1eTTOuR8hP0FTG/9A==
+Thread-index: Ac5V6uwySmVn3U0XRZm0AWXxq1bX5g==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zQ91awdmBBuefa1osuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVsbZ/IVvBOf6KC4tXsDQwvuXpYuTkkBAwkTj5rpsFwhaTuHBvPVsXIxeHkMAyRomb
-	u5czwhTN23qKCSIxnVGi7d07qKpfjBInu/eCtbMJqEl8+XKYvYuRg0NEQF+irUUDpIZZoJtR
-	4lHzXGaQGmEBW4mNb78ygdgsAqoSz8/OANvAK2Ap0dO7DMoWlPgx+R7YTGYBLYn1O48zQdjy
-	EpvXvGWGuEhBYsfZ12D1IgJ6EruuLmaDqBGR2PfiHSPIYgmBQ+wSvUcms0AsE5D4NvkQC8hx
-	EgKyEpsOQM2RlDi44gbLBEaxWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQv
-	XS85P3cTIyT6+nYw3jxgfYgxGWj9RGYp0eR8YPTmlcQbGpsZWZiamBobmVuakSasJM6r1mId
-	KCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxXoikVKVdVeeZ78VlU1w2zEni6ilZJnfIQOeR
-	1Z/p+Tv6OnLFn8/orRZ8saJIRfLw6y+Rna1CPn4sCed27lhXsqPp9Xvlr7O5LR2uu5X8j7x3
-	yEZvecc8Vm3/53pNmjpNecbL79vOlzCfe8Kk+mOC7bRpivlt2T+NGFTNpibUVa+y4p2slqzE
-	UpyRaKjFXFScCAAhXanP1AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd1awdmBBk8vqVosuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLG2fyFbwTn+iguLV7A0ML7l6WLk5JAQMJGY
-	t/UUE4QtJnHh3nq2LkYuDiGB6YwSbe/eQTm/GCVOdu9lAaliE1CT+PLlMHsXIweHiIC+RFuL
-	BkgNs0A3o8Sj5rnMIDXCArYSG99+BZvKIqAq8fzsDEYQm1fAUqKndxmULSjxY/I9sJnMAloS
-	63ceZ4Kw5SU2r3nLDHGRgsSOs6/B6kUE9CR2XV3MBlEjIrHvxTvGCYwCs5CMmoVk1Cwko2Yh
-	aVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzi2n0ntYFzZYHGIUYCDUYmHV8BwVqAQ
-	a2JZcWXuIUYJDmYlEd7vzUAh3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgemnbySeENjEzMj
-	SyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYPTt/Jqetv7jjN1l11JKF5yT
-	bOBenTztnatsScW+3qhKNn7+K1tUXCeIn+GKkCsvOy4vynhA8P5RTz6Jr90aiwLyWqf2dJ91
-	KBL4Hbf1pF3nu3PhemfWKSlM+Oi7Ttzh6dTLQdn631qPnFAvcmbYbBFsGOS0JMxR+Y/SjrI1
-	s1kvPqoufBPArsRSnJFoqMVcVJwIABUMkioxAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zI90JgrMDDabf17RYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoErY/uWrSwFi6QqPm48wNTAuFa0i5GDQ0LARGL6Hf4uRk4gU0ziwr31bF2MXBxCAssY
+	JXauuMAIkTCR2L7vDjtEYhGjxM322awQzi9GiZPXmllBqtgE1CS+fDnMDjJVREBfoq1FA6SG
+	WaCbUeJR81xmkBphARuJYzf3sYHYLAKqEhuOfWAHsXkFLCXevH3DCmELSvyYfI8FxGYW0JJY
+	v/M4E4QtL7F5zVtmiIsUJHacfQ12nYiAnsTbY5tYIWpEJPa9eMcIslhC4BS7xPE1D9khlglI
+	fJt8iAXiZVmJTQeg5khKHFxxg2UCo9gsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kqlec
+	mFtcmpeul5yfu4kREnsTdzDeP2B9iDEZaP1EZinR5Hxg7OaVxBsamxlZmJqYGhuZW5qRJqwk
+	zqveYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTFlaUl26gIdzqLnRRtM3RfbSd4oPulW
+	aug75Z22tbW97dHG+BDnCq2OgxxHegQ4ny2fMfPF64k9JdxqiqtUJpgpFr3p37/VxHll9GTe
+	6Zbfz23grjO4zuJzJO19Z3juvMfMa3JYYrY57z1tK5y+NUS3M7L2oujWP44eC0z3TnG4PFnZ
+	mXv6SyWW4oxEQy3mouJEAK+4BCbTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jAd0JgrMDDc6/V7VYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWP7lq0sBYukKj5uPMDUwLhWtIuRk0NCwERi
+	+7477BC2mMSFe+vZuhi5OIQEFjFK3GyfzQrh/GKUOHmtmRWkik1ATeLLl8NAHRwcIgL6Em0t
+	GiA1zALdjBKPmucyg9QIC9hIHLu5jw3EZhFQldhw7APYBl4BS4k3b9+wQtiCEj8m32MBsZkF
+	tCTW7zzOBGHLS2xe85YZ4iIFiR1nXzOC2CICehJvj21ihagRkdj34h3jBEaBWUhGzUIyahaS
+	UbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzbz6R2MK5ssDjEKMDBqMTDK2A4
+	K1CINbGsuDL3EKMEB7OSCO/3ZqAQb0piZVVqUX58UWlOavEhxmSgTycyS4km5wPTTl5JvKGx
+	iZmRpZGZhZGJuTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MIZdmFSWW3bZZrvbpdya
+	PaKer1YcOLDh9U+TxIszLBacz1lmcGvWrjxWbus645gHrwJzT1vkhlscfyZ4W0Fhu2q8+MP3
+	k7YF5lyTqtCdqLlvhYDI37Qp1z0udroo3jlUdJLh/d2Tpdt/KJxIqSjme1v9OuH/uf0ir25n
+	V/Rd/ygzr7RA3YaJl0mJpTgj0VCLuag4EQAxKzpUMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,65 +57,103 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-mpc5121.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ drivers/rtc/rtc-pm8xxx.c |   27 ++++++++-------------------
+ 1 file changed, 8 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
-index 213006b..4c02497 100644
---- a/drivers/rtc/rtc-mpc5121.c
-+++ b/drivers/rtc/rtc-mpc5121.c
-@@ -312,15 +312,14 @@ static int mpc5121_rtc_probe(struct platform_device *op)
- 	struct mpc5121_rtc_data *rtc;
- 	int err = 0;
+diff --git a/drivers/rtc/rtc-pm8xxx.c b/drivers/rtc/rtc-pm8xxx.c
+index 14ee860..03f8f75 100644
+--- a/drivers/rtc/rtc-pm8xxx.c
++++ b/drivers/rtc/rtc-pm8xxx.c
+@@ -395,7 +395,7 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 	if (pdata != NULL)
+ 		rtc_write_enable = pdata->rtc_write_enable;
  
--	rtc = kzalloc(sizeof(*rtc), GFP_KERNEL);
-+	rtc = devm_kzalloc(&op->dev, sizeof(*rtc), GFP_KERNEL);
- 	if (!rtc)
+-	rtc_dd = kzalloc(sizeof(*rtc_dd), GFP_KERNEL);
++	rtc_dd = devm_kzalloc(&pdev->dev, sizeof(*rtc_dd), GFP_KERNEL);
+ 	if (rtc_dd == NULL) {
+ 		dev_err(&pdev->dev, "Unable to allocate memory!\n");
  		return -ENOMEM;
- 
- 	rtc->regs = of_iomap(op->dev.of_node, 0);
- 	if (!rtc->regs) {
- 		dev_err(&op->dev, "%s: couldn't map io space\n", __func__);
--		err = -ENOSYS;
--		goto out_free;
-+		return -ENOSYS;
+@@ -407,16 +407,14 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 0);
+ 	if (rtc_dd->rtc_alarm_irq < 0) {
+ 		dev_err(&pdev->dev, "Alarm IRQ resource absent!\n");
+-		rc = -ENXIO;
+-		goto fail_rtc_enable;
++		return -ENXIO;
  	}
  
- 	device_init_wakeup(&op->dev, 1);
-@@ -354,10 +353,10 @@ static int mpc5121_rtc_probe(struct platform_device *op)
- 			out_be32(&rtc->regs->keep_alive, ka);
+ 	rtc_resource = platform_get_resource_byname(pdev, IORESOURCE_IO,
+ 							"pmic_rtc_base");
+ 	if (!(rtc_resource && rtc_resource->start)) {
+ 		dev_err(&pdev->dev, "RTC IO resource absent!\n");
+-		rc = -ENXIO;
+-		goto fail_rtc_enable;
++		return -ENXIO;
+ 	}
+ 
+ 	rtc_dd->rtc_base = rtc_resource->start;
+@@ -432,7 +430,7 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 	rc = pm8xxx_read_wrapper(rtc_dd, &ctrl_reg, rtc_dd->rtc_base, 1);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "RTC control register read failed!\n");
+-		goto fail_rtc_enable;
++		return rc;
+ 	}
+ 
+ 	if (!(ctrl_reg & PM8xxx_RTC_ENABLE)) {
+@@ -442,7 +440,7 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 		if (rc < 0) {
+ 			dev_err(&pdev->dev, "Write to RTC control register "
+ 								"failed\n");
+-			goto fail_rtc_enable;
++			return rc;
  		}
- 
--		rtc->rtc = rtc_device_register("mpc5121-rtc", &op->dev,
-+		rtc->rtc = devm_rtc_device_register(&op->dev, "mpc5121-rtc",
- 						&mpc5121_rtc_ops, THIS_MODULE);
- 	} else {
--		rtc->rtc = rtc_device_register("mpc5200-rtc", &op->dev,
-+		rtc->rtc = devm_rtc_device_register(&op->dev, "mpc5200-rtc",
- 						&mpc5200_rtc_ops, THIS_MODULE);
  	}
  
-@@ -377,8 +376,6 @@ out_dispose2:
- out_dispose:
- 	irq_dispose_mapping(rtc->irq);
- 	iounmap(rtc->regs);
--out_free:
--	kfree(rtc);
+@@ -453,13 +451,12 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, rtc_dd);
  
- 	return err;
+ 	/* Register the RTC device */
+-	rtc_dd->rtc = rtc_device_register("pm8xxx_rtc", &pdev->dev,
++	rtc_dd->rtc = devm_rtc_device_register(&pdev->dev, "pm8xxx_rtc",
+ 				&pm8xxx_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc_dd->rtc)) {
+ 		dev_err(&pdev->dev, "%s: RTC registration failed (%ld)\n",
+ 					__func__, PTR_ERR(rtc_dd->rtc));
+-		rc = PTR_ERR(rtc_dd->rtc);
+-		goto fail_rtc_enable;
++		return PTR_ERR(rtc_dd->rtc);
+ 	}
+ 
+ 	/* Request the alarm IRQ */
+@@ -468,7 +465,7 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 				 "pm8xxx_rtc_alarm", rtc_dd);
+ 	if (rc < 0) {
+ 		dev_err(&pdev->dev, "Request IRQ failed (%d)\n", rc);
+-		goto fail_req_irq;
++		return rc;
+ 	}
+ 
+ 	device_init_wakeup(&pdev->dev, 1);
+@@ -476,12 +473,6 @@ static int pm8xxx_rtc_probe(struct platform_device *pdev)
+ 	dev_dbg(&pdev->dev, "Probe success !!\n");
+ 
+ 	return 0;
+-
+-fail_req_irq:
+-	rtc_device_unregister(rtc_dd->rtc);
+-fail_rtc_enable:
+-	kfree(rtc_dd);
+-	return rc;
  }
-@@ -392,14 +389,11 @@ static int mpc5121_rtc_remove(struct platform_device *op)
- 	out_8(&regs->alm_enable, 0);
- 	out_8(&regs->int_enable, in_8(&regs->int_enable) & ~0x1);
  
--	rtc_device_unregister(rtc->rtc);
- 	iounmap(rtc->regs);
- 	free_irq(rtc->irq, &op->dev);
- 	free_irq(rtc->irq_periodic, &op->dev);
- 	irq_dispose_mapping(rtc->irq);
- 	irq_dispose_mapping(rtc->irq_periodic);
--	dev_set_drvdata(&op->dev, NULL);
--	kfree(rtc);
+ static int pm8xxx_rtc_remove(struct platform_device *pdev)
+@@ -490,8 +481,6 @@ static int pm8xxx_rtc_remove(struct platform_device *pdev)
+ 
+ 	device_init_wakeup(&pdev->dev, 0);
+ 	free_irq(rtc_dd->rtc_alarm_irq, rtc_dd);
+-	rtc_device_unregister(rtc_dd->rtc);
+-	kfree(rtc_dd);
  
  	return 0;
  }
