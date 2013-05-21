@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212Ab3EUEHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 00:07:44 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:29521 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab3EUEHn (ORCPT
+	id S1751692Ab3EUEZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 00:25:48 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39852 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3EUEZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 00:07:43 -0400
-X-Spam-Score: -100.8
-Message-ID: <519AF2DC.2040200@asianux.com>
-Date: Tue, 21 May 2013 12:06:52 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: compiling issue, need 'EXPORT_SYMBOL_GPL(read_current_timer)'
-References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com>
-In-Reply-To: <20130520095606.GH31359@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 21 May 2013 00:25:47 -0400
+Date: Tue, 21 May 2013 14:25:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Nicolas Schichan <nschichan@freebox.fr>
+Subject: linux-next: manual merge of the akpm tree with the net-next tree
+Message-Id: <20130521142537.00a9ccb7ca4aa81f553b61cf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__21_May_2013_14_25_37_+1000_czuMkj7p2T1jaBgU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2013 05:56 PM, Will Deacon wrote:
-> On Mon, May 20, 2013 at 08:15:04AM +0100, Marc Zyngier wrote:
->> On Mon, 20 May 2013 14:48:05 +0800, Chen Gang <gang.chen@asianux.com>
->> wrote:
->>> Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with allmodconfig.
->>>
->>> The related error:
->>>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
->>>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
->>>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
->>>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
->>>
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> ---
->>>  arch/arm64/kernel/time.c |    1 +
->>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
->>> index a551f88..7fcba80 100644
->>> --- a/arch/arm64/kernel/time.c
->>> +++ b/arch/arm64/kernel/time.c
->>> @@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
->>>  	*timer_value = arch_timer_read_counter();
->>>  	return 0;
->>>  }
->>> +EXPORT_SYMBOL_GPL(read_current_timer);
->>>  
->>>  void __init time_init(void)
->>>  {
->>
->> While this solves the problem, I'm not sure this is the best fix. The real
->> issue is with get_cycles, which is a macro around read_current_timer.
->>
->> AArch32 exports it because of the number of timer implementations. On
->> arm64, we should be able to just return CNTVCT_EL0.
->>
->> Catalin, Will, what do you think?
-> 
-> Should be ok once the arch timer driver has moved exclusively to virtual
-> time. I'm also not sure we even need to implement read_current_timer() --
-> it's only used for delay-loop calibration, which we don't need for the
-> arch timer.
-> 
+--Signature=_Tue__21_May_2013_14_25_37_+1000_czuMkj7p2T1jaBgU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For whether we need implement read_current_timer():
+Hi Andrew,
 
-  many platforms have implemented it (openrisc, arm, sparc, hexagon, avr32, x86).
-  it is called by init/calibrate.c when 'ARCH_HAS_READ_CURRENT_TIMER' is defined.
-  since arm64 can implement it, better to provide it as an architect features to let outside use.
+Today's linux-next merge of the akpm tree got a conflict in
+arch/arm/net/bpf_jit_32.c between commit aafc787e41fd ("arm: bpf_jit: can
+call module_free() from any context") from the net-next tree and commit
+"ARM: net: bpf_jit: make code generation less dependent on struct
+sk_filter" from the akpm tree.
 
-For the implementation of read_current_timer():
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-  it has to face various configurations
-    (e.g. CONFIG_ARM_ARCH_TIMER, arch_timer_read_zero, arch_counter_get_cntvct, arch_counter_get_cntpct)
-  so better still use variable instead of.
-    (excuse me, I do not know what is 'CNTVCT_EL0', is it like a constant number ?)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-For the implementation of get_cycles()
+diff --cc arch/arm/net/bpf_jit_32.c
+index f50d223,2dab3e6..0000000
+--- a/arch/arm/net/bpf_jit_32.c
++++ b/arch/arm/net/bpf_jit_32.c
+@@@ -926,8 -926,32 +925,21 @@@ out
+  	return;
+  }
+ =20
++ void bpf_jit_compile(struct sk_filter *fp)
++ {
++ 	struct jit_ctx ctx;
++=20
++ 	memset(&ctx, 0, sizeof(ctx));
++ 	ctx.prog_len =3D fp->len;
++ 	ctx.prog_insns =3D fp->insns;
++=20
++ 	__bpf_jit_compile(&ctx);
++ 	if (ctx.target)
++ 		fp->bpf_func =3D (void *)ctx.target;
++ }
++=20
+ -static void bpf_jit_free_worker(struct work_struct *work)
+ -{
+ -	module_free(NULL, work);
+ -}
+ -
+  void bpf_jit_free(struct sk_filter *fp)
+  {
+ -	struct work_struct *work;
+ -
+ -	if (fp->bpf_func !=3D sk_run_filter) {
+ -		work =3D (struct work_struct *)fp->bpf_func;
+ -
+ -		INIT_WORK(work, bpf_jit_free_worker);
+ -		schedule_work(work);
+ -	}
+ +	if (fp->bpf_func !=3D sk_run_filter)
+ +		module_free(NULL, fp->bpf_func);
+  }
 
-  if read_current_timer() is provided,
-  better to let get_cycles() to call it, instead of implement once again.
+--Signature=_Tue__21_May_2013_14_25_37_+1000_czuMkj7p2T1jaBgU
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRmvdBAAoJEECxmPOUX5FEf9gP/jDC3ve/SD4oTq4cNKPIX6Yb
+bYGgo3+wTae6WPOmzy5nXj6M8hdBow6YtH3rttxefPlUOBTpIybR0MWpmUmO7I0X
+gcqm/XidhrDnYiBZRLoT97B9xnrr1LsC/pJaamy2KTHKqd3sksVp+4z0pFURIACV
+lZMF5dwu5BLxtCHFsTMYLNw63saiMikVkieFZQ6lqdlPmY8sVvWNIbMPN+qy3FM9
+K6ch+P6ugmioNwWtotnokMMy2TShoq79ub54UdkY2fKEVEaPvEXDzfKU0eGjasG0
+L07rJsh6MvWqiI0Rx2dYdWRyzNDb/ntL7TK9jFVhklMDkc1PI9P/jLU8l250Gr0u
+HEkPczaiAzTdixusk7I2GOYpoNUP6tXfNfu2R2vo1lciaryPNB+RhmcJnxJ8BDRj
+tAjdSCnANRVanJc2vREh5YEtZPwW8QhxzgzBUrUmLy2ZPPCHZ+yHQrGgTxlNvHBj
+MX2Jbxik/NSIu50WYOCc0qkO0+xIxqV9qMHI9OkH6GstZRnq0W0g7htw2dS3e5iy
+/vJogts94Y3Ng7XVRD3yUC+t9HopAkwoJT73JQQTUuseJe6pXLMWBkQDMpP9i1Ge
+FdCqZQ724XNC8mwEQCIpgy9/HH2PytblcQPEL+au0i+OaBjiAArq2O57Vdlzct/w
+fuOp6hwLVOuVdah6jzil
+=eMNV
+-----END PGP SIGNATURE-----
 
-Thanks.
--- 
-Chen Gang
-
-Asianux Corporation
+--Signature=_Tue__21_May_2013_14_25_37_+1000_czuMkj7p2T1jaBgU--
