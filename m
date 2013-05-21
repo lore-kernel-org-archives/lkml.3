@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3EUXX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:23:28 -0400
-Received: from www.sr71.net ([198.145.64.142]:46280 "EHLO blackbird.sr71.net"
+	id S1754004Ab3EUXY5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:24:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64758 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab3EUXX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:23:26 -0400
-Message-ID: <519C01EC.5060909@sr71.net>
-Date: Tue, 21 May 2013 16:23:24 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751139Ab3EUXY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:24:56 -0400
+Date: Tue, 21 May 2013 19:24:48 -0400
+From: Dave Jones <davej@redhat.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] pipe_off wait timed out
+Message-ID: <20130521232448.GA14347@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Daniel Vetter <daniel@ffwll.ch>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>
+References: <20130521230108.GB12713@redhat.com>
+ <CAKMK7uFB2u1hO+fLk49vVsT_+A-MDbMDPhGDtPmcK+aUQMipZw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 29/39] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uFB2u1hO+fLk49vVsT_+A-MDbMDPhGDtPmcK+aUQMipZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> 
-> It's confusing that mk_huge_pmd() has sematics different from mk_pte()
-> or mk_pmd().
-> 
-> Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
-> prototype to match mk_pte().
+On Wed, May 22, 2013 at 01:10:36AM +0200, Daniel Vetter wrote:
+ > On Wed, May 22, 2013 at 1:01 AM, Dave Jones <davej@redhat.com> wrote:
+ > > This is new to me as of 3.10-rc2.
+ > 
+ > If this is an ironlake with a DP output it's a know issue which seems
+ > to pop up every once in a while.
 
-Oh, and please stick this in your queue of stuff to go upstream, first.
+00:02.0 VGA compatible controller: Intel Corporation Atom Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller (rev 02)
+
+ > Otherwise we need to take a look
+ > here. If so can you please boot with drm.debug=0xe, reproduce the
+ > issue and attach the complete dmesg?
+ > 
+ > Also does 3.10-rc1 work (since you mention -rc2 specifically and there
+ > wasn't really a lot going into that for drm/i915).
+
+It had been running rc1 for the last week or so without incident.
+Though I've been away, with the monitor turned off.
+
+Judging by the trace, this seems to be related to console blanking ?
+(this is my home firewall, so spends most of its time with the screen
+ turned off)
+
+I've added that debug option to my command line, I'll keep an eye on it
+and try to reproduce over the next few days.
+
+	Dave
 
