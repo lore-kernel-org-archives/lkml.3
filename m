@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab3EUSok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:44:40 -0400
-Received: from sauhun.de ([89.238.76.85]:60785 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851Ab3EUSoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:44:39 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/mfd: Remove obsolete cleanup for clientdata
-Date: Tue, 21 May 2013 20:45:41 +0200
-Message-Id: <1369161945-26671-2-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369161945-26671-1-git-send-email-wsa@the-dreams.de>
-References: <1369161945-26671-1-git-send-email-wsa@the-dreams.de>
+	id S1755405Ab3EUStY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:49:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53535 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3EUStX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:49:23 -0400
+Date: Tue, 21 May 2013 11:49:21 -0700 (PDT)
+Message-Id: <20130521.114921.460497085402760002.davem@davemloft.net>
+To: priikone@iki.fi
+Cc: eric.dumazet@gmail.com, eliezer.tamir@linux.intel.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
+        e1000-devel@lists.sourceforge.net, willemb@google.com,
+        andi@firstfloor.org, hpa@zytor.com, eliezer@tamir.org.il
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
+References: <519B2237.20204@linux.intel.com>
+	<1369142926.3301.213.camel@edumazet-glaptop>
+	<alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-on exit or error. This is obsolete meanwhile, the core will do it.
+From: Pekka Riikonen <priikone@iki.fi>
+Date: Tue, 21 May 2013 19:02:19 +0200 (CEST)
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/mfd/twl6040.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+> On Tue, 21 May 2013, Eric Dumazet wrote:
+> 
+> : > > Alternatively, use a napi_id instead of a pointer.
+> : > 
+> : > I'm not sure I understand what you propose.
+> : 
+> : Oh well.
+> : 
+> : To get a pointer to a struct net_device, we can use ifindex, and do a
+> : rcu lookup into a hash table to get the net_device. We do not need
+> : {pointer,ifindex} but {ifindex} is enough
+> : 
+> : My suggestion is to not have skb->skb_ref but skb->napi_index : Its safe
+> : to copy its value from skb->napi_index to sk->napi_index without
+> : refcounting.
+> : 
+> : All NAPI need to get a unique napi_index, and be inserted in a hash
+> : table for immediate/fast lookup.
+> : 
+> Maybe even that's not needed.  Couldn't skb->queue_mapping give the 
+> correct NAPI instance in multiqueue nics?  The NAPI instance could be made 
+> easily available from skb->dev.  In any case an index is much better than 
+> a new pointer.
 
-diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-index 492ee2c..eec7de2 100644
---- a/drivers/mfd/twl6040.c
-+++ b/drivers/mfd/twl6040.c
-@@ -558,13 +558,13 @@ static int twl6040_probe(struct i2c_client *client,
- 				 twl6040->supplies);
- 	if (ret != 0) {
- 		dev_err(&client->dev, "Failed to get supplies: %d\n", ret);
--		goto regulator_get_err;
-+		goto err;
- 	}
- 
- 	ret = regulator_bulk_enable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
- 	if (ret != 0) {
- 		dev_err(&client->dev, "Failed to enable supplies: %d\n", ret);
--		goto regulator_get_err;
-+		goto err;
- 	}
- 
- 	twl6040->dev = &client->dev;
-@@ -688,8 +688,6 @@ readyirq_err:
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
- gpio_err:
- 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
--regulator_get_err:
--	i2c_set_clientdata(client, NULL);
- err:
- 	return ret;
- }
-@@ -706,7 +704,6 @@ static int twl6040_remove(struct i2c_client *client)
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
- 
- 	mfd_remove_devices(&client->dev);
--	i2c_set_clientdata(client, NULL);
- 
- 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
- 
--- 
-1.7.10.4
-
+Queue mapping is more volatile, and consider layered devices.
