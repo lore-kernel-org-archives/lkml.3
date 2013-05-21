@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab3EUPgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 11:36:19 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:34751 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394Ab3EUPgR (ORCPT
+	id S1754677Ab3EUPhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:37:06 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51513
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754111Ab3EUPhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 11:36:17 -0400
-Date: Tue, 21 May 2013 12:36:09 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH rebased] Bluetooth: Add missing reset_resume dev_pm_ops
-Message-ID: <20130521153609.GC1829@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Shuah Khan <shuah.kh@samsung.com>, marcel@holtmann.org,
-	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-References: <1369150326-4476-1-git-send-email-shuah.kh@samsung.com>
+	Tue, 21 May 2013 11:37:04 -0400
+Date: Tue, 21 May 2013 17:36:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
+Message-ID: <20130521153654.GL26912@twins.programming.kicks-ass.net>
+References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <519A4429.30405@amd.com>
+ <20130521091157.GD26912@twins.programming.kicks-ass.net>
+ <519B76CB.1000208@amd.com>
+ <20130521135231.GK26912@twins.programming.kicks-ass.net>
+ <20130521142523.GD7424@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369150326-4476-1-git-send-email-shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130521142523.GD7424@8bytes.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shuah,
-
-* Shuah Khan <shuah.kh@samsung.com> [2013-05-21 09:32:06 -0600]:
-
-> Add missing reset_resume dev_pm_ops. Missing reset_resume results in the
-> following message after power management device test. This change sets
-> reset_resume to btusb_resume().
+On Tue, May 21, 2013 at 04:25:23PM +0200, Joerg Roedel wrote:
+> Hi Peter,
 > 
-> [ 2506.936134] btusb 1-1.5:1.0: no reset_resume for driver btusb?
-> [ 2506.936137] btusb 1-1.5:1.1: no reset_resume for driver btusb?
+> On Tue, May 21, 2013 at 03:52:31PM +0200, Peter Zijlstra wrote:
+> > OK, I'll take them and will push them to Ingo.
 > 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->  drivers/bluetooth/btusb.c |    1 +
->  1 file changed, 1 insertion(+)
+> Please wait with that until I had a look at the IOMMU pieces.
 
-Patch has been applied to bluetooth-next. Thanks.
-
-	Gustavo
+Sure thing, I'll wait until I hear from you again.
