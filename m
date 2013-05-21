@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3EUT0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 15:26:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:18318 "EHLO mga14.intel.com"
+	id S1755678Ab3EUT2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 15:28:19 -0400
+Received: from www.sr71.net ([198.145.64.142]:44396 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab3EUT0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 15:26:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,715,1363158000"; 
-   d="scan'208";a="244777060"
-Message-ID: <519BCA37.4020707@linux.intel.com>
-Date: Tue, 21 May 2013 22:25:43 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1753019Ab3EUT2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 15:28:16 -0400
+Message-ID: <519BCACD.4020106@sr71.net>
+Date: Tue, 21 May 2013 12:28:13 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Pekka Riikonen <priikone@iki.fi>, Dave Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
- socket polling
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>  <20130520101601.14133.874.stgit@ladj378.jer.intel.com>  <1369063764.3301.182.camel@edumazet-glaptop>  <519B2237.20204@linux.intel.com>  <1369142926.3301.213.camel@edumazet-glaptop>  <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>  <1369158499.3301.236.camel@edumazet-glaptop> <1369158686.3301.237.camel@edumazet-glaptop>
-In-Reply-To: <1369158686.3301.237.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 09/39] thp, mm: introduce mapping_can_have_hugepages()
+ predicate
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-10-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1368321816-17719-10-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/05/2013 20:51, Eric Dumazet wrote:
-> On Tue, 2013-05-21 at 10:48 -0700, Eric Dumazet wrote:
->
->> We do not keep skb->dev information once a packet leaves the rcu
->> protected region.
->>
->> Once packet is queued to tcp input queues, skb->dev is NULL.
->
-> This is done in tcp_v4_rcv() & tcp_v6_rcv()
+On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> Returns true if mapping can have huge pages. Just check for __GFP_COMP
+> in gfp mask of the mapping for now.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  include/linux/pagemap.h |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index e3dea75..28597ec 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -84,6 +84,18 @@ static inline void mapping_set_gfp_mask(struct address_space *m, gfp_t mask)
+>  				(__force unsigned long)mask;
+>  }
+>  
+> +static inline bool mapping_can_have_hugepages(struct address_space *m)
+> +{
+> +	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE)) {
+> +		gfp_t gfp_mask = mapping_gfp_mask(m);
+> +		/* __GFP_COMP is key part of GFP_TRANSHUGE */
+> +		return !!(gfp_mask & __GFP_COMP) &&
+> +			transparent_hugepage_pagecache();
+> +	}
+> +
+> +	return false;
+> +}
 
-So if we move calling sk_mark_ll() into the rcu protected region,
-We would not need the gen id in the skb.
-We could save skb->dev and skb->queue_mapping along with the generation 
-id in the socket.
+transparent_hugepage_pagecache() already has the same IS_ENABLED()
+check,  Is it really necessary to do it again here?
 
-then we don't need to change the skb struct at all.
-skb_mark_ll() can go away.
-we also call sk_mark_ll in one central place in net_protocol->handler 
-instead of all over the place.
+IOW, can you do this?
 
-or am I missing something?
+> +static inline bool mapping_can_have_hugepages(struct address_space
+> +{
+> +		gfp_t gfp_mask = mapping_gfp_mask(m);
+		if (!transparent_hugepage_pagecache())
+			return false;
+> +		/* __GFP_COMP is key part of GFP_TRANSHUGE */
+> +		return !!(gfp_mask & __GFP_COMP);
+> +}
+
+I know we talked about this in the past, but I've forgotten already.
+Why is this checking for __GFP_COMP instead of GFP_TRANSHUGE?
+
+Please flesh out the comment.
+
+Also, what happens if "transparent_hugepage_flags &
+(1<<TRANSPARENT_HUGEPAGE_PAGECACHE)" becomes false at runtime and you
+have some already-instantiated huge page cache mappings around?  Will
+things like mapping_align_mask() break?
