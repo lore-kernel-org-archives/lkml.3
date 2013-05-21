@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3EUHVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:21:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51646 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755529Ab3EUHVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:21:42 -0400
-Date: Tue, 21 May 2013 09:21:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123
- native_smp_send_reschedule, round 2
-Message-ID: <20130521072140.GA4866@pd.tnic>
-References: <20130520064727.GD12690@pd.tnic>
- <5199C990.3020602@linux.vnet.ibm.com>
- <5199CB59.1020309@linux.vnet.ibm.com>
- <CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com>
- <5199CFD0.9030101@linux.vnet.ibm.com>
- <5199E54D.7030407@linux.vnet.ibm.com>
- <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com>
- <5199EBB5.7060209@linux.vnet.ibm.com>
- <20130520132355.GF12690@pd.tnic>
- <519ADA03.5060206@linux.vnet.ibm.com>
+	id S1756420Ab3EUH0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:26:31 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62557 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756340Ab3EUH01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 03:26:27 -0400
+X-AuditID: 9c93016f-b7cfdae000002fc1-38-519b21a1b455
+From: Namhyung Kim <namhyung@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 0/7] perf report/gtk: Add support for hierarchy view
+References: <1369116878-12489-1-git-send-email-namhyung@kernel.org>
+	<CAOJsxLETg8WMrX+gqYA03Bm4tAsgAKVgbH6aay=NS9L-WmKbpQ@mail.gmail.com>
+Date: Tue, 21 May 2013 16:26:25 +0900
+In-Reply-To: <CAOJsxLETg8WMrX+gqYA03Bm4tAsgAKVgbH6aay=NS9L-WmKbpQ@mail.gmail.com>
+	(Pekka Enberg's message of "Tue, 21 May 2013 10:04:05 +0300")
+Message-ID: <87vc6c3iam.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <519ADA03.5060206@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 10:20:51AM +0800, Michael Wang wrote:
-> This is not enough to prove that policy->cpus is wrong, the cpu could
-> be online when get from policy->cpus, but offline when checked here,
-> since hotplug is able to happen during the period.
+Hi Pekka,
 
-Strictly speaking you're correct but I don't do any hotplug besides the
-one-time thing which is part of halting the box.
+On Tue, 21 May 2013 10:04:05 +0300, Pekka Enberg wrote:
+> Hello,
+>
+> On Tue, May 21, 2013 at 9:14 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>> This patchset implements a new feature that collects hist entries in a
+>> hierachical manner.  That means lower-level entries are belonged to an
+>> upper-level entry.  The entry hierachy is built on the sort keys
+>> given, so users can set it whatever they want.  It only shows
+>> top-level entries first, and user can expand/collapse it dynamically.
+>>
+>> This is only implemented in --gtk currently, since it's well-matched
+>> to the GTK tree view widget and I didn't want to be bothered with the
+>> TUI browser code at this stage. :)
+>
+> Can use this infrastructure to support call-graphs in the GTK UI?
 
-> I don't get it...
-> 
-> get_online_cpus() is just stop hotplug happen after it was invoked, so
-> unless policy->cpus is really wrong, otherwise all the cpu it masked
-> won't go offline any more.
+Yes, I think it's doable.  I don't have an idea how to use both of the
+features at the same time though.  Anyway, I'll try to add support for
+callchains later.
 
-Yes, that's my impression too - at the point we do gov_queue_work,
-policy->cpus already contains offline cpus.
-
-> This protect nothing...before we go here, the cpu could already
-> offline, nothing changed...
-
-Yes, but I don't want to schedule work on an offlined cpu and that is
-ensured here.
-
-> If you really want to confirm the policy->cpus was wrong, the way
-> should be apply the fix I suggested, than check online in here.
-
-Sure, feel free to get a box, enable NO_HZ_FULL and do all the
-experimentations you desire. I surely cannot be the only one who
-triggers this.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Namhyung
