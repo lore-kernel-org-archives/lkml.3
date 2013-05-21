@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab3EUTfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 15:35:55 -0400
-Received: from www.sr71.net ([198.145.64.142]:44508 "EHLO blackbird.sr71.net"
+	id S1752993Ab3EUTrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 15:47:21 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:55241 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab3EUTfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 15:35:54 -0400
-Message-ID: <519BCC97.1090307@sr71.net>
-Date: Tue, 21 May 2013 12:35:51 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1750910Ab3EUTrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 15:47:20 -0400
+Date: Tue, 21 May 2013 19:47:19 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Zach Brown <zab@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [RFC v0 1/4] vfs: add copy_range syscall and vfs entry point
+Message-ID: <20130521194719.GA2957@dcvr.yhbt.net>
+References: <1368566126-17610-1-git-send-email-zab@redhat.com>
+ <1368566126-17610-2-git-send-email-zab@redhat.com>
+ <20130515194405.GA28720@dcvr.yhbt.net>
+ <20130515200307.GD318@lenny.home.zabbo.net>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 13/39] mm: trace filemap: dump page order
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-14-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-14-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130515200307.GD318@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Zach Brown <zab@redhat.com> wrote:
+> On Wed, May 15, 2013 at 07:44:05PM +0000, Eric Wong wrote:
+> > Why introduce a new syscall instead of extending sys_splice?
 > 
-> Dump page order to trace to be able to distinguish between small page
-> and huge page in page cache.
+> Personally, I think it's ugly to have different operations use the same
+> syscall just because their arguments match.
 
-Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+Fair enough.  I think adding a (currently unused) flags parameter would
+make sense for future-proofing.
 
+If this were extended to sockets/pipes, peek/nonblock/waitall flags
+may be added.
+
+Basically, something like splice/tee, but without needing to
+create/manage a pipe in userspace or needing extra syscalls/looping.
