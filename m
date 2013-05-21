@@ -1,122 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3EUKls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:41:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23781 "EHLO mga03.intel.com"
+	id S1753757Ab3EUKug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:50:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42683 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751Ab3EUKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:40:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
-   d="scan'208";a="305622751"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: linux-usb@vger.kernel.org
-Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v2 2/4] usb: xhci: define port register names and use them instead of magic numbers
-Date: Tue, 21 May 2013 13:43:35 +0300
-Message-Id: <1369133017-3035-3-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1752316Ab3EUKue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:50:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <liuj97@gmail.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 4/5] ACPI / scan: Add second pass of companion offlining to hot-remove code
+Date: Tue, 21 May 2013 12:59:13 +0200
+Message-ID: <5594351.7bIW5J5bfS@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <519B238D.3070900@huawei.com>
+References: <2250271.rGYN6WlBxf@vostro.rjw.lan> <3662688.5fMZaG7XgD@vostro.rjw.lan> <519B238D.3070900@huawei.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-hub.c |   16 +++++++---------
- drivers/usb/host/xhci.c     |    4 ++--
- drivers/usb/host/xhci.h     |    5 +++++
- 3 files changed, 14 insertions(+), 11 deletions(-)
+On Tuesday, May 21, 2013 03:34:37 PM Xishi Qiu wrote:
+> On 2013/5/19 7:34, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > As indicated by comments in mm/memory_hotplug.c:remove_memory(),
+> > if CONFIG_MEMCG is set, it may not be possible to offline all of the
+> > memory blocks held by one module (FRU) in one pass (because one of
+> > them may be used by the others to store page cgroup in that case
+> > and that block has to be offlined before the other ones).
+> > 
+> > To handle that arguably corner case, add a second pass of companion
+> > device offlining to acpi_scan_hot_remove() and make it ignore errors
+> > returned in the first pass (and make it skip the second pass if the
+> > first one is successful).
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/scan.c |   67 ++++++++++++++++++++++++++++++++++++++--------------
+> >  1 file changed, 50 insertions(+), 17 deletions(-)
+> > 
+> > Index: linux-pm/drivers/acpi/scan.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/scan.c
+> > +++ linux-pm/drivers/acpi/scan.c
+> > @@ -131,6 +131,7 @@ static acpi_status acpi_bus_offline_comp
+> >  {
+> >  	struct acpi_device *device = NULL;
+> >  	struct acpi_device_physical_node *pn;
+> > +	bool second_pass = (bool)data;
+> >  	acpi_status status = AE_OK;
+> >  
+> >  	if (acpi_bus_get_device(handle, &device))
+> > @@ -141,15 +142,26 @@ static acpi_status acpi_bus_offline_comp
+> >  	list_for_each_entry(pn, &device->physical_node_list, node) {
+> >  		int ret;
+> >  
+> > +		if (second_pass) {
+> > +			/* Skip devices offlined by the first pass. */
+> > +			if (pn->put_online)
+> 
+> should it be "if (!pn->put_online)" ?
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 187a3ec..1d35459 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -867,18 +867,18 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 		case USB_PORT_FEAT_U1_TIMEOUT:
- 			if (hcd->speed != HCD_USB3)
- 				goto error;
--			temp = xhci_readl(xhci, port_array[wIndex] + 1);
-+			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
- 			temp &= ~PORT_U1_TIMEOUT_MASK;
- 			temp |= PORT_U1_TIMEOUT(timeout);
--			xhci_writel(xhci, temp, port_array[wIndex] + 1);
-+			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
- 			break;
- 		case USB_PORT_FEAT_U2_TIMEOUT:
- 			if (hcd->speed != HCD_USB3)
- 				goto error;
--			temp = xhci_readl(xhci, port_array[wIndex] + 1);
-+			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
- 			temp &= ~PORT_U2_TIMEOUT_MASK;
- 			temp |= PORT_U2_TIMEOUT(timeout);
--			xhci_writel(xhci, temp, port_array[wIndex] + 1);
-+			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
- 			break;
- 		default:
- 			goto error;
-@@ -1098,10 +1098,8 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
- 			__le32 __iomem *addr;
- 			u32 tmp;
- 
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
-+			/* Get the port power control register address. */
-+			addr = port_array[port_index] + PORTPMSC;
- 			tmp = xhci_readl(xhci, addr);
- 			tmp |= PORT_RWE;
- 			xhci_writel(xhci, tmp, addr);
-@@ -1193,7 +1191,7 @@ int xhci_bus_resume(struct usb_hcd *hcd)
- 			/* Add one to the port status register address to get
- 			 * the port power control register address.
- 			 */
--			addr = port_array[port_index] + 1;
-+			addr = port_array[port_index] + PORTPMSC;
- 			tmp = xhci_readl(xhci, addr);
- 			tmp &= ~PORT_RWE;
- 			xhci_writel(xhci, tmp, addr);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index e540a36..317bf08 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3901,7 +3901,7 @@ static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
- 	 * Check device's USB 2.0 extension descriptor to determine whether
- 	 * HIRD or BESL shoule be used. See USB2.0 LPM errata.
- 	 */
--	pm_addr = port_array[port_num] + 1;
-+	pm_addr = port_array[port_num] + PORTPMSC;
- 	hird = xhci_calculate_hird_besl(xhci, udev);
- 	temp = PORT_L1DS(udev->slot_id) | PORT_HIRD(hird);
- 	xhci_writel(xhci, temp, pm_addr);
-@@ -3999,7 +3999,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- 
- 	port_array = xhci->usb2_ports;
- 	port_num = udev->portnum - 1;
--	pm_addr = port_array[port_num] + 1;
-+	pm_addr = port_array[port_num] + PORTPMSC;
- 	temp = xhci_readl(xhci, pm_addr);
- 
- 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 1dbc63f..b6cd55e 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -132,6 +132,11 @@ struct xhci_cap_regs {
- /* Number of registers per port */
- #define	NUM_PORT_REGS	4
- 
-+#define PORTSC		0
-+#define PORTPMSC	1
-+#define PORTLI		2
-+#define PORTHLPMC	3
-+
- /**
-  * struct xhci_op_regs - xHCI Host Controller Operational Registers.
-  * @command:		USBCMD - xHC command register
+No, I don't think so.
+
+pn->put_online set means that the device has been offlined by the first pass,
+so we don't need to try it in the second one.
+
+Thanks,
+Rafael
+
+
+> > +				continue;
+> > +		} else {
+> > +			pn->put_online = false;
+> > +		}
+> >  		ret = device_offline(pn->dev);
+> >  		if (acpi_force_hot_remove)
+> >  			continue;
+> >  
+> > -		if (ret < 0) {
+> > -			status = AE_ERROR;
+> > -			break;
+> > +		if (ret >= 0) {
+> > +			pn->put_online = !ret;
+> > +		} else {
+> > +			*ret_p = pn->dev;
+> > +			if (second_pass) {
+> > +				status = AE_ERROR;
+> > +				break;
+> > +			}
+> >  		}
+> > -		pn->put_online = !ret;
+> >  	}
+> >  
+> >  	mutex_unlock(&device->physical_node_lock);
+> 
+> 
+> 
 -- 
-1.7.4.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
