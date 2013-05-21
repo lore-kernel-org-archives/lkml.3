@@ -1,176 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3EUNdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:33:49 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50993
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754305Ab3EUNds (ORCPT
+	id S1754646Ab3EUNeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:34:15 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41063 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab3EUNeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:33:48 -0400
-Date: Tue, 21 May 2013 13:05:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Josh Boyer <jwboyer@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130521110537.GG26912@twins.programming.kicks-ass.net>
-References: <20130516181018.GO19669@dyad.programming.kicks-ass.net>
- <20130516205558.GE8356@rric.localhost>
- <20130516213420.GB31393@pd.tnic>
- <20130517090451.GQ19669@dyad.programming.kicks-ass.net>
- <20130517091651.GB23035@pd.tnic>
- <20130517092741.GR19669@dyad.programming.kicks-ass.net>
- <20130517094551.GE23035@pd.tnic>
- <20130517103600.GG8356@rric.localhost>
- <20130517105730.GD5162@dyad.programming.kicks-ass.net>
- <20130521085630.GA1860@rric.localhost>
+	Tue, 21 May 2013 09:34:14 -0400
+Date: Tue, 21 May 2013 09:33:56 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] perf: net_dropmonitor: Make it work and make it fast
+Message-ID: <20130521133355.GA3613@neilslaptop.think-freely.org>
+References: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130521085630.GA1860@rric.localhost>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 10:56:30AM +0200, Robert Richter wrote:
-> On 17.05.13 12:57:30, Peter Zijlstra wrote:
-> > 
-> > So what about something like the below?
+On Tue, May 21, 2013 at 01:42:56AM +0100, Ben Hutchings wrote:
+> Somewhat surprisingly, the net_dropmonitor reporting script doesn't work
+> at all.  This series fixes it and then makes it slightly more efficient.
 > 
-> See my comments below, otherwise it looks fine to me.
-
-I've been liberal and read an Ack there, holler if that needs be amended.
-
-> There is the question about core performance counters and its
-> constraints on fam16h. Not sure if there are any. Cc'ing Jacob.
-
-Currently the code doesn't work for Fam16h afaict, so I didn't wreck
-that did I?
-
-> >  	/*
-> >  	 * If core performance counter extensions exists, we must use
-> >  	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
+> Ben.
 > 
-> ... amd_pmu_addr_offset():
+It worked fine when I first submitted it.  I wonder if there was a paramter
+order change at some point that I wasn't CC'ed on.
+
+Either way, this all looks good.  Thanks Ben.
+
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+
+> Ben Hutchings (5):
+>   perf: net_dropmonitor: Fix trace parameter order
+>   perf: net_dropmonitor: Fix symbol-relative addresses
+>   perf: net_dropmonitor: Do not assume ordering of dictionaries
+>   perf: net_dropmonitor: Use bisection in symbol lookup
+>   perf: net_dropmonitor: Remove progress indicator
 > 
->          * If core performance counter extensions exists, we must use
->          * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
->          * amd_pmu_addr_offset().
+>  tools/perf/scripts/python/net_dropmonitor.py |   39 ++++++++++++++------------
+>  1 file changed, 21 insertions(+), 18 deletions(-)
+> 
 > 
 
-Done.
-
-> > @@ -675,8 +670,7 @@ static int setup_perfctr_core(void)
-> >  	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
-> >  	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
-> >  
-> > -	printk(KERN_INFO "perf: AMD core performance counters detected\n");
-> > -
-> > +	pr_cont("core perfctr, ");
-> >  	return 0;
-> >  }
-> >  
-> > @@ -688,8 +682,8 @@ __init int amd_pmu_init(void)
-> >  
-> >  	x86_pmu = amd_pmu;
-> >  
-> > -	setup_event_constraints();
-> > -	setup_perfctr_core();
-> > +	if (cpu_has_perfctr_core && amd_core_pmu_init())
-> > +		return -ENODEV;
-> 
-> Better return result of amd_core_pmu_init().
-
-Done.. that was admittedly a tad lazy of me :-)
-
----
-Subject: perf, x86: Rework AMD PMU init code
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, 17 May 2013 12:57:30 +0200
-
-Josh reported that his QEMU is a bad hardware emulator and trips a
-WARN in the AMD PMU init code. He requested the WARN be turned into a
-pr_err() or similar.
-
-While there, rework the code a little.
-
-Reported-by: Josh Boyer <jwboyer@redhat.com>
-Acked-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/cpu/perf_event_amd.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
-
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -648,48 +648,48 @@ static __initconst const struct x86_pmu
- 	.cpu_dead		= amd_pmu_cpu_dead,
- };
- 
--static int setup_event_constraints(void)
-+__init int amd_core_pmu_init(void)
- {
--	if (boot_cpu_data.x86 == 0x15)
-+	if (!cpu_has_perfctr_core)
-+		return 0;
-+
-+	switch (boot_cpu_data.x86) {
-+	case 0x15:
-+		pr_cont("Fam15h ");
- 		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
--	return 0;
--}
-+		break;
- 
--static int setup_perfctr_core(void)
--{
--	if (!cpu_has_perfctr_core) {
--		WARN(x86_pmu.get_event_constraints == amd_get_event_constraints_f15h,
--		     KERN_ERR "Odd, counter constraints enabled but no core perfctrs detected!");
-+	default:
-+		pr_err("core perfctr but no constraints; unknown hardware!\n");
- 		return -ENODEV;
- 	}
- 
--	WARN(x86_pmu.get_event_constraints == amd_get_event_constraints,
--	     KERN_ERR "hw perf events core counters need constraints handler!");
--
- 	/*
- 	 * If core performance counter extensions exists, we must use
- 	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
--	 * x86_pmu_addr_offset().
-+	 * amd_pmu_addr_offset().
- 	 */
- 	x86_pmu.eventsel	= MSR_F15H_PERF_CTL;
- 	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
- 	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
- 
--	printk(KERN_INFO "perf: AMD core performance counters detected\n");
--
-+	pr_cont("core perfctr, ");
- 	return 0;
- }
- 
- __init int amd_pmu_init(void)
- {
-+	int ret;
-+
- 	/* Performance-monitoring supported from K7 and later: */
- 	if (boot_cpu_data.x86 < 6)
- 		return -ENODEV;
- 
- 	x86_pmu = amd_pmu;
- 
--	setup_event_constraints();
--	setup_perfctr_core();
-+	ret = amd_core_pmu_init();
-+	if (ret)
-+		return ret;
- 
- 	/* Events are common for all AMDs */
- 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
 
