@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab3EUUlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:41:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58374 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab3EUUlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:41:24 -0400
-Date: Tue, 21 May 2013 13:41:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
- configurable
-Message-Id: <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
-In-Reply-To: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753484Ab3EUUnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:43:06 -0400
+Received: from mout.gmx.net ([212.227.15.19]:61953 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab3EUUnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 16:43:04 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+Gecwz+FuG5dDIFJXQgO7BB9nnkGH2RaxRuR5Vo0
+	r9xx/8tu73D7lL
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v2] uio/uio_pci_generic: Use module_pci_driver to register driver
+Date: Tue, 21 May 2013 22:47:44 +0200
+Message-Id: <1369169264-13144-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130521170952.GA6895@kroah.com>
+References: <20130521170952.GA6895@kroah.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  3 May 2013 03:10:52 -0700 Tim Chen <tim.c.chen@linux.intel.com> wrote:
+Removing some boilerplate by using module_pci_driver instead of calling
+register and unregister in the otherwise empty init/exit functions.
 
-> Currently, there is a single, global, variable (percpu_counter_batch) that
-> controls the batch sizes for every 'struct percpu_counter' on the system.
-> 
-> However, there are some applications, e.g. memory accounting where it is
-> more appropriate to scale the batch size according to the memory size.
-> This patch adds the infrastructure to be able to change the batch sizes
-> for each individual instance of 'struct percpu_counter'.
-> 
+It removes a pr_info showing some details about the driver, but
+these infos can also be retrieved by using modinfo.
 
-This patch seems to add rather a lot of unnecessary code.
+The name of the pci_driver struct had to be changed in order to prevent a
+build failure.
 
-- The increase in the size of percu_counter is regrettable.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+Sorry for the build failure.
 
-- The change to percpu_counter_startup() is unneeded - no
-  percpu_counters should exist at this time.  (We may have screwed this
-  up - percpu_counter_startup() shuold probably be explicitly called
-  from start_kernel()).
+ drivers/uio/uio_pci_generic.c | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
-- Once the percpu_counter_startup() change is removed, all that code
-  which got moved out of CONFIG_HOTPLUG_CPU can be put back.
-
-And probably other stuff.
-
-
-If you want to use a larger batch size for vm_committed_as, why not
-just use the existing __percpu_counter_add(..., batch)?  Easy.
+diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
+index 14aa10c..077ae12 100644
+--- a/drivers/uio/uio_pci_generic.c
++++ b/drivers/uio/uio_pci_generic.c
+@@ -113,27 +113,14 @@ static void remove(struct pci_dev *pdev)
+ 	kfree(gdev);
+ }
+ 
+-static struct pci_driver driver = {
++static struct pci_driver uio_pci_driver = {
+ 	.name = "uio_pci_generic",
+ 	.id_table = NULL, /* only dynamic id's */
+ 	.probe = probe,
+ 	.remove = remove,
+ };
+ 
+-static int __init init(void)
+-{
+-	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+-	return pci_register_driver(&driver);
+-}
+-
+-static void __exit cleanup(void)
+-{
+-	pci_unregister_driver(&driver);
+-}
+-
+-module_init(init);
+-module_exit(cleanup);
+-
++module_pci_driver(uio_pci_driver);
+ MODULE_VERSION(DRIVER_VERSION);
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+-- 
+1.8.1.5
 
