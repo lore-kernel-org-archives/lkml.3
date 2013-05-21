@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3EUH17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:27:59 -0400
-Received: from smtp2.macqel.be ([194.78.208.39]:28306 "EHLO smtp2.macqel.be"
+	id S1755676Ab3EUH3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:29:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10008 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512Ab3EUH15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:27:57 -0400
-Date: Tue, 21 May 2013 09:27:54 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Karel Zak <kzak@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 2/5] Add aix lvm partitions support files
-Message-ID: <20130521072754.GB19266@frolo.macqel>
-References: <1367270313-18871-1-git-send-email-phdm@macqel.be> <1367270313-18871-3-git-send-email-phdm@macqel.be> <20130520163927.8e4c2fe753b60a02c368ceb5@linux-foundation.org>
+	id S1751212Ab3EUH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 03:29:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="317007074"
+Message-ID: <519B2237.20204@linux.intel.com>
+Date: Tue, 21 May 2013 10:28:55 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130520163927.8e4c2fe753b60a02c368ceb5@linux-foundation.org>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>  <20130520101601.14133.874.stgit@ladj378.jer.intel.com> <1369063764.3301.182.camel@edumazet-glaptop>
+In-Reply-To: <1369063764.3301.182.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On 20/05/2013 18:29, Eric Dumazet wrote:
+> On Mon, 2013-05-20 at 13:16 +0300, Eliezer Tamir wrote:
+---
+>> +static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
+>> +{
+>> +	skb->dev_ref = napi;
+>> +}
+>> +
+>> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+>> +{
+>> +	sk->dev_ref = skb->dev_ref;
+>> +}
+>
+> I do not see why it's safe to keep a pointer to a napi object without
+> taking a reference, or something to prevent object being removed.
+>
+> Using a genid might be enough. (some counter incremented every time a
+> napi is dismantled)
 
-On Mon, May 20, 2013 at 04:39:27PM -0700, Andrew Morton wrote:
-> On Mon, 29 Apr 2013 23:18:30 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
-> 
-> > adding partitions/aix.h and partitions/aix.c
-> > 
-> > Partitions (called Logical Volumes in AIX) can be non-contiguous or
-> > even split on more than one disk.  Altough we detect such partitions,
-> > we cannot describe them to the Linux partitions layer, so we simply
-> > discard them and issue a diagnose message.
-> 
-> This description is rather hard to follow.
-> 
-> It appears that the new code permits Linux to access some types of AIX
-> partitions, but not other types, correct?  If so, can we please provide
-> a more explicit description of which typesw are and are not supported?
-> 
+I really like this approach and I tried it.
+The main problem I had is that you need to increase the size of the skb 
+to store the generation id unless you stuff it in the flags2 bitfield.
+There appear to be only 7 useful bit left there.
+Is it OK to use them all up?
 
-AIX LVM permits to make "logical volumes" which are made of multiple slices
-of multiple disks.  The new code allows only access to the "logical volumes"
-which are made of one slice on the probed disk, a slice being a contiguous
-disk area.  The code also detects "logical volumes" made of multiple slices
-on the probed disk, but can not describe them to the partition layer, because
-the partition layer generic code does not support that.  When such
-non-contiguous "logical volumes" are detected, a diagnostic message is
-printed.
 
-Philippe
+> Alternatively, use a napi_id instead of a pointer.
 
--- 
-Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
+I'm not sure I understand what you propose.
+
+-Eliezer
