@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3EUGbn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:31:43 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:64331 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab3EUGbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:31:42 -0400
-Date: Mon, 20 May 2013 23:31:39 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Bergmann, Arnd" <arnd@arndb.de>
-Subject: Re: [PATCH] ARM: vt8500: Add missing NULL terminator in dt_compat
-Message-ID: <20130521063139.GA20453@quad.lixom.net>
-References: <1368776657-23035-1-git-send-email-srinivas.kandagatla@st.com>
- <5195EA34.7000409@prisktech.co.nz>
+	id S1756030Ab3EUGfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:35:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40494 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab3EUGfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 02:35:10 -0400
+X-IronPort-AV: E=Sophos;i="4.87,712,1363104000"; 
+   d="scan'208";a="7321085"
+Message-ID: <519B1641.1020906@cn.fujitsu.com>
+Date: Tue, 21 May 2013 14:37:53 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5195EA34.7000409@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/2 v2, RFC] Driver core: Introduce offline/online callbacks
+ for memory blocks
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1583356.7oqZ7gBy2q@vostro.rjw.lan> <2376818.CRj1BTLk0Y@vostro.rjw.lan> <19540491.PRsM4lKIYM@vostro.rjw.lan>
+In-Reply-To: <19540491.PRsM4lKIYM@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 14:33:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 14:33:45,
+	Serialize complete at 2013/05/21 14:33:45
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 17, 2013 at 08:28:36PM +1200, Tony Prisk wrote:
-> On 17/05/13 19:44, Srinivas KANDAGATLA wrote:
-> >From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> >
-> >When I tried booting a stih415 Dual core A9 with multi_v7_defconfig, it
-> >failed to boot. The issues seems to be changing by enabling or disabling
-> >VT8550 platform. Having a quick look at dt_compat list, it seems to miss
-> >a NULL terminator, which means of_flat_dt_match will compat check will
-> >cross the boundary of dt_compat and fault at some point , which is what
-> >was happening in my case.
-> >
-> >Without this patch if we try to boot multi_v7_defconfig you might notice
-> >that some of the platforms might fault if they fall after vt8500 in
-> >machine-desc list. Other platforms which fall before vt8500 in mdesc list
-> >will not fault.
-> >
-> >Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> >---
-> >  arch/arm/mach-vt8500/vt8500.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
-> >index 1dd281e..f5c33df 100644
-> >--- a/arch/arm/mach-vt8500/vt8500.c
-> >+++ b/arch/arm/mach-vt8500/vt8500.c
-> >@@ -173,6 +173,7 @@ static const char * const vt8500_dt_compat[] = {
-> >  	"wm,wm8505",
-> >  	"wm,wm8750",
-> >  	"wm,wm8850",
-> >+	NULL
-> >  };
-> >  DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
-> My bad. Thanks for the fix.
-> 
-> Acked-by: Tony Prisk <linux@prisktech.co.nz>
-> 
-> Arnd, Olof: Can you apply this directly please.
+Hi Rafael,
 
-Done.
+Please see below.
 
-Thanks,
+On 05/04/2013 07:21 PM, Rafael J. Wysocki wrote:
+......
+>   static BLOCKING_NOTIFIER_HEAD(memory_chain);
+> @@ -278,33 +283,64 @@ static int __memory_block_change_state(s
+>   {
+>   	int ret = 0;
+>
+> -	if (mem->state != from_state_req) {
+> -		ret = -EINVAL;
+> -		goto out;
+> -	}
+> +	if (mem->state != from_state_req)
+> +		return -EINVAL;
+>
+>   	if (to_state == MEM_OFFLINE)
+>   		mem->state = MEM_GOING_OFFLINE;
+>
+>   	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
+> -
+>   	if (ret) {
+>   		mem->state = from_state_req;
+> -		goto out;
+> +	} else {
+> +		mem->state = to_state;
+> +		if (to_state == MEM_ONLINE)
+> +			mem->last_online = online_type;
 
--Olof
+Why do we need to remember last online type ?
+
+And as far as I know, we can obtain which zone a page was in last time it
+was onlined by check page->flags, just like online_pages() does. If we
+use online_kernel or online_movable, the zone boundary will be 
+recalculated.
+So we don't need to remember the last online type.
+
+Seeing from your patch, I guess memory_subsys_online() can only handle
+online and offline. So mem->last_online is used to remember what user has
+done through the original way to trigger memory hot-remove, right ? And 
+when
+user does it in this new way, it just does the same thing as user does last
+time.
+
+But I still think we don't need to remember it because if finally you call
+online_pages(), it just does the same thing as last time by default.
+
+online_pages()
+{
+	......
+	if (online_type == ONLINE_KERNEL ......
+
+	if (online_type == ONLINE_MOVABLE......
+
+	zone = page_zone(pfn_to_page(pfn));
+
+	/* Here, the page will be put into the zone which it belong to last 
+time. */
+
+	......
+}
+
+I just thought of it. Maybe I missed something in your design. Please tell
+me if I'm wrong.
+
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Thanks. :)
+
+
