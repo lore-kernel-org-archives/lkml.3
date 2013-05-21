@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3EUXyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:54:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46297 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab3EUXys (ORCPT
+	id S1754375Ab3EUXyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:54:55 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:64935 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752683Ab3EUXyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:54:48 -0400
-Date: Wed, 22 May 2013 09:54:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, Nicolas Schichan <nschichan@freebox.fr>
-Subject: Re: linux-next: manual merge of the akpm tree with the net-next
- tree
-Message-Id: <20130522095436.66e63c613c41da01cd103208@canb.auug.org.au>
-In-Reply-To: <519B25CD.5060801@redhat.com>
-References: <20130521142537.00a9ccb7ca4aa81f553b61cf@canb.auug.org.au>
-	<519B25CD.5060801@redhat.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__22_May_2013_09_54_36_+1000_0TExivfAl2d=7F9o"
+	Tue, 21 May 2013 19:54:50 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwOAJwInFF5LNn3/2dsb2JhbABagwi8eoUcBAGBBRd0giMBAQUnExwzCAMYCSUPBSUDIQESiAy7bhaNZ4Ekg1QDlzeRQYMhKg
+Date: Wed, 22 May 2013 09:54:10 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: XFS assertion from truncate. (3.10-rc2)
+Message-ID: <20130521235410.GY29466@dastard>
+References: <20130521225257.GA12713@redhat.com>
+ <20130521233429.GW29466@dastard>
+ <20130521234016.GB14347@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521234016.GB14347@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__22_May_2013_09_54_36_+1000_0TExivfAl2d=7F9o
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 21, 2013 at 07:40:16PM -0400, Dave Jones wrote:
+> On Wed, May 22, 2013 at 09:34:29AM +1000, Dave Chinner wrote:
+>  > On Tue, May 21, 2013 at 06:52:57PM -0400, Dave Jones wrote:
+>  > > [  464.210598] XFS: Assertion failed: (mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET| ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID| ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0, file: fs/xfs/xfs_iops.c, line: 719
+>  > 
+>  > Never seen that fire before, but this is why we have ASSERT()s like
+>  > this - we're being handed something by the VFS we don't expect...
+>  > 
+>  > Can you give me some context of the file permissions before the
+>  > syscall and what the syscall parameters are? i.e. is this likely to
+>  > be trying to strip SUID/SGID during the truncate operation?
+> 
+> no idea tbh. Is there something I can add to that assert to dump
+> which file it was triggered by ?
 
-Hi Daniel,
+Convert the assert to a if (), and then in the body do something
+like:
 
-On Tue, 21 May 2013 09:44:13 +0200 Daniel Borkmann <dborkman@redhat.com> wr=
-ote:
->
-> Also seccomp_jit_free() needs a change otherwise the kernel won't build
-> with CONFIG_SECCOMP_FILTER_JIT enabled since the work_struct is initializ=
-ed
-> with the bpf_jit_free_worker() callback, which is no longer existent.
->=20
-> Do you want me to send you a patch?
+	if (mask & (...) {
+		char buf[MAX_PATHLEN];
 
-Yes, please.
+		d_path(VFS_I(ip)->i_dentry, buf, MAXPATHLEN);
+		xfs_warn(mp, "%s: mask 0x%x mismatch on file %s\n",
+			 __func__, mask, buf);
+		ASSERT(0);
+	}
 
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__22_May_2013_09_54_36_+1000_0TExivfAl2d=7F9o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRnAlAAAoJEECxmPOUX5FEp/0QAJAoFRXOZKc0tIn1kcPdgf1f
-iFQw8PZmE8VB+lC6SzmqfPs0nuFHG1TPMhfFLJaLw91jDdw+E9sgIN3bnm3gaerG
-JbwN4zzfygv5Aa3w+1Z8aDrVPYZAqKSheMPRRzxejeJ0RXiy3scQ6HZBv1U8rXhy
-jk/QdCj7vtGbKgnoEbKuo4EBdX/LayKMOC4RMn3TaIu6yCXlOPfgIcjNXaCedPT/
-gqslM6VTDHg/KpZ4mojMog+j5IB9YSpJGFMTqBLG3NJiCKwC3hHsi0sGtsV98ocw
-m1eWnUJTr4oa0xyKNOqXkVtCtD33JdteobpPA6tW7WfAJxW95Yt61TV5SEs3eI4S
-nJ8wbROtcTDmEoxp4e8pBHI/GBpqqj8RAZB5n/yJleWWWOK4O9WIXsaIcHm8+Dji
-OK4LNEOApkAkEO54gxZFRGzNSQYIPFRCeBizD/qH1d1dh45CeXZXqSj5T6gjpQFw
-j53inMbDF5+E8FCKXmoZI1CbWRwKferUl8KchvqEZf6+dkbA2XABgsYLTLNDudCO
-k76H14on3tcZJRxVTfke2DR8rfQCr269omcaKcS955cU/qirfjjoB7431Ea2me8W
-FWuZaqGIZW4wthMnnXZmPH2q1LI7q8A7kx2MWAT/BdKEfaOhgLCc62llQr0C7rd8
-pKXfN/62L9rX3za0DoQT
-=0Xwa
------END PGP SIGNATURE-----
-
---Signature=_Wed__22_May_2013_09_54_36_+1000_0TExivfAl2d=7F9o--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
