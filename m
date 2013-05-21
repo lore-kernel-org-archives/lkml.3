@@ -1,133 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3EUU3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:29:24 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55052 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3EUU3X convert rfc822-to-8bit (ORCPT
+	id S1753338Ab3EUUlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:41:07 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:38063 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab3EUUlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:29:23 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 21 May 2013 22:28:17 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: stephan.gatzka@gmail.com
-Cc: linux1394-devel@lists.sourceforge.net, peter@hurleysoftware.com,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: function call fw_iso_resource_mange(..) (core-iso.c) does not
- return
-Message-ID: <20130521222817.3626b59d@stein>
-In-Reply-To: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
-References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 May 2013 16:41:04 -0400
+Date: Tue, 21 May 2013 14:41:00 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] PCI: Split pci_assign_unassigned_resources to per
+ root bus
+Message-ID: <20130521204100.GA12440@google.com>
+References: <1367837311.15842.31.camel@pasglop>
+ <1367882130-19452-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1367882130-19452-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Cc: LKML and Tejun.  Not adding Ralf, I think he is subscribed.)
-
-On May 21 Stephan Gatzka wrote:
-> Hi!
+On Mon, May 06, 2013 at 04:15:29PM -0700, Yinghai Lu wrote:
+> BenH reported that there is some assign unassigned resource problem
+> in powerpc.
 > 
-> I want to keep you informed about that issue, Ralf described some month 
-> ago:
+> It turns out after
+> | commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
+> | Date:   Thu Feb 23 19:23:29 2012 -0800
+> |
+> |    PCI: Retry on IORESOURCE_IO type allocations
 > 
-> http://marc.info/?l=linux1394-devel&m=136152042914650&w=2
+> even the root bus does not have io port range, it will keep retrying
+> to realloc with mmio.
 > 
-> We instrumented the workqueue and got a lot of insight how it works. :)
+> Current retry logic is : try with must+optional at first, and if
+> it fails will try must then try to extend must with optional.
+> That will fail as mmio-non-pref and mmio-pref for bridge will
+> be next to each other. So we have no chance to extend mmio-non-pref.
 > 
-> The deadlock occurs mainly because the firewire workqueue is allocated 
-> with WQ_MEM_RECLAIM. That's why a so called rescuer thread is started 
-> while allocating the wq.
+> We should not fall into retry in this case, as root bus does
+> not io port range.
 > 
-> This rescuer thread is responsible to keep the queue working even under 
-> high memory pressure so that a memory allocation might sleep. If that 
-> happens, all work of that workqueue is designated to that particular 
-> rescuer thread. The work in this rescuer thread is done strictly 
-> sequential. Now we have the situation that the rescuer thread runs 
-> fw_device_init->read_config_rom->read_rom->fw_run_transaction. 
-> fw_run_transaction blocks waiting for the completion object. This 
-> completion object will be completed in bus_reset_work, but this work 
-> will never executed in the rescuer thread.
+> Before we do that we need to split pci_assign_unassiged_resource
+> to every root bus, so we can stop early for root bus without ioport
+> range, and still continue to retry on buses that do have ioport range.
 > 
-> The interesting question is why the firewire wq stuff is designated to 
-> the rescuer thread because we are definitely not under high memory 
-> pressure. I looked into the workqueue code and  found that the work is 
-> shifted to the rescuer a new worker thread could not be allocated in a 
-> certain time (static bool maybe_create_worker(struct global_cwq *gcwq) 
-> in workqueue.c). This timeout (MAYDAY_INITIAL_TIMEOUT) is set to 10ms.
-
-If I recall correctly what was written earlier in this thread, the fact
-that firewire-ohci schedules its work from IRQ context seems to matter.
-If so, then this raises the generally interesting question how to use
-workqueue as bottom half of an interrupt handler.¹  Does this necessitate
-separate workqueues --- one for the BH worklets and another for worklets
-that depend on the BH worklets?²
-
-But Ralf wrote on March 12:  "Other tests have shown that even the own
-workqueue is not enough.  The deadlock also occurs here.  Not nearly as
-often, but it happens.  Only  with the tasklet can I yet be sure that the
-deadlock does not occur."  So, having a private workqueue just for this
-single BH worklet alone is still not the answer.
-
---------
- ¹) Worklets as bottom halves --- as alternative to tasklets as bottom
-    halves --- have been suggested by RT folks in the past because there
-    is more control over CPU scheduling of worklets compared to tasklets,
-    obviously.
-
- ²) In the firewire-subsystem, we have a subsystem workqueue for various
-    work from firewire-core and occasional work from upper-layer drivers
-    IOW protocol drivers.  A while ago we converted a low-level driver IRQ
-    BH from tasklet to worklet in order to be able to do some sleeping
-    stuff in it. However, progress of the core and upper layer work
-    depends on the IRQ BH to be executed concurrently.
-
-> What I don't understand is that the create_worker() call is not 
-> satisfied within 10ms. We run the stuff on a 400Mhz PowerPC with Xenomai 
-> realtime extension. Because we have a lot of firewire participants, we 
-> got a log of bus resets when starting up the whole system. Maybe we 
-> spend too much time during the interrupts, but that's just a rough guess 
-> right now. We will look further into that issue.
-
-Wait a minute --- I seem to be reading of Xenomai RT extensions for the
-first time in this thread.  Has the problem been reproduced on a mainline
-kernel too?  (Mainline plus Ralf's firewire upper layer driver maybe, but
-without any other 3rd party stuff please.  Actually the issue should be
-reproducible even without an upper layer driver performing
-fw_iso_resource_manage in fw_workqueue context, shouldn't it?)
-
-
-There was one or two /other/ reports about split transactions never
-completing, i.e. not even timing out, on the ffado-user or ffado-devel
-mailinglist:  The userland Jack audio server got stuck in
-drivers/firewire/core-cdev.c::fw_device_op_release().  However, whether
-this was the same problem or a different one altogether is not known to
-me.  There is at least one known hardware³ bug which we do not handle in
-yet which can lead to this, orthogonally to the workqueue problem which we
-are discussing here.  ---  Long story short, Ralf may possibly be the
-only one who suffers from this problem so far, which makes it even more
-important to verify whether or not this is a mainline problem.)
-
---------
- ³) JMB38x
-
-> Our workaround is to declare the firewire workqueue as CPU_INTENSIVE. 
-> This gives a slight different execution model in the normal case (no 
-> work running on the rescuer thread). Maybe it's worth to think about 
-> that because some work looks rather heavy to me.
+> This will be become more often when we have x86 8 sockets or 32 sockets
+> system, and those system will have one root bus per socket.
+> They will have some root buses do not have ioport range.
 > 
-> Regards,
-> 
-> Stephan
+> For the retry failing, we could allocate mmio-non-pref bottom-up
+> and mmio-pref will be top-down, but that could not be material for v3.10.
 
-There is quite a bit going on in firewire-ohci's and firewire-core's parts
-of self-ID-complete event handling.  But I suspect that stuff like that is
-still not in the league for which CPU_INTENSIVE was intended for
-(cryptography etc.).
--- 
-Stefan Richter
--=====-===-= -=-= =-=-=
-http://arcgraph.de/sr/
+If I understand correctly, this particular patch makes no functional
+changes, so the changelog above should be saved for the patches that *do*
+actually fix problems.
+
+> 
+> Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/pci/setup-bus.c |  101 +++++++++++++++++++++++-------------------------
+>  1 file changed, 49 insertions(+), 52 deletions(-)
+> 
+> Index: linux-2.6/drivers/pci/setup-bus.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/setup-bus.c
+> +++ linux-2.6/drivers/pci/setup-bus.c
+> @@ -1315,21 +1315,6 @@ static int __init pci_bus_get_depth(stru
+>  
+>  	return depth;
+>  }
+> -static int __init pci_get_max_depth(void)
+> -{
+> -	int depth = 0;
+> -	struct pci_bus *bus;
+> -
+> -	list_for_each_entry(bus, &pci_root_buses, node) {
+> -		int ret;
+> -
+> -		ret = pci_bus_get_depth(bus);
+> -		if (ret > depth)
+> -			depth = ret;
+> -	}
+> -
+> -	return depth;
+> -}
+>  
+>  /*
+>   * -1: undefined, will auto detect later
+> @@ -1354,34 +1339,41 @@ void __init pci_realloc_get_opt(char *st
+>  	else if (!strncmp(str, "on", 2))
+>  		pci_realloc_enable = user_enabled;
+>  }
+> -static bool __init pci_realloc_enabled(void)
+> +static bool __init pci_realloc_enabled(enum enable_type enable)
+>  {
+> -	return pci_realloc_enable >= user_enabled;
+> +	return enable >= user_enabled;
+>  }
+>  
+> -static void __init pci_realloc_detect(void)
+> +static enum enable_type __init pci_realloc_detect(struct pci_bus *bus,
+> +			 enum enable_type enable_local)
+>  {
+>  #if defined(CONFIG_PCI_IOV) && defined(CONFIG_PCI_REALLOC_ENABLE_AUTO)
+> -	struct pci_dev *dev = NULL;
+> +	struct pci_dev *dev;
+>  
+> -	if (pci_realloc_enable != undefined)
+> -		return;
+> +	if (enable_local != undefined)
+> +		return enable_local;
+>  
+> -	for_each_pci_dev(dev) {
+> +	list_for_each_entry(dev, &bus->devices, bus_list) {
+>  		int i;
+>  
+>  		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
+>  			struct resource *r = &dev->resource[i];
+>  
+>  			/* Not assigned, or rejected by kernel ? */
+> -			if (r->flags && !r->start) {
+> -				pci_realloc_enable = auto_enabled;
+> -
+> -				return;
+> -			}
+> +			if (r->flags && !r->start)
+> +				return auto_enabled;
+>  		}
+>  	}
+> +
+> +	list_for_each_entry(dev, &bus->devices, bus_list) {
+> +		struct pci_bus *child = dev->subordinate;
+> +
+> +		if (child &&
+> +		    pci_realloc_detect(child, enable_local) == auto_enabled)
+> +			return auto_enabled;
+> +	}
+
+This uses recursion and basically does the same thing as pci_walk_bus().
+I think it will be clearer if you make it look something like this:
+
+        static int count_unassigned_resources(struct pci_dev *dev, void *data)
+        {
+          int *count = data;
+
+          for (i = PCI_IOV_RESOURCES; ...)
+            if (r->flags && !r->start)
+              *count++;
+
+          return 0;
+        }
+
+        static pci_realloc_detect(struct pci_bus *bus, ...  enable_local)
+        {
+	  int unassigned;
+
+          if (enable_local != undefined)
+            return enable_local;
+
+	  unassigned = 0;
+	  pci_walk_bus(bus, count_unassigned_resources, &unassigned);
+	  if (unassigned)
+	    return auto_enabled;
+
+          return enable_local;
+        }
+
+
+>  #endif
+> +	return enable_local;
+>  }
+>  
+>  /*
+> @@ -1389,10 +1381,9 @@ static void __init pci_realloc_detect(vo
+>   * second  and later try will clear small leaf bridge res
+>   * will stop till to the max  deepth if can not find good one
+>   */
+> -void __init
+> -pci_assign_unassigned_resources(void)
+> +static void __init
+> +pci_assign_unassigned_root_bus_resources(struct pci_bus *bus)
+>  {
+> -	struct pci_bus *bus;
+>  	LIST_HEAD(realloc_head); /* list of resources that
+>  					want additional resources */
+>  	struct list_head *add_list = NULL;
+> @@ -1403,15 +1394,17 @@ pci_assign_unassigned_resources(void)
+>  	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+>  				  IORESOURCE_PREFETCH;
+>  	int pci_try_num = 1;
+> +	enum enable_type enable_local;
+>  
+>  	/* don't realloc if asked to do so */
+> -	pci_realloc_detect();
+> -	if (pci_realloc_enabled()) {
+> -		int max_depth = pci_get_max_depth();
+> +	enable_local = pci_realloc_detect(bus, pci_realloc_enable);
+> +	if (pci_realloc_enabled(enable_local)) {
+> +		int max_depth = pci_bus_get_depth(bus);
+>  
+>  		pci_try_num = max_depth + 1;
+> -		printk(KERN_DEBUG "PCI: max bus depth: %d pci_try_num: %d\n",
+> -			 max_depth, pci_try_num);
+> +		dev_printk(KERN_DEBUG, &bus->dev,
+> +			   "max bus depth: %d pci_try_num: %d\n",
+> +			   max_depth, pci_try_num);
+>  	}
+>  
+>  again:
+> @@ -1423,12 +1416,10 @@ again:
+>  		add_list = &realloc_head;
+>  	/* Depth first, calculate sizes and alignments of all
+>  	   subordinate buses. */
+> -	list_for_each_entry(bus, &pci_root_buses, node)
+> -		__pci_bus_size_bridges(bus, add_list);
+> +	__pci_bus_size_bridges(bus, add_list);
+>  
+>  	/* Depth last, allocate resources and update the hardware. */
+> -	list_for_each_entry(bus, &pci_root_buses, node)
+> -		__pci_bus_assign_resources(bus, add_list, &fail_head);
+> +	__pci_bus_assign_resources(bus, add_list, &fail_head);
+>  	if (add_list)
+>  		BUG_ON(!list_empty(add_list));
+>  	tried_times++;
+> @@ -1438,17 +1429,17 @@ again:
+>  		goto enable_and_dump;
+>  
+>  	if (tried_times >= pci_try_num) {
+> -		if (pci_realloc_enable == undefined)
+> -			printk(KERN_INFO "Some PCI device resources are unassigned, try booting with pci=realloc\n");
+> -		else if (pci_realloc_enable == auto_enabled)
+> -			printk(KERN_INFO "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
+> +		if (enable_local == undefined)
+> +			dev_info(&bus->dev, "Some PCI device resources are unassigned, try booting with pci=realloc\n");
+> +		else if (enable_local == auto_enabled)
+> +			dev_info(&bus->dev, "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
+
+I think you can add enable_local and the pci_realloc_enabled() parameter
+in a separate patch.  That will remove distractions from the main patch.
+
+>  
+>  		free_list(&fail_head);
+>  		goto enable_and_dump;
+>  	}
+>  
+> -	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
+> -			 tried_times + 1);
+> +	dev_printk(KERN_DEBUG, &bus->dev,
+> +		   "No. %d try to assign unassigned res\n", tried_times + 1);
+>  
+>  	/* third times and later will not check if it is leaf */
+>  	if ((tried_times + 1) > 2)
+> @@ -1458,12 +1449,11 @@ again:
+>  	 * Try to release leaf bridge's resources that doesn't fit resource of
+>  	 * child device under that bridge
+>  	 */
+> -	list_for_each_entry(fail_res, &fail_head, list) {
+> -		bus = fail_res->dev->bus;
+> -		pci_bus_release_bridge_resources(bus,
+> +	list_for_each_entry(fail_res, &fail_head, list)
+> +		pci_bus_release_bridge_resources(fail_res->dev->bus,
+
+This change is gratuitous and distracting.  Please move it to a
+separate patch.
+
+>  						 fail_res->flags & type_mask,
+>  						 rel_type);
+> -	}
+> +
+>  	/* restore size and flags */
+>  	list_for_each_entry(fail_res, &fail_head, list) {
+>  		struct resource *res = fail_res->res;
+> @@ -1480,12 +1470,19 @@ again:
+>  
+>  enable_and_dump:
+>  	/* Depth last, update the hardware. */
+> -	list_for_each_entry(bus, &pci_root_buses, node)
+> -		pci_enable_bridges(bus);
+> +	pci_enable_bridges(bus);
+>  
+>  	/* dump the resource on buses */
+> +	pci_bus_dump_resources(bus);
+> +}
+> +
+> +void __init
+> +pci_assign_unassigned_resources(void)
+> +{
+> +	struct pci_bus *bus;
+> +
+>  	list_for_each_entry(bus, &pci_root_buses, node)
+> -		pci_bus_dump_resources(bus);
+> +		pci_assign_unassigned_root_bus_resources(bus);
+>  }
+>  
+>  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+
+I think this should be split up into something like the following patches
+so we can see what's going on here:
+
+    - Remove "bus" temporary when calling pci_bus_release_bridge_resources()
+
+    - Add pci_realloc_enabled() parameter and enable_local
+
+    - Add pci_realloc_detect() parameters.  The "bus" parameter is 
+      ignored for now.
+
+    - Change pci_realloc_detect() to iterate over pci_root_buses and
+      call pci_walk_bus() to find any unassigned resources instead of
+      using for_each_pci_dev().
+
+    - Split pci_assign_unassigned_resources() into iterating over
+      pci_root_buses and calling pci_assign_unassigned_root_bus_resources(bus).
+      Change pci_realloc_detect() to only walk the supplied bus instead
+      of everything in pci_root_buses.  This will be basically just removing
+      list_for_each_entry(bus, &pci_root_buses, node) loops.
+
+Bjorn
