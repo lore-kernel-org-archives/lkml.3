@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab3EUM7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:59:08 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57505 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3EUM7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:59:05 -0400
-Date: Tue, 21 May 2013 05:58:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
-Message-ID: <20130521125856.GH3578@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <519B38EC.90401@yandex-team.ru>
- <20130521120906.GD3578@linux.vnet.ibm.com>
- <519B6CBE.1020002@yandex-team.ru>
+	id S1754445Ab3EUNCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:02:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11057 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805Ab3EUNCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 09:02:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,714,1363158000"; 
+   d="scan'208";a="244605817"
+Date: Tue, 21 May 2013 15:02:28 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Botao Sun <botao.sun@linaro.org>
+Cc: Kevin Hilman <kevin.hilman@linaro.org>,
+        Andrey Konovalov <andrey.konovalov@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Naresh Kamboju <naresh.kamboju@linaro.org>,
+        Fathi Boudra <fathi.boudra@linaro.org>,
+        Milosz Wasilewski <milosz.wasilewski@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linaro-dev <linaro-dev@lists.linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: Patch merge request for STE Snowball build failure on
+ linux-arm-soc-for-next.
+Message-ID: <20130521130228.GD4589@zurbaran>
+References: <CAMGVPmWRLddtZ3fS8DWovW=X7oQzy2x_-_SU60u+x9eTGaO9+A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519B6CBE.1020002@yandex-team.ru>
+In-Reply-To: <CAMGVPmWRLddtZ3fS8DWovW=X7oQzy2x_-_SU60u+x9eTGaO9+A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052112-5518-0000-0000-00000EDA4070
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 04:46:54PM +0400, Roman Gushchin wrote:
-> On 21.05.2013 16:09, Paul E. McKenney wrote:
-> >On Tue, May 21, 2013 at 01:05:48PM +0400, Roman Gushchin wrote:
-> >>Hi, all!
-> >>
-> >>This is a fix for a problem described here:
-> >>https://lkml.org/lkml/2013/4/16/371 .
-> >>---
-> >>
-> >>Some network functions (udp4_lib_lookup2(), for instance) use the
-> >>hlist_nulls_for_each_entry_rcu macro in a way that assumes restarting
-> >>of a loop. In this case, it is strictly necessary to reread the head->first
-> >>value from the memory before each scan.
-> >>Without additional hints, gcc caches this value in a register. In this case,
-> >>if a cached node is moved to another chain during the scan, we can loop
-> >>forever getting wrong nulls values and restarting the loop uninterruptedly.
-> >>
-> >>Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> >>Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
-> >>---
-> >>  include/linux/rculist_nulls.h | 5 +++--
-> >>  1 file changed, 3 insertions(+), 2 deletions(-)
-> >>
-> >>diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> >>index 2ae1371..efd51bf 100644
-> >>--- a/include/linux/rculist_nulls.h
-> >>+++ b/include/linux/rculist_nulls.h
-> >>@@ -37,8 +37,9 @@ static inline void hlist_nulls_del_init_rcu(struct
-> >>hlist_nulls_node *n)
-> >>  	}
-> >>  }
-> >>
-> >>-#define hlist_nulls_first_rcu(head) \
-> >>-	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> >>+#define hlist_nulls_first_rcu(head)			\
-> >>+	(*((struct hlist_nulls_node __rcu __force **)	\
-> >>+	   &((volatile typeof(*head) *)head)->first))
-> >
-> >Why not use ACCESS_ONCE() or (better) rcu_dereference_raw() here?
+Hi Botao,
+
+On Tue, May 21, 2013 at 09:34:52PM +1000, Botao Sun wrote:
+> Hi,
 > 
-> It will be nice, but will require to keep the old variant too (for
-> using in hlist_nulls_add_head_rcu() as in rcu_assign_pointer()
-> argument). Do you think, it's better?
+> There is a build failure for STE Snowball on "linux-arm-soc-for-next"
+> branch in Linaro Kernel CI system:
+> 
+> https://ci.linaro.org/jenkins/job/linux-arm-soc-for-next/hwpack=snowball,label=kernel_cloud/46/console
+> 
+> which is caused by:
+> 
+> 01:31:32
+> /mnt/ci_build/workspace/linux-arm-soc-for-next/hwpack/snowball/label/kernel_cloud/drivers/mfd/ab8500-debugfs.c:95:23:
+> fatal error: mach/irqs.h: No such file or directory
+> 01:31:32  #include <mach/irqs.h>
+> 01:31:32                        ^
+> 01:31:32 compilation terminated.
+> 01:31:32 make[3]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+> 01:31:32 make[2]: *** [drivers/mfd] Error 2
+> 01:31:32 make[1]: *** [drivers] Error 2
+> 
+> To solve this issue, here is the patch which Linux Walleij provided on 11
+> April 2013:
+> 
+> https://lkml.org/lkml/2013/4/11/101
+> 
+> Would anyone like to merge the patch to fix this compiling error?
+It is queued in mfd-fixes, and I will send a pull request for that either
+tonight or tomorrow.
 
-Both ACCESS_ONCE() and rcu_dereference_raw() can be used by updaters
-as well as readers, so yes, I do think that it is better.  Better to
-keep the encapsulation rather than having to search for lots of volatile
-casts should this idiom ever need to change.
+Cheers,
+Samuel.
 
-							Thanx, Paul
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
