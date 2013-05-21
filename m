@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3EUSn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:43:56 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:59716 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab3EUSnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:43:55 -0400
-Message-ID: <519BC066.5080600@acm.org>
-Date: Tue, 21 May 2013 20:43:50 +0200
-From: Bart Van Assche <bart.vanassche@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Arjan van de Ven <arjan@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755667Ab3EUSok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:44:40 -0400
+Received: from sauhun.de ([89.238.76.85]:60785 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab3EUSoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:44:39 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] drivers/mfd: Remove obsolete cleanup for clientdata
+Date: Tue, 21 May 2013 20:45:41 +0200
+Message-Id: <1369161945-26671-2-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1369161945-26671-1-git-send-email-wsa@the-dreams.de>
+References: <1369161945-26671-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure that the round_jiffies*() functions return a time that is
-in the future when the jiffies counter is about to wrap.
+A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+on exit or error. This is obsolete meanwhile, the core will do it.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
- kernel/timer.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/mfd/twl6040.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 15ffdb3..aa8b964 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -149,9 +149,7 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
- 	/* now that we have rounded, subtract the extra skew again */
- 	j -= cpu * 3;
--	if (j <= jiffies) /* rounding ate our timeout entirely; */
--		return original;
--	return j;
-+	return time_is_after_jiffies(j) ? j : original;
+diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
+index 492ee2c..eec7de2 100644
+--- a/drivers/mfd/twl6040.c
++++ b/drivers/mfd/twl6040.c
+@@ -558,13 +558,13 @@ static int twl6040_probe(struct i2c_client *client,
+ 				 twl6040->supplies);
+ 	if (ret != 0) {
+ 		dev_err(&client->dev, "Failed to get supplies: %d\n", ret);
+-		goto regulator_get_err;
++		goto err;
+ 	}
+ 
+ 	ret = regulator_bulk_enable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+ 	if (ret != 0) {
+ 		dev_err(&client->dev, "Failed to enable supplies: %d\n", ret);
+-		goto regulator_get_err;
++		goto err;
+ 	}
+ 
+ 	twl6040->dev = &client->dev;
+@@ -688,8 +688,6 @@ readyirq_err:
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+ gpio_err:
+ 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+-regulator_get_err:
+-	i2c_set_clientdata(client, NULL);
+ err:
+ 	return ret;
  }
-  /**
+@@ -706,7 +704,6 @@ static int twl6040_remove(struct i2c_client *client)
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+ 
+ 	mfd_remove_devices(&client->dev);
+-	i2c_set_clientdata(client, NULL);
+ 
+ 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+ 
 -- 
 1.7.10.4
 
