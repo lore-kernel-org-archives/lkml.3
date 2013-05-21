@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab3EUCZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 22:25:07 -0400
-Received: from plane.gmane.org ([80.91.229.3]:38581 "EHLO plane.gmane.org"
+	id S1757495Ab3EUC1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 22:27:36 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:46920 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755340Ab3EUCZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 22:25:04 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Duncan <1i5t5.duncan@cox.net>
-Subject: Re: [RFC PATCH v1 0/5] BTRFS hot relocation support
-Date: Tue, 21 May 2013 02:22:34 +0000 (UTC)
-Message-ID: <pan$d5913$460afe14$f9be182d$7f8dbe54@cox.net>
-References: <1369062687-23544-1-git-send-email-zwu.kernel@gmail.com>
+	id S1750804Ab3EUC1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 22:27:34 -0400
+Date: Mon, 20 May 2013 22:27:33 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Lin Feng <linfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
+Message-ID: <20130521022733.GT1008@kvack.org>
+References: <20130206095617.GN21389@suse.de> <5190AE4F.4000103@cn.fujitsu.com> <20130513091902.GP11497@suse.de> <5191B5B3.7080406@cn.fujitsu.com> <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip68-231-22-224.ph.ph.cox.net
-User-Agent: Pan/0.140 (Chocolate Salty Balls; GIT b00f96e
-	/usr/src/portage/src/egit-src/pan2)
-Cc: linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519AD6F8.2070504@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zwu.kernel posted on Mon, 20 May 2013 23:11:22 +0800 as excerpted:
+On Tue, May 21, 2013 at 10:07:52AM +0800, Tang Chen wrote:
+....
+> I'm not saying using two callbacks before and after migration is better.
+> I don't want to use address_space_operations is because there is no such 
+> member
+> for anonymous pages.
 
-> The patchset is trying to introduce hot relocation support
-> for BTRFS. In hybrid storage environment, when the data in rotating disk
-> get hot, it can be relocated to nonrotating disk by BTRFS hot relocation
-> support automatically; also, if nonrotating disk ratio exceed its upper
-> threshold, the data which get cold can be looked up and relocated to
-> rotating disk to make more space in nonrotating disk at first, and then
-> the data which get hot will be relocated to nonrotating disk
-> automatically.
+That depends on the nature of the pinning.  For the general case of 
+get_user_pages(), you're correct that it won't work for anonymous memory.
 
-One advantage of a filesystem implementation, as opposed to bcache or 
-dmcache, is arguably a corner-case, but it's /my/ corner-case, so...
+> In your idea, using a file mapping will create a 
+> address_space_operations. But
+> I really don't think we can modify the way of memory allocation for all the
+> subsystems who has this problem. Maybe not just aio and cma. That means if
+> you want to pin pages in memory, you have to use a file mapping. This makes
+> the memory allocation more complicated. And the idea should be known by all
+> the subsystem developers. Is that going to happen ?
 
-I run an intr*-less (I guess technically, empty initramfs) monolithic-
-kernel boot, using the kernel commandline root= and (formerly) md= and 
-related logic to choose/assemble/mount root directly from the kernel 
-command line via bootloader (grub2).  Thus, any user-space-required-to-
-mount-root is out, since I don't have an initr* and thus no early 
-userspace.  That means both lvm2 and dmcache (AFAIK) are out.  I'm not 
-sure about bcache, but it has other negatives, particularly against btrfs-
-raid-1 and I'd guess md/raid-1 as well.
+Different subsystems will need to use different approaches to fixing the 
+issue.  I doubt any single approach will work for everything.
 
-Much like md before it, btrfs, while normally requiring the user-space-
-required device-scan to properly handle multiple devices, has kernel-
-command-line options that allow direct kernel multi-device assembly 
-without the help of early-userspace/initr*.
+> I also thought about reuse one field of struct page. But as you said, there
+> may not be many users of this functionality. Reusing a field of struct page
+> will make things more complicated and lead to high coupling.
 
-So in-btrfs hot-relocation support building on the existing kernel-
-command-line multi-device assembly options would definitely be welcomed 
-by all us no-initr* folks looking at SSDs but not able to afford them 
-for /everything/ just yet. =:^)
+What happens when more than one subsystem tries to pin a particular page?  
+What if it's a shared page rather than an anonymous page?
 
-(That said, even if accepted, your solution's a bit late for my own 
-current needs, but there's surely going to be others hitting the same 
-issue in a few kernel cycles when your patches could be mainline btrfs, 
-and having the option at my next upgrade cycle say a couple years out 
-would be very nice, indeed. =:^)
+> So, how about the other idea that Mel mentioned ?
+> 
+> We create a 1-1 mapping of pinned page ranges and the pinner (subsystem
+> callbacks and data), maybe a global list or a hash table. And then, we can
+> find the callbacks.
 
+Maybe that is the simplest approach, but it's going to make get_user_pages() 
+slower and more complicated (as if it wasn't already).  Maybe with all the 
+bells and whistles of per-cpu data structures and such you can make it work, 
+but I'm pretty sure someone running the large unmentionable benchmark will 
+complain about the performance regressions you're going to introduce.  At 
+least in the case of the AIO ring buffer, using the address_space approach 
+doesn't introduce any new performance issues.  There's also the bigger 
+question of if you can or cannot exclude get_user_pages_fast() from this.  
+In short: you've got a lot more work on your hands to do.
+
+> Thanks. :)
+
+Cheers,
+
+		-ben
 -- 
-Duncan - List replies preferred.   No HTML msgs.
-"Every nonfree program has a lord, a master --
-and if you use the program, he is your master."  Richard Stallman
-
+"Thought is the essence of where you are now."
