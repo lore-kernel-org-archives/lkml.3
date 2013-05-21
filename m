@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab3EUVkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:40:32 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50441 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751689Ab3EUVka (ORCPT
+	id S1751983Ab3EUVm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:42:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58787 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab3EUVm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:40:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18kBubdO+jdRcGylEsDiRKK
-Date: Tue, 21 May 2013 14:40:27 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH] rtc: rtc-twl: Fix missing device_init_wakeup() when booted
- with device tree
-Message-ID: <20130521214026.GV10378@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 21 May 2013 17:42:27 -0400
+Date: Tue, 21 May 2013 14:42:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH 3/4] rtc: rtc-hid-sensor-time: add option hctosys to set
+ time at boot
+Message-Id: <20130521144225.c42faaacf8aba55691cde5b7@linux-foundation.org>
+In-Reply-To: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
+References: <51765FB9.2050009@ahsoftware.de>
+	<1367752887-2927-1-git-send-email-holler@ahsoftware.de>
+	<1367752887-2927-4-git-send-email-holler@ahsoftware.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booted in legacy mode device_init_wakeup() gets called
-by drivers/mfd/twl-core.c when the children are initialized.
-However, when booted using device tree, the children are
-created with of_platform_populate() instead add_children().
+On Sun,  5 May 2013 13:21:26 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
 
-This means that the RTC driver will not have device_init_wakeup()
-set, and we need to call it from the driver probe like RTC drivers
-typically do.
+> drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
+> rtc-hid-sensor-time because it will be called in late_init, and thus before
+> rtc-hid-sensor-time gets loaded. To set the time through
+> rtc-hid-sensor-time at startup, the module now checks by default if the
+> system time is before 1970-01-02 and sets the system time (once) if this is
+> the case.
+> 
+> To disable this behaviour, set the module option hctosys to zero, e.g. by
+> using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
+> driver is statically linked into the kernel.
 
-Without this we cannot test PM wake-up events on omaps for
-cases where there may not be any physical wake-up event.
+I still find this rather unpleasant.  Partly because it's hacky, mainly
+because it only solves the problem for one driver.
 
-Reported-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Can we please try harder to find a more general fix?
 
----
+For example: if hctosys finds there are no drivers available, it sets a
+flag.  Later when drivers are registered(?), that flag is queried and,
+if set, we set the system time at this time.
 
-This fix is for the -rc cycle please.
-
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -524,6 +524,7 @@ static int twl_rtc_probe(struct platform_device *pdev)
- 	}
- 
- 	platform_set_drvdata(pdev, rtc);
-+	device_init_wakeup(&pdev->dev, 1);
- 	return 0;
- 
- out2:
+Or something.
