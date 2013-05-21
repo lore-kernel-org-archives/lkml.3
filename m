@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab3EUKku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:40:50 -0400
+	id S1754102Ab3EUKlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:41:00 -0400
 Received: from mga03.intel.com ([143.182.124.21]:23781 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab3EUKkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:40:47 -0400
+	id S1753940Ab3EUKkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:40:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
-   d="scan'208";a="305622758"
+   d="scan'208";a="305622766"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: linux-usb@vger.kernel.org
 Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v2 3/4] usb: xhci: add USB2 Link power management BESL support
-Date: Tue, 21 May 2013 13:43:36 +0300
-Message-Id: <1369133017-3035-4-git-send-email-mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v2 4/4] usb: add usb2 Link PM variables to sysfs and usb_device
+Date: Tue, 21 May 2013 13:43:37 +0300
+Message-Id: <1369133017-3035-5-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
 References: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
@@ -23,345 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb 2.0 devices with link power managment (LPM) can describe their idle link
-timeouts either in BESL or HIRD format, so far xHCI has only supported HIRD but
-later xHCI errata add BESL support as well
+Adds abitilty to tune L1 timeout (inactivity timer for usb2 link sleep)
+and BESL (best effort service latency)via sysfs.
 
-BESL timeouts need to inform exit latency changes with an evaluate
-context command the same way USB 3.0 link PM code does.
-The same xhci_change_max_exit_latency() function is used as with USB3
-but code is pulled out from #ifdef CONFIG_PM as USB2.0 BESL LPM
-funcionality does not depend on CONFIG_PM.
+This also adds a new usb2_lpm_parameters structure with those variables to
+struct usb_device.
 
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 ---
- drivers/usb/host/xhci-ext-caps.h |    1 +
- drivers/usb/host/xhci.c          |  201 ++++++++++++++++++++++++++------------
- drivers/usb/host/xhci.h          |   23 +++++
- include/linux/usb.h              |    2 +
- 4 files changed, 163 insertions(+), 64 deletions(-)
+ drivers/usb/core/sysfs.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci.c  |    6 +++-
+ include/linux/usb.h      |   17 ++++++++++++++
+ 3 files changed, 75 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ext-caps.h b/drivers/usb/host/xhci-ext-caps.h
-index 377f424..8d7a132 100644
---- a/drivers/usb/host/xhci-ext-caps.h
-+++ b/drivers/usb/host/xhci-ext-caps.h
-@@ -71,6 +71,7 @@
+diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+index aa38db4..62dc4c7 100644
+--- a/drivers/usb/core/sysfs.c
++++ b/drivers/usb/core/sysfs.c
+@@ -497,8 +497,62 @@ set_usb2_hardware_lpm(struct device *dev, struct device_attribute *attr,
+ static DEVICE_ATTR(usb2_hardware_lpm, S_IRUGO | S_IWUSR, show_usb2_hardware_lpm,
+ 			set_usb2_hardware_lpm);
  
- /* USB 2.0 xHCI 1.0 hardware LMP capability - section 7.2.2.1.3.2 */
- #define XHCI_HLC               (1 << 19)
-+#define XHCI_BLC               (1 << 19)
- 
- /* command register values to disable interrupts and halt the HC */
- /* start/stop HC execution - do not write unless HC is halted*/
++static ssize_t
++show_usb2_lpm_l1_timeout(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	return sprintf(buf, "%d\n", udev->l1_params.timeout);
++}
++
++static ssize_t
++set_usb2_lpm_l1_timeout(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	u8 timeout;
++
++	if (kstrtou8(buf, 0, &timeout))
++		return -EINVAL;
++
++	udev->l1_params.timeout = timeout;
++
++	return count;
++}
++
++static DEVICE_ATTR(usb2_lpm_l1_timeout, S_IRUGO | S_IWUSR,
++		   show_usb2_lpm_l1_timeout, set_usb2_lpm_l1_timeout);
++
++static ssize_t
++show_usb2_lpm_besl(struct device *dev, struct device_attribute *attr,
++		   char *buf)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	return sprintf(buf, "%d\n", udev->l1_params.besl);
++}
++
++static ssize_t
++set_usb2_lpm_besl(struct device *dev, struct device_attribute *attr,
++		const char *buf, size_t count)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	u8 besl;
++
++	if (kstrtou8(buf, 0, &besl) || besl > 15)
++		return -EINVAL;
++
++	udev->l1_params.besl = besl;
++
++	return count;
++}
++
++static DEVICE_ATTR(usb2_lpm_besl, S_IRUGO | S_IWUSR,
++		   show_usb2_lpm_besl, set_usb2_lpm_besl);
++
+ static struct attribute *usb2_hardware_lpm_attr[] = {
+ 	&dev_attr_usb2_hardware_lpm.attr,
++	&dev_attr_usb2_lpm_l1_timeout.attr,
++	&dev_attr_usb2_lpm_besl.attr,
+ 	NULL,
+ };
+ static struct attribute_group usb2_hardware_lpm_attr_group = {
 diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 317bf08..22932d9 100644
+index 22932d9..da4215f 100644
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -3805,6 +3805,56 @@ int xhci_find_raw_port_number(struct usb_hcd *hcd, int port1)
- 	return raw_port;
- }
- 
-+/*
-+ * Issue an Evaluate Context command to change the Maximum Exit Latency in the
-+ * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
-+ */
-+static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
-+			struct usb_device *udev, u16 max_exit_latency)
-+{
-+	struct xhci_virt_device *virt_dev;
-+	struct xhci_command *command;
-+	struct xhci_input_control_ctx *ctrl_ctx;
-+	struct xhci_slot_ctx *slot_ctx;
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&xhci->lock, flags);
-+	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
-+		spin_unlock_irqrestore(&xhci->lock, flags);
-+		return 0;
-+	}
-+
-+	/* Attempt to issue an Evaluate Context command to change the MEL. */
-+	virt_dev = xhci->devs[udev->slot_id];
-+	command = xhci->lpm_command;
-+	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
-+	spin_unlock_irqrestore(&xhci->lock, flags);
-+
-+	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
-+	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
-+	slot_ctx = xhci_get_slot_ctx(xhci, command->in_ctx);
-+	slot_ctx->dev_info2 &= cpu_to_le32(~((u32) MAX_EXIT));
-+	slot_ctx->dev_info2 |= cpu_to_le32(max_exit_latency);
-+
-+	xhci_dbg(xhci, "Set up evaluate context for LPM MEL change.\n");
-+	xhci_dbg(xhci, "Slot %u Input Context:\n", udev->slot_id);
-+	xhci_dbg_ctx(xhci, command->in_ctx, 0);
-+
-+	/* Issue and wait for the evaluate context command. */
-+	ret = xhci_configure_endpoint(xhci, udev, command,
-+			true, true);
-+	xhci_dbg(xhci, "Slot %u Output Context:\n", udev->slot_id);
-+	xhci_dbg_ctx(xhci, virt_dev->out_ctx, 0);
-+
-+	if (!ret) {
-+		spin_lock_irqsave(&xhci->lock, flags);
-+		virt_dev->current_mel = max_exit_latency;
-+		spin_unlock_irqrestore(&xhci->lock, flags);
-+	}
-+	return ret;
-+}
-+
- #ifdef CONFIG_PM_RUNTIME
- 
- /* BESL to HIRD Encoding array for USB2 LPM */
-@@ -3846,6 +3896,25 @@ static int xhci_calculate_hird_besl(struct xhci_hcd *xhci,
- 	return besl;
- }
- 
-+/* Calculate BESLD, L1 timeout and HIRDM for USB2 PORTHLPMC */
-+static int xhci_calculate_usb2_hw_lpm_params(struct usb_device *udev)
-+{
-+	u32 field;
-+	int l1 =  XHCI_L1_TIMEOUT;
-+	int besld = 0;
-+	int hirdm = 0;
-+
-+	field = le32_to_cpu(udev->bos->ext_cap->bmAttributes);
-+
-+	/* device has preferred BESLD */
-+	if (field & USB_BESL_DEEP_VALID) {
-+		besld = USB_GET_BESL_DEEP(field);
-+		hirdm = 1;
-+	}
-+
-+	return PORT_BESLD(besld) | PORT_L1_TIMEOUT(l1) | PORT_HIRDM(hirdm);
-+}
-+
- static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
- 					struct usb_device *udev)
+@@ -3900,7 +3900,7 @@ static int xhci_calculate_hird_besl(struct xhci_hcd *xhci,
+ static int xhci_calculate_usb2_hw_lpm_params(struct usb_device *udev)
  {
-@@ -3978,11 +4047,12 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- {
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
- 	__le32 __iomem	**port_array;
--	__le32 __iomem	*pm_addr;
--	u32		temp;
-+	__le32 __iomem	*pm_addr, *hlpm_addr;
-+	u32		pm_val, hlpm_val, field;
- 	unsigned int	port_num;
- 	unsigned long	flags;
--	int		hird;
-+	int		hird, exit_latency;
-+	int		ret;
+ 	u32 field;
+-	int l1 =  XHCI_L1_TIMEOUT;
++	int l1 =  udev->l1_params.timeout;
+ 	int besld = 0;
+ 	int hirdm = 0;
  
- 	if (hcd->speed == HCD_USB3 || !xhci->hw_lpm_support ||
- 			!udev->lpm_capable)
-@@ -4000,23 +4070,73 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- 	port_array = xhci->usb2_ports;
- 	port_num = udev->portnum - 1;
- 	pm_addr = port_array[port_num] + PORTPMSC;
--	temp = xhci_readl(xhci, pm_addr);
-+	pm_val = xhci_readl(xhci, pm_addr);
-+	hlpm_addr = port_array[port_num] + PORTHLPMC;
-+	field = le32_to_cpu(udev->bos->ext_cap->bmAttributes);
+@@ -4088,7 +4088,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
+ 			    (field & USB_BESL_BASELINE_VALID))
+ 				hird = USB_GET_BESL_BASELINE(field);
+ 			else
+-				hird = XHCI_DEFAULT_BESL;
++				hird = udev->l1_params.besl;
  
- 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
- 			enable ? "enable" : "disable", port_num);
- 
--	hird = xhci_calculate_hird_besl(xhci, udev);
--
- 	if (enable) {
--		temp &= ~PORT_HIRD_MASK;
--		temp |= PORT_HIRD(hird) | PORT_RWE;
--		xhci_writel(xhci, temp, pm_addr);
--		temp = xhci_readl(xhci, pm_addr);
--		temp |= PORT_HLE;
--		xhci_writel(xhci, temp, pm_addr);
-+		/* Host supports BESL timeout instead of HIRD */
-+		if (udev->usb2_hw_lpm_besl_capable) {
-+			/* if device doesn't have a preferred BESL value use a
-+			 * default one which works with mixed HIRD and BESL
-+			 * systems. See XHCI_DEFAULT_BESL definition in xhci.h
-+			 */
-+			if ((field & USB_BESL_SUPPORT) &&
-+			    (field & USB_BESL_BASELINE_VALID))
-+				hird = USB_GET_BESL_BASELINE(field);
-+			else
-+				hird = XHCI_DEFAULT_BESL;
-+
-+			exit_latency = xhci_besl_encoding[hird];
-+			spin_unlock_irqrestore(&xhci->lock, flags);
-+
-+			/* USB 3.0 code dedicate one xhci->lpm_command->in_ctx
-+			 * input context for link powermanagement evaluate
-+			 * context commands. It is protected by hcd->bandwidth
-+			 * mutex and is shared by all devices. We need to set
-+			 * the max ext latency in USB 2 BESL LPM as well, so
-+			 * use the same mutex and xhci_change_max_exit_latency()
-+			 */
-+			mutex_lock(hcd->bandwidth_mutex);
-+			ret = xhci_change_max_exit_latency(xhci, udev,
-+							   exit_latency);
-+			mutex_unlock(hcd->bandwidth_mutex);
-+
-+			if (ret < 0)
-+				return ret;
-+			spin_lock_irqsave(&xhci->lock, flags);
-+
-+			hlpm_val = xhci_calculate_usb2_hw_lpm_params(udev);
-+			xhci_writel(xhci, hlpm_val, hlpm_addr);
-+			/* flush write */
-+			xhci_readl(xhci, hlpm_addr);
-+		} else {
-+			hird = xhci_calculate_hird_besl(xhci, udev);
-+		}
-+
-+		pm_val &= ~PORT_HIRD_MASK;
-+		pm_val |= PORT_HIRD(hird) | PORT_RWE;
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		pm_val = xhci_readl(xhci, pm_addr);
-+		pm_val |= PORT_HLE;
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		/* flush write */
-+		xhci_readl(xhci, pm_addr);
- 	} else {
--		temp &= ~(PORT_HLE | PORT_RWE | PORT_HIRD_MASK);
--		xhci_writel(xhci, temp, pm_addr);
-+		pm_val &= ~(PORT_HLE | PORT_RWE | PORT_HIRD_MASK);
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		/* flush write */
-+		xhci_readl(xhci, pm_addr);
-+		if (udev->usb2_hw_lpm_besl_capable) {
-+			spin_unlock_irqrestore(&xhci->lock, flags);
-+			mutex_lock(hcd->bandwidth_mutex);
-+			xhci_change_max_exit_latency(xhci, udev, 0);
-+			mutex_unlock(hcd->bandwidth_mutex);
-+			return 0;
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -4058,6 +4178,9 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 			exit_latency = xhci_besl_encoding[hird];
+ 			spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -4178,6 +4178,8 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
  		if (xhci->hw_lpm_support == 1 &&
  		    xhci_check_usb2_port_capability(xhci, portnum, XHCI_HLC)) {
  			udev->usb2_hw_lpm_capable = 1;
-+			if (xhci_check_usb2_port_capability(xhci, portnum,
-+							    XHCI_BLC))
-+				udev->usb2_hw_lpm_besl_capable = 1;
- 			ret = xhci_set_usb2_hardware_lpm(hcd, udev, 1);
- 			if (!ret)
- 				udev->usb2_hw_lpm_enabled = 1;
-@@ -4388,56 +4511,6 @@ static u16 xhci_calculate_lpm_timeout(struct usb_hcd *hcd,
- 	return timeout;
- }
- 
--/*
-- * Issue an Evaluate Context command to change the Maximum Exit Latency in the
-- * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
-- */
--static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
--			struct usb_device *udev, u16 max_exit_latency)
--{
--	struct xhci_virt_device *virt_dev;
--	struct xhci_command *command;
--	struct xhci_input_control_ctx *ctrl_ctx;
--	struct xhci_slot_ctx *slot_ctx;
--	unsigned long flags;
--	int ret;
--
--	spin_lock_irqsave(&xhci->lock, flags);
--	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
--		spin_unlock_irqrestore(&xhci->lock, flags);
--		return 0;
--	}
--
--	/* Attempt to issue an Evaluate Context command to change the MEL. */
--	virt_dev = xhci->devs[udev->slot_id];
--	command = xhci->lpm_command;
--	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
--	spin_unlock_irqrestore(&xhci->lock, flags);
--
--	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
--	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
--	slot_ctx = xhci_get_slot_ctx(xhci, command->in_ctx);
--	slot_ctx->dev_info2 &= cpu_to_le32(~((u32) MAX_EXIT));
--	slot_ctx->dev_info2 |= cpu_to_le32(max_exit_latency);
--
--	xhci_dbg(xhci, "Set up evaluate context for LPM MEL change.\n");
--	xhci_dbg(xhci, "Slot %u Input Context:\n", udev->slot_id);
--	xhci_dbg_ctx(xhci, command->in_ctx, 0);
--
--	/* Issue and wait for the evaluate context command. */
--	ret = xhci_configure_endpoint(xhci, udev, command,
--			true, true);
--	xhci_dbg(xhci, "Slot %u Output Context:\n", udev->slot_id);
--	xhci_dbg_ctx(xhci, virt_dev->out_ctx, 0);
--
--	if (!ret) {
--		spin_lock_irqsave(&xhci->lock, flags);
--		virt_dev->current_mel = max_exit_latency;
--		spin_unlock_irqrestore(&xhci->lock, flags);
--	}
--	return ret;
--}
--
- static int calculate_max_exit_latency(struct usb_device *udev,
- 		enum usb3_link_state state_changed,
- 		u16 hub_encoded_timeout)
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index b6cd55e..768f7fb 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -386,6 +386,29 @@ struct xhci_op_regs {
- #define	PORT_L1DS(p)		(((p) & 0xff) << 8)
- #define	PORT_HLE		(1 << 16)
- 
-+
-+/* USB2 Protocol PORTHLPMC */
-+#define PORT_HIRDM(p)((p) & 3)
-+#define PORT_L1_TIMEOUT(p)(((p) & 0xff) << 2)
-+#define PORT_BESLD(p)(((p) & 0xf) << 10)
-+
-+/* use 512us as USB2 LPM L1 default timeout.
-+ * For encoding see xHCI 1.0 section 5.4.11.2
-+ */
-+#define XHCI_L1_TIMEOUT                0x02
-+
-+/* Set default HIRD/BESL value to 4 (350/400us) for USB2 L1 LPM resume latency.
-+ * Safe to use with mixed HIRD and BESL systems (host and device) and is used
-+ * by other operating systems.
-+ *
-+ * XHCI 1.0 errata 8/14/12 Table 13 notes:
-+ * "Software should choose xHC BESL/BESLD field values that do not violate a
-+ * device's resume latency requirements,
-+ * e.g. not program values > '4' if BLC = '1' and a HIRD device is attached,
-+ * or not program values < '4' if BLC = '0' and a BESL device is attached.
-+ */
-+#define XHCI_DEFAULT_BESL      4
-+
- /**
-  * struct xhci_intr_reg - Interrupt Register Set
-  * @irq_pending:	IMAN - Interrupt Management Register.  Used to enable
++			udev->l1_params.timeout = XHCI_L1_TIMEOUT;
++			udev->l1_params.besl = XHCI_DEFAULT_BESL;
+ 			if (xhci_check_usb2_port_capability(xhci, portnum,
+ 							    XHCI_BLC))
+ 				udev->usb2_hw_lpm_besl_capable = 1;
 diff --git a/include/linux/usb.h b/include/linux/usb.h
-index a0bee5a..3a1b864 100644
+index 3a1b864..08f6c63 100644
 --- a/include/linux/usb.h
 +++ b/include/linux/usb.h
-@@ -468,6 +468,7 @@ struct usb3_lpm_parameters {
-  * @wusb: device is Wireless USB
-  * @lpm_capable: device supports LPM
-  * @usb2_hw_lpm_capable: device can perform USB2 hardware LPM
-+ * @usb2_hw_lpm_besl_capable: device can perform USB2 hardware BESL LPM
-  * @usb2_hw_lpm_enabled: USB2 hardware LPM enabled
-  * @usb3_lpm_enabled: USB3 hardware LPM enabled
-  * @string_langid: language ID for strings
-@@ -538,6 +539,7 @@ struct usb_device {
- 	unsigned wusb:1;
- 	unsigned lpm_capable:1;
- 	unsigned usb2_hw_lpm_capable:1;
-+	unsigned usb2_hw_lpm_besl_capable:1;
- 	unsigned usb2_hw_lpm_enabled:1;
- 	unsigned usb3_lpm_enabled:1;
- 	int string_langid;
+@@ -394,6 +394,21 @@ enum usb_port_connect_type {
+ };
+ 
+ /*
++ * USB 2.0 Link Power Management (LPM) parameters.
++ */
++struct usb2_lpm_parameters {
++	/* Best effort service latency indicate how long the host will drive
++	 * resume on an exit from L1.
++	 */
++	unsigned int besl;
++
++	/* Timeout value for the L1 inactivity timer (LPM Timer). When the timer
++	 * counts to zero, the parent hub will initiate an LPM transition to L1.
++	 */
++	int timeout;
++};
++
++/*
+  * USB 3.0 Link Power Management (LPM) parameters.
+  *
+  * PEL and SEL are USB 3.0 Link PM latencies for device-initiated LPM exit.
+@@ -488,6 +503,7 @@ struct usb3_lpm_parameters {
+  *	specific data for the device.
+  * @slot_id: Slot ID assigned by xHCI
+  * @removable: Device can be physically removed from this port
++ * @l1_params: best effor service latency for USB2 L1 LPM state, and L1 timeout.
+  * @u1_params: exit latencies for USB3 U1 LPM state, and hub-initiated timeout.
+  * @u2_params: exit latencies for USB3 U2 LPM state, and hub-initiated timeout.
+  * @lpm_disable_count: Ref count used by usb_disable_lpm() and usb_enable_lpm()
+@@ -568,6 +584,7 @@ struct usb_device {
+ 	struct wusb_dev *wusb_dev;
+ 	int slot_id;
+ 	enum usb_device_removable removable;
++	struct usb2_lpm_parameters l1_params;
+ 	struct usb3_lpm_parameters u1_params;
+ 	struct usb3_lpm_parameters u2_params;
+ 	unsigned lpm_disable_count;
 -- 
 1.7.4.1
 
