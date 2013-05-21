@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab3EUHG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:06:58 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2063 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab3EUHG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:06:57 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <1369120003.25971.2.camel@lb-tlvb-eilong.il.broadcom.com>
-Subject: Re: [PATCH v3 net-next 3/4] ixgbe: Add support for ndo_ll_poll
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Eliezer Tamir" <eliezer.tamir@linux.intel.com>,
-        "Or Gerlitz" <or.gerlitz@gmail.com>
-cc: "Dave Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org,
-        "Jesse Brandeburg" <jesse.brandeburg@intel.com>,
-        "Don Skidmore" <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        "Willem de Bruijn" <willemb@google.com>,
-        "Andi Kleen" <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        "Eliezer Tamir" <eliezer@tamir.org.il>
-Date: Tue, 21 May 2013 10:06:43 +0300
-In-Reply-To: <519B1A2B.4010909@linux.intel.com>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
- <20130520101622.14133.21998.stgit@ladj378.jer.intel.com>
- <CAJZOPZJx8vpSWqOhmN65gn=vi7hWXQO_J01+hAwGY9RwetX3DA@mail.gmail.com>
- <519B1A2B.4010909@linux.intel.com>
-Organization: Broadcom
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18)
+	id S1755753Ab3EUHKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:10:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39758 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755109Ab3EUHKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 03:10:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,712,1363104000"; 
+   d="scan'208";a="7321421"
+Message-ID: <519B1E75.5040401@cn.fujitsu.com>
+Date: Tue, 21 May 2013 15:12:53 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-WSS-ID: 7D85C3B831W23788522-01-01
-Content-Type: text/plain;
- charset=utf-8
+To: Pekka Enberg <penberg@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        x86 maintainers <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] numa, mm, memory-hotplug: Do not allocate pagetable
+ to local node with MEMORY_HOTREMOVE enabled.
+References: <1368705021-24396-1-git-send-email-tangchen@cn.fujitsu.com> <CAOJsxLEhSM1foG=fUcGyz1rvfPPirh4jW+dZuhO6ap5oKFk5ug@mail.gmail.com>
+In-Reply-To: <CAOJsxLEhSM1foG=fUcGyz1rvfPPirh4jW+dZuhO6ap5oKFk5ug@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 15:08:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 15:08:43,
+	Serialize complete at 2013/05/21 15:08:43
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 09:54 +0300, Eliezer Tamir wrote:
-> On 20/05/2013 23:20, Or Gerlitz wrote:
-> > On Mon, May 20, 2013 at 1:16 PM, Eliezer Tamir
-> > <eliezer.tamir@linux.intel.com> wrote:
-> >> Add the ixgbe driver code implementing ndo_ll_poll.
-> >> It should be easy for other drivers to do something similar
-> >> in order to enable support for CONFIG_INET_LL_RX_POLL
-> >
-> > I am not sure,
-> 
-> Willem ported this to <some undisclosed HW that they use at Google>, his 
-> feedback was that it was not a major effort.
+Hi
 
-We also played with applying a similar patch on the bnx2x and it looks
-great :) - Thanks Eliezer!
+On 05/21/2013 03:02 PM, Pekka Enberg wrote:
+......
+>
+> Ugh. Special-casing for CONFIG_MEMORY_HOTPLUG is just begging for
+> trouble. Were you able to determine which commit broke memory
+> hot-remove?
 
-Or - at least for the bnx2x, it is easy to add support for this new ndo.
+Please refer to the following patch-set.
+https://lkml.org/lkml/2013/4/11/829
 
-Hopefully this series will be accepted so we can send follow up support
-for the bnx2x as well.
+patch21 and patch22 will allocate pagetable to local, which may cause
+memory hot-remove fail.
 
-Thanks,
-Eilon
+But this patch-set is not in the mainline now.
 
+Thanks. :)
 
 
