@@ -1,127 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab3EUWJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:09:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab3EUWJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:09:24 -0400
-Message-ID: <519BF082.2040309@redhat.com>
-Date: Tue, 21 May 2013 18:09:06 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
+	id S1752623Ab3EUWKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:10:46 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54318 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751604Ab3EUWKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:10:45 -0400
+Message-ID: <519BF0DB.6040108@hurleysoftware.com>
+Date: Tue, 21 May 2013 18:10:35 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alexander Duyck <alexander.duyck@gmail.com>
-CC: Alexander Duyck <alexander.h.duyck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        NetDev <netdev@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
-References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com> <5192AEF4.1070905@intel.com> <519BE778.9040800@redhat.com> <519BE7C4.3050306@redhat.com> <519BEE22.3080806@gmail.com>
-In-Reply-To: <519BEE22.3080806@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>, stephan.gatzka@gmail.com,
+        Tejun Heo <tj@kernel.org>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: function call fw_iso_resource_mange(..) (core-iso.c) does not
+ return
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org> <519BA6AC.1080600@hurleysoftware.com> <62922216e6007f9ef83956e0ca202644@gatzka.org> <20130521235329.48ba65e2@stein>
+In-Reply-To: <20130521235329.48ba65e2@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 05:58 PM, Alexander Duyck wrote:
-> On 05/21/2013 02:31 PM, Don Dutile wrote:
->> On 05/21/2013 05:30 PM, Don Dutile wrote:
->>> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
->>>> On 05/14/2013 12:59 PM, Yinghai Lu wrote:
->>>>> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
->>>>> <alexander.h.duyck@intel.com>  wrote:
->>>>>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
->>>>>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
->>>>>>> <alexander.h.duyck@intel.com>  wrote:
->>>>>>>> I'm sorry, but what is the point of this patch? With device
->>>>>>>> assignment
->>>>>>>> it is always possible to have VFs loaded and the PF driver unloaded
->>>>>>>> since you cannot remove the VFs if they are assigned to a VM.
->>>>>>> unload PF driver will not call pci_disable_sriov?
->>>>>> You cannot call pci_disable_sriov because you will panic all of the
->>>>>> guests that have devices assigned.
->>>>> ixgbe_remove did call pci_disable_sriov...
->>>>>
->>>>> for guest panic, that is another problem.
->>>>> just like you pci passthrough with real pci device and hotremove the
->>>>> card in host.
->>>>>
->>>>> ...
->>>>
->>>> I suggest you take another look. In ixgbe_disable_sriov, which is the
->>>> function that is called we do a check for assigned VFs. If they are
->>>> assigned then we do not call pci_disable_sriov.
->>>>
->>>>>
->>>>>> So how does your patch actually fix this problem? It seems like it is
->>>>>> just avoiding it.
->>>>> yes, until the first one is done.
->>>>
->>>> Avoiding the issue doesn't fix the underlying problem and instead you
->>>> are likely just introducing more bugs as a result.
->>>>
->>>>>>  From what I can tell your problem is originating in pci_call_probe. I
->>>>>> believe it is calling work_on_cpu and that doesn't seem correct since
->>>>>> the work should be taking place on a CPU already local to the PF. You
->>>>>> might want to look there to see why you are trying to schedule work
->>>>>> on a
->>>>>> CPU which should be perfectly fine for you to already be doing your
->>>>>> work on.
->>>>> it always try to go with local cpu with same pxm.
->>>>
->>>> The problem is we really shouldn't be calling work_for_cpu in this case
->>>> since we are already on the correct CPU. What probably should be
->>>> happening is that pci_call_probe should be doing a check to see if the
->>>> current CPU is already contained within the device node map and if so
->>>> just call local_pci_probe directly. That way you can avoid deadlocking
->>>> the system by trying to flush the CPU queue of the CPU you are
->>>> currently on.
->>>>
->>> That's the patch that Michael Tsirkin posted for a fix,
->>> but it was noted that if you have the case where the _same_ driver is
->>> used for vf&  pf,
->>> other deadlocks may occur.
->>> It would work in the case of ixgbe/ixgbevf, but not for something like
->>> the Mellanox pf/vf driver (which is the same).
->>>
->> apologies; here's the thread the discussed the issue:
->> https://patchwork.kernel.org/patch/2458681/
+On 05/21/2013 05:53 PM, Stefan Richter wrote:
+> On May 21 Stephan Gatzka wrote:
+>> Hi all!
 >>
+>>>> The deadlock occurs mainly because the firewire workqueue is allocated
+>>>> with WQ_MEM_RECLAIM. That's why a so called rescuer thread is started
+>>>> while allocating the wq.
+>>>                        ^^^^^^
+>>> Are there other conditions which contribute?  For example, Ralf
+>>> reported that
+>>> having the bus_reset_work on its own wq delayed but did not eliminate
+>>> the
+>>> deadlock.
+>>>
+>>
+>> The worker threads are independant from the workqueues. New worker
+>> thread are only allocated if all current worker threads are sleeping and
+>> are making no progress. Right now I don't know if Ralfs separate queue
+>> for bus_reset_work was allocated with MEM_RECLAIM. Buf even if it has
+>> it's own rescuer thread, that should not block because there is no other
+>> work in that queue. No, right now I have no explanation for that.
 >
-> I found out about that patch after I submitted one that was similar.
-> The only real complaint I had about his patch was that it was only
-> looking at the CPU and he could save himself some trouble by just doing
-> the work locally if we were on the correct NUMA node.  For example if
-> the system only has one node in it what is the point in scheduling all
-> of the work on CPU 0?  My alternative patch can be found at:
-> https://patchwork.kernel.org/patch/2568881/
+> Indeed.  Ralf wrote he had given bus_reset_work its own workqueue (which
+> reduced the probability of the bug but did not eliminate it), and then
+> there can only three things happen (from my perspective as a mere API
+> user):
+>    a) The ohci->bus_reset_work instance is queued while the wq is empty.
+>       Which is the trivial case and presumably works.
+>       queue_work() returns nonzero.
 >
-> As far as the inter-driver locking issues for same driver I don't think
-> that is really any kind if issue.  Most drivers shouldn't be holding any
-> big locks when they call pci_enable_sriov.  If I am not mistaken the
-> follow on patch I submitted which was similar to Michaels was reported
-> to have resolved the issue.
->
-You mean the above patchwork patch, or another one?
+>    b) The instance is queued while the very same instance has already been
+>       queued but is not yet being executed.  Sounds trivial too:  These two
+>       or more queuing attempts before execution should in total lead to the
+>       work be executed once.
+>       queue_work() returns zero in this case.
+>       Ralf observed this condition to coincide with the hang.
 
-> As far as the Mellanox PF/VF the bigger issue is that when they call
-> pci_enable_sriov they are not ready to handle VFs.  There have been
-> several suggestions on how to resolve it including -EPROBE_DEFER or the
-> igbvf/ixgbevf approach of just brining up the device in a "link down" state.
->
-thanks for summary.  i was backlogged on email, and responding as i read them;
-I should have read through the whole thread before chiming in.
+An important note with case b) is that Ralf (the original reporter) was
+running 3.4.something.  I'm aware that some work has gone into workqueue
+locks in 3.9 and 3.10. I asked Ralf if he could reproduce on a more
+recent kernel but never heard back. Maybe these are two different problems
+(ie, a failure to guarantee forward progress on a single workqueue and
+a straightforward deadlock when using two wqs)?
 
-> Thanks,
+Stephan Gatzka,
+what kernel version did you instrument and reproduce this with?
+
+>    c) The instance is queued while it is being executed.  In this case,
+>       the work must be put into the queue but must not be started until its
+>       present execution finished.  (We have a non-reentrant workqueue which
+>       is meant to guarantee that one and the same worklet instance is
+>       executed at most once at any time, systemwide.)
+>       queue_work() returns nonzero in this case.
+>       Whether this condition is involved in the problem or not is not clear
+>       to me.  Maybe one occurrence of condition c initiates the problem,
+>       and the occurrences of b which had been observed are only a
+>       by-product.  Or the trouble starts in condition b only...?
 >
-> Alex
+> Well, a few further conditions can happen if there are several OHCI-1394
+> LLCs in the system and all fw_ohci instances share a single workqueue.
+> But since there is no dependency between different ohci->bus_reset_work
+> instances (in contrast to firewire-core worklets and upper layer worklets
+> whose progress depends on firewire-ohci worklets' progress), the only
+> effect of such sharing would be that conditions b and c are somewhat more
+> likely to occur, especially if bus resets on the different buses are
+> correlated.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> This rescuer thread is responsible to keep the queue working even
+>>>> under high memory pressure so that a memory allocation might sleep. If
+>>>> that happens, all work of that workqueue is designated to that
+>>>> particular rescuer thread. The work in this rescuer thread is done
+>>>> strictly sequential. Now we have the situation that the rescuer thread
+>>>> runs fw_device_init->read_config_rom->read_rom->fw_run_transaction.
+>>>> fw_run_transaction blocks waiting for the completion object. This
+>>>> completion object will be completed in bus_reset_work, but this work
+>>>> will never executed in the rescuer thread.
+>>>
+>>> Interesting.
+>>>
+>>> Tejun, is this workqueue behavior as designed?  Ie., that a workqueue
+>>> used
+>>> as a domain for forward progress guarantees collapses under certain
+>>> conditions,
+>>> such as scheduler overhead and no longer ensures forward progress?
+>>>
+>>>
+>>> I've observed the string of bus resets on startup as well and I think
+>>> it has to do
+>>> with failing to ack the interrupt promptly because the log printk()
+>>> takes too long (>50us).
+>>> The point being that I don't think this is contributing to the
+>>> create_worker() +10ms
+>>> delay.
+>>
+>> That depends on. The console on embedded systems (like ours) often runs
+>> on a serial port with 115200 baud. We measured the cost of a printk and
+>> dependent of the length and parameters that might easily go up to
+>> several ms. So dependent on the console level set you might run into
+>> trouble.
+>>
+>> Regards,
+>>
+>> Stephan
+>
 
