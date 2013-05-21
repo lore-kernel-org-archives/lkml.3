@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab3EUOwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:52:55 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45614 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab3EUOww (ORCPT
+	id S1754093Ab3EUPBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:01:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22967 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab3EUPBe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:52:52 -0400
-Date: Tue, 21 May 2013 16:52:43 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Shaohua Li <shli@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Lost IPIs during CPU Hotplug
-Message-ID: <20130521145243.GA29150@osiris>
-References: <20130520123743.GA4108@osiris>
+	Tue, 21 May 2013 11:01:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,714,1363158000"; 
+   d="scan'208";a="337655313"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: RE: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
+Thread-Topic: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
+Thread-Index: AQHOVis7CWvG47qD5UG7R/nagjEs65kPu5zw
+Date: Tue, 21 May 2013 15:01:27 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01F2E489@HASMSX106.ger.corp.intel.com>
+References: <20130521135817.GE4589@zurbaran>
+In-Reply-To: <20130521135817.GE4589@zurbaran>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130520123743.GA4108@osiris>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052114-3548-0000-0000-000005741038
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 02:37:43PM +0200, Heiko Carstens wrote:
-> I just got a dump from a system running a 3.0.something kernel, however I
-> think the problem exists with current kernels as well.
+
+
+> -----Original Message-----
+> From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+> Sent: Tuesday, May 21, 2013 16:58
+> To: Winkler, Tomas
+> Cc: linux-kernel
+> Subject: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
 > 
-> Testcase was some I/O intense workload together with cpu hotplug stress.
+> After cancelling all reads from the disable hook, we need to reset the
+> event_cb pointer as well or else we won't be able to set a new one up when
+> re-enabling the device.
 > 
-> When trying to bring a cpu online we got an endless loop on the cpu that
-> issued the cpu_up and called smp_call_function_single() within its cpu
-> hotplug notifier:
-
-[...]
-
-> It looks to me like the IPI(s) was lost when cpu 3 was brought down before:
-
-[...]
-
-> So it looks to me like yet another CPU_DYING cpu hotplug notifier is needed
-> for the generic smp code, which looks for pending IPIs on the to be brought
-> down cpu and executes them.
-> 
-> Does that make sense?
-
-Ok, I was able to reproduce it. And the fix should be in the s390 specific
-arch code within __cpu_disable() just before the cpu gets removed from the
-cpu online mask.
-No idea why this never has been seen before.
+> Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Acked.
 
