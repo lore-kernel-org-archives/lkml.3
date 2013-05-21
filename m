@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab3EUJv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:51:57 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:13179 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3EUJvz (ORCPT
+	id S1752909Ab3EUKAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:00:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33149 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab3EUKAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:51:55 -0400
-Message-ID: <519B418A.7060805@huawei.com>
-Date: Tue, 21 May 2013 17:42:34 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 21 May 2013 06:00:35 -0400
+Message-ID: <519B45C3.8050700@arm.com>
+Date: Tue, 21 May 2013 11:00:35 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Gu Zheng <guz.fnst@cn.fujitsu.com>, David Miller <davem@davemloft.net>,
-        <libo.chen@huawei.com>, <gregkh@linuxfoundation.org>,
-        <samuel@sortiz.org>, <stern@rowland.harvard.edu>, <khc@pm.waw.pl>,
-        <akpm@linux-foundation.org>, <balbi@ti.com>,
-        <sarah.a.sharp@linux.intel.com>, <alexander.shishkin@linux.intel.com>,
-        <brudley@broadcom.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com> <20130520.232619.964940909999914694.davem@davemloft.net> <20130521084108.1a585f32@skate> <519B2993.4090409@cn.fujitsu.com> <20130521110616.21eee053@skate>
-In-Reply-To: <20130521110616.21eee053@skate>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+To: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
+References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 21 May 2013 10:00:31.0828 (UTC) FILETIME=[07A5A140:01CE560A]
+X-MC-Unique: 113052111003218201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/21 17:06, Thomas Petazzoni wrote:
-> Dear Gu Zheng,
-> 
-> On Tue, 21 May 2013 16:00:19 +0800, Gu Zheng wrote:
-> 
->>> Or, maybe make the existing module_platform_driver() macro do this?
->>
->> But not all the modules use module_platform_driver() macro to replace the module init/exit.
-> 
-> Then maybe it's a good opportunity to convert those ones to use
-> module_platform_driver() ?
-> 
-> Thomas
-> 
+Hi Rob, Grant,
 
- In my opinion, not all modules can use module_platform_driver() macro to replace the module init/exit easily, like us3mc_init.
+On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> These are couple of updates to existing PM/OPP library to support
+> sharing of OPPs between different device nodes.
+> 
+> Currently all the cpu nodes are parsed until the OPPs are found. This
+> is essential to support cpuhotplug without having to replicate OPP
+> information in all the cpu nodes.
+> 
+> However in systems with multiple cpu power domain, its better to have
+> OPP entry for each cpu. To avoid replication, phandle can be specified
+> to the node which contains the full OPP information.
+> 
+Is proposed option of phandle for OPP acceptable to avoid replication ?
+Any suggestions to proceed on this ? This is needed to support CPU
+hotplug on big LITTLE system where current methods like parsing all the
+nodes or just CPU0 node will not work.
 
- Furthermore this work will touch various platforms and architectures, I am worried it is hard to *test* (compile and boot).
-
- What do you think?
+Regards,
+Sudeep
 
