@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3EUI4n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:56:43 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:51360 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3EUI4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:56:41 -0400
-Date: Tue, 21 May 2013 10:56:30 +0200
-From: Robert Richter <rric@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Josh Boyer <jwboyer@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, gleb@redhat.com,
-        Jacob Shin <jacob.shin@amd.com>
-Subject: Re: Drop WARN on AMD lack of perfctrs
-Message-ID: <20130521085630.GA1860@rric.localhost>
-References: <20130516175557.GC18325@hansolo.jdub.homelinux.org>
- <20130516181018.GO19669@dyad.programming.kicks-ass.net>
- <20130516205558.GE8356@rric.localhost>
- <20130516213420.GB31393@pd.tnic>
- <20130517090451.GQ19669@dyad.programming.kicks-ass.net>
- <20130517091651.GB23035@pd.tnic>
- <20130517092741.GR19669@dyad.programming.kicks-ass.net>
- <20130517094551.GE23035@pd.tnic>
- <20130517103600.GG8356@rric.localhost>
- <20130517105730.GD5162@dyad.programming.kicks-ass.net>
+	id S1753994Ab3EUI5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:57:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:10631 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753878Ab3EUI5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:57:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="337503453"
+Date: Tue, 21 May 2013 10:56:50 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
+Message-ID: <20130521085650.GB4589@zurbaran>
+References: <20130514091956.GG3297@gmail.com>
+ <20130515090449.GA3494@gmail.com>
+ <20130516224337.GZ22822@zurbaran>
+ <20130517075140.GA25077@balto.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130517105730.GD5162@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130517075140.GA25077@balto.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.05.13 12:57:30, Peter Zijlstra wrote:
+Hi Fabio,
+
+On Fri, May 17, 2013 at 09:51:40AM +0200, Fabio Baltieri wrote:
+> Hello Samuel,
 > 
-> So what about something like the below?
-
-See my comments below, otherwise it looks fine to me.
-
-There is the question about core performance counters and its
-constraints on fam16h. Not sure if there are any. Cc'ing Jacob.
-
--Robert
-
+> On Fri, May 17, 2013 at 12:43:37AM +0200, Samuel Ortiz wrote:
+> > > Fabio Baltieri (5):
+> > >       mfd: abx500-core: Fix sparse warning
+> > >       mfd: ab8500-sysctrl: Fix sparse warning
+> > >       mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+> > >       mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+> > Unless I'm missing something here, this one is not really rcN material, so
+> > I'd appreciate if you could queue it to your for-mfd branch instead.
 > 
-> ---
->  arch/x86/kernel/cpu/perf_event_amd.c | 26 ++++++++++----------------
->  1 file changed, 10 insertions(+), 16 deletions(-)
+> The last two:
 > 
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-> index 7e28d94..87e8a7e 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> @@ -648,24 +648,19 @@ static __initconst const struct x86_pmu amd_pmu = {
->  	.cpu_dead		= amd_pmu_cpu_dead,
->  };
->  
-> -static int setup_event_constraints(void)
-> +__init int amd_core_pmu_init(void)
->  {
-> -	if (boot_cpu_data.x86 == 0x15)
-> +	switch (boot_cpu_data.x86) {
-> +	case 0x15:
-> +		pr_cont("Fam15h ");
->  		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
-> -	return 0;
-> -}
-> +		break;
->  
-> -static int setup_perfctr_core(void)
-> -{
-> -	if (!cpu_has_perfctr_core) {
-> -		WARN(x86_pmu.get_event_constraints == amd_get_event_constraints_f15h,
-> -		     KERN_ERR "Odd, counter constraints enabled but no core perfctrs detected!");
-> +	default:
-> +		pr_err("core perfctr but no constraints; unknown hardware!\n");
->  		return -ENODEV;
->  	}
->  
-> -	WARN(x86_pmu.get_event_constraints == amd_get_event_constraints,
-> -	     KERN_ERR "hw perf events core counters need constraints handler!");
-> -
->  	/*
->  	 * If core performance counter extensions exists, we must use
->  	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
+>   mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+This one is already in mfd-fixes, the commit log was clear enough.
 
-... amd_pmu_addr_offset():
 
-         * If core performance counter extensions exists, we must use
-         * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
-         * amd_pmu_addr_offset().
+>   mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+This one is not, as the commit log is not showing it actually fixes something
+but only makes the code cleaner. If it really fixes something, could you
+please provide me with a commit log that describes what exactly it fixes ?
 
-> @@ -675,8 +670,7 @@ static int setup_perfctr_core(void)
->  	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
->  	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
->  
-> -	printk(KERN_INFO "perf: AMD core performance counters detected\n");
-> -
-> +	pr_cont("core perfctr, ");
->  	return 0;
->  }
->  
-> @@ -688,8 +682,8 @@ __init int amd_pmu_init(void)
->  
->  	x86_pmu = amd_pmu;
->  
-> -	setup_event_constraints();
-> -	setup_perfctr_core();
-> +	if (cpu_has_perfctr_core && amd_core_pmu_init())
-> +		return -ENODEV;
+Cheers,
+Samuel.
 
-Better return result of amd_core_pmu_init().
-
->  
->  	/* Events are common for all AMDs */
->  	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
-> 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
