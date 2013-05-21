@@ -1,83 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab3EUI6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:58:31 -0400
-Received: from mail-ia0-f181.google.com ([209.85.210.181]:62378 "EHLO
-	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab3EUI6a (ORCPT
+	id S1754107Ab3EUI6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:58:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50225 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab3EUI6h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:58:30 -0400
+	Tue, 21 May 2013 04:58:37 -0400
+Message-ID: <519B3738.1010004@arm.com>
+Date: Tue, 21 May 2013 09:58:32 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <519B26FD.9080404@linux.vnet.ibm.com>
-References: <1369065716-22801-1-git-send-email-fweisbec@gmail.com>
-	<1369065716-22801-7-git-send-email-fweisbec@gmail.com>
-	<CAK7N6voNjWrDJNzAaVAndt8cGWR+AAERs_C-oCWe0rRO=XuutQ@mail.gmail.com>
-	<519B26FD.9080404@linux.vnet.ibm.com>
-Date: Tue, 21 May 2013 14:28:29 +0530
-Message-ID: <CAK7N6vqcP+fcR0NYUzGDYT6q62KePTrg8yhQkuBq_zetkwUmUw@mail.gmail.com>
-Subject: Re: [RFC PATCH 6/8] kthread: Enable parking requests from setup() and
- unpark() callbacks
-From: anish singh <anish198519851985@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Don Zickus <dzickus@redhat.com>
+To: Chen Gang <gang.chen@asianux.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: kernel: compiling issue, need 'EXPORT_SYMBOL_GPL(read_current_timer)'
+References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com> <519AF2DC.2040200@asianux.com> <5bf8a8dd20ecd01c14f0ed9aa054f2df@localhost> <519B332F.1000404@asianux.com>
+In-Reply-To: <519B332F.1000404@asianux.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 21 May 2013 08:58:33.0485 (UTC) FILETIME=[5F5783D0:01CE5601]
+X-MC-Unique: 113052109583500301
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 1:19 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 05/21/2013 11:04 AM, anish singh wrote:
->> On Mon, May 20, 2013 at 9:31 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>> When the watchdog code is boot-disabled by the user, for example
->>> through the 'nmi_watchdog=0' boot option, the setup() callback of
->>> the watchdog kthread requests to park the task, and that until the
->>> user later re-enables the watchdog through sysctl or procfs.
+On 21/05/13 09:41, Chen Gang wrote:
+> On 05/21/2013 02:13 PM, Marc Zyngier wrote:
+>> On Tue, 21 May 2013 12:06:52 +0800, Chen Gang <gang.chen@asianux.com>
+>> wrote:
+>>> On 05/20/2013 05:56 PM, Will Deacon wrote:
+>>>> On Mon, May 20, 2013 at 08:15:04AM +0100, Marc Zyngier wrote:
+>>>>> On Mon, 20 May 2013 14:48:05 +0800, Chen Gang <gang.chen@asianux.com>
+>>>>> wrote:
+>>>>>> Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with
+>>>>>> allmodconfig.
+>>>>>>
+>>>>>> The related error:
+>>>>>>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
+>>>>>>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
+>>>>>>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
+>>>>>>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+>>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>>>> ---
+>>>>>>  arch/arm64/kernel/time.c |    1 +
+>>>>>>  1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+>>>>>> index a551f88..7fcba80 100644
+>>>>>> --- a/arch/arm64/kernel/time.c
+>>>>>> +++ b/arch/arm64/kernel/time.c
+>>>>>> @@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
+>>>>>>  	*timer_value = arch_timer_read_counter();
+>>>>>>  	return 0;
+>>>>>>  }
+>>>>>> +EXPORT_SYMBOL_GPL(read_current_timer);
+>>>>>>  
+>>>>>>  void __init time_init(void)
+>>>>>>  {
+>>>>>
+>>>>> While this solves the problem, I'm not sure this is the best fix. The
+>>>>> real
+>>>>> issue is with get_cycles, which is a macro around read_current_timer.
+>>>>>
+>>>>> AArch32 exports it because of the number of timer implementations. On
+>>>>> arm64, we should be able to just return CNTVCT_EL0.
+>>>>>
+>>>>> Catalin, Will, what do you think?
+>>>>
+>>>> Should be ok once the arch timer driver has moved exclusively to
+>> virtual
+>>>> time. I'm also not sure we even need to implement read_current_timer()
+>> --
+>>>> it's only used for delay-loop calibration, which we don't need for the
+>>>> arch timer.
+>>>>
 >>>
->>> However the parking request is not well handled when done from
->>> the setup() callback. After ->setup() is called, the generic smpboot
->>> kthread loop directly tries to call the thread function or wait
->>> for some event if ->thread_should_run() is false.
+>>> For whether we need implement read_current_timer():
 >>>
->>> In the case of the watchdog kthread, ->thread_should_run() returns
->>> false and the kthread goes to sleep and wait for the watchdog timer
->>> to wake it up. But the timer is not enabled since the user requested
->>> to disable the watchdog. We want the kthread to park instead of waiting
->>> for events that can't happen.
->>>
->>> As a result, later unpark requests after sysctl write through
->>> 'sysctl -w kernel.watchdog=1' won't wake up/unpark the task as
->>> expected, since it's not parked anyway, leaving the value modified
->>> without triggering any action.
->> Out of curiosity, this can happen only for short period of time right?After
->> some time this will work right as the thread get back in action
->> after the schedule call.Then sysctl and procfs will work I think.
->
-> kthread_unpark() can wake up a task only if the task is in TASK_PARKED
-> state. But since the above task would be in TASK_INTERRUPTIBLE state
-> (since it is not parked), kthread_unpark() will be powerless to do anything.
-Yes but this will happen only for a short period of time right?
-After the schdule() call the below code gets executed in while() loop.
+>>>   many platforms have implemented it (openrisc, arm, sparc, hexagon,
+>>>   avr32, x86).
+>>>   it is called by init/calibrate.c when 'ARCH_HAS_READ_CURRENT_TIMER' is
+>>>   defined.
+>>>   since arm64 can implement it, better to provide it as an architect
+>>>   features to let outside use.
+>>
+>> Nobody disputes the interest of read_current_timer.
+>>
+> 
+> It is for Will said "I'm also not sure we even need to implement
+> read_current_timer()".
+> 
+> I think we still need it.
 
-if (kthread_should_park()) {
-__set_current_state(TASK_RUNNING);
-preempt_enable();
-if (ht->park && td->status == HP_THREAD_ACTIVE) {
-BUG_ON(td->cpu != smp_processor_id());
-ht->park(td->cpu);
-td->status = HP_THREAD_PARKED;
-}
-kthread_parkme();
-/* We might have been woken for stop */
-continue;
-}
+Not really. The only use of read_current_timer is for calibrating the
+delay loop, and we just do not need this, because we can actually rely
+on the timer to give us an accurate timing information.
 
-As we have already called kthread_park this above if() condition gets true and
-it will park the thread wouldn't it?But this will happen after the schedule
-call which is not right as mentioned by fredrick.
+>>> For the implementation of read_current_timer():
+>>>
+>>>   it has to face various configurations
+>>>     (e.g. CONFIG_ARM_ARCH_TIMER, arch_timer_read_zero,
+>>>     arch_counter_get_cntvct, arch_counter_get_cntpct)
+>>>   so better still use variable instead of.
+>>>     (excuse me, I do not know what is 'CNTVCT_EL0', is it like a
+>> constant
+>>>     number ?)
+>>
+>> Architected timer is mandatory on arm64, so we can always rely on it it be
+>> present. CNTVCT_EL0 is the system register accessing the Virtual Counter,
+>> which is basically what read_current_timer() returns.
+>>
+> 
+> OK, thanks. for CNTVCT_EL0, can we use arch_counter_get_cntvct() which
+> is defined in "arch/arm64/include/asm/arch_timer.h" ?
+
+Yes.
+
+>>> For the implementation of get_cycles()
+>>>
+>>>   if read_current_timer() is provided,
+>>>   better to let get_cycles() to call it, instead of implement once
+>> again.
+>>
+>> There is certainly some value in reusing existing code, but in this
+>> particular case we can simply inline two instructions (isb + mrs
+>> cntvct_el0), and I'm not even completely sure about the isb.
+>>
+> 
+> OK, thanks.
+> 
+> 
+> So, how about the fix below :)
+> 
+> ------------------------diff begin-------------------------------
+> 
+> diff --git a/arch/arm64/include/asm/timex.h b/arch/arm64/include/asm/timex.h
+> index b24a31a..768ba44 100644
+> --- a/arch/arm64/include/asm/timex.h
+> +++ b/arch/arm64/include/asm/timex.h
+> @@ -16,11 +16,13 @@
+>  #ifndef __ASM_TIMEX_H
+>  #define __ASM_TIMEX_H
+>  
+> +#include <asm/arch_timer.h>
+> +
+>  /*
+>   * Use the current timer as a cycle counter since this is what we use for
+>   * the delay loop.
+>   */
+> -#define get_cycles()	({ cycles_t c; read_current_timer(&c); c; })
+> +#define get_cycles()	arch_counter_get_cntvct()
+>  
+>  #include <asm-generic/timex.h>
+>  
+> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+> index a551f88..6d7ce08 100644
+> --- a/arch/arm64/kernel/time.c
+> +++ b/arch/arm64/kernel/time.c
+> @@ -38,6 +38,7 @@
+>  
+>  #include <asm/thread_info.h>
+>  #include <asm/stacktrace.h>
+> +#include <asm/arch_timer.h>
+>  
+>  #ifdef CONFIG_SMP
+>  unsigned long profile_pc(struct pt_regs *regs)
+> @@ -70,7 +71,7 @@ unsigned long long notrace sched_clock(void)
+>  
+>  int read_current_timer(unsigned long *timer_value)
+>  {
+> -	*timer_value = arch_timer_read_counter();
+> +	*timer_value = arch_counter_get_cntvct();
+>  	return 0;
+>  }
+> 
+> 
+> ------------------------diff end---------------------------------
+
+I think you should try to implement Will's suggestion and drop
+read_current_timer (and the ARCH_HAS_READ_CURRENT_TIMER macro) altogether.
+
+It would be a much better fix.
+
+Thanks,
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
