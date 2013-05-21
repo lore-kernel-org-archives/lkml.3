@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab3EUIxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:53:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27681 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab3EUIxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:53:00 -0400
-X-IronPort-AV: E=Sophos;i="4.87,713,1363104000"; 
-   d="scan'208";a="7322401"
-Message-ID: <519B355E.8020505@cn.fujitsu.com>
-Date: Tue, 21 May 2013 16:50:38 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753756Ab3EUIwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:52:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40225 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752361Ab3EUIwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:52:36 -0400
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <grant.likely@secretlab.ca>, <dmitry.torokhov@gmail.com>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <manishv.b@ti.com>
+Subject: [PATCH V3 2/2] ARM: davinci: da850: add tps6507x touchscreen DT data
+Date: Tue, 21 May 2013 14:24:18 +0530
+Message-ID: <1369126458-24872-3-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
+References: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
 MIME-Version: 1.0
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        David Miller <davem@davemloft.net>, libo.chen@huawei.com,
-        gregkh@linuxfoundation.org, samuel@sortiz.org,
-        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com,
-        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com> <20130520.232619.964940909999914694.davem@davemloft.net> <20130521084108.1a585f32@skate> <519B2993.4090409@cn.fujitsu.com> <519B2FC7.6000801@huawei.com>
-In-Reply-To: <519B2FC7.6000801@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 16:51:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 16:51:38,
-	Serialize complete at 2013/05/21 16:51:38
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 04:26 PM, Libo Chen wrote:
+Add tps6507x touchscreen DT node to da850-evm.
+Touchscreen DT data is added as per da850 board file.
 
-> On 2013/5/21 16:00, Gu Zheng wrote:
->> On 05/21/2013 02:41 PM, Thomas Petazzoni wrote:
->>
->>> Dear David Miller,
->>>
->>> On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
->>>> From: Libo Chen <libo.chen@huawei.com>
->>>> Date: Tue, 21 May 2013 10:42:00 +0800
->>>>
->>>>> I find a lot of mistakes using struct platform_driver without owner.
->>>>> So I pick up some of them including usb and net modules
->>>>
->>>> Instead of doing it this way, which is obviously error prone and
->>>> easy to forget, make platform_driver_register() be a macro which
->>>> sets the module owner field then calls the real
->>>> __platform_driver_register().
->>>
->>> Or, maybe make the existing module_platform_driver() macro do this?
->>
->>
->> But not all the modules use module_platform_driver() macro to replace the module init/exit.
->>
->> Thanks,
->> Gu
->>
-> 
-> yes, there are many drivers register platform_driver by platform_driver_register manually.
-> 
-> make both platform_driver_register() and module_platform_driver()  to check and set the module owner field?
+Tested on da850-evm.
 
+Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+---
+Changes since V2:
+ - Updated names of devicetree properties.
+Changes since V1:
+ - Updated commit message.
 
-No, module_platform_driver() will call platform_driver_register() to register platform_driver, just do it in
-platform_driver_register() is enough.
-As David mentioned, making platform_driver_register() be a macro and sets the module owner field in it, seems
-a good way.
+:100644 100644 c914357... 1ca1691... M	arch/arm/boot/dts/da850-evm.dts
+ arch/arm/boot/dts/da850-evm.dts |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Thanks,
-Gu
-
-> 
-> 
-> 
->>>
->>> Best regards,
->>>
->>> Thomas
->>
->>
->>
->> .
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index c914357..1ca1691 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -155,4 +155,13 @@
+ 			regulator-boot-on;
+ 		};
+ 	};
++
++	tsc {
++		ti,poll-period = <30>;
++		ti,min-pressure = <0x30>;
++		ti,vref = <0>;
++		ti,vendor = <0>;
++		ti,product = <65070>;
++		ti,version = <0x100>;
++	};
+ };
+-- 
+1.7.4.1
 
