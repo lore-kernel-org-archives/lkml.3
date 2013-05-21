@@ -1,78 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3EUGpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:45:08 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:17242 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab3EUGpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:45:06 -0400
-X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8DFCng/+ALmLZYRFnZn15ELiOAuLr3NkII
-X-RZG-CLASS-ID: mo00
-Date: Tue, 21 May 2013 08:44:55 +0200
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH][RFC] CPU Jitter random number generator (resent)
-Message-ID: <20130521084455.5c651991@tauon>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756203Ab3EUGrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:47:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40887 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755007Ab3EUGrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 02:47:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,712,1363104000"; 
+   d="scan'208";a="7321188"
+Message-ID: <519B1923.6030107@cn.fujitsu.com>
+Date: Tue, 21 May 2013 14:50:11 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/2 v2, RFC] ACPI / memhotplug: Bind removable memory
+ blocks to ACPI device nodes
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1583356.7oqZ7gBy2q@vostro.rjw.lan> <2376818.CRj1BTLk0Y@vostro.rjw.lan> <11495390.fLTYR4Utem@vostro.rjw.lan>
+In-Reply-To: <11495390.fLTYR4Utem@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 14:45:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 14:46:00,
+	Serialize complete at 2013/05/21 14:46:00
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Rafael,
 
-[1] patch at http://www.chronox.de/jent/jitterentropy-20130516.tar.bz2
+Seems OK to me.
 
-A new version of the CPU Jitter random number generator is released at
-http://www.chronox.de/ . The heart of the RNG is about 30 lines of easy
-to read code. The readme in the main directory explains the different
-code files. A changelog can be found on the web site.
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-In a previous attempt (http://lkml.org/lkml/2013/2/8/476), the first
-iteration received comments for the lack of tests, documentation and
-entropy assessment. All these concerns have been addressed. The
-documentation of the CPU Jitter random number generator
-(http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html and PDF at
-http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf -- the graphs and
-pictures are better in PDF) offers a full analysis of:
+Thanks. :)
 
-- the root cause of entropy
-
-- a design of the RNG
-
-- statistical tests and analyses
-
-- entropy assessment and explanation of the flow of entropy
-
-The document also explains the core concept to have a fully
-decentralized entropy collector for every caller in need of entropy.
-
-Also, this RNG is well suitable for virtualized environments.
-Measurements on OpenVZ and KVM environments have been conducted as
-documented. As the Linux kernel is starved of entropy in virtualized as
-well as server environments, new sources of entropy are vital.
-
-The appendix of the documentation contains example use cases by
-providing link code to the Linux kernel crypto API, libgcrypt and
-OpenSSL. Links to other cryptographic libraries should be straight
-forward to implement. These implementations follow the concept of
-decentralized entropy collection.
-
-The man page provided with the source code explains the use of the API
-of the CPU Jitter random number generator.
-
-The test cases used to compile the documentation are available at the
-web site as well.
-
-Note: for the kernel crypto API, please read the provided Kconfig file
-for the switches and which of them are recommended in regular
-operation. These switches must currently be set manually in the
-Makefile.
-
-Ciao
-Stephan
-
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+On 05/04/2013 07:12 PM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+>
+> During ACPI memory hotplug configuration bind memory blocks residing
+> in modules removable through the standard ACPI mechanism to struct
+> acpi_device objects associated with ACPI namespace objects
+> representing those modules.  Accordingly, unbind those memory blocks
+> from the struct acpi_device objects when the memory modules in
+> question are being removed.
+>
+> When "offline" operation for devices representing memory blocks is
+> introduced, this will allow the ACPI core's device hot-remove code to
+> use it to carry out remove_memory() for those memory blocks and check
+> the results of that before it actually removes the modules holding
+> them from the system.
+>
+> Since walk_memory_range() is used for accessing all memory blocks
+> corresponding to a given ACPI namespace object, it is exported from
+> memory_hotplug.c so that the code in acpi_memhotplug.c can use it.
+>
+> Signed-off-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+> ---
+>   drivers/acpi/acpi_memhotplug.c |   53 ++++++++++++++++++++++++++++++++++++++---
+>   include/linux/memory_hotplug.h |    2 +
+>   mm/memory_hotplug.c            |    4 ++-
+>   3 files changed, 55 insertions(+), 4 deletions(-)
+>
+> Index: linux-pm/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-pm.orig/mm/memory_hotplug.c
+> +++ linux-pm/mm/memory_hotplug.c
+> @@ -1618,6 +1618,7 @@ int offline_pages(unsigned long start_pf
+>   {
+>   	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
+>   }
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>
+>   /**
+>    * walk_memory_range - walks through all mem sections in [start_pfn, end_pfn)
+> @@ -1631,7 +1632,7 @@ int offline_pages(unsigned long start_pf
+>    *
+>    * Returns the return value of func.
+>    */
+> -static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+> +int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+>   		void *arg, int (*func)(struct memory_block *, void *))
+>   {
+>   	struct memory_block *mem = NULL;
+> @@ -1668,6 +1669,7 @@ static int walk_memory_range(unsigned lo
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>   /**
+>    * offline_memory_block_cb - callback function for offlining memory block
+>    * @mem: the memory block to be offlined
+> Index: linux-pm/include/linux/memory_hotplug.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/memory_hotplug.h
+> +++ linux-pm/include/linux/memory_hotplug.h
+> @@ -245,6 +245,8 @@ static inline int is_mem_section_removab
+>   static inline void try_offline_node(int nid) {}
+>   #endif /* CONFIG_MEMORY_HOTREMOVE */
+>
+> +extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+> +		void *arg, int (*func)(struct memory_block *, void *));
+>   extern int mem_online_node(int nid);
+>   extern int add_memory(int nid, u64 start, u64 size);
+>   extern int arch_add_memory(int nid, u64 start, u64 size);
+> Index: linux-pm/drivers/acpi/acpi_memhotplug.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/acpi_memhotplug.c
+> +++ linux-pm/drivers/acpi/acpi_memhotplug.c
+> @@ -28,6 +28,7 @@
+>    */
+>
+>   #include<linux/acpi.h>
+> +#include<linux/memory.h>
+>   #include<linux/memory_hotplug.h>
+>
+>   #include "internal.h"
+> @@ -166,13 +167,50 @@ static int acpi_memory_check_device(stru
+>   	return 0;
+>   }
+>
+> +static unsigned long acpi_meminfo_start_pfn(struct acpi_memory_info *info)
+> +{
+> +	return PFN_DOWN(info->start_addr);
+> +}
+> +
+> +static unsigned long acpi_meminfo_end_pfn(struct acpi_memory_info *info)
+> +{
+> +	return PFN_UP(info->start_addr + info->length-1);
+> +}
+> +
+> +static int acpi_bind_memblk(struct memory_block *mem, void *arg)
+> +{
+> +	return acpi_bind_one(&mem->dev, (acpi_handle)arg);
+> +}
+> +
+> +static int acpi_bind_memory_blocks(struct acpi_memory_info *info,
+> +				   acpi_handle handle)
+> +{
+> +	return walk_memory_range(acpi_meminfo_start_pfn(info),
+> +				 acpi_meminfo_end_pfn(info), (void *)handle,
+> +				 acpi_bind_memblk);
+> +}
+> +
+> +static int acpi_unbind_memblk(struct memory_block *mem, void *arg)
+> +{
+> +	acpi_unbind_one(&mem->dev);
+> +	return 0;
+> +}
+> +
+> +static void acpi_unbind_memory_blocks(struct acpi_memory_info *info,
+> +				      acpi_handle handle)
+> +{
+> +	walk_memory_range(acpi_meminfo_start_pfn(info),
+> +			  acpi_meminfo_end_pfn(info), NULL, acpi_unbind_memblk);
+> +}
+> +
+>   static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   {
+> +	acpi_handle handle = mem_device->device->handle;
+>   	int result, num_enabled = 0;
+>   	struct acpi_memory_info *info;
+>   	int node;
+>
+> -	node = acpi_get_node(mem_device->device->handle);
+> +	node = acpi_get_node(handle);
+>   	/*
+>   	 * Tell the VM there is more memory here...
+>   	 * Note: Assume that this function returns zero on success
+> @@ -203,6 +241,12 @@ static int acpi_memory_enable_device(str
+>   		if (result&&  result != -EEXIST)
+>   			continue;
+>
+> +		result = acpi_bind_memory_blocks(info, handle);
+> +		if (result) {
+> +			acpi_unbind_memory_blocks(info, handle);
+> +			return -ENODEV;
+> +		}
+> +
+>   		info->enabled = 1;
+>
+>   		/*
+> @@ -229,10 +273,11 @@ static int acpi_memory_enable_device(str
+>
+>   static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>   {
+> +	acpi_handle handle = mem_device->device->handle;
+>   	int result = 0, nid;
+>   	struct acpi_memory_info *info, *n;
+>
+> -	nid = acpi_get_node(mem_device->device->handle);
+> +	nid = acpi_get_node(handle);
+>
+>   	list_for_each_entry_safe(info, n,&mem_device->res_list, list) {
+>   		if (!info->enabled)
+> @@ -240,6 +285,8 @@ static int acpi_memory_remove_memory(str
+>
+>   		if (nid<  0)
+>   			nid = memory_add_physaddr_to_nid(info->start_addr);
+> +
+> +		acpi_unbind_memory_blocks(info, handle);
+>   		result = remove_memory(nid, info->start_addr, info->length);
+>   		if (result)
+>   			return result;
+> @@ -300,7 +347,7 @@ static int acpi_memory_device_add(struct
+>   	if (result) {
+>   		dev_err(&device->dev, "acpi_memory_enable_device() error\n");
+>   		acpi_memory_device_free(mem_device);
+> -		return -ENODEV;
+> +		return result;
+>   	}
+>
+>   	dev_dbg(&device->dev, "Memory device configured by ACPI\n");
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
