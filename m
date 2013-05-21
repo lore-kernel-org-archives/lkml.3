@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab3EUICu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:02:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:11730 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab3EUICq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:02:46 -0400
-X-IronPort-AV: E=Sophos;i="4.87,713,1363104000"; 
-   d="scan'208";a="7321924"
-Message-ID: <519B2993.4090409@cn.fujitsu.com>
-Date: Tue, 21 May 2013 16:00:19 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752134Ab3EUIKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:10:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45413 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382Ab3EUIKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:10:30 -0400
+Date: Tue, 21 May 2013 09:10:20 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 2/4] zbud: add to mm/
+Message-ID: <20130521081020.GT11497@suse.de>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130517154837.GN11497@suse.de>
+ <20130519205219.GA3252@cerebellum>
+ <20130520135439.GR11497@suse.de>
+ <20130520154225.GA25536@cerebellum>
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: David Miller <davem@davemloft.net>, libo.chen@huawei.com,
-        gregkh@linuxfoundation.org, samuel@sortiz.org,
-        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com,
-        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com> <20130520.232619.964940909999914694.davem@davemloft.net> <20130521084108.1a585f32@skate>
-In-Reply-To: <20130521084108.1a585f32@skate>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 16:01:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/21 16:01:24,
-	Serialize complete at 2013/05/21 16:01:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130520154225.GA25536@cerebellum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 02:41 PM, Thomas Petazzoni wrote:
-
-> Dear David Miller,
+On Mon, May 20, 2013 at 10:42:25AM -0500, Seth Jennings wrote:
+> On Mon, May 20, 2013 at 02:54:39PM +0100, Mel Gorman wrote:
+> > On Sun, May 19, 2013 at 03:52:19PM -0500, Seth Jennings wrote:
+> > > My first guess is that the external fragmentation situation you are referring to
+> > > is a workload in which all pages compress to greater than half a page.  If so,
+> > > then it doesn't matter what NCHUCNKS_ORDER is, there won't be any pages the
+> > > compress enough to fit in the < PAGE_SIZE/2 free space that remains in the
+> > > unbuddied zbud pages.
+> > > 
+> > 
+> > There are numerous aspects to this, too many to write them all down.
+> > Modelling the external fragmentation one and how it affects swap IO
+> > would be a complete pain in the ass so lets consider the following
+> > example instead as it's a bit clearer.
+> > 
+> > Three processes. Process A compresses by 75%, Process B compresses to 15%,
+> > Process C pages compress to 15%. They are all adding to zswap in lockstep.
+> > Lets say that zswap can hold 100 physical pages.
+> > 
+> > NCHUNKS == 2
+> > 	All Process A pages get rejected.
 > 
-> On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
->> From: Libo Chen <libo.chen@huawei.com>
->> Date: Tue, 21 May 2013 10:42:00 +0800
->>
->>> I find a lot of mistakes using struct platform_driver without owner.
->>> So I pick up some of them including usb and net modules
->>
->> Instead of doing it this way, which is obviously error prone and
->> easy to forget, make platform_driver_register() be a macro which
->> sets the module owner field then calls the real
->> __platform_driver_register().
+> Ah, I think this is our disconnect.  Process A pages will not be rejected.
+> They will be stored in a zbud page, and that zbud page will be added
+> to the 0th unbuddied list.  This list maintains a list of zbud pages
+> that will never be buddied because there are no free chunks.
 > 
-> Or, maybe make the existing module_platform_driver() macro do this?
 
+D'oh, good point. Unfortunately, the problem then still exists at the
+writeback end which I didn't bring up in the previous mail. Take three
+processes writing in lockstep. Process A pages compress to 15%, B compresses
+to 15%, C compresses to 60%. Each physical page packing will look like this
 
-But not all the modules use module_platform_driver() macro to replace the module init/exit.
+nchunks=6	nchunks = 2
 
-Thanks,
-Gu
+Page 0	A B	A B
+Page 1	C A	C
+Page 2	B C	A B
+Page 3	A B	C
+Pattern repeats..........
 
-> 
-> Best regards,
-> 
-> Thomas
+This continues until zswap is full. Now all three process stop and process
+D starts writing to zswap, each of its pages compresses to 80%. These will
+be freed in LRU order which is effectively FIFO.
 
+With nchunks=6, to store 2 process D pages, it must write out 4 pages
+to swap.  With nchunks=2, to store two process D pages, it must write 3
+pages so process D stalls for less time with nchunks==2.
 
+This is a variation of the zsmalloc packing problem where greater packing
+leads to worse performance when zswap is full. The user bug report will
+look something like "performance goes to hell when zswap is full although
+swap IO rates look normal". If it was a kernel parameter, setting nchunk=2
+as a kernel boot parameter will at least be a workaround.
+
+Of course, this is all hypothetical. It is certainly possible to create
+a reference string where nchunks=2 generates more IO but it tends to
+generate the IO sooner and more closely resemble existing swap behaviour
+that users might be willing to accept as a workaround until their problem
+can be resolved. This is why I think the parameter should be available at
+boot-time as a debugging/workaround option for developers to recommend to
+a user.
+
+-- 
+Mel Gorman
+SUSE Labs
