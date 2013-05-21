@@ -1,36 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3EUIvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:51:33 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:40078 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab3EUIvb (ORCPT
+	id S1753558Ab3EUIwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:52:38 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47174 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab3EUIwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:51:31 -0400
+	Tue, 21 May 2013 04:52:36 -0400
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-input@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <grant.likely@secretlab.ca>, <dmitry.torokhov@gmail.com>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <manishv.b@ti.com>
+Subject: [PATCH V3 0/2] Add DT support for tps6507x touchscreen
+Date: Tue, 21 May 2013 14:24:16 +0530
+Message-ID: <1369126458-24872-1-git-send-email-manishv.b@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20130521.013912.96249995742935192.davem@davemloft.net>
-References: <1369120003.25971.2.camel@lb-tlvb-eilong.il.broadcom.com>
-	<20130521.001444.1361294042663568537.davem@davemloft.net>
-	<CAJZOPZJTA9A8T4R8MtRCeqcYj3XJWFCXF+ojmEqza5TMj-6G+w@mail.gmail.com>
-	<20130521.013912.96249995742935192.davem@davemloft.net>
-Date: Tue, 21 May 2013 11:43:23 +0300
-Message-ID: <CAJZOPZJD5QpkmkJF9qpWV3Q28aioLw5CuT5X4URxDC4eSby3nQ@mail.gmail.com>
-Subject: Re: [PATCH v3 net-next 3/4] ixgbe: Add support for ndo_ll_poll
-From: Or Gerlitz <or.gerlitz@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: eilong@broadcom.com, eliezer.tamir@linux.intel.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        andi@firstfloor.org, hpa@zytor.com, eliezer@tamir.org.il
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 11:39 AM, David Miller <davem@davemloft.net> wrote:
+Patch set adds DT support for tps6507x based touchscreen.
+Also, add DT data for tps6507x touchscreen in da850-evm by
+providing touchscreen node inside tps6507x mfd device.
 
-> It's one of those "implementation details", I hate it too.
+This patch series applies on top of linux-next tree and depends on [1].
 
-Maybe if we bake it on this list little further we can see how to get
-away from that, or what's the most non ugly way for that?
+[1]tps6507x-ts: update to devm_* API
+   https://patchwork.kernel.org/patch/2324441/
+
+Tested on da850-evm board.
+
+Changes since V2:
+ - Updated tps6507x documentation.
+ - Removed unnecessary code.
+
+Changes since V1:
+ - Updated tps6507x documentation.
+ - Updated commit message.
+ - return proper error value in absence platform and DT data
+   for touchscreen.
+
+Vishwanathrao Badarkhe, Manish (2):
+  tps6507x-ts: Add DT support
+  ARM: davinci: da850: add tps6507x touchscreen DT data
+
+ Documentation/devicetree/bindings/mfd/tps6507x.txt |   28 ++++++-
+ arch/arm/boot/dts/da850-evm.dts                    |    9 ++
+ drivers/input/touchscreen/tps6507x-ts.c            |   98 ++++++++++++++------
+ 3 files changed, 104 insertions(+), 31 deletions(-)
+
+-- 
+1.7.4.1
+
