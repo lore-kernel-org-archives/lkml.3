@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3EUK2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:28:24 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:54034 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab3EUK2X (ORCPT
+	id S1753769Ab3EUKce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:32:34 -0400
+Received: from fed1rmfepo201.cox.net ([68.230.241.146]:59954 "EHLO
+	fed1rmfepo201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab3EUKcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:28:23 -0400
-X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 06:28:23 EDT
-Date: Tue, 21 May 2013 12:20:50 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        linux-mm@kvack.org, Bob Liu <bob.liu@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] Bye bye Mr tmem guy
-Message-ID: <20130521102050.GA545@router-fw-old.local.net-space.pl>
-References: <c064ee79-6fa0-4833-b3f1-ca712b029a83@default>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c064ee79-6fa0-4833-b3f1-ca712b029a83@default>
-User-Agent: Mutt/1.3.28i
+	Tue, 21 May 2013 06:32:33 -0400
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020202.519B4130.001F,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=2.0 cv=W9Hmo2qk c=1 sm=1
+ a=FR1MTl3YMS4VH7Od6Kqlfg==:17 a=Dyoqhi_TatcA:10 a=G8Uczd0VNMoA:10
+ a=Zllrig3nyLsA:10 a=Cfj4BQAnxiAA:10 a=kviXuzpPAAAA:8 a=TVMPHSTFAAAA:8
+ a=vJ7fuLy0an0A:10 a=xU9rusA-kU3pQgV6PrYA:9 a=Ft8UYL4EG9YA:10
+ a=FR1MTl3YMS4VH7Od6Kqlfg==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN)
+ smtp.auth=mogadishumobb1@cox.net
+Reply-To: <colinleefirm@mail2Paralegal.com>
+From: "JMW SOLICITORS LLP" <court@cox.net>
+Subject: His Last Will and Testament
+Date: Tue, 21 May 2013 11:32:30 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130520-1, 05/20/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20130521103232.DTEW8908.fed1rmfepo201.cox.net@fed1rmimpo305>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 08:51:47AM -0700, Dan Magenheimer wrote:
-> Hi Linux kernel folks and Xen folks --
-> 
-> Effective July 5, I will be resigning from Oracle and "retiring"
-> for a minimum of 12-18 months and probably/hopefully much longer.
-> Between now and July 5, I will be tying up loose ends related to
-> my patches but also using up accrued vacation days.  If you have
-> a loose end you'd like to see tied, please let me know ASAP and
-> I will do my best.
-> 
-> After July 5, any email to me via first DOT last AT oracle DOT com
-> will go undelivered and may bounce.  Please send email related to
-> my open source patches and contributions to Konrad Wilk and/or Bob Liu.
-> Personal email directed to me can be sent to first AT last DOT com.
-> 
-> Thanks much to everybody for the many educational opportunities,
-> the technical and political jousting, and the great times at
-> conferences and summits!  I wish you all the best of luck!
-> Or to quote Douglas Adams: "So long and thanks for all the fish!"
-
-We will miss you! It was very nice to work with you.
-Have a fun during your free time...
-
-Daniel
+My Late client Mr James Campbell bequeathed his inheritance to you, I advise you contact me to enable the transfer of the inheritance.
+Barr Colin Lee.
