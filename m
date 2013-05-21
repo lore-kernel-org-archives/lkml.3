@@ -1,183 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab3EUKOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:14:23 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:40033 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab3EUKOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:14:21 -0400
-Message-ID: <519B48F4.8050005@linaro.org>
-Date: Tue, 21 May 2013 12:14:12 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753478Ab3EUKUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:20:35 -0400
+Received: from foo.stuge.se ([212.116.89.98]:56789 "EHLO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655Ab3EUKUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:20:32 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 06:20:31 EDT
+Message-ID: <20130521101349.30660.qmail@stuge.se>
+Date: Tue, 21 May 2013 12:13:49 +0200
+From: Peter Stuge <peter@stuge.se>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arch@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-pm@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pcmcia@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        cluster-devel@redhat.com, linux-mm@kvack.org,
+        Hans Verkuil <hans.verkuil@cisco.com>, Pavel Machek <pavel@ucw.cz>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org
+Subject: Re: [PATCH] Finally eradicate CONFIG_HOTPLUG
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-arch@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Russell King <linux@arm.linux.org.uk>,
+	Arnd Bergmann <arnd@arndb.de>, linux-pm@vger.kernel.org,
+	linux-pci@vger.kernel.org, linux-pcmcia@lists.infradead.org,
+	LKML <linux-kernel@vger.kernel.org>, cluster-devel@redhat.com,
+	linux-mm@kvack.org, Hans Verkuil <hans.verkuil@cisco.com>,
+	Pavel Machek <pavel@ucw.cz>,
+	Doug Thompson <dougthompson@xmission.com>,
+	Bjorn Helgaas <bhelgaas@google.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Steven Whitehouse <swhiteho@redhat.com>,
+	linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org
+References: <20130521134935.d18c3f5c23485fb5ddabc365@canb.auug.org.au>
 MIME-Version: 1.0
-To: Jingchang Lu <b35083@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        john.stultz@linaro.org, tglx@linutronix.de, shawn.guo@linaro.org,
-        s.hauer@pengutronix.de
-Subject: Re: [PATCH v4] clocksource: add Vybrid Family pit timer support
-References: <1369121274-9371-1-git-send-email-b35083@freescale.com>
-In-Reply-To: <1369121274-9371-1-git-send-email-b35083@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ibTvN161/egqYuK8"
+Content-Disposition: inline
+In-Reply-To: <20130521134935.d18c3f5c23485fb5ddabc365@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 09:27 AM, Jingchang Lu wrote:
-> Add Freescale Vybrid Family period interrupt timer support.
-> 
-> Signed-off-by: Jingchang Lu <b35083@freescale.com>
-> ---
-> v4:
->   use family name names driver and symbol instead of SoC name.
->   remove redundant code.
->   use BUG_ON instead of WARN_ON.
->   add necessory comment information.
-> 
->  drivers/clocksource/Kconfig         |   5 +
->  drivers/clocksource/Makefile        |   1 +
->  drivers/clocksource/mvf_pit_timer.c | 187 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 193 insertions(+)
->  create mode 100644 drivers/clocksource/mvf_pit_timer.c
 
-[ ... ]
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +
-> +static int pit_set_next_event(unsigned long delta,
-> +				struct clock_event_device *unused)
-> +{
-> +	/*
-> +	 * set a new value to PITLDVAL register will not restart the timer,
-> +	 * to abort the current cycle and start a timer period with the new
-> +	 * value, the timer must be disabled and enabled again.
-> +	 * and the PITLAVAL should be set to delta minus one.
+Are you changing the code to have HOTPLUG always -on- or -off- ?
 
-Why delta "minus one" ?
-
-> +	 */
-> +	pit_timer_disable();
-> +	__raw_writel(delta - 1, clkevt_base + PITLDVAL);
-> +	pit_timer_enable();
-> +
-> +	return 0;
-> +}
-> +
-> +static void pit_set_mode(enum clock_event_mode mode,
-> +				struct clock_event_device *evt)
-> +{
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		pit_timer_disable();
-> +		__raw_writel(cycle_per_jiffy - 1, clkevt_base + PITLDVAL);
-> +		pit_timer_enable();
-
-You can call pit_set_next_event(cycle_per_jiffy, evt) instead of adding
-redundant code, no ?
-
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +}
-
-[ ... ]
-
-> +
-> +static struct clock_event_device clockevent_pit = {
-> +	.name		= "MVF pit timer",
-> +	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-> +	.set_mode	= pit_set_mode,
-> +	.set_next_event	= pit_set_next_event,
-> +	.rating		= 300,
-> +};
-> +
-> +static struct irqaction pit_timer_irq = {
-> +	.name		= "MVF pit timer",
-> +	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-
-Did you take into account Thomas's comment ?
-
-> +	.handler	= pit_timer_interrupt,
-> +	.dev_id		= &clockevent_pit,
-> +};
-> +
-> +static int __init pit_clockevent_init(struct clk *pit_clk, int irq)
-> +{
-> +	unsigned int c = clk_get_rate(pit_clk);
-> +
-> +	__raw_writel(0, clkevt_base + PITTCTRL);
-> +	__raw_writel(PITTFLG_TIF, clkevt_base + PITTFLG);
-> +
-> +	clockevent_pit.cpumask = cpumask_of(0);
-
-The irq initialization is missing.
-
-	clockevent_pit.irq = irq;
-
-> +	clockevents_config_and_register(&clockevent_pit, c, 2, 0xffffffff);
-
-Is it possible to have a comment with the justification for these values ?
-
-> +
-> +	BUG_ON(setup_irq(irq, &pit_timer_irq));
-> +	return 0;
-
-Everything is ok if you can't setup your timer ?
-
-> +}
-> +
-> +static void __init pit_timer_init(struct device_node *np)
-> +{
-> +	struct clk *pit_clk;
-> +	void __iomem *timer_base;
-> +	int irq;
-> +
-> +	timer_base = of_iomap(np, 0);
-> +	BUG_ON(!timer_base);
-
-You raise a bug and then you go ahead setting up the address with an
-invalid value, leading to a random crash.
-
-> +	/*
-> +	 * PIT0 and PIT1 can be chained to build a 64-bit timer,
-> +	 * so choose PIT2 as clocksource, PIT3 as clockevent device,
-> +	 * and leave PIT0 and PIT1 unused for anyone else who needs them.
-> +	 */
-> +	clksrc_base = timer_base + PITn_OFFSET(2);
-> +	clkevt_base = timer_base + PITn_OFFSET(3);
-> +
-> +	irq = irq_of_parse_and_map(np, 0);
-> +
-> +	pit_clk = of_clk_get(np, 0);
-> +	BUG_ON(IS_ERR(pit_clk));
-> +
-> +	BUG_ON(clk_prepare_enable(pit_clk));
-
-Same here.
-
-> +	cycle_per_jiffy = clk_get_rate(pit_clk)/(HZ);
-> +
-> +	/* enable the pit module */
-> +	__raw_writel(~PITMCR_MDIS, timer_base + PITMCR);
-> +
-> +	BUG_ON(pit_clocksource_init(pit_clk));
-> +
-> +	pit_clockevent_init(pit_clk, irq);
-
-Please, remove these BUG_ON, this is inconsistent especially with a one
-call init function. If pit_timer_init can't be initialized, just pr_err
-+ BUG.
-
-Thanks
-  -- Daniel
+=46rom the commit message I had expected always -on-.
 
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Stephen Rothwell wrote:
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -68,14 +68,6 @@
+>   * are handled as text/data or they can be discarded (which
+>   * often happens at runtime)
+>   */
+> -#ifdef CONFIG_HOTPLUG
+> -#define DEV_KEEP(sec)    *(.dev##sec)
+> -#define DEV_DISCARD(sec)
+> -#else
+> -#define DEV_KEEP(sec)
+> -#define DEV_DISCARD(sec) *(.dev##sec)
+> -#endif
+> -
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  #define CPU_KEEP(sec)    *(.cpu##sec)
+>  #define CPU_DISCARD(sec)
+> @@ -182,8 +174,6 @@
+>  	*(.data)							\
+>  	*(.ref.data)							\
+>  	*(.data..shared_aligned) /* percpu related */			\
+> -	DEV_KEEP(init.data)						\
+> -	DEV_KEEP(exit.data)						\
+=2E.
+> @@ -503,7 +489,6 @@
+>  /* init and exit section handling */
+>  #define INIT_DATA							\
+>  	*(.init.data)							\
+> -	DEV_DISCARD(init.data)						\
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Shouldn't the effect of one of the above remain?
 
+
+//Peter
+
+--ibTvN161/egqYuK8
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFRm0jdhR3Q0dhIfEgRAtAtAKDxeofcdUGqWjn2AyXb/CxbZP4X8ACgvEte
+zomgM5roARu65KybTU/PIcM=
+=bMNu
+-----END PGP SIGNATURE-----
+
+--ibTvN161/egqYuK8--
