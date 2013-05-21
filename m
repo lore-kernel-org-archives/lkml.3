@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3EUNeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:34:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41063 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754608Ab3EUNeO (ORCPT
+	id S1752633Ab3EUNhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:37:34 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54002 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3EUNhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:34:14 -0400
-Date: Tue, 21 May 2013 09:33:56 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] perf: net_dropmonitor: Make it work and make it fast
-Message-ID: <20130521133355.GA3613@neilslaptop.think-freely.org>
-References: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Tue, 21 May 2013 09:37:33 -0400
+Message-ID: <1369143450.3301.217.camel@edumazet-glaptop>
+Subject: Re: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Roman Gushchin <klamm@yandex-team.ru>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Date: Tue, 21 May 2013 06:37:30 -0700
+In-Reply-To: <20130521120906.GD3578@linux.vnet.ibm.com>
+References: <519B38EC.90401@yandex-team.ru>
+	 <20130521120906.GD3578@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 01:42:56AM +0100, Ben Hutchings wrote:
-> Somewhat surprisingly, the net_dropmonitor reporting script doesn't work
-> at all.  This series fixes it and then makes it slightly more efficient.
+On Tue, 2013-05-21 at 05:09 -0700, Paul E. McKenney wrote:
+> > 
+> > -#define hlist_nulls_first_rcu(head) \
+> > -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+> > +#define hlist_nulls_first_rcu(head)			\
+> > +	(*((struct hlist_nulls_node __rcu __force **)	\
+> > +	   &((volatile typeof(*head) *)head)->first))
 > 
-> Ben.
+> Why not use ACCESS_ONCE() or (better) rcu_dereference_raw() here?
 > 
-It worked fine when I first submitted it.  I wonder if there was a paramter
-order change at some point that I wasn't CC'ed on.
 
-Either way, this all looks good.  Thanks Ben.
++1
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Very good catch Roman !
 
-> Ben Hutchings (5):
->   perf: net_dropmonitor: Fix trace parameter order
->   perf: net_dropmonitor: Fix symbol-relative addresses
->   perf: net_dropmonitor: Do not assume ordering of dictionaries
->   perf: net_dropmonitor: Use bisection in symbol lookup
->   perf: net_dropmonitor: Remove progress indicator
-> 
->  tools/perf/scripts/python/net_dropmonitor.py |   39 ++++++++++++++------------
->  1 file changed, 21 insertions(+), 18 deletions(-)
-> 
-> 
+Thanks !
 
 
