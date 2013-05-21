@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab3EUKmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:42:00 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:54432 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753750Ab3EUKlz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:41:55 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
-Date: Tue, 21 May 2013 11:40:47 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7241@saturn3.aculab.com>
-In-Reply-To: <519B38EC.90401@yandex-team.ru>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
-Thread-Index: Ac5WBCIi7zwLo+dSQp+rgRWDJ9MARAAAyZTA
-References: <519B38EC.90401@yandex-team.ru>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Roman Gushchin" <klamm@yandex-team.ru>,
-        "Dipankar Sarma" <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: <zhmurov@yandex-team.ru>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "Alexey Kuznetsov" <kuznet@ms2.inr.ac.ru>,
-        "James Morris" <jmorris@namei.org>,
-        "Hideaki YOSHIFUJI" <yoshfuji@linux-ipv6.org>,
-        "Patrick McHardy" <kaber@trash.net>
+	id S1754173Ab3EUKls (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:41:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:23781 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab3EUKkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:40:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="305622751"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linux-usb@vger.kernel.org
+Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v2 2/4] usb: xhci: define port register names and use them instead of magic numbers
+Date: Tue, 21 May 2013 13:43:35 +0300
+Message-Id: <1369133017-3035-3-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Some network functions (udp4_lib_lookup2(), for instance) use the
-> hlist_nulls_for_each_entry_rcu macro in a way that assumes restarting
-> of a loop. In this case, it is strictly necessary to reread the head->first
-> value from the memory before each scan.
-> Without additional hints, gcc caches this value in a register. In this case,
-> if a cached node is moved to another chain during the scan, we can loop
-> forever getting wrong nulls values and restarting the loop uninterruptedly.
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c |   16 +++++++---------
+ drivers/usb/host/xhci.c     |    4 ++--
+ drivers/usb/host/xhci.h     |    5 +++++
+ 3 files changed, 14 insertions(+), 11 deletions(-)
 
-Hmmm.... if either inet_ehashfn() or next_pseudo_random32() is
-called gcc must reread it anyway.
-I'm surprised gcc is generating separate code for all the conditional
-loop endings. So why is it caching head->first.
-The 'list empty' might be short-circuited - but that would only
-be relevant after a rescan.
-I suspect something else is going on.
-
-I'd also have thought that this code needs to scan the entire
-hash list. If things are moved under its feet this won't happen.
-If it can end up on a different list (because a node got moved)
-it is also possible for a later node to move it back.
-In that case it would end up on the correct list
-...
-> -#define hlist_nulls_first_rcu(head) \
-> -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> +#define hlist_nulls_first_rcu(head)			\
-> +	(*((struct hlist_nulls_node __rcu __force **)	\
-> +	   &((volatile typeof(*head) *)head)->first))
-
-I'd have thought it would be better to change hlist_nulls_first_rcu().
-
-	David
-
-
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 187a3ec..1d35459 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -867,18 +867,18 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 		case USB_PORT_FEAT_U1_TIMEOUT:
+ 			if (hcd->speed != HCD_USB3)
+ 				goto error;
+-			temp = xhci_readl(xhci, port_array[wIndex] + 1);
++			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
+ 			temp &= ~PORT_U1_TIMEOUT_MASK;
+ 			temp |= PORT_U1_TIMEOUT(timeout);
+-			xhci_writel(xhci, temp, port_array[wIndex] + 1);
++			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
+ 			break;
+ 		case USB_PORT_FEAT_U2_TIMEOUT:
+ 			if (hcd->speed != HCD_USB3)
+ 				goto error;
+-			temp = xhci_readl(xhci, port_array[wIndex] + 1);
++			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
+ 			temp &= ~PORT_U2_TIMEOUT_MASK;
+ 			temp |= PORT_U2_TIMEOUT(timeout);
+-			xhci_writel(xhci, temp, port_array[wIndex] + 1);
++			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
+ 			break;
+ 		default:
+ 			goto error;
+@@ -1098,10 +1098,8 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 			__le32 __iomem *addr;
+ 			u32 tmp;
+ 
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
++			/* Get the port power control register address. */
++			addr = port_array[port_index] + PORTPMSC;
+ 			tmp = xhci_readl(xhci, addr);
+ 			tmp |= PORT_RWE;
+ 			xhci_writel(xhci, tmp, addr);
+@@ -1193,7 +1191,7 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 			/* Add one to the port status register address to get
+ 			 * the port power control register address.
+ 			 */
+-			addr = port_array[port_index] + 1;
++			addr = port_array[port_index] + PORTPMSC;
+ 			tmp = xhci_readl(xhci, addr);
+ 			tmp &= ~PORT_RWE;
+ 			xhci_writel(xhci, tmp, addr);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index e540a36..317bf08 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3901,7 +3901,7 @@ static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
+ 	 * Check device's USB 2.0 extension descriptor to determine whether
+ 	 * HIRD or BESL shoule be used. See USB2.0 LPM errata.
+ 	 */
+-	pm_addr = port_array[port_num] + 1;
++	pm_addr = port_array[port_num] + PORTPMSC;
+ 	hird = xhci_calculate_hird_besl(xhci, udev);
+ 	temp = PORT_L1DS(udev->slot_id) | PORT_HIRD(hird);
+ 	xhci_writel(xhci, temp, pm_addr);
+@@ -3999,7 +3999,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
+ 
+ 	port_array = xhci->usb2_ports;
+ 	port_num = udev->portnum - 1;
+-	pm_addr = port_array[port_num] + 1;
++	pm_addr = port_array[port_num] + PORTPMSC;
+ 	temp = xhci_readl(xhci, pm_addr);
+ 
+ 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 1dbc63f..b6cd55e 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -132,6 +132,11 @@ struct xhci_cap_regs {
+ /* Number of registers per port */
+ #define	NUM_PORT_REGS	4
+ 
++#define PORTSC		0
++#define PORTPMSC	1
++#define PORTLI		2
++#define PORTHLPMC	3
++
+ /**
+  * struct xhci_op_regs - xHCI Host Controller Operational Registers.
+  * @command:		USBCMD - xHC command register
+-- 
+1.7.4.1
 
