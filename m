@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab3EUVbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:31:53 -0400
-Received: from mout.gmx.net ([212.227.17.22]:59142 "EHLO mout.gmx.net"
+	id S1752937Ab3EUVcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:32:45 -0400
+Received: from mout.gmx.net ([212.227.17.20]:61472 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab3EUVbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:31:15 -0400
+	id S1752729Ab3EUVbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:31:14 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19zphoUaeVz8lH6Le/FzHdoNe05/4ltCVAuHGiLZK
-	YEeS5D4xr9I1Yb
+X-Provags-ID: V01U2FsdGVkX194kUVb/2t48fwM5hN1FGSIlQApZ9wnhEUlbvtZJW
+	qi0EbDddnLshAI
 From: Peter Huewe <peterhuewe@gmx.de>
 To: "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 5/6] scsi/initio: Use module_pci_driver to register driver
-Date: Tue, 21 May 2013 23:36:20 +0200
-Message-Id: <1369172181-22070-5-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 3/6] scsi/dc395x: Use module_pci_driver to register driver
+Date: Tue, 21 May 2013 23:36:18 +0200
+Message-Id: <1369172181-22070-3-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369172181-22070-1-git-send-email-peterhuewe@gmx.de>
 References: <1369172181-22070-1-git-send-email-peterhuewe@gmx.de>
@@ -29,34 +29,45 @@ register and unregister in the otherwise empty init/exit functions.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/scsi/initio.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/scsi/dc395x.c | 25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
 
-diff --git a/drivers/scsi/initio.c b/drivers/scsi/initio.c
-index 280d5af..23e1b7d 100644
---- a/drivers/scsi/initio.c
-+++ b/drivers/scsi/initio.c
-@@ -2995,19 +2995,7 @@ static struct pci_driver initio_pci_driver = {
- 	.remove		= initio_remove_one,
+diff --git a/drivers/scsi/dc395x.c b/drivers/scsi/dc395x.c
+index 694e13c..4e6f29f 100644
+--- a/drivers/scsi/dc395x.c
++++ b/drivers/scsi/dc395x.c
+@@ -4882,30 +4882,7 @@ static struct pci_driver dc395x_driver = {
+ 	.remove         = dc395x_remove_one,
  };
  
--static int __init initio_init_driver(void)
+-
+-/**
+- * dc395x_module_init - Module initialization function
+- *
+- * Used by both module and built-in driver to initialise this driver.
+- **/
+-static int __init dc395x_module_init(void)
 -{
--	return pci_register_driver(&initio_pci_driver);
+-	return pci_register_driver(&dc395x_driver);
 -}
 -
--static void __exit initio_exit_driver(void)
+-
+-/**
+- * dc395x_module_exit - Module cleanup function.
+- **/
+-static void __exit dc395x_module_exit(void)
 -{
--	pci_unregister_driver(&initio_pci_driver);
+-	pci_unregister_driver(&dc395x_driver);
 -}
 -
-+module_pci_driver(initio_pci_driver);
- MODULE_DESCRIPTION("Initio INI-9X00U/UW SCSI device driver");
- MODULE_AUTHOR("Initio Corporation");
+-
+-module_init(dc395x_module_init);
+-module_exit(dc395x_module_exit);
+-
++module_pci_driver(dc395x_driver);
+ MODULE_AUTHOR("C.L. Huang / Erich Chen / Kurt Garloff");
+ MODULE_DESCRIPTION("SCSI host adapter driver for Tekram TRM-S1040 based adapters: Tekram DC395 and DC315 series");
  MODULE_LICENSE("GPL");
--
--module_init(initio_init_driver);
--module_exit(initio_exit_driver);
 -- 
 1.8.1.5
 
