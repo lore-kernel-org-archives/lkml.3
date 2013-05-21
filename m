@@ -1,115 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab3EUKug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:50:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42683 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab3EUKue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:50:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 4/5] ACPI / scan: Add second pass of companion offlining to hot-remove code
-Date: Tue, 21 May 2013 12:59:13 +0200
-Message-ID: <5594351.7bIW5J5bfS@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <519B238D.3070900@huawei.com>
-References: <2250271.rGYN6WlBxf@vostro.rjw.lan> <3662688.5fMZaG7XgD@vostro.rjw.lan> <519B238D.3070900@huawei.com>
+	id S1753971Ab3EUKxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:53:43 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:38480 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab3EUKxl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:53:41 -0400
+Date: Tue, 21 May 2013 12:53:37 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com
+Subject: [PATCH] perf: check branch sampling priv level in generic code
+Message-ID: <20130521105337.GA2879@quad>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, May 21, 2013 03:34:37 PM Xishi Qiu wrote:
-> On 2013/5/19 7:34, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > As indicated by comments in mm/memory_hotplug.c:remove_memory(),
-> > if CONFIG_MEMCG is set, it may not be possible to offline all of the
-> > memory blocks held by one module (FRU) in one pass (because one of
-> > them may be used by the others to store page cgroup in that case
-> > and that block has to be offlined before the other ones).
-> > 
-> > To handle that arguably corner case, add a second pass of companion
-> > device offlining to acpi_scan_hot_remove() and make it ignore errors
-> > returned in the first pass (and make it skip the second pass if the
-> > first one is successful).
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/scan.c |   67 ++++++++++++++++++++++++++++++++++++++--------------
-> >  1 file changed, 50 insertions(+), 17 deletions(-)
-> > 
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -131,6 +131,7 @@ static acpi_status acpi_bus_offline_comp
-> >  {
-> >  	struct acpi_device *device = NULL;
-> >  	struct acpi_device_physical_node *pn;
-> > +	bool second_pass = (bool)data;
-> >  	acpi_status status = AE_OK;
-> >  
-> >  	if (acpi_bus_get_device(handle, &device))
-> > @@ -141,15 +142,26 @@ static acpi_status acpi_bus_offline_comp
-> >  	list_for_each_entry(pn, &device->physical_node_list, node) {
-> >  		int ret;
-> >  
-> > +		if (second_pass) {
-> > +			/* Skip devices offlined by the first pass. */
-> > +			if (pn->put_online)
-> 
-> should it be "if (!pn->put_online)" ?
 
-No, I don't think so.
+This patch reverts commit 7cc23cd:
+ perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
 
-pn->put_online set means that the device has been offlined by the first pass,
-so we don't need to try it in the second one.
+The check is now implemented in generic code
+instead of x86 specific code. That way we
+do not have to repeat the test in each arch
+supporting branch sampling.
 
-Thanks,
-Rafael
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 +++----------
+ kernel/events/core.c                       |    9 ++++-----
+ 2 files changed, 7 insertions(+), 15 deletions(-)
 
-
-> > +				continue;
-> > +		} else {
-> > +			pn->put_online = false;
-> > +		}
-> >  		ret = device_offline(pn->dev);
-> >  		if (acpi_force_hot_remove)
-> >  			continue;
-> >  
-> > -		if (ret < 0) {
-> > -			status = AE_ERROR;
-> > -			break;
-> > +		if (ret >= 0) {
-> > +			pn->put_online = !ret;
-> > +		} else {
-> > +			*ret_p = pn->dev;
-> > +			if (second_pass) {
-> > +				status = AE_ERROR;
-> > +				break;
-> > +			}
-> >  		}
-> > -		pn->put_online = !ret;
-> >  	}
-> >  
-> >  	mutex_unlock(&device->physical_node_lock);
-> 
-> 
-> 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d978353..de341d4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
+  * - in case there is no HW filter
+  * - in case the HW filter has errata or limitations
+  */
+-static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ {
+ 	u64 br_type = event->attr.branch_sample_type;
+ 	int mask = 0;
+@@ -318,11 +318,8 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	if (br_type & PERF_SAMPLE_BRANCH_USER)
+ 		mask |= X86_BR_USER;
+ 
+-	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
+-		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+-			return -EACCES;
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
+ 		mask |= X86_BR_KERNEL;
+-	}
+ 
+ 	/* we ignore BRANCH_HV here */
+ 
+@@ -342,8 +339,6 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 	 * be used by fixup code for some CPU
+ 	 */
+ 	event->hw.branch_reg.reg = mask;
+-
+-	return 0;
+ }
+ 
+ /*
+@@ -391,9 +386,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * setup SW LBR filter
+ 	 */
+-	ret = intel_pmu_setup_sw_lbr_filter(event);
+-	if (ret)
+-		return ret;
++	intel_pmu_setup_sw_lbr_filter(event);
+ 
+ 	/*
+ 	 * setup HW LBR filter, if any
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9dc297f..cf79c81 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6327,11 +6327,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 		if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
+ 			return -EINVAL;
+ 
+-		/* kernel level capture: check permissions */
+-		if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
+-		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+-			return -EACCES;
+-
+ 		/* propagate priv level, when not set for branch */
+ 		if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
+ 
+@@ -6349,6 +6344,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			 */
+ 			attr->branch_sample_type = mask;
+ 		}
++		/* kernel level capture: check permissions */
++		if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
++		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
++			return -EACCES;
+ 	}
+ 
+ 	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
