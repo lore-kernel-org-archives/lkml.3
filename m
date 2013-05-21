@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab3EUKxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:53:43 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:38480 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3EUKxl (ORCPT
+	id S1754079Ab3EULBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 07:01:00 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54288 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab3EULA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:53:41 -0400
-Date: Tue, 21 May 2013 12:53:37 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com
-Subject: [PATCH] perf: check branch sampling priv level in generic code
-Message-ID: <20130521105337.GA2879@quad>
+	Tue, 21 May 2013 07:00:59 -0400
+Date: Tue, 21 May 2013 11:59:59 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        Ben Dooks <ben@fluff.org>
+Subject: Re: [PATCH] include/linux/posix_acl.h: need 'return NULL' when
+	BUG(), if neither CONFIG_BUG nor HAVE_ARCH_BUG is defined.
+Message-ID: <20130521105959.GZ18614@n2100.arm.linux.org.uk>
+References: <5199DBE2.5080707@asianux.com> <97dada79-cd78-4799-8f18-ed2bf8eee508@email.android.com> <20130520163118.GX18614@n2100.arm.linux.org.uk> <519AD33D.1030106@asianux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <519AD33D.1030106@asianux.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 21, 2013 at 09:51:57AM +0800, Chen Gang wrote:
+> On 05/21/2013 12:31 AM, Russell King - ARM Linux wrote:
+> > On Mon, May 20, 2013 at 07:40:24AM -0700, Eric W. Biederman wrote:
+> >> Seriously?  The correct fix it would seem is to give a useful default BUG
+> >> definition.  Say *NULL.
+> > 
+> > Absolutely.
+> > 
+> > The real question is... how is this happening.  I've seen it occasionally
+> > in the randconfig builds - though I don't have any logs to hand which
+> > show that in the build system at the moment.  So, looking at the files:
+> > 
+> 
+> Maybe it is my fault for the incorrect configuration.
+> 
+> My operation:
+>   make EXTRA_CFLAGS=-W ARCH=arm randconfig
+>   make EXTRA_CFLAGS=-W ARCH=arm menuconfig
+>     set 'arm-linux-gnu-' as cross compiler prefix.
+>     select "MMU-based Paged Memory" in "System Type".
+>     select "Samsung S5PV210/S5PC110" in "ARM System type"
+>   make EXTRA_CFLAGS=-W ARCH=arm
+>   ...
+> 
+> In menuconfig, I do not touch the "S5PV210 Machines" or "S5PC110
+> Machines" in "System Type", and no machines will be chosen as default.
 
-This patch reverts commit 7cc23cd:
- perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-
-The check is now implemented in generic code
-instead of x86 specific code. That way we
-do not have to repeat the test in each arch
-supporting branch sampling.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 +++----------
- kernel/events/core.c                       |    9 ++++-----
- 2 files changed, 7 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index d978353..de341d4 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -310,7 +310,7 @@ void intel_pmu_lbr_read(void)
-  * - in case there is no HW filter
-  * - in case the HW filter has errata or limitations
-  */
--static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- {
- 	u64 br_type = event->attr.branch_sample_type;
- 	int mask = 0;
-@@ -318,11 +318,8 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	if (br_type & PERF_SAMPLE_BRANCH_USER)
- 		mask |= X86_BR_USER;
- 
--	if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
--		if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
--			return -EACCES;
-+	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
- 		mask |= X86_BR_KERNEL;
--	}
- 
- 	/* we ignore BRANCH_HV here */
- 
-@@ -342,8 +339,6 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	 * be used by fixup code for some CPU
- 	 */
- 	event->hw.branch_reg.reg = mask;
--
--	return 0;
- }
- 
- /*
-@@ -391,9 +386,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * setup SW LBR filter
- 	 */
--	ret = intel_pmu_setup_sw_lbr_filter(event);
--	if (ret)
--		return ret;
-+	intel_pmu_setup_sw_lbr_filter(event);
- 
- 	/*
- 	 * setup HW LBR filter, if any
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9dc297f..cf79c81 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6327,11 +6327,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 		if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
- 			return -EINVAL;
- 
--		/* kernel level capture: check permissions */
--		if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
--		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
--			return -EACCES;
--
- 		/* propagate priv level, when not set for branch */
- 		if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
- 
-@@ -6349,6 +6344,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
- 			 */
- 			attr->branch_sample_type = mask;
- 		}
-+		/* kernel level capture: check permissions */
-+		if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
-+		    && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
-+			return -EACCES;
- 	}
- 
- 	if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
--- 
-1.7.9.5
-
+You know, telling us that you're using a random configuration to produce
+a problem and not providing the actual configuration file is utterly
+insane.  How many iterations do you think it might take to generate a
+random configuration which shows the same problem you're seeing?
