@@ -1,49 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3EUXZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:25:14 -0400
-Received: from kari2.ac-grenoble.fr ([193.54.149.72]:58317 "EHLO
-	kari2.ac-grenoble.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab3EUXZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:25:11 -0400
-X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 19:25:11 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-Content-type: text/plain; CHARSET=US-ASCII
-From: Pellet Marie-Noelle <Marie-Noel.Pellet@ac-grenoble.fr>
-Reply-to: clearnzteam@gmail.com
-Message-id: <4d1f761e6daf00e3.519c4d51@ac-grenoble.fr>
-Date: Wed, 22 May 2013 04:45:05 +0530
-X-Mailer: Webmail Academie de Grenoble
-Content-language: fr
-Subject: Upgrade your Account
-X-Accept-Language: fr
-To: undisclosed-recipients:;
+	id S1753757Ab3EUX1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:27:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13866 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751960Ab3EUX1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:27:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,716,1363158000"; 
+   d="scan'208";a="317430306"
+Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
+ configurable
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
+References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
+	 <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 21 May 2013 16:27:29 -0700
+Message-ID: <1369178849.27102.330.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-05-21 at 13:41 -0700, Andrew Morton wrote:
+
+> This patch seems to add rather a lot of unnecessary code.
+> 
+> - The increase in the size of percu_counter is regrettable.
+> 
+> - The change to percpu_counter_startup() is unneeded - no
+>   percpu_counters should exist at this time.  (We may have screwed this
+>   up - percpu_counter_startup() shuold probably be explicitly called
+>   from start_kernel()).
+> 
+> - Once the percpu_counter_startup() change is removed, all that code
+>   which got moved out of CONFIG_HOTPLUG_CPU can be put back.
+> 
+> And probably other stuff.
+> 
+> 
+> If you want to use a larger batch size for vm_committed_as, why not
+> just use the existing __percpu_counter_add(..., batch)?  Easy.
+> 
+
+Andrew,
+
+Thanks for your comments and reviews.
+Will something like the following work if we get rid of the percpu
+counter changes and use __percpu_counter_add(..., batch)?  In
+benchmark with a lot of memory changes via brk, this makes quite
+a difference when we go to a bigger batch size.
+
+Tim
+
+Change batch size for memory accounting to be proportional to memory available.
+
+Currently the per cpu counter's batch size for memory accounting is
+configured as twice the number of cpus in the system.  However,
+for system with very large memory, it is more appropriate to make it
+proportional to the memory size per cpu in the system.
+
+For example, for a x86_64 system with 64 cpus and 128 GB of memory,
+the batch size is only 2*64 pages (0.5 MB).  So any memory accounting
+changes of more than 0.5MB will overflow the per cpu counter into
+the global counter.  Instead, for the new scheme, the batch size
+is configured to be 0.4% of the memory/cpu = 8MB (128 GB/64 /256),
+which is more inline with the memory size.
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ include/linux/mman.h |  5 +++++
+ mm/mmap.c            | 14 ++++++++++++++
+ mm/nommu.c           | 14 ++++++++++++++
+ 3 files changed, 33 insertions(+)
+
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index 9aa863d..11d5ce9 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -10,12 +10,17 @@
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
+ extern struct percpu_counter vm_committed_as;
++extern int vm_committed_as_batch;
  
+ unsigned long vm_memory_committed(void);
  
---
-Your Mailbox needs an urgent upgrade to improve your email 
-performance in sending and receiving emails,to upgrade your 
-email please fill in your information in the the field below:
+ static inline void vm_acct_memory(long pages)
+ {
++#ifdef CONFIG_SMP
++	__percpu_counter_add(&vm_committed_as, pages, vm_committed_as_batch);
++#else
+ 	percpu_counter_add(&vm_committed_as, pages);
++#endif
+ }
+ 
+ static inline void vm_unacct_memory(long pages)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f681e18..0eef503 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -3145,11 +3145,25 @@ void mm_drop_all_locks(struct mm_struct *mm)
+ /*
+  * initialise the VMA slab
+  */
++
++int vm_committed_as_batch;
++EXPORT_SYMBOL(vm_committed_as_batch);
++
++static int mm_compute_batch(void)
++{
++	int nr = num_present_cpus();
++	int batch = max(32, nr*2);
++
++	/* batch size set to 0.4% of (total memory/#cpus) */
++	return max((int) (totalram_pages/nr) / 256, batch);
++}
++
+ void __init mmap_init(void)
+ {
+ 	int ret;
+ 
+ 	ret = percpu_counter_init(&vm_committed_as, 0);
++	vm_committed_as_batch = mm_compute_batch();
+ 	VM_BUG_ON(ret);
+ }
+ 
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 298884d..1b7008a 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -527,11 +527,25 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+ /*
+  * initialise the VMA and region record slabs
+  */
++
++int vm_committed_as_batch;
++EXPORT_SYMBOL(vm_committed_as_batch);
++
++static int mm_compute_batch(void)
++{
++	int nr = num_present_cpus();
++	int batch = max(32, nr*2);
++
++	/* batch size set to 0.4% of (total memory/#cpus) */
++	return max((int) (totalram_pages/nr) / 256, batch);
++}
++
+ void __init mmap_init(void)
+ {
+ 	int ret;
+ 
+ 	ret = percpu_counter_init(&vm_committed_as, 0);
++	vm_committed_as_batch = mm_compute_batch();
+ 	VM_BUG_ON(ret);
+ 	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
+ }
+-- 
+1.7.11.7
 
-  
 
-Email Address:
-User ID:
-Password:
-Confirm Password:
 
-  
-
-Your Email Account will be De-activated if you do not 
-upgrade your mailbox within the next 48hours!!!
-
-  
-
-ADMINISTRATOR
