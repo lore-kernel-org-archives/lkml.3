@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab3EUGyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:54:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14893 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751915Ab3EUGyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:54:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,712,1363158000"; 
-   d="scan'208";a="337452123"
-Message-ID: <519B1A2B.4010909@linux.intel.com>
-Date: Tue, 21 May 2013 09:54:35 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1755361Ab3EUG5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:57:37 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62487 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab3EUG5g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 02:57:36 -0400
 MIME-Version: 1.0
-To: Or Gerlitz <or.gerlitz@gmail.com>
-CC: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v3 net-next 3/4] ixgbe: Add support for ndo_ll_poll
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com> <20130520101622.14133.21998.stgit@ladj378.jer.intel.com> <CAJZOPZJx8vpSWqOhmN65gn=vi7hWXQO_J01+hAwGY9RwetX3DA@mail.gmail.com>
-In-Reply-To: <CAJZOPZJx8vpSWqOhmN65gn=vi7hWXQO_J01+hAwGY9RwetX3DA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <519AE6D7.1090401@asianux.com>
+References: <5199B7D6.40907@asianux.com>
+	<20130520091008.GB31359@mudshark.cambridge.arm.com>
+	<519AE6D7.1090401@asianux.com>
+Date: Tue, 21 May 2013 08:57:36 +0200
+X-Google-Sender-Auth: CGHprDyor3KbJ-FteQWLGL2WV7M
+Message-ID: <CAMuHMdWNHPDkf35MYMKnxt5pn3a+dsT4jgYxuuHrp+mpZMckfw@mail.gmail.com>
+Subject: Re: [PATCH] arm64: kernel: need extern variable 'screen_info' for
+ related driver using.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/05/2013 23:20, Or Gerlitz wrote:
-> On Mon, May 20, 2013 at 1:16 PM, Eliezer Tamir
-> <eliezer.tamir@linux.intel.com> wrote:
->> Add the ixgbe driver code implementing ndo_ll_poll.
->> It should be easy for other drivers to do something similar
->> in order to enable support for CONFIG_INET_LL_RX_POLL
+On Tue, May 21, 2013 at 5:15 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> I think it would be better if we added a something like
+>> CONFIG_HAVE_VGA_CONSOLE, which VGA_CONSOLE can then depend on. Architectures
+>> like x86 can then select the former, and we can remove the long list of
+>> architectures from the current option.
 >
-> I am not sure,
+> I guess your meaning is:
+>
+>   under arm64, actually, need not support 'VGA_CONSOLE', and 'screen_info' is useless.
+>   So better to define 'CONFIG_HAVE_VGA_CONSOLE' which 'VGA_CONSOLE' can depend on it, and in arm64, we do not define CONFIG_HAVE_VGA_CONSOLE.
+>
+> Is it correct ?
 
-Willem ported this to <some undisclosed HW that they use at Google>, his 
-feedback was that it was not a major effort.
+No, you missed "and we can remove the long list of architectures from the
+current option".
+
+> If so, I recommend to add depend item for VGA_CONSOLE directly:
+
+I strongly support CONFIG_HAVE_VGA_CONSOLE.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
