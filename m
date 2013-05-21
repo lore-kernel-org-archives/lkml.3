@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab3EUSPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:15:25 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:34604 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab3EUSPY (ORCPT
+	id S1755454Ab3EUSQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:16:25 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47470 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754964Ab3EUSQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:15:24 -0400
-Message-ID: <1369160115.2615.51.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: Alex Rosenbaum <alexr@mellanox.com>, Dave Miller <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 21 May 2013 19:15:15 +0100
-In-Reply-To: <519B68A4.3010406@linux.intel.com>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-	 <519B632F.7040202@mellanox.com> <519B68A4.3010406@linux.intel.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 21 May 2013 14:16:23 -0400
+Message-ID: <519BB9E7.8080401@ti.com>
+Date: Tue, 21 May 2013 14:16:07 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19882.005
-X-TM-AS-Result: No--18.080000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <rui.zhang@intel.com>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 0/2] staging -> thermal: move ti-soc-thermal to drivers/thermal
+References: <1368632761-10528-1-git-send-email-eduardo.valentin@ti.com> <20130521170302.GC20464@kroah.com>
+In-Reply-To: <20130521170302.GC20464@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="----enig2OIKCPWXLFPRQFBALQIGP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 15:29 +0300, Eliezer Tamir wrote:
-> Many of the questions you asked are covered in our RFC cover letter, but 
-> I will touch them briefly
-> 
-> On 21/05/2013 15:06, Alex Rosenbaum wrote:
-> > 1. It seem this patch does not cover epoll/select and such IO muxing APIs?
-> 
-> We are thinking about how to implement epoll support as one of the next 
-> steps.
->
-> What benchmarks are you using to test poll/select/epoll?
-[...]
+------enig2OIKCPWXLFPRQFBALQIGP
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I raised this issue back at Plumbers and I thought Jesse said poll() was
-covered.  It's likely to be a bit of a toy without that.  Also, UDP?
+Hello Greg,
 
-Solarflare uses a wide range of benchmarks.  Of the publicly available
-applications, I believe Ixia Chariot uses (or can use) epoll.
+On 21-05-2013 13:03, Greg KH wrote:
+> On Wed, May 15, 2013 at 11:45:59AM -0400, Eduardo Valentin wrote:
+>>
+>> Hello Greg and Rui,
+>>
+>> I am proposing to move the ti-soc-thermal driver from drivers/stating/=
 
-Ben.
+>> to drivers/thermal. It has been some time that we have been fixing and=
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+>> improving the code under staging tree.
+>=20
+> This is up to review from the thermal maintainer and developers to
+> accept this.
 
+Thanks for your feedback.
+
+Rui?
+
+>=20
+> thanks,
+>=20
+> greg k-h
+>=20
+>=20
+
+
+
+------enig2OIKCPWXLFPRQFBALQIGP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlGbuecACgkQCXcVR3XQvP0sygD/UlZZcCjus5q1bsDORqd4iUuH
+emOSLT6nwgZ888wfcmoA/3BlJtakRvs81OJa780z5gnDGq8CIVoWCZ/Z7jx3dtE0
+=zB75
+-----END PGP SIGNATURE-----
+
+------enig2OIKCPWXLFPRQFBALQIGP--
