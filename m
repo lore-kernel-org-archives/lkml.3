@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3EUMJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:09:14 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48720 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab3EUMJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:09:13 -0400
-Date: Tue, 21 May 2013 05:09:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
-Message-ID: <20130521120906.GD3578@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <519B38EC.90401@yandex-team.ru>
+	id S1751724Ab3EUMPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 08:15:37 -0400
+Received: from smtp4.epfl.ch ([128.178.224.219]:51916 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750766Ab3EUMPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 08:15:35 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 08:15:35 EDT
+Message-ID: <519B63D3.7040600@epfl.ch>
+Date: Tue, 21 May 2013 14:08:51 +0200
+From: Florian Vaussard <florian.vaussard@epfl.ch>
+Reply-To: florian.vaussard@epfl.ch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519B38EC.90401@yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052112-5806-0000-0000-0000213D1C85
+To: Tony Lindgren <tony@atomide.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@iki.fi>, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH] ARM: OMAP4: change the device names in usb_bind_phy
+References: <1366697656-14315-1-git-send-email-kishon@ti.com> <51936946.3030507@iki.fi> <20130516155857.GV5600@atomide.com> <519503DA.5070303@iki.fi> <20130516162034.GX5600@atomide.com> <5195C28C.40300@ti.com> <20130517172335.GX5600@atomide.com>
+In-Reply-To: <20130517172335.GX5600@atomide.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 01:05:48PM +0400, Roman Gushchin wrote:
-> Hi, all!
-> 
-> This is a fix for a problem described here:
-> https://lkml.org/lkml/2013/4/16/371 .
-> ---
-> 
-> Some network functions (udp4_lib_lookup2(), for instance) use the
-> hlist_nulls_for_each_entry_rcu macro in a way that assumes restarting
-> of a loop. In this case, it is strictly necessary to reread the head->first
-> value from the memory before each scan.
-> Without additional hints, gcc caches this value in a register. In this case,
-> if a cached node is moved to another chain during the scan, we can loop
-> forever getting wrong nulls values and restarting the loop uninterruptedly.
-> 
-> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
-> ---
->  include/linux/rculist_nulls.h | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> index 2ae1371..efd51bf 100644
-> --- a/include/linux/rculist_nulls.h
-> +++ b/include/linux/rculist_nulls.h
-> @@ -37,8 +37,9 @@ static inline void hlist_nulls_del_init_rcu(struct
-> hlist_nulls_node *n)
->  	}
->  }
-> 
-> -#define hlist_nulls_first_rcu(head) \
-> -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> +#define hlist_nulls_first_rcu(head)			\
-> +	(*((struct hlist_nulls_node __rcu __force **)	\
-> +	   &((volatile typeof(*head) *)head)->first))
 
-Why not use ACCESS_ONCE() or (better) rcu_dereference_raw() here?
+On 05/17/2013 07:23 PM, Tony Lindgren wrote:
+> * Kishon Vijay Abraham I <kishon@ti.com> [130516 22:45]:
+>> Hi,
+>>
+>> On Thursday 16 May 2013 09:50 PM, Tony Lindgren wrote:
+>>> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130516 09:11]:
+>>>> On 16/05/13 18:58, Tony Lindgren wrote:
+>>>>> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130515 03:59]:
+>>>>>
+>>>>> Just checking.. Do you have CONFIG_OMAP_OCP2SCP=y in your .config? Sounds
+>>>>> like the some transceivers should depend on that for omap4.
+>>>>
+>>>> Yes, I have OCP2SCP=y.
+>>>
+>>> Hmm well no idea beyond that then. Sounds like Kishon should check it.
+>>>
+>>>>>> The musb-hdrc id is wrong on overo also.
+>>>>>
+>>>>> Hmm has there been a fix posted for that?
+>>>>
+>>>> I couldn't find with a quick look. We debugged and discussed this on an irc
+>>>> channel with Kishon, who said he'll send a patch. Changing the musb-hdrc ID
+>>>> on overo fixed the issue, and it looks very similar to the error on 4430sdp.
+>>>> The overo fix was just:
+>>
+>> hmm.. I think using device name to bind the controller and the phy
+>> can no longer be used reliably. I think it's better to have
+>> something like what Grant suggested in my other patch series.. to
+>> have the phy reference into the host controllers platform_data
+>> structure. And for the phy reference I'll have label and id.
+>>
+>> Does this makes sense to you?
+>
+> Sounds OK to me, but I guess that would be for v3.11. I think we
+> still need a fix for at least overo for v3.10?
+>
 
-							Thanx, Paul
+Indead, musb-hdrc is broken on overo with 3.10-rc2. The patch posted in this
+thread fixes the issue.
 
->  #define hlist_nulls_next_rcu(node) \
->  	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
-> -- 
-> 1.8.1.2
-> 
+Regards,
 
+Florian
