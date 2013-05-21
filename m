@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab3EUUEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:04:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58154 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab3EUUEk (ORCPT
+	id S1753397Ab3EUUEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:04:44 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:52435 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab3EUUEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:04:40 -0400
-Date: Tue, 21 May 2013 13:04:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Nicolas Schichan <nschichan@freebox.fr>
-Subject: Re: linux-next: manual merge of the akpm tree with the net-next
- tree
-Message-Id: <20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org>
-In-Reply-To: <20130521142948.444f09820c5406f9adc4b7f1@canb.auug.org.au>
-References: <20130521142948.444f09820c5406f9adc4b7f1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 May 2013 16:04:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <yq1obcxpb76.fsf@sermon.lab.mkp.net>
+References: <20130429152639.GG32324@breakpoint.cc>
+	<yq1obcxpb76.fsf@sermon.lab.mkp.net>
+Date: Tue, 21 May 2013 13:04:41 -0700
+Message-ID: <CAHtARFHhfwZBNJFODFc5rQ3p-oHOtEeiN_Z6PSaPaxmeYRN3Bg@mail.gmail.com>
+Subject: Re: "WRITE SAME failed. Manually zeroing" with 3w-xxxx driver
+From: adam radford <aradford@gmail.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Florian Westphal <fw@strlen.de>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013 14:29:48 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Mon, Apr 29, 2013 at 9:13 AM, Martin K. Petersen
+<martin.petersen@oracle.com> wrote:
+>>>>>> "Florian" == Florian Westphal <fw@strlen.de> writes:
+>
+> Florian> After update to 3.8 dmesg is spammed with: kernel: [
+> Florian> 280.272094] 3w-xxxx: scsi8: Unknown scsi opcode: 0x41 kernel: [
+> Florian> 280.272107] sd 8:0:0:0: [sda] Unhandled error code kernel:
+>
+> Interesting. It looks like the 3ware handles this at the driver level
+> instead of passing the command through to the disk and letting it
+> fail. That in turn means that the logic we have in place to disable WS
+> when the disk does not support it does not get triggered.
+>
+> The driver should really fill out the sense buffer in that case.
+>
+> Could you please test the patch below?
+>
+>
+> Florian> This goes on and on.
+>
+> The second question is what it is that's issuing these zeroouts at boot?
+> Which filesystem are you using? What's your DM/MD config?
+>
+> --
+> Martin K. Petersen      Oracle Linux Engineering
+>
+>
+> 3w-xxxx: Create sense buffer for unsupported commands
+>
+> Make the driver return appropriate sense data when an unsupported
+> operation is queued. This will cause the SCSI layer to stop issuing the
+> offending command.
+>
+> Reported-by: Florian Westphal <fw@strlen.de>
+> CC: adam radford <aradford@gmail.com>
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+>
+> diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
+> index 56662ae..b9276d1 100644
+> --- a/drivers/scsi/3w-xxxx.c
+> +++ b/drivers/scsi/3w-xxxx.c
+> @@ -216,6 +216,7 @@
+>  #include <scsi/scsi_host.h>
+>  #include <scsi/scsi_tcq.h>
+>  #include <scsi/scsi_cmnd.h>
+> +#include <scsi/scsi_eh.h>
+>  #include "3w-xxxx.h"
+>
+>  /* Globals */
+> @@ -2009,7 +2010,8 @@ static int tw_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_c
+>                         printk(KERN_NOTICE "3w-xxxx: scsi%d: Unknown scsi opcode: 0x%x\n", tw_dev->host->host_no, *command);
+>                         tw_dev->state[request_id] = TW_S_COMPLETED;
+>                         tw_state_request_finish(tw_dev, request_id);
+> -                       SCpnt->result = (DID_BAD_TARGET << 16);
+> +                       SCpnt->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
+> +                       scsi_build_sense_buffer(1, SCpnt->sense_buffer, ILLEGAL_REQUEST, 0x20, 0);
+>                         done(SCpnt);
+>                         retval = 0;
+>         }
 
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in
-> arch/arm/net/bpf_jit_32.c between commit aafc787e41fd ("arm: bpf_jit: can
-> call module_free() from any context") from the net-next tree and commit
-> "bpf: add comments explaining the schedule_work() operation" from the
-> akpm tree.
-> 
-> The former means that the latter is no longer required, so I used the
-> former and can carry the fix as necessary (no action is required).
+Thanks Martin.  This patch looks good.
 
-Yes, there have been a lot of conflicts in
-
-seccomp-add-generic-code-for-jitted-seccomp-filters.patch
-arm-net-bpf_jit-make-code-generation-less-dependent-on-struct-sk_filter.patch
-arm-net-bpf_jit-make-code-generation-less-dependent-on-struct-sk_filter-fixup-merge-conflict.patch
-arm-net-bpf_jit-add-support-for-jitted-seccomp-filters.patch
-
-recently and I'm presently seeing a compilation error.
-
-Nicolas, I think the patches need a re-check so I'll drop the versions
-which I presently have.  Please refresh, retest and resend when
-convenient?  It'll need to be against linux-next, which is where the
-conflicting (vfree/module_free) changes have occurred.
-
-
+Acked-by: Adam Radford <aradford@gmail.com>
