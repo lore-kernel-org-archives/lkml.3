@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3EUJGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:06:25 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60940 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab3EUJGX (ORCPT
+	id S1753328Ab3EUJG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:06:56 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36961 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab3EUJGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:06:23 -0400
-Date: Tue, 21 May 2013 11:06:16 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: David Miller <davem@davemloft.net>, libo.chen@huawei.com,
-        gregkh@linuxfoundation.org, samuel@sortiz.org,
-        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com,
-        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-Message-ID: <20130521110616.21eee053@skate>
-In-Reply-To: <519B2993.4090409@cn.fujitsu.com>
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com>
-	<20130520.232619.964940909999914694.davem@davemloft.net>
-	<20130521084108.1a585f32@skate>
-	<519B2993.4090409@cn.fujitsu.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 21 May 2013 05:06:55 -0400
+Message-ID: <519B3932.7030508@atmel.com>
+Date: Tue, 21 May 2013 11:06:58 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Wenyou Yang <wenyou.yang@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <plagnioj@jcrosoft.com>,
+        <linux@maxim.org.za>
+Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to "MT_MEMORY_SO"
+References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com> <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Gu Zheng,
+On 20/05/2013 03:06, Wenyou Yang :
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 
-On Tue, 21 May 2013 16:00:19 +0800, Gu Zheng wrote:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> > Or, maybe make the existing module_platform_driver() macro do this?
-> 
-> But not all the modules use module_platform_driver() macro to replace the module init/exit.
+And stacked on at91-3.10-fixes.
 
-Then maybe it's a good opportunity to convert those ones to use
-module_platform_driver() ?
+Best regards,
 
-Thomas
+> ---
+>   arch/arm/mach-at91/setup.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+> index e2f4bdd..d68be6c 100644
+> --- a/arch/arm/mach-at91/setup.c
+> +++ b/arch/arm/mach-at91/setup.c
+> @@ -80,7 +80,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+>
+>   	desc->pfn = __phys_to_pfn(base);
+>   	desc->length = length;
+> -	desc->type = MT_DEVICE;
+> +	desc->type = MT_MEMORY_SO;
+>
+>   	pr_info("AT91: sram at 0x%lx of 0x%x mapped at 0x%lx\n",
+>   		base, length, desc->virtual);
+>
+
+
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Nicolas Ferre
