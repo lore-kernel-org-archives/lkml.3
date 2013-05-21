@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3EUNZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:25:13 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50934
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753886Ab3EUNZK (ORCPT
+	id S1754445Ab3EUN2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:28:50 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:57441 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab3EUN2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:25:10 -0400
-Date: Tue, 21 May 2013 11:45:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130521094531.GE26912@twins.programming.kicks-ass.net>
-References: <20130413220943.GB29861@linux.vnet.ibm.com>
- <20130514122049.GH15942@dyad.programming.kicks-ass.net>
- <20130514141245.GA4442@linux.vnet.ibm.com>
- <20130514145119.GC19669@dyad.programming.kicks-ass.net>
- <20130514154728.GC4442@linux.vnet.ibm.com>
- <20130515085639.GD10510@laptop.programming.kicks-ass.net>
- <20130515090234.GE10510@laptop.programming.kicks-ass.net>
- <20130515173142.GL4442@linux.vnet.ibm.com>
- <20130516094519.GJ19669@dyad.programming.kicks-ass.net>
- <20130516132210.GV4442@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130516132210.GV4442@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 21 May 2013 09:28:49 -0400
+Message-ID: <1369142926.3301.213.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 21 May 2013 06:28:46 -0700
+In-Reply-To: <519B2237.20204@linux.intel.com>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	  <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
+	 <1369063764.3301.182.camel@edumazet-glaptop>
+	 <519B2237.20204@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 06:22:10AM -0700, Paul E. McKenney wrote:
-> > But somehow I imagined making a CPU part of the GP would be easier than taking
-> > it out. After all, taking it out is dangerous and careful work, one is not to
-> > accidentally execute a callback or otherwise end a GP before time.
-> > 
-> > When entering the GP cycle there is no such concern, the CPU state is clean
-> > after all.
+On Tue, 2013-05-21 at 10:28 +0300, Eliezer Tamir wrote:
+> On 20/05/2013 18:29, Eric Dumazet wrote:
+> > On Mon, 2013-05-20 at 13:16 +0300, Eliezer Tamir wrote:
+> ---
+> >> +static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
+> >> +{
+> >> +	skb->dev_ref = napi;
+> >> +}
+> >> +
+> >> +static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+> >> +{
+> >> +	sk->dev_ref = skb->dev_ref;
+> >> +}
+> >
+> > I do not see why it's safe to keep a pointer to a napi object without
+> > taking a reference, or something to prevent object being removed.
+> >
+> > Using a genid might be enough. (some counter incremented every time a
+> > napi is dismantled)
 > 
-> But that would increase the overhead of GP initialization.  Right now,
-> GP initialization touches only the leaf rcu_node structures, of which
-> there are by default one per 16 CPUs (and can be configured up to one per
-> 64 CPUs, which it is on really big systems).  So on busy mixed-workload
-> systems, this approach increases GP initialization overhead for no
-> good reason -- and on systems running these sorts of workloads, there
-> usually aren't "sacrificial lamb" timekeeping CPUs whose utilization
-> doesn't matter.
+> I really like this approach and I tried it.
+> The main problem I had is that you need to increase the size of the skb 
+> to store the generation id unless you stuff it in the flags2 bitfield.
+> There appear to be only 7 useful bit left there.
+> Is it OK to use them all up?
+> 
+> 
+> > Alternatively, use a napi_id instead of a pointer.
+> 
+> I'm not sure I understand what you propose.
 
-Right, so I read through some of the fqs code to get a better feel for
-things and I suppose I see what you're talking about :-)
+Oh well.
 
-The only thing I could come up with is making fqslock a global/local
-style lock, so that individual CPUs can adjust their own state without
-bouncing the lock around.
+To get a pointer to a struct net_device, we can use ifindex, and do a
+rcu lookup into a hash table to get the net_device. We do not need
+{pointer,ifindex} but {ifindex} is enough
 
-It would make the fqs itself a 'bit' more expensive but ideally those
-don't happen that often, ha!.
+My suggestion is to not have skb->skb_ref but skb->napi_index : Its safe
+to copy its value from skb->napi_index to sk->napi_index without
+refcounting.
 
-But yeah, every time you let the fqs propagate 'idle' state up the tree
-your join becomes more expensive too.
+All NAPI need to get a unique napi_index, and be inserted in a hash
+table for immediate/fast lookup.
+
+
+
