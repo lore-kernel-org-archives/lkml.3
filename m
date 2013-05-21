@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3EUV6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:58:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19732 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab3EUV6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:58:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,716,1363158000"; 
-   d="scan'208";a="244835256"
-Date: Tue, 21 May 2013 23:58:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
-Message-ID: <20130521215806.GC4566@zurbaran>
-References: <20130514091956.GG3297@gmail.com>
- <20130515090449.GA3494@gmail.com>
- <20130516224337.GZ22822@zurbaran>
- <20130517075140.GA25077@balto.lan>
- <20130521085650.GB4589@zurbaran>
- <20130521091230.GA28756@balto.lan>
+	id S1752843Ab3EUV7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:59:03 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43284 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3EUV7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:59:00 -0400
+Message-ID: <519BEE22.3080806@gmail.com>
+Date: Tue, 21 May 2013 14:58:58 -0700
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521091230.GA28756@balto.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Don Dutile <ddutile@redhat.com>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com> <5192AEF4.1070905@intel.com> <519BE778.9040800@redhat.com> <519BE7C4.3050306@redhat.com>
+In-Reply-To: <519BE7C4.3050306@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On 05/21/2013 02:31 PM, Don Dutile wrote:
+> On 05/21/2013 05:30 PM, Don Dutile wrote:
+>> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
+>>> On 05/14/2013 12:59 PM, Yinghai Lu wrote:
+>>>> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
+>>>> <alexander.h.duyck@intel.com> wrote:
+>>>>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
+>>>>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
+>>>>>> <alexander.h.duyck@intel.com> wrote:
+>>>>>>> I'm sorry, but what is the point of this patch? With device
+>>>>>>> assignment
+>>>>>>> it is always possible to have VFs loaded and the PF driver unloaded
+>>>>>>> since you cannot remove the VFs if they are assigned to a VM.
+>>>>>> unload PF driver will not call pci_disable_sriov?
+>>>>> You cannot call pci_disable_sriov because you will panic all of the
+>>>>> guests that have devices assigned.
+>>>> ixgbe_remove did call pci_disable_sriov...
+>>>>
+>>>> for guest panic, that is another problem.
+>>>> just like you pci passthrough with real pci device and hotremove the
+>>>> card in host.
+>>>>
+>>>> ...
+>>>
+>>> I suggest you take another look. In ixgbe_disable_sriov, which is the
+>>> function that is called we do a check for assigned VFs. If they are
+>>> assigned then we do not call pci_disable_sriov.
+>>>
+>>>>
+>>>>> So how does your patch actually fix this problem? It seems like it is
+>>>>> just avoiding it.
+>>>> yes, until the first one is done.
+>>>
+>>> Avoiding the issue doesn't fix the underlying problem and instead you
+>>> are likely just introducing more bugs as a result.
+>>>
+>>>>> From what I can tell your problem is originating in pci_call_probe. I
+>>>>> believe it is calling work_on_cpu and that doesn't seem correct since
+>>>>> the work should be taking place on a CPU already local to the PF. You
+>>>>> might want to look there to see why you are trying to schedule work
+>>>>> on a
+>>>>> CPU which should be perfectly fine for you to already be doing your
+>>>>> work on.
+>>>> it always try to go with local cpu with same pxm.
+>>>
+>>> The problem is we really shouldn't be calling work_for_cpu in this case
+>>> since we are already on the correct CPU. What probably should be
+>>> happening is that pci_call_probe should be doing a check to see if the
+>>> current CPU is already contained within the device node map and if so
+>>> just call local_pci_probe directly. That way you can avoid deadlocking
+>>> the system by trying to flush the CPU queue of the CPU you are
+>>> currently on.
+>>>
+>> That's the patch that Michael Tsirkin posted for a fix,
+>> but it was noted that if you have the case where the _same_ driver is
+>> used for vf & pf,
+>> other deadlocks may occur.
+>> It would work in the case of ixgbe/ixgbevf, but not for something like
+>> the Mellanox pf/vf driver (which is the same).
+>>
+> apologies; here's the thread the discussed the issue:
+> https://patchwork.kernel.org/patch/2458681/
+> 
 
-On Tue, May 21, 2013 at 11:12:30AM +0200, Fabio Baltieri wrote:
-> On Tue, May 21, 2013 at 10:56:50AM +0200, Samuel Ortiz wrote:
-> > On Fri, May 17, 2013 at 09:51:40AM +0200, Fabio Baltieri wrote:
-> > > Hello Samuel,
-> > > 
-> > > On Fri, May 17, 2013 at 12:43:37AM +0200, Samuel Ortiz wrote:
-> > > > > Fabio Baltieri (5):
-> > > > >       mfd: abx500-core: Fix sparse warning
-> > > > >       mfd: ab8500-sysctrl: Fix sparse warning
-> > > > >       mfd: ab8500-sysctrl: Set sysctrl_dev during probe
-> > > > >       mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-> > > > Unless I'm missing something here, this one is not really rcN material, so
-> > > > I'd appreciate if you could queue it to your for-mfd branch instead.
-> > > 
-> > > The last two:
-> > > 
-> > >   mfd: ab8500-sysctrl: Set sysctrl_dev during probe
-> > This one is already in mfd-fixes, the commit log was clear enough.
-> 
-> Great!
-> 
-> > >   mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-> > This one is not, as the commit log is not showing it actually fixes something
-> > but only makes the code cleaner. If it really fixes something, could you
-> > please provide me with a commit log that describes what exactly it fixes ?
-> 
-> Ok, the fix here is that right now that driver is initialized without a
-> specific pdata (that is plat->sysctrl), so enforcing it breaks existing
-> platforms for no reason.  To make the commit more clear I would just
-> point that out as in (just last two sentences):
-> 
-> --- >8 ---
-> mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
-> 
-> A check for a valid plat->sysctrl was introduced in:
-> 
-> 2377e52 mfd: ab8500-sysctrl: Error check clean up
-> 
-> but the driver works just fine even without that initialization data,
-> and enforcing it breaks existing platforms for no reason.
-> 
-> This patch removes the check and let the driver go ahead with probe.
-> --- >8 ---
-> 
-> Is it better?
-Slightly. Next time please describe how it breaks.
-I applied and pushed this patch now, I'll send a pull request to Linus
-tomorrow morning.
+I found out about that patch after I submitted one that was similar.
+The only real complaint I had about his patch was that it was only
+looking at the CPU and he could save himself some trouble by just doing
+the work locally if we were on the correct NUMA node.  For example if
+the system only has one node in it what is the point in scheduling all
+of the work on CPU 0?  My alternative patch can be found at:
+https://patchwork.kernel.org/patch/2568881/
 
-Cheers,
-Samuel.
+As far as the inter-driver locking issues for same driver I don't think
+that is really any kind if issue.  Most drivers shouldn't be holding any
+big locks when they call pci_enable_sriov.  If I am not mistaken the
+follow on patch I submitted which was similar to Michaels was reported
+to have resolved the issue.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+As far as the Mellanox PF/VF the bigger issue is that when they call
+pci_enable_sriov they are not ready to handle VFs.  There have been
+several suggestions on how to resolve it including -EPROBE_DEFER or the
+igbvf/ixgbevf approach of just brining up the device in a "link down" state.
+
+Thanks,
+
+Alex
+
