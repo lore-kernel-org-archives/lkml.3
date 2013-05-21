@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3EUUEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:04:44 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:52435 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3EUUEm (ORCPT
+	id S1754365Ab3EUUFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:05:08 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:57229 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab3EUUFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:04:42 -0400
+	Tue, 21 May 2013 16:05:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <yq1obcxpb76.fsf@sermon.lab.mkp.net>
-References: <20130429152639.GG32324@breakpoint.cc>
-	<yq1obcxpb76.fsf@sermon.lab.mkp.net>
-Date: Tue, 21 May 2013 13:04:41 -0700
-Message-ID: <CAHtARFHhfwZBNJFODFc5rQ3p-oHOtEeiN_Z6PSaPaxmeYRN3Bg@mail.gmail.com>
-Subject: Re: "WRITE SAME failed. Manually zeroing" with 3w-xxxx driver
-From: adam radford <aradford@gmail.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Florian Westphal <fw@strlen.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+In-Reply-To: <1369160653.6828.151.camel@gandalf.local.home>
+References: <1369158390.6828.148.camel@gandalf.local.home>
+	<CAFTL4hyWAJyOs3NnqSOt1JQHTk4vRiGWz6xE1bDXsVWi6fQKrQ@mail.gmail.com>
+	<1369160653.6828.151.camel@gandalf.local.home>
+Date: Tue, 21 May 2013 22:05:03 +0200
+Message-ID: <CAFTL4hyvWUDjjVe+EAOXQgor4GvZLKJx8KJbO46+5JYRtiso2Q@mail.gmail.com>
+Subject: Re: [PATCH][3.10] nohz: Fix lockup on restart from wrong error code
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 29, 2013 at 9:13 AM, Martin K. Petersen
-<martin.petersen@oracle.com> wrote:
->>>>>> "Florian" == Florian Westphal <fw@strlen.de> writes:
+2013/5/21 Steven Rostedt <rostedt@goodmis.org>:
+> On Tue, 2013-05-21 at 20:12 +0200, Frederic Weisbecker wrote:
 >
-> Florian> After update to 3.8 dmesg is spammed with: kernel: [
-> Florian> 280.272094] 3w-xxxx: scsi8: Unknown scsi opcode: 0x41 kernel: [
-> Florian> 280.272107] sd 8:0:0:0: [sda] Unhandled error code kernel:
+>> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>>
+>> There has been this patch that makes it return -EPERM instead:
+>> https://lkml.org/lkml/2013/5/20/386
+>>
+>> Not sure which is best. Both sort of make sense to me.
 >
-> Interesting. It looks like the 3ware handles this at the driver level
-> instead of passing the command through to the disk and letting it
-> fail. That in turn means that the logic we have in place to disable WS
-> when the disk does not support it does not get triggered.
+> That's just as good, as it also fixes the issue.
 >
-> The driver should really fill out the sense buffer in that case.
->
-> Could you please test the patch below?
->
->
-> Florian> This goes on and on.
->
-> The second question is what it is that's issuing these zeroouts at boot?
-> Which filesystem are you using? What's your DM/MD config?
->
-> --
-> Martin K. Petersen      Oracle Linux Engineering
->
->
-> 3w-xxxx: Create sense buffer for unsupported commands
->
-> Make the driver return appropriate sense data when an unsupported
-> operation is queued. This will cause the SCSI layer to stop issuing the
-> offending command.
->
-> Reported-by: Florian Westphal <fw@strlen.de>
-> CC: adam radford <aradford@gmail.com>
-> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
->
-> diff --git a/drivers/scsi/3w-xxxx.c b/drivers/scsi/3w-xxxx.c
-> index 56662ae..b9276d1 100644
-> --- a/drivers/scsi/3w-xxxx.c
-> +++ b/drivers/scsi/3w-xxxx.c
-> @@ -216,6 +216,7 @@
->  #include <scsi/scsi_host.h>
->  #include <scsi/scsi_tcq.h>
->  #include <scsi/scsi_cmnd.h>
-> +#include <scsi/scsi_eh.h>
->  #include "3w-xxxx.h"
->
->  /* Globals */
-> @@ -2009,7 +2010,8 @@ static int tw_scsi_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_c
->                         printk(KERN_NOTICE "3w-xxxx: scsi%d: Unknown scsi opcode: 0x%x\n", tw_dev->host->host_no, *command);
->                         tw_dev->state[request_id] = TW_S_COMPLETED;
->                         tw_state_request_finish(tw_dev, request_id);
-> -                       SCpnt->result = (DID_BAD_TARGET << 16);
-> +                       SCpnt->result = (DRIVER_SENSE << 24) | SAM_STAT_CHECK_CONDITION;
-> +                       scsi_build_sense_buffer(1, SCpnt->sense_buffer, ILLEGAL_REQUEST, 0x20, 0);
->                         done(SCpnt);
->                         retval = 0;
->         }
+> You can take Li's and add my Acked-by to it. And perhaps even add some
+> of my change log as well.
 
-Thanks Martin.  This patch looks good.
-
-Acked-by: Adam Radford <aradford@gmail.com>
+Ok, thanks!
