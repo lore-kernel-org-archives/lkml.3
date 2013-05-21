@@ -1,153 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3EUVuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:50:23 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:49519 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab3EUVuW (ORCPT
+	id S1752076Ab3EUVxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:53:52 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:56581 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3EUVxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:50:22 -0400
-X-IronPort-AV: E=Sophos;i="4.87,716,1363132800"; 
-   d="scan'208";a="25349628"
-Date: Tue, 21 May 2013 22:50:09 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Feng Jin <joe.jin@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Yuval Shaia <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
- driver load first time
-In-Reply-To: <20130521204245.GA7073@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com> <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
- <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com> <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
- <20130521204245.GA7073@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 21 May 2013 17:53:50 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 21 May 2013 23:53:29 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: stephan.gatzka@gmail.com
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        linux1394-devel@lists.sourceforge.net, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: function call fw_iso_resource_mange(..) (core-iso.c) does not
+ return
+Message-ID: <20130521235329.48ba65e2@stein>
+In-Reply-To: <62922216e6007f9ef83956e0ca202644@gatzka.org>
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
+	<519BA6AC.1080600@hurleysoftware.com>
+	<62922216e6007f9ef83956e0ca202644@gatzka.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
-> On Tue, May 21, 2013 at 05:51:02PM +0100, Stefano Stabellini wrote:
-> > On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
-> > > > Looking at the hypervisor code I couldn't see anything obviously wrong.
-> > > 
-> > > I think the culprit is "physdev_unmap_pirq":
-> > > 
-> > >    if ( is_hvm_domain(d) )                                                     
-> > >     {                                                                           
-> > >         spin_lock(&d->event_lock);                                              
-> > >         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
-> > >             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
-> > >             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
-> > >             domain_pirq_to_irq(d, pirq));                                       
-> > >                                                                                 
-> > >         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
-> > >             ret = unmap_domain_pirq_emuirq(d, pirq);                            
-> > >         spin_unlock(&d->event_lock);                                            
-> > >         if ( domid == DOMID_SELF || ret )                                       
-> > >             goto free_domain;                                             
-> > > 
-> > > It always tells me unbound:
-> > > 
-> > > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
-> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
-> > > (a bit older debug code, so the 'unbound' does not show up here).
-> > > 
-> > > Which means that the call to unmap_domain_pirq_emuirq does not happen.
-> > > The checks in unmap_domain_pirq_emuirq also look to be depend
-> > > on the code being IRQ_UNBOUND.
-> > > 
-> > > In other words, all of that code looks to only clear things when
-> > > they are !IRQ_UNBOUND.
-> > > 
-> > > But the other logic (IRQ_UNBOUND) looks to be missing a removal
-> > > in the radix tree:
-> > > 
-> > >   if ( emuirq != IRQ_PT )                                                     
-> > >         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
-> > >                                                                         
-> > > And I think that is what is causing the leak - the radix tree
-> > > needs to be pruned? Or perhaps the allocate_pirq should check
-> > > the radix tree for IRQ_UNBOUND ones and re-use them?
+On May 21 Stephan Gatzka wrote:
+> Hi all!
+> 
+> >> The deadlock occurs mainly because the firewire workqueue is allocated 
+> >> with WQ_MEM_RECLAIM. That's why a so called rescuer thread is started 
+> >> while allocating the wq.
+> >                       ^^^^^^
+> > Are there other conditions which contribute?  For example, Ralf 
+> > reported that
+> > having the bus_reset_work on its own wq delayed but did not eliminate 
+> > the
+> > deadlock.
 > > 
-> > I think that you are looking in the wrong place.
-> > The issue is that QEMU doesn't call pt_msi_disable in
-> > pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
 > 
-> In my test-case I am not even calling QEMU. I am just doing two hypercalls 
-> hypercall - get_free_pirq and unmap.
+> The worker threads are independant from the workqueues. New worker 
+> thread are only allocated if all current worker threads are sleeping and 
+> are making no progress. Right now I don't know if Ralfs separate queue 
+> for bus_reset_work was allocated with MEM_RECLAIM. Buf even if it has 
+> it's own rescuer thread, that should not block because there is no other 
+> work in that queue. No, right now I have no explanation for that.
+
+Indeed.  Ralf wrote he had given bus_reset_work its own workqueue (which
+reduced the probability of the bug but did not eliminate it), and then
+there can only three things happen (from my perspective as a mere API
+user):
+  a) The ohci->bus_reset_work instance is queued while the wq is empty.
+     Which is the trivial case and presumably works.
+     queue_work() returns nonzero.
+
+  b) The instance is queued while the very same instance has already been
+     queued but is not yet being executed.  Sounds trivial too:  These two
+     or more queuing attempts before execution should in total lead to the
+     work be executed once.
+     queue_work() returns zero in this case.
+     Ralf observed this condition to coincide with the hang.
+
+  c) The instance is queued while it is being executed.  In this case,
+     the work must be put into the queue but must not be started until its
+     present execution finished.  (We have a non-reentrant workqueue which
+     is meant to guarantee that one and the same worklet instance is
+     executed at most once at any time, systemwide.)
+     queue_work() returns nonzero in this case.
+     Whether this condition is involved in the problem or not is not clear
+     to me.  Maybe one occurrence of condition c initiates the problem,
+     and the occurrences of b which had been observed are only a
+     by-product.  Or the trouble starts in condition b only...?
+
+Well, a few further conditions can happen if there are several OHCI-1394
+LLCs in the system and all fw_ohci instances share a single workqueue.
+But since there is no dependency between different ohci->bus_reset_work
+instances (in contrast to firewire-core worklets and upper layer worklets
+whose progress depends on firewire-ohci worklets' progress), the only
+effect of such sharing would be that conditions b and c are somewhat more
+likely to occur, especially if bus resets on the different buses are
+correlated.
+
+> >> This rescuer thread is responsible to keep the queue working even 
+> >> under high memory pressure so that a memory allocation might sleep. If 
+> >> that happens, all work of that workqueue is designated to that 
+> >> particular rescuer thread. The work in this rescuer thread is done 
+> >> strictly sequential. Now we have the situation that the rescuer thread 
+> >> runs fw_device_init->read_config_rom->read_rom->fw_run_transaction. 
+> >> fw_run_transaction blocks waiting for the completion object. This 
+> >> completion object will be completed in bus_reset_work, but this work 
+> >> will never executed in the rescuer thread.
 > > 
-> > The code above is correct as is because it is trying to handle emulated
-> > IRQs and MSIs, not real passthrough MSIs. They latter are not added to
-> > that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
+> > Interesting.
+> > 
+> > Tejun, is this workqueue behavior as designed?  Ie., that a workqueue 
+> > used
+> > as a domain for forward progress guarantees collapses under certain 
+> > conditions,
+> > such as scheduler overhead and no longer ensures forward progress?
+> > 
+> > 
+> > I've observed the string of bus resets on startup as well and I think
+> > it has to do
+> > with failing to ack the interrupt promptly because the log printk()
+> > takes too long (>50us).
+> > The point being that I don't think this is contributing to the
+> > create_worker() +10ms
+> > delay.
 > 
-> The bug is in the hypervisor. This little patch solves the test-case
-> (I hadn't tried to do the PCI passthrough yet)
+> That depends on. The console on embedded systems (like ours) often runs 
+> on a serial port with 115200 baud. We measured the cost of a printk and 
+> dependent of the length and parameters that might easily go up to 
+> several ms. So dependent on the console level set you might run into 
+> trouble.
 > 
+> Regards,
 > 
-> diff --git a/xen/arch/x86/irq.c b/xen/arch/x86/irq.c
-> index b0b0c65..b78717a 100644
-> --- a/xen/arch/x86/irq.c
-> +++ b/xen/arch/x86/irq.c
-> @@ -1851,8 +1851,8 @@ static int pirq_guest_force_unbind(struct domain *d, struct pirq *pirq)
->  static inline bool_t is_free_pirq(const struct domain *d,
->                                    const struct pirq *pirq)
->  {
-> -    return !pirq || (!pirq->arch.irq && (!is_hvm_domain(d) ||
-> -        pirq->arch.hvm.emuirq == IRQ_UNBOUND));
-> +    return !pirq || ((pirq->arch.irq == 0 || (pirq->arch.irq == PIRQ_ALLOCATED)) &&
-> +           (!is_hvm_domain(d) || pirq->arch.hvm.emuirq == IRQ_UNBOUND));
->  }
->  
->  int get_free_pirq(struct domain *d, int type)
-> 
-> 
-> The reason is that pirq->arch.irq in PHYSDEVOP_get_free_pirq is set to
-> from the value of zero to -1 (PIRQ_ALLOCATED). Then in map_domain_pirq
-> we check it first:
-> 
-> 904     old_irq = domain_pirq_to_irq(d, pirq);                  
-> .. snip..                    
-> 1907     if ( (old_irq > 0 && (old_irq != irq) ) ||                                  
-> 
-> and since the 'old_irq' is -1 (or zero), and the irq passed in
-> is different, then all checks pass and the value is over-written:
-> 
->  1988         set_domain_irq_pirq(d, irq, info);                                      
-> 
-> And that is it.
+> Stephan
 
-
-We have to be careful about this: the point of PHYSDEVOP_get_free_pirq is
-that Linux can know for sure the pirq that is going to be used to map the
-MSI by QEMU. If you modify is_free_pirq that way, suddenly the pirq
-could be allocated for something else after Linux called
-PHYSDEVOP_get_free_pirq and before QEMU called xc_physdev_map_pirq_msi.
-
-Right now the unmap is supposed to be done by QEMU, not Linux. So I
-think that it is "normal" (although counterintuitive) that your little
-test works that way.
-
-pirq allocated via PHYSDEVOP_get_free_pirq should be passed to QEMU,
-mapped by QEMU, unmapped by QEMU and eventually freed by QEMU.
-
-This is not the bestest interface ever written of course but that's how
-it works now.
+-- 
+Stefan Richter
+-=====-===-= -=-= =-=-=
+http://arcgraph.de/sr/
