@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab3EUWBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:01:12 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45307 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3EUWBK (ORCPT
+	id S1753071Ab3EUWCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:02:03 -0400
+Received: from mail-gh0-f181.google.com ([209.85.160.181]:56984 "EHLO
+	mail-gh0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab3EUWCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:01:10 -0400
-Message-ID: <519BEEA4.2030804@gmail.com>
-Date: Tue, 21 May 2013 15:01:08 -0700
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Tue, 21 May 2013 18:02:02 -0400
+Message-ID: <519BEED7.6030605@gmail.com>
+Date: Tue, 21 May 2013 18:01:59 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Don Dutile <ddutile@redhat.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        NetDev <netdev@vger.kernel.org>, Or Gerlitz <or.gerlitz@gmail.com>
-Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
-References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com> <5192AEF4.1070905@intel.com> <519BE778.9040800@redhat.com> <20130521214912.GA21713@redhat.com>
-In-Reply-To: <20130521214912.GA21713@redhat.com>
+To: Rafael Aquini <aquini@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Karel Zak <kzak@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, hughd@google.com, shli@kernel.org,
+        jmoyer@redhat.com, riel@redhat.com, lwoodman@redhat.com,
+        mgorman@suse.de
+Subject: Re: [RFC PATCH 02/02] swapon: add "cluster-discard" support
+References: <cover.1369092449.git.aquini@redhat.com> <398ace0dd3ca1283372b3aad3fceeee59f6897d7.1369084886.git.aquini@redhat.com> <519AC7B3.5060902@gmail.com> <20130521102648.GB11774@x2.net.home> <519BD640.4040102@gmail.com> <20130521211300.GE20178@optiplex.redhat.com>
+In-Reply-To: <20130521211300.GE20178@optiplex.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 02:49 PM, Michael S. Tsirkin wrote:
-> On Tue, May 21, 2013 at 05:30:32PM -0400, Don Dutile wrote:
->> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
->>> On 05/14/2013 12:59 PM, Yinghai Lu wrote:
->>>> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
->>>> <alexander.h.duyck@intel.com>  wrote:
->>>>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
->>>>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
->>>>>> <alexander.h.duyck@intel.com>  wrote:
->>>>>>> I'm sorry, but what is the point of this patch?  With device assignment
->>>>>>> it is always possible to have VFs loaded and the PF driver unloaded
->>>>>>> since you cannot remove the VFs if they are assigned to a VM.
->>>>>> unload PF driver will not call pci_disable_sriov?
->>>>> You cannot call pci_disable_sriov because you will panic all of the
->>>>> guests that have devices assigned.
->>>> ixgbe_remove did call pci_disable_sriov...
->>>>
->>>> for guest panic, that is another problem.
->>>> just like you pci passthrough with real pci device and hotremove the
->>>> card in host.
->>>>
->>>> ...
->>>
->>> I suggest you take another look.  In ixgbe_disable_sriov, which is the
->>> function that is called we do a check for assigned VFs.  If they are
->>> assigned then we do not call pci_disable_sriov.
->>>
->>>>
->>>>> So how does your patch actually fix this problem?  It seems like it is
->>>>> just avoiding it.
->>>> yes, until the first one is done.
->>>
->>> Avoiding the issue doesn't fix the underlying problem and instead you
->>> are likely just introducing more bugs as a result.
->>>
->>>>> From what I can tell your problem is originating in pci_call_probe.  I
->>>>> believe it is calling work_on_cpu and that doesn't seem correct since
->>>>> the work should be taking place on a CPU already local to the PF. You
->>>>> might want to look there to see why you are trying to schedule work on a
->>>>> CPU which should be perfectly fine for you to already be doing your work on.
->>>> it always try to go with local cpu with same pxm.
->>>
->>> The problem is we really shouldn't be calling work_for_cpu in this case
->>> since we are already on the correct CPU.  What probably should be
->>> happening is that pci_call_probe should be doing a check to see if the
->>> current CPU is already contained within the device node map and if so
->>> just call local_pci_probe directly.  That way you can avoid deadlocking
->>> the system by trying to flush the CPU queue of the CPU you are currently on.
->>>
->> That's the patch that Michael Tsirkin posted for a fix,
->> but it was noted that if you have the case where the _same_ driver is used for vf & pf,
->> other deadlocks may occur.
->> It would work in the case of ixgbe/ixgbevf, but not for something like
->> the Mellanox pf/vf driver (which is the same).
->>
-> 
-> I think our conclusion was this is a false positive for Mellanox.
-> If not, we need to understand what the deadlock is better.
-> 
+> Instead of reverting and renaming --discard, what about making it accept an
+> optional argument, so we could use --discard (to enable all thing and keep
+> backward compatibility); --discard=cluster & --discard=batch (or whatever we
+> think it should be named). I'll try to sort this approach out if you folks think
+> it's worthwhile. 
 
-As I understand the issue, the problem is not a deadlock for Mellanox
-(At least with either your patch or mine applied), the issue is that the
-PF is not ready to handle VFs when pci_enable_sriov is called due to
-some firmware issues.
+Optional argument looks nice, at least to me. 
 
-Thanks,
+But hmm.. 
 
-Alex
+"cluster" and "batch" describes current kernel implementation, not user visible effect. 
+Usually I suggest to pick up a word from man pages because it describe user visible action.
+e.g. --discard=freed-pages or --discard=io or --discard=swapon or --discard=once, etc..
+
+But this is not strong opinion. You can ignore it. I don't think I have good English sense. :-)
 
