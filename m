@@ -1,102 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758525Ab3ETXzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 19:55:54 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:48245 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897Ab3ETXzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 19:55:53 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-f1-519ab806a31d
-Date: Mon, 20 May 2013 23:55:50 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: [PATCH] i2c: i2c-designware: Fix compilation warning
-To: wsa@the-dreams.de, linux-i2c@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130520234352411@eunb.song
-Msgkey: 20130520234352411@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130520234352411@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <2512686.216921369094149829.JavaMail.weblogic@epml25>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+Zji7bjlmBBu8eW1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6ML8e2shX84ao4svsjUwPjFa4uRk4OIQEViZb/3xlBbAkBE4mr
-	y1ZC2WISF+6tZ+ti5AKqWcYoceXCArii7W3/mCAS8xklvj5fwASSYBFQlZhw9y4LiM0moC3x
-	9ssDVhBbWMBWYnrzVjBbRMBGomnCLmYQm1nAUeLR5TvMEFfIS0w+fZkdxOYVEJQ4OfMJ0BwO
-	oGVKEgvvaYKYvALKEi1zNSFOkJCYNf0CK4TNKzGj/SkLhC0nMe3rGmYIW1ri/KwNcL8s/v4Y
-	Ks4vcez2DiaI6bwST+4Hw4zZvfkLG4QtIDH1zEGoVnWJ9XP+QLXySaxZ+JYFZsyuU8uZYXrv
-	b5nLBPGUosSU7ofsELaWxJcf+9hQPQViO0pc2D6feQKj8iwkqVlI2mchaUdWs4CRZRWjaGpB
-	ckFxUnqRiV5xYm5xaV66XnJ+7iZGSFKYsIPx3gHrQ4zJwAiZyCwlmpwPTCp5JfGGxmZGFqYm
-	psZG5pZmpAkrifOqt1gHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDkS10ZP2tN3t6A9Wtn
-	SvXyXnG6fHjGas15v183aHAcdNSt0Xzfv+LA1mi1ST+cf2Ymu3oJTJSbx7BwxacZi2wSdrbc
-	nqf18W69o4bboscFK/NEWv8bZuaYJ0/R5z211rlsmexfK/7iCT2C37IYzzTuWRloP11z7zKn
-	rsTdHSeVvuX/6O7p6uhQYinOSDTUYi4qTgQA7WNncCADAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2TF22HbMCDZa3WVpc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jC/HtrIV/OGqOLL7I1MD4xWuLkZODiEBFYmW/98ZQWwJAROJ7W3/mCBsMYkL99azdTFyAdXM
-	Z5T4+nwBWIJFQFViwt27LCA2m4C2xNsvD1hBbGEBW4npzVvBbBEBG4mmCbuYQWxmAUeJR5fv
-	MEMsk5eYfPoyO4jNKyAocXLmE6A5HEDLlCQW3tMEMXkFlCVa5mpCnCAhMWv6BVYIm1diRvtT
-	FghbTmLa1zXMELa0xPlZGxhhTl78/TFUnF/i2O0dTBDTeSWe3A+GGbN78xc2CFtAYuqZg1Ct
-	6hLr5/yBauWTWLPwLQvMmF2nljPD9N7fMpcJ4ilFiSndD9khbC2JLz/2saF6CsR2lLiwfT7z
-	BEa5WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9ApDveLE3OLSvHS95PzcTYzg9PRs4Q7GL+et
-	DzEKcDAq8fAKGM4KFGJNLCuuzD3EKMHBrCTC+70ZKMSbklhZlVqUH19UmpNafIgxGRh9E5ml
-	RJPzgakzryTe0NjA2NDQ0tzA1NDIgjRhJXHep63WgUIC6YklqdmpqQWpRTBbmDg4pRoY3XX/
-	FogdE7HcVrDgaPX5zaVyX9isTvCHeDWeSp1p9H6WRMO7O0r80sscJ5Rz8v48Jzq9a3N52/VZ
-	xZzB0txhc0v10ptbeyvSxKbL3JNhuuH9YdH5XX3LHx+TOJG1asE20aIGBre9TCnL9Nr4LFea
-	n08zCu8q0/3nbevDZHObfX9DT1BFqr8SS3FGoqEWc1FxIgDg8MQWkwMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1758581Ab3EUAEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 20:04:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755866Ab3EUAEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 20 May 2013 20:04:47 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, hughd@google.com,
+        shli@kernel.org, kzak@redhat.com, jmoyer@redhat.com, riel@redhat.com,
+        lwoodman@redhat.com, mgorman@suse.de
+Subject: [RFC PATCH 01/02] swap: discard while swapping only if SWAP_FLAG_DISCARD_CLUSTER
+Date: Mon, 20 May 2013 21:04:24 -0300
+Message-Id: <e3ae11727f13e1580ae66ce80845e9002ec90ea6.1369092449.git.aquini@redhat.com>
+In-Reply-To: <cover.1369092449.git.aquini@redhat.com>
+References: <cover.1369092449.git.aquini@redhat.com>
+In-Reply-To: <cover.1369092449.git.aquini@redhat.com>
+References: <cover.1369092449.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4KNu1LI016689
 
+Intruduce a new flag to make page-cluster fine-grained discards while swapping
+conditional, as they can be considered detrimental to some setups. However,
+keep allowing batched discards at sys_swapon() time, when enabled by the
+system administrator. 
 
-Fix the following compilation warning when CONFIG_PM_RUNTIME is not enabled:
-
-drivers/i2c/busses/i2c-designware-pcidrv.c:188: warning: 'i2c_dw_pci_runtime_idle' defined but not used
-
-Signed-off-by: EunBong Song <eunb.song@samsung.com>
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
 ---
- drivers/i2c/busses/i2c-designware-pcidrv.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/swap.h |  8 +++++---
+ mm/swapfile.c        | 12 ++++++++----
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index f6ed06c..2b5d3a6 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -185,6 +185,7 @@ static int i2c_dw_pci_resume(struct device *dev)
- 	return 0;
- }
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 1701ce4..ab2e742 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -19,10 +19,11 @@ struct bio;
+ #define SWAP_FLAG_PREFER	0x8000	/* set if swap priority specified */
+ #define SWAP_FLAG_PRIO_MASK	0x7fff
+ #define SWAP_FLAG_PRIO_SHIFT	0
+-#define SWAP_FLAG_DISCARD	0x10000 /* discard swap cluster after use */
++#define SWAP_FLAG_DISCARD	0x10000 /* enable discard for swap areas */
++#define SWAP_FLAG_DISCARD_CLUSTER 0x20000 /* discard swap clusters after use */
  
-+#ifdef CONFIG_PM_RUNTIME
- static int i2c_dw_pci_runtime_idle(struct device *dev)
+ #define SWAP_FLAGS_VALID	(SWAP_FLAG_PRIO_MASK | SWAP_FLAG_PREFER | \
+-				 SWAP_FLAG_DISCARD)
++				 SWAP_FLAG_DISCARD | SWAP_FLAG_DISCARD_CLUSTER)
+ 
+ static inline int current_is_kswapd(void)
  {
- 	int err = pm_schedule_suspend(dev, 500);
-@@ -194,6 +195,7 @@ static int i2c_dw_pci_runtime_idle(struct device *dev)
- 		return 0;
- 	return -EBUSY;
- }
-+#endif
+@@ -152,8 +153,9 @@ enum {
+ 	SWP_CONTINUED	= (1 << 5),	/* swap_map has count continuation */
+ 	SWP_BLKDEV	= (1 << 6),	/* its a block device */
+ 	SWP_FILE	= (1 << 7),	/* set after swap_activate success */
++	SWP_CLUSTERDISCARD = (1 << 8),	/* discard swap cluster after usage */
+ 					/* add others here before... */
+-	SWP_SCANNING	= (1 << 8),	/* refcount in scan_swap_map */
++	SWP_SCANNING	= (1 << 9),	/* refcount in scan_swap_map */
+ };
  
- static const struct dev_pm_ops i2c_dw_pm_ops = {
- 	.resume         = i2c_dw_pci_resume,
+ #define SWAP_CLUSTER_MAX 32UL
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 6c340d9..197461f 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -212,7 +212,7 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
+ 			si->cluster_nr = SWAPFILE_CLUSTER - 1;
+ 			goto checks;
+ 		}
+-		if (si->flags & SWP_DISCARDABLE) {
++		if (si->flags & SWP_CLUSTERDISCARD) {
+ 			/*
+ 			 * Start range check on racing allocations, in case
+ 			 * they overlap the cluster we eventually decide on
+@@ -322,7 +322,7 @@ checks:
+ 
+ 	if (si->lowest_alloc) {
+ 		/*
+-		 * Only set when SWP_DISCARDABLE, and there's a scan
++		 * Only set when SWP_CLUSTERDISCARD, and there's a scan
+ 		 * for a free cluster in progress or just completed.
+ 		 */
+ 		if (found_free_cluster) {
+@@ -2123,8 +2123,11 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 			p->flags |= SWP_SOLIDSTATE;
+ 			p->cluster_next = 1 + (prandom_u32() % p->highest_bit);
+ 		}
+-		if ((swap_flags & SWAP_FLAG_DISCARD) && discard_swap(p) == 0)
++		if ((swap_flags & SWAP_FLAG_DISCARD) && discard_swap(p) == 0) {
+ 			p->flags |= SWP_DISCARDABLE;
++			if (swap_flags & SWAP_FLAG_DISCARD_CLUSTER)
++				p->flags |= SWP_CLUSTERDISCARD;
++		}
+ 	}
+ 
+ 	mutex_lock(&swapon_mutex);
+@@ -2135,11 +2138,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 	enable_swap_info(p, prio, swap_map, frontswap_map);
+ 
+ 	printk(KERN_INFO "Adding %uk swap on %s.  "
+-			"Priority:%d extents:%d across:%lluk %s%s%s\n",
++			"Priority:%d extents:%d across:%lluk %s%s%s%s\n",
+ 		p->pages<<(PAGE_SHIFT-10), name->name, p->prio,
+ 		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
+ 		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
+ 		(p->flags & SWP_DISCARDABLE) ? "D" : "",
++		(p->flags & SWP_CLUSTERDISCARD) ? "C" : "",
+ 		(frontswap_map) ? "FS" : "");
+ 
+ 	mutex_unlock(&swapon_mutex);
 -- 
-1.7.10.4
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.11.7
+
