@@ -1,107 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab3EUOw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:52:28 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:33983 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab3EUOw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:52:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,714,1363132800"; 
-   d="scan'208";a="26485104"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
-        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
-        <olof@lixom.net>, <xen-devel@lists.xensource.com>,
-        Jon Medhurst <tixy@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v11 2/2] ARM: Enable selection of SMP operations at boot time
-Date: Tue, 21 May 2013 15:38:53 +0100
-Message-ID: <1369147133-29729-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1305211522120.4799@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1305211522120.4799@kaball.uk.xensource.com>
+	id S1754320Ab3EUOwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:52:55 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:45614 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab3EUOww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 10:52:52 -0400
+Date: Tue, 21 May 2013 16:52:43 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shaohua Li <shli@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Lost IPIs during CPU Hotplug
+Message-ID: <20130521145243.GA29150@osiris>
+References: <20130520123743.GA4108@osiris>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130520123743.GA4108@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052114-3548-0000-0000-000005741038
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Medhurst <tixy@linaro.org>
+On Mon, May 20, 2013 at 02:37:43PM +0200, Heiko Carstens wrote:
+> I just got a dump from a system running a 3.0.something kernel, however I
+> think the problem exists with current kernels as well.
+> 
+> Testcase was some I/O intense workload together with cpu hotplug stress.
+> 
+> When trying to bring a cpu online we got an endless loop on the cpu that
+> issued the cpu_up and called smp_call_function_single() within its cpu
+> hotplug notifier:
 
-Add a new 'smp_init' hook to machine_desc so platforms can specify a
-function to be used to setup smp ops instead of having a statically
-defined value.  The hook must return true when smp_ops are initialized.
-If false the static mdesc->smp_ops will be used by default.
+[...]
 
-Add the definition of "bool" by including the linux/types.h file to
-asm/mach/arch.h and make it self-contained.
+> It looks to me like the IPI(s) was lost when cpu 3 was brought down before:
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- arch/arm/include/asm/mach/arch.h |    5 +++++
- arch/arm/kernel/setup.c          |   10 ++++++----
- 2 files changed, 11 insertions(+), 4 deletions(-)
+[...]
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 308ad7d..75bf079 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -8,6 +8,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/types.h>
-+
- #ifndef __ASSEMBLY__
- 
- struct tag;
-@@ -16,8 +18,10 @@ struct pt_regs;
- struct smp_operations;
- #ifdef CONFIG_SMP
- #define smp_ops(ops) (&(ops))
-+#define smp_init_ops(ops) (&(ops))
- #else
- #define smp_ops(ops) (struct smp_operations *)NULL
-+#define smp_init_ops(ops) (bool (*)(void))NULL
- #endif
- 
- struct machine_desc {
-@@ -41,6 +45,7 @@ struct machine_desc {
- 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
- 	char			restart_mode;	/* default restart mode	*/
- 	struct smp_operations	*smp;		/* SMP operations	*/
-+	bool			(*smp_init)(void);
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 8f7a6e9..2b3ba15 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -800,10 +800,12 @@ void __init setup_arch(char **cmdline_p)
- 	psci_init();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
--		if (psci_smp_available())
--			smp_set_ops(&psci_smp_ops);
--		else if (mdesc->smp)
--			smp_set_ops(mdesc->smp);
-+		if (!mdesc->smp_init || !mdesc->smp_init()) {
-+			if (psci_smp_available())
-+				smp_set_ops(&psci_smp_ops);
-+			else if (mdesc->smp)
-+				smp_set_ops(mdesc->smp);
-+		}
- 		smp_init_cpus();
- 	}
- #endif
--- 
-1.7.2.5
+> So it looks to me like yet another CPU_DYING cpu hotplug notifier is needed
+> for the generic smp code, which looks for pending IPIs on the to be brought
+> down cpu and executes them.
+> 
+> Does that make sense?
+
+Ok, I was able to reproduce it. And the fix should be in the s390 specific
+arch code within __cpu_disable() just before the cpu gets removed from the
+cpu online mask.
+No idea why this never has been seen before.
 
