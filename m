@@ -1,110 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab3EUKHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:07:15 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:1210 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038Ab3EUKHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:07:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,713,1363132800"; 
-   d="scan'208";a="25178482"
-Message-ID: <519B474E.4000202@citrix.com>
-Date: Tue, 21 May 2013 11:07:10 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1753227Ab3EUKLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:11:54 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:40706 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3EUKLw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:11:52 -0400
+Date: Tue, 21 May 2013 05:11:47 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: Would like to form a pool of Linux copyright holders for faster
+ GPL enforcement against Anthrax Kernels
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Eric Appleman <erappleman@gmail.com>, legal@lists.gpl-violations.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
+	(from luke.leighton@gmail.com on Sat May 18 13:27:21 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1369131107.2776.6@driftwood>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Feng Jin <joe.jin@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Yuval Shaia <yuval.shaia@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when driver
- load first time
-References: <alpine.DEB.2.02.1305131540020.4799@kaball.uk.xensource.com>	<20130513161714.GC10401@phenom.dumpdata.com>	<alpine.DEB.2.02.1305131753070.4799@kaball.uk.xensource.com>	<20130513182055.GC14177@phenom.dumpdata.com>	<alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com>	<20130514142013.GA10173@konrad-lan.dumpdata.com>	<alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>	<5195944A.3050608@oracle.com>	<alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>	<20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com>
-In-Reply-To: <20130520203855.GA30616@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/05/13 21:38, Konrad Rzeszutek Wilk wrote:
->> At this point I think that upstream option is to save the PIRQ value and re-use it.
->> Will post a patch for it.
+On 05/18/2013 01:27:21 PM, luke.leighton wrote:
+> On Sat, May 18, 2013 at 8:24 AM, Eric Appleman <erappleman@gmail.com>  
+> wrote:
+> > Would anyone be interested in forming such a pool?
 > 
-> Here is the patch. It works for me when passing in a NIC driver.
+>  count me in.
 > 
->>From 509499568d1cdf1f2a3fb53773c991f4b063eb56 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Mon, 20 May 2013 16:08:16 -0400
-> Subject: [PATCH] xen/pci: Track PVHVM PIRQs.
+> > Last I checked, I have 1 long-time poster of this list on board.  
+> Would
+> > anyone else like to join? Ideally I'd like to get the LKML (which I  
+> have
+> > CC'd) involved so that authors of critical Linux components be a  
+> part of
+> > this. I'm not sure if my defconfig commits to Android kernel  
+> branches count
+> > as contributions,
 > 
-> The PIRQs that the hypervisor provides for the guest are a limited
-> resource. They are acquired via PHYSDEVOP_get_free_pirq and in
-> theory should be returned back to the hypervisor via PHYSDEVOP_unmap_pirq
-> hypercall. Unfortunatly that is not the case.
+>  even if you did not explicitly put "Copyright (C) {your name}" in
+> them, you still retain copyright.  depending on the country you are in
+> you cannot even get rid of the copyright even if you say "i forever
+> renounce irrevocably and without restriction or limitation all
+> copyright and place this into the public domain signed me" - you have
+> to actively assign the copyright to someone else.
 > 
-> This means that if there is a PCI device that has been passed in
-> the guest and does a loop of 'rmmod <driver>;modprobe <driver>"
-> we end up exhausting all of the PIRQs that are available.
+> > so I'm not going to consider myself a Linux contributor
+> > unless told otherwise.
 > 
-> For example (with kernel built as debug), we get this:
-> 00:05.0 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (rev 06)
-> [  152.659396] e1000e 0000:00:05.0: xen: msi bound to pirq=53
-> [  152.665856] e1000e 0000:00:05.0: xen: msi --> pirq=53 --> irq=73
-> .. snip
-> [  188.276835] e1000e 0000:00:05.0: xen: msi bound to pirq=51
-> [  188.283194] e1000e 0000:00:05.0: xen: msi --> pirq=51 --> irq=73
+>  you wrote something that's copyrighted.  therefore you're a copyright
+> holder [therefore automatically any copyright violator must request
+> your permission to have their GPLv2 license rights reinstated].
 > 
-> .. and so on, until the pirq value is zero. This is an acute problem
-> when many PCI devices with many MSI-X entries are passed in the guest.
+>  my linux kernel modifications are small, too - they sort of winged
+> their way by a slow process of migration into tmpfs by way of selinux
+> xattrs.  and there are likely some unattributed contributions that
+> came from the xanadux.sf.net project originally (depending on whether
+> they were picked up or not over time)
 > 
-> There is an alternative solution where we assume that on PCI
-> initialization (so when user passes in the PCI device) QEMU will init
-> the MSI and MSI-X entries to zero. Based on that assumptions and
-> that the Linux MSI API will write the PIRQ value to the MSI/MSI-X
-> (and used by QEMU through the life-cycle of the PCI device), we can
-> also depend on that. That means if MSI (or MSI-X entries) are read back
-> and are not 0, we can re-use that PIRQ value. However this patch
-> guards against future changes in QEMU in case that assumption
-> is incorrect.
+>  but that makes no odds: i am still a copyright holder, ergo a
+> contributor, ergo i'd like to be included in the pool please.
 > 
-> Reported-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/events.c |  124 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 122 insertions(+), 2 deletions(-)
+> > This pool would be used in the following manner:
+> >
+> > * Formally requesting source for binaries (means to request source
+> > * Formally requesting removal of critical copyrighted code that  
+> Linux cannot
+> > function without
+> > * Informing interested parties with respect to refusals of the above
 > 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 6a6bbe4..8aae21a 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -112,6 +112,27 @@ struct irq_info {
->  #define PIRQ_NEEDS_EOI	(1 << 0)
->  #define PIRQ_SHAREABLE	(1 << 1)
->  
-> +/*
-> + * The PHYSDEVOP_get_free_pirq allocates a set of PIRQs for the guest and
-> + * the PHYSDEVOP_unmap_pirq is suppose to return them to the hypervisor.
-> + * Unfortunatly that is not the case and we exhaust all of the PIRQs that are
-> + * allocated for the domain if a driver is loaded/unloaded in a loop.
-> + * The pirq_info serves a cache of the allocated PIRQs so that we can reuse
-> + * for drivers. Note, it is only used by the MSI, MSI-X routines.
-> + */
+>  it would also serve as a useful point of contact for criminal
+> copyright violators wishing to have their license rights reinstated.
+> 
+>  also it would serve as a good starting point to be able to contact
+> large numbers of people wishing to explicitly dual-license their code
+> contributions to the linux kernel.
+> 
+>  actually, that's a good point.  please can it be specifically noted,
+> from this moment onwards, that all contributions that i have made to
+> the linux kernel are dual-licensed under both the GPLv2 and also the
+> GPLv3+ license?
 
-Ick.  Let's fix the bug in the hypervisor instead of hacking up the
-kernel like this.
+I have a git repository that goes back to 0.0.1. The word "leighton"  
+(case insensitive) occurs in the full log exactly once, in a single  
+2004 commit that wasn't even done by you but was apparently inspired by  
+a patch you did.
 
-Looking at the hypervisor code I couldn't see anything obviously wrong.
- I do note that Xen doesn't free the pirq until it has been unbound by
-the guest.  Xen will warn if the guest unmaps a pirq that is still bound
-("domD: forcing unbind of pirq P").  Is this what is happening?  If so,
-that would suggest a bug in the guest rather than the hypervisor.
+> someone has to start somewhere on this.  it doesn't matter if it takes
+> 20 years for all GPLv2-exlusive contributions to be made obselete,
+> deleted or replaced: a start has to be made.
 
-David
+You're aware that copyleft in general is declining, right?
+
+"The GPL" was synonymous with copyleft. It was a terminal node in a  
+directed graph of license convertability, and the only thing  
+programmers had to know is whether or not some other license was  
+GPL-compatible. If it was: treat it as GPL. If it wasn't: ignore it.
+
+But there's no "the GPL" anymore. Linux and Samba can't share code,  
+even though they implement two ends of the same protocol. And making  
+your project "GPLv2 or later" means you can't take code from _either_  
+source. These days the GPL largely serves to _prevent_ code re-use, and  
+people have responded to the percieved problems with "GPL-next"  
+initiatives where they fragment copyleft further with Affero variants,  
+by using creative commons on code, and so on. But copyleft only ever  
+worked as one big universal license, and now it doesn't.
+
+In the absence of a universal receiver, most developers have switched  
+to universal donor licenses: MIT/BSD or even public domain. Yes,  
+"most": the most common license on Github is "no license specified",  
+and that's not just ignorance, that's napster-style civil disobedience  
+from a generation of coders who lump copyright in with software patents  
+and consider it all "too dumb to live". (You think GPL enforcement  
+suits are viewed any differently than DMCA takedown notices on youtube,  
+both coming from clueless old people?)
+
+Now add in Android's official "no GPL in userspace" policy, which means  
+that if you preinstall GPL (or LGPL) software in your install image,  
+you can't use the Android trademark to describe your product. (Did I  
+mention that smartphones are replacing the PC? Mainframe, minicomputer,  
+microcomputer, smartphone:  
+http://www.youtube.com/watch?v=SGmtP5Lg_t0#t=30s and that's why Android  
+matters; it can get preinstalled on that class of hardware. Linux has  
+been trying for 20 years and still has less than 2% marketshare on any  
+device an end-user interacts directly with.)
+
+I'm sorry, but Richard Stallman _screwed_up_. GPLv3 suceeded where  
+Sun's CDDL failed: it split copyleft into incompatible warring factions  
+which are collectively shrinking in market share because none of them  
+are as useful a "The GPL" was.
+
+I miss "the GPL". But it's gone. It seems to be being replaced by a  
+gradual shift to public domain code on the part of younger coders.  
+(Part of this may just be that proprietary software ran its course. The  
+ability to sell binary-only software was invented by the Apple vs  
+Franklin decision in 1983 extending copyright to binaries, and over the  
+next 20 years the market proved that just leads to abandonware and  
+monopoly exclusion. That's about when Microsoft peaked and started  
+stagnating, a dozen years ago. Making a killing selling shrinkwrapped  
+software isn't nearly as attractive as it used to be.*)
+
+Advocating for GPLv2 to go away is sad, but understandable. Expecting  
+GPLv2 to be replaced by GPLv3 is just delusional.
+
+Rob
+
+* Except for terminal nodes like games where there can't be any lock-in  
+because users don't derive work product from the software. Users seem  
+to have developed a resistance to "you can hold my thesis for ransom  
+because I wrote it with your software and your gatekeeper program can  
+revoke my access to my own work", presumably because so many tools have  
+gone away over the years. Of course the lesson has to be learned all  
+over again with web services, and some things like photoshop are  
+grandfathered in. As always, reality is complicated...
