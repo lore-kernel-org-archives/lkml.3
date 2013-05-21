@@ -1,174 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab3EUX1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:27:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13866 "EHLO mga09.intel.com"
+	id S1753550Ab3EUXbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:31:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:33552 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab3EUX1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:27:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,716,1363158000"; 
-   d="scan'208";a="317430306"
-Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
- configurable
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
-References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-	 <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 May 2013 16:27:29 -0700
-Message-ID: <1369178849.27102.330.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1752076Ab3EUXbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:31:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        akpm@linux-foundation.org
+Cc: jlayton@redhat.com, lucas.demarchi@profusion.mobi,
+        linux-kernel@vger.kernel.org, oleg@redhat.com, bfields@fieldses.org,
+        viro@zeniv.linux.org.uk, bharrosh@panasas.com, devel@openvz.org
+Subject: Re: [RFC PATCH] kmod: add ability to swap root in usermode helper
+In-Reply-To: <20130520070017.7957.9224.stgit@localhost.localdomain>
+References: <20130520070017.7957.9224.stgit@localhost.localdomain>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 21 May 2013 15:20:28 +0930
+Message-ID: <874ndwzxsr.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 13:41 -0700, Andrew Morton wrote:
+Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+> Usermode helper executes all binaries in global "init" root context. This
+> doesn't allow to call to call the binary from other root (for example in a
+> container).
+> Currently, containerized NFS server requires an ability to execute a binary in
+> a other context, than "init" root (UMH is used for client recovery tracking).
+> This patch adds root swap to ____call_usermodehelper(), if non-NULL root was
+> passed as a part of subprocess_info data, and a call_usermodehelper_root()
+> helper, which accept root as a parameter. Root path reference must be hold by
+> the caller, since it will be on UMH thread exit.
 
-> This patch seems to add rather a lot of unnecessary code.
-> 
-> - The increase in the size of percu_counter is regrettable.
-> 
-> - The change to percpu_counter_startup() is unneeded - no
->   percpu_counters should exist at this time.  (We may have screwed this
->   up - percpu_counter_startup() shuold probably be explicitly called
->   from start_kernel()).
-> 
-> - Once the percpu_counter_startup() change is removed, all that code
->   which got moved out of CONFIG_HOTPLUG_CPU can be put back.
-> 
-> And probably other stuff.
-> 
-> 
-> If you want to use a larger batch size for vm_committed_as, why not
-> just use the existing __percpu_counter_add(..., batch)?  Easy.
-> 
+This makes sense, but you should document the reference requirements in
+the API.  Your sentence above seems unfinished?
 
-Andrew,
+Thanks,
+Rusty.
 
-Thanks for your comments and reviews.
-Will something like the following work if we get rid of the percpu
-counter changes and use __percpu_counter_add(..., batch)?  In
-benchmark with a lot of memory changes via brk, this makes quite
-a difference when we go to a bigger batch size.
+>
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Tim
-
-Change batch size for memory accounting to be proportional to memory available.
-
-Currently the per cpu counter's batch size for memory accounting is
-configured as twice the number of cpus in the system.  However,
-for system with very large memory, it is more appropriate to make it
-proportional to the memory size per cpu in the system.
-
-For example, for a x86_64 system with 64 cpus and 128 GB of memory,
-the batch size is only 2*64 pages (0.5 MB).  So any memory accounting
-changes of more than 0.5MB will overflow the per cpu counter into
-the global counter.  Instead, for the new scheme, the batch size
-is configured to be 0.4% of the memory/cpu = 8MB (128 GB/64 /256),
-which is more inline with the memory size.
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- include/linux/mman.h |  5 +++++
- mm/mmap.c            | 14 ++++++++++++++
- mm/nommu.c           | 14 ++++++++++++++
- 3 files changed, 33 insertions(+)
-
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index 9aa863d..11d5ce9 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -10,12 +10,17 @@
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern struct percpu_counter vm_committed_as;
-+extern int vm_committed_as_batch;
- 
- unsigned long vm_memory_committed(void);
- 
- static inline void vm_acct_memory(long pages)
- {
-+#ifdef CONFIG_SMP
-+	__percpu_counter_add(&vm_committed_as, pages, vm_committed_as_batch);
-+#else
- 	percpu_counter_add(&vm_committed_as, pages);
-+#endif
- }
- 
- static inline void vm_unacct_memory(long pages)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f681e18..0eef503 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -3145,11 +3145,25 @@ void mm_drop_all_locks(struct mm_struct *mm)
- /*
-  * initialise the VMA slab
-  */
-+
-+int vm_committed_as_batch;
-+EXPORT_SYMBOL(vm_committed_as_batch);
-+
-+static int mm_compute_batch(void)
-+{
-+	int nr = num_present_cpus();
-+	int batch = max(32, nr*2);
-+
-+	/* batch size set to 0.4% of (total memory/#cpus) */
-+	return max((int) (totalram_pages/nr) / 256, batch);
-+}
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
- 	ret = percpu_counter_init(&vm_committed_as, 0);
-+	vm_committed_as_batch = mm_compute_batch();
- 	VM_BUG_ON(ret);
- }
- 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 298884d..1b7008a 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -527,11 +527,25 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
- /*
-  * initialise the VMA and region record slabs
-  */
-+
-+int vm_committed_as_batch;
-+EXPORT_SYMBOL(vm_committed_as_batch);
-+
-+static int mm_compute_batch(void)
-+{
-+	int nr = num_present_cpus();
-+	int batch = max(32, nr*2);
-+
-+	/* batch size set to 0.4% of (total memory/#cpus) */
-+	return max((int) (totalram_pages/nr) / 256, batch);
-+}
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
- 	ret = percpu_counter_init(&vm_committed_as, 0);
-+	vm_committed_as_batch = mm_compute_batch();
- 	VM_BUG_ON(ret);
- 	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
- }
--- 
-1.7.11.7
-
-
-
+> ---
+>  include/linux/kmod.h |    9 +++++++++
+>  kernel/kmod.c        |   41 ++++++++++++++++++++++++++++++++++-------
+>  2 files changed, 43 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+> index 0555cc6..0b041c7 100644
+> --- a/include/linux/kmod.h
+> +++ b/include/linux/kmod.h
+> @@ -64,12 +64,21 @@ struct subprocess_info {
+>  	int (*init)(struct subprocess_info *info, struct cred *new);
+>  	void (*cleanup)(struct subprocess_info *info);
+>  	void *data;
+> +	struct path *root;
+>  };
+>  
+>  extern int
+> +call_usermodehelper_root(char *path, char **argv, char **envp, int wait,
+> +			 struct path *root);
+> +extern int
+>  call_usermodehelper(char *path, char **argv, char **envp, int wait);
+>  
+>  extern struct subprocess_info *
+> +call_usermodehelper_setup_root(char *path, char **argv, char **envp, gfp_t gfp_mask,
+> +			       int (*init)(struct subprocess_info *info, struct cred *new),
+> +			       void (*cleanup)(struct subprocess_info *), void *data,
+> +			       struct path *root);
+> +extern struct subprocess_info *
+>  call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
+>  			  int (*init)(struct subprocess_info *info, struct cred *new),
+>  			  void (*cleanup)(struct subprocess_info *), void *data);
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index 1296e72..1b41f2c 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/rwsem.h>
+>  #include <linux/ptrace.h>
+>  #include <linux/async.h>
+> +#include <linux/fs_struct.h>
+>  #include <asm/uaccess.h>
+>  
+>  #include <trace/events/module.h>
+> @@ -215,6 +216,9 @@ static int ____call_usermodehelper(void *data)
+>  	 */
+>  	set_user_nice(current, 0);
+>  
+> +	if (sub_info->root)
+> +		set_fs_root(current->fs, sub_info->root);
+> +
+>  	retval = -ENOMEM;
+>  	new = prepare_kernel_cred(current);
+>  	if (!new)
+> @@ -505,7 +509,7 @@ static void helper_unlock(void)
+>  }
+>  
+>  /**
+> - * call_usermodehelper_setup - prepare to call a usermode helper
+> + * call_usermodehelper_setup_root - prepare to call a usermode helper
+>   * @path: path to usermode executable
+>   * @argv: arg vector for process
+>   * @envp: environment for process
+> @@ -513,6 +517,7 @@ static void helper_unlock(void)
+>   * @cleanup: a cleanup function
+>   * @init: an init function
+>   * @data: arbitrary context sensitive data
+> + * @root: fs root to swap to before binary execution
+>   *
+>   * Returns either %NULL on allocation failure, or a subprocess_info
+>   * structure.  This should be passed to call_usermodehelper_exec to
+> @@ -527,11 +532,11 @@ static void helper_unlock(void)
+>   * Function must be runnable in either a process context or the
+>   * context in which call_usermodehelper_exec is called.
+>   */
+> -struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+> +struct subprocess_info *call_usermodehelper_setup_root(char *path, char **argv,
+>  		char **envp, gfp_t gfp_mask,
+>  		int (*init)(struct subprocess_info *info, struct cred *new),
+>  		void (*cleanup)(struct subprocess_info *info),
+> -		void *data)
+> +		void *data, struct path *root)
+>  {
+>  	struct subprocess_info *sub_info;
+>  	sub_info = kzalloc(sizeof(struct subprocess_info), gfp_mask);
+> @@ -546,9 +551,22 @@ struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+>  	sub_info->cleanup = cleanup;
+>  	sub_info->init = init;
+>  	sub_info->data = data;
+> +
+> +	sub_info->root = root;
+>    out:
+>  	return sub_info;
+>  }
+> +EXPORT_SYMBOL(call_usermodehelper_setup_root);
+> +
+> +struct subprocess_info *call_usermodehelper_setup(char *path, char **argv,
+> +		char **envp, gfp_t gfp_mask,
+> +		int (*init)(struct subprocess_info *info, struct cred *new),
+> +		void (*cleanup)(struct subprocess_info *info),
+> +		void *data)
+> +{
+> +	return call_usermodehelper_setup_root(path, argv, envp, gfp_mask, init,
+> +					      cleanup, data, NULL);
+> +}
+>  EXPORT_SYMBOL(call_usermodehelper_setup);
+>  
+>  /**
+> @@ -617,7 +635,7 @@ unlock:
+>  EXPORT_SYMBOL(call_usermodehelper_exec);
+>  
+>  /**
+> - * call_usermodehelper() - prepare and start a usermode application
+> + * call_usermodehelper_root() - prepare and start a usermode application
+>   * @path: path to usermode executable
+>   * @argv: arg vector for process
+>   * @envp: environment for process
+> @@ -625,24 +643,33 @@ EXPORT_SYMBOL(call_usermodehelper_exec);
+>   *        when UMH_NO_WAIT don't wait at all, but you get no useful error back
+>   *        when the program couldn't be exec'ed. This makes it safe to call
+>   *        from interrupt context.
+> + * @root: fs root to swap to before binary execution
+>   *
+>   * This function is the equivalent to use call_usermodehelper_setup() and
+>   * call_usermodehelper_exec().
+>   */
+> -int call_usermodehelper(char *path, char **argv, char **envp, int wait)
+> +int call_usermodehelper_root(char *path, char **argv, char **envp, int wait,
+> +			     struct path *root)
+>  {
+>  	struct subprocess_info *info;
+>  	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
+>  
+> -	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
+> -					 NULL, NULL, NULL);
+> +	info = call_usermodehelper_setup_root(path, argv, envp, gfp_mask,
+> +					      NULL, NULL, NULL, root);
+>  	if (info == NULL)
+>  		return -ENOMEM;
+>  
+>  	return call_usermodehelper_exec(info, wait);
+>  }
+> +EXPORT_SYMBOL(call_usermodehelper_root);
+> +
+> +int call_usermodehelper(char *path, char **argv, char **envp, int wait)
+> +{
+> +	return call_usermodehelper_root(path, argv, envp, wait, NULL);
+> +}
+>  EXPORT_SYMBOL(call_usermodehelper);
+>  
+> +
+>  static int proc_cap_handler(struct ctl_table *table, int write,
+>  			 void __user *buffer, size_t *lenp, loff_t *ppos)
+>  {
