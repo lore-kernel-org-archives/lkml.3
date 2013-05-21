@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab3EUGSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:18:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58107 "EHLO
+	id S1756304Ab3EUGSf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:18:35 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58173 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3EUGSP (ORCPT
+	with ESMTP id S1755842Ab3EUGSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:18:15 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-af-519b11a627ae
+	Tue, 21 May 2013 02:18:33 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-b8-519b11b80c71
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 6/8] rtc: rtc-pxa: use devm_*() functions
-Date: Tue, 21 May 2013 15:18:14 +0900
-Message-id: <000901ce55ea$fa02aa70$ee07ff50$@samsung.com>
+Subject: [PATCH 7/8] rtc: rtc-rx8025: use devm_*() functions
+Date: Tue, 21 May 2013 15:18:32 +0900
+Message-id: <000a01ce55eb$04a28b80$0de7a280$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5V6vlFLYEINeFgQ4+UOEY7MYN0pA==
+Thread-index: Ac5V6wPXuMhJRRFdSKm3yJqXJJERlQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfd1lgrMDDRZ91rNYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoEr4959z4JOsYpJDw+yNzB+EOxi5OSQEDCRmD93IxOELSZx4d56ti5GLg4hgWWMEk0z
-	prLAFPXeWscOkVjEKDHlzndmCOcXo8Sqvz/B2tkE1CS+fDkMVMXBISKgL9HWogFSwyzQzSjx
-	qHkuM0iNsIClxKLHDxlBbBYBVYkXf2ewgdTzAsXbnuaBhHkFBCV+TL4HtphZQEti/c7jTBC2
-	vMTmNW+ZIQ5SkNhx9jUjxCo9iUUvCiBKRCT2vXjHCLJWQuAQu8SJEyeYIVYJSHybfIgFpF5C
-	QFZi0wGoMZISB1fcYJnAKDYLyeZZSDbPQrJ5FpIVCxhZVjGKphYkFxQnpRcZ6hUn5haX5qXr
-	JefnbmKExF3vDsbbB6wPMSYDrZ/ILCWanA+M27ySeENjMyMLUxNTYyNzSzPShJXEedVarAOF
-	BNITS1KzU1MLUovii0pzUosPMTJxcEo1MKo/nP1U+M974Yjo3lMCtwqqz0omcLqf9bR5zaot
-	5rlxDovc3q21B+w3fL49eUfe47m9z6Y7+nRonvCoq177p1zBbt0k+7A8VrZ+9W+rek9tsb+4
-	9WG2idkq59lGh6sX73/5YX32P9bas/+EFs340CF9SNM3e/qfybOmlolrPQ53+MTx99ikxnYl
-	luKMREMt5qLiRABURPFz0QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd1lgrMDDSbc0LJYcvEqu8Wc9WvY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zI90dgrMDDRp6VCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
+	LdK3S+DKWHXrLWPBeYGKa6+aWRsY1/F2MXJySAiYSKz5fYUdwhaTuHBvPVsXIxeHkMAyRomL
+	e3tYYYp2rjoIlZjOKPH5UjcLhPOLUaJ1yn2wKjYBNYkvXw4DjeLgEBHQl2hr0QCpYRboZpR4
+	1DyXGaRGWMBGovHPWTCbRUBVou3tRrDVvAKWEttnrmKBsAUlfky+B2YzC2hJrN95nAnClpfY
+	vOYtM8RFChI7zr5mBLFFBPQkDn8+xQhRIyKx78U7RpDFEgLH2CU2H7rLBrFMQOLb5EMsIMdJ
+	CMhKbDoANUdS4uCKGywTGMVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0
+	veT83E2MkOibuIPx/gHrQ4zJQOsnMkuJJucDozevJN7Q2MzIwtTE1NjI3NKMNGElcV71FutA
+	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwTP9kE5573iZivMndZq2oFQ27uz6A7lbnTmBq2
+	nDziFn3MjEFKov/hN8bK3AOvt70QlH2wQ27CbHtBHbHWiaY/53xxZvpyU/hFVmm/16Pw8HUs
+	23OuPys7rcNv+t7ukOHBbxz1S8Ja/VoOGXL19/buPc1qvkTtXeWD9zePKBX/Nl97XCmlmkWJ
+	pTgj0VCLuag4EQBjgaoL1AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd0dgrMDDQ5PVbBYcvEqu8Wc9WvY
 	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
 	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePefc+CTrGKSQ8PsjcwfhDsYuTkkBAwkei9
-	tY4dwhaTuHBvPVsXIxeHkMAiRokpd74zQzi/GCVW/f3JBFLFJqAm8eXLYaAODg4RAX2JthYN
-	kBpmgW5GiUfNc5lBaoQFLCUWPX7ICGKzCKhKvPg7gw2knhco3vY0DyTMKyAo8WPyPRYQm1lA
-	S2L9zuNMELa8xOY1b5khDlKQ2HH2NSPEKj2JRS8KIEpEJPa9eMc4gVFgFpJJs5BMmoVk0iwk
-	LQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEf1M6kdjCsbLA4xCnAwKvHwChjOChRi
-	TSwrrsw9xCjBwawkwvu9GSjEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cCEk1cSb2hsYmZk
-	aWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjIKLugt+GcSt6j51Uea9RVjj
-	I5anPxW/F728pKKTotR2wO7kvTBdt4lcwa3vs7tPifuw8n/+JR9z959L4SWZ3S5vYrf92fwu
-	KLir6U9zU5PRgXX7bspZJd6wSP7KtVfS+Ir6dduNjAszLrII3pf+tu0mA/8dXfF/ZZ8yrur1
-	3z7PrDrXsmNOqBJLcUaioRZzUXEiALlZRJsuAwAA
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPVrbeMBecFKq69amZtYFzH28XIySEhYCKx
+	c9VBNghbTOLCvfVANheHkMB0RonPl7pZIJxfjBKtU+6zglSxCahJfPlymL2LkYNDREBfoq1F
+	A6SGWaCbUeJR81xmkBphARuJxj9nwWwWAVWJtrcb2UFsXgFLie0zV7FA2IISPybfA7OZBbQk
+	1u88zgRhy0tsXvOWGeIiBYkdZ18zgtgiAnoShz+fYoSoEZHY9+Id4wRGgVlIRs1CMmoWklGz
+	kLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc28+kdjCubLA4xCjAwajEwytgOCtQ
+	iDWxrLgy9xCjBAezkgjv92agEG9KYmVValF+fFFpTmrxIcZkoE8nMkuJJucD005eSbyhsYmZ
+	kaWRmYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAu99Hdf2Pdf88Ps+3O+lzP
+	PpN37eeikvC9Z3dvmj8nOcRwvd20pmWsvgIh6e47U3frfCjL+fw/QLyUS+BijVj/frstO0Ru
+	zJFI77JOPOnRNp/r5xXfh2te1UjJbfvIHeBec+nVR60j5oliER3HpeLOyvjyZDZcr1wYe1zi
+	6JsoqZk6nbIGQRZKLMUZiYZazEXFiQDGDjPIMQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,102 +57,74 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-pxa.c |   43 ++++++++++++-------------------------------
- 1 file changed, 12 insertions(+), 31 deletions(-)
+ drivers/rtc/rtc-rx8025.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
-index ed037ae..a355f2b 100644
---- a/drivers/rtc/rtc-pxa.c
-+++ b/drivers/rtc/rtc-pxa.c
-@@ -324,37 +324,35 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
- 	int ret;
- 	u32 rttr;
- 
--	pxa_rtc = kzalloc(sizeof(struct pxa_rtc), GFP_KERNEL);
-+	pxa_rtc = devm_kzalloc(dev, sizeof(*pxa_rtc), GFP_KERNEL);
- 	if (!pxa_rtc)
- 		return -ENOMEM;
- 
- 	spin_lock_init(&pxa_rtc->lock);
- 	platform_set_drvdata(pdev, pxa_rtc);
- 
--	ret = -ENXIO;
- 	pxa_rtc->ress = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!pxa_rtc->ress) {
- 		dev_err(dev, "No I/O memory resource defined\n");
--		goto err_ress;
-+		return -ENXIO;
+diff --git a/drivers/rtc/rtc-rx8025.c b/drivers/rtc/rtc-rx8025.c
+index 0722d36..8fa23ea 100644
+--- a/drivers/rtc/rtc-rx8025.c
++++ b/drivers/rtc/rtc-rx8025.c
+@@ -549,7 +549,7 @@ static int rx8025_probe(struct i2c_client *client,
+ 		goto errout;
  	}
  
- 	pxa_rtc->irq_1Hz = platform_get_irq(pdev, 0);
- 	if (pxa_rtc->irq_1Hz < 0) {
- 		dev_err(dev, "No 1Hz IRQ resource defined\n");
--		goto err_ress;
-+		return -ENXIO;
- 	}
- 	pxa_rtc->irq_Alrm = platform_get_irq(pdev, 1);
- 	if (pxa_rtc->irq_Alrm < 0) {
- 		dev_err(dev, "No alarm IRQ resource defined\n");
--		goto err_ress;
-+		return -ENXIO;
- 	}
- 	pxa_rtc_open(dev);
--	ret = -ENOMEM;
--	pxa_rtc->base = ioremap(pxa_rtc->ress->start,
-+	pxa_rtc->base = devm_ioremap(dev, pxa_rtc->ress->start,
- 				resource_size(pxa_rtc->ress));
- 	if (!pxa_rtc->base) {
--		dev_err(&pdev->dev, "Unable to map pxa RTC I/O memory\n");
--		goto err_map;
-+		dev_err(dev, "Unable to map pxa RTC I/O memory\n");
-+		return -ENOMEM;
+-	rx8025 = kzalloc(sizeof(*rx8025), GFP_KERNEL);
++	rx8025 = devm_kzalloc(&client->dev, sizeof(*rx8025), GFP_KERNEL);
+ 	if (!rx8025) {
+ 		dev_err(&adapter->dev, "failed to alloc memory\n");
+ 		err = -ENOMEM;
+@@ -562,7 +562,7 @@ static int rx8025_probe(struct i2c_client *client,
+ 
+ 	err = rx8025_init_client(client, &need_reset);
+ 	if (err)
+-		goto errout_free;
++		goto errout;
+ 
+ 	if (need_reset) {
+ 		struct rtc_time tm;
+@@ -572,12 +572,12 @@ static int rx8025_probe(struct i2c_client *client,
+ 		rx8025_set_time(&client->dev, &tm);
  	}
  
- 	/*
-@@ -370,41 +368,24 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
- 
- 	rtsr_clear_bits(pxa_rtc, RTSR_PIALE | RTSR_RDALE1 | RTSR_HZE);
- 
--	pxa_rtc->rtc = rtc_device_register("pxa-rtc", &pdev->dev, &pxa_rtc_ops,
--					   THIS_MODULE);
--	ret = PTR_ERR(pxa_rtc->rtc);
-+	pxa_rtc->rtc = devm_rtc_device_register(&pdev->dev, "pxa-rtc",
-+						&pxa_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(pxa_rtc->rtc)) {
-+		ret = PTR_ERR(pxa_rtc->rtc);
- 		dev_err(dev, "Failed to register RTC device -> %d\n", ret);
--		goto err_rtc_reg;
-+		return ret;
+-	rx8025->rtc = rtc_device_register(client->name, &client->dev,
++	rx8025->rtc = devm_rtc_device_register(&client->dev, client->name,
+ 					  &rx8025_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rx8025->rtc)) {
+ 		err = PTR_ERR(rx8025->rtc);
+ 		dev_err(&client->dev, "unable to register the class device\n");
+-		goto errout_free;
++		goto errout;
  	}
  
- 	device_init_wakeup(dev, 1);
+ 	if (client->irq > 0) {
+@@ -586,7 +586,7 @@ static int rx8025_probe(struct i2c_client *client,
+ 				  0, "rx8025", client);
+ 		if (err) {
+ 			dev_err(&client->dev, "unable to request IRQ\n");
+-			goto errout_reg;
++			goto errout;
+ 		}
+ 	}
  
- 	return 0;
--
--err_rtc_reg:
--	 iounmap(pxa_rtc->base);
--err_ress:
--err_map:
--	kfree(pxa_rtc);
--	return ret;
- }
+@@ -603,12 +603,6 @@ errout_irq:
+ 	if (client->irq > 0)
+ 		free_irq(client->irq, client);
  
- static int __exit pxa_rtc_remove(struct platform_device *pdev)
- {
--	struct pxa_rtc *pxa_rtc = platform_get_drvdata(pdev);
+-errout_reg:
+-	rtc_device_unregister(rx8025->rtc);
 -
- 	struct device *dev = &pdev->dev;
--	pxa_rtc_release(dev);
+-errout_free:
+-	kfree(rx8025);
 -
--	rtc_device_unregister(pxa_rtc->rtc);
--
--	spin_lock_irq(&pxa_rtc->lock);
--	iounmap(pxa_rtc->base);
--	spin_unlock_irq(&pxa_rtc->lock);
--
--	kfree(pxa_rtc);
+ errout:
+ 	dev_err(&adapter->dev, "probing for rx8025 failed\n");
+ 	return err;
+@@ -629,8 +623,6 @@ static int rx8025_remove(struct i2c_client *client)
+ 	}
  
-+	pxa_rtc_release(dev);
+ 	rx8025_sysfs_unregister(&client->dev);
+-	rtc_device_unregister(rx8025->rtc);
+-	kfree(rx8025);
  	return 0;
  }
  
