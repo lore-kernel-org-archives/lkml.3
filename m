@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab3EUV2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:28:16 -0400
-Received: from www.sr71.net ([198.145.64.142]:45358 "EHLO blackbird.sr71.net"
+	id S1752869Ab3EUVap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab3EUV2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:28:15 -0400
-Message-ID: <519BE6ED.8030202@sr71.net>
-Date: Tue, 21 May 2013 14:28:13 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751742Ab3EUVan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:30:43 -0400
+Message-ID: <519BE778.9040800@redhat.com>
+Date: Tue, 21 May 2013 17:30:32 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121116 Thunderbird/10.0.11
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 20/39] thp, mm: naive support of thp in generic read/write
- routines
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-21-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-21-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com> <5192AEF4.1070905@intel.com>
+In-Reply-To: <5192AEF4.1070905@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> +		if (PageTransHuge(page))
-> +			offset = pos & ~HPAGE_PMD_MASK;
-> +
->  		pagefault_disable();
-> -		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
-> +		copied = iov_iter_copy_from_user_atomic(
-> +				page + (offset >> PAGE_CACHE_SHIFT),
-> +				i, offset & ~PAGE_CACHE_MASK, bytes);
->  		pagefault_enable();
->  		flush_dcache_page(page);
+On 05/14/2013 05:39 PM, Alexander Duyck wrote:
+> On 05/14/2013 12:59 PM, Yinghai Lu wrote:
+>> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
+>> <alexander.h.duyck@intel.com>  wrote:
+>>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
+>>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
+>>>> <alexander.h.duyck@intel.com>  wrote:
+>>>>> I'm sorry, but what is the point of this patch?  With device assignment
+>>>>> it is always possible to have VFs loaded and the PF driver unloaded
+>>>>> since you cannot remove the VFs if they are assigned to a VM.
+>>>> unload PF driver will not call pci_disable_sriov?
+>>> You cannot call pci_disable_sriov because you will panic all of the
+>>> guests that have devices assigned.
+>> ixgbe_remove did call pci_disable_sriov...
+>>
+>> for guest panic, that is another problem.
+>> just like you pci passthrough with real pci device and hotremove the
+>> card in host.
+>>
+>> ...
+>
+> I suggest you take another look.  In ixgbe_disable_sriov, which is the
+> function that is called we do a check for assigned VFs.  If they are
+> assigned then we do not call pci_disable_sriov.
+>
+>>
+>>> So how does your patch actually fix this problem?  It seems like it is
+>>> just avoiding it.
+>> yes, until the first one is done.
+>
+> Avoiding the issue doesn't fix the underlying problem and instead you
+> are likely just introducing more bugs as a result.
+>
+>>>  From what I can tell your problem is originating in pci_call_probe.  I
+>>> believe it is calling work_on_cpu and that doesn't seem correct since
+>>> the work should be taking place on a CPU already local to the PF. You
+>>> might want to look there to see why you are trying to schedule work on a
+>>> CPU which should be perfectly fine for you to already be doing your work on.
+>> it always try to go with local cpu with same pxm.
+>
+> The problem is we really shouldn't be calling work_for_cpu in this case
+> since we are already on the correct CPU.  What probably should be
+> happening is that pci_call_probe should be doing a check to see if the
+> current CPU is already contained within the device node map and if so
+> just call local_pci_probe directly.  That way you can avoid deadlocking
+> the system by trying to flush the CPU queue of the CPU you are currently on.
+>
+That's the patch that Michael Tsirkin posted for a fix,
+but it was noted that if you have the case where the _same_ driver is used for vf & pf,
+other deadlocks may occur.
+It would work in the case of ixgbe/ixgbevf, but not for something like
+the Mellanox pf/vf driver (which is the same).
 
-I think there's enough voodoo in there to warrant a comment or adding
-some temporary variables.  There are three things going on that you wan
-to convey:
-
-1. Offset is normally <PAGE_SIZE, but you make it <HPAGE_PMD_SIZE if
-   you are dealing with a huge page
-2. (offset >> PAGE_CACHE_SHIFT) is always 0 for small pages since
-    offset < PAGE_SIZE
-3. "offset & ~PAGE_CACHE_MASK" does nothing for small-page offsets, but
-   it turns a large-page offset back in to a small-page-offset.
-
-I think you can do it with something like this:
-
- 	int subpage_nr = 0;
-	off_t smallpage_offset = offset;
-	if (PageTransHuge(page)) {
-		// we transform 'offset' to be offset in to the huge
-		// page instead of inside the PAGE_SIZE page
-		offset = pos & ~HPAGE_PMD_MASK;
-		subpage_nr = (offset >> PAGE_CACHE_SHIFT);
-	}
-	
-> +		copied = iov_iter_copy_from_user_atomic(
-> +				page + subpage_nr,
-> +				i, smallpage_offset, bytes);
-
-
-> @@ -2437,6 +2453,7 @@ again:
->  			 * because not all segments in the iov can be copied at
->  			 * once without a pagefault.
->  			 */
-> +			offset = pos & ~PAGE_CACHE_MASK;
-
-Urg, and now it's *BACK* in to a small-page offset?
-
-This means that 'offset' has two _different_ meanings and it morphs
-between them during the function a couple of times.  That seems very
-error-prone to me.
-
->  			bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
->  						iov_iter_single_seg_count(i));
->  			goto again;
-> 
+>
+> Alex
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
