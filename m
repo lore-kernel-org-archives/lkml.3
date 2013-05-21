@@ -1,168 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3EUVtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:49:45 -0400
-Received: from www.sr71.net ([198.145.64.142]:45549 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab3EUVtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:49:43 -0400
-Message-ID: <519BEBF5.4060309@sr71.net>
-Date: Tue, 21 May 2013 14:49:41 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753006Ab3EUVuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:50:23 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:49519 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab3EUVuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:50:22 -0400
+X-IronPort-AV: E=Sophos;i="4.87,716,1363132800"; 
+   d="scan'208";a="25349628"
+Date: Tue, 21 May 2013 22:50:09 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
+ driver load first time
+In-Reply-To: <20130521204245.GA7073@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1305141440500.4799@kaball.uk.xensource.com> <20130514142013.GA10173@konrad-lan.dumpdata.com> <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com> <5195944A.3050608@oracle.com> <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
+ <20130520175706.GA27973@phenom.dumpdata.com> <20130520203855.GA30616@phenom.dumpdata.com> <519B474E.4000202@citrix.com> <20130521134059.GE492@phenom.dumpdata.com> <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
+ <20130521204245.GA7073@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 21/39] thp, libfs: initial support of thp in simple_read/write_begin/write_end
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-22-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-22-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+> On Tue, May 21, 2013 at 05:51:02PM +0100, Stefano Stabellini wrote:
+> > On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > Looking at the hypervisor code I couldn't see anything obviously wrong.
+> > > 
+> > > I think the culprit is "physdev_unmap_pirq":
+> > > 
+> > >    if ( is_hvm_domain(d) )                                                     
+> > >     {                                                                           
+> > >         spin_lock(&d->event_lock);                                              
+> > >         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
+> > >             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
+> > >             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
+> > >             domain_pirq_to_irq(d, pirq));                                       
+> > >                                                                                 
+> > >         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
+> > >             ret = unmap_domain_pirq_emuirq(d, pirq);                            
+> > >         spin_unlock(&d->event_lock);                                            
+> > >         if ( domid == DOMID_SELF || ret )                                       
+> > >             goto free_domain;                                             
+> > > 
+> > > It always tells me unbound:
+> > > 
+> > > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+> > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > (a bit older debug code, so the 'unbound' does not show up here).
+> > > 
+> > > Which means that the call to unmap_domain_pirq_emuirq does not happen.
+> > > The checks in unmap_domain_pirq_emuirq also look to be depend
+> > > on the code being IRQ_UNBOUND.
+> > > 
+> > > In other words, all of that code looks to only clear things when
+> > > they are !IRQ_UNBOUND.
+> > > 
+> > > But the other logic (IRQ_UNBOUND) looks to be missing a removal
+> > > in the radix tree:
+> > > 
+> > >   if ( emuirq != IRQ_PT )                                                     
+> > >         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
+> > >                                                                         
+> > > And I think that is what is causing the leak - the radix tree
+> > > needs to be pruned? Or perhaps the allocate_pirq should check
+> > > the radix tree for IRQ_UNBOUND ones and re-use them?
+> > 
+> > I think that you are looking in the wrong place.
+> > The issue is that QEMU doesn't call pt_msi_disable in
+> > pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
 > 
-> For now we try to grab a huge cache page if gfp_mask has __GFP_COMP.
-> It's probably to weak condition and need to be reworked later.
+> In my test-case I am not even calling QEMU. I am just doing two hypercalls 
+> hypercall - get_free_pirq and unmap.
+> > 
+> > The code above is correct as is because it is trying to handle emulated
+> > IRQs and MSIs, not real passthrough MSIs. They latter are not added to
+> > that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  fs/libfs.c              |   50 ++++++++++++++++++++++++++++++++++++-----------
->  include/linux/pagemap.h |    8 ++++++++
->  2 files changed, 47 insertions(+), 11 deletions(-)
+> The bug is in the hypervisor. This little patch solves the test-case
+> (I hadn't tried to do the PCI passthrough yet)
 > 
-> diff --git a/fs/libfs.c b/fs/libfs.c
-> index 916da8c..ce807fe 100644
-> --- a/fs/libfs.c
-> +++ b/fs/libfs.c
-> @@ -383,7 +383,7 @@ EXPORT_SYMBOL(simple_setattr);
->  
->  int simple_readpage(struct file *file, struct page *page)
+> 
+> diff --git a/xen/arch/x86/irq.c b/xen/arch/x86/irq.c
+> index b0b0c65..b78717a 100644
+> --- a/xen/arch/x86/irq.c
+> +++ b/xen/arch/x86/irq.c
+> @@ -1851,8 +1851,8 @@ static int pirq_guest_force_unbind(struct domain *d, struct pirq *pirq)
+>  static inline bool_t is_free_pirq(const struct domain *d,
+>                                    const struct pirq *pirq)
 >  {
-> -	clear_highpage(page);
-> +	clear_pagecache_page(page);
->  	flush_dcache_page(page);
->  	SetPageUptodate(page);
->  	unlock_page(page);
-> @@ -394,21 +394,44 @@ int simple_write_begin(struct file *file, struct address_space *mapping,
->  			loff_t pos, unsigned len, unsigned flags,
->  			struct page **pagep, void **fsdata)
->  {
-> -	struct page *page;
-> +	struct page *page = NULL;
->  	pgoff_t index;
-
-I know ramfs uses simple_write_begin(), but it's not the only one.  I
-think you probably want to create a new ->write_begin() function just
-for ramfs rather than modifying this one.
-
-The optimization that you just put in a few patches ago:
-
->> +static inline struct page *grab_cache_page_write_begin(
->> +{
->> +	if (!transparent_hugepage_pagecache() && (flags & AOP_FLAG_TRANSHUGE))
->> +		return NULL;
->> +	return __grab_cache_page_write_begin(mapping, index, flags);
-
-
-is now worthless for any user of simple_readpage().
-
->  	index = pos >> PAGE_CACHE_SHIFT;
->  
-> -	page = grab_cache_page_write_begin(mapping, index, flags);
-> +	/* XXX: too weak condition? */
-
-Why would it be too weak?
-
-> +	if (mapping_can_have_hugepages(mapping)) {
-> +		page = grab_cache_page_write_begin(mapping,
-> +				index & ~HPAGE_CACHE_INDEX_MASK,
-> +				flags | AOP_FLAG_TRANSHUGE);
-> +		/* fallback to small page */
-> +		if (!page) {
-> +			unsigned long offset;
-> +			offset = pos & ~PAGE_CACHE_MASK;
-> +			len = min_t(unsigned long,
-> +					len, PAGE_CACHE_SIZE - offset);
-> +		}
-
-Why does this have to muck with 'len'?  It doesn't appear to be undoing
-anything from earlier in the function.  What is it fixing up?
-
-> +		BUG_ON(page && !PageTransHuge(page));
-> +	}
-
-So, those semantics for AOP_FLAG_TRANSHUGE are actually pretty strong.
-They mean that you can only return a transparent pagecache page, but you
-better not return a small page.
-
-Would it have been possible for a huge page to get returned from
-grab_cache_page_write_begin(), but had it split up between there and the
-BUG_ON()?
-
-Which reminds me... under what circumstances _do_ we split these huge
-pages?  How are those circumstances different from the anonymous ones?
-
-> +	if (!page)
-> +		page = grab_cache_page_write_begin(mapping, index, flags);
->  	if (!page)
->  		return -ENOMEM;
-> -
->  	*pagep = page;
->  
-> -	if (!PageUptodate(page) && (len != PAGE_CACHE_SIZE)) {
-> -		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
-> -
-> -		zero_user_segments(page, 0, from, from + len, PAGE_CACHE_SIZE);
-> +	if (!PageUptodate(page)) {
-> +		unsigned from;
-> +
-> +		if (PageTransHuge(page) && len != HPAGE_PMD_SIZE) {
-> +			from = pos & ~HPAGE_PMD_MASK;
-> +			zero_huge_user_segment(page, 0, from);
-> +			zero_huge_user_segment(page,
-> +					from + len, HPAGE_PMD_SIZE);
-> +		} else if (len != PAGE_CACHE_SIZE) {
-> +			from = pos & ~PAGE_CACHE_MASK;
-> +			zero_user_segments(page, 0, from,
-> +					from + len, PAGE_CACHE_SIZE);
-> +		}
->  	}
->  	return 0;
+> -    return !pirq || (!pirq->arch.irq && (!is_hvm_domain(d) ||
+> -        pirq->arch.hvm.emuirq == IRQ_UNBOUND));
+> +    return !pirq || ((pirq->arch.irq == 0 || (pirq->arch.irq == PIRQ_ALLOCATED)) &&
+> +           (!is_hvm_domain(d) || pirq->arch.hvm.emuirq == IRQ_UNBOUND));
 >  }
-> @@ -443,9 +466,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
 >  
->  	/* zero the stale part of the page if we did a short copy */
->  	if (copied < len) {
-> -		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
-> -
-> -		zero_user(page, from + copied, len - copied);
-> +		unsigned from;
-> +		if (PageTransHuge(page)) {
-> +			from = pos & ~HPAGE_PMD_MASK;
-> +			zero_huge_user(page, from + copied, len - copied);
-> +		} else {
-> +			from = pos & ~PAGE_CACHE_MASK;
-> +			zero_user(page, from + copied, len - copied);
-> +		}
->  	}
+>  int get_free_pirq(struct domain *d, int type)
+> 
+> 
+> The reason is that pirq->arch.irq in PHYSDEVOP_get_free_pirq is set to
+> from the value of zero to -1 (PIRQ_ALLOCATED). Then in map_domain_pirq
+> we check it first:
+> 
+> 904     old_irq = domain_pirq_to_irq(d, pirq);                  
+> .. snip..                    
+> 1907     if ( (old_irq > 0 && (old_irq != irq) ) ||                                  
+> 
+> and since the 'old_irq' is -1 (or zero), and the irq passed in
+> is different, then all checks pass and the value is over-written:
+> 
+>  1988         set_domain_irq_pirq(d, irq, info);                                      
+> 
+> And that is it.
 
-When I see stuff going in to the simple_* functions, I fear that this
-code will end up getting copied in to each and every one of the
-filesystems that implement these on their own.
 
-I guess this works for now, but I'm worried that the the next fs is just
-going to copy-and-paste these.  Guess I'll yell at them when they do it. :)
+We have to be careful about this: the point of PHYSDEVOP_get_free_pirq is
+that Linux can know for sure the pirq that is going to be used to map the
+MSI by QEMU. If you modify is_free_pirq that way, suddenly the pirq
+could be allocated for something else after Linux called
+PHYSDEVOP_get_free_pirq and before QEMU called xc_physdev_map_pirq_msi.
 
+Right now the unmap is supposed to be done by QEMU, not Linux. So I
+think that it is "normal" (although counterintuitive) that your little
+test works that way.
+
+pirq allocated via PHYSDEVOP_get_free_pirq should be passed to QEMU,
+mapped by QEMU, unmapped by QEMU and eventually freed by QEMU.
+
+This is not the bestest interface ever written of course but that's how
+it works now.
