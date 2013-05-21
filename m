@@ -1,103 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab3EUAqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 20:46:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34608 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755993Ab3EUAqB (ORCPT
+	id S1758519Ab3EUAsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 20:48:54 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49855 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3EUAsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 20:46:01 -0400
-Message-ID: <1369097157.3469.136.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH 5/5] perf: net_dropmonitor: Remove progress indicator
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
+	Mon, 20 May 2013 20:48:53 -0400
+Date: Tue, 21 May 2013 08:48:33 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: jslaby@suse.cz, alan@linux.intel.com, airlied@redhat.com,
         linux-kernel@vger.kernel.org
-Date: Tue, 21 May 2013 01:45:57 +0100
-In-Reply-To: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
-References: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-KHHl/WcQGtROn9MGfqv9"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Subject: Re: [PATCH 0/9] Convert all to the caller hold lock version
+Message-ID: <20130521004833.GA2090@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
+	alan@linux.intel.com, airlied@redhat.com,
+	linux-kernel@vger.kernel.org
+References: <20130508181304.GA12344@udknight>
+ <20130520192737.GA20961@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130520192737.GA20961@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 20, 2013 at 12:27:37PM -0700, Greg KH wrote:
+> Can you also send a patch fixing up the documentation to use the new
+> functions as well?
+> 
+Yes, I will do it.
 
---=-KHHl/WcQGtROn9MGfqv9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-We can read /proc/kallsyms in a fraction of a second, so why waste
-a further fraction of a second showing progress?
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- tools/perf/scripts/python/net_dropmonitor.py |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
-
-diff --git a/tools/perf/scripts/python/net_dropmonitor.py b/tools/perf/scri=
-pts/python/net_dropmonitor.py
-index 32fcee0..b574059 100755
---- a/tools/perf/scripts/python/net_dropmonitor.py
-+++ b/tools/perf/scripts/python/net_dropmonitor.py
-@@ -15,28 +15,17 @@ kallsyms =3D []
-=20
- def get_kallsyms_table():
- 	global kallsyms
-+
- 	try:
- 		f =3D open("/proc/kallsyms", "r")
--		linecount =3D 0
--		for line in f:
--			linecount =3D linecount+1
--		f.seek(0)
- 	except:
- 		return
-=20
--
--	j =3D 0
- 	for line in f:
- 		loc =3D int(line.split()[0], 16)
- 		name =3D line.split()[2]
--		j =3D j +1
--		if ((j % 100) =3D=3D 0):
--			print "\r" + str(j) + "/" + str(linecount),
- 		kallsyms.append((loc, name))
--
--	print "\r" + str(j) + "/" + str(linecount)
- 	kallsyms.sort()
--	return
-=20
- def get_sym(sloc):
- 	loc =3D int(sloc)
-
-
---=-KHHl/WcQGtROn9MGfqv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUZrDxee/yOyVhhEJAQrqWQ/8DTDYpe0WzoA5BmPH8/SEjy0WxYirY1wQ
-Xx/MhS3XsWi5Mk8dwBNdKhW0qhozHg0fxXSh19IVRtA7gqvFPy3r/3z3/lwV8Ufq
-jOmJbrq54RyhJsiHOkHGi6ctJjts9gY0OtJLM7pkW+2Mrkb+/RjrIG254Q7KGhDT
-+XWhMfF/rhABqab62HH5vGw2FK/ldT0GLHELB/om9aS9UjwazWQNTRdkDlCWtoHT
-QspLKJovoPnwq8KE2PvdLJpKG4B0ZvhTRnUuaNk3+aCIVBNmG+r8LZkgIROz5Tu/
-LxsO1fP3oSF1+L3dGmMj8B0iRxRPiPuXm/MW5SkoYYhhFR3xbJMZ8uVTbFn1wBSF
-dCo6wKeHOUNUVxL+O1fCr15CZyp0FKv1j6B6fHfppu/fbhnTG/U7znpjBP8C7Tj1
-QQrhKN3sO+GsHQOwcADa6MrnsYEq2YMHYkVRmTN/p7ZI1YFZk++nqFENS7FGFHWm
-jwt/k4WEgYctoQs/eW5Cx1VBp51fRqqgr3LTLU/A1fiTFVLJyrsXOcpPotVofQfS
-HfuhOKDlme96KMiEnTDby0JOQSkaCZj8JUe4WBqRFEg6pBRqS8aatwEmWpv/Xk5n
-MPGgCMA8AhBMXFI2d4DUDTPILRPT2drrYSJ+FD5ErgYsOsImEn3hVXTQulaLUMA3
-FgvhBEPTicM=
-=r9Af
------END PGP SIGNATURE-----
-
---=-KHHl/WcQGtROn9MGfqv9--
+Thanks.
