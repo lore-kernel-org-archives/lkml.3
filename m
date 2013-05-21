@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3EUQyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:54:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56475 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3EUQyC (ORCPT
+	id S1755131Ab3EUQ4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:56:17 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:53702 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab3EUQ4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:54:02 -0400
-Date: Tue, 21 May 2013 09:54:01 -0700
-From: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
-Message-ID: <20130521165401.GA8822@kroah.com>
-References: <20130521135817.GE4589@zurbaran>
- <5B8DA87D05A7694D9FA63FD143655C1B01F2E489@HASMSX106.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01F2E489@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 21 May 2013 12:56:16 -0400
+X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8DFCng/+ALmLZYRFnZn15ELiOAuLr3NkII
+X-RZG-CLASS-ID: mo00
+Date: Tue, 21 May 2013 18:56:04 +0200
+From: Stephan Mueller <smueller@chronox.de>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: linux-crypto@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RFC] CPU Jitter random number generator (resent)
+Message-ID: <20130521185604.06c00b0e@tauon>
+In-Reply-To: <CACXcFmmPjGBYhfbwfMdE2iTv2a9Q6HB1aT8JSnXA-8n2yO0zcA@mail.gmail.com>
+References: <20130521084455.5c651991@tauon>
+	<CACXcFmmPjGBYhfbwfMdE2iTv2a9Q6HB1aT8JSnXA-8n2yO0zcA@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 03:01:27PM +0000, Winkler, Tomas wrote:
+On Tue, 21 May 2013 12:09:02 -0400
+Sandy Harris <sandyinchina@gmail.com> wrote:
+
+Hi Sandy,
+
+> I very much like the basic notion here. The existing random(4) driver
+> may not get enough entropy in a VM or on a device like a Linux router
+> and I think work such as yours or HAVEGE (
+> http://www.irisa.fr/caps/projects/hipsor/) are important research. The
+> paper by McGuire et al of "Analysis of inherent randomness of the
+> Linux
+> kernel" (http://lwn.net/images/conf/rtlws11/random-hardware.pdf)
+> seems to show that this is a fine source of more entropy.
 > 
+> On the other hand, I am not certain you are doing it in the right
+> place. My own attempt (ftp://ftp.cs.sjtu.edu.cn:990/sandy/maxwell/)
+> put it in a demon that just feeds /dev/random, probably also not the
+> right place. haveged(8) ( http://www.issihosts.com/haveged/) also
+> puts it in a demon process. It may, as you suggest, belong in the
+> kernel instead, but I think there are arguments both ways.
+
+Thanks for your insights. What I propose is that it shall NOT have any
+fixed place at all.
+
+The entropy collection shall be as close to the "consumer" as
+possible. There shall be NO single one entropy collector, but one for
+every consumer.
+
+That is the reason, why the code I am offering has that many links to
+different crypto libs or even a stand-alone shared lib compilation.
+Also, the implementation for the kernel crypto API should be used in a
+way where one "consumer" instantiates the raw RNG or even the DRNGs
+independently from others. That means, in-kernel users of entropy like
+IPSEC shall instantiate the the kernel crypto API code independently
+of others.
 > 
-> > -----Original Message-----
-> > From: Samuel Ortiz [mailto:sameo@linux.intel.com]
-> > Sent: Tuesday, May 21, 2013 16:58
-> > To: Winkler, Tomas
-> > Cc: linux-kernel
-> > Subject: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
-> > 
-> > After cancelling all reads from the disable hook, we need to reset the
-> > event_cb pointer as well or else we won't be able to set a new one up when
-> > re-enabling the device.
-> > 
-> > Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-> Acked.
+> Could we keep random(4) mostly as is and rearrange your code to just
+> give it more entropy? I think the large entropy pool in the existing
+> driver is essential since we sometimes want to generate things like a
+> 2 Kbit PGP key and it is not clear to me that your driver is entirely
+> trustworthy under such stress.
 
-Nice, but can someone actually send me the patch to apply?
+We can easily do that -- the different links I provide to different
+crypto libs can be extended by a patch to random(4) too. My goal is to
+go away from a central source of entropy to a fully decentralized
+source.
 
-thanks,
+Ciao
+Stephan
 
-greg k-h
+
+-- 
+| Cui bono? |
