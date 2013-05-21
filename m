@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab3EUXKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:10:38 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49613 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab3EUXKg convert rfc822-to-8bit (ORCPT
+	id S1753580Ab3EUXOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:14:30 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:31583 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751139Ab3EUXO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:10:36 -0400
+	Tue, 21 May 2013 19:14:29 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwOAF7/m1F5LNn3/2dsb2JhbABagwi8eoUcBAGBChd0giMBAQU6HCMQCAMOCgklDwUlAyETiAy7bxaNZ4EdB4NUA5c3kUGDISo
+Date: Wed, 22 May 2013 09:13:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Reduce system disruption due to kswapd V4
+Message-ID: <20130521231358.GV29466@dastard>
+References: <1368432760-21573-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130521230108.GB12713@redhat.com>
-References: <20130521230108.GB12713@redhat.com>
-Date: Wed, 22 May 2013 01:10:36 +0200
-X-Google-Sender-Auth: edYYg0ZHBdYOLbDW45g_A1xSPsE
-Message-ID: <CAKMK7uFB2u1hO+fLk49vVsT_+A-MDbMDPhGDtPmcK+aUQMipZw@mail.gmail.com>
-Subject: Re: [Intel-gfx] pipe_off wait timed out
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368432760-21573-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 1:01 AM, Dave Jones <davej@redhat.com> wrote:
-> This is new to me as of 3.10-rc2.
+On Mon, May 13, 2013 at 09:12:31AM +0100, Mel Gorman wrote:
+> This series does not fix all the current known problems with reclaim but
+> it addresses one important swapping bug when there is background IO.
 
-If this is an ironlake with a DP output it's a know issue which seems
-to pop up every once in a while. Otherwise we need to take a look
-here. If so can you please boot with drm.debug=0xe, reproduce the
-issue and attach the complete dmesg?
+....
+> 
+>                             3.10.0-rc1  3.10.0-rc1
+>                                vanilla lessdisrupt-v4
+> Page Ins                       1234608      101892
+> Page Outs                     12446272    11810468
+> Swap Ins                        283406           0
+> Swap Outs                       698469       27882
+> Direct pages scanned                 0      136480
+> Kswapd pages scanned           6266537     5369364
+> Kswapd pages reclaimed         1088989      930832
+> Direct pages reclaimed               0      120901
+> Kswapd efficiency                  17%         17%
+> Kswapd velocity               5398.371    4635.115
+> Direct efficiency                 100%         88%
+> Direct velocity                  0.000     117.817
+> Percentage direct scans             0%          2%
+> Page writes by reclaim         1655843     4009929
+> Page writes file                957374     3982047
 
-Also does 3.10-rc1 work (since you mention -rc2 specifically and there
-wasn't really a lot going into that for drm/i915).
+Lots more file pages are written by reclaim. Is this from kswapd
+or direct reclaim? If it's direct reclaim, what happens when you run
+on a filesystem that doesn't allow writeback from direct reclaim?
 
-Thanks, Daniel
+Also, what does this do to IO patterns and allocation? This tends
+to indicate that the background flusher thread is not doing the
+writeback work fast enough when memory is low - can you comment on
+this at all, Mel?
 
->
->
-> WARNING: at drivers/gpu/drm/i915/intel_display.c:997 intel_wait_for_pipe_off+0x194/0x1a0 [i915]()
-> pipe_off wait timed out
-> Modules linked in: ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_LOG xt_limit ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter nf_conntrack_ipv4 nf_defrag_ipv4 ip6_tables xt_conntrack nf_conntrack microcode pcspkr r8169 mii nfsd auth_rpcgss nfs_acl lockd sunrpc i915 video backlight i2c_algo_bit drm_kms_helper drm
-> CPU: 3 PID: 1414 Comm: kworker/3:1 Not tainted 3.10.0-rc2+ #3
-> Hardware name:                  /D510MO, BIOS MOPNV10J.86A.0175.2010.0308.0620 03/08/2010
-> Workqueue: events console_callback
->  ffffffffa00d1c08 ffff8800753c7988 ffffffff8151fd9f ffff8800753c79c8
->  ffffffff8103ca8b 00000000000008dd ffff880076738000 000000000000031f
->  0000000000001fff 0000000000071000 0000000100086e1b ffff8800753c7a28
-> Call Trace:
->  [<ffffffff8151fd9f>] dump_stack+0x19/0x1b
->  [<ffffffff8103ca8b>] warn_slowpath_common+0x6b/0xa0
->  [<ffffffff8103cb61>] warn_slowpath_fmt+0x41/0x50
->  [<ffffffffa008d414>] intel_wait_for_pipe_off+0x194/0x1a0 [i915]
->  [<ffffffffa008d5a5>] intel_disable_pipe+0x185/0x210 [i915]
->  [<ffffffffa008dcef>] i9xx_crtc_disable+0xcf/0x230 [i915]
->  [<ffffffffa009245f>] intel_crtc_update_dpms+0x6f/0xa0 [i915]
->  [<ffffffffa0092515>] intel_encoder_dpms+0x15/0x30 [i915]
->  [<ffffffffa0097207>] intel_connector_dpms+0x37/0x70 [i915]
->  [<ffffffffa00520b0>] drm_fb_helper_dpms.isra.17+0xc0/0x110 [drm_kms_helper]
->  [<ffffffffa0052131>] drm_fb_helper_blank+0x31/0x80 [drm_kms_helper]
->  [<ffffffff812a6f51>] fb_blank+0x51/0xc0
->  [<ffffffff812b5c3b>] fbcon_blank+0x22b/0x2e0
->  [<ffffffff81526d95>] ? _raw_spin_unlock_irqrestore+0x65/0x80
->  [<ffffffff8109a475>] ? trace_hardirqs_on_caller+0x105/0x1d0
->  [<ffffffff8109a54d>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff81526d6d>] ? _raw_spin_unlock_irqrestore+0x3d/0x80
->  [<ffffffff8104b3c6>] ? try_to_del_timer_sync+0x56/0x70
->  [<ffffffff8104b48a>] ? del_timer_sync+0xaa/0xd0
->  [<ffffffff8104b3e0>] ? try_to_del_timer_sync+0x70/0x70
->  [<ffffffff81324618>] do_blank_screen+0x1d8/0x280
->  [<ffffffff813269bf>] console_callback+0x5f/0x150
->  [<ffffffff8105a7f1>] process_one_work+0x1f1/0x490
->  [<ffffffff8105a78c>] ? process_one_work+0x18c/0x490
->  [<ffffffff8105aef3>] worker_thread+0x113/0x370
->  [<ffffffff8105ade0>] ? rescuer_thread+0x310/0x310
->  [<ffffffff81062798>] kthread+0xe8/0xf0
->  [<ffffffff81094732>] ? get_lock_stats+0x22/0x70
->  [<ffffffff810626b0>] ? kthread_create_on_node+0x150/0x150
->  [<ffffffff8152d02c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff810626b0>] ? kthread_create_on_node+0x150/0x150
->
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+Cheers,
 
-
-
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
