@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3EUPls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 11:41:48 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:50569 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab3EUPlq convert rfc822-to-8bit (ORCPT
+	id S1754686Ab3EUPtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:49:07 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:32977 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753370Ab3EUPtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 11:41:46 -0400
-From: "Liu, Joseph" <Joseph.Liu@Emulex.Com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        "Zhang, LongX" <longx.zhang@intel.com>
-CC: "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
-Subject: RE: Subject : [ PATCH ]
- pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-Thread-Topic: Subject : [ PATCH ]
- pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-Thread-Index: Ac5CQUdmhbSX64FbRraxMqZGOLGlLwABCDYwBOhZoQAAE4z+sA==
-Date: Tue, 21 May 2013 15:41:44 +0000
-Message-ID: <CF6E51640088844D9CADE5541A7C2FEB33EBE413@CMEXMB1.ad.emulex.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <20130520224824.GA31740@google.com>
-In-Reply-To: <20130520224824.GA31740@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.74.55]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 May 2013 11:49:04 -0400
+X-Greylist: delayed 9505 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 11:49:04 EDT
+Message-ID: <519B976A.3050708@hurleysoftware.com>
+Date: Tue, 21 May 2013 11:48:58 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Wang YanQing <udknight@gmail.com>
+CC: gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to do_take_over_console
+References: <20130521051511.GA11435@udknight> <519B7249.2070207@hurleysoftware.com> <20130521144215.GA5302@udknight.homenetwork>
+In-Reply-To: <20130521144215.GA5302@udknight.homenetwork>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn,
-
->> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
->> index ed4d094..7abefd9 100644
->> --- a/drivers/pci/pcie/portdrv_pci.c
->> +++ b/drivers/pci/pcie/portdrv_pci.c
->> @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
->>  	pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
->>  	int retval;
->>  
->> -	/* If fatal, restore cfg space for possible link reset at upstream */
->> -	if (dev->error_state == pci_channel_io_frozen) {
->> -		dev->state_saved = true;
->> -		pci_restore_state(dev);
->> -		pcie_portdrv_restore_config(dev);
->> -		pci_enable_pcie_error_reporting(dev);
->> -	}
->> +	/* restore cfg space for possible link reset at upstream */
->> +	dev->state_saved = true;
->> +	pci_restore_state(dev);
->> +	pcie_portdrv_restore_config(dev);
->> +	pci_enable_pcie_error_reporting(dev);
->>  
->>  	/* get true return value from &status */
->>  	retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
+On 05/21/2013 10:42 AM, Wang YanQing wrote:
+> On Tue, May 21, 2013 at 09:10:33AM -0400, Peter Hurley wrote:
+>> I would rather revert dc9641895abb which purported to delete
+>> _unneeded_ functions than have this. Obviously the functions
+>> were needed.
+>>
 >
->I think this patch changes the behavior in the case of a non-fatal error
->where one of the .error_detected() methods returned
->PCI_ERS_RESULT_NEED_RESET.  In that case, pcie_portdrv_slot_reset()
->previously did not restore config space, but after your patch, it *will*
->restore it.  We need an explanation of why this is safe. 
+> Hi Peter, this series patches' goal is to reduce codes'
+> redundance and function duplication. But if we keep take_over_console,
+> then we have to rewrite it as a trivial wrapper over do_take_over_console,
+> or we have to keep bind_con_driver and register_con_driver, and this
+> will bring use codes' redundance.
+>
+> And if we rewrite take_over_console as a wrapper over
+> do_take_over_console, it is so trivial, delete it and let kernel
+> use the unified version of APIs will simplify the APIs.
 
-Here is my understanding of this part of the patch:
+Except now you're spreading the brokenness that is console_lock()
+over many more source files than the single-use case of
+do_take_over_console().
 
-I think your concern here should not be an issue. Whether it is a non-fatal error or a fatal error, as long as one of the .error_detected() method from the downstream drivers involved returns a PCI_ERS_RESULT_NEED_RESET, it should trump all others and a slot reset should be performed, even though it was originally due to a non-fatal error reported or only one of the downstream drivers requests it. In the case of AER driver, this should be implemented in the broadcast_error_message() with pci_walk_bus() by passing in the report_error_detected() function, and merging the results into the result_data->result...
+The actual interface is take_over_console(); the _workaround_ is
+exposing do_take_over_console() for fbcon to wrap.
 
-In any case, the fact that this pcie_portdrv_slot_reset() being invoked should be considered as a aftermath of a slot reset has been performed, thus the restore of config space should be performed after the reset. I suppose the restore should be to the same state as fresh power-on states, right?
-
-Thanks,
-Joe Liu, Ph.D.
-Senior Principal Engineer
-Emulex Corporation
+Regards,
+Peter Hurley
 
