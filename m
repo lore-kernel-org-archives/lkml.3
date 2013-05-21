@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab3EUWjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:39:24 -0400
-Received: from www.sr71.net ([198.145.64.142]:45915 "EHLO blackbird.sr71.net"
+	id S1753786Ab3EUWjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:39:53 -0400
+Received: from mout.gmx.net ([212.227.17.20]:64140 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab3EUWjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:39:21 -0400
-Message-ID: <519BF796.1010403@sr71.net>
-Date: Tue, 21 May 2013 15:39:18 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 24/39] thp, mm: truncate support for transparent huge
- page cache
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-25-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-25-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753419Ab3EUWjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:39:08 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX191RgQ5cYR1wks4lBRttULy3Px7NJASRrEFu9eIfi
+	vkn1ESJsMzx04A
+From: Peter Huewe <peterhuewe@gmx.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jes Sorensen <jes@trained-monkey.org>,
+        linux-acenic@sunsite.dk (open list:ACENIC DRIVER),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 09/19] net/ethernet/alteon/acenic: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 00:42:14 +0200
+Message-Id: <1369176146-19383-9-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> If we starting position of truncation is in tail page we have to spilit
-> the huge page page first.
+Removing some boilerplate by using module_pci_driver instead of calling
+register and unregister in the otherwise empty init/exit functions.
 
-That's a very interesting sentence sentence. :)
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/net/ethernet/alteon/acenic.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
-> We also have to split if end is within the huge page. Otherwise we can
-> truncate whole huge page at once.
-
-How about something more like this as a description?
-
-Splitting a huge page is relatively expensive.  If at all possible, we
-would like to do truncation without first splitting a page.  However, if
-the truncation request starts or ends in the middle of a huge page, we
-have no choice and must split it.
-
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/truncate.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index c75b736..0152feb 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -231,6 +231,17 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  			if (index > end)
->  				break;
->  
-> +			/* split page if we start from tail page */
-> +			if (PageTransTail(page))
-> +				split_huge_page(compound_trans_head(page));
-
-I know it makes no logical difference, but should this be an "else if"?
- It would make it more clear to me that PageTransTail() and
-PageTransHead() are mutually exclusive.
-
-> +			if (PageTransHuge(page)) {
-> +				/* split if end is within huge page */
-> +				if (index == (end & ~HPAGE_CACHE_INDEX_MASK))
-
-How about:
-
-	if ((end - index) > HPAGE_CACHE_NR)
-
-That seems a bit more straightforward, to me at least.
-
-> +					split_huge_page(page);
-> +				else
-> +					/* skip tail pages */
-> +					i += HPAGE_CACHE_NR - 1;
-> +			}
-
-
-Hmm..  This is all inside a loop, right?
-
-                for (i = 0; i < pagevec_count(&pvec); i++) {
-                        struct page *page = pvec.pages[i];
-
-PAGEVEC_SIZE is only 14 here, so it seems a bit odd to be incrementing i
-by 512-1.  We'll break out of the pagevec loop, but won't 'index' be set
-to the wrong thing on the next iteration of the loop?  Did you want to
-be incrementing 'index' instead of 'i'?
-
-This is also another case where I wonder about racing split_huge_page()
-operations.
-
->  			if (!trylock_page(page))
->  				continue;
->  			WARN_ON(page->index != index);
-> @@ -280,6 +291,8 @@ void truncate_inode_pages_range(struct address_space *mapping,
->  			if (index > end)
->  				break;
->  
-> +			if (PageTransHuge(page))
-> +				split_huge_page(page);
->  			lock_page(page);
->  			WARN_ON(page->index != index);
->  			wait_on_page_writeback(page);
-
-This seems to imply that we would have taken care of the case where we
-encountered a tail page in the first pass.  Should we put a comment in
-to explain that assumption?
+diff --git a/drivers/net/ethernet/alteon/acenic.c b/drivers/net/ethernet/alteon/acenic.c
+index b7894f8..219be1b 100644
+--- a/drivers/net/ethernet/alteon/acenic.c
++++ b/drivers/net/ethernet/alteon/acenic.c
+@@ -702,19 +702,6 @@ static struct pci_driver acenic_pci_driver = {
+ 	.remove		= acenic_remove_one,
+ };
+ 
+-static int __init acenic_init(void)
+-{
+-	return pci_register_driver(&acenic_pci_driver);
+-}
+-
+-static void __exit acenic_exit(void)
+-{
+-	pci_unregister_driver(&acenic_pci_driver);
+-}
+-
+-module_init(acenic_init);
+-module_exit(acenic_exit);
+-
+ static void ace_free_descriptors(struct net_device *dev)
+ {
+ 	struct ace_private *ap = netdev_priv(dev);
+@@ -3199,3 +3186,5 @@ static int read_eeprom_byte(struct net_device *dev, unsigned long offset)
+ 	       ap->name, offset);
+ 	goto out;
+ }
++
++module_pci_driver(acenic_pci_driver);
+-- 
+1.8.1.5
 
