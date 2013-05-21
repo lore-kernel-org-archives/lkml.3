@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab3EUG06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:26:58 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:41158 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab3EUG05 (ORCPT
+	id S1755960Ab3EUGbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:31:43 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:64331 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3EUGbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:26:57 -0400
-Date: Mon, 20 May 2013 23:26:52 -0700
+	Tue, 21 May 2013 02:31:42 -0400
+Date: Mon, 20 May 2013 23:31:39 -0700
 From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Prathyush K <prathyush.k@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] pinctrl: samsung: fix suspend/resume functionality
-Message-ID: <20130521062652.GE19627@quad.lixom.net>
-References: <1368746388-20194-1-git-send-email-dianders@chromium.org>
- <1368765198-25550-1-git-send-email-dianders@chromium.org>
- <CACRpkdZ1zBrp+jpgw8o_PVd_bcQMpkFXvRAwfJH6KCztT4jx+w@mail.gmail.com>
- <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Bergmann, Arnd" <arnd@arndb.de>
+Subject: Re: [PATCH] ARM: vt8500: Add missing NULL terminator in dt_compat
+Message-ID: <20130521063139.GA20453@quad.lixom.net>
+References: <1368776657-23035-1-git-send-email-srinivas.kandagatla@st.com>
+ <5195EA34.7000409@prisktech.co.nz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=XOiVdkEhYu+u-aGkD0DpxWn369uD_r4Pmw=7gHKLjOuQ@mail.gmail.com>
+In-Reply-To: <5195EA34.7000409@prisktech.co.nz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 07:59:27AM -0700, Doug Anderson wrote:
-> Linus,
+On Fri, May 17, 2013 at 08:28:36PM +1200, Tony Prisk wrote:
+> On 17/05/13 19:44, Srinivas KANDAGATLA wrote:
+> >From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >
+> >When I tried booting a stih415 Dual core A9 with multi_v7_defconfig, it
+> >failed to boot. The issues seems to be changing by enabling or disabling
+> >VT8550 platform. Having a quick look at dt_compat list, it seems to miss
+> >a NULL terminator, which means of_flat_dt_match will compat check will
+> >cross the boundary of dt_compat and fault at some point , which is what
+> >was happening in my case.
+> >
+> >Without this patch if we try to boot multi_v7_defconfig you might notice
+> >that some of the platforms might fault if they fall after vt8500 in
+> >machine-desc list. Other platforms which fall before vt8500 in mdesc list
+> >will not fault.
+> >
+> >Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> >---
+> >  arch/arm/mach-vt8500/vt8500.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/arch/arm/mach-vt8500/vt8500.c b/arch/arm/mach-vt8500/vt8500.c
+> >index 1dd281e..f5c33df 100644
+> >--- a/arch/arm/mach-vt8500/vt8500.c
+> >+++ b/arch/arm/mach-vt8500/vt8500.c
+> >@@ -173,6 +173,7 @@ static const char * const vt8500_dt_compat[] = {
+> >  	"wm,wm8505",
+> >  	"wm,wm8750",
+> >  	"wm,wm8850",
+> >+	NULL
+> >  };
+> >  DT_MACHINE_START(WMT_DT, "VIA/Wondermedia SoC (Device Tree Support)")
+> My bad. Thanks for the fix.
 > 
-> On Mon, May 20, 2013 at 4:47 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > Looks good to me.
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> >
-> > How are you going to merge this?
-> >
-> > Samsung tree?
-> >
-> > My pinctrl development tree?
-> >
-> > Or my fixes tree, if it's a regression for v3.10?
+> Acked-by: Tony Prisk <linux@prisktech.co.nz>
 > 
-> It is a regression for v3.10 so it would be nice to get it in there
-> (Tomasz's patches, too).
-> 
-> It looks like the majority of recent commits to this file went through
-> your tree and that seems fine to me unless anyone else on this thread
-> has objections.
+> Arnd, Olof: Can you apply this directly please.
 
-Sounds good to me.
+Done.
 
+Thanks,
 
 -Olof
