@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab3EURtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 13:49:18 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:59299 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab3EURtQ (ORCPT
+	id S1755408Ab3EURvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 13:51:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:38266 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538Ab3EURv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 13:49:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <519BAD99.9020007@intel.com>
-References: <1369132386-11725-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<519BAD99.9020007@intel.com>
-Date: Tue, 21 May 2013 20:49:14 +0300
-Message-ID: <CAHp75VdTVKnR8chYRPrLea_PbbHQy3tbHDwXpVn9=f6wfkoyNw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] gpio-langwell: bugfix and amendments
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: David Cohen <david.a.cohen@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 May 2013 13:51:29 -0400
+Message-ID: <1369158686.3301.237.camel@edumazet-glaptop>
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pekka Riikonen <priikone@iki.fi>
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 21 May 2013 10:51:26 -0700
+In-Reply-To: <1369158499.3301.236.camel@edumazet-glaptop>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+	 <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
+	 <1369063764.3301.182.camel@edumazet-glaptop>
+	 <519B2237.20204@linux.intel.com>
+	 <1369142926.3301.213.camel@edumazet-glaptop>
+	 <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
+	 <1369158499.3301.236.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 8:23 PM, David Cohen <david.a.cohen@intel.com> wrote:
-> On 05/21/2013 03:33 AM, Andy Shevchenko wrote:
->>
->> There is locking bug fix and few amendments. Each commit message verbose
->> enoough I think.
->>
->> Andy Shevchenko (4):
->>    gpio-langwell: initialize lock before usage
->>    gpio-langwell: amend error messages
->>    gpio-langwell: do not use direct access to iomapped memory
->>    gpio-langwell: use managed functions pcim_* and devm_*
->
->
-> I wonder if you should rebase those patches on top of this one:
-> https://patchwork.kernel.org/patch/2527431/
+On Tue, 2013-05-21 at 10:48 -0700, Eric Dumazet wrote:
 
-I actually made my patchset on top of that one.
-I think I have to fix patch 2/4 here to call that as real amendment.
+> We do not keep skb->dev information once a packet leaves the rcu
+> protected region.
+> 
+> Once packet is queued to tcp input queues, skb->dev is NULL.
 
---
-With Best Regards,
-Andy Shevchenko
+This is done in tcp_v4_rcv() & tcp_v6_rcv()
+
+
+
