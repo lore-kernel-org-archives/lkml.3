@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab3EUTBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 15:01:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752265Ab3EUTBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 15:01:48 -0400
-Date: Tue, 21 May 2013 21:03:05 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>, Jan Beulich <JBeulich@suse.com>
-Subject: [PATCH RESEND 0/1] AHCI: Make distinct names for ports in
- /proc/interrupts
-Message-ID: <cover.1369161950.git.agordeev@redhat.com>
+	id S1755798Ab3EUTCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 15:02:03 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:50400 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755775Ab3EUTB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 15:01:59 -0400
+Date: Tue, 21 May 2013 15:01:57 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH][RFC] CPU Jitter random number generator (resent)
+Message-ID: <20130521190157.GD22559@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Sandy Harris <sandyinchina@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+References: <20130521084455.5c651991@tauon>
+ <CACXcFm=PCPs23Kd8B0+B7418fSaz=59Z4DRcj3-Wcd-i=Meang@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CACXcFm=PCPs23Kd8B0+B7418fSaz=59Z4DRcj3-Wcd-i=Meang@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+I continue to be suspicious about claims that userspace timing
+measurements are measuring anything other than OS behaviour.  But that
+doesn't mean that they shouldn't exist.  Personally, I believe you
+should try to collect as much entropy as you can, from as many places
+as you can.  For VM's, it means we should definitely use
+paravirtualization to get randomness from the host OS.  If you don't
+trust the host OS, then what on earth are you doing trying to generate
+a long-term public key pair on the VM in the first place?  For that
+matter, why are you willing to expose a high value private keypair on
+the VM?
 
-This patch is applied on top of previously (re)sent patch
-"AHCI: Optimize interrupt processing". Should the latter
-refused, I will post a new version.
+For devices like Linux routers, what we desperately need is hardware
+assist; either a on-CPU hardware random number generator, or a
+hardware RNG from a TPM module, or having an individualized secret key
+generated at manufacturing time and burned onto the device.  If you
+don't trust that the Intel hardware RNG honest, then by all means mix
+in additional timing information either at kernel device driver level,
+or from systems such as HAVEGE.
 
-Alexander Gordeev (1):
-  AHCI: Make distinct names for ports in /proc/interrupts
+What I'm against is relying only on solutions such as HAVEGE or
+replacing /dev/random with something scheme that only relies on CPU
+timing and ignores interrupt timing.
 
- drivers/ata/ahci.c    |    5 +++--
- drivers/ata/ahci.h    |    1 +
- drivers/ata/libahci.c |   10 ++++++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
-
--- 
-1.7.7.6
-
-
--- 
 Regards,
-Alexander Gordeev
-agordeev@redhat.com
+
+					- Ted
