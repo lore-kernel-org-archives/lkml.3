@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3EUPcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 11:32:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab3EUPcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 11:32:16 -0400
-Date: Tue, 21 May 2013 17:28:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        akpm@linux-foundation.org, jlayton@redhat.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        bharrosh@panasas.com, devel@openvz.org
-Subject: Re: [RFC PATCH] kmod: add ability to swap root in usermode helper
-Message-ID: <20130521152836.GA13461@redhat.com>
-References: <20130520070017.7957.9224.stgit@localhost.localdomain> <20130520135716.GA10084@redhat.com> <519A3693.8020006@parallels.com> <20130520151001.GA13173@redhat.com> <20130520212412.GI14677@fieldses.org>
+	id S1754654Ab3EUPcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 11:32:55 -0400
+Received: from sisa.samsung.com ([63.166.156.250]:40983 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab3EUPcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 11:32:53 -0400
+X-ASG-Debug-ID: 1369150372-051129284731090001-xx1T2L
+X-Barracuda-Envelope-From: shuah.kh@samsung.com
+X-Barracuda-Apparent-Source-IP: 105.144.21.115
+X-ASG-Whitelist: Client
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Gustavo Padovan <gustavo@padovan.org>
+CC: "marcel@holtmann.org" <marcel@holtmann.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH rebased] Bluetooth: Add missing reset_resume dev_pm_ops
+Thread-Topic: [PATCH rebased] Bluetooth: Add missing reset_resume dev_pm_ops
+X-ASG-Orig-Subj: Re: [PATCH rebased] Bluetooth: Add missing reset_resume dev_pm_ops
+Thread-Index: AQHOVb7v3Podb/0mVEeMC1jREEoUOZkPcEUAgADKfoA=
+Date: Tue, 21 May 2013 15:32:51 +0000
+Message-ID: <1369150371.18338.4.camel@lorien>
+References: <1367250333.4938.20.camel@lorien> <20130520230832.GF17712@joana>
+	 <1369092891.8079.5.camel@lorien> <1369098178.11557.3.camel@lorien>
+	 <20130521032806.GA12086@joana>
+In-Reply-To: <20130521032806.GA12086@joana>
+Reply-To: Shuah Khan <shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [105.144.34.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <EE90513A3D1E4041B5EC7E9EB3035330@sisa.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130520212412.GI14677@fieldses.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1369150372
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4LFX1W1021047
 
-You know, I am puzzled. Everything looks so clear that I can't
-understand what I could miss.
+On Tue, 2013-05-21 at 00:28 -0300, Gustavo Padovan wrote:
+> Hi Shuan,
+> 
+> * Shuah Khan <shuah.kh@samsung.com> [2013-05-21 01:02:58 +0000]:
+> 
+> > Add missing reset_resume dev_pm_ops. Missing reset_resume results in the
+> > following message after power management device test. This change sets
+> > reset_resume to btusb_resume().
+> > 
+> > [ 2506.936134] btusb 1-1.5:1.0: no reset_resume for driver btusb?
+> > [ 2506.936137] btusb 1-1.5:1.1: no reset_resume for driver btusb?
+> > 
+> > Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> > ---
+> >  drivers/bluetooth/btusb.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> > index 7a7e5f8..1eb90c0 100644
+> > --- a/drivers/bluetooth/btusb.c
+> > +++ b/drivers/bluetooth/btusb.c
+> > @@ -1616,6 +1616,7 @@ static struct usb_driver btusb_driver = {
+> >  #ifdef CONFIG_PM
+> >  	.suspend	= btusb_suspend,
+> >  	.resume		= btusb_resume,
+> > +	.reset_resume	= btusb_resume,
+> >  #endif
+> >  	.id_table	= btusb_table,
+> >  	.supports_autosuspend = 1,
+> 
+> Patch still doesn't apply, are you sending it with git-send-email?
+> 
+> Applying: Bluetooth: Add missing reset_resume dev_pm_ops
+> /home/padovan/p/linux-trees/bluetooth-next/.git/rebase-apply/patch:13: trailing whitespace.
+>         .reset_resume   = btusb_resume,
+> error: patch failed: drivers/bluetooth/btusb.c:1616
+> error: drivers/bluetooth/btusb.c: patch does not apply
+> Patch failed at 0001 Bluetooth: Add missing reset_resume dev_pm_ops
+> 
+> 	Gustavo
 
-On 05/20, J. Bruce Fields wrote:
->
-> On Mon, May 20, 2013 at 05:10:01PM +0200, Oleg Nesterov wrote:
-> > On 05/20, Stanislav Kinsbursky wrote:
-> > >
-> > OK, why nfs can't simply use this code
-> >
-> > 	static int umh_set_fs_root(struct subprocess_info *info, struct cred *new)
-> > 	{
-> > 		set_fs_root(current->fs, sub_info->data);
-> > 		return 0;
-> > 	}
-> >
-> > 	int call_usermodehelper_root(char *path, char **argv, char **envp, int wait,
-> > 				     struct path *root)
-> > 	{
-> >
-> > 		struct subprocess_info *info;
-> >
-> > 		info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-> > 							umh_set_fs_root, NULL, root);
-> > 		if (info == NULL)
-> > 			return -ENOMEM;
-> > 		return call_usermodehelper_exec(info, wait);
-> > 	}
->
-> Right, that's more or less what Stanislav proposed before:
->
-> 	https://patchwork.kernel.org/patch/2449081/
->
-> (though with an open-coded set_fs_root).  Jeff and I asked him to try
-> this approach instead.
+I saved the patch from the email I sent and applied to your latest git
+and it applies. I am not sure what happened. In any case, I just resent
+it using git-send-email. Hope that works.
 
-And I still can't understand why you do not like this.
+-- Shuah
 
-> > ? Why do you want to add the new member, the new arguments, the new helpers?
->
-> 	- It's simpler for callers to be able to say "run this help in
-> 	  that namespace" in a single line.  We expect there will be
-> 	  more such callers, so the mild complication of the API seems
-> 	  worth it for the convenience.
+Shuah Khan, Linux Kernel Developer - Open Source Group 
+Samsung Research America (Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
 
-So call_usermodehelper_root() above doesn't look as a simple API for you?
-
-Add it into kmod.c (or another place) and use it everywhere, why do
-insist we should complicate the generic code?
-
-What if someone wants to, say, change "nice" before running the helper?
-Do you think that we need yet another change which turns
-call_usermodehelper_setup_root() added by this patch into
-call_usermodehelper_setup_root_nice()? And another member in sub_info?
-And the "if (sub_info->nice)" check into ____call_usermodehelper() ?
-
-> 	- set_fs_root looks like something that shouldn't really be used
-> 	  outside of a small number of well-known callers in core code.
-
-OK, so do not do this. Export the new helper.
-
-Oleg.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
