@@ -1,35 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3EUMsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:48:50 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50545
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753794Ab3EUMst (ORCPT
+	id S1754340Ab3EUMw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 08:52:57 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:33998 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab3EUMw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:48:49 -0400
-Date: Tue, 21 May 2013 11:11:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com,
-        iommu@lists.linux-foundation.org, joro@8bytes.org
-Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
-Message-ID: <20130521091157.GD26912@twins.programming.kicks-ass.net>
-References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
- <519A4429.30405@amd.com>
+	Tue, 21 May 2013 08:52:56 -0400
+Message-ID: <519B6DA7.7000305@synopsys.com>
+Date: Tue, 21 May 2013 18:20:47 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519A4429.30405@amd.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARC MM Bug Fix
+References: <1369140259-30501-1-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1369140259-30501-1-git-send-email-vgupta@synopsys.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.228]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 10:41:29AM -0500, Suravee Suthikulanit wrote:
-> Peter,
+On 05/21/2013 06:14 PM, Vineet Gupta wrote:
+> Hi Linus,
 > 
-> Please let me know if you have any questions/concerns regarding the PMU
-> implementation.
+> I have a ARC MM bug fix, and it seems the best way to CC stable explicitly, is
+> to send a patch to them (and hence you as well - as opposed to regular
+> pull-req). OK with you ?
 
-Looks good, how would you like to go about merging this? Should I push
-it through Ingo's tree or do you prefer it goes through some IOMMU tree?
+Damn ! Despite the noise, the CC to stable didn't go thru - I missed < > around
+the email address perhaps.
+
+-Vineet
