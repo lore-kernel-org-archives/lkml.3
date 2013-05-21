@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab3EUCnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 22:43:01 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:32429 "EHLO
+	id S1758721Ab3EUCsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 22:48:36 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:32394 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758669Ab3EUCm6 (ORCPT
+	with ESMTP id S1758639Ab3EUCm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 22:42:58 -0400
+	Mon, 20 May 2013 22:42:57 -0400
 From: Libo Chen <libo.chen@huawei.com>
-To: <linux@arm.linux.org.uk>
+To: <akpm@linux-foundation.org>
 CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <davem@davemloft.net>, <lizefan@huawei.com>, <libo.chen@huawei.com>
-Subject: [PATCH 08/19] drivers/net/ethernet/amd: add missing platform_driver owner
-Date: Tue, 21 May 2013 10:42:24 +0800
-Message-ID: <1369104144-712-1-git-send-email-libo.chen@huawei.com>
+Subject: [PATCH 10/19] drivers/net/ethernet/freescale: add missing platform_driver owner
+Date: Tue, 21 May 2013 10:42:29 +0800
+Message-ID: <1369104149-35536-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,21 +28,21 @@ caller of driver holds a module refernece
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/net/ethernet/amd/am79c961a.c |    1 +
+ drivers/net/ethernet/freescale/xgmac_mdio.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/amd/am79c961a.c b/drivers/net/ethernet/amd/am79c961a.c
-index 9793767..a1a890b 100644
---- a/drivers/net/ethernet/amd/am79c961a.c
-+++ b/drivers/net/ethernet/amd/am79c961a.c
-@@ -757,6 +757,7 @@ static struct platform_driver am79c961_driver = {
- 	.probe		= am79c961_probe,
- 	.driver		= {
- 		.name	= "am79c961",
+diff --git a/drivers/net/ethernet/freescale/xgmac_mdio.c b/drivers/net/ethernet/freescale/xgmac_mdio.c
+index 418068b..8ba34fa 100644
+--- a/drivers/net/ethernet/freescale/xgmac_mdio.c
++++ b/drivers/net/ethernet/freescale/xgmac_mdio.c
+@@ -262,6 +262,7 @@ MODULE_DEVICE_TABLE(of, xgmac_mdio_match);
+ static struct platform_driver xgmac_mdio_driver = {
+ 	.driver = {
+ 		.name = "fsl-fman_xmdio",
 +		.owner	= THIS_MODULE,
+ 		.of_match_table = xgmac_mdio_match,
  	},
- };
- 
+ 	.probe = xgmac_mdio_probe,
 -- 
 1.7.1
 
