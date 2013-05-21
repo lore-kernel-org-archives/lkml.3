@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3EUOmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:42:33 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38565 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab3EUOmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:42:31 -0400
-Date: Tue, 21 May 2013 22:42:15 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to
- do_take_over_console
-Message-ID: <20130521144215.GA5302@udknight.homenetwork>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Peter Hurley <peter@hurleysoftware.com>, gregkh@linuxfoundation.org,
-	sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20130521051511.GA11435@udknight>
- <519B7249.2070207@hurleysoftware.com>
+	id S1753915Ab3EUOpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:45:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251Ab3EUOpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 10:45:07 -0400
+Date: Tue, 21 May 2013 16:45:49 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/3] Enable multiple MSI feature in pSeries
+Message-ID: <20130521144548.GB21632@dhcp-26-207.brq.redhat.com>
+References: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519B7249.2070207@hurleysoftware.com>
+In-Reply-To: <1358235536-32741-1-git-send-email-qiudayu@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 09:10:33AM -0400, Peter Hurley wrote:
-> I would rather revert dc9641895abb which purported to delete
-> _unneeded_ functions than have this. Obviously the functions
-> were needed.
-> 
+On Tue, Jan 15, 2013 at 03:38:53PM +0800, Mike Qiu wrote:
+> The test results is shown by 'cat /proc/interrups':
+>           CPU0       CPU1       CPU2       CPU3       
+> 16:     240458     261601     226310     200425      XICS Level     IPI
+> 17:          0          0          0          0      XICS Level     RAS_EPOW
+> 18:         10          0          3          2      XICS Level     hvc_console
+> 19:     122182      28481      28527      28864      XICS Level     ibmvscsi
+> 20:        506    7388226        108        118      XICS Level     eth0
+> 21:          6          5          5          5      XICS Level     host1-0
+> 22:        817        814        816        813      XICS Level     host1-1
 
-Hi Peter, this series patches' goal is to reduce codes'
-redundance and function duplication. But if we keep take_over_console, 
-then we have to rewrite it as a trivial wrapper over do_take_over_console,
-or we have to keep bind_con_driver and register_con_driver, and this
-will bring use codes' redundance.
+Hi Mike,
 
-And if we rewrite take_over_console as a wrapper over
-do_take_over_console, it is so trivial, delete it and let kernel
-use the unified version of APIs will simplify the APIs.
+I am curious if pSeries firmware allows changing affinity masks independently
+for multiple MSIs? I.e. in your example, would it be possible to assign IRQ21
+and IRQ22 to different CPUs?
 
-Thanks.
+Thanks!
+
+> LOC:     398077     316725     231882     203049   Local timer interrupts
+> SPU:       1659        919        961        903   Spurious interrupts
+> CNT:          0          0          0          0   Performance
+> monitoring interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
