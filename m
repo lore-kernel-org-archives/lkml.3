@@ -1,489 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3EUFL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 01:11:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48897 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab3EUFLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 01:11:55 -0400
-Message-ID: <519B0200.90701@redhat.com>
-Date: Tue, 21 May 2013 13:11:28 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755561Ab3EUFPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 01:15:37 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55730 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3EUFPe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 01:15:34 -0400
+Date: Tue, 21 May 2013 13:15:12 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] TTY:vt: convert remain take_over_console's users to
+ do_take_over_console
+Message-ID: <20130521051511.GA11435@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: "Narasimhan, Sriram" <sriram.narasimhan@hp.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics
- through ethtool
-References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com> <20130519112800.GG19883@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF133@G9W0717.americas.hpqcorp.net> <20130519200320.GA27407@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF195@G9W0717.americas.hpqcorp.net> <20130520095900.GB8206@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063D1429@G4W3207.americas.hpqcorp.net>
-In-Reply-To: <228BD1969E90E94D8805535E22CE8EFF063D1429@G4W3207.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 09:26 AM, Narasimhan, Sriram wrote:
->
-> -----Original Message-----
-> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
-> Sent: Monday, May 20, 2013 2:59 AM
-> To: Narasimhan, Sriram
-> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
-> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
->
-> On Sun, May 19, 2013 at 10:56:16PM +0000, Narasimhan, Sriram wrote:
->> Hi Michael,
->>
->> Comments inline...
->>
->> -----Original Message-----
->> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
->> Sent: Sunday, May 19, 2013 1:03 PM
->> To: Narasimhan, Sriram
->> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
->> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
->>
->> On Sun, May 19, 2013 at 04:09:48PM +0000, Narasimhan, Sriram wrote:
->>> Hi Michael,
->>>
->>> I was getting all packets on the same inbound queue which
->>> is why I added this support to virtio-net (and some more
->>> instrumentation at tun as well).  But, it turned out to be
->>> my misconfiguration - I did not enable IFF_MULTI_QUEUE on
->>> the tap device, so the real_num_tx_queues on tap netdev was 
->>> always 1 (no tx distribution at tap).
->> Interesting that qemu didn't fail.
->>
->> [Sriram] void tun_set_real_num_tx_queues() does not return 
->> the EINVAL return from netif_set_real_num_tx_queues() for 
->> txq > dev->num_tx_queues (which would be the case if the
->> tap device were not created with IFF_MULTI_QUEUE).  I think
->> it would be better to fix the code to disable the new 
->> queue and fail tun_attach()
-> You mean fail TUNSETQUEUE?
->
-> [Sriram] No I meant TUNSETIFF. FYI, I am using QEMU 1.4.50.
-> I created the tap device using tunctl.  This does not
-> specify the IFF_MULTI_QUEUE flag during create so 1 netdev
-> queue is allocated.  But, when the tun device is closed,
-> tun_detach decrements tun->numqueues from 1 to 0.
->
-> The following were the options I passed to qemu: 
-> -netdev tap,id=hostnet1,vhost=on,ifname=tap1,queues=4 
-> -device virtio-net-pci,netdev=hostnet1,id=net1,
-> mac=52:54:00:9b:8e:24,mq=on,vectors=9,ctrl_vq=on
->
->
->> in this scenario.  If you 
->> agree, I can go ahead and create a separate patch for that.
-> Hmm I not sure I understand what happens, so hard for me to tell.
->
-> I think this code was supposed to handle it:
->         err = -EBUSY;
->         if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
->                 goto out;
->
-> why doesn't it?
->
-> [Sriram] This question was raised by Jason as well.
-> When QEMU is started with multiple queues on the tap 
-> device, it calls TUNSETIFF on the existing tap device with 
-> IFF_MULTI_QUEUE set.  The above code falls through since 
-> tun->numqueues = 0 due to the previous tun_detach() during 
-> close. At the end of this, tun_set_iff() sets TUN_TAP_MQ
-> flag for the tun data structure.  From that point onwards,
-> subsequent TUNSETIFF will fall through resulting in the
-> mismatch in #queues between tun and netdev structures. 
->
+Impact:
+1:convert all remain take_over_console to do_take_over_console
+2:update take_over_console to do_take_over_console in comment
 
-Thanks, I think I get it. The problem is we only allocate a one queue
-netdevice when IFF_MULTI_QUEUE were not set. So reset the multiqueue
-flag for persist device should be forbidden. Looks like we need the
-following patch. Could you please test this?
+Commit dc9641895abb ("vt: delete unneeded functions
+register_con_driver|take_over_console") delete take_over_console,
+but forget to convert remain take_over_console's users to new API
+do_take_over_console, this patch fix it.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index f042b03..d4fc2bd 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1585,6 +1585,10 @@ static int tun_set_iff(struct net *net, struct
-file *file, struct ifreq *ifr)
-                else
-                        return -EINVAL;
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ Sorry for my mistake, I believe I do the full
+ kernel source find|grep, but the reality is I 
+ forget  take_over_console.
  
-+               if (((ifr->ifr_flags & IFF_MULTI_QUEUE) ==
-IFF_MULTI_QUEUE) ^
-+                   ((tun->flags & TUN_TAP_MQ) == TUN_TAP_MQ))
-+                       return -EINVAL;
+ I will send the patch to update DOC tonight.
+ arch/alpha/kernel/console.c             |  4 +++-
+ arch/alpha/kernel/process.c             |  4 +++-
+ arch/mips/pci/pci-bcm1480.c             |  4 +++-
+ arch/mips/pci/pci-sb1250.c              |  4 +++-
+ arch/parisc/kernel/setup.c              |  2 +-
+ drivers/tty/vt/vt.c                     |  2 +-
+ drivers/usb/misc/sisusbvga/sisusb_con.c | 18 +++++++++++-------
+ drivers/video/console/fbcon.c           |  2 +-
+ drivers/video/console/mdacon.c          |  8 ++++++--
+ drivers/video/console/newport_con.c     |  9 ++++++---
+ drivers/video/console/sticon.c          |  6 +++++-
+ 11 files changed, 43 insertions(+), 20 deletions(-)
+
+diff --git a/arch/alpha/kernel/console.c b/arch/alpha/kernel/console.c
+index da711e3..6a61dee 100644
+--- a/arch/alpha/kernel/console.c
++++ b/arch/alpha/kernel/console.c
+@@ -61,7 +61,9 @@ locate_and_init_vga(void *(*sel_func)(void *, void *))
+ 
+ 	/* Set the VGA hose and init the new console. */
+ 	pci_vga_hose = hose;
+-	take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
++	console_lock();
++	do_take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
++	console_unlock();
+ }
+ 
+ void __init
+diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+index ab80a80..f2360a7 100644
+--- a/arch/alpha/kernel/process.c
++++ b/arch/alpha/kernel/process.c
+@@ -117,7 +117,9 @@ common_shutdown_1(void *generic_ptr)
+ 		if (in_interrupt())
+ 			irq_exit();
+ 		/* This has the effect of resetting the VGA video origin.  */
+-		take_over_console(&dummy_con, 0, MAX_NR_CONSOLES-1, 1);
++		console_lock();
++		do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES-1, 1);
++		console_unlock();
+ #endif
+ 		pci_restore_srm_config();
+ 		set_hae(srm_hae);
+diff --git a/arch/mips/pci/pci-bcm1480.c b/arch/mips/pci/pci-bcm1480.c
+index e2e69e1..44dd5aa 100644
+--- a/arch/mips/pci/pci-bcm1480.c
++++ b/arch/mips/pci/pci-bcm1480.c
+@@ -257,7 +257,9 @@ static int __init bcm1480_pcibios_init(void)
+ 	register_pci_controller(&bcm1480_controller);
+ 
+ #ifdef CONFIG_VGA_CONSOLE
+-	take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
++	console_lock();
++	do_take_over_console(&vga_con, 0, MAX_NR_CONSOLES-1, 1);
++	console_unlock();
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/mips/pci/pci-sb1250.c b/arch/mips/pci/pci-sb1250.c
+index cdefcc4..fc634ae 100644
+--- a/arch/mips/pci/pci-sb1250.c
++++ b/arch/mips/pci/pci-sb1250.c
+@@ -283,7 +283,9 @@ static int __init sb1250_pcibios_init(void)
+ 	register_pci_controller(&sb1250_controller);
+ 
+ #ifdef CONFIG_VGA_CONSOLE
+-	take_over_console(&vga_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_lock();
++	do_take_over_console(&vga_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_unlock();
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/parisc/kernel/setup.c b/arch/parisc/kernel/setup.c
+index 76b63e7..60c1ae6 100644
+--- a/arch/parisc/kernel/setup.c
++++ b/arch/parisc/kernel/setup.c
+@@ -155,7 +155,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ #if defined(CONFIG_VT) && defined(CONFIG_DUMMY_CONSOLE)
+-	conswitchp = &dummy_con;	/* we use take_over_console() later ! */
++	conswitchp = &dummy_con;	/* we use do_take_over_console() later ! */
+ #endif
+ 
+ }
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 405e1c9..d4ba2ba 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3592,7 +3592,7 @@ EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+  *	when a driver wants to take over some existing consoles
+  *	and become default driver for newly opened ones.
+  *
+- *	take_over_console is basically a register followed by unbind
++ *	do_take_over_console is basically a register followed by unbind
+  */
+ int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+diff --git a/drivers/usb/misc/sisusbvga/sisusb_con.c b/drivers/usb/misc/sisusbvga/sisusb_con.c
+index 411e605..a638c4e 100644
+--- a/drivers/usb/misc/sisusbvga/sisusb_con.c
++++ b/drivers/usb/misc/sisusbvga/sisusb_con.c
+@@ -208,7 +208,7 @@ sisusbcon_init(struct vc_data *c, int init)
+ 	struct sisusb_usb_data *sisusb;
+ 	int cols, rows;
+ 
+-	/* This is called by take_over_console(),
++	/* This is called by do_take_over_console(),
+ 	 * ie by us/under our control. It is
+ 	 * only called after text mode and fonts
+ 	 * are set up/restored.
+@@ -273,7 +273,7 @@ sisusbcon_deinit(struct vc_data *c)
+ 	struct sisusb_usb_data *sisusb;
+ 	int i;
+ 
+-	/* This is called by take_over_console()
++	/* This is called by do_take_over_console()
+ 	 * and others, ie not under our control.
+ 	 */
+ 
+@@ -1490,8 +1490,9 @@ sisusb_console_init(struct sisusb_usb_data *sisusb, int first, int last)
+ 	mutex_unlock(&sisusb->lock);
+ 
+ 	/* Now grab the desired console(s) */
+-	ret = take_over_console(&sisusb_con, first - 1, last - 1, 0);
+-
++	console_lock();
++	ret = do_take_over_console(&sisusb_con, first - 1, last - 1, 0);
++	console_unlock();
+ 	if (!ret)
+ 		sisusb->haveconsole = 1;
+ 	else {
+@@ -1535,11 +1536,14 @@ sisusb_console_exit(struct sisusb_usb_data *sisusb)
+ 
+ 	if (sisusb->haveconsole) {
+ 		for (i = 0; i < MAX_NR_CONSOLES; i++)
+-			if (sisusb->havethisconsole[i])
+-				take_over_console(&sisusb_dummy_con, i, i, 0);
++			if (sisusb->havethisconsole[i]) {
++				console_lock();
++				do_take_over_console(&sisusb_dummy_con, i, i, 0);
++				console_unlock();
+ 				/* At this point, con_deinit for all our
+-				 * consoles is executed by take_over_console().
++				 * consoles is executed by do_take_over_console().
+ 				 */
++			}
+ 		sisusb->haveconsole = 0;
+ 	}
+ 
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index a09c667..d55b337 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -873,7 +873,7 @@ static int set_con2fb_map(int unit, int newidx, int user)
+ /*
+  *  Low Level Operations
+  */
+-/* NOTE: fbcon cannot be __init: it may be called from take_over_console later */
++/* NOTE: fbcon cannot be __init: it may be called from do_take_over_console later */
+ static int var_to_display(struct display *disp,
+ 			  struct fb_var_screeninfo *var,
+ 			  struct fb_info *info)
+diff --git a/drivers/video/console/mdacon.c b/drivers/video/console/mdacon.c
+index 0b67866..296e945 100644
+--- a/drivers/video/console/mdacon.c
++++ b/drivers/video/console/mdacon.c
+@@ -585,10 +585,14 @@ static const struct consw mda_con = {
+ 
+ int __init mda_console_init(void)
+ {
++	int err;
 +
-                if (tun_not_capable(tun))
-                        return -EPERM;
-                err = security_tun_dev_open(tun->security);
-
-
->>> I am thinking about 
->>> adding a -q option to tunctl to specify multi-queue flag on
->>> the tap device.
->> Absolutely.
->>
->> [Sriram] OK, let me do that.
->
-> [Sriram] I am planning to add ip tuntap multi-queue option 
-> instead of tunctl.  
->
-> Sriram
->
->>> Yes, number of exits will be most useful.  I will look into
->>> adding the other statistics you mention.
->>>
->>> Sriram  
->> Pls note you'll need to switch to virtqueue_kick_prepare
->> to detect exits: virtqueue_kick doesn't let you know
->> whether there was an exit.
->>
->> Also, it's best to make this a separate patch from the one
->> adding per-queue stats.
->>
->> [Sriram] OK, I will cover only the per-queue statistics in
->> this patch. Also, I will address the indentation/data 
->> structure name points that you mentioned in your earlier
->> email and send a new revision for this patch.
->>
->> Sriram
->>
->>> -----Original Message-----
->>> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
->>> Sent: Sunday, May 19, 2013 4:28 AM
->>> To: Narasimhan, Sriram
->>> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
->>> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
->>>
->>> On Thu, May 16, 2013 at 01:24:29PM -0700, Sriram Narasimhan wrote:
->>>> This patch allows virtio-net driver to report traffic distribution
->>>> to inbound/outbound queues through ethtool -S.  The per_cpu
->>>> virtnet_stats is split into receive and transmit stats and are
->>>> maintained on a per receive_queue and send_queue basis.
->>>> virtnet_stats() is modified to aggregate interface level statistics
->>>> from per-queue statistics.  Sample output below:
->>>>
->>> Thanks for the patch. The idea itself looks OK to me.
->>> Ben Hutchings already sent some comments
->>> so I won't repeat them. Some minor more comments
->>> and questions below.
->>>
->>>> NIC statistics:
->>>>      rxq0: rx_packets: 4357802
->>>>      rxq0: rx_bytes: 292642052
->>>>      txq0: tx_packets: 824540
->>>>      txq0: tx_bytes: 55256404
->>>>      rxq1: rx_packets: 0
->>>>      rxq1: rx_bytes: 0
->>>>      txq1: tx_packets: 1094268
->>>>      txq1: tx_bytes: 73328316
->>>>      rxq2: rx_packets: 0
->>>>      rxq2: rx_bytes: 0
->>>>      txq2: tx_packets: 1091466
->>>>      txq2: tx_bytes: 73140566
->>>>      rxq3: rx_packets: 0
->>>>      rxq3: rx_bytes: 0
->>>>      txq3: tx_packets: 1093043
->>>>      txq3: tx_bytes: 73246142
->>> Interesting. This example implies that all packets are coming in
->>> through the same RX queue - is this right?
->>> If yes that's worth exploring - could be a tun bug -
->>> and shows how this patch is useful.
->>>
->>>> Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
->>> BTW, while you are looking at the stats, one other interesting
->>> thing to add could be checking more types of stats: number of exits,
->>> queue full errors, etc.
->>>
->>>> ---
->>>>  drivers/net/virtio_net.c |  157 +++++++++++++++++++++++++++++++++++++---------
->>>>  1 files changed, 128 insertions(+), 29 deletions(-)
->>>>
->>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->>>> index 3c23fdc..3c58c52 100644
->>>> --- a/drivers/net/virtio_net.c
->>>> +++ b/drivers/net/virtio_net.c
->>>> @@ -41,15 +41,46 @@ module_param(gso, bool, 0444);
->>>>  
->>>>  #define VIRTNET_DRIVER_VERSION "1.0.0"
->>>>  
->>>> -struct virtnet_stats {
->>>> -	struct u64_stats_sync tx_syncp;
->>>> +struct virtnet_rx_stats {
->>>>  	struct u64_stats_sync rx_syncp;
->>>> -	u64 tx_bytes;
->>>> +	u64 rx_packets;
->>>> +	u64 rx_bytes;
->>>> +};
->>>> +
->>>> +struct virtnet_tx_stats {
->>>> +	struct u64_stats_sync tx_syncp;
->>>>  	u64 tx_packets;
->>>> +	u64 tx_bytes;
->>>> +};
->>>>  
->>>> -	u64 rx_bytes;
->>>> -	u64 rx_packets;
->>> I think maintaining the stats in a per-queue data structure like this is
->>> fine.  if # of CPUs == # of queues which is typical, we use same amount
->>> of memory.  And each queue access is under a lock,
->>> or from napi thread, so no races either.
->>>
->>>> +struct virtnet_ethtool_stats {
->>>> +	char desc[ETH_GSTRING_LEN];
->>>> +	int type;
->>>> +	int size;
->>>> +	int offset;
->>>> +};
->>>> +
->>>> +enum {VIRTNET_STATS_TX, VIRTNET_STATS_RX};
->>>> +
->>>> +#define VIRTNET_RX_STATS_INFO(_struct, _field) \
->>>> +	{#_field, VIRTNET_STATS_RX, FIELD_SIZEOF(_struct, _field), \
->>>> +	offsetof(_struct, _field)}
->>>> +
->>>> +#define VIRTNET_TX_STATS_INFO(_struct, _field) \
->>>> +	{#_field, VIRTNET_STATS_TX, FIELD_SIZEOF(_struct, _field), \
->>>> +	offsetof(_struct, _field)}
->>>> +
->>>> +static const struct virtnet_ethtool_stats virtnet_et_rx_stats[] = {
->>>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_packets),
->>>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_bytes)
->>>> +};
->>>> +#define VIRTNET_RX_STATS_NUM (ARRAY_SIZE(virtnet_et_rx_stats))
->>>> +
->>>> +static const struct virtnet_ethtool_stats virtnet_et_tx_stats[] = {
->>>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_packets),
->>>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_bytes)
->>>>  };
->>>> +#define VIRTNET_TX_STATS_NUM (ARRAY_SIZE(virtnet_et_tx_stats))
->>> I'd prefer a full name: virtnet_ethtool_tx_stats, or
->>> just virtnet_tx_stats.
->>>
->>>>  
->>>>  /* Internal representation of a send virtqueue */
->>>>  struct send_queue {
->>>> @@ -61,6 +92,9 @@ struct send_queue {
->>>>  
->>>>  	/* Name of the send queue: output.$index */
->>>>  	char name[40];
->>>> +
->>>> +	/* Active send queue statistics */
->>>> +	struct virtnet_tx_stats stats;
->>>>  };
->>>>  
->>>>  /* Internal representation of a receive virtqueue */
->>>> @@ -81,6 +115,9 @@ struct receive_queue {
->>>>  
->>>>  	/* Name of this receive queue: input.$index */
->>>>  	char name[40];
->>>> +
->>>> +	/* Active receive queue statistics */
->>>> +	struct virtnet_rx_stats stats;
->>>>  };
->>>>  
->>>>  struct virtnet_info {
->>>> @@ -109,9 +146,6 @@ struct virtnet_info {
->>>>  	/* enable config space updates */
->>>>  	bool config_enable;
->>>>  
->>>> -	/* Active statistics */
->>>> -	struct virtnet_stats __percpu *stats;
->>>> -
->>>>  	/* Work struct for refilling if we run low on memory. */
->>>>  	struct delayed_work refill;
->>>>  
->>>> @@ -330,7 +364,7 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
->>>>  {
->>>>  	struct virtnet_info *vi = rq->vq->vdev->priv;
->>>>  	struct net_device *dev = vi->dev;
->>>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>>> +	struct virtnet_rx_stats *stats = &rq->stats;
->>>>  	struct sk_buff *skb;
->>>>  	struct page *page;
->>>>  	struct skb_vnet_hdr *hdr;
->>>> @@ -650,8 +684,7 @@ static void free_old_xmit_skbs(struct send_queue *sq)
->>>>  {
->>>>  	struct sk_buff *skb;
->>>>  	unsigned int len;
->>>> -	struct virtnet_info *vi = sq->vq->vdev->priv;
->>>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
->>>> +	struct virtnet_tx_stats *stats = &sq->stats;
->>>>  
->>>>  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
->>>>  		pr_debug("Sent skb %p\n", skb);
->>>> @@ -841,24 +874,25 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->>>>  					       struct rtnl_link_stats64 *tot)
->>>>  {
->>>>  	struct virtnet_info *vi = netdev_priv(dev);
->>>> -	int cpu;
->>>> +	int i;
->>>>  	unsigned int start;
->>>>  
->>>> -	for_each_possible_cpu(cpu) {
->>>> -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
->>>> +	for (i = 0; i < vi->max_queue_pairs; i++) {
->>>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
->>>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
->>>>  		u64 tpackets, tbytes, rpackets, rbytes;
->>>>  
->>>>  		do {
->>>> -			start = u64_stats_fetch_begin_bh(&stats->tx_syncp);
->>>> -			tpackets = stats->tx_packets;
->>>> -			tbytes   = stats->tx_bytes;
->>>> -		} while (u64_stats_fetch_retry_bh(&stats->tx_syncp, start));
->>>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
->>>> +			tpackets = tstats->tx_packets;
->>>> +			tbytes   = tstats->tx_bytes;
->>>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
->>>>  
->>>>  		do {
->>>> -			start = u64_stats_fetch_begin_bh(&stats->rx_syncp);
->>>> -			rpackets = stats->rx_packets;
->>>> -			rbytes   = stats->rx_bytes;
->>>> -		} while (u64_stats_fetch_retry_bh(&stats->rx_syncp, start));
->>>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
->>>> +			rpackets = rstats->rx_packets;
->>>> +			rbytes   = rstats->rx_bytes;
->>>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
->>>>  
->>>>  		tot->rx_packets += rpackets;
->>>>  		tot->tx_packets += tpackets;
->>>> @@ -1177,12 +1211,83 @@ static void virtnet_get_channels(struct net_device *dev,
->>>>  	channels->other_count = 0;
->>>>  }
->>>>  
->>>> +static void virtnet_get_stat_strings(struct net_device *dev,
->>>> +					u32 stringset,
->>>> +					u8 *data)
->>>> +{
->>>> +	struct virtnet_info *vi = netdev_priv(dev);
->>>> +	int i, j;
->>>> +
->>>> +	switch (stringset) {
->>>> +	case ETH_SS_STATS:
->>>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
->>>> +			for (j = 0; j < VIRTNET_RX_STATS_NUM; j++) {
->>>> +				sprintf(data, "rxq%d: %s", i,
->>>> +					virtnet_et_rx_stats[j].desc);
->>>> +				data += ETH_GSTRING_LEN;
->>>> +			}
->>>> +			for (j = 0; j < VIRTNET_TX_STATS_NUM; j++) {
->>>> +				sprintf(data, "txq%d: %s", i,
->>>> +					virtnet_et_tx_stats[j].desc);
->>>> +				data += ETH_GSTRING_LEN;
->>>> +			}
->>>> +		}
->>>> +		break;
->>>> +	}
->>>> +}
->>>> +
->>>> +static int virtnet_get_sset_count(struct net_device *dev, int stringset)
->>>> +{
->>>> +	struct virtnet_info *vi = netdev_priv(dev);
->>>> +	switch (stringset) {
->>>> +	case ETH_SS_STATS:
->>>> +		return vi->max_queue_pairs *
->>>> +			(VIRTNET_RX_STATS_NUM + VIRTNET_TX_STATS_NUM);
->>>> +	default:
->>>> +		return -EINVAL;
->>>> +	}
->>>> +}
->>>> +
->>>> +static void virtnet_get_ethtool_stats(struct net_device *dev,
->>>> +					struct ethtool_stats *stats,
->>>> +					u64 *data)
->>>> +{
->>>> +	struct virtnet_info *vi = netdev_priv(dev);
->>>> +	unsigned int i, base;
->>>> +	unsigned int start;
->>>> +
->>>> +	for (i = 0, base = 0; i < vi->max_queue_pairs; i++) {
->>>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
->>>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
->>>> +
->>>> +		do {
->>>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
->>>> +			data[base] = rstats->rx_packets;
->>>> +			data[base+1] = rstats->rx_bytes;
->>> nitpicking:
->>> We normally has spaces around +, like this:
->>> 			data[base + 1] = rstats->rx_bytes;
->>>
->>>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
->>>> +
->>>> +		base += VIRTNET_RX_STATS_NUM;
->>>> +
->>>> +		do {
->>>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
->>>> +			data[base] = tstats->tx_packets;
->>>> +			data[base+1]   = tstats->tx_bytes;
->>>
->>> nitpicking:
->>> Here, something strange happened to indentation.
->>>
->>>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
->>>> +
->>>> +		base += VIRTNET_TX_STATS_NUM;
->>>> +	}
->>>> +}
->>>> +
->>>> +
->>>>  static const struct ethtool_ops virtnet_ethtool_ops = {
->>>>  	.get_drvinfo = virtnet_get_drvinfo,
->>>>  	.get_link = ethtool_op_get_link,
->>>>  	.get_ringparam = virtnet_get_ringparam,
->>>>  	.set_channels = virtnet_set_channels,
->>>>  	.get_channels = virtnet_get_channels,
->>>> +	.get_strings = virtnet_get_stat_strings,
->>>> +	.get_sset_count = virtnet_get_sset_count,
->>>> +	.get_ethtool_stats = virtnet_get_ethtool_stats,
->>>>  };
->>>>  
->>>>  #define MIN_MTU 68
->>>> @@ -1531,14 +1636,11 @@ static int virtnet_probe(struct virtio_device *vdev)
->>>>  	vi->dev = dev;
->>>>  	vi->vdev = vdev;
->>>>  	vdev->priv = vi;
->>>> -	vi->stats = alloc_percpu(struct virtnet_stats);
->>>>  	err = -ENOMEM;
->>>> -	if (vi->stats == NULL)
->>>> -		goto free;
->>>>  
->>>>  	vi->vq_index = alloc_percpu(int);
->>>>  	if (vi->vq_index == NULL)
->>>> -		goto free_stats;
->>>> +		goto free;
->>>>  
->>>>  	mutex_init(&vi->config_lock);
->>>>  	vi->config_enable = true;
->>>> @@ -1616,8 +1718,6 @@ free_vqs:
->>>>  	virtnet_del_vqs(vi);
->>>>  free_index:
->>>>  	free_percpu(vi->vq_index);
->>>> -free_stats:
->>>> -	free_percpu(vi->stats);
->>>>  free:
->>>>  	free_netdev(dev);
->>>>  	return err;
->>>> @@ -1653,7 +1753,6 @@ static void virtnet_remove(struct virtio_device *vdev)
->>>>  	flush_work(&vi->config_work);
->>>>  
->>>>  	free_percpu(vi->vq_index);
->>>> -	free_percpu(vi->stats);
->>>>  	free_netdev(vi->dev);
->>>>  }
->>> Thanks!
->>>
->>>> -- 
->>>> 1.7.1
-
+ 	if (mda_first_vc > mda_last_vc)
+ 		return 1;
+-
+-	return take_over_console(&mda_con, mda_first_vc-1, mda_last_vc-1, 0);
++	console_lock();
++	err = do_take_over_console(&mda_con, mda_first_vc-1, mda_last_vc-1, 0);
++	console_unlock();
++	return err;
+ }
+ 
+ static void __exit mda_console_exit(void)
+diff --git a/drivers/video/console/newport_con.c b/drivers/video/console/newport_con.c
+index b05afd0..a6ab929 100644
+--- a/drivers/video/console/newport_con.c
++++ b/drivers/video/console/newport_con.c
+@@ -297,7 +297,7 @@ static void newport_exit(void)
+ 		newport_set_def_font(i, NULL);
+ }
+ 
+-/* Can't be __init, take_over_console may call it later */
++/* Can't be __init, do_take_over_console may call it later */
+ static const char *newport_startup(void)
+ {
+ 	int i;
+@@ -746,6 +746,7 @@ static int newport_probe(struct gio_device *dev,
+ 			 const struct gio_device_id *id)
+ {
+ 	unsigned long newport_addr;
++	int err;
+ 
+ 	if (!dev->resource.start)
+ 		return -EINVAL;
+@@ -759,8 +760,10 @@ static int newport_probe(struct gio_device *dev,
+ 
+ 	npregs = (struct newport_regs *)/* ioremap cannot fail */
+ 		ioremap(newport_addr, sizeof(struct newport_regs));
+-
+-	return take_over_console(&newport_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_lock();
++	err = do_take_over_console(&newport_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_unlock();
++	return err;
+ }
+ 
+ static void newport_remove(struct gio_device *dev)
+diff --git a/drivers/video/console/sticon.c b/drivers/video/console/sticon.c
+index 491c1c1..5f65ca3 100644
+--- a/drivers/video/console/sticon.c
++++ b/drivers/video/console/sticon.c
+@@ -372,6 +372,7 @@ static const struct consw sti_con = {
+ 
+ static int __init sticonsole_init(void)
+ {
++    int err;
+     /* already initialized ? */
+     if (sticon_sti)
+ 	 return 0;
+@@ -382,7 +383,10 @@ static int __init sticonsole_init(void)
+ 
+     if (conswitchp == &dummy_con) {
+ 	printk(KERN_INFO "sticon: Initializing STI text console.\n");
+-	return take_over_console(&sti_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_lock();
++	err = do_take_over_console(&sti_con, 0, MAX_NR_CONSOLES - 1, 1);
++	console_unlock();
++	return err;
+     }
+     return 0;
+ }
+-- 
+1.7.12.4.dirty
