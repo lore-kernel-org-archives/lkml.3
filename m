@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab3EUQdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:33:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52215 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab3EUQdN (ORCPT
+	id S1754766Ab3EUQeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:34:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60259 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab3EUQeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:33:13 -0400
-Date: Tue, 21 May 2013 09:33:12 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/base: Use attribute groups to create sysfs
- memory files
-Message-ID: <20130521163312.GA27705@kroah.com>
-References: <518A78CC.2000501@linux.vnet.ibm.com>
+	Tue, 21 May 2013 12:34:21 -0400
+Message-ID: <519BA209.6050407@wwwdotorg.org>
+Date: Tue, 21 May 2013 10:34:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <518A78CC.2000501@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jongsung Kim <neidhard.kim@lge.com>
+CC: linux@arm.linux.org.uk, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        linux-serial@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: bcm2835: override the HW UART periphid
+References: <519AD82A.6090809@wwwdotorg.org> <1369116149-2361-1-git-send-email-neidhard.kim@lge.com>
+In-Reply-To: <1369116149-2361-1-git-send-email-neidhard.kim@lge.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 08, 2013 at 11:09:48AM -0500, Nathan Fontenot wrote:
-> Update the sysfs memory code to create/delete files at the time of device
-> and subsystem registration.
+On 05/21/2013 12:02 AM, Jongsung Kim wrote:
+> Stephen Warren reported the recent commit 78506f2 (add support for
+> extended FIFO-size of PL011-r1p5) breaks the serial port on the
+> BCM2835 ARM SoC.
 > 
-> The current code creates files in the root memory directory explicitly through
-> the use of init_* routines. The files for each memory block are created and
-> deleted explicitly using the mem_[create|delete]_simple_file macros.
+> A UART compatible with the ARM PL011-r1p5 should have 32-deep FIFOs.
+> The BCM2835 UART just looks like an ARM PL011-r1p5, but has 16-deep
+> FIFOs just like PL011-r1p4 or earlier revisions. As a workaround for
+> this compatibility issue, this patch overrides the HW UART periphid
+> register values with the actually compatible UART periphid 0x00241011
+> (r1p3 or r1p4).
 > 
-> This patch creates attribute groups for the memory root files and files in
-> each memory block directory so that they are created and deleted implicitly
-> at subsys and device register and unregister time.
->  
-> This did necessitate moving the register_memory() and unregister_memory()
-> routines in the file. There are no changes to unregister_memory, the
-> register_memory routine is only updated to set the dev.groups field.
-> 
-> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> 
-> Please cc me on responses/comments.
-> ---
->  drivers/base/memory.c |  163 ++++++++++++++++++++++----------------------------
->  1 file changed, 72 insertions(+), 91 deletions(-)
+> Reported-by: Stephen Warren <swarren@wwwdotorg.org>
+> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
 
-This doesn't seem to apply to 3.10-rc2, can you refresh it and resend it
-so that I can apply it?
+I know this will work, because I tried out the same thing last week.
 
-thanks,
-
-greg k-h
+However, I'm not convinced that it's the correct approach. What other
+changes exist between r1p4 and r1p5; can you check in the TRM? Faking
+the periphid would prevent the driver from taking account of any other
+changes. Should we instead add a DT property solely to override the FIFO
+size, and then set that for bcm2835? I guess if there really aren't any
+other SW-visible changes in r1p5, this approach is fine.
