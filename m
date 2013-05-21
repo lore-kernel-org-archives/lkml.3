@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab3EUCm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 22:42:57 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:32381 "EHLO
+	id S1758711Ab3EUCnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 22:43:04 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:32485 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab3EUCm4 (ORCPT
+	with ESMTP id S1758686Ab3EUCnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 22:42:56 -0400
+	Mon, 20 May 2013 22:43:01 -0400
 From: Libo Chen <libo.chen@huawei.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <libo.chen@huawei.com>
-Subject: [PATCH 06/19] drivers/usb/phy: add missing platform_driver owner
-Date: Tue, 21 May 2013 10:42:18 +0800
-Message-ID: <1369104138-20552-1-git-send-email-libo.chen@huawei.com>
+To: <akpm@linux-foundation.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davem@davemloft.net>, <lizefan@huawei.com>, <libo.chen@huawei.com>
+Subject: [PATCH 11/19] drivers/net/ethernet/natsemi: add missing platform_driver owner
+Date: Tue, 21 May 2013 10:42:32 +0800
+Message-ID: <1369104152-20152-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,21 +28,21 @@ caller of driver holds a module refernece
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/usb/phy/phy-rcar-usb.c |    1 +
+ drivers/net/ethernet/natsemi/xtsonic.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-rcar-usb.c b/drivers/usb/phy/phy-rcar-usb.c
-index a35681b..a3422a5 100644
---- a/drivers/usb/phy/phy-rcar-usb.c
-+++ b/drivers/usb/phy/phy-rcar-usb.c
-@@ -208,6 +208,7 @@ static int rcar_usb_phy_remove(struct platform_device *pdev)
- static struct platform_driver rcar_usb_phy_driver = {
- 	.driver		= {
- 		.name	= "rcar_usb_phy",
+diff --git a/drivers/net/ethernet/natsemi/xtsonic.c b/drivers/net/ethernet/natsemi/xtsonic.c
+index c2e0256..9281781 100644
+--- a/drivers/net/ethernet/natsemi/xtsonic.c
++++ b/drivers/net/ethernet/natsemi/xtsonic.c
+@@ -315,6 +315,7 @@ static struct platform_driver xtsonic_driver = {
+ 	.remove = xtsonic_device_remove,
+ 	.driver = {
+ 		.name = xtsonic_string,
 +		.owner	= THIS_MODULE,
  	},
- 	.probe		= rcar_usb_phy_probe,
- 	.remove		= rcar_usb_phy_remove,
+ };
+ 
 -- 
 1.7.1
 
