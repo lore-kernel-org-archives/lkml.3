@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab3EUVq1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:46:27 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:55934 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751397Ab3EUVq0 (ORCPT
+	id S1752407Ab3EUVrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:47:32 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:59657 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3EUVra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:46:26 -0400
-Message-ID: <519BEB2D.4040607@hurleysoftware.com>
-Date: Tue, 21 May 2013 17:46:21 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com
-Subject: Re: lockdep spew from tty
-References: <1369099320.6387.33.camel@pasglop> <1369121464.6387.58.camel@pasglop> <20130521210348.GA30422@kroah.com>
-In-Reply-To: <20130521210348.GA30422@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 21 May 2013 17:47:30 -0400
+Message-ID: <1369172846.3301.258.camel@edumazet-glaptop>
+Subject: Re: [ 072/102] ipv6: do not clear pinet6 field
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Tue, 21 May 2013 14:47:26 -0700
+In-Reply-To: <519B5E29.5010605@yandex-team.ru>
+References: <20130517213244.277411019@linuxfoundation.org>
+	 <20130517213251.913091371@linuxfoundation.org>
+	 <519B5E29.5010605@yandex-team.ru>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 05:03 PM, Greg Kroah-Hartman wrote:
-> On Tue, May 21, 2013 at 05:31:04PM +1000, Benjamin Herrenschmidt wrote:
->> On Tue, 2013-05-21 at 11:22 +1000, Benjamin Herrenschmidt wrote:
->>> Hi Greg !
->>
->> Adding Jiri...
->
-> I'll let Jiri work it out, but I think this is a known issue, and can be
-> ignored, right?
+On Tue, 2013-05-21 at 15:44 +0400, Roman Gushchin wrote:
+> Hi, all!
+> 
+> I think, it's good, but not enough.
+> 
+> We still can't rely on the sk->sk_family field by dereferencing the 
+> inet_sk(sk)->pinet6 field, because we can set the sk_family field to
+> the PF_INET6 value before setting pinet6 to an appropriate value 
+> (assuming it is NULL just because it was not a PF_INET6 socket in a 
+> previous life).
+> 
+> net/ipv6/af_inet6.c:
+> static int inet6_create(struct net *net, struct socket *sock, int 
+> protocol, int kern)
+> {
+> 	<...>
+> 	err = -ENOBUFS;
+> 	sk = sk_alloc(net, PF_INET6, GFP_KERNEL, answer_prot);
+> 	if (sk == NULL)
+> 		goto out;
+> 	<...>
+> 	sk->sk_destruct		= inet_sock_destruct;
+> 	sk->sk_family		= PF_INET6;
+> 	sk->sk_protocol		= protocol;
+> 
+> 	sk->sk_backlog_rcv	= answer->prot->backlog_rcv;
+> 
+> 	inet_sk(sk)->pinet6 = np = inet6_sk_generic(sk);
+> 	<...>
+> }
+> 
+> net/core/sock.c:
+> struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
+> 		      struct proto *prot)
+> {
+> 	struct sock *sk;
+> 
+> 	sk = sk_prot_alloc(prot, priority | __GFP_ZERO, family);
+> 	if (sk) {
+> 		sk->sk_family = family;
+> 	<...>
+> }
+> 
+> 
+> So, we need to care about setting sk_family to PF_INET6 _strictly_ after 
+> setting the pinet6 field to a valid value (using rcu_assign_pointer(), 
+> for instance).
 
-This is the same bug reported by Dave Jones and fixed by:
+This can never happen.
 
-   'tty/vt: Fix vc_deallocate() lock order'
+A socket cannot be find in a hash chain while pinet6 is not set.
 
-which hasn't quite yet made its way to mainline.
+For a given socket pointer sk (say TCP or UDP), pinet6 is a constant and
+cannot change. (This is a property of SLAB_DESTROY_BY_RCU : slab cannot
+be merged, so all objects are of the same type)
 
-I'll reiterate my apology here for not running systemd (which is
-the necessary userspace component to trigger this lockdep warning).
+So the order of writing sk_family / pinet6 is irrelevant.
 
-At the same time, I'll reiterate my disappointment with a 'new'
-userspace component using a broken and largely defunct kernel
-interface.
+Before inserting socket into tcp/udp hash table, all memory writes will
+have been committed.
 
-Regards,
-Peter Hurley
+Only concern is when a socket is deleted/reused, and my patch address
+the problem.
 
->>> Caught that on a console today running some 3.10-almost-rc2
->>> (based on ec50f2a97a4a7098a81b40030e0bfe28bdc43740). Right now I don't
->>> have the bandwidth to investigate but I though you might be
->>> interested :-)
->>>
->>> I'll take another peek if it happens again.
->>>
->>> ======================================================
->>> [ INFO: possible circular locking dependency detected ]
->>> 3.10.0-rc1-test #19 Not tainted
->>> -------------------------------------------------------
->>> kworker/24:1/1089 is trying to acquire lock:
->>>   (&ldata->output_lock){+.+...}, at: [<c00000000037aa0c>] .process_echoes+0x34/0x2ec
->>>
->>> but task is already holding lock:
->>>   ((&buf->work)){+.+...}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
->>>
->>> which lock already depends on the new lock.
->>>
->>>
->>> the existing dependency chain (in reverse order) is:
->>>
->>> -> #2 ((&buf->work)){+.+...}:
->>>         [<c00000000007714c>] .flush_work+0x38/0x258
->>>         [<c0000000000781e4>] .__cancel_work_timer+0xe0/0x140
->>>         [<c0000000003820c4>] .tty_port_destroy+0x14/0x2c
->>>         [<c000000000390d88>] .vc_deallocate+0xfc/0x128
->>>         [<c000000000385d8c>] .vt_ioctl+0xae4/0x13a4
->>>         [<c00000000037a218>] .tty_ioctl+0xd1c/0xe68
->>>         [<c0000000001403b0>] .vfs_ioctl+0x44/0x6c
->>>         [<c000000000140e54>] .do_vfs_ioctl+0x614/0x6ac
->>>         [<c000000000140f30>] .SyS_ioctl+0x44/0x70
->>>         [<c000000000009ca4>] syscall_exit+0x0/0x98
->>>
->>> -> #1 (console_lock){+.+.+.}:
->>>         [<c00000000005aeec>] .console_lock+0x80/0x98
->>>         [<c00000000039180c>] .do_con_write.part.16+0x3c/0x1fb0
->>>         [<c0000000003937ec>] .con_write+0x28/0x40
->>>         [<c00000000037b344>] .n_tty_write+0x28c/0x424
->>>         [<c000000000377c84>] .tty_write+0x184/0x238
->>>         [<c00000000012f0ec>] .vfs_write+0xd4/0x1cc
->>>         [<c00000000012f5d0>] .SyS_write+0x48/0x7c
->>>         [<c000000000009ca4>] syscall_exit+0x0/0x98
->>>
->>> -> #0 (&ldata->output_lock){+.+...}:
->>>         [<c0000000000a4dc4>] .lock_acquire+0x54/0x70
->>>         [<c000000000705780>] .mutex_lock_nested+0x9c/0x4d4
->>>         [<c00000000037aa0c>] .process_echoes+0x34/0x2ec
->>>         [<c00000000037cc04>] .n_tty_receive_buf+0xc64/0xf90
->>>         [<c000000000380d3c>] .flush_to_ldisc+0x110/0x1ac
->>>         [<c00000000007793c>] .process_one_work+0x280/0x43c
->>>         [<c000000000077d10>] .worker_thread+0x1e0/0x324
->>>         [<c00000000007e360>] .kthread+0xc8/0xd4
->>>         [<c000000000009fac>] .ret_from_kernel_thread+0x5c/0xb0
->>>
->>> other info that might help us debug this:
->>>
->>> Chain exists of:
->>>    &ldata->output_lock --> console_lock --> (&buf->work)
->>>
->>>   Possible unsafe locking scenario:
->>>
->>>         CPU0                    CPU1
->>>         ----                    ----
->>>    lock((&buf->work));
->>>                                 lock(console_lock);
->>>                                 lock((&buf->work));
->>>    lock(&ldata->output_lock);
->>>
->>>   *** DEADLOCK ***
->>>
->>> 2 locks held by kworker/24:1/1089:
->>>   #0:  (events){.+.+.+}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
->>>   #1:  ((&buf->work)){+.+...}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
->>>
->>> stack backtrace:
->>> CPU: 24 PID: 1089 Comm: kworker/24:1 Not tainted 3.10.0-rc1-test #19
->>> Workqueue: events .flush_to_ldisc
->>> Call Trace:
->>> [c000003ed7c37350] [c000000000011b18] .show_stack+0x50/0x14c (unreliable)
->>> [c000003ed7c37420] [c00000000070eb90] .dump_stack+0x28/0x3c
->>> [c000003ed7c37490] [c00000000070b16c] .print_circular_bug+0x364/0x374
->>> [c000003ed7c37540] [c0000000000a4088] .__lock_acquire+0x14d8/0x1d08
->>> [c000003ed7c37690] [c0000000000a4dc4] .lock_acquire+0x54/0x70
->>> [c000003ed7c37720] [c000000000705780] .mutex_lock_nested+0x9c/0x4d4
->>> [c000003ed7c37830] [c00000000037aa0c] .process_echoes+0x34/0x2ec
->>> [c000003ed7c378f0] [c00000000037cc04] .n_tty_receive_buf+0xc64/0xf90
->>> [c000003ed7c37aa0] [c000000000380d3c] .flush_to_ldisc+0x110/0x1ac
->>> [c000003ed7c37b60] [c00000000007793c] .process_one_work+0x280/0x43c
->>> [c000003ed7c37c20] [c000000000077d10] .worker_thread+0x1e0/0x324
->>> [c000003ed7c37cd0] [c00000000007e360] .kthread+0xc8/0xd4
->>>
->>> Cheers,
->>> Ben.
+Thanks
 
 
