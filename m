@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3EUXia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:38:30 -0400
-Received: from mout.gmx.net ([212.227.15.19]:60071 "EHLO mout.gmx.net"
+	id S1754404Ab3EUXie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:38:34 -0400
+Received: from www.sr71.net ([198.145.64.142]:46382 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab3EUXi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:38:28 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/9EjkUebn9ljWgSmCAFtkVr3vEtcN/xYx4ZEJ6G4
-	y/+jD9eXfZUag5
-From: Peter Huewe <peterhuewe@gmx.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Bill Pemberton <wfp5p@virginia.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 17/19] net/fddi/skfp/skfddi: Use module_pci_driver to register driver
-Date: Wed, 22 May 2013 01:42:54 +0200
-Message-Id: <1369179778-20115-17-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
-References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1754244Ab3EUXia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:38:30 -0400
+Message-ID: <519C0573.4030808@sr71.net>
+Date: Tue, 21 May 2013 16:38:27 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 31/39] thp: consolidate code between handle_mm_fault()
+ and do_huge_pmd_anonymous_page()
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-32-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1368321816-17719-32-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing some boilerplate by using module_pci_driver instead of calling
-register and unregister in the otherwise empty init/exit functions.
+On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> do_huge_pmd_anonymous_page() has copy-pasted piece of handle_mm_fault()
+> to handle fallback path.
+> 
+> Let's consolidate code back by introducing VM_FAULT_FALLBACK return
+> code.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  include/linux/huge_mm.h |    3 ---
+>  include/linux/mm.h      |    3 ++-
+>  mm/huge_memory.c        |   31 +++++--------------------------
+>  mm/memory.c             |    9 ++++++---
+>  4 files changed, 13 insertions(+), 33 deletions
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/net/fddi/skfp/skfddi.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+Wow, nice diffstat!
 
-diff --git a/drivers/net/fddi/skfp/skfddi.c b/drivers/net/fddi/skfp/skfddi.c
-index d5bd563..f5d7305 100644
---- a/drivers/net/fddi/skfp/skfddi.c
-+++ b/drivers/net/fddi/skfp/skfddi.c
-@@ -2246,15 +2246,4 @@ static struct pci_driver skfddi_pci_driver = {
- 	.remove		= skfp_remove_one,
- };
- 
--static int __init skfd_init(void)
--{
--	return pci_register_driver(&skfddi_pci_driver);
--}
--
--static void __exit skfd_exit(void)
--{
--	pci_unregister_driver(&skfddi_pci_driver);
--}
--
--module_init(skfd_init);
--module_exit(skfd_exit);
-+module_pci_driver(skfddi_pci_driver);
--- 
-1.8.1.5
+This and the previous patch can go in the cleanups pile, no?
 
+> @@ -3788,9 +3788,12 @@ retry:
+>  	if (!pmd)
+>  		return VM_FAULT_OOM;
+>  	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+> +		int ret = 0;
+>  		if (!vma->vm_ops)
+> -			return do_huge_pmd_anonymous_page(mm, vma, address,
+> -							  pmd, flags);
+> +			ret = do_huge_pmd_anonymous_page(mm, vma, address,
+> +					pmd, flags);
+> +		if ((ret & VM_FAULT_FALLBACK) == 0)
+> +			return ret;
+
+This could use a small comment about where the code flow is going, when
+and why.  FWIW, I vastly prefer the '!' form in these:
+
+	if (!(ret & VM_FAULT_FALLBACK))
