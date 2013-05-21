@@ -1,198 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3EUO1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:27:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58275 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab3EUO1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:27:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,714,1363158000"; 
-   d="scan'208";a="305712765"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v4 net-next 4/4] ixgbe: add extra stats for ndo_ll_poll
-To: Dave Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 21 May 2013 17:27:23 +0300
-Message-ID: <20130521142723.18498.73223.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
-References: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1754170Ab3EUOaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:30:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37115 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab3EUOaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 10:30:11 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH] [media] videobuf2-core: call __setup_offsets only for mmap memory type
+Date: Tue, 21 May 2013 16:30:05 +0200
+Message-Id: <1369146605-10648-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.8.2.rc2
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add additional statistics to the ixgbe driver for ndo_ll_poll
-Defined under LL_EXTENDED_STATS
+__setup_offsets fills the v4l2_planes' mem_offset fields, which is only valid
+for V4L2_MEMORY_MMAP type buffers. For V4L2_MEMORY_DMABUF and _USERPTR buffers,
+this incorrectly overwrites the fd and userptr fields.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Tested-by: Willem de Bruijn <willemb@google.com>
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Reported-by: Michael Olbrich <m.olbrich@pengutronix.de>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
+ drivers/media/v4l2-core/videobuf2-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h         |   14 ++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   40 ++++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    6 +++
- 3 files changed, 60 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index a2fd08b..58ac602 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -54,6 +54,9 @@
- 
- #include <net/ll_poll.h>
- 
-+#ifdef CONFIG_INET_LL_RX_POLL
-+#define LL_EXTENDED_STATS
-+#endif
- /* common prefix used by pr_<> macros */
- #undef pr_fmt
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -184,6 +187,11 @@ struct ixgbe_rx_buffer {
- struct ixgbe_queue_stats {
- 	u64 packets;
- 	u64 bytes;
-+#ifdef LL_EXTENDED_STATS
-+	u64 yields;
-+	u64 misses;
-+	u64 cleaned;
-+#endif  /* LL_EXTENDED_STATS */
- };
- 
- struct ixgbe_tx_queue_stats {
-@@ -391,6 +399,9 @@ static inline int ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->tx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
-@@ -421,6 +432,9 @@ static inline int ixgbe_qv_lock_poll(struct ixgbe_q_vector *q_vector)
- 	if ((q_vector->state & IXGBE_QV_LOCKED)) {
- 		q_vector->state |= IXGBE_QV_STATE_POLL_YIELD;
- 		rc = false;
-+#ifdef LL_EXTENDED_STATS
-+		q_vector->rx.ring->stats.yields++;
-+#endif
- 	} else
- 		/* preserve yield marks */
- 		q_vector->state |= IXGBE_QV_STATE_POLL;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index d375472..24e2e7a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -1054,6 +1054,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1063,6 +1069,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
- 	}
- 	for (j = 0; j < IXGBE_NUM_RX_QUEUES; j++) {
- 		ring = adapter->rx_ring[j];
-@@ -1070,6 +1082,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i] = 0;
- 			data[i+1] = 0;
- 			i += 2;
-+#ifdef LL_EXTENDED_STATS
-+			data[i] = 0;
-+			data[i+1] = 0;
-+			data[i+2] = 0;
-+			i += 3;
-+#endif
- 			continue;
- 		}
- 
-@@ -1079,6 +1097,12 @@ static void ixgbe_get_ethtool_stats(struct net_device *netdev,
- 			data[i+1] = ring->stats.bytes;
- 		} while (u64_stats_fetch_retry_bh(&ring->syncp, start));
- 		i += 2;
-+#ifdef LL_EXTENDED_STATS
-+		data[i] = ring->stats.yields;
-+		data[i+1] = ring->stats.misses;
-+		data[i+2] = ring->stats.cleaned;
-+		i += 3;
-+#endif
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 5f7ae44..9e12f75 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -241,7 +241,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
+ 		q->bufs[q->num_buffers + buffer] = vb;
  	}
  
- 	for (j = 0; j < IXGBE_MAX_PACKET_BUFFERS; j++) {
-@@ -1115,12 +1139,28 @@ static void ixgbe_get_strings(struct net_device *netdev, u32 stringset,
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "tx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "tx_q_%u_napi_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "tx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_NUM_RX_QUEUES; i++) {
- 			sprintf(p, "rx_queue_%u_packets", i);
- 			p += ETH_GSTRING_LEN;
- 			sprintf(p, "rx_queue_%u_bytes", i);
- 			p += ETH_GSTRING_LEN;
-+#ifdef LL_EXTENDED_STATS
-+			sprintf(p, "rx_q_%u_ll_poll_yield", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_misses", i);
-+			p += ETH_GSTRING_LEN;
-+			sprintf(p, "rx_q_%u_cleaned", i);
-+			p += ETH_GSTRING_LEN;
-+#endif /* LL_EXTENDED_STATS */
- 		}
- 		for (i = 0; i < IXGBE_MAX_PACKET_BUFFERS; i++) {
- 			sprintf(p, "tx_pb_%u_pxon", i);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 5e43258..4c6ba4b 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -2016,6 +2016,12 @@ static int ixgbe_low_latency_recv(struct napi_struct *napi)
+-	__setup_offsets(q, buffer);
++	if (memory == V4L2_MEMORY_MMAP)
++		__setup_offsets(q, buffer);
  
- 	ixgbe_for_each_ring(ring, q_vector->rx) {
- 		found = ixgbe_clean_rx_irq(q_vector, ring, 4);
-+#ifdef LL_EXTENDED_STATS
-+		if (found)
-+			ring->stats.cleaned += found;
-+		else
-+			ring->stats.misses++;
-+#endif
- 		if (found)
- 			break;
- 	}
+ 	dprintk(1, "Allocated %d buffers, %d plane(s) each\n",
+ 			buffer, num_planes);
+-- 
+1.8.2.rc2
 
