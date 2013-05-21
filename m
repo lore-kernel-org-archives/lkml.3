@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3EUGOD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:14:03 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:42751 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754369Ab3EUGOA (ORCPT
+	id S1756075Ab3EUGOt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:14:49 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46119 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab3EUGOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:14:00 -0400
-To: Chen Gang <gang.chen@asianux.com>
-Subject: Re: [PATCH] arm64: kernel: compiling issue, need =?UTF-8?Q?=27EXPORT=5FSY?=
- =?UTF-8?Q?MBOL=5FGPL=28read=5Fcurrent=5Ftimer=29=27?=
-X-PHP-Originating-Script: 0:func.inc
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Tue, 21 May 2013 08:13:54 +0200
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Organization: ARM Ltd
-In-Reply-To: <519AF2DC.2040200@asianux.com>
-References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com> <519AF2DC.2040200@asianux.com>
-Message-ID: <5bf8a8dd20ecd01c14f0ed9aa054f2df@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: gang.chen@asianux.com, will.deacon@arm.com, Catalin.Marinas@arm.com, linux-kernel@vger.kernel.org, tony@atomide.com, santosh.shilimkar@ti.com, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	Tue, 21 May 2013 02:14:46 -0400
+X-AuditID: 9c93017d-b7b64ae000000e51-8e-519b10d1314c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 7/7] perf gtk/hists: Set rules hint for the hist browser
+Date: Tue, 21 May 2013 15:14:38 +0900
+Message-Id: <1369116878-12489-8-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1369116878-12489-1-git-send-email-namhyung@kernel.org>
+References: <1369116878-12489-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013 12:06:52 +0800, Chen Gang <gang.chen@asianux.com>
-wrote:
-> On 05/20/2013 05:56 PM, Will Deacon wrote:
->> On Mon, May 20, 2013 at 08:15:04AM +0100, Marc Zyngier wrote:
->>> On Mon, 20 May 2013 14:48:05 +0800, Chen Gang <gang.chen@asianux.com>
->>> wrote:
->>>> Need 'EXPORT_SYMBOL_GPL(read_current_timer)' if build with
->>>> allmodconfig.
->>>>
->>>> The related error:
->>>>   ERROR: "read_current_timer" [lib/rbtree_test.ko] undefined!
->>>>   ERROR: "read_current_timer" [lib/interval_tree_test.ko] undefined!
->>>>   ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
->>>>   ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
->>>>
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  arch/arm64/kernel/time.c |    1 +
->>>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
->>>> index a551f88..7fcba80 100644
->>>> --- a/arch/arm64/kernel/time.c
->>>> +++ b/arch/arm64/kernel/time.c
->>>> @@ -73,6 +73,7 @@ int read_current_timer(unsigned long *timer_value)
->>>>  	*timer_value = arch_timer_read_counter();
->>>>  	return 0;
->>>>  }
->>>> +EXPORT_SYMBOL_GPL(read_current_timer);
->>>>  
->>>>  void __init time_init(void)
->>>>  {
->>>
->>> While this solves the problem, I'm not sure this is the best fix. The
->>> real
->>> issue is with get_cycles, which is a macro around read_current_timer.
->>>
->>> AArch32 exports it because of the number of timer implementations. On
->>> arm64, we should be able to just return CNTVCT_EL0.
->>>
->>> Catalin, Will, what do you think?
->> 
->> Should be ok once the arch timer driver has moved exclusively to
-virtual
->> time. I'm also not sure we even need to implement read_current_timer()
---
->> it's only used for delay-loop calibration, which we don't need for the
->> arch timer.
->> 
-> 
-> For whether we need implement read_current_timer():
-> 
->   many platforms have implemented it (openrisc, arm, sparc, hexagon,
->   avr32, x86).
->   it is called by init/calibrate.c when 'ARCH_HAS_READ_CURRENT_TIMER' is
->   defined.
->   since arm64 can implement it, better to provide it as an architect
->   features to let outside use.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Nobody disputes the interest of read_current_timer.
+The 'rules' means that every second line of the tree view has a shaded
+background, which makes it easier to see which cell belongs to which
+row in the tree view.  It can be useful for a tree view that has a lot
+of rows.
 
-> For the implementation of read_current_timer():
-> 
->   it has to face various configurations
->     (e.g. CONFIG_ARM_ARCH_TIMER, arch_timer_read_zero,
->     arch_counter_get_cntvct, arch_counter_get_cntpct)
->   so better still use variable instead of.
->     (excuse me, I do not know what is 'CNTVCT_EL0', is it like a
-constant
->     number ?)
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/gtk/hists.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Architected timer is mandatory on arm64, so we can always rely on it it be
-present. CNTVCT_EL0 is the system register accessing the Virtual Counter,
-which is basically what read_current_timer() returns.
-
-> For the implementation of get_cycles()
-> 
->   if read_current_timer() is provided,
->   better to let get_cycles() to call it, instead of implement once
-again.
-
-There is certainly some value in reusing existing code, but in this
-particular case we can simply inline two instructions (isb + mrs
-cntvct_el0), and I'm not even completely sure about the isb.
-
-        M.
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index e161317236fe..b108d2fb1130 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -339,6 +339,8 @@ add:
+ 				 G_CALLBACK(on_row_activated), NULL);
+ 	}
+ 
++	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
++
+ 	gtk_container_add(GTK_CONTAINER(window), view);
+ }
+ 
 -- 
-Fast, cheap, reliable. Pick two.
+1.7.11.7
+
