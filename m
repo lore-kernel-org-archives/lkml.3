@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab3EUSJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:09:48 -0400
-Received: from sauhun.de ([89.238.76.85]:37912 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753642Ab3EUSJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:09:46 -0400
-Date: Tue, 21 May 2013 20:11:20 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] i2c for 3.10
-Message-ID: <20130521181117.GA23945@katana>
+	id S1755418Ab3EUSMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:12:37 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:47697 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754895Ab3EUSMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:12:35 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <519BB90B.6080706@yandex-team.ru>
+Date: Tue, 21 May 2013 22:12:27 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
+        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+References: <519B38EC.90401@yandex-team.ru>   <20130521120906.GD3578@linux.vnet.ibm.com>  <1369143885.3301.221.camel@edumazet-glaptop>  <519B8908.9080007@yandex-team.ru> <1369150693.3301.233.camel@edumazet-glaptop>
+In-Reply-To: <1369150693.3301.233.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+> If other rcu accessors have the same problem, a more complete patch is
+> needed.
 
-please pull the bugfixes for the i2c subsystem. Those should have been
-in rc1 but I missed it due to working on devm longer than expected.
-There is one ID addition, since we are touching the driver anyhow. And
-the feature bit documentation is one outcome of a debug session and will
-make it easier for users to work around problems. The rest is typical
-driver bugfixes.
+[PATCH] rcu: fix a race in rcu lists traverse macros
 
-Please pull.
+Some network functions (udp4_lib_lookup2(), for instance) use the
+rcu lists traverse macros (hlist_nulls_for_each_entry_rcu, for instance)
+in a way that assumes restarting of a loop. In this case, it is strictly
+necessary to reread the head->first value from the memory before each scan.
+Without additional hints, gcc caches this value in a register. In this case,
+if a cached node is moved to another chain during the scan, we can loop
+forever getting wrong nulls values and restarting the loop uninterruptedly.
 
-Thanks,
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+---
+  include/linux/compiler.h      | 6 ++++++
+  include/linux/rculist.h       | 6 ++++--
+  include/linux/rculist_nulls.h | 3 ++-
+  3 files changed, 12 insertions(+), 3 deletions(-)
 
-   Wolfram
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 92669cd..0e05d7c 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -351,6 +351,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+   */
+  #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 
++/*
++ * Prevent the compiler from optimizing accesses to structure member.
++ */
++#define GET_STRUCT_FIELD_VOLATILE(struct_ptr, field)		\
++	(((volatile typeof(*struct_ptr) *)struct_ptr)->field)
++
+  /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
+  #ifdef CONFIG_KPROBES
+  # define __kprobes	__attribute__((__section__(".kprobes.text")))
+diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+index 8089e35..6c3eea7 100644
+--- a/include/linux/rculist.h
++++ b/include/linux/rculist.h
+@@ -282,7 +282,8 @@ static inline void list_splice_init_rcu(struct list_head *list,
+   * as long as the traversal is guarded by rcu_read_lock().
+   */
+  #define list_for_each_entry_rcu(pos, head, member) \
+-	for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
++	for (pos = list_entry_rcu(GET_STRUCT_FIELD_VOLATILE(head, next), \
++				  typeof(*pos), member); \
+  		&pos->member != (head); \
+  		pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+@@ -348,7 +349,8 @@ static inline void hlist_replace_rcu(struct hlist_node *old,
+  /*
+   * return the first or the next element in an RCU protected hlist
+   */
+-#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)(&(head)->first)))
++#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)		\
++				   (&GET_STRUCT_FIELD_VOLATILE(head, first))))
+  #define hlist_next_rcu(node)	(*((struct hlist_node __rcu **)(&(node)->next)))
+  #define hlist_pprev_rcu(node)	(*((struct hlist_node __rcu **)((node)->pprev)))
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+index 2ae1371..b04fd0a 100644
+--- a/include/linux/rculist_nulls.h
++++ b/include/linux/rculist_nulls.h
+@@ -38,7 +38,8 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
+  }
 
-are available in the git repository at:
+  #define hlist_nulls_first_rcu(head) \
+-	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
++	(*((struct hlist_nulls_node __rcu __force **)	\
++	   &(GET_STRUCT_FIELD_VOLATILE(head, first))))
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+  #define hlist_nulls_next_rcu(node) \
+  	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
+-- 
+1.8.1.2
 
-for you to fetch changes up to e9b526fe704812364bca07edd15eadeba163ebfb:
-
-  i2c: suppress lockdep warning on delete_device (2013-05-17 22:49:45 +0200)
-
-----------------------------------------------------------------
-Alexander Sverdlin (1):
-      i2c: suppress lockdep warning on delete_device
-
-Jean Delvare (1):
-      i2c: i801: Document feature bits in modinfo
-
-Josef Ahmad (1):
-      i2c: designware: fix RX FIFO overrun
-
-Mika Westerberg (2):
-      i2c: designware: always clear interrupts before enabling them
-      i2c: designware: add Intel BayTrail ACPI ID
-
-Russell King (1):
-      i2c: mv64xxx: work around signals causing I2C transactions to be aborted
-
- drivers/i2c/busses/i2c-designware-core.c    |   14 ++++++++++++--
- drivers/i2c/busses/i2c-designware-core.h    |    2 ++
- drivers/i2c/busses/i2c-designware-platdrv.c |    1 +
- drivers/i2c/busses/i2c-i801.c               |    6 +++++-
- drivers/i2c/busses/i2c-mv64xxx.c            |    8 ++++----
- drivers/i2c/i2c-core.c                      |    3 ++-
- 6 files changed, 26 insertions(+), 8 deletions(-)
