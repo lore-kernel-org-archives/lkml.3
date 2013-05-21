@@ -1,55 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3EUVm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:42:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58787 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab3EUVm1 (ORCPT
+	id S1752315Ab3EUVq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:46:27 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:55934 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751397Ab3EUVq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:42:27 -0400
-Date: Tue, 21 May 2013 14:42:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH 3/4] rtc: rtc-hid-sensor-time: add option hctosys to set
- time at boot
-Message-Id: <20130521144225.c42faaacf8aba55691cde5b7@linux-foundation.org>
-In-Reply-To: <1367752887-2927-4-git-send-email-holler@ahsoftware.de>
-References: <51765FB9.2050009@ahsoftware.de>
-	<1367752887-2927-1-git-send-email-holler@ahsoftware.de>
-	<1367752887-2927-4-git-send-email-holler@ahsoftware.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 21 May 2013 17:46:26 -0400
+Message-ID: <519BEB2D.4040607@hurleysoftware.com>
+Date: Tue, 21 May 2013 17:46:21 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com
+Subject: Re: lockdep spew from tty
+References: <1369099320.6387.33.camel@pasglop> <1369121464.6387.58.camel@pasglop> <20130521210348.GA30422@kroah.com>
+In-Reply-To: <20130521210348.GA30422@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  5 May 2013 13:21:26 +0200 Alexander Holler <holler@ahsoftware.de> wrote:
+On 05/21/2013 05:03 PM, Greg Kroah-Hartman wrote:
+> On Tue, May 21, 2013 at 05:31:04PM +1000, Benjamin Herrenschmidt wrote:
+>> On Tue, 2013-05-21 at 11:22 +1000, Benjamin Herrenschmidt wrote:
+>>> Hi Greg !
+>>
+>> Adding Jiri...
+>
+> I'll let Jiri work it out, but I think this is a known issue, and can be
+> ignored, right?
 
-> drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
-> rtc-hid-sensor-time because it will be called in late_init, and thus before
-> rtc-hid-sensor-time gets loaded. To set the time through
-> rtc-hid-sensor-time at startup, the module now checks by default if the
-> system time is before 1970-01-02 and sets the system time (once) if this is
-> the case.
-> 
-> To disable this behaviour, set the module option hctosys to zero, e.g. by
-> using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
-> driver is statically linked into the kernel.
+This is the same bug reported by Dave Jones and fixed by:
 
-I still find this rather unpleasant.  Partly because it's hacky, mainly
-because it only solves the problem for one driver.
+   'tty/vt: Fix vc_deallocate() lock order'
 
-Can we please try harder to find a more general fix?
+which hasn't quite yet made its way to mainline.
 
-For example: if hctosys finds there are no drivers available, it sets a
-flag.  Later when drivers are registered(?), that flag is queried and,
-if set, we set the system time at this time.
+I'll reiterate my apology here for not running systemd (which is
+the necessary userspace component to trigger this lockdep warning).
 
-Or something.
+At the same time, I'll reiterate my disappointment with a 'new'
+userspace component using a broken and largely defunct kernel
+interface.
+
+Regards,
+Peter Hurley
+
+>>> Caught that on a console today running some 3.10-almost-rc2
+>>> (based on ec50f2a97a4a7098a81b40030e0bfe28bdc43740). Right now I don't
+>>> have the bandwidth to investigate but I though you might be
+>>> interested :-)
+>>>
+>>> I'll take another peek if it happens again.
+>>>
+>>> ======================================================
+>>> [ INFO: possible circular locking dependency detected ]
+>>> 3.10.0-rc1-test #19 Not tainted
+>>> -------------------------------------------------------
+>>> kworker/24:1/1089 is trying to acquire lock:
+>>>   (&ldata->output_lock){+.+...}, at: [<c00000000037aa0c>] .process_echoes+0x34/0x2ec
+>>>
+>>> but task is already holding lock:
+>>>   ((&buf->work)){+.+...}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
+>>>
+>>> which lock already depends on the new lock.
+>>>
+>>>
+>>> the existing dependency chain (in reverse order) is:
+>>>
+>>> -> #2 ((&buf->work)){+.+...}:
+>>>         [<c00000000007714c>] .flush_work+0x38/0x258
+>>>         [<c0000000000781e4>] .__cancel_work_timer+0xe0/0x140
+>>>         [<c0000000003820c4>] .tty_port_destroy+0x14/0x2c
+>>>         [<c000000000390d88>] .vc_deallocate+0xfc/0x128
+>>>         [<c000000000385d8c>] .vt_ioctl+0xae4/0x13a4
+>>>         [<c00000000037a218>] .tty_ioctl+0xd1c/0xe68
+>>>         [<c0000000001403b0>] .vfs_ioctl+0x44/0x6c
+>>>         [<c000000000140e54>] .do_vfs_ioctl+0x614/0x6ac
+>>>         [<c000000000140f30>] .SyS_ioctl+0x44/0x70
+>>>         [<c000000000009ca4>] syscall_exit+0x0/0x98
+>>>
+>>> -> #1 (console_lock){+.+.+.}:
+>>>         [<c00000000005aeec>] .console_lock+0x80/0x98
+>>>         [<c00000000039180c>] .do_con_write.part.16+0x3c/0x1fb0
+>>>         [<c0000000003937ec>] .con_write+0x28/0x40
+>>>         [<c00000000037b344>] .n_tty_write+0x28c/0x424
+>>>         [<c000000000377c84>] .tty_write+0x184/0x238
+>>>         [<c00000000012f0ec>] .vfs_write+0xd4/0x1cc
+>>>         [<c00000000012f5d0>] .SyS_write+0x48/0x7c
+>>>         [<c000000000009ca4>] syscall_exit+0x0/0x98
+>>>
+>>> -> #0 (&ldata->output_lock){+.+...}:
+>>>         [<c0000000000a4dc4>] .lock_acquire+0x54/0x70
+>>>         [<c000000000705780>] .mutex_lock_nested+0x9c/0x4d4
+>>>         [<c00000000037aa0c>] .process_echoes+0x34/0x2ec
+>>>         [<c00000000037cc04>] .n_tty_receive_buf+0xc64/0xf90
+>>>         [<c000000000380d3c>] .flush_to_ldisc+0x110/0x1ac
+>>>         [<c00000000007793c>] .process_one_work+0x280/0x43c
+>>>         [<c000000000077d10>] .worker_thread+0x1e0/0x324
+>>>         [<c00000000007e360>] .kthread+0xc8/0xd4
+>>>         [<c000000000009fac>] .ret_from_kernel_thread+0x5c/0xb0
+>>>
+>>> other info that might help us debug this:
+>>>
+>>> Chain exists of:
+>>>    &ldata->output_lock --> console_lock --> (&buf->work)
+>>>
+>>>   Possible unsafe locking scenario:
+>>>
+>>>         CPU0                    CPU1
+>>>         ----                    ----
+>>>    lock((&buf->work));
+>>>                                 lock(console_lock);
+>>>                                 lock((&buf->work));
+>>>    lock(&ldata->output_lock);
+>>>
+>>>   *** DEADLOCK ***
+>>>
+>>> 2 locks held by kworker/24:1/1089:
+>>>   #0:  (events){.+.+.+}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
+>>>   #1:  ((&buf->work)){+.+...}, at: [<c0000000000778b4>] .process_one_work+0x1f8/0x43c
+>>>
+>>> stack backtrace:
+>>> CPU: 24 PID: 1089 Comm: kworker/24:1 Not tainted 3.10.0-rc1-test #19
+>>> Workqueue: events .flush_to_ldisc
+>>> Call Trace:
+>>> [c000003ed7c37350] [c000000000011b18] .show_stack+0x50/0x14c (unreliable)
+>>> [c000003ed7c37420] [c00000000070eb90] .dump_stack+0x28/0x3c
+>>> [c000003ed7c37490] [c00000000070b16c] .print_circular_bug+0x364/0x374
+>>> [c000003ed7c37540] [c0000000000a4088] .__lock_acquire+0x14d8/0x1d08
+>>> [c000003ed7c37690] [c0000000000a4dc4] .lock_acquire+0x54/0x70
+>>> [c000003ed7c37720] [c000000000705780] .mutex_lock_nested+0x9c/0x4d4
+>>> [c000003ed7c37830] [c00000000037aa0c] .process_echoes+0x34/0x2ec
+>>> [c000003ed7c378f0] [c00000000037cc04] .n_tty_receive_buf+0xc64/0xf90
+>>> [c000003ed7c37aa0] [c000000000380d3c] .flush_to_ldisc+0x110/0x1ac
+>>> [c000003ed7c37b60] [c00000000007793c] .process_one_work+0x280/0x43c
+>>> [c000003ed7c37c20] [c000000000077d10] .worker_thread+0x1e0/0x324
+>>> [c000003ed7c37cd0] [c00000000007e360] .kthread+0xc8/0xd4
+>>>
+>>> Cheers,
+>>> Ben.
+
+
