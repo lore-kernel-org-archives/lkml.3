@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab3EUSkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:40:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57601 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab3EUSks (ORCPT
+	id S1755540Ab3EUSn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:43:56 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:59716 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3EUSnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:40:48 -0400
-Date: Tue, 21 May 2013 11:40:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: davem@davemloft.net, samuel@sortiz.org, stern@rowland.harvard.edu,
-        khc@pm.waw.pl, akpm@linux-foundation.org, balbi@ti.com,
-        sarah.a.sharp@linux.intel.com, alexander.shishkin@linux.intel.com,
-        brudley@broadcom.com, thomas.petazzoni@free-electrons.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-Message-ID: <20130521184046.GA7827@kroah.com>
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com>
+	Tue, 21 May 2013 14:43:55 -0400
+Message-ID: <519BC066.5080600@acm.org>
+Date: Tue, 21 May 2013 20:43:50 +0200
+From: Bart Van Assche <bart.vanassche@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369104120-35552-1-git-send-email-libo.chen@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] timer: Fix jiffies wrap behavior of round_jiffies*()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 10:42:00AM +0800, Libo Chen wrote:
-> I find a lot of mistakes using struct platform_driver without owner.
-> So I pick up some of them including usb and net modules
+Make sure that the round_jiffies*() functions return a time that is
+in the future when the jiffies counter is about to wrap.
 
-Like others said, make the function call a macro that sets the module
-owner in it, like all of the other major subsystem registration calls do
-(usb_drivers, pci_drivers, etc.)
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ kernel/timer.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-thanks,
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 15ffdb3..aa8b964 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -149,9 +149,7 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	return time_is_after_jiffies(j) ? j : original;
+ }
+  /**
+-- 
+1.7.10.4
 
-greg k-h
