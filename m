@@ -1,38 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab3EUAsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 20:48:54 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:49855 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab3EUAsx (ORCPT
+	id S1757525Ab3EUAun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 20:50:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1490 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab3EUAul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 20:48:53 -0400
-Date: Tue, 21 May 2013 08:48:33 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: jslaby@suse.cz, alan@linux.intel.com, airlied@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] Convert all to the caller hold lock version
-Message-ID: <20130521004833.GA2090@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-	alan@linux.intel.com, airlied@redhat.com,
-	linux-kernel@vger.kernel.org
-References: <20130508181304.GA12344@udknight>
- <20130520192737.GA20961@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130520192737.GA20961@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 20 May 2013 20:50:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,711,1363158000"; 
+   d="scan'208";a="49012688"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: dts: msm: Fix bad register addresses
+Date: Mon, 20 May 2013 17:50:37 -0700
+Message-Id: <1369097437-19217-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.rc2.10.g0c2b1cf.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 12:27:37PM -0700, Greg KH wrote:
-> Can you also send a patch fixing up the documentation to use the new
-> functions as well?
-> 
-Yes, I will do it.
+Some bad copy/paste got in as well as too many zeroes. Fix
+everything up so that the registers after the @ sign are
+consistent with the first reg property.
 
-Thanks.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/boot/dts/msm8660-surf.dts | 4 ++--
+ arch/arm/boot/dts/msm8960-cdp.dts  | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
+index 9bf49b3..d347082 100644
+--- a/arch/arm/boot/dts/msm8660-surf.dts
++++ b/arch/arm/boot/dts/msm8660-surf.dts
+@@ -15,7 +15,7 @@
+ 		      < 0x02081000 0x1000 >;
+ 	};
+ 
+-	timer@2000004 {
++	timer@2000000 {
+ 		compatible = "qcom,scss-timer", "qcom,msm-timer";
+ 		interrupts = <1 0 0x301>,
+ 			     <1 1 0x301>,
+@@ -26,7 +26,7 @@
+ 		cpu-offset = <0x40000>;
+ 	};
+ 
+-	serial@19c400000 {
++	serial@19c40000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x19c40000 0x1000>,
+ 		      <0x19c00000 0x1000>;
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index 2e4d87a..7c9ef9b 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -26,7 +26,7 @@
+ 		cpu-offset = <0x80000>;
+ 	};
+ 
+-	serial@19c400000 {
++	serial@16440000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x16440000 0x1000>,
+ 		      <0x16400000 0x1000>;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
