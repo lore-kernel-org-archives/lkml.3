@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab3EUKce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:32:34 -0400
-Received: from fed1rmfepo201.cox.net ([68.230.241.146]:59954 "EHLO
-	fed1rmfepo201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab3EUKcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:32:33 -0400
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020202.519B4130.001F,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=2.0 cv=W9Hmo2qk c=1 sm=1
- a=FR1MTl3YMS4VH7Od6Kqlfg==:17 a=Dyoqhi_TatcA:10 a=G8Uczd0VNMoA:10
- a=Zllrig3nyLsA:10 a=Cfj4BQAnxiAA:10 a=kviXuzpPAAAA:8 a=TVMPHSTFAAAA:8
- a=vJ7fuLy0an0A:10 a=xU9rusA-kU3pQgV6PrYA:9 a=Ft8UYL4EG9YA:10
- a=FR1MTl3YMS4VH7Od6Kqlfg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN)
- smtp.auth=mogadishumobb1@cox.net
-Reply-To: <colinleefirm@mail2Paralegal.com>
-From: "JMW SOLICITORS LLP" <court@cox.net>
-Subject: His Last Will and Testament
-Date: Tue, 21 May 2013 11:32:30 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130520-1, 05/20/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20130521103232.DTEW8908.fed1rmfepo201.cox.net@fed1rmimpo305>
-To: unlisted-recipients:; (no To-header on input)
+	id S1753870Ab3EUKdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:33:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50133 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532Ab3EUKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:33:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="244554735"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        David Cohen <david.a.cohen@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 0/4] gpio-langwell: bugfix and amendments
+Date: Tue, 21 May 2013 13:33:02 +0300
+Message-Id: <1369132386-11725-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My Late client Mr James Campbell bequeathed his inheritance to you, I advise you contact me to enable the transfer of the inheritance.
-Barr Colin Lee.
+There is locking bug fix and few amendments. Each commit message verbose
+enoough I think.
+
+Andy Shevchenko (4):
+  gpio-langwell: initialize lock before usage
+  gpio-langwell: amend error messages
+  gpio-langwell: do not use direct access to iomapped memory
+  gpio-langwell: use managed functions pcim_* and devm_*
+
+ drivers/gpio/gpio-langwell.c | 93 +++++++++++++-------------------------------
+ 1 file changed, 28 insertions(+), 65 deletions(-)
+
+-- 
+1.8.2.rc0.22.gb3600c3
+
