@@ -1,241 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab3EUWZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:25:35 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:37102 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752049Ab3EUWZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:25:34 -0400
-Date: Tue, 21 May 2013 17:25:29 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Robin Holt <holt@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpu: Speedup disable_nonboot_cpus()
-Message-ID: <20130521222529.GA17762@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130503223543.GB25937@sgi.com>
- <20130521141717.a5eec1db994e193f0479b296@linux-foundation.org>
+	id S1753292Ab3EUWas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:30:48 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:61691 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab3EUWaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:30:46 -0400
+Message-ID: <519BF594.1020607@gmail.com>
+Date: Tue, 21 May 2013 15:30:44 -0700
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521141717.a5eec1db994e193f0479b296@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>, Or Gerlitz <or.gerlitz@gmail.com>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org> <1368498506-25857-7-git-send-email-yinghai@kernel.org> <51925FB0.4080504@intel.com> <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com> <5192946F.1050700@intel.com> <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com> <5192AEF4.1070905@intel.com> <519BE778.9040800@redhat.com> <20130521214912.GA21713@redhat.com> <519BEEA4.2030804@gmail.com> <20130521221117.GB803@redhat.com>
+In-Reply-To: <20130521221117.GB803@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 02:17:17PM -0700, Andrew Morton wrote:
-> On Fri, 3 May 2013 17:35:44 -0500 Russ Anderson <rja@sgi.com> wrote:
+On 05/21/2013 03:11 PM, Michael S. Tsirkin wrote:
+> On Tue, May 21, 2013 at 03:01:08PM -0700, Alexander Duyck wrote:
+>> On 05/21/2013 02:49 PM, Michael S. Tsirkin wrote:
+>>> On Tue, May 21, 2013 at 05:30:32PM -0400, Don Dutile wrote:
+>>>> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
+>>>>> On 05/14/2013 12:59 PM, Yinghai Lu wrote:
+>>>>>> On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
+>>>>>> <alexander.h.duyck@intel.com>  wrote:
+>>>>>>> On 05/14/2013 11:44 AM, Yinghai Lu wrote:
+>>>>>>>> On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
+>>>>>>>> <alexander.h.duyck@intel.com>  wrote:
+>>>>>>>>> I'm sorry, but what is the point of this patch?  With device assignment
+>>>>>>>>> it is always possible to have VFs loaded and the PF driver unloaded
+>>>>>>>>> since you cannot remove the VFs if they are assigned to a VM.
+>>>>>>>> unload PF driver will not call pci_disable_sriov?
+>>>>>>> You cannot call pci_disable_sriov because you will panic all of the
+>>>>>>> guests that have devices assigned.
+>>>>>> ixgbe_remove did call pci_disable_sriov...
+>>>>>>
+>>>>>> for guest panic, that is another problem.
+>>>>>> just like you pci passthrough with real pci device and hotremove the
+>>>>>> card in host.
+>>>>>>
+>>>>>> ...
+>>>>>
+>>>>> I suggest you take another look.  In ixgbe_disable_sriov, which is the
+>>>>> function that is called we do a check for assigned VFs.  If they are
+>>>>> assigned then we do not call pci_disable_sriov.
+>>>>>
+>>>>>>
+>>>>>>> So how does your patch actually fix this problem?  It seems like it is
+>>>>>>> just avoiding it.
+>>>>>> yes, until the first one is done.
+>>>>>
+>>>>> Avoiding the issue doesn't fix the underlying problem and instead you
+>>>>> are likely just introducing more bugs as a result.
+>>>>>
+>>>>>>> From what I can tell your problem is originating in pci_call_probe.  I
+>>>>>>> believe it is calling work_on_cpu and that doesn't seem correct since
+>>>>>>> the work should be taking place on a CPU already local to the PF. You
+>>>>>>> might want to look there to see why you are trying to schedule work on a
+>>>>>>> CPU which should be perfectly fine for you to already be doing your work on.
+>>>>>> it always try to go with local cpu with same pxm.
+>>>>>
+>>>>> The problem is we really shouldn't be calling work_for_cpu in this case
+>>>>> since we are already on the correct CPU.  What probably should be
+>>>>> happening is that pci_call_probe should be doing a check to see if the
+>>>>> current CPU is already contained within the device node map and if so
+>>>>> just call local_pci_probe directly.  That way you can avoid deadlocking
+>>>>> the system by trying to flush the CPU queue of the CPU you are currently on.
+>>>>>
+>>>> That's the patch that Michael Tsirkin posted for a fix,
+>>>> but it was noted that if you have the case where the _same_ driver is used for vf & pf,
+>>>> other deadlocks may occur.
+>>>> It would work in the case of ixgbe/ixgbevf, but not for something like
+>>>> the Mellanox pf/vf driver (which is the same).
+>>>>
+>>>
+>>> I think our conclusion was this is a false positive for Mellanox.
+>>> If not, we need to understand what the deadlock is better.
+>>>
+>>
+>> As I understand the issue, the problem is not a deadlock for Mellanox
+>> (At least with either your patch or mine applied), the issue is that the
+>> PF is not ready to handle VFs when pci_enable_sriov is called due to
+>> some firmware issues.
+>>
+>> Thanks,
+>>
+>> Alex
 > 
-> > The routine disable_nonboot_cpus() shuts down cpus sequentially
-> > using for_each_online_cpu(cpu) to call cpu_down() one cpu at
-> > a time.  cpu_down() calls __stop_machine() which stops all
-> > the cpus while it disables one.  Then it re-enables the remaining
-> > cpus, only to do it all over again for the next cpu.  The 
-> > result is that it takes 16 minutes on a 1024 cpu system to 
-> > disable 1023 cpus.
-> > 
-> > This patch changes disable_nonboot_cpus() to pass a bitmask
-> > of cpus to cpu_down() and modifies cpu_down() to only call
-> > __stop_machine() once.
-> > 
-> > On a 1024 cpu system this reduces the time it takes to disable
-> > all but one cpu from 16 minutes down to 4 minutes.
-> 
-> That's still a helluva long time.  What's the kernel *doing* for
-> all that time?
+> I haven't seen Mellanox guys say anything like this on the list.
+> Pointers?
+> All I saw is some lockdep warnings and Tejun says they are bogus ...
 
-Since __raw_notifier_call_chain() isn't thread safe, it is still
-called one cpu at a time.  See "__cpu_notify(CPU_DOWN_PREPARE" below.
-So we still go sequentially for each cpu through the call chain.
+Actually the patch I submitted is at:
+https://patchwork.kernel.org/patch/2568881/
 
-These are the two heaviest hitters on the call chain.
+It was in response to:
+https://patchwork.kernel.org/patch/2562471/
 
-    sched_init_smp ->
-        cpuset_cpu_inactive ->
-            cpuset_update_active_cpus ->
-                    partition_sched_domains(1, NULL, NULL)
-                    schedule_work(&cpuset_hotplug_work);
-                        cpuset_hotplug_workfn
-                            mutex_lock(&cpuset_mutex);
-                            partition_sched_domains()
+Basically the patch I was responding to was supposed to address both the
+lockdep issue and a problem with mlx4 not being able to support the VFs
+when pci_enable_sriov is called.  Yinghai had specifically called out
+the work_on_cpu lockdep issue that you also submitted a patch for.
 
-                    partition_sched_domains ->
-                            unregister_sched_domain_sysctl() ->
-                                    unregister_sysctl_table
-                            register_sched_domain_sysctl
-                                    for_each_possible_cpu()
-                                    register_sysctl_table
+As per the feedback from Yinghai it seems like my patch does resolve the
+lockdep issue that was seen.  The other half of the issue was what we
+have been discussing with Or in regards to delaying VF driver init via
+something like -EPROBE_DEFER instead of trying to split up
+pci_enable_sriov and VF probe.
 
+Thanks,
 
-    uncore_cpu_nb -> uncore_cpu_notifier
-           uncore_event_exit_cpu
-                   for_each_online_cpu()
-
-The partition_sched_domains() code gets called for each cpu,
-each time destroying and building new domains.
-register_sched_domain_sysctl() calls for_each_possible_cpu()
-each time.
-
-Likewise uncore_event_exit_cpu() calls for_each_online_cpu()
-for each cpu.
-
-Neither of those scale well.
-
-
-> > --- linux.orig/kernel/cpu.c	2013-05-03 09:56:31.145508321 -0500
-> > +++ linux/kernel/cpu.c	2013-05-03 17:01:20.652959400 -0500
-> >
-> > ...
-> >
-> > @@ -255,21 +255,21 @@ static int __ref take_cpu_down(void *_pa
-> >  	if (err < 0)
-> >  		return err;
-> >  
-> > -	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-> > +	cpu_notify(CPU_DYING | param->mod, hcpu);
-> >  	/* Park the stopper thread */
-> >  	kthread_park(current);
-> >  	return 0;
-> >  }
-> >  
-> >  /* Requires cpu_add_remove_lock to be held */
-> > -static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
-> > +static int __ref _cpu_down(const cpumask_t *cpus_to_offline, int tasks_frozen)
-> 
-> _cpu_down() is now misnamed - it downs multiple CPUs.
-
-OK, I'll change it.
-
-> >  {
-> > -	int err, nr_calls = 0;
-> > +	int err = 0, cpu = 0, nr_calls = 0;
-> >  	void *hcpu = (void *)(long)cpu;
-> > +	cpumask_var_t cpus_offlined;
-> >  	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
-> >  	struct take_cpu_down_param tcd_param = {
-> >  		.mod = mod,
-> > -		.hcpu = hcpu,
-> >  	};
-> >  
-> >  	if (num_online_cpus() == 1)
-> > @@ -278,46 +278,67 @@ static int __ref _cpu_down(unsigned int
-> >  	if (!cpu_online(cpu))
-> >  		return -EINVAL;
-> >  
-> > +	if (!alloc_cpumask_var(&cpus_offlined, GFP_KERNEL))
-> > +		return -ENOMEM;
-> > +
-> >  	cpu_hotplug_begin();
-> > +	cpumask_copy(cpus_offlined, cpus_to_offline);
-> >  
-> > -	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
-> > -	if (err) {
-> > -		nr_calls--;
-> > -		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-> > -		printk("%s: attempt to take down CPU %u failed\n",
-> > +	for_each_cpu_mask(cpu, *cpus_to_offline) {
-> > +		if (!cpu_online(cpu))
-> > +			continue;
-> > +		hcpu = (void *)(long)cpu;
-> > +		err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
-> > +		if (err) {
-> > +			nr_calls--;
-> > +			__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
-> > +			pr_err("%s: attempt to take down CPU %u failed\n",
-> >  				__func__, cpu);
-> > -		goto out_release;
-> > +			goto out_release;
-> > +		}
-> > +		smpboot_park_threads(cpu);
-> >  	}
-> > -	smpboot_park_threads(cpu);
-> >  
-> > -	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-> > +	err = __stop_machine(take_cpu_down, &tcd_param, cpus_to_offline);
-> >  	if (err) {
-> >  		/* CPU didn't die: tell everyone.  Can't complain. */
-> 
-> This comment is now inaccurate.  "One or more of the CPUs didn't die"?.
-> 
-> I'm not sure what "Can't complain" means.  Perhaps expand on this while
-> you're there?
-
-OK.
-
-> > -		smpboot_unpark_threads(cpu);
-> > -		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
-> > +		for_each_cpu_mask(cpu, *cpus_to_offline) {
-> > +			hcpu = (void *)(long)cpu;
-> > +			smpboot_unpark_threads(cpu);
-> > +			cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
-> 
-> Is this accurate?  What happens if we asked stop_machine() to down 100
-> CPUs but it failed at CPU #50?  We now tell listeners that we failed to
-> down all 100 CPUs?  That's not true.
-
-I'll look closer at that.
-
-> > +		}
-> >  		goto out_release;
-> >  	}
-> > -	BUG_ON(cpu_online(cpu));
-> >  
-> >  	/*
-> >  	 * The migration_call() CPU_DYING callback will have removed all
-> >  	 * runnable tasks from the cpu, there's only the idle task left now
-> >  	 * that the migration thread is done doing the stop_machine thing.
-> > -	 *
-> > -	 * Wait for the stop thread to go away.
-> >  	 */
-> > -	while (!idle_cpu(cpu))
-> > -		cpu_relax();
-> > -
-> > -	/* This actually kills the CPU. */
-> > -	__cpu_die(cpu);
-> > +	for_each_cpu_mask(cpu, *cpus_offlined) {
-> > +		BUG_ON(cpu_online(cpu));
-> >  
-> > -	/* CPU is completely dead: tell everyone.  Too late to complain. */
-> > -	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-> > -
-> > -	check_for_tasks(cpu);
-> > +		/*
-> > +		 * Wait for the stop thread to go away.
-> > +		 */
-> > +		while (!idle_cpu(cpu))
-> > +			cpu_relax();
-> > +
-> > +		/*
-> > +		 * This actually kills the CPU.
-> > +		 */
-> > +		__cpu_die(cpu);
-> > +
-> > +		/*
-> > +		 * CPU is completely dead: tell everyone.  Too late to complain.
-> > +		 */
-> > +		hcpu = (void *)(long)cpu;
-> > +		cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-> > +		check_for_tasks(cpu);
-> > +	}
-> >  
-> >  out_release:
-> > +	free_cpumask_var(cpus_offlined);
-> >  	cpu_hotplug_done();
-> 
-> Swap the above two lines and we reduced the locked region by an
-> unmeasurable amount!
-> 
-> >  	if (!err)
-> >  		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
-> >
-> > ...
-> >
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Alex
