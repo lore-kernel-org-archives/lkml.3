@@ -1,160 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab3EUMen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:34:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48837 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab3EUMea (ORCPT
+	id S1753890Ab3EUMiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 08:38:17 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:51133 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753171Ab3EUMiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:34:30 -0400
-Date: Tue, 21 May 2013 13:57:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org, rostedt@goodmis.org
-Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
-Message-ID: <20130521115734.GA9554@twins.programming.kicks-ass.net>
-References: <cover.1368702323.git.mst@redhat.com>
- <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
- <20130516184041.GP19669@dyad.programming.kicks-ass.net>
- <20130519093526.GD19883@redhat.com>
+	Tue, 21 May 2013 08:38:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130519093526.GD19883@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130521110858.GH26912@twins.programming.kicks-ass.net>
+References: <20130521105337.GA2879@quad>
+	<20130521110858.GH26912@twins.programming.kicks-ass.net>
+Date: Tue, 21 May 2013 14:38:15 +0200
+Message-ID: <CABPqkBTkSkHF9Y58FkEHDc4VV7Af+5erheD8GUhtsKup5cN5=w@mail.gmail.com>
+Subject: Re: [PATCH] perf: check branch sampling priv level in generic code
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 19, 2013 at 12:35:26PM +0300, Michael S. Tsirkin wrote:
-> > > --- a/include/linux/kernel.h
-> > > +++ b/include/linux/kernel.h
-> > > @@ -198,7 +198,6 @@ void might_fault(void);
-> > >  #else
-> > >  static inline void might_fault(void)
-> > >  {
-> > > -	might_sleep();
-> > 
-> > This removes potential resched points for PREEMPT_VOLUNTARY -- was that
-> > intentional?
-> 
-> No it's a bug. Thanks for pointing this out.
-> OK so I guess it should be might_sleep_if(!in_atomic())
-> and this means might_fault would have to move from linux/kernel.h to
-> linux/uaccess.h, since in_atomic() is in linux/hardirq.h
-> 
-> Makes sense?
+On Tue, May 21, 2013 at 1:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> On Tue, May 21, 2013 at 12:53:37PM +0200, Stephane Eranian wrote:
+> >
+> > This patch reverts commit 7cc23cd:
+> >  perf/x86/intel/lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
+> >
+> > The check is now implemented in generic code
+> > instead of x86 specific code. That way we
+> > do not have to repeat the test in each arch
+> > supporting branch sampling.
+>
+> Good point indeed.
+>
+> > Signed-off-by: Stephane Eranian <eranian@google.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   13 +++----------
+> >  kernel/events/core.c                       |    9 ++++-----
+> >  2 files changed, 7 insertions(+), 15 deletions(-)
+> >
+>
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index 9dc297f..cf79c81 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -6327,11 +6327,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+> >               if (!(mask & ~PERF_SAMPLE_BRANCH_PLM_ALL))
+> >                       return -EINVAL;
+> >
+> > -             /* kernel level capture: check permissions */
+> > -             if ((mask & PERF_SAMPLE_BRANCH_PERM_PLM)
+> > -                 && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> > -                     return -EACCES;
+> > -
+>
+> Oh hey, there was a check..
+>
+There was a check. But I realized it was broken. It was checking user+kernel.
+But it did not cover the case where the priv level which propagated from the
+event and was not specific to the branch_sample_type.
 
-So the only difference between PROVE_LOCKING and not should be the
-might_lock_read() thing; so how about something like this?
 
----
- include/linux/kernel.h  |  7 ++-----
- include/linux/uaccess.h | 26 ++++++++++++++++++++++++++
- mm/memory.c             | 14 ++------------
- 3 files changed, 30 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e96329c..70812f4 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -194,12 +194,9 @@ extern int _cond_resched(void);
- 	})
- 
- #ifdef CONFIG_PROVE_LOCKING
--void might_fault(void);
-+void might_fault_lockdep(void);
- #else
--static inline void might_fault(void)
--{
--	might_sleep();
--}
-+static inline void might_fault_lockdep(void) { }
- #endif
- 
- extern struct atomic_notifier_head panic_notifier_list;
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index 5ca0951..50a2cc9 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -38,6 +38,32 @@ static inline void pagefault_enable(void)
- 	preempt_check_resched();
- }
- 
-+static inline bool __can_fault(void)
-+{
-+	/*
-+	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
-+	 * holding the mmap_sem, this is safe because kernel memory doesn't
-+	 * get paged out, therefore we'll never actually fault, and the
-+	 * below annotations will generate false positives.
-+	 */
-+	if (segment_eq(get_fs(), KERNEL_DS))
-+		return false;
-+
-+	if (in_atomic() /* || pagefault_disabled() */)
-+		return false;
-+
-+	return true;
-+}
-+
-+static inline void might_fault(void)
-+{
-+	if (!__can_fault())
-+		return;
-+
-+	might_sleep();
-+	might_fault_lockdep();
-+}
-+
- #ifndef ARCH_HAS_NOCACHE_UACCESS
- 
- static inline unsigned long __copy_from_user_inatomic_nocache(void *to,
-diff --git a/mm/memory.c b/mm/memory.c
-index 6dc1882..266610c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -4211,19 +4211,9 @@ void print_vma_addr(char *prefix, unsigned long ip)
- }
- 
- #ifdef CONFIG_PROVE_LOCKING
--void might_fault(void)
-+void might_fault_lockdep(void)
- {
- 	/*
--	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
--	 * holding the mmap_sem, this is safe because kernel memory doesn't
--	 * get paged out, therefore we'll never actually fault, and the
--	 * below annotations will generate false positives.
--	 */
--	if (segment_eq(get_fs(), KERNEL_DS))
--		return;
--
--	might_sleep();
--	/*
- 	 * it would be nicer only to annotate paths which are not under
- 	 * pagefault_disable, however that requires a larger audit and
- 	 * providing helpers like get_user_atomic.
-@@ -4231,7 +4221,7 @@ void might_fault(void)
- 	if (!in_atomic() && current->mm)
- 		might_lock_read(&current->mm->mmap_sem);
- }
--EXPORT_SYMBOL(might_fault);
-+EXPORT_SYMBOL(might_fault_lockdep);
- #endif
- 
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
-
+>
+> >               /* propagate priv level, when not set for branch */
+> >               if (!(mask & PERF_SAMPLE_BRANCH_PLM_ALL)) {
+> >
+> > @@ -6349,6 +6344,10 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+> >                        */
+> >                       attr->branch_sample_type = mask;
+> >               }
+> > +             /* kernel level capture: check permissions */
+> > +             if ((mask & PERF_SAMPLE_BRANCH_KERNEL)
+> > +                 && perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
+> > +                     return -EACCES;
+> >       }
+> >
+> >       if (attr->sample_type & PERF_SAMPLE_REGS_USER) {
+> > --
+> > 1.7.9.5
+> >
