@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3EUH7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:59:11 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:40039 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab3EUH7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:59:08 -0400
-Message-ID: <519B292F.5020603@linux.vnet.ibm.com>
-Date: Tue, 21 May 2013 15:58:39 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752413Ab3EUICu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:02:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:11730 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab3EUICq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:02:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,713,1363104000"; 
+   d="scan'208";a="7321924"
+Message-ID: <519B2993.4090409@cn.fujitsu.com>
+Date: Tue, 21 May 2013 16:00:19 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Viresh Kumar <viresh.kumar@linaro.org>, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: NOHZ: WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule,
- round 2
-References: <20130520064727.GD12690@pd.tnic> <5199C990.3020602@linux.vnet.ibm.com> <5199CB59.1020309@linux.vnet.ibm.com> <CAKohponk-FQpHOx407FL63ZCYVgz2C-ScvZQBQFVxddbL+fS=A@mail.gmail.com> <5199CFD0.9030101@linux.vnet.ibm.com> <5199E54D.7030407@linux.vnet.ibm.com> <CAKohponS+tCkZyVpDO9fEMQCfsn5h=N235sj5sBGUkD2qKY=cQ@mail.gmail.com> <5199EBB5.7060209@linux.vnet.ibm.com> <20130520132355.GF12690@pd.tnic> <519ADA03.5060206@linux.vnet.ibm.com> <20130521072140.GA4866@pd.tnic>
-In-Reply-To: <20130521072140.GA4866@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: David Miller <davem@davemloft.net>, libo.chen@huawei.com,
+        gregkh@linuxfoundation.org, samuel@sortiz.org,
+        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
+        balbi@ti.com, sarah.a.sharp@linux.intel.com,
+        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
+References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com> <20130520.232619.964940909999914694.davem@davemloft.net> <20130521084108.1a585f32@skate>
+In-Reply-To: <20130521084108.1a585f32@skate>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 16:01:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/21 16:01:24,
+	Serialize complete at 2013/05/21 16:01:24
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052107-5490-0000-0000-0000038123E3
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 03:21 PM, Borislav Petkov wrote:
-> On Tue, May 21, 2013 at 10:20:51AM +0800, Michael Wang wrote:
->> This is not enough to prove that policy->cpus is wrong, the cpu could
->> be online when get from policy->cpus, but offline when checked here,
->> since hotplug is able to happen during the period.
-> 
-> Strictly speaking you're correct but I don't do any hotplug besides the
-> one-time thing which is part of halting the box.
+On 05/21/2013 02:41 PM, Thomas Petazzoni wrote:
 
-Well, they share the same cpu_down() I suppose...
-
+> Dear David Miller,
 > 
->> I don't get it...
+> On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
+>> From: Libo Chen <libo.chen@huawei.com>
+>> Date: Tue, 21 May 2013 10:42:00 +0800
 >>
->> get_online_cpus() is just stop hotplug happen after it was invoked, so
->> unless policy->cpus is really wrong, otherwise all the cpu it masked
->> won't go offline any more.
+>>> I find a lot of mistakes using struct platform_driver without owner.
+>>> So I pick up some of them including usb and net modules
+>>
+>> Instead of doing it this way, which is obviously error prone and
+>> easy to forget, make platform_driver_register() be a macro which
+>> sets the module owner field then calls the real
+>> __platform_driver_register().
 > 
-> Yes, that's my impression too - at the point we do gov_queue_work,
-> policy->cpus already contains offline cpus.
-> 
->> This protect nothing...before we go here, the cpu could already
->> offline, nothing changed...
-> 
-> Yes, but I don't want to schedule work on an offlined cpu and that is
-> ensured here.
+> Or, maybe make the existing module_platform_driver() macro do this?
 
-IMHO, the problem seems mostly like the wrong usage of policy->cpus,
-it's providing the right info, but just at that time, we don't need
-worry about work on offlined cpu if we don't allow cpu disappear.
 
-Your approach could be good respect to performance, but if we could
-prove that policy->cpus is correct firstly, than we could fix the
-problem without any concern, don't we?
+But not all the modules use module_platform_driver() macro to replace the module init/exit.
+
+Thanks,
+Gu
 
 > 
->> If you really want to confirm the policy->cpus was wrong, the way
->> should be apply the fix I suggested, than check online in here.
+> Best regards,
 > 
-> Sure, feel free to get a box, enable NO_HZ_FULL and do all the
-> experimentations you desire. I surely cannot be the only one who
-> triggers this.
+> Thomas
 
-I'm fine if the problem get solved, that means your box doesn't show
-WARN any more :)
-
-Regards,
-Michael Wang
-
-> 
 
