@@ -1,368 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab3EUFK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 01:10:57 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36786 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab3EUFK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 01:10:56 -0400
-X-IronPort-AV: E=Sophos;i="4.87,712,1363158000"; 
-   d="scan'208";a="49062276"
-Message-ID: <519B01DF.1080700@codeaurora.org>
-Date: Mon, 20 May 2013 22:10:55 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1755553Ab3EUFL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 01:11:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab3EUFLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 01:11:55 -0400
+Message-ID: <519B0200.90701@redhat.com>
+Date: Tue, 21 May 2013 13:11:28 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/5] clk: add support for clock reparent on set_rate
-References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com> <1369056507-32521-4-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1369056507-32521-4-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Narasimhan, Sriram" <sriram.narasimhan@hp.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics
+ through ethtool
+References: <1368735869-31076-1-git-send-email-sriram.narasimhan@hp.com> <20130519112800.GG19883@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF133@G9W0717.americas.hpqcorp.net> <20130519200320.GA27407@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063CF195@G9W0717.americas.hpqcorp.net> <20130520095900.GB8206@redhat.com> <228BD1969E90E94D8805535E22CE8EFF063D1429@G4W3207.americas.hpqcorp.net>
+In-Reply-To: <228BD1969E90E94D8805535E22CE8EFF063D1429@G4W3207.americas.hpqcorp.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2013 06:28 AM, James Hogan wrote:
-> Add core support to allow clock implementations to select the best
-> parent clock when rounding a rate, e.g. the one which can provide the
-> closest clock rate to that requested. This is by way of adding a new
-> clock op, determine_rate(), which is like round_rate() but has an extra
-> parameter to allow the clock implementation to optionally select a
-> different parent clock. The core then takes care of reparenting the
-> clock when setting the rate.
+On 05/21/2013 09:26 AM, Narasimhan, Sriram wrote:
 >
-> The parent change takes place with the help of some new private data
-> members. struct clk::new_parent specifies a clock's new parent (NULL
-> indicates no change), and struct clk::new_child specifies a clock's new
-> child (whose new_parent member points back to it). The purpose of these
-> are to allow correct walking of the future tree for notifications prior
-> to actually reparenting any clocks, specifically to skip child clocks
-> who are being reparented to another clock (they will be notified via the
-> new parent), and to include any new child clock. These pointers are set
-> by clk_calc_subtree(), and the new_child pointer gets cleared when a
-> child is actually reparented to avoid duplicate POST_RATE_CHANGE
-> notifications.
+> -----Original Message-----
+> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
+> Sent: Monday, May 20, 2013 2:59 AM
+> To: Narasimhan, Sriram
+> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
+> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
 >
-> Each place where round_rate() is called, determine_rate() is checked
-> first and called in preference. This restructures a few of the call
-> sites to simplify the logic into if/else blocks.
+> On Sun, May 19, 2013 at 10:56:16PM +0000, Narasimhan, Sriram wrote:
+>> Hi Michael,
+>>
+>> Comments inline...
+>>
+>> -----Original Message-----
+>> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
+>> Sent: Sunday, May 19, 2013 1:03 PM
+>> To: Narasimhan, Sriram
+>> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jason Wang
+>> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
+>>
+>> On Sun, May 19, 2013 at 04:09:48PM +0000, Narasimhan, Sriram wrote:
+>>> Hi Michael,
+>>>
+>>> I was getting all packets on the same inbound queue which
+>>> is why I added this support to virtio-net (and some more
+>>> instrumentation at tun as well).  But, it turned out to be
+>>> my misconfiguration - I did not enable IFF_MULTI_QUEUE on
+>>> the tap device, so the real_num_tx_queues on tap netdev was 
+>>> always 1 (no tx distribution at tap).
+>> Interesting that qemu didn't fail.
+>>
+>> [Sriram] void tun_set_real_num_tx_queues() does not return 
+>> the EINVAL return from netif_set_real_num_tx_queues() for 
+>> txq > dev->num_tx_queues (which would be the case if the
+>> tap device were not created with IFF_MULTI_QUEUE).  I think
+>> it would be better to fix the code to disable the new 
+>> queue and fail tun_attach()
+> You mean fail TUNSETQUEUE?
 >
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
-> Changes in v4:
+> [Sriram] No I meant TUNSETIFF. FYI, I am using QEMU 1.4.50.
+> I created the tap device using tunctl.  This does not
+> specify the IFF_MULTI_QUEUE flag during create so 1 netdev
+> queue is allocated.  But, when the tun device is closed,
+> tun_detach decrements tun->numqueues from 1 to 0.
 >
-> * (not included Stephen Boyd's Reviewed-by due to changes)
-> * replace __clk_set_parent_no_recalc with __clk_set_parent.
-> * never pass NULL to determine_rate's best_parent_clk parameter, and
->    slight refactor of __clk_round_rate to use local copy of clk->parent.
-> * a few new comments around use of clk::new_child.
+> The following were the options I passed to qemu: 
+> -netdev tap,id=hostnet1,vhost=on,ifname=tap1,queues=4 
+> -device virtio-net-pci,netdev=hostnet1,id=net1,
+> mac=52:54:00:9b:8e:24,mq=on,vectors=9,ctrl_vq=on
 >
-> Changes in v3:
 >
-> * rebased on v3.10-rc1.
-> * store new_parent_index in struct clk too (calculated from
->    clk_fetch_parent_index, and passed through __clk_set_parent_no_recalc
->    to __clk_set_parent).
-> * allow determine_rate to satisfy recalc_rate check in __clk_init.
+>> in this scenario.  If you 
+>> agree, I can go ahead and create a separate patch for that.
+> Hmm I not sure I understand what happens, so hard for me to tell.
 >
->   Documentation/clk.txt        |   4 ++
->   drivers/clk/clk.c            | 142 +++++++++++++++++++++++++++++--------------
->   include/linux/clk-private.h  |   3 +
->   include/linux/clk-provider.h |   7 +++
->   4 files changed, 110 insertions(+), 46 deletions(-)
+> I think this code was supposed to handle it:
+>         err = -EBUSY;
+>         if (!(tun->flags & TUN_TAP_MQ) && tun->numqueues == 1)
+>                 goto out;
 >
-> diff --git a/Documentation/clk.txt b/Documentation/clk.txt
-> index b9911c2..3110ba4 100644
-> --- a/Documentation/clk.txt
-> +++ b/Documentation/clk.txt
-> @@ -70,6 +70,10 @@ the operations defined in clk.h:
->   						unsigned long parent_rate);
->   		long		(*round_rate)(struct clk_hw *hw, unsigned long,
->   						unsigned long *);
-> +		long		(*determine_rate)(struct clk_hw *hw,
-> +						unsigned long rate,
-> +						unsigned long *best_parent_rate,
-> +						struct clk **best_parent_clk);
->   		int		(*set_parent)(struct clk_hw *hw, u8 index);
->   		u8		(*get_parent)(struct clk_hw *hw);
->   		int		(*set_rate)(struct clk_hw *hw, unsigned long);
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index a4cd6bc..3ce4810 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -888,21 +888,24 @@ EXPORT_SYMBOL_GPL(clk_enable);
->   unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
->   {
->   	unsigned long parent_rate = 0;
-> +	struct clk *parent;
+> why doesn't it?
 >
->   	if (!clk)
->   		return 0;
+> [Sriram] This question was raised by Jason as well.
+> When QEMU is started with multiple queues on the tap 
+> device, it calls TUNSETIFF on the existing tap device with 
+> IFF_MULTI_QUEUE set.  The above code falls through since 
+> tun->numqueues = 0 due to the previous tun_detach() during 
+> close. At the end of this, tun_set_iff() sets TUN_TAP_MQ
+> flag for the tun data structure.  From that point onwards,
+> subsequent TUNSETIFF will fall through resulting in the
+> mismatch in #queues between tun and netdev structures. 
 >
-> -	if (!clk->ops->round_rate) {
-> -		if (clk->flags & CLK_SET_RATE_PARENT)
-> -			return __clk_round_rate(clk->parent, rate);
-> -		else
-> -			return clk->rate;
-> -	}
-> -
-> -	if (clk->parent)
-> -		parent_rate = clk->parent->rate;
-> -
-> -	return clk->ops->round_rate(clk->hw, rate, &parent_rate);
-> +	parent = clk->parent;
-> +	if (parent)
-> +		parent_rate = parent->rate;
-> +
-> +	if (clk->ops->determine_rate)
-> +		return clk->ops->determine_rate(clk->hw, rate, &parent_rate,
-> +						&parent);
-> +	else if (clk->ops->round_rate)
-> +		return clk->ops->round_rate(clk->hw, rate, &parent_rate);
-> +	else if (clk->flags & CLK_SET_RATE_PARENT)
-> +		return __clk_round_rate(clk->parent, rate);
-> +	else
-> +		return clk->rate;
->   }
->
->   /**
-> @@ -1055,6 +1058,10 @@ static u8 clk_fetch_parent_index(struct clk *clk, struct clk *parent)
->
->   static void clk_reparent(struct clk *clk, struct clk *new_parent)
->   {
-> +	/* avoid duplicate POST_RATE_CHANGE notifications */
-> +	if (new_parent->new_child == clk)
-> +		new_parent->new_child = NULL;
-> +
->   	hlist_del(&clk->child_node);
->
->   	if (new_parent)
-> @@ -1173,18 +1180,25 @@ out:
->   	return ret;
->   }
->
-> -static void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
-> +static void clk_calc_subtree(struct clk *clk, unsigned long new_rate,
-> +			     struct clk *new_parent, u8 p_index)
->   {
->   	struct clk *child;
->
->   	clk->new_rate = new_rate;
-> +	clk->new_parent = new_parent;
-> +	clk->new_parent_index = p_index;
-> +	/* include clk in new parent's PRE_RATE_CHANGE notifications */
-> +	clk->new_child = NULL;
-> +	if (new_parent && new_parent != clk->parent)
-> +		new_parent->new_child = clk;
->
->   	hlist_for_each_entry(child, &clk->children, child_node) {
->   		if (child->ops->recalc_rate)
->   			child->new_rate = child->ops->recalc_rate(child->hw, new_rate);
->   		else
->   			child->new_rate = new_rate;
-> -		clk_calc_subtree(child, child->new_rate);
-> +		clk_calc_subtree(child, child->new_rate, NULL, 0);
->   	}
->   }
->
-> @@ -1195,50 +1209,63 @@ static void clk_calc_subtree(struct clk *clk, unsigned long new_rate)
->   static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
->   {
->   	struct clk *top = clk;
-> +	struct clk *old_parent, *parent;
->   	unsigned long best_parent_rate = 0;
->   	unsigned long new_rate;
-> +	u8 p_index = 0;
->
->   	/* sanity */
->   	if (IS_ERR_OR_NULL(clk))
->   		return NULL;
->
->   	/* save parent rate, if it exists */
-> -	if (clk->parent)
-> -		best_parent_rate = clk->parent->rate;
-> -
-> -	/* never propagate up to the parent */
-> -	if (!(clk->flags & CLK_SET_RATE_PARENT)) {
-> -		if (!clk->ops->round_rate) {
-> -			clk->new_rate = clk->rate;
-> -			return NULL;
-> -		}
-> -		new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
-> +	parent = old_parent = clk->parent;
-> +	if (parent)
-> +		best_parent_rate = parent->rate;
-> +
-> +	/* find the closest rate and parent clk/rate */
-> +	if (clk->ops->determine_rate) {
-> +		new_rate = clk->ops->determine_rate(clk->hw, rate,
-> +						    &best_parent_rate,
-> +						    &parent);
-> +	} else if (clk->ops->round_rate) {
-> +		new_rate = clk->ops->round_rate(clk->hw, rate,
-> +						&best_parent_rate);
-> +	} else if (!parent || !(clk->flags & CLK_SET_RATE_PARENT)) {
-> +		/* pass-through clock without adjustable parent */
-> +		clk->new_rate = clk->rate;
-> +		return NULL;
-> +	} else {
-> +		/* pass-through clock with adjustable parent */
-> +		top = clk_calc_new_rates(parent, rate);
-> +		new_rate = parent->new_rate;
->   		goto out;
->   	}
->
-> -	/* need clk->parent from here on out */
-> -	if (!clk->parent) {
-> -		pr_debug("%s: %s has NULL parent\n", __func__, clk->name);
-> +	/* some clocks must be gated to change parent */
-> +	if (parent != old_parent &&
-> +	    (clk->flags & CLK_SET_PARENT_GATE) && clk->prepare_count) {
-> +		pr_debug("%s: %s not gated but wants to reparent\n",
-> +			 __func__, clk->name);
->   		return NULL;
->   	}
->
-> -	if (!clk->ops->round_rate) {
-> -		top = clk_calc_new_rates(clk->parent, rate);
-> -		new_rate = clk->parent->new_rate;
-> -
-> -		goto out;
-> +	/* try finding the new parent index */
-> +	if (parent) {
-> +		p_index = clk_fetch_parent_index(clk, parent);
-> +		if (p_index == clk->num_parents) {
-> +			pr_debug("%s: clk %s can not be parent of clk %s\n",
-> +				 __func__, parent->name, clk->name);
-> +			return NULL;
-> +		}
->   	}
->
-> -	new_rate = clk->ops->round_rate(clk->hw, rate, &best_parent_rate);
-> -
-> -	if (best_parent_rate != clk->parent->rate) {
-> -		top = clk_calc_new_rates(clk->parent, best_parent_rate);
-> -
-> -		goto out;
-> -	}
-> +	if ((clk->flags & CLK_SET_RATE_PARENT) && parent &&
-> +	    best_parent_rate != parent->rate)
-> +		top = clk_calc_new_rates(parent, best_parent_rate);
->
->   out:
-> -	clk_calc_subtree(clk, new_rate);
-> +	clk_calc_subtree(clk, new_rate, parent, p_index);
->
->   	return top;
->   }
-> @@ -1250,7 +1277,7 @@ out:
->    */
->   static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long event)
->   {
-> -	struct clk *child, *fail_clk = NULL;
-> +	struct clk *child, *tmp_clk, *fail_clk = NULL;
->   	int ret = NOTIFY_DONE;
->
->   	if (clk->rate == clk->new_rate)
-> @@ -1263,9 +1290,19 @@ static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long even
->   	}
->
->   	hlist_for_each_entry(child, &clk->children, child_node) {
-> -		clk = clk_propagate_rate_change(child, event);
-> -		if (clk)
-> -			fail_clk = clk;
-> +		/* Skip children who will be reparented to another clock */
-> +		if (child->new_parent && child->new_parent != clk)
-> +			continue;
-> +		tmp_clk = clk_propagate_rate_change(child, event);
-> +		if (tmp_clk)
-> +			fail_clk = tmp_clk;
-> +	}
-> +
-> +	/* handle the new child who might not be in clk->children yet */
-> +	if (clk->new_child) {
-> +		tmp_clk = clk_propagate_rate_change(clk->new_child, event);
-> +		if (tmp_clk)
-> +			fail_clk = tmp_clk;
->   	}
->
->   	return fail_clk;
-> @@ -1283,6 +1320,10 @@ static void clk_change_rate(struct clk *clk)
->
->   	old_rate = clk->rate;
->
-> +	/* set parent */
-> +	if (clk->new_parent && clk->new_parent != clk->parent)
-> +		__clk_set_parent(clk, clk->new_parent, clk->new_parent_index);
-> +
->   	if (clk->parent)
->   		best_parent_rate = clk->parent->rate;
->
-> @@ -1297,8 +1338,16 @@ static void clk_change_rate(struct clk *clk)
->   	if (clk->notifier_count && old_rate != clk->rate)
->   		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
->
-> -	hlist_for_each_entry(child, &clk->children, child_node)
-> +	hlist_for_each_entry(child, &clk->children, child_node) {
-> +		/* Skip children who will be reparented to another clock */
-> +		if (child->new_parent && child->new_parent != clk)
-> +			continue;
->   		clk_change_rate(child);
-> +	}
-> +
-> +	/* handle the new child who might not be in clk->children yet */
-> +	if (clk->new_child)
-> +		clk_change_rate(clk->new_child);
->   }
->
->   /**
-> @@ -1545,8 +1594,9 @@ int __clk_init(struct device *dev, struct clk *clk)
->
->   	/* check that clk_ops are sane.  See Documentation/clk.txt */
->   	if (clk->ops->set_rate &&
-> -			!(clk->ops->round_rate && clk->ops->recalc_rate)) {
-> -		pr_warning("%s: %s must implement .round_rate & .recalc_rate\n",
-> +	    !((clk->ops->round_rate || clk->ops->determine_rate) &&
-> +	      clk->ops->recalc_rate)) {
-> +		pr_warning("%s: %s must implement .round_rate or .determine_rate in addition to .recalc_rate\n",
->   				__func__, clk->name);
->   		ret = -EINVAL;
->   		goto out;
-> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-> index dd7adff..8138c94 100644
-> --- a/include/linux/clk-private.h
-> +++ b/include/linux/clk-private.h
-> @@ -33,8 +33,11 @@ struct clk {
->   	const char		**parent_names;
->   	struct clk		**parents;
->   	u8			num_parents;
-> +	u8			new_parent_index;
 
-Why do you need this? Given the new_parent, can't the specific clock 
-implementation just look it up when set_rate() is called? Wouldn't that 
-be the only time you would actually need the index?
+Thanks, I think I get it. The problem is we only allocate a one queue
+netdevice when IFF_MULTI_QUEUE were not set. So reset the multiqueue
+flag for persist device should be forbidden. Looks like we need the
+following patch. Could you please test this?
 
-If it's just for optimization of some error cases, I think we should 
-drop this to keep the code simpler. One less state to keep track of when 
-reading, writing or reviewing the clock framework.
-
-I would like to do a more thorough review of this patch, but it's been a 
-while since I have looked at clk.c. So, I might not be able to do it 
-soon enough. But I can't ask to hold off this patch just because I don't 
-have time. So, I'll see what I can do.
-
--Saravana
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index f042b03..d4fc2bd 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1585,6 +1585,10 @@ static int tun_set_iff(struct net *net, struct
+file *file, struct ifreq *ifr)
+                else
+                        return -EINVAL;
+ 
++               if (((ifr->ifr_flags & IFF_MULTI_QUEUE) ==
+IFF_MULTI_QUEUE) ^
++                   ((tun->flags & TUN_TAP_MQ) == TUN_TAP_MQ))
++                       return -EINVAL;
++
+                if (tun_not_capable(tun))
+                        return -EPERM;
+                err = security_tun_dev_open(tun->security);
 
 
+>>> I am thinking about 
+>>> adding a -q option to tunctl to specify multi-queue flag on
+>>> the tap device.
+>> Absolutely.
+>>
+>> [Sriram] OK, let me do that.
+>
+> [Sriram] I am planning to add ip tuntap multi-queue option 
+> instead of tunctl.  
+>
+> Sriram
+>
+>>> Yes, number of exits will be most useful.  I will look into
+>>> adding the other statistics you mention.
+>>>
+>>> Sriram  
+>> Pls note you'll need to switch to virtqueue_kick_prepare
+>> to detect exits: virtqueue_kick doesn't let you know
+>> whether there was an exit.
+>>
+>> Also, it's best to make this a separate patch from the one
+>> adding per-queue stats.
+>>
+>> [Sriram] OK, I will cover only the per-queue statistics in
+>> this patch. Also, I will address the indentation/data 
+>> structure name points that you mentioned in your earlier
+>> email and send a new revision for this patch.
+>>
+>> Sriram
+>>
+>>> -----Original Message-----
+>>> From: Michael S. Tsirkin [mailto:mst@redhat.com] 
+>>> Sent: Sunday, May 19, 2013 4:28 AM
+>>> To: Narasimhan, Sriram
+>>> Cc: rusty@rustcorp.com.au; virtualization@lists.linux-foundation.org; kvm@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+>>> Subject: Re: [PATCH] virtio-net: Reporting traffic queue distribution statistics through ethtool
+>>>
+>>> On Thu, May 16, 2013 at 01:24:29PM -0700, Sriram Narasimhan wrote:
+>>>> This patch allows virtio-net driver to report traffic distribution
+>>>> to inbound/outbound queues through ethtool -S.  The per_cpu
+>>>> virtnet_stats is split into receive and transmit stats and are
+>>>> maintained on a per receive_queue and send_queue basis.
+>>>> virtnet_stats() is modified to aggregate interface level statistics
+>>>> from per-queue statistics.  Sample output below:
+>>>>
+>>> Thanks for the patch. The idea itself looks OK to me.
+>>> Ben Hutchings already sent some comments
+>>> so I won't repeat them. Some minor more comments
+>>> and questions below.
+>>>
+>>>> NIC statistics:
+>>>>      rxq0: rx_packets: 4357802
+>>>>      rxq0: rx_bytes: 292642052
+>>>>      txq0: tx_packets: 824540
+>>>>      txq0: tx_bytes: 55256404
+>>>>      rxq1: rx_packets: 0
+>>>>      rxq1: rx_bytes: 0
+>>>>      txq1: tx_packets: 1094268
+>>>>      txq1: tx_bytes: 73328316
+>>>>      rxq2: rx_packets: 0
+>>>>      rxq2: rx_bytes: 0
+>>>>      txq2: tx_packets: 1091466
+>>>>      txq2: tx_bytes: 73140566
+>>>>      rxq3: rx_packets: 0
+>>>>      rxq3: rx_bytes: 0
+>>>>      txq3: tx_packets: 1093043
+>>>>      txq3: tx_bytes: 73246142
+>>> Interesting. This example implies that all packets are coming in
+>>> through the same RX queue - is this right?
+>>> If yes that's worth exploring - could be a tun bug -
+>>> and shows how this patch is useful.
+>>>
+>>>> Signed-off-by: Sriram Narasimhan <sriram.narasimhan@hp.com>
+>>> BTW, while you are looking at the stats, one other interesting
+>>> thing to add could be checking more types of stats: number of exits,
+>>> queue full errors, etc.
+>>>
+>>>> ---
+>>>>  drivers/net/virtio_net.c |  157 +++++++++++++++++++++++++++++++++++++---------
+>>>>  1 files changed, 128 insertions(+), 29 deletions(-)
+>>>>
+>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>>>> index 3c23fdc..3c58c52 100644
+>>>> --- a/drivers/net/virtio_net.c
+>>>> +++ b/drivers/net/virtio_net.c
+>>>> @@ -41,15 +41,46 @@ module_param(gso, bool, 0444);
+>>>>  
+>>>>  #define VIRTNET_DRIVER_VERSION "1.0.0"
+>>>>  
+>>>> -struct virtnet_stats {
+>>>> -	struct u64_stats_sync tx_syncp;
+>>>> +struct virtnet_rx_stats {
+>>>>  	struct u64_stats_sync rx_syncp;
+>>>> -	u64 tx_bytes;
+>>>> +	u64 rx_packets;
+>>>> +	u64 rx_bytes;
+>>>> +};
+>>>> +
+>>>> +struct virtnet_tx_stats {
+>>>> +	struct u64_stats_sync tx_syncp;
+>>>>  	u64 tx_packets;
+>>>> +	u64 tx_bytes;
+>>>> +};
+>>>>  
+>>>> -	u64 rx_bytes;
+>>>> -	u64 rx_packets;
+>>> I think maintaining the stats in a per-queue data structure like this is
+>>> fine.  if # of CPUs == # of queues which is typical, we use same amount
+>>> of memory.  And each queue access is under a lock,
+>>> or from napi thread, so no races either.
+>>>
+>>>> +struct virtnet_ethtool_stats {
+>>>> +	char desc[ETH_GSTRING_LEN];
+>>>> +	int type;
+>>>> +	int size;
+>>>> +	int offset;
+>>>> +};
+>>>> +
+>>>> +enum {VIRTNET_STATS_TX, VIRTNET_STATS_RX};
+>>>> +
+>>>> +#define VIRTNET_RX_STATS_INFO(_struct, _field) \
+>>>> +	{#_field, VIRTNET_STATS_RX, FIELD_SIZEOF(_struct, _field), \
+>>>> +	offsetof(_struct, _field)}
+>>>> +
+>>>> +#define VIRTNET_TX_STATS_INFO(_struct, _field) \
+>>>> +	{#_field, VIRTNET_STATS_TX, FIELD_SIZEOF(_struct, _field), \
+>>>> +	offsetof(_struct, _field)}
+>>>> +
+>>>> +static const struct virtnet_ethtool_stats virtnet_et_rx_stats[] = {
+>>>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_packets),
+>>>> +	VIRTNET_RX_STATS_INFO(struct virtnet_rx_stats, rx_bytes)
+>>>> +};
+>>>> +#define VIRTNET_RX_STATS_NUM (ARRAY_SIZE(virtnet_et_rx_stats))
+>>>> +
+>>>> +static const struct virtnet_ethtool_stats virtnet_et_tx_stats[] = {
+>>>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_packets),
+>>>> +	VIRTNET_TX_STATS_INFO(struct virtnet_tx_stats, tx_bytes)
+>>>>  };
+>>>> +#define VIRTNET_TX_STATS_NUM (ARRAY_SIZE(virtnet_et_tx_stats))
+>>> I'd prefer a full name: virtnet_ethtool_tx_stats, or
+>>> just virtnet_tx_stats.
+>>>
+>>>>  
+>>>>  /* Internal representation of a send virtqueue */
+>>>>  struct send_queue {
+>>>> @@ -61,6 +92,9 @@ struct send_queue {
+>>>>  
+>>>>  	/* Name of the send queue: output.$index */
+>>>>  	char name[40];
+>>>> +
+>>>> +	/* Active send queue statistics */
+>>>> +	struct virtnet_tx_stats stats;
+>>>>  };
+>>>>  
+>>>>  /* Internal representation of a receive virtqueue */
+>>>> @@ -81,6 +115,9 @@ struct receive_queue {
+>>>>  
+>>>>  	/* Name of this receive queue: input.$index */
+>>>>  	char name[40];
+>>>> +
+>>>> +	/* Active receive queue statistics */
+>>>> +	struct virtnet_rx_stats stats;
+>>>>  };
+>>>>  
+>>>>  struct virtnet_info {
+>>>> @@ -109,9 +146,6 @@ struct virtnet_info {
+>>>>  	/* enable config space updates */
+>>>>  	bool config_enable;
+>>>>  
+>>>> -	/* Active statistics */
+>>>> -	struct virtnet_stats __percpu *stats;
+>>>> -
+>>>>  	/* Work struct for refilling if we run low on memory. */
+>>>>  	struct delayed_work refill;
+>>>>  
+>>>> @@ -330,7 +364,7 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+>>>>  {
+>>>>  	struct virtnet_info *vi = rq->vq->vdev->priv;
+>>>>  	struct net_device *dev = vi->dev;
+>>>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>>>> +	struct virtnet_rx_stats *stats = &rq->stats;
+>>>>  	struct sk_buff *skb;
+>>>>  	struct page *page;
+>>>>  	struct skb_vnet_hdr *hdr;
+>>>> @@ -650,8 +684,7 @@ static void free_old_xmit_skbs(struct send_queue *sq)
+>>>>  {
+>>>>  	struct sk_buff *skb;
+>>>>  	unsigned int len;
+>>>> -	struct virtnet_info *vi = sq->vq->vdev->priv;
+>>>> -	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+>>>> +	struct virtnet_tx_stats *stats = &sq->stats;
+>>>>  
+>>>>  	while ((skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+>>>>  		pr_debug("Sent skb %p\n", skb);
+>>>> @@ -841,24 +874,25 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
+>>>>  					       struct rtnl_link_stats64 *tot)
+>>>>  {
+>>>>  	struct virtnet_info *vi = netdev_priv(dev);
+>>>> -	int cpu;
+>>>> +	int i;
+>>>>  	unsigned int start;
+>>>>  
+>>>> -	for_each_possible_cpu(cpu) {
+>>>> -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
+>>>> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+>>>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
+>>>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
+>>>>  		u64 tpackets, tbytes, rpackets, rbytes;
+>>>>  
+>>>>  		do {
+>>>> -			start = u64_stats_fetch_begin_bh(&stats->tx_syncp);
+>>>> -			tpackets = stats->tx_packets;
+>>>> -			tbytes   = stats->tx_bytes;
+>>>> -		} while (u64_stats_fetch_retry_bh(&stats->tx_syncp, start));
+>>>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
+>>>> +			tpackets = tstats->tx_packets;
+>>>> +			tbytes   = tstats->tx_bytes;
+>>>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
+>>>>  
+>>>>  		do {
+>>>> -			start = u64_stats_fetch_begin_bh(&stats->rx_syncp);
+>>>> -			rpackets = stats->rx_packets;
+>>>> -			rbytes   = stats->rx_bytes;
+>>>> -		} while (u64_stats_fetch_retry_bh(&stats->rx_syncp, start));
+>>>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
+>>>> +			rpackets = rstats->rx_packets;
+>>>> +			rbytes   = rstats->rx_bytes;
+>>>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
+>>>>  
+>>>>  		tot->rx_packets += rpackets;
+>>>>  		tot->tx_packets += tpackets;
+>>>> @@ -1177,12 +1211,83 @@ static void virtnet_get_channels(struct net_device *dev,
+>>>>  	channels->other_count = 0;
+>>>>  }
+>>>>  
+>>>> +static void virtnet_get_stat_strings(struct net_device *dev,
+>>>> +					u32 stringset,
+>>>> +					u8 *data)
+>>>> +{
+>>>> +	struct virtnet_info *vi = netdev_priv(dev);
+>>>> +	int i, j;
+>>>> +
+>>>> +	switch (stringset) {
+>>>> +	case ETH_SS_STATS:
+>>>> +		for (i = 0; i < vi->max_queue_pairs; i++) {
+>>>> +			for (j = 0; j < VIRTNET_RX_STATS_NUM; j++) {
+>>>> +				sprintf(data, "rxq%d: %s", i,
+>>>> +					virtnet_et_rx_stats[j].desc);
+>>>> +				data += ETH_GSTRING_LEN;
+>>>> +			}
+>>>> +			for (j = 0; j < VIRTNET_TX_STATS_NUM; j++) {
+>>>> +				sprintf(data, "txq%d: %s", i,
+>>>> +					virtnet_et_tx_stats[j].desc);
+>>>> +				data += ETH_GSTRING_LEN;
+>>>> +			}
+>>>> +		}
+>>>> +		break;
+>>>> +	}
+>>>> +}
+>>>> +
+>>>> +static int virtnet_get_sset_count(struct net_device *dev, int stringset)
+>>>> +{
+>>>> +	struct virtnet_info *vi = netdev_priv(dev);
+>>>> +	switch (stringset) {
+>>>> +	case ETH_SS_STATS:
+>>>> +		return vi->max_queue_pairs *
+>>>> +			(VIRTNET_RX_STATS_NUM + VIRTNET_TX_STATS_NUM);
+>>>> +	default:
+>>>> +		return -EINVAL;
+>>>> +	}
+>>>> +}
+>>>> +
+>>>> +static void virtnet_get_ethtool_stats(struct net_device *dev,
+>>>> +					struct ethtool_stats *stats,
+>>>> +					u64 *data)
+>>>> +{
+>>>> +	struct virtnet_info *vi = netdev_priv(dev);
+>>>> +	unsigned int i, base;
+>>>> +	unsigned int start;
+>>>> +
+>>>> +	for (i = 0, base = 0; i < vi->max_queue_pairs; i++) {
+>>>> +		struct virtnet_tx_stats *tstats = &vi->sq[i].stats;
+>>>> +		struct virtnet_rx_stats *rstats = &vi->rq[i].stats;
+>>>> +
+>>>> +		do {
+>>>> +			start = u64_stats_fetch_begin_bh(&rstats->rx_syncp);
+>>>> +			data[base] = rstats->rx_packets;
+>>>> +			data[base+1] = rstats->rx_bytes;
+>>> nitpicking:
+>>> We normally has spaces around +, like this:
+>>> 			data[base + 1] = rstats->rx_bytes;
+>>>
+>>>> +		} while (u64_stats_fetch_retry_bh(&rstats->rx_syncp, start));
+>>>> +
+>>>> +		base += VIRTNET_RX_STATS_NUM;
+>>>> +
+>>>> +		do {
+>>>> +			start = u64_stats_fetch_begin_bh(&tstats->tx_syncp);
+>>>> +			data[base] = tstats->tx_packets;
+>>>> +			data[base+1]   = tstats->tx_bytes;
+>>>
+>>> nitpicking:
+>>> Here, something strange happened to indentation.
+>>>
+>>>> +		} while (u64_stats_fetch_retry_bh(&tstats->tx_syncp, start));
+>>>> +
+>>>> +		base += VIRTNET_TX_STATS_NUM;
+>>>> +	}
+>>>> +}
+>>>> +
+>>>> +
+>>>>  static const struct ethtool_ops virtnet_ethtool_ops = {
+>>>>  	.get_drvinfo = virtnet_get_drvinfo,
+>>>>  	.get_link = ethtool_op_get_link,
+>>>>  	.get_ringparam = virtnet_get_ringparam,
+>>>>  	.set_channels = virtnet_set_channels,
+>>>>  	.get_channels = virtnet_get_channels,
+>>>> +	.get_strings = virtnet_get_stat_strings,
+>>>> +	.get_sset_count = virtnet_get_sset_count,
+>>>> +	.get_ethtool_stats = virtnet_get_ethtool_stats,
+>>>>  };
+>>>>  
+>>>>  #define MIN_MTU 68
+>>>> @@ -1531,14 +1636,11 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>>>  	vi->dev = dev;
+>>>>  	vi->vdev = vdev;
+>>>>  	vdev->priv = vi;
+>>>> -	vi->stats = alloc_percpu(struct virtnet_stats);
+>>>>  	err = -ENOMEM;
+>>>> -	if (vi->stats == NULL)
+>>>> -		goto free;
+>>>>  
+>>>>  	vi->vq_index = alloc_percpu(int);
+>>>>  	if (vi->vq_index == NULL)
+>>>> -		goto free_stats;
+>>>> +		goto free;
+>>>>  
+>>>>  	mutex_init(&vi->config_lock);
+>>>>  	vi->config_enable = true;
+>>>> @@ -1616,8 +1718,6 @@ free_vqs:
+>>>>  	virtnet_del_vqs(vi);
+>>>>  free_index:
+>>>>  	free_percpu(vi->vq_index);
+>>>> -free_stats:
+>>>> -	free_percpu(vi->stats);
+>>>>  free:
+>>>>  	free_netdev(dev);
+>>>>  	return err;
+>>>> @@ -1653,7 +1753,6 @@ static void virtnet_remove(struct virtio_device *vdev)
+>>>>  	flush_work(&vi->config_work);
+>>>>  
+>>>>  	free_percpu(vi->vq_index);
+>>>> -	free_percpu(vi->stats);
+>>>>  	free_netdev(vi->dev);
+>>>>  }
+>>> Thanks!
+>>>
+>>>> -- 
+>>>> 1.7.1
 
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
