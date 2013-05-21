@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab3EUOaN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:30:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37115 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3EUOaL (ORCPT
+	id S1753818Ab3EUObZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:31:25 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:58113 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878Ab3EUObY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:30:11 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] [media] videobuf2-core: call __setup_offsets only for mmap memory type
-Date: Tue, 21 May 2013 16:30:05 +0200
-Message-Id: <1369146605-10648-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.2.rc2
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 21 May 2013 10:31:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <519B68A4.3010406@linux.intel.com>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
+ <519B632F.7040202@mellanox.com> <519B68A4.3010406@linux.intel.com>
+From: Willem de Bruijn <willemb@google.com>
+Date: Tue, 21 May 2013 10:30:53 -0400
+Message-ID: <CA+FuTScYMPUsf0+67FAU0LBfuxhGT8JKyvL1WX=Rjomno75q2A@mail.gmail.com>
+Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Alex Rosenbaum <alexr@mellanox.com>, Dave Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel <e1000-devel@lists.sourceforge.net>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__setup_offsets fills the v4l2_planes' mem_offset fields, which is only valid
-for V4L2_MEMORY_MMAP type buffers. For V4L2_MEMORY_DMABUF and _USERPTR buffers,
-this incorrectly overwrites the fd and userptr fields.
+>> 2. How is the logic aware of RSS and RFS?
+>>
+>> With TCP sockets, the driver knows the specific ring it need to poll so
+>> this should be mapped and provide the best latency.
+>
+>
+> This code is blissfully oblivious of RFS and RSS, it only assumes that the
+> packets for a socket are likely to continue to come on the same queue.
+> The code is designed to be correct even if you get your data on the wrong
+> queue. (your performance will suffer but no more than that.)
+>
 
-Reported-by: Michael Olbrich <m.olbrich@pengutronix.de>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/media/v4l2-core/videobuf2-core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 5f7ae44..9e12f75 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -241,7 +241,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
- 		q->bufs[q->num_buffers + buffer] = vb;
- 	}
- 
--	__setup_offsets(q, buffer);
-+	if (memory == V4L2_MEMORY_MMAP)
-+		__setup_offsets(q, buffer);
- 
- 	dprintk(1, "Allocated %d buffers, %d plane(s) each\n",
- 			buffer, num_planes);
--- 
-1.8.2.rc2
-
+For low latency, you don't want to have to wait for the IPI that RPS
+sets to redirect packets to another CPU.  However, this feature works
+extremely well with hardware flow steering (nfc/ntuple) and
+accelerated RFS, where the device will enqueue directly on an rxqueue
+owned exclusively by the destination cpu (if configured correctly).
