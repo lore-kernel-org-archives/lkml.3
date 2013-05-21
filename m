@@ -1,131 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3EUSBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:01:52 -0400
-Received: from mailproxy2.rcs-rds.ro ([212.54.127.4]:43984 "EHLO
-	mailproxy2.rcs-rds.ro" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab3EUSBu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:01:50 -0400
-From: Daniel Petre <daniel.petre@rcs-rds.ro>
+	id S1755386Ab3EUSJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:09:48 -0400
+Received: from sauhun.de ([89.238.76.85]:37912 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab3EUSJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:09:46 -0400
+Date: Tue, 21 May 2013 20:11:20 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.10
+Message-ID: <20130521181117.GA23945@katana>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] ip_gre: fix kernel panic with icmp_dest_unreach
-Message-Id: <D2CA09D3-A93C-48CF-A23B-DC1B76D66818@rcs-rds.ro>
-Date: Tue, 21 May 2013 20:53:35 +0300
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Mailer: Apple Mail (2.1503)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-This mini patch mitigates the kernel panic with "stack-protector: Kernel stack
-is corrupted" when using gre tunnels and network interface flaps and ip_gre 
-sends a icmp dest unreachable which gets in the IP stack and most probably messes things up.
+Linus,
 
-Current ip_gre panics both 3.7.10 and 3.8.13 few seconds after ether interface is down, 
-i managed to take a look at the vmcore with crash utility to find each time icmp_send :
+please pull the bugfixes for the i2c subsystem. Those should have been
+in rc1 but I missed it due to working on devm longer than expected.
+There is one ID addition, since we are touching the driver anyhow. And
+the feature bit documentation is one outcome of a debug session and will
+make it easier for users to work around problems. The rest is typical
+driver bugfixes.
 
-crash> bt
+Please pull.
 
-PID: 0      TASK: ffffffff81813420  CPU: 0   COMMAND: "swapper/0"
-#0 [ffff88003fc03798] machine_kexec at ffffffff81027430
-#1 [ffff88003fc037e8] crash_kexec at ffffffff8107da80
-#2 [ffff88003fc038b8] panic at ffffffff81540026
-#3 [ffff88003fc03938] __stack_chk_fail at ffffffff81037f77
-#4 [ffff88003fc03948] icmp_send at ffffffff814d5fec
-#5 [ffff88003fc03ae8] ipv4_link_failure at ffffffff814a1795
-#6 [ffff88003fc03af8] ipgre_tunnel_xmit at ffffffff814e7965
-#7 [ffff88003fc03b78] dev_hard_start_xmit at ffffffff8146e032
-#8 [ffff88003fc03bc8] sch_direct_xmit at ffffffff81487d66
-#9 [ffff88003fc03c08] __qdisc_run at ffffffff81487efd
-#10 [ffff88003fc03c48] dev_queue_xmit at ffffffff8146e5a7
-#11 [ffff88003fc03c88] ip_finish_output at ffffffff814ab596
-#12 [ffff88003fc03ce8] __netif_receive_skb at ffffffff8146ed13
-#13 [ffff88003fc03d88] napi_gro_receive at ffffffff8146fc50
-#14 [ffff88003fc03da8] e1000_clean_rx_irq at ffffffff813bc67b
-#15 [ffff88003fc03e48] e1000e_poll at ffffffff813c3a20
-#16 [ffff88003fc03e98] net_rx_action at ffffffff8146f796
-#17 [ffff88003fc03ee8] __do_softirq at ffffffff8103ebb9
-#18 [ffff88003fc03f38] call_softirq at ffffffff8154444c
-#19 [ffff88003fc03f50] do_softirq at ffffffff810047dd
-#20 [ffff88003fc03f80] do_IRQ at ffffffff81003f6c
---- <IRQ stack> ---
-#21 [ffffffff81801ea8] ret_from_intr at ffffffff81542c2a
-   [exception RIP: mwait_idle+95]
-   RIP: ffffffff8100ad8f  RSP: ffffffff81801f50  RFLAGS: 00000246
-   RAX: 0000000000000000  RBX: ffffffff8154194e  RCX: 0000000000000000
-   RDX: 0000000000000000  RSI: ffffffff81801fd8  RDI: ffff88003fc0d840
-   RBP: ffffffff8185be80   R8: 0000000000000000   R9: 0000000000000001
-   R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
-   R13: ffffffff81813420  R14: ffff88003fc11000  R15: ffffffff81813420
-   ORIG_RAX: ffffffffffffff1e  CS: 0010  SS: 0018
-#22 [ffffffff81801f50] cpu_idle at ffffffff8100b126
+Thanks,
 
-crash> log
-
-[..]
-
-[ 6772.560124] e1000e: eth3 NIC Link is Down
-[ 6786.680876] e1000e: eth3 NIC Link is Up 1000 Mbps Full Duplex, Flow
-Control: Rx
-[ 6928.050119] e1000e: eth3 NIC Link is Down
-[ 6945.240875] e1000e: eth3 NIC Link is Up 1000 Mbps Full Duplex, Flow
-Control: Rx
-[ 6945.738103] Kernel panic - not syncing: stack-protector: Kernel stack
-is corrupted in: ffffffff814d5fec
-
-[ 6945.738165] Pid: 0, comm: swapper/0 Not tainted 3.8.13 #3
-[ 6945.738189] Call Trace:
-[ 6945.738212]  <IRQ>  [<ffffffff8154001f>] ? panic+0xbf/0x1c9
-[ 6945.738245]  [<ffffffff814ab505>] ? ip_finish_output+0x255/0x3e0
-[ 6945.738271]  [<ffffffff814d5fec>] ? icmp_send+0x6bc/0x730
-[ 6945.738296]  [<ffffffff81037f77>] ? __stack_chk_fail+0x17/0x30
-[ 6945.738320]  [<ffffffff814d5fec>] ? icmp_send+0x6bc/0x730
-[ 6945.738344]  [<ffffffff81009470>] ? nommu_map_sg+0x110/0x110
-[ 6945.738369]  [<ffffffff815428f9>] ? _raw_spin_lock_bh+0x9/0x30
-[ 6945.738393]  [<ffffffff814a1795>] ? ipv4_link_failure+0x15/0x60
-[ 6945.738418]  [<ffffffff814e7965>] ? ipgre_tunnel_xmit+0x7f5/0x9f0
-[ 6945.738443]  [<ffffffff8146e032>] ? dev_hard_start_xmit+0x102/0x490
-[ 6945.738470]  [<ffffffff81487d66>] ? sch_direct_xmit+0x106/0x1e0
-[ 6945.738494]  [<ffffffff81487efd>] ? __qdisc_run+0xbd/0x150
-[ 6945.738518]  [<ffffffff8146e5a7>] ? dev_queue_xmit+0x1e7/0x3a0
-[ 6945.738542]  [<ffffffff814ab596>] ? ip_finish_output+0x2e6/0x3e0
-[ 6945.738567]  [<ffffffff8146ed13>] ? __netif_receive_skb+0x5b3/0x7c0
-[ 6945.738591]  [<ffffffff8146f114>] ? netif_receive_skb+0x24/0x80
-[ 6945.738616]  [<ffffffff8146fc50>] ? napi_gro_receive+0x110/0x140
-[ 6945.738642]  [<ffffffff813bc67b>] ? e1000_clean_rx_irq+0x29b/0x490
-[ 6945.738667]  [<ffffffff813c3a20>] ? e1000e_poll+0x90/0x3a0
-[ 6945.738690]  [<ffffffff8146f796>] ? net_rx_action+0xc6/0x1e0
-[ 6945.738715]  [<ffffffff8103ebb9>] ? __do_softirq+0xa9/0x170
-[ 6945.738739]  [<ffffffff8154444c>] ? call_softirq+0x1c/0x30
-[ 6945.738762]  [<ffffffff810047dd>] ? do_softirq+0x4d/0x80
-[ 6945.738786]  [<ffffffff8103e9cd>] ? irq_exit+0x7d/0x90
-[ 6945.738808]  [<ffffffff81003f6c>] ? do_IRQ+0x5c/0xd0
-[ 6945.738831]  [<ffffffff81542c2a>] ? common_interrupt+0x6a/0x6a
-[ 6945.738854]  <EOI>  [<ffffffff8154194e>] ? __schedule+0x26e/0x5b0
-[ 6945.738884]  [<ffffffff8100ad8f>] ? mwait_idle+0x5f/0x70
-[ 6945.738907]  [<ffffffff8100b126>] ? cpu_idle+0xf6/0x110
-[ 6945.738930]  [<ffffffff81875c58>] ? start_kernel+0x33d/0x348
-[ 6945.738954]  [<ffffffff8187573b>] ? repair_env_string+0x5b/0x5b
-[ 6945.738978]  [<ffffffff8187541d>] ? x86_64_start_kernel+0xee/0xf2
+   Wolfram
 
 
-Signed-off-by: Daniel Petre <daniel.petre@rcs-rds.ro>
----
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
---- linux-3.8.13/net/ipv4/ip_gre.c.orig	2013-05-21 20:28:37.340537935 +0300
-+++ linux-3.8.13/net/ipv4/ip_gre.c	2013-05-21 20:32:47.248722835 +0300
-@@ -728,7 +728,9 @@ static int ipgre_rcv(struct sk_buff *skb
- 		gro_cells_receive(&tunnel->gro_cells, skb);
- 		return 0;
- 	}
--	icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PORT_UNREACH, 0);
-+	/* don't send icmp destination unreachable if tunnel is down
-+	the IP stack gets corrupted and machine panics!
-+	icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PORT_UNREACH, 0); */
- 
- drop:
- 	kfree_skb(skb);
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to e9b526fe704812364bca07edd15eadeba163ebfb:
+
+  i2c: suppress lockdep warning on delete_device (2013-05-17 22:49:45 +0200)
+
+----------------------------------------------------------------
+Alexander Sverdlin (1):
+      i2c: suppress lockdep warning on delete_device
+
+Jean Delvare (1):
+      i2c: i801: Document feature bits in modinfo
+
+Josef Ahmad (1):
+      i2c: designware: fix RX FIFO overrun
+
+Mika Westerberg (2):
+      i2c: designware: always clear interrupts before enabling them
+      i2c: designware: add Intel BayTrail ACPI ID
+
+Russell King (1):
+      i2c: mv64xxx: work around signals causing I2C transactions to be aborted
+
+ drivers/i2c/busses/i2c-designware-core.c    |   14 ++++++++++++--
+ drivers/i2c/busses/i2c-designware-core.h    |    2 ++
+ drivers/i2c/busses/i2c-designware-platdrv.c |    1 +
+ drivers/i2c/busses/i2c-i801.c               |    6 +++++-
+ drivers/i2c/busses/i2c-mv64xxx.c            |    8 ++++----
+ drivers/i2c/i2c-core.c                      |    3 ++-
+ 6 files changed, 26 insertions(+), 8 deletions(-)
