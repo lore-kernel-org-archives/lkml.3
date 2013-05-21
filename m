@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab3EUJKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:10:18 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54670 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab3EUJKQ (ORCPT
+	id S1752647Ab3EUJMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:12:45 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:64546 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab3EUJMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:10:16 -0400
-Message-ID: <519B393F.4090400@linux.vnet.ibm.com>
-Date: Tue, 21 May 2013 14:37:11 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 21 May 2013 05:12:43 -0400
+Date: Tue, 21 May 2013 11:12:30 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, arnd@arndb.de,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [GIT PULL v2] MFD: Fixes due for the v3.10 -rc:s
+Message-ID: <20130521091230.GA28756@balto.lan>
+References: <20130514091956.GG3297@gmail.com>
+ <20130515090449.GA3494@gmail.com>
+ <20130516224337.GZ22822@zurbaran>
+ <20130517075140.GA25077@balto.lan>
+ <20130521085650.GB4589@zurbaran>
 MIME-Version: 1.0
-To: anish singh <anish198519851985@gmail.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [RFC PATCH 6/8] kthread: Enable parking requests from setup()
- and unpark() callbacks
-References: <1369065716-22801-1-git-send-email-fweisbec@gmail.com> <1369065716-22801-7-git-send-email-fweisbec@gmail.com> <CAK7N6voNjWrDJNzAaVAndt8cGWR+AAERs_C-oCWe0rRO=XuutQ@mail.gmail.com> <519B26FD.9080404@linux.vnet.ibm.com> <CAK7N6vqcP+fcR0NYUzGDYT6q62KePTrg8yhQkuBq_zetkwUmUw@mail.gmail.com>
-In-Reply-To: <CAK7N6vqcP+fcR0NYUzGDYT6q62KePTrg8yhQkuBq_zetkwUmUw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052108-9264-0000-0000-000003C92D7A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521085650.GB4589@zurbaran>
+X-Operating-System: Linux balto 3.9.0-10518-gd7ab730 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 02:28 PM, anish singh wrote:
-> On Tue, May 21, 2013 at 1:19 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 05/21/2013 11:04 AM, anish singh wrote:
->>> On Mon, May 20, 2013 at 9:31 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> When the watchdog code is boot-disabled by the user, for example
->>>> through the 'nmi_watchdog=0' boot option, the setup() callback of
->>>> the watchdog kthread requests to park the task, and that until the
->>>> user later re-enables the watchdog through sysctl or procfs.
->>>>
->>>> However the parking request is not well handled when done from
->>>> the setup() callback. After ->setup() is called, the generic smpboot
->>>> kthread loop directly tries to call the thread function or wait
->>>> for some event if ->thread_should_run() is false.
->>>>
->>>> In the case of the watchdog kthread, ->thread_should_run() returns
->>>> false and the kthread goes to sleep and wait for the watchdog timer
->>>> to wake it up. But the timer is not enabled since the user requested
->>>> to disable the watchdog. We want the kthread to park instead of waiting
->>>> for events that can't happen.
->>>>
->>>> As a result, later unpark requests after sysctl write through
->>>> 'sysctl -w kernel.watchdog=1' won't wake up/unpark the task as
->>>> expected, since it's not parked anyway, leaving the value modified
->>>> without triggering any action.
->>> Out of curiosity, this can happen only for short period of time right?After
->>> some time this will work right as the thread get back in action
->>> after the schedule call.Then sysctl and procfs will work I think.
->>
->> kthread_unpark() can wake up a task only if the task is in TASK_PARKED
->> state. But since the above task would be in TASK_INTERRUPTIBLE state
->> (since it is not parked), kthread_unpark() will be powerless to do anything.
-> Yes but this will happen only for a short period of time right?
-> After the schdule() call the below code gets executed in while() loop.
+Hi Samuel,
+
+On Tue, May 21, 2013 at 10:56:50AM +0200, Samuel Ortiz wrote:
+> Hi Fabio,
 > 
+> On Fri, May 17, 2013 at 09:51:40AM +0200, Fabio Baltieri wrote:
+> > Hello Samuel,
+> > 
+> > On Fri, May 17, 2013 at 12:43:37AM +0200, Samuel Ortiz wrote:
+> > > > Fabio Baltieri (5):
+> > > >       mfd: abx500-core: Fix sparse warning
+> > > >       mfd: ab8500-sysctrl: Fix sparse warning
+> > > >       mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+> > > >       mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+> > > Unless I'm missing something here, this one is not really rcN material, so
+> > > I'd appreciate if you could queue it to your for-mfd branch instead.
+> > 
+> > The last two:
+> > 
+> >   mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+> This one is already in mfd-fixes, the commit log was clear enough.
 
-schedule() is not just another function call from which you'll simply
-return "after a short period of time". We have set the task's state to
-TASK_INTERRUPTIBLE at the beginning of the loop. So the call to schedule()
-will kick the task out of the runqueue, since it is not runnable any more.
+Great!
 
-You need somebody to do a wake_up_process() or something similar to make
-the task runnable again, after which it gets back to the runqueue and gets
-a chance to run. But the only one who can do wake_up_process() for this
-watchdog task in this case, is the kthread_unpark() code, which needs the
-task to be in TASK_PARKED state, not TASK_INTERRUPTIBLE. So the call to
-wake_up_state() returns without doing anything, leaving the watchdog task
-non-runnable. This is what Frederic referred to, when he said that
-enabling nmi watchdog via sysctl/procfs won't do anything.
+> >   mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+> This one is not, as the commit log is not showing it actually fixes something
+> but only makes the code cleaner. If it really fixes something, could you
+> please provide me with a commit log that describes what exactly it fixes ?
 
-> if (kthread_should_park()) {
-> __set_current_state(TASK_RUNNING);
-> preempt_enable();
-> if (ht->park && td->status == HP_THREAD_ACTIVE) {
-> BUG_ON(td->cpu != smp_processor_id());
-> ht->park(td->cpu);
-> td->status = HP_THREAD_PARKED;
-> }
-> kthread_parkme();
-> /* We might have been woken for stop */
-> continue;
-> }
-> 
-> As we have already called kthread_park this above if() condition gets true and
-> it will park the thread wouldn't it?But this will happen after the schedule
-> call which is not right as mentioned by fredrick.
-> 
+Ok, the fix here is that right now that driver is initialized without a
+specific pdata (that is plat->sysctrl), so enforcing it breaks existing
+platforms for no reason.  To make the commit more clear I would just
+point that out as in (just last two sentences):
 
-Regards,
-Srivatsa S. Bhat
+--- >8 ---
+mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
 
+A check for a valid plat->sysctrl was introduced in:
+
+2377e52 mfd: ab8500-sysctrl: Error check clean up
+
+but the driver works just fine even without that initialization data,
+and enforcing it breaks existing platforms for no reason.
+
+This patch removes the check and let the driver go ahead with probe.
+--- >8 ---
+
+Is it better?
+
+Thanks,
+Fabio
+
+-- 
+Fabio Baltieri
