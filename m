@@ -1,158 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3EUVOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:14:34 -0400
-Received: from www.sr71.net ([198.145.64.142]:45284 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751991Ab3EUVOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:14:33 -0400
-Message-ID: <519BE3B6.6070902@sr71.net>
-Date: Tue, 21 May 2013 14:14:30 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 19/39] thp, mm: allocate huge pages in grab_cache_page_write_begin()
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-20-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1368321816-17719-20-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752938Ab3EUVRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:17:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab3EUVRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:17:19 -0400
+Date: Tue, 21 May 2013 14:17:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Russ Anderson <rja@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Robin Holt <holt@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpu: Speedup disable_nonboot_cpus()
+Message-Id: <20130521141717.a5eec1db994e193f0479b296@linux-foundation.org>
+In-Reply-To: <20130503223543.GB25937@sgi.com>
+References: <20130503223543.GB25937@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Fri, 3 May 2013 17:35:44 -0500 Russ Anderson <rja@sgi.com> wrote:
+
+> The routine disable_nonboot_cpus() shuts down cpus sequentially
+> using for_each_online_cpu(cpu) to call cpu_down() one cpu at
+> a time.  cpu_down() calls __stop_machine() which stops all
+> the cpus while it disables one.  Then it re-enables the remaining
+> cpus, only to do it all over again for the next cpu.  The 
+> result is that it takes 16 minutes on a 1024 cpu system to 
+> disable 1023 cpus.
 > 
-> Try to allocate huge page if flags has AOP_FLAG_TRANSHUGE.
+> This patch changes disable_nonboot_cpus() to pass a bitmask
+> of cpus to cpu_down() and modifies cpu_down() to only call
+> __stop_machine() once.
+> 
+> On a 1024 cpu system this reduces the time it takes to disable
+> all but one cpu from 16 minutes down to 4 minutes.
 
-Why do we need this flag?  When might we set it, and when would we not
-set it?  What kinds of callers need to check for and act on it?
+That's still a helluva long time.  What's the kernel *doing* for
+all that time?
 
-Some of this, at least, needs to make it in to the comment by the #define.
-
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -194,6 +194,9 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
->  #define HPAGE_CACHE_NR         ({ BUILD_BUG(); 0; })
->  #define HPAGE_CACHE_INDEX_MASK ({ BUILD_BUG(); 0; })
+> --- linux.orig/kernel/cpu.c	2013-05-03 09:56:31.145508321 -0500
+> +++ linux/kernel/cpu.c	2013-05-03 17:01:20.652959400 -0500
+>
+> ...
+>
+> @@ -255,21 +255,21 @@ static int __ref take_cpu_down(void *_pa
+>  	if (err < 0)
+>  		return err;
 >  
-> +#define THP_WRITE_ALLOC		({ BUILD_BUG(); 0; })
-> +#define THP_WRITE_ALLOC_FAILED	({ BUILD_BUG(); 0; })
-
-Doesn't this belong in the previous patch?
-
->  #define hpage_nr_pages(x) 1
->  
->  #define transparent_hugepage_enabled(__vma) 0
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index 2e86251..8feeecc 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -270,8 +270,15 @@ unsigned find_get_pages_contig(struct address_space *mapping, pgoff_t start,
->  unsigned find_get_pages_tag(struct address_space *mapping, pgoff_t *index,
->  			int tag, unsigned int nr_pages, struct page **pages);
->  
-> -struct page *grab_cache_page_write_begin(struct address_space *mapping,
-> +struct page *__grab_cache_page_write_begin(struct address_space *mapping,
->  			pgoff_t index, unsigned flags);
-> +static inline struct page *grab_cache_page_write_begin(
-> +		struct address_space *mapping, pgoff_t index, unsigned flags)
-> +{
-> +	if (!transparent_hugepage_pagecache() && (flags & AOP_FLAG_TRANSHUGE))
-> +		return NULL;
-> +	return __grab_cache_page_write_begin(mapping, index, flags);
-> +}
-
-OK, so there's some of the behavior.
-
-Could you also call out why you refactored this code?  It seems like
-you're trying to optimize for the case where AOP_FLAG_TRANSHUGE isn't
-set and where the compiler knows that it isn't set.
-
-Could you talk a little bit about the cases that you're thinking of here?
-
->  /*
->   * Returns locked page at given index in given cache, creating it if needed.
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 9ea46a4..e086ef0 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2309,25 +2309,44 @@ EXPORT_SYMBOL(generic_file_direct_write);
->   * Find or create a page at the given pagecache position. Return the locked
->   * page. This function is specifically for buffered writes.
->   */
-> -struct page *grab_cache_page_write_begin(struct address_space *mapping,
-> -					pgoff_t index, unsigned flags)
-> +struct page *__grab_cache_page_write_begin(struct address_space *mapping,
-> +		pgoff_t index, unsigned flags)
->  {
->  	int status;
->  	gfp_t gfp_mask;
->  	struct page *page;
->  	gfp_t gfp_notmask = 0;
-> +	bool thp = (flags & AOP_FLAG_TRANSHUGE) &&
-> +		IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE);
-
-Instead of 'thp', how about 'must_use_thp'?  The flag seems to be a
-pretty strong edict rather than a hint, so it should be reflected in the
-variables derived from it.
-
-"IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE)" has also popped up
-enough times in the code that it's probably time to start thinking about
-shortening it up.  It's a wee bit verbose.
-
->  	gfp_mask = mapping_gfp_mask(mapping);
->  	if (mapping_cap_account_dirty(mapping))
->  		gfp_mask |= __GFP_WRITE;
->  	if (flags & AOP_FLAG_NOFS)
->  		gfp_notmask = __GFP_FS;
-> +	if (thp) {
-> +		BUG_ON(index & HPAGE_CACHE_INDEX_MASK);
-> +		BUG_ON(!(gfp_mask & __GFP_COMP));
-> +	}
->  repeat:
->  	page = find_lock_page(mapping, index);
-> -	if (page)
-> +	if (page) {
-> +		if (thp && !PageTransHuge(page)) {
-> +			unlock_page(page);
-> +			page_cache_release(page);
-> +			return NULL;
-> +		}
->  		goto found;
-> +	}
->  
-> -	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
-> +	if (thp) {
-> +		page = alloc_pages(gfp_mask & ~gfp_notmask, HPAGE_PMD_ORDER);
-> +		if (page)
-> +			count_vm_event(THP_WRITE_ALLOC);
-> +		else
-> +			count_vm_event(THP_WRITE_ALLOC_FAILED);
-> +	} else
-> +		page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
->  	if (!page)
->  		return NULL;
->  	status = add_to_page_cache_lru(page, mapping, index,
-> @@ -2342,7 +2361,7 @@ found:
->  	wait_for_stable_page(page);
->  	return page;
+> -	cpu_notify(CPU_DYING | param->mod, param->hcpu);
+> +	cpu_notify(CPU_DYING | param->mod, hcpu);
+>  	/* Park the stopper thread */
+>  	kthread_park(current);
+>  	return 0;
 >  }
-> -EXPORT_SYMBOL(grab_cache_page_write_begin);
-> +EXPORT_SYMBOL(__grab_cache_page_write_begin);
 >  
->  static ssize_t generic_perform_write(struct file *file,
->  				struct iov_iter *i, loff_t pos)
-> 
+>  /* Requires cpu_add_remove_lock to be held */
+> -static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+> +static int __ref _cpu_down(const cpumask_t *cpus_to_offline, int tasks_frozen)
+
+_cpu_down() is now misnamed - it downs multiple CPUs.
+
+>  {
+> -	int err, nr_calls = 0;
+> +	int err = 0, cpu = 0, nr_calls = 0;
+>  	void *hcpu = (void *)(long)cpu;
+> +	cpumask_var_t cpus_offlined;
+>  	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>  	struct take_cpu_down_param tcd_param = {
+>  		.mod = mod,
+> -		.hcpu = hcpu,
+>  	};
+>  
+>  	if (num_online_cpus() == 1)
+> @@ -278,46 +278,67 @@ static int __ref _cpu_down(unsigned int
+>  	if (!cpu_online(cpu))
+>  		return -EINVAL;
+>  
+> +	if (!alloc_cpumask_var(&cpus_offlined, GFP_KERNEL))
+> +		return -ENOMEM;
+> +
+>  	cpu_hotplug_begin();
+> +	cpumask_copy(cpus_offlined, cpus_to_offline);
+>  
+> -	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
+> -	if (err) {
+> -		nr_calls--;
+> -		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
+> -		printk("%s: attempt to take down CPU %u failed\n",
+> +	for_each_cpu_mask(cpu, *cpus_to_offline) {
+> +		if (!cpu_online(cpu))
+> +			continue;
+> +		hcpu = (void *)(long)cpu;
+> +		err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
+> +		if (err) {
+> +			nr_calls--;
+> +			__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
+> +			pr_err("%s: attempt to take down CPU %u failed\n",
+>  				__func__, cpu);
+> -		goto out_release;
+> +			goto out_release;
+> +		}
+> +		smpboot_park_threads(cpu);
+>  	}
+> -	smpboot_park_threads(cpu);
+>  
+> -	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
+> +	err = __stop_machine(take_cpu_down, &tcd_param, cpus_to_offline);
+>  	if (err) {
+>  		/* CPU didn't die: tell everyone.  Can't complain. */
+
+This comment is now inaccurate.  "One or more of the CPUs didn't die"?.
+
+I'm not sure what "Can't complain" means.  Perhaps expand on this while
+you're there?
+
+> -		smpboot_unpark_threads(cpu);
+> -		cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+> +		for_each_cpu_mask(cpu, *cpus_to_offline) {
+> +			hcpu = (void *)(long)cpu;
+> +			smpboot_unpark_threads(cpu);
+> +			cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+
+Is this accurate?  What happens if we asked stop_machine() to down 100
+CPUs but it failed at CPU #50?  We now tell listeners that we failed to
+down all 100 CPUs?  That's not true.
+
+> +		}
+>  		goto out_release;
+>  	}
+> -	BUG_ON(cpu_online(cpu));
+>  
+>  	/*
+>  	 * The migration_call() CPU_DYING callback will have removed all
+>  	 * runnable tasks from the cpu, there's only the idle task left now
+>  	 * that the migration thread is done doing the stop_machine thing.
+> -	 *
+> -	 * Wait for the stop thread to go away.
+>  	 */
+> -	while (!idle_cpu(cpu))
+> -		cpu_relax();
+> -
+> -	/* This actually kills the CPU. */
+> -	__cpu_die(cpu);
+> +	for_each_cpu_mask(cpu, *cpus_offlined) {
+> +		BUG_ON(cpu_online(cpu));
+>  
+> -	/* CPU is completely dead: tell everyone.  Too late to complain. */
+> -	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
+> -
+> -	check_for_tasks(cpu);
+> +		/*
+> +		 * Wait for the stop thread to go away.
+> +		 */
+> +		while (!idle_cpu(cpu))
+> +			cpu_relax();
+> +
+> +		/*
+> +		 * This actually kills the CPU.
+> +		 */
+> +		__cpu_die(cpu);
+> +
+> +		/*
+> +		 * CPU is completely dead: tell everyone.  Too late to complain.
+> +		 */
+> +		hcpu = (void *)(long)cpu;
+> +		cpu_notify_nofail(CPU_DEAD | mod, hcpu);
+> +		check_for_tasks(cpu);
+> +	}
+>  
+>  out_release:
+> +	free_cpumask_var(cpus_offlined);
+>  	cpu_hotplug_done();
+
+Swap the above two lines and we reduced the locked region by an
+unmeasurable amount!
+
+>  	if (!err)
+>  		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
+>
+> ...
+>
 
