@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab3EUQ1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:27:09 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:38385 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab3EUQ1H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:27:07 -0400
+	id S1754840Ab3EUQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:28:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab3EUQ2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 12:28:22 -0400
+Date: Tue, 21 May 2013 19:28:11 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v3 5/5] mips/kvm: Fix ABI by moving manipulation of CP0
+ registers to KVM_{G,S}ET_MSRS
+Message-ID: <20130521162811.GE14287@redhat.com>
+References: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com>
+ <1369083686-27524-6-git-send-email-ddaney.cavm@gmail.com>
+ <20130521153752.GD14287@redhat.com>
+ <519B9EF2.8020107@caviumnetworks.com>
 MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <CF6E51640088844D9CADE5541A7C2FEB33EBE413@CMEXMB1.ad.emulex.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
- <20130520224824.GA31740@google.com> <CF6E51640088844D9CADE5541A7C2FEB33EBE413@CMEXMB1.ad.emulex.com>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Tue, 21 May 2013 11:26:46 -0500
-Message-ID: <CAHrUA36VUZc6y4seefV=zUY4_Sup4DxwenC3bSokuxS2idoROw@mail.gmail.com>
-Subject: Re: Subject : [ PATCH ] pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
-To: "Liu, Joseph" <Joseph.Liu@emulex.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Zhang, LongX" <longx.zhang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519B9EF2.8020107@caviumnetworks.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhang, Bjorn,
+On Tue, May 21, 2013 at 09:21:06AM -0700, David Daney wrote:
+> On 05/21/2013 08:37 AM, Gleb Natapov wrote:
+> >On Mon, May 20, 2013 at 02:01:26PM -0700, David Daney wrote:
+> >>From: David Daney <david.daney@cavium.com>
+> >>
+> >>Because not all 256 CP0 registers are ever implemented, we need a
+> >>different method of manipulating them.  Use the
+> >>KVM_GET_MSRS/KVM_SET_MSRS mechanism as x86 does for its MSRs.
+> >>
+> >Have you looked at KVM_(GET|SET)_ONE_REG interface (not used by x86, but is
+> >used bu arm/ppc/s390). It looks like it is more suitable for your case.
+> >Actually you can use it instead of KVM_(GET|SET)_REGS for all registers.
+> 
+> Yes, I suppose it could be used.  One problem it has is that there
+> is no way to query the set of supported registers. 
+KVM_GET_REG_LIST
 
-On 21 May 2013 10:41, Liu, Joseph <Joseph.Liu@emulex.com> wrote:
-> Bjorn,
->
->>> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
->>> index ed4d094..7abefd9 100644
->>> --- a/drivers/pci/pcie/portdrv_pci.c
->>> +++ b/drivers/pci/pcie/portdrv_pci.c
->>> @@ -332,13 +332,11 @@ static pci_ers_result_t pcie_portdrv_slot_reset(struct pci_dev *dev)
->>>      pci_ers_result_t status = PCI_ERS_RESULT_RECOVERED;
->>>      int retval;
->>>
->>> -    /* If fatal, restore cfg space for possible link reset at upstream */
->>> -    if (dev->error_state == pci_channel_io_frozen) {
->>> -            dev->state_saved = true;
->>> -            pci_restore_state(dev);
->>> -            pcie_portdrv_restore_config(dev);
->>> -            pci_enable_pcie_error_reporting(dev);
->>> -    }
->>> +    /* restore cfg space for possible link reset at upstream */
->>> +    dev->state_saved = true;
->>> +    pci_restore_state(dev);
->>> +    pcie_portdrv_restore_config(dev);
->>> +    pci_enable_pcie_error_reporting(dev);
->>>
->>>      /* get true return value from &status */
->>>      retval = device_for_each_child(&dev->dev, &status, slot_reset_iter);
->>
->>I think this patch changes the behavior in the case of a non-fatal error
->>where one of the .error_detected() methods returned
->>PCI_ERS_RESULT_NEED_RESET.  In that case, pcie_portdrv_slot_reset()
->>previously did not restore config space, but after your patch, it *will*
->>restore it.  We need an explanation of why this is safe.
->
-> Here is my understanding of this part of the patch:
->
-> I think your concern here should not be an issue. Whether it is a non-fatal error or a fatal error, as long as one of the .error_detected() method from the downstream drivers involved returns a PCI_ERS_RESULT_NEED_RESET, it should trump all others and a slot reset should be performed, even though it was originally due to a non-fatal error reported or only one of the downstream drivers requests it. In the case of AER driver, this should be implemented in the broadcast_error_message() with pci_walk_bus() by passing in the report_error_detected() function, and merging the results into the result_data->result...
->
-> In any case, the fact that this pcie_portdrv_slot_reset() being invoked should be considered as a aftermath of a slot reset has been performed, thus the restore of config space should be performed after the reset. I suppose the restore should be to the same state as fresh power-on states, right?
+>                                                     Also you have to
+> make multiple calls to set multiple registers, which involves
+> vcpu_{load,put} for each register.
+> 
+How often this happens on the fast path on mips? On x86 this never
+happens on the fast path so it uses KVM_(GET|SET)_REGS mostly for
+historical reasons.
 
+> We will definitely implement it for all the FP and General Purpose
+> registers.
+> 
+> >
+> >>Code related to implementing KVM_GET_MSRS/KVM_SET_MSRS is consolidated
+> 
 
-Again, I think Joe has it exactly right.   The patch, I'm not so sure.
- In my earlier emails, I was assuming that the device has just gotten
-either a hard reset (power has been turned off-n-on, e.g. using
-pci-hotplug, or a 'soft reset' (whatever that means :-)).   If the
-adapter has been reset, then it is appropriate to restore pci config
-space to something resembling a fresh power-on.
-
-If the adapter has NOT been reset, then, ummm .. changing
-('restoring') the config space would be wrong ... if I recall
-correctly, a pci link reset does not whack the config space, and if
-the device itself has not been whacked, then all the contents of the
-config space (dma mappings, etc) are all still valid, and should not
-be changed!
-
-So, the restore of the config space should be conditional, depending
-on whether the device has been reset or not.
-
--- Linas
+--
+			Gleb.
