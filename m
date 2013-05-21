@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab3EUXex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:34:53 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56674 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752809Ab3EUXew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:34:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AusOAEYEnFF5LNn3/2dsb2JhbABagwi8eoUcBAGBCRd0giMBAQU6HDMIAxgJJQ8FJQMhARKIDLtwFo1ngSSDVAOXN5FBgyEq
-Date: Wed, 22 May 2013 09:34:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: XFS assertion from truncate. (3.10-rc2)
-Message-ID: <20130521233429.GW29466@dastard>
-References: <20130521225257.GA12713@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521225257.GA12713@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754183Ab3EUXiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:38:24 -0400
+Received: from mout.gmx.net ([212.227.17.21]:58224 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753432Ab3EUXiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:38:22 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+JXDQG8AmJFEyaVF/grHcVLNiSlYRPW9P1jq0crm
+	ZRUT7PkKwzjt6i
+From: Peter Huewe <peterhuewe@gmx.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Jes Sorensen <jes@trained-monkey.org>,
+        linux-hippi@sunsite.dk (open list:HIPPI),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 16/19] net/hippi/rrunner: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 01:42:53 +0200
+Message-Id: <1369179778-20115-16-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 06:52:57PM -0400, Dave Jones wrote:
-> [  464.210598] XFS: Assertion failed: (mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET| ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID| ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0, file: fs/xfs/xfs_iops.c, line: 719
+Removing some boilerplate by using module_pci_driver instead of calling
+register and unregister in the otherwise empty init/exit functions.
 
-Never seen that fire before, but this is why we have ASSERT()s like
-this - we're being handed something by the VFS we don't expect...
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/net/hippi/rrunner.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-Can you give me some context of the file permissions before the
-syscall and what the syscall parameters are? i.e. is this likely to
-be trying to strip SUID/SGID during the truncate operation?
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/hippi/rrunner.c b/drivers/net/hippi/rrunner.c
+index 3c4d627..00ed751 100644
+--- a/drivers/net/hippi/rrunner.c
++++ b/drivers/net/hippi/rrunner.c
+@@ -1686,15 +1686,4 @@ static struct pci_driver rr_driver = {
+ 	.remove		= rr_remove_one,
+ };
+ 
+-static int __init rr_init_module(void)
+-{
+-	return pci_register_driver(&rr_driver);
+-}
+-
+-static void __exit rr_cleanup_module(void)
+-{
+-	pci_unregister_driver(&rr_driver);
+-}
+-
+-module_init(rr_init_module);
+-module_exit(rr_cleanup_module);
++module_pci_driver(rr_driver);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.5
+
