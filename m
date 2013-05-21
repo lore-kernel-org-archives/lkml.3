@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3EUWiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:38:12 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:47094 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab3EUWhv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:37:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130521223453.GY25399@ZenIV.linux.org.uk>
-References: <CA+55aFyKg=m=USnRmFQNaRB_9MWNpzdLwxr-v7X0ONaG72+nsg@mail.gmail.com>
-	<20130521223453.GY25399@ZenIV.linux.org.uk>
-Date: Tue, 21 May 2013 15:37:50 -0700
-X-Google-Sender-Auth: 47KGSKNbgPUbiyt846OT1oMGca4
-Message-ID: <CA+55aFwouNkOUiEQO1RYX=bq_WR8AaiOgDv7irMV8uaQ3Anegg@mail.gmail.com>
-Subject: Re: Stupid VFS name lookup interface..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753869Ab3EUWip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:38:45 -0400
+Received: from mout.gmx.net ([212.227.17.21]:51151 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab3EUWio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:38:44 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+rTpcPedOrtgMPqeCOxlTnpKOSsTwbM2WKnGUFZC
+	aWoLuewEhZ9MJQ
+From: Peter Huewe <peterhuewe@gmx.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Francois Romieu <romieu@fr.zoreil.com>,
+        netdev@vger.kernel.org (open list:SIS 190 ETHERNET...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 05/19] net/ethernet/sis/sis190: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 00:42:10 +0200
+Message-Id: <1369176146-19383-5-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 3:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> In principle, yes, but...  I wonder if those two cases are actually
-> safe (especially ncpfs) right now.
+Removing some boilerplate by using module_pci_driver instead of calling
+register and unregister in the otherwise empty init/exit functions.
 
-Now I can agree that that may well be an issue.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/net/ethernet/sis/sis190.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-I don't think my patch makes anything worse (because if the inode
-isn't stable, we could have hit the before/after cases before, and the
-new NULL case is trivial to handle).
+diff --git a/drivers/net/ethernet/sis/sis190.c b/drivers/net/ethernet/sis/sis190.c
+index 9a9c379..02df089 100644
+--- a/drivers/net/ethernet/sis/sis190.c
++++ b/drivers/net/ethernet/sis/sis190.c
+@@ -1934,15 +1934,4 @@ static struct pci_driver sis190_pci_driver = {
+ 	.remove		= sis190_remove_one,
+ };
+ 
+-static int __init sis190_init_module(void)
+-{
+-	return pci_register_driver(&sis190_pci_driver);
+-}
+-
+-static void __exit sis190_cleanup_module(void)
+-{
+-	pci_unregister_driver(&sis190_pci_driver);
+-}
+-
+-module_init(sis190_init_module);
+-module_exit(sis190_cleanup_module);
++module_pci_driver(sis190_pci_driver);
+-- 
+1.8.1.5
 
-But I'm certainly not going to claim that ncpfs doesn't already have a
-race as-is. Just claiming that I wouldn't have made it worse ;)
-
-> Let me dig around in that code a bit, OK?
-
-Sure, no problem. This would be 3.11 material anyway, I'd expect.
-
-                 Linus
