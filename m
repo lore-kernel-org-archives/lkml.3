@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab3EUJAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:00:41 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:55676 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab3EUJAj (ORCPT
+	id S1752231Ab3EUJEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:04:10 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:59518 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3EUJEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:00:39 -0400
+	Tue, 21 May 2013 05:04:08 -0400
+X-Spam-Score: -100.8
+Message-ID: <519B3855.6050201@asianux.com>
+Date: Tue, 21 May 2013 17:03:17 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <008d01ce55e9$7c479510$74d6bf30$@lge.com>
-References: <519AD82A.6090809@wwwdotorg.org>
-	<1369116149-2361-1-git-send-email-neidhard.kim@lge.com>
-	<008d01ce55e9$7c479510$74d6bf30$@lge.com>
-Date: Tue, 21 May 2013 10:00:37 +0100
-X-Google-Sender-Auth: lVAiRcNnGqFK7dDe3dcoOHgAKfE
-Message-ID: <CAE8Q9tD8UiV=3sYbPPFGgiPCGzMS6xUWSGCRnR8tpGwQegyEQQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: bcm2835: override the HW UART periphid
-From: Gordon Hollingworth <gordon@holliweb.co.uk>
-To: Jongsung Kim <neidhard.kim@lge.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, gregkh@linuxfoundation.org,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-rpi-kernel@lists.infradead.org" 
-	<linux-rpi-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+To: Paul Mackerras <paulus@samba.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        zhangyanfei@cn.fujitsu.com, Jiri Kosina <jkosina@suse.cz>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] PowerPC: kernel: need return the related error code when
+ failure occurs.
+References: <519B0ACA.6090008@asianux.com> <20130521081031.GA29303@iris.ozlabs.ibm.com>
+In-Reply-To: <20130521081031.GA29303@iris.ozlabs.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have checked with the designer of the UART block and he confirmed that
-the 2835 PL011 contains a 16 deep fifo not 32 deep...
+On 05/21/2013 04:10 PM, Paul Mackerras wrote:
+> On Tue, May 21, 2013 at 01:48:58PM +0800, Chen Gang wrote:
+>> > 
+>> > When error occurs, need return the related error code to let upper
+>> > caller know about it.
+>> > 
+>> > ppc_md.nvram_size() can return the error code (e.g. core99_nvram_size()
+>> > in 'arch/powerpc/platforms/powermac/nvram.c').
+>> > 
+>> > And when '*ppos >= size', need return -ESPIPE (Illegal seek)
+> Why?  When *ppos >= size, it should return 0 (end of file) in my opinion.
+> ESPIPE means that any seek would be ineffective, not that a particular
+> seek went out of bounds.
 
-Hardware guys, they can never just leave it alone!!!
+OK, thanks, I will send patch v2.  :-)
 
-Gordon
 
-On 21 May 2013 07:07, Jongsung Kim <neidhard.kim@lge.com> wrote:
-> Jongsung Kim <neidhard.kim@lge.com> :
->> diff --git a/arch/arm/boot/dts/bcm2835.dtsi
-> b/arch/arm/boot/dts/bcm2835.dtsi
->> index f0052dc..1e12aef 100644
->> --- a/arch/arm/boot/dts/bcm2835.dtsi
->> +++ b/arch/arm/boot/dts/bcm2835.dtsi
->> @@ -44,6 +44,7 @@
->>                       reg = <0x7e201000 0x1000>;
->>                       interrupts = <2 25>;
->>                       clock-frequency = <3000000>;
->> +                     arm,primecell-periphid = <0x00241011>;
->>               };
->>
->>               gpio: gpio {
->
-> Stephen, how do you think about this kind of approach instead?
->
->
-> _______________________________________________
-> linux-rpi-kernel mailing list
-> linux-rpi-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rpi-kernel
+Thanks.
+-- 
+Chen Gang
+
+Asianux Corporation
