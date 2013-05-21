@@ -1,167 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab3EUQRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:17:37 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:51702 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3EUQRg (ORCPT
+	id S1754806Ab3EUQTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:19:06 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:43846 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab3EUQTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:17:36 -0400
+	Tue, 21 May 2013 12:19:03 -0400
+Date: Wed, 22 May 2013 00:18:50 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to
+ do_take_over_console
+Message-ID: <20130521161849.GA11322@udknight.homenetwork>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Peter Hurley <peter@hurleysoftware.com>, gregkh@linuxfoundation.org,
+	sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130521051511.GA11435@udknight>
+ <519B7249.2070207@hurleysoftware.com>
+ <20130521144215.GA5302@udknight.homenetwork>
+ <519B976A.3050708@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <51995A78.20207@signal11.us>
-References: <1368112788-25701-1-git-send-email-david@hauweele.net>
-	<1368112788-25701-2-git-send-email-david@hauweele.net>
-	<5191B5C4.2020609@signal11.us>
-	<CAO+c-UWi5UH-ZN5G0JiJCrCrScaYprKT7jLpFH0wEJecgoHgig@mail.gmail.com>
-	<51995A78.20207@signal11.us>
-Date: Tue, 21 May 2013 18:17:34 +0200
-X-Google-Sender-Auth: emZ5FKe03eZJu6WevS8APadui8o
-Message-ID: <CAO+c-UXymPjYysvh2kM36gcOsL3P51YWq+aYhEqX8oCySwBcaQ@mail.gmail.com>
-Subject: Re: [Linux-zigbee-devel] [PATCH 2/2] mrf24j40: Keep the interrupt
- line enabled
-From: David Hauweele <david@hauweele.net>
-To: Alan Ott <alan@signal11.us>
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519B976A.3050708@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/20 Alan Ott <alan@signal11.us>:
-> On 05/16/2013 05:34 PM, David Hauweele wrote:
->> I have seen the interrupt line going low forever with heavy traffic.
->
-> Hi David,
->
-> I've been doing some testing today and I can reproduce your issue if I
-> ping -f both ways simultaneously (after about 3-4 minutes usually). I
-> think it has more to do with the tx/rx mutual exclusion that you
-> described in patch 1/1 than it does with the disable/enable IRQ. With
-> respect to enable/disable irq, I did some checking of other similar
-> drivers (non-ieee802154) and noticed that many of them use threaded
-> interrupts. I think this may be closer to the right way to do it.
+On Tue, May 21, 2013 at 11:48:58AM -0400, Peter Hurley wrote:
+> On 05/21/2013 10:42 AM, Wang YanQing wrote:
+> > On Tue, May 21, 2013 at 09:10:33AM -0400, Peter Hurley wrote:
+> >> I would rather revert dc9641895abb which purported to delete
+> >> _unneeded_ functions than have this. Obviously the functions
+> >> were needed.
+> >>
+> >
+> > Hi Peter, this series patches' goal is to reduce codes'
+> > redundance and function duplication. But if we keep take_over_console,
+> > then we have to rewrite it as a trivial wrapper over do_take_over_console,
+> > or we have to keep bind_con_driver and register_con_driver, and this
+> > will bring use codes' redundance.
+> >
+> > And if we rewrite take_over_console as a wrapper over
+> > do_take_over_console, it is so trivial, delete it and let kernel
+> > use the unified version of APIs will simplify the APIs.
+> 
+> Except now you're spreading the brokenness that is console_lock()
+> over many more source files than the single-use case of
+> do_take_over_console().
 
-Hi Alan,
+> The actual interface is take_over_console(); the _workaround_ is
+> exposing do_take_over_console() for fbcon to wrap.
 
-Indeed, threaded interrupts would be more appropriate.
-What about spi_async ? We could avoid using any working queue with this call.
-Although the driver would need a major rewrite and I've no clue about
-the benefits of doing so.
-I wonder how much additional latency is introduced by the working
-queue, I will try to measure this today.
+This _workaround_ willn't work, take_over_console will hold console_lock internal,
+but do_take_over_console need caller hold console_lock, then we can't rewrite 
+do_take_over_console as a wrap base on take_over_console. 
 
->
-> Are you running a tickless kernel? What is your preemption model? What's
-> your hardware platform?
-
-This is a tickless kernel with CONFIG_PREEMPT on an RPi.
-
->
->> The at86rf230 driver has two isr, one for edge-triggered and another
->> for level-triggered interrupt. The latter uses
->> disable_irq_nosync/enable_irq which makes sense for level-triggered
->> interrupt. Otherwise the interrupt would be triggered again and again
->> until the scheduled work read the status register.
->>
->> However I don't see the use of disable_irq/enable_irq with an
->> edge-triggered interrupt. Perhaps I'm missing something. Though I
->> don't see any harm using it anyway.
->
-> My understanding based on the datasheet is that the interrupt can be
-> asserted again as soon as INTSTAT is read (which is done in the
-> workqueue). I guess even if it happens while the workqueue is running,
-> it's ok.
-
-You're right, as soon as INTSTAT is read, the line should be driven
-high again to assert another interrupt.
-So it shouldn't pose any problem if the interrupts are replayed by the
-kernel. What may happen however is
-an error in the spi transfer. This would result in the line staying
-low since the register hasn't really been read.
-This is what I observed at the hardware level.
-
-If this is the case, then the problem should also occurs with and
-without disable/enable_irq. However this bug
-is a bit harder to reproduce as it may take several hours. The only
-solution I see would be to regularly poll the
-INTSTAT register for recovering. I know about other drivers which do
-this so I will look into this and work on a fix.
-
->
-> I think I had a flawed understanding of schedule_work() before, thinking
-> that it would not schedule a work_struct it if the work_struct was running.
->
->>  As you said the interrupt should
->> be delayed until enable_irq() is called. In particular when
->> CONFIG_HARDIRQS_SW_RESEND is set.
->
-> I think I agree with you. I'll send you a patch to try with threaded
-> interrupts to try.
->
-> I'm trying to determine exactly what's the cause of the interrupt line
-> being stuck low.
->
-
-I tried your patch for INIT_COMPLETION. It doesn't fix the problem but
-I agree with you for the race condition.
-
-David
-
->>
->> 2013/5/14 Alan Ott <alan@signal11.us>:
->>> On 5/9/13 11:19 AM, David Hauweele wrote:
->>>> Disabling the interrupt line could miss an IRQ and leave the line into a
->>>> low state hence locking the driver.
->>>>
->>> Have you observed this? My understanding is that the interrupt won't be lost
->>> but instead delayed until enable_irq() is called.
->>>
->>> I got this pattern from the other 802.15.4 drivers. Perhaps my understanding
->>> is wrong.
->>>
->>>
->>>
->>>> Signed-off-by: David Hauweele <david@hauweele.net>
->>>> ---
->>>>   drivers/net/ieee802154/mrf24j40.c |    7 +------
->>>>   1 file changed, 1 insertion(+), 6 deletions(-)
->>>>
->>>> diff --git a/drivers/net/ieee802154/mrf24j40.c
->>>> b/drivers/net/ieee802154/mrf24j40.c
->>>> index 1e3ddf3..6ef32f7 100644
->>>> --- a/drivers/net/ieee802154/mrf24j40.c
->>>> +++ b/drivers/net/ieee802154/mrf24j40.c
->>>> @@ -603,8 +603,6 @@ static irqreturn_t mrf24j40_isr(int irq, void *data)
->>>>   {
->>>>         struct mrf24j40 *devrec = data;
->>>>
->>>> -       disable_irq_nosync(irq);
->>>> -
->>>>         schedule_work(&devrec->irqwork);
->>>>
->>>>         return IRQ_HANDLED;
->>>> @@ -619,7 +617,7 @@ static void mrf24j40_isrwork(struct work_struct *work)
->>>>         /* Read the interrupt status */
->>>>         ret = read_short_reg(devrec, REG_INTSTAT, &intstat);
->>>>         if (ret)
->>>> -               goto out;
->>>> +               return;
->>>>
->>>>         /* Check for TX complete */
->>>>         if (intstat & 0x1)
->>>> @@ -628,9 +626,6 @@ static void mrf24j40_isrwork(struct work_struct *work)
->>>>         /* Check for Rx */
->>>>         if (intstat & 0x8)
->>>>                 schedule_work(&devrec->rxwork);
->>>> -
->>>> -out:
->>>> -       enable_irq(devrec->spi->irq);
->>>>   }
->>>>
->>>>   static void mrf24j40_rxwork(struct work_struct *work)
->>>>
->
->
+But the reverse is ok. So if we have to do it, then the actual interface 
+is do_take_over_console, and the "_workaround_" is exposing take_over_console 
+as a wrap base on do_take_over_console.
