@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab3EURsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 13:48:23 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:54976 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3EURsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 13:48:21 -0400
-Message-ID: <1369158499.3301.236.camel@edumazet-glaptop>
-Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
- socket polling
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pekka Riikonen <priikone@iki.fi>
-Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 21 May 2013 10:48:19 -0700
-In-Reply-To: <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-	   <20130520101601.14133.874.stgit@ladj378.jer.intel.com>
-	  <1369063764.3301.182.camel@edumazet-glaptop>
-	  <519B2237.20204@linux.intel.com>
-	 <1369142926.3301.213.camel@edumazet-glaptop>
-	 <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755342Ab3EURtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 13:49:08 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:36889 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751915Ab3EURtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 13:49:06 -0400
+Date: Tue, 21 May 2013 19:48:49 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
+ device tree nodes
+Message-ID: <20130521174849.GL26249@lunn.ch>
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 19:02 +0200, Pekka Riikonen wrote:
+On Tue, May 21, 2013 at 06:41:44PM +0200, Sebastian Hesselbarth wrote:
+> This patch adds orion-eth and mvmdio device tree nodes for DT enabled
+> Dove boards. As there is only one ethernet controller on Dove, a default
+> phy node is also added with a note to set its reg property on a per-board
+> basis.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Changelog:
+> v3->v4:
+> - convert to new device tree binding
+> 
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |    7 +++++++
+>  arch/arm/boot/dts/dove.dtsi      |   35 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 42 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+> index 7e3065a..02618fa 100644
+> --- a/arch/arm/boot/dts/dove-cubox.dts
+> +++ b/arch/arm/boot/dts/dove-cubox.dts
+> @@ -49,6 +49,13 @@
+>  &uart0 { status = "okay"; };
+>  &sata0 { status = "okay"; };
+>  &i2c0 { status = "okay"; };
+> +&mdio { status = "okay"; };
+> +&eth { status = "okay"; };
+> +
+> +&ethphy {
+> +	compatible = "marvell,88e1310";
+> +	reg = <1>;
+> +};
+>  
+>  &sdio0 {
+>  	status = "okay";
+> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> index 6cab468..8612658 100644
+> --- a/arch/arm/boot/dts/dove.dtsi
+> +++ b/arch/arm/boot/dts/dove.dtsi
+> @@ -258,5 +258,40 @@
+>  				dmacap,xor;
+>  			};
+>  		};
+> +
+> +		mdio: mdio-bus@72004 {
+> +			compatible = "marvell,orion-mdio";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0x72004 0x84>;
+> +			interrupts = <30>;
+> +			clocks = <&gate_clk 2>;
+> +			status = "disabled";
+> +
+> +			ethphy: ethernet-phy {
+> +				device-type = "ethernet-phy";
+> +				/* set phy address in board file */
+> +			};
+> +		};
+> +
+> +		eth: ethernet-controller@72000 {
+> +			compatible = "marvell,orion-eth";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +			reg = <0x72000 0x4000>;
+> +			clocks = <&gate_clk 2>;
+> +			marvell,tx-checksum-limit = <1600>;
+> +			status = "disabled";
+> +
+> +			ethernet-port@0 {
+> +				device_type = "network";
+> +				compatible = "marvell,orion-eth-port";
+> +				reg = <0>;
+> +				interrupts = <29>;
+> +				/* overwrite MAC address in bootloader */
+> +				local-mac-address = [00 00 00 00 00 00];
 
-> Maybe even that's not needed.  Couldn't skb->queue_mapping give the 
-> correct NAPI instance in multiqueue nics?  The NAPI instance could be made 
-> easily available from skb->dev.  In any case an index is much better than 
-> a new pointer.
+Hi Sebastian
 
-We do not keep skb->dev information once a packet leaves the rcu
-protected region.
+Its probably a good idea to set the local administration bit in this
+MAC address. i.e. first byte is 02.
 
-Once packet is queued to tcp input queues, skb->dev is NULL.
-
-
-
+    Andrew
