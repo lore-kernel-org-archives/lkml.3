@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3EUJrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:47:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62569 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196Ab3EUJrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:47:14 -0400
-Date: Tue, 21 May 2013 11:47:11 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Linda Walsh <lkml@tlinx.org>
-Cc: util-linux@vger.kernel.org, Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: mount --no-canonical seems broken.
-Message-ID: <20130521094711.GD11688@x2.net.home>
-References: <5175BA15.9060803@tlinx.org>
- <20130423123648.GB24501@x2.net.home>
- <517729C7.2030806@tlinx.org>
- <20130520074001.GE16493@x2.net.home>
- <519AB20D.7030503@tlinx.org>
+	id S1753024Ab3EUJt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:49:27 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34093 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3EUJt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 05:49:26 -0400
+Message-ID: <519B4322.4030701@hitachi.com>
+Date: Tue, 21 May 2013 18:49:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519AB20D.7030503@tlinx.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Irina Tirdea <irina.tirdea@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Tom Zanussi <tom.zanussi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@suse.de>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: Re: [PATCH 2/5] perf: Reorder parameters of strglobmatch
+References: <20130516114839.13508.92844.stgit@mhiramat-M0-7522> <20130516114852.13508.72995.stgit@mhiramat-M0-7522> <1368716142.6828.98.camel@gandalf.local.home> <51959417.7070403@hitachi.com> <20130521091947.GD10541@ghostprotocols.net>
+In-Reply-To: <20130521091947.GD10541@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 04:30:21PM -0700, Linda Walsh wrote:
->  widely known as "df" or "mount".
+(2013/05/21 18:19), Arnaldo Carvalho de Melo wrote:
+> Em Fri, May 17, 2013 at 11:21:11AM +0900, Masami Hiramatsu escreveu:
+>> (2013/05/16 23:55), Steven Rostedt wrote:
+>>> I'm a bit confused to the rational here. Can you explain in more detail
+>>> to why this patch is actually needed?
+>  
+>> Yes, actually, this patch is not needed from the viewpoint of execution,
+>> but less misuse for future use of the strglobmatch, I think.
+>  
+>> For example, glob(3) has the pattern parameter as the first one,
+>>
+>>        int glob(const char *pattern, int flags,
+>>                 int (*errfunc) (const char *epath, int eerrno),
+>>                 glob_t *pglob);
+>  
+>> regexec(3) also has the compiled regexp at the first parameter,
+>  
+>>        int regexec(const regex_t *preg, const char *string, size_t nmatch,
+>>                    regmatch_t pmatch[], int eflags);
+>  
+>> Thus, I think a new user of strglobmatch() may guess that the first
+>> parameter should be the glob pattern.
+>  
+>> So, this patch is not technically needed, but from the viewpoint of coding
+>> naturally, it should be changed, IMHO.
 > 
-> I might point out that by default,
-> > findmnt /
-> 
-> TARGET SOURCE    FSTYPE OPTIONS
-> /      /dev/root xfs    rw,nodiratime,relatime,attr2,inode64,noquota
-> > > l /dev/root
-> ls: cannot access /dev/root: No such file or directory
+> So I suggest you state this in the changeset comment :-)
 
- util-linux 2.23 ? 
- 
- libmount since this version is able to use the root= kernel command
- line option to convert /dev/root from the /proc/self/mountinfo file
- to a real device name.
+Agreed, I must update it ...
 
-    Karel
-
+Thank you,
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
