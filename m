@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3EUNNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:13:17 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:34235 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235Ab3EUNNQ (ORCPT
+	id S1754529Ab3EUNQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:16:35 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:56513 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754439Ab3EUNQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:13:16 -0400
-Message-ID: <519B7298.1090109@synopsys.com>
-Date: Tue, 21 May 2013 18:41:52 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 21 May 2013 09:16:34 -0400
+Date: Tue, 21 May 2013 14:15:40 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: kernel: need extern variable 'screen_info' for
+ related driver using.
+Message-ID: <20130521131539.GC27002@arm.com>
+References: <5199B7D6.40907@asianux.com>
+ <20130520091008.GB31359@mudshark.cambridge.arm.com>
+ <519AE6D7.1090401@asianux.com>
+ <CAMuHMdWNHPDkf35MYMKnxt5pn3a+dsT4jgYxuuHrp+mpZMckfw@mail.gmail.com>
+ <519B278B.6030708@asianux.com>
+ <20130521090336.GC10453@mudshark.cambridge.arm.com>
+ <519B48B4.6050607@asianux.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARC MM Bug Fix
-References: <1369140259-30501-1-git-send-email-vgupta@synopsys.com> <519B6DA7.7000305@synopsys.com>
-In-Reply-To: <519B6DA7.7000305@synopsys.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.228]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519B48B4.6050607@asianux.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 06:20 PM, Vineet Gupta wrote:
-> On 05/21/2013 06:14 PM, Vineet Gupta wrote:
->> Hi Linus,
->>
->> I have a ARC MM bug fix, and it seems the best way to CC stable explicitly, is
->> to send a patch to them (and hence you as well - as opposed to regular
->> pull-req). OK with you ?
+On Tue, May 21, 2013 at 11:13:08AM +0100, Chen Gang wrote:
+> On 05/21/2013 05:03 PM, Will Deacon wrote:
+> > On Tue, May 21, 2013 at 08:51:39AM +0100, Chen Gang wrote:
+> >> For me, I still recommend add 'ARM64' in the long list of architectures
+> >> for 'VGA_CONSOLE', I have 3 reasons, please check:
+> >>
+> >> a. current implementation only changes one area which only related with
+> >> arm64 and 'VGA_CONSOLE', but if use 'CONFIG_HAVE_VGA_CONSOLE', that will
+> >> touch many multiple platforms dependency, at least we need discuss about
+> >> it with multiple platforms guys for it, firstly.
+> > 
+> > That's a weak argument. You might as well propose the cleanup and see what
+> > people say.
 > 
-> Damn ! Despite the noise, the CC to stable didn't go thru - I missed < > around
-> the email address perhaps.
-> 
-> -Vineet
-> 
+> Hmm.. I think at least, we need discuss it with the 'final applier'
+> firstly (and now, I even do not know who is the 'final applier').
 
-Please ignore the whole thread - bad day it seems - while the patch fixes the
-issue with no apparent regressions it introduces a bit of bogosity in TLB Miss
-handlers. I'll respin/re-test and send this via  regular pull request and notify
-stable explicitly.
+Well, you can post the patch to linux-arch, cc'ing the arch maintainers
+whose Kconfig files you touch. If there are no comments, it will most
+likely be picked by Andrew Morton and sent to Linus (make sure you cc
+Andrew as well).
 
-Sorry once again for the noise.
-
-Thx,
--Vineet
+-- 
+Catalin
