@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab3EURDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 13:03:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56712 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab3EURDD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 13:03:03 -0400
-Date: Tue, 21 May 2013 10:03:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: rui.zhang@intel.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/2] staging -> thermal: move ti-soc-thermal to
- drivers/thermal
-Message-ID: <20130521170302.GC20464@kroah.com>
-References: <1368632761-10528-1-git-send-email-eduardo.valentin@ti.com>
+	id S1755247Ab3EURDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 13:03:20 -0400
+Received: from git.silcnet.org ([81.89.56.81]:52069 "EHLO git.silcnet.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752898Ab3EURDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 13:03:18 -0400
+Date: Tue, 21 May 2013 19:02:19 +0200 (CEST)
+From: Pekka Riikonen <priikone@iki.fi>
+X-X-Sender: priikone@git.silcnet.org
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Dave Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
+ socket polling
+In-Reply-To: <1369142926.3301.213.camel@edumazet-glaptop>
+Message-ID: <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org>
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>   <20130520101601.14133.874.stgit@ladj378.jer.intel.com>  <1369063764.3301.182.camel@edumazet-glaptop>  <519B2237.20204@linux.intel.com> <1369142926.3301.213.camel@edumazet-glaptop>
+User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368632761-10528-1-git-send-email-eduardo.valentin@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:45:59AM -0400, Eduardo Valentin wrote:
-> 
-> Hello Greg and Rui,
-> 
-> I am proposing to move the ti-soc-thermal driver from drivers/stating/
-> to drivers/thermal. It has been some time that we have been fixing and
-> improving the code under staging tree.
+On Tue, 21 May 2013, Eric Dumazet wrote:
 
-This is up to review from the thermal maintainer and developers to
-accept this.
+: > > Alternatively, use a napi_id instead of a pointer.
+: > 
+: > I'm not sure I understand what you propose.
+: 
+: Oh well.
+: 
+: To get a pointer to a struct net_device, we can use ifindex, and do a
+: rcu lookup into a hash table to get the net_device. We do not need
+: {pointer,ifindex} but {ifindex} is enough
+: 
+: My suggestion is to not have skb->skb_ref but skb->napi_index : Its safe
+: to copy its value from skb->napi_index to sk->napi_index without
+: refcounting.
+: 
+: All NAPI need to get a unique napi_index, and be inserted in a hash
+: table for immediate/fast lookup.
+: 
+Maybe even that's not needed.  Couldn't skb->queue_mapping give the 
+correct NAPI instance in multiqueue nics?  The NAPI instance could be made 
+easily available from skb->dev.  In any case an index is much better than 
+a new pointer.
 
-thanks,
-
-greg k-h
+	Pekka
