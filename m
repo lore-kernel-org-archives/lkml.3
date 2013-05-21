@@ -1,127 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935Ab3EUNzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:55:17 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:52768 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3EUNzP (ORCPT
+	id S1753098Ab3EUN4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:56:24 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54630 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab3EUN4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:55:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <8578.1368699317@ale.ozlabs.ibm.com>
-References: <20130503121122.931661809@chello.nl>
-	<20130503121256.230745028@chello.nl>
-	<CABPqkBTvcQAyXfeiJwpPsNtbs4ffsVguXE631dK_rbzHpwBdOg@mail.gmail.com>
-	<20130516090916.GF19669@dyad.programming.kicks-ass.net>
-	<8578.1368699317@ale.ozlabs.ibm.com>
-Date: Tue, 21 May 2013 15:55:14 +0200
-Message-ID: <CABPqkBRpbh4BO7cMBysE+E+n5E_o_KesEhEZ3Wq49B3MeW786A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf, x86, lbr: Demand proper privileges for PERF_SAMPLE_BRANCH_KERNEL
-From: Stephane Eranian <eranian@google.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Linux PPC dev <linuxppc-dev@ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 21 May 2013 09:56:23 -0400
+From: Dongjin Kim <tobetter@gmail.com>
+Cc: Dongjin Kim <tobetter@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: add max77686 node entry for ODROID-X
+Date: Tue, 21 May 2013 22:56:04 +0900
+Message-Id: <1369144571-16901-1-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 12:15 PM, Michael Neuling <mikey@neuling.org> wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Wed, May 15, 2013 at 03:37:22PM +0200, Stephane Eranian wrote:
->> > On Fri, May 3, 2013 at 2:11 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> > > We should always have proper privileges when requesting kernel data.
->> > >
->> > > Cc: Andi Kleen <ak@linux.intel.com>
->> > > Cc: eranian@google.com
->> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> > > Link: http://lkml.kernel.org/n/tip-v0x9ky3ahzr6nm3c6ilwrili@git.kernel.org
->> > > ---
->> > >  arch/x86/kernel/cpu/perf_event_intel_lbr.c |    5 ++++-
->> > >  1 file changed, 4 insertions(+), 1 deletion(-)
->> > >
->> > > --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> > > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> > > @@ -318,8 +318,11 @@ static void intel_pmu_setup_sw_lbr_filte
->> > >         if (br_type & PERF_SAMPLE_BRANCH_USER)
->> > >                 mask |= X86_BR_USER;
->> > >
->> > > -       if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
->> > > +       if (br_type & PERF_SAMPLE_BRANCH_KERNEL) {
->> > > +               if (perf_paranoid_kernel() && !capable(CAP_SYS_ADMIN))
->> > > +                       return -EACCES;
->> > >                 mask |= X86_BR_KERNEL;
->> > > +       }
->> > >
->> > This will prevent regular users from capturing kernel -> kernel branches.
->> > But it won't prevent users from getting kernel -> user branches. Thus
->> > some kernel address will still be captured. I guess they could be eliminated
->> > by the sw_filter.
->> >
->> > When using LBR priv level filtering, the filter applies to the branch target
->> > only.
->>
->> How about something like the below? It also adds the branch flags
->> Mikey wanted for PowerPC.
->
-> Peter,
->
-> BTW PowerPC also has the ability to filter on conditional branches.  Any
-> chance we could add something like the follow to perf also?
->
-> Mikey
->
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index fb104e5..891c769 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -157,8 +157,9 @@ enum perf_branch_sample_type {
->         PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << 4, /* any call branch */
->         PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << 5, /* any return branch */
->         PERF_SAMPLE_BRANCH_IND_CALL     = 1U << 6, /* indirect calls */
-> +       PERF_SAMPLE_BRANCH_CONDITIONAL  = 1U << 7, /* conditional branches */
->
-I would use PERF_SAMPLE_BRANCH_COND here.
+ODROID-X board have a max77686 PMIC on i2c channel 0. The properties of used
+LDO and BUCK are defined according the schematic.
 
-> -       PERF_SAMPLE_BRANCH_MAX          = 1U << 7, /* non-ABI */
-> +       PERF_SAMPLE_BRANCH_MAX          = 1U << 8, /* non-ABI */
->  };
->
->  #define PERF_SAMPLE_BRANCH_PLM_ALL \
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index cdf58ec..5b0b89d 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -676,6 +676,7 @@ static const struct branch_mode branch_modes[] = {
->         BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
->         BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
->         BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-> +       BRANCH_OPT("cnd", PERF_SAMPLE_BRANCH_CONDITIONAL),
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ arch/arm/boot/dts/exynos4412-odroidx.dts |  195 ++++++++++++++++++++++++++++++
+ 1 file changed, 195 insertions(+)
 
-use "cond"
+diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
+index 53bc8bf..1786225 100644
+--- a/arch/arm/boot/dts/exynos4412-odroidx.dts
++++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
+@@ -108,4 +108,199 @@
+ 			clock-frequency = <24000000>;
+ 		};
+ 	};
++
++	i2c@13860000 {
++		pinctrl-0 = <&i2c0_bus>;
++		pinctrl-names = "default";
++		status = "okay";
++
++		max77686: pmic@09 {
++			compatible = "maxim,max77686";
++			reg = <0x09>;
++
++			voltage-regulators {
++				ldo1_reg: LDO1 {
++					regulator-name = "VDD_ALIVE_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				ldo2_reg: LDO2 {
++					regulator-name = "VDDQ_M1_2_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++				};
++
++				ldo3_reg: LDO3 {
++					regulator-name = "VDDQ_EXT_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++				};
++
++				ldo4_reg: LDO4 {
++					regulator-name = "VDDQ_MMC2_2.8V";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <2800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo5_reg: LDO5 {
++					regulator-name = "VDDQ_MMC1_3_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo6_reg: LDO6 {
++					regulator-name = "VDD10_MPLL_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				ldo7_reg: LDO7 {
++					regulator-name = "VDD10_XPLL_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++				};
++
++				ldo11_reg: LDO11 {
++					regulator-name = "VDD18_ABB1_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++				};
++
++				ldo12_reg: LDO12 {
++					regulator-name = "VDD33_USB_3.3V";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo13_reg: LDO13 {
++					regulator-name = "VDDQ_C2C_W_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo14_reg: LDO14 {
++					regulator-name = "VDD18_ABB0_2_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo15_reg: LDO15 {
++					regulator-name = "VDD10_HSIC_1.0V";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo16_reg: LDO16 {
++					regulator-name = "VDD18_HSIC_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo20_reg: LDO20 {
++					regulator-name = "LDO20_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-boot-on;
++				};
++
++				ldo21_reg: LDO21 {
++					regulator-name = "LDO21_3.3V";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				ldo25_reg: LDO25 {
++					regulator-name = "VDDQ_LCD_1.8V";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck1_reg: BUCK1 {
++					regulator-name = "vdd_mif";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck2_reg: BUCK2 {
++					regulator-name = "vdd_arm";
++					regulator-min-microvolt = <900000>;
++					regulator-max-microvolt = <1300000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck3_reg: BUCK3 {
++					regulator-name = "vdd_int";
++					regulator-min-microvolt = <1000000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck4_reg: BUCK4 {
++					regulator-name = "vdd_g3d";
++					regulator-min-microvolt = <900000>;
++					regulator-max-microvolt = <1100000>;
++					regulator-microvolt-offset = <50000>;
++				};
++
++				buck5_reg: BUCK5 {
++					regulator-name = "VDDQ_CKEM1_2_1.2V";
++					regulator-min-microvolt = <1200000>;
++					regulator-max-microvolt = <1200000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck6_reg: BUCK6 {
++					regulator-name = "BUCK6_1.35V";
++					regulator-min-microvolt = <1350000>;
++					regulator-max-microvolt = <1350000>;
++					regulator-always-on;
++					regulator-boot-on;
++				};
++
++				buck7_reg: BUCK7 {
++					regulator-name = "BUCK7_2.0V";
++					regulator-min-microvolt = <2000000>;
++					regulator-max-microvolt = <2000000>;
++					regulator-always-on;
++				};
++
++				buck8_reg: BUCK8 {
++					regulator-name = "BUCK8_2.8V";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <2800000>;
++					regulator-always-on;
++				};
++			};
++		};
++	};
+ };
+-- 
+1.7.9.5
 
->         BRANCH_END
->  };
->
-
-And if you do this, you also need to update the x86
-perf_event_intel_lbr.c mapping
-tables to fill out the entries for PERF_SAMPLE_BRANCH_COND:
-
-        [PERF_SAMPLE_BRANCH_COND]       = LBR_JCC,
-
-And you also need to update intel_pmu_setup_sw_lbr_filter()
-to handle the conversion to x86 instructions:
-
-       if (br_type & PERF_SAMPLE_BRANCH_COND)
-                mask |= X86_BR_JCC;
-
-
-You also need to update the perf-record.txt documentation to list cond
-as a possible
-branch filter.
