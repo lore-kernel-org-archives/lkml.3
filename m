@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099Ab3EUQoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:44:13 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:51998 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab3EUQnw (ORCPT
+	id S1754913Ab3EUQmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:42:19 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:43128 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab3EUQmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:43:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130521084455.5c651991@tauon>
-References: <20130521084455.5c651991@tauon>
-Date: Tue, 21 May 2013 12:43:50 -0400
-Message-ID: <CACXcFmnqfpsAnS3ca-bfqE=Ru5vsdFv4atZoE=5AoH9CgWAAfQ@mail.gmail.com>
-Subject: Re: [PATCH][RFC] CPU Jitter random number generator (resent)
-From: Sandy Harris <sandyinchina@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 21 May 2013 12:42:15 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 01/12] net: mv643xx_eth: use phy_disconnect instead of phy_detach
+Date: Tue, 21 May 2013 18:41:39 +0200
+Message-Id: <1369154510-4927-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I very much like the basic notion here. The existing random(4) driver
-may not get enough entropy in a VM or on a device like a Linux router
-and I think work such as yours or HAVEGE
-(http://www.irisa.fr/caps/projects/hipsor/) are important research.
-The paper by McGuire et al of "Analysis of inherent randomness of the
-Linux kernel" (http://lwn.net/images/conf/rtlws11/random-hardware.pdf)
-seems to show that this is a fine source of more entropy.
+Using a separated mdio bus driver with mvmdio, phy_detach on network device
+removal will not stop the phy and finally lead to NULL pointer dereference
+in mvmdio due to non-existent network device. Use phy_disconnect instead
+to properly stop phy device from accessing network device prior removal of
+the network device.
 
-On the other hand, I am not certain you are doing it in the right
-place. My own attempt (ftp://ftp.cs.sjtu.edu.cn:990/sandy/maxwell/)
-put it in a demon that just feeds /dev/random, probably also not the
-right place. haveged(8) (http://www.issihosts.com/haveged/) also puts
-it in a demon process. It may, as you suggest, belong in the kernel
-instead, but I think there are arguments both ways.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Note: I observed this behavior when removing a modular mv643xx_eth driver
+after attaching it to a phy handled by (also modular) mvmdio. The mvmdio
+conversion has been done in
 
-Could we keep random(4) mostly as is and rearrange your code to just
-give it more entropy? I think the large entropy pool in the existing
-driver is essential since we sometimes want to generate things like a
-2 Kbit PGP key and it is not clear to me that your driver is entirely
-trustworthy under such stress.
+commit c3a07134e6aa5b93a37f72ffa3d11fadf72bf757
+ ("mv643xx_eth: convert to use the Marvell Orion MDIO driver")
 
-On Tue, May 21, 2013 at 2:44 AM, Stephan Mueller <smueller@chronox.de> wrote:
-> Hi,
->
-> [1] patch at http://www.chronox.de/jent/jitterentropy-20130516.tar.bz2
->
-> A new version of the CPU Jitter random number generator is released at
-> http://www.chronox.de/ . The heart of the RNG is about 30 lines of easy
-> to read code. The readme in the main directory explains the different
-> code files. A changelog can be found on the web site.
->
-> In a previous attempt (http://lkml.org/lkml/2013/2/8/476), the first
-> iteration received comments for the lack of tests, documentation and
-> entropy assessment. All these concerns have been addressed. The
-> documentation of the CPU Jitter random number generator
-> (http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html and PDF at
-> http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf -- the graphs and
-> pictures are better in PDF) offers a full analysis of:
->
-> - the root cause of entropy
->
-> - a design of the RNG
->
-> - statistical tests and analyses
->
-> - entropy assessment and explanation of the flow of entropy
->
-> The document also explains the core concept to have a fully
-> decentralized entropy collector for every caller in need of entropy.
->
-> Also, this RNG is well suitable for virtualized environments.
-> Measurements on OpenVZ and KVM environments have been conducted as
-> documented. As the Linux kernel is starved of entropy in virtualized as
-> well as server environments, new sources of entropy are vital.
->
-> The appendix of the documentation contains example use cases by
-> providing link code to the Linux kernel crypto API, libgcrypt and
-> OpenSSL. Links to other cryptographic libraries should be straight
-> forward to implement. These implementations follow the concept of
-> decentralized entropy collection.
->
-> The man page provided with the source code explains the use of the API
-> of the CPU Jitter random number generator.
->
-> The test cases used to compile the documentation are available at the
-> web site as well.
->
-> Note: for the kernel crypto API, please read the provided Kconfig file
-> for the switches and which of them are recommended in regular
-> operation. These switches must currently be set manually in the
-> Makefile.
->
-> Ciao
-> Stephan
->
-> Signed-off-by: Stephan Mueller <smueller@chronox.de>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+and should go back any -stable version with that commit (propably only 3.9)
 
+@David: I am not sure if the above description is sufficient for a -stable
+patch, if you need more, like actual kernel failure, I am sure I can reproduce
+it.
 
+Cc: David Miller <davem@davemloft.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index d0afeea..ef3454c 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2805,7 +2805,7 @@ static int mv643xx_eth_remove(struct platform_device *pdev)
+ 
+ 	unregister_netdev(mp->dev);
+ 	if (mp->phy != NULL)
+-		phy_detach(mp->phy);
++		phy_disconnect(mp->phy);
+ 	cancel_work_sync(&mp->tx_timeout_task);
+ 
+ 	if (!IS_ERR(mp->clk))
 -- 
-Who put a stop payment on my reality check?
+1.7.10.4
+
