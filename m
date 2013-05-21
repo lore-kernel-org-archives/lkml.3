@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3EUMH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:07:58 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:42487 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753226Ab3EUMH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:07:56 -0400
-Message-ID: <519B632F.7040202@mellanox.com>
-Date: Tue, 21 May 2013 15:06:07 +0300
-From: Alex Rosenbaum <alexr@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1754102Ab3EUMJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 08:09:14 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48720 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753682Ab3EUMJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 08:09:13 -0400
+Date: Tue, 21 May 2013 05:09:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
+Message-ID: <20130521120906.GD3578@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <519B38EC.90401@yandex-team.ru>
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: Dave Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
-References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.222.66.109]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519B38EC.90401@yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052112-5806-0000-0000-0000213D1C85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/20/2013 1:15 PM, Eliezer Tamir wrote:
-> updated with the comments I got so far.
->
-> Thanks,
-> Eliezer
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Tue, May 21, 2013 at 01:05:48PM +0400, Roman Gushchin wrote:
+> Hi, all!
+> 
+> This is a fix for a problem described here:
+> https://lkml.org/lkml/2013/4/16/371 .
+> ---
+> 
+> Some network functions (udp4_lib_lookup2(), for instance) use the
+> hlist_nulls_for_each_entry_rcu macro in a way that assumes restarting
+> of a loop. In this case, it is strictly necessary to reread the head->first
+> value from the memory before each scan.
+> Without additional hints, gcc caches this value in a register. In this case,
+> if a cached node is moved to another chain during the scan, we can loop
+> forever getting wrong nulls values and restarting the loop uninterruptedly.
+> 
+> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+> ---
+>  include/linux/rculist_nulls.h | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+> index 2ae1371..efd51bf 100644
+> --- a/include/linux/rculist_nulls.h
+> +++ b/include/linux/rculist_nulls.h
+> @@ -37,8 +37,9 @@ static inline void hlist_nulls_del_init_rcu(struct
+> hlist_nulls_node *n)
+>  	}
+>  }
+> 
+> -#define hlist_nulls_first_rcu(head) \
+> -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+> +#define hlist_nulls_first_rcu(head)			\
+> +	(*((struct hlist_nulls_node __rcu __force **)	\
+> +	   &((volatile typeof(*head) *)head)->first))
 
-Hello Eliezer,
+Why not use ACCESS_ONCE() or (better) rcu_dereference_raw() here?
 
-I am working in Mellanox on a low latency user space offload technology 
-and there are some similarities between the user space and your kernel 
-implementation.
+							Thanx, Paul
 
-We have experience in similar ‘infinite polling’ issues in respect to 
-the real applications.
-
-I am coming in a little late here but wanted to check that:
-
-1. It seem this patch does not cover epoll/select and such IO muxing APIs?
-
-Most real application will be based on epoll or select, not like netperf 
-which is a simple send/recv per thread based network test. If you take 
-memcached application you have epoll per thread with few sockets in each 
-running on each core.
-
-In the IO mux cases you need to poll multiple driver rings while also 
-polling other non-network fd’s (files, pipes,..) and not to hurt their 
-latency response.
-
-2. How is the logic aware of RSS and RFS?
-
-With TCP sockets, the driver knows the specific ring it need to poll so 
-this should be mapped and provide the best latency.
-
-For UDP (unicast and multicast) you can have all rings delivering 
-packets to a single receive socket, is ndo_ll_poll expected to scan 
-driver rings?
-
-3. I could not find any reference to multi-thread on single core logic. 
-This can causes the opposite effect and create contentions and higher 
-latency’s.
-
-Maybe you should ref_count the number of threads per core going into 
-ndo_ll_poll. If the second+ threads want to go down to ndo_ll_poll you 
-should block (sleep) them instead of creating contention.
-
-In this mode at least the first thread will get very good latency and 
-the others will not get hurt.
-
-Or if they move to a different core they should go down to the driver 
-for polling the ring.
-
-Thanks,
-
-Alex Rosenbaum
-
-Director R&D Application Acceleration
-
-Mellanox Technologies
+>  #define hlist_nulls_next_rcu(node) \
+>  	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
+> -- 
+> 1.8.1.2
+> 
 
