@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3EUJ2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:28:12 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:36773 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3EUJ2K (ORCPT
+	id S1752896Ab3EUJ3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:29:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10155 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005Ab3EUJ3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:28:10 -0400
-X-Spam-Score: -100.7
-Message-ID: <519B3DF8.9060902@asianux.com>
-Date: Tue, 21 May 2013 17:27:20 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kernel: compiling issue, need 'EXPORT_SYMBOL_GPL(read_current_timer)'
-References: <5199C725.8050102@asianux.com> <168084c28e8ba5124c05553e97463172@localhost> <20130520095606.GH31359@mudshark.cambridge.arm.com> <519AF2DC.2040200@asianux.com> <20130521085325.GB10453@mudshark.cambridge.arm.com>
-In-Reply-To: <20130521085325.GB10453@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 21 May 2013 05:29:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="317052530"
+Message-ID: <1369128579.29283.139.camel@smile>
+Subject: Re: [PATCH v3 0/2] dma: support Lynxpoint DMA
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Date: Tue, 21 May 2013 12:29:39 +0300
+In-Reply-To: <20130514045423.GC27639@intel.com>
+References: <1368003349-12204-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20130514045423.GC27639@intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 04:53 PM, Will Deacon wrote:
-> On Tue, May 21, 2013 at 05:06:52AM +0100, Chen Gang wrote:
->> On 05/20/2013 05:56 PM, Will Deacon wrote:
->>> Should be ok once the arch timer driver has moved exclusively to virtual
->>> time. I'm also not sure we even need to implement read_current_timer() --
->>> it's only used for delay-loop calibration, which we don't need for the
->>> arch timer.
->>>
->>
->> For whether we need implement read_current_timer():
->>
->>   many platforms have implemented it (openrisc, arm, sparc, hexagon, avr32, x86).
->>   it is called by init/calibrate.c when 'ARCH_HAS_READ_CURRENT_TIMER' is defined.
->>   since arm64 can implement it, better to provide it as an architect features to let outside use.
-> 
-> No, that code is not needed on arm64 because we calibrate the delay loop
-> statically using a known timer frequency.
-> 
->> For the implementation of read_current_timer():
->>
->>   it has to face various configurations
->>     (e.g. CONFIG_ARM_ARCH_TIMER, arch_timer_read_zero, arch_counter_get_cntvct, arch_counter_get_cntpct)
->>   so better still use variable instead of.
->>     (excuse me, I do not know what is 'CNTVCT_EL0', is it like a constant number ?)
-> 
-> cntvct_el0 is a system register, which provides the virtual counter value.
-> 
->> For the implementation of get_cycles()
->>
->>   if read_current_timer() is provided,
->>   better to let get_cycles() to call it, instead of implement once again.
-> 
-> You can implement it as a macro if you like, I'm just suggesting that we
-> might not need read_current_timer after all.
-> 
-> Will
-> 
-> 
+On Tue, 2013-05-14 at 10:24 +0530, Vinod Koul wrote: 
+> On Wed, May 08, 2013 at 11:55:47AM +0300, Andy Shevchenko wrote:
+> > This is the rest of patch series related to ACPI DMA helpers and Lynxpoint DMAC.
+> > Patches are rebased against current Linus' tree and Vinod's branch for-linus.
+> > 
+> > Since v2:
+> >  - remove patches that are already in the Vinod's tree
+> >  - rebase on top of today's origin/master and Vinod's for-linus branch
+> >  - fix description in patch 2/2
+> Applied both, Thanks
 
-Thanks, I should try patch v2.  :-)
+Thank you for applying them to next.
+
+I'm just wondering if you are going to send pull request soon to get
+them in the v3.10-rcX.
+
+Besides those two are really needed to support Haswell properly, there
+are people who are waiting for those patches, because patches touch ACPI
+subsystem.
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
