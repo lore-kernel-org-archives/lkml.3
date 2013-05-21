@@ -1,110 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3EUIKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 04:10:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45413 "EHLO mx2.suse.de"
+	id S1752612Ab3EUIK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 04:10:59 -0400
+Received: from ozlabs.org ([203.10.76.45]:37345 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab3EUIKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 04:10:30 -0400
-Date: Tue, 21 May 2013 09:10:20 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
+	id S1752299Ab3EUIKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 04:10:40 -0400
+Date: Tue, 21 May 2013 18:10:31 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv11 2/4] zbud: add to mm/
-Message-ID: <20130521081020.GT11497@suse.de>
-References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130517154837.GN11497@suse.de>
- <20130519205219.GA3252@cerebellum>
- <20130520135439.GR11497@suse.de>
- <20130520154225.GA25536@cerebellum>
+        zhangyanfei@cn.fujitsu.com, Jiri Kosina <jkosina@suse.cz>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PowerPC: kernel: need return the related error code when
+ failure occurs.
+Message-ID: <20130521081031.GA29303@iris.ozlabs.ibm.com>
+References: <519B0ACA.6090008@asianux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130520154225.GA25536@cerebellum>
+In-Reply-To: <519B0ACA.6090008@asianux.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 10:42:25AM -0500, Seth Jennings wrote:
-> On Mon, May 20, 2013 at 02:54:39PM +0100, Mel Gorman wrote:
-> > On Sun, May 19, 2013 at 03:52:19PM -0500, Seth Jennings wrote:
-> > > My first guess is that the external fragmentation situation you are referring to
-> > > is a workload in which all pages compress to greater than half a page.  If so,
-> > > then it doesn't matter what NCHUCNKS_ORDER is, there won't be any pages the
-> > > compress enough to fit in the < PAGE_SIZE/2 free space that remains in the
-> > > unbuddied zbud pages.
-> > > 
-> > 
-> > There are numerous aspects to this, too many to write them all down.
-> > Modelling the external fragmentation one and how it affects swap IO
-> > would be a complete pain in the ass so lets consider the following
-> > example instead as it's a bit clearer.
-> > 
-> > Three processes. Process A compresses by 75%, Process B compresses to 15%,
-> > Process C pages compress to 15%. They are all adding to zswap in lockstep.
-> > Lets say that zswap can hold 100 physical pages.
-> > 
-> > NCHUNKS == 2
-> > 	All Process A pages get rejected.
+On Tue, May 21, 2013 at 01:48:58PM +0800, Chen Gang wrote:
 > 
-> Ah, I think this is our disconnect.  Process A pages will not be rejected.
-> They will be stored in a zbud page, and that zbud page will be added
-> to the 0th unbuddied list.  This list maintains a list of zbud pages
-> that will never be buddied because there are no free chunks.
+> When error occurs, need return the related error code to let upper
+> caller know about it.
 > 
+> ppc_md.nvram_size() can return the error code (e.g. core99_nvram_size()
+> in 'arch/powerpc/platforms/powermac/nvram.c').
+> 
+> And when '*ppos >= size', need return -ESPIPE (Illegal seek)
 
-D'oh, good point. Unfortunately, the problem then still exists at the
-writeback end which I didn't bring up in the previous mail. Take three
-processes writing in lockstep. Process A pages compress to 15%, B compresses
-to 15%, C compresses to 60%. Each physical page packing will look like this
+Why?  When *ppos >= size, it should return 0 (end of file) in my opinion.
+ESPIPE means that any seek would be ineffective, not that a particular
+seek went out of bounds.
 
-nchunks=6	nchunks = 2
-
-Page 0	A B	A B
-Page 1	C A	C
-Page 2	B C	A B
-Page 3	A B	C
-Pattern repeats..........
-
-This continues until zswap is full. Now all three process stop and process
-D starts writing to zswap, each of its pages compresses to 80%. These will
-be freed in LRU order which is effectively FIFO.
-
-With nchunks=6, to store 2 process D pages, it must write out 4 pages
-to swap.  With nchunks=2, to store two process D pages, it must write 3
-pages so process D stalls for less time with nchunks==2.
-
-This is a variation of the zsmalloc packing problem where greater packing
-leads to worse performance when zswap is full. The user bug report will
-look something like "performance goes to hell when zswap is full although
-swap IO rates look normal". If it was a kernel parameter, setting nchunk=2
-as a kernel boot parameter will at least be a workaround.
-
-Of course, this is all hypothetical. It is certainly possible to create
-a reference string where nchunks=2 generates more IO but it tends to
-generate the IO sooner and more closely resemble existing swap behaviour
-that users might be willing to accept as a workaround until their problem
-can be resolved. This is why I think the parameter should be available at
-boot-time as a debugging/workaround option for developers to recommend to
-a user.
-
--- 
-Mel Gorman
-SUSE Labs
+Paul.
