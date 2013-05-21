@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3EUK05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:26:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14954 "EHLO mx1.redhat.com"
+	id S1753773Ab3EUK13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:27:29 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:54074 "EHLO lnfm1.sai.msu.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167Ab3EUK04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:26:56 -0400
-Date: Tue, 21 May 2013 12:26:48 +0200
-From: Karel Zak <kzak@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org, hughd@google.com,
-        shli@kernel.org, jmoyer@redhat.com, riel@redhat.com,
-        lwoodman@redhat.com, mgorman@suse.de
-Subject: Re: [RFC PATCH 02/02] swapon: add "cluster-discard" support
-Message-ID: <20130521102648.GB11774@x2.net.home>
-References: <cover.1369092449.git.aquini@redhat.com>
- <398ace0dd3ca1283372b3aad3fceeee59f6897d7.1369084886.git.aquini@redhat.com>
- <519AC7B3.5060902@gmail.com>
+	id S1752655Ab3EUK11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:27:27 -0400
+X-Greylist: delayed 1778 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 06:27:27 EDT
+Date: Tue, 21 May 2013 13:57:37 +0400 (MSK)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+To: jirislaby@gmail.com
+cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] tty: mxser: fix usage of opmode_ioaddr
+Message-ID: <alpine.LRH.2.00.1305211349360.20113@lnfm1.sai.msu.ru>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519AC7B3.5060902@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 09:02:43PM -0400, KOSAKI Motohiro wrote:
-> > -	if (fl_discard)
-> > +	if (fl_discard) {
-> >  		flags |= SWAP_FLAG_DISCARD;
-> > +		if (fl_discard > 1)
-> > +			flags |= SWAP_FLAG_DISCARD_CLUSTER;
-> 
-> This is not enough, IMHO. When running this code on old kernel, swapon() return EINVAL.
-> At that time, we should fall back swapon(0x10000).
+From: Matwey V. Kornilov <matwey@sai.msu.ru>
 
- Hmm.. currently we don't use any fallback for any swap flag (e.g.
- 0x10000) for compatibility with old kernels. Maybe it's better to
- keep it simple and stupid and return an error message than introduce
- any super-smart semantic to hide incompatible fstab configuration.
+mxser_port->opmode_ioaddr is initialized only for MOXA_MUST_MU860_HWID 
+chips, but no precautions have been undertaken to prevent reading and 
+writing to undefined port number.
 
-    Karel
- 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+---
+
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index 71d6eb2..f97b196 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -1618,8 +1618,12 @@ static int mxser_ioctl_special(unsigned int cmd, void __user *argp)
+  				if (ip->type == PORT_16550A)
+  					me->fifo[p] = 1;
+
+-				opmode = inb(ip->opmode_ioaddr)>>((p % 4) * 2);
+-				opmode &= OP_MODE_MASK;
++				if (ip->board->chip_flag == MOXA_MUST_MU860_HWID) {
++					opmode = inb(ip->opmode_ioaddr)>>((p % 4) * 2);
++					opmode &= OP_MODE_MASK;
++				} else {
++					opmode = RS232_MODE;
++				}
+  				me->iftype[p] = opmode;
+  				mutex_unlock(&port->mutex);
+  			}
+@@ -1670,6 +1674,9 @@ static int mxser_ioctl(struct tty_struct *tty,
+  		return mxser_ioctl_special(cmd, argp);
+
+  	if (cmd == MOXA_SET_OP_MODE || cmd == MOXA_GET_OP_MODE) {
++		if (info->board->chip_flag != MOXA_MUST_MU860_HWID)
++			return -EFAULT;
++
+  		int p;
+  		unsigned long opmode;
+  		static unsigned char ModeMask[] = { 0xfc, 0xf3, 0xcf, 0x3f };
