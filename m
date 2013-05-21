@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab3EUCnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 20 May 2013 22:43:20 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:32666 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab3EUCnP (ORCPT
+	id S1758756Ab3EUCnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 20 May 2013 22:43:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34745 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758638Ab3EUCnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 20 May 2013 22:43:15 -0400
+	Mon, 20 May 2013 22:43:09 -0400
 From: Libo Chen <libo.chen@huawei.com>
 To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <libo.chen@huawei.com>
-Subject: [PATCH 07/19] drivers/usb/gadget: add missing platform_driver owner
-Date: Tue, 21 May 2013 10:42:21 +0800
-Message-ID: <1369104141-36236-1-git-send-email-libo.chen@huawei.com>
+CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <libo.chen@huawei.com>
+Subject: [PATCH 04/19] drivers/usb/dwc3: add missing platform_driver owner
+Date: Tue, 21 May 2013 10:42:12 +0800
+Message-ID: <1369104132-7060-1-git-send-email-libo.chen@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -28,21 +29,47 @@ caller of driver holds a module refernece
 
 Signed-off-by: Libo Chen <libo.chen@huawei.com>
 ---
- drivers/usb/gadget/r8a66597-udc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/dwc3/core.c        |    1 +
+ drivers/usb/dwc3/dwc3-exynos.c |    1 +
+ drivers/usb/dwc3/dwc3-omap.c   |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-index 0b742d1..3670e23 100644
---- a/drivers/usb/gadget/r8a66597-udc.c
-+++ b/drivers/usb/gadget/r8a66597-udc.c
-@@ -2017,6 +2017,7 @@ static struct platform_driver r8a66597_driver = {
- 	.remove =	__exit_p(r8a66597_remove),
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index c35d49d..570c2df 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -766,6 +766,7 @@ static struct platform_driver dwc3_driver = {
+ 	.remove		= dwc3_remove,
  	.driver		= {
- 		.name =	(char *) udc_name,
+ 		.name	= "dwc3",
 +		.owner	= THIS_MODULE,
+ 		.of_match_table	= of_match_ptr(of_dwc3_match),
+ 		.pm	= DWC3_PM_OPS,
  	},
- };
- 
+diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
+index a8afe6e..831aa81 100644
+--- a/drivers/usb/dwc3/dwc3-exynos.c
++++ b/drivers/usb/dwc3/dwc3-exynos.c
+@@ -219,6 +219,7 @@ static struct platform_driver dwc3_exynos_driver = {
+ 	.remove		= dwc3_exynos_remove,
+ 	.driver		= {
+ 		.name	= "exynos-dwc3",
++		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(exynos_dwc3_match),
+ 		.pm	= DEV_PM_OPS,
+ 	},
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 34638b9..3aaf87f 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -468,6 +468,7 @@ static struct platform_driver dwc3_omap_driver = {
+ 	.remove		= dwc3_omap_remove,
+ 	.driver		= {
+ 		.name	= "omap-dwc3",
++		.owner	= THIS_MODULE,
+ 		.of_match_table	= of_dwc3_match,
+ 		.pm	= DEV_PM_OPS,
+ 	},
 -- 
 1.7.1
 
