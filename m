@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3EUNLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:11:46 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:33234 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3EUNLp (ORCPT
+	id S1754486Ab3EUNNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:13:17 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:34235 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab3EUNNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:11:45 -0400
-Message-ID: <519B728F.2000905@cogentembedded.com>
-Date: Tue, 21 May 2013 17:11:43 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 21 May 2013 09:13:16 -0400
+Message-ID: <519B7298.1090109@synopsys.com>
+Date: Tue, 21 May 2013 18:41:52 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Libo Chen <libo.chen@huawei.com>
-CC: thomas.petazzoni@free-electrons.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com
-Subject: Re: [PATCH 18/19] drivers/net/ethernet/marvell: add missing platform_driver
- owne
-References: <1369104171-8824-1-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1369104171-8824-1-git-send-email-libo.chen@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.linux.kernel
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARC MM Bug Fix
+References: <1369140259-30501-1-git-send-email-vgupta@synopsys.com> <519B6DA7.7000305@synopsys.com>
+In-Reply-To: <519B6DA7.7000305@synopsys.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.228]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 05/21/2013 06:20 PM, Vineet Gupta wrote:
+> On 05/21/2013 06:14 PM, Vineet Gupta wrote:
+>> Hi Linus,
+>>
+>> I have a ARC MM bug fix, and it seems the best way to CC stable explicitly, is
+>> to send a patch to them (and hence you as well - as opposed to regular
+>> pull-req). OK with you ?
+> 
+> Damn ! Despite the noise, the CC to stable didn't go thru - I missed < > around
+> the email address perhaps.
+> 
+> -Vineet
+> 
 
-On 21-05-2013 6:42, Libo Chen wrote:
+Please ignore the whole thread - bad day it seems - while the patch fixes the
+issue with no apparent regressions it introduces a bit of bogosity in TLB Miss
+handlers. I'll respin/re-test and send this via  regular pull request and notify
+stable explicitly.
 
-> set the owner of platform_driver, to ensure that the
-> caller of driver holds a module refernece
+Sorry once again for the noise.
 
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
-> ---
->   drivers/net/ethernet/marvell/mvneta.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
-
-> diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-> index c966785..be35a3e 100644
-> --- a/drivers/net/ethernet/marvell/mvneta.c
-> +++ b/drivers/net/ethernet/marvell/mvneta.c
-> @@ -2820,6 +2820,7 @@ static struct platform_driver mvneta_driver = {
->   	.remove = mvneta_remove,
->   	.driver = {
->   		.name = MVNETA_DRIVER_NAME,
-> +		.owner	= THIS_MODULE,
-
-    Indent this = with space or indent all ='s with tabs.
-
->   		.of_match_table = mvneta_match,
->   	},
->   };
-
-WBR, Sergei
-
-
+Thx,
+-Vineet
