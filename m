@@ -1,28 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab3EUGl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:41:27 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60584 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab3EUGlZ (ORCPT
+	id S1756088Ab3EUGpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:45:08 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:17242 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3EUGpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:41:25 -0400
-Date: Tue, 21 May 2013 08:41:08 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: David Miller <davem@davemloft.net>
-Cc: libo.chen@huawei.com, gregkh@linuxfoundation.org, samuel@sortiz.org,
-        stern@rowland.harvard.edu, khc@pm.waw.pl, akpm@linux-foundation.org,
-        balbi@ti.com, sarah.a.sharp@linux.intel.com,
-        alexander.shishkin@linux.intel.com, brudley@broadcom.com,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 00/19] driver:usb&net: add missing platform_driver owner
-Message-ID: <20130521084108.1a585f32@skate>
-In-Reply-To: <20130520.232619.964940909999914694.davem@davemloft.net>
-References: <1369104120-35552-1-git-send-email-libo.chen@huawei.com>
-	<20130520.232619.964940909999914694.davem@davemloft.net>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 21 May 2013 02:45:06 -0400
+X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8DFCng/+ALmLZYRFnZn15ELiOAuLr3NkII
+X-RZG-CLASS-ID: mo00
+Date: Tue, 21 May 2013 08:44:55 +0200
+From: Stephan Mueller <smueller@chronox.de>
+To: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH][RFC] CPU Jitter random number generator (resent)
+Message-ID: <20130521084455.5c651991@tauon>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -30,27 +22,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear David Miller,
+Hi,
 
-On Mon, 20 May 2013 23:26:19 -0700 (PDT), David Miller wrote:
-> From: Libo Chen <libo.chen@huawei.com>
-> Date: Tue, 21 May 2013 10:42:00 +0800
-> 
-> > I find a lot of mistakes using struct platform_driver without owner.
-> > So I pick up some of them including usb and net modules
-> 
-> Instead of doing it this way, which is obviously error prone and
-> easy to forget, make platform_driver_register() be a macro which
-> sets the module owner field then calls the real
-> __platform_driver_register().
+[1] patch at http://www.chronox.de/jent/jitterentropy-20130516.tar.bz2
 
-Or, maybe make the existing module_platform_driver() macro do this?
+A new version of the CPU Jitter random number generator is released at
+http://www.chronox.de/ . The heart of the RNG is about 30 lines of easy
+to read code. The readme in the main directory explains the different
+code files. A changelog can be found on the web site.
 
-Best regards,
+In a previous attempt (http://lkml.org/lkml/2013/2/8/476), the first
+iteration received comments for the lack of tests, documentation and
+entropy assessment. All these concerns have been addressed. The
+documentation of the CPU Jitter random number generator
+(http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.html and PDF at
+http://www.chronox.de/jent/doc/CPU-Jitter-NPTRNG.pdf -- the graphs and
+pictures are better in PDF) offers a full analysis of:
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+- the root cause of entropy
+
+- a design of the RNG
+
+- statistical tests and analyses
+
+- entropy assessment and explanation of the flow of entropy
+
+The document also explains the core concept to have a fully
+decentralized entropy collector for every caller in need of entropy.
+
+Also, this RNG is well suitable for virtualized environments.
+Measurements on OpenVZ and KVM environments have been conducted as
+documented. As the Linux kernel is starved of entropy in virtualized as
+well as server environments, new sources of entropy are vital.
+
+The appendix of the documentation contains example use cases by
+providing link code to the Linux kernel crypto API, libgcrypt and
+OpenSSL. Links to other cryptographic libraries should be straight
+forward to implement. These implementations follow the concept of
+decentralized entropy collection.
+
+The man page provided with the source code explains the use of the API
+of the CPU Jitter random number generator.
+
+The test cases used to compile the documentation are available at the
+web site as well.
+
+Note: for the kernel crypto API, please read the provided Kconfig file
+for the switches and which of them are recommended in regular
+operation. These switches must currently be set manually in the
+Makefile.
+
+Ciao
+Stephan
+
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
