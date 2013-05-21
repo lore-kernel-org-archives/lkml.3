@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3EUNJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:09:39 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:62176 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab3EUNJh (ORCPT
+	id S1754476Ab3EUNKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:10:41 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:59426 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754220Ab3EUNKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:09:37 -0400
-Message-ID: <519B720F.9020705@cogentembedded.com>
-Date: Tue, 21 May 2013 17:09:35 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 21 May 2013 09:10:39 -0400
+Message-ID: <519B7249.2070207@hurleysoftware.com>
+Date: Tue, 21 May 2013 09:10:33 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Libo Chen <libo.chen@huawei.com>
-CC: samuel@sortiz.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, lizefan@huawei.com
-Subject: Re: [PATCH 15/19] drivers/net/irda: add missing platform_driver owner
-References: <1369104163-38628-1-git-send-email-libo.chen@huawei.com>
-In-Reply-To: <1369104163-38628-1-git-send-email-libo.chen@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Wang YanQing <udknight@gmail.com>, gregkh@linuxfoundation.org
+CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to do_take_over_console
+References: <20130521051511.GA11435@udknight>
+In-Reply-To: <20130521051511.GA11435@udknight>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 21-05-2013 6:42, Libo Chen wrote:
-
-> set the owner of platform_driver, to ensure that the
-> caller of driver holds a module refernece
-
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+On 05/21/2013 01:15 AM, Wang YanQing wrote:
+> Impact:
+> 1:convert all remain take_over_console to do_take_over_console
+> 2:update take_over_console to do_take_over_console in comment
+>
+> Commit dc9641895abb ("vt: delete unneeded functions
+> register_con_driver|take_over_console") delete take_over_console,
+> but forget to convert remain take_over_console's users to new API
+> do_take_over_console, this patch fix it.
+>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
 > ---
->   drivers/net/irda/bfin_sir.c   |    1 +
->   drivers/net/irda/sh_irda.c    |    1 +
->   drivers/net/irda/sh_sir.c     |    1 +
->   drivers/net/irda/smsc-ircc2.c |    1 +
->   4 files changed, 4 insertions(+), 0 deletions(-)
+>   Sorry for my mistake, I believe I do the full
+>   kernel source find|grep, but the reality is I
+>   forget  take_over_console.
 
-> diff --git a/drivers/net/irda/bfin_sir.c b/drivers/net/irda/bfin_sir.c
-> index 22b4527..bf976f3 100644
-> --- a/drivers/net/irda/bfin_sir.c
-> +++ b/drivers/net/irda/bfin_sir.c
-> @@ -806,6 +806,7 @@ static struct platform_driver bfin_ir_driver = {
->   	.resume  = bfin_sir_resume,
->   	.driver  = {
->   		.name = DRIVER_NAME,
-> +		.owner	= THIS_MODULE,
+I would rather revert dc9641895abb which purported to delete
+_unneeded_ functions than have this. Obviously the functions
+were needed.
 
-    Either indent last = with space as above, or indent both = with tabs.
-
-WBR, Sergei
-
+Regards,
+Peter Hurley
