@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3EUGPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:15:13 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52766 "EHLO
+	id S1756009Ab3EUGPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:15:35 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46119 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab3EUGOp (ORCPT
+	with ESMTP id S1755936Ab3EUGOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 21 May 2013 02:14:45 -0400
-X-AuditID: 9c93017d-b7b64ae000000e51-8c-519b10d1cf6b
+X-AuditID: 9c93017d-b7b64ae000000e51-8b-519b10d1824d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 6/7] perf gtk/hists: Add a double-click handler for hierarchy mode
-Date: Tue, 21 May 2013 15:14:37 +0900
-Message-Id: <1369116878-12489-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/7] perf report: Add -H (--hierarchy) option
+Date: Tue, 21 May 2013 15:14:36 +0900
+Message-Id: <1369116878-12489-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1369116878-12489-1-git-send-email-namhyung@kernel.org>
 References: <1369116878-12489-1-git-send-email-namhyung@kernel.org>
@@ -28,48 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-If hierarchy mode is enabled, add "row-activated" signal handler for
-handling double-click or pressing ENTER key action.
+It's for enabling the hierarchical view.
 
-Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/gtk/hists.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ tools/perf/Documentation/perf-report.txt | 5 +++++
+ tools/perf/builtin-report.c              | 6 ++++++
+ 2 files changed, 11 insertions(+)
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index fb4b5ff00319..e161317236fe 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -220,6 +220,18 @@ static void perf_gtk__add_entries_hierarchy(struct hists *hists,
- 	__perf_gtk__add_entries_hierarchy(hists, root, store, NULL, hpp, se);
- }
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 7d5f4f38aa52..3c86b9f83c54 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -210,6 +210,11 @@ OPTIONS
+ 	Demangle symbol names to human readable form. It's enabled by default,
+ 	disable with --no-demangle.
  
-+static void on_row_activated(GtkTreeView *view, GtkTreePath *path,
-+			     GtkTreeViewColumn *col __maybe_unused,
-+			     gpointer user_data __maybe_unused)
-+{
-+	bool expanded = gtk_tree_view_row_expanded(view, path);
++-H::
++--hierarchy::
++	Show events in hierarchical view.  Each events are grouped under prior
++	sort keys.  Currently --gtk output is supported only.
 +
-+	if (expanded)
-+		gtk_tree_view_collapse_row(view, path);
-+	else
-+		gtk_tree_view_expand_row(view, path, FALSE);
-+}
-+
- static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists)
- {
- 	struct perf_hpp_fmt *fmt;
-@@ -322,6 +334,9 @@ add:
- 						  expander_col);
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-annotate[1]
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d45bf9b0361d..9b9a35b296d8 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -809,6 +809,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
+ 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
++	OPT_BOOLEAN('H', "hierarchy", &symbol_conf.hierarchy, "Hierarchical view"),
+ 	OPT_END()
+ 	};
  
- 		perf_gtk__add_entries_hierarchy(hists, &hpp, store);
-+
-+		g_signal_connect(view, "row-activated",
-+				 G_CALLBACK(on_row_activated), NULL);
+@@ -833,6 +834,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			input_name = "perf.data";
  	}
  
- 	gtk_container_add(GTK_CONTAINER(window), view);
++	if (symbol_conf.hierarchy && use_browser != 2) {
++		pr_err("--hierarchy option is only used for --gtk output\n");
++		return -EINVAL;
++	}
++
+ 	if (strcmp(input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else {
 -- 
 1.7.11.7
 
