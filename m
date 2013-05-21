@@ -1,67 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab3EUUKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:10:01 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53722 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3EUUJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:09:59 -0400
-Date: Tue, 21 May 2013 13:09:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Florian Westphal <fw@strlen.de>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sk_page_frag_refill OOM killing spree
-In-Reply-To: <1369150280.3301.230.camel@edumazet-glaptop>
-Message-ID: <alpine.DEB.2.02.1305211309100.31504@chino.kir.corp.google.com>
-References: <20130521122845.GD16412@breakpoint.cc> <1369150280.3301.230.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752792Ab3EUUOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:14:17 -0400
+Received: from www.sr71.net ([198.145.64.142]:44799 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab3EUUOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 16:14:15 -0400
+Message-ID: <519BD595.5040405@sr71.net>
+Date: Tue, 21 May 2013 13:14:13 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 14/39] thp, mm: rewrite delete_from_page_cache() to
+ support huge pages
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1368321816-17719-15-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013, Eric Dumazet wrote:
+On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> As with add_to_page_cache_locked() we handle HPAGE_CACHE_NR pages a
+> time.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  mm/filemap.c |   31 +++++++++++++++++++++++++------
+>  1 file changed, 25 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index b0c7c8c..657ce82 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -115,6 +115,9 @@
+>  void __delete_from_page_cache(struct page *page)
+>  {
+>  	struct address_space *mapping = page->mapping;
+> +	bool thp = PageTransHuge(page) &&
+> +		IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE);
+> +	int nr;
 
-> On Tue, 2013-05-21 at 14:28 +0200, Florian Westphal wrote:
-> > Hi Eric,
-> > 
-> > seems like sk_page_frag_refill() can cause oom-killer invocation:
-> > 
-> > postgres invoked oom-killer: gfp_mask=0x42d0, order=3, oom_score_adj=0
-> > Pid: 10551, comm: postgres Tainted: G           O 3.8.6-5.g613ca40-smp #1
-> > Call Trace:
-> >  [<c106dbd5>] ? dump_header+0x60/0x191
-> >  [<c1133d3a>] ? ___ratelimit+0xb2/0xc4
-> >  [<c106dfd3>] ? oom_kill_process+0x61/0x2d1
-> >  [<c1030042>] ? has_capability_noaudit+0x1c/0x23
-> >  [<c106df0f>] ? oom_badness+0x8c/0xef
-> >  [<c106e446>] ? out_of_memory+0x203/0x247
-> >  [<c107128a>] ? __alloc_pages_nodemask+0x42b/0x4c3
-> >  [<c11fa66a>] ? sk_page_frag_refill+0x6a/0xd2
-> >  [<c1233548>] ? tcp_sendmsg+0x3e8/0x7c6
-> >  [<c124f34b>] ? inet_sendmsg+0x6b/0x75
-> >  [<c11f74d8>] ? sock_sendmsg+0x8d/0xa6
-> >  [<c11f7b83>] ? sys_sendto+0x105/0x130
-> >  [<c1025927>] ? __kunmap_atomic+0x62/0x8a
-> >  [<c1025940>] ? __kunmap_atomic+0x7b/0x8a
-> >  [<c1073d78>] ? __lru_cache_add+0x18/0x47
-> >  [<c10812f9>] ? handle_pte_fault+0x745/0x751
-> >  [<c1025a2d>] ? kmap_atomic_prot+0xd3/0xf1
-> >  [<c10817da>] ? handle_mm_fault+0x112/0x121
-> >  [<c11f7be5>] ? sys_send+0x37/0x3b
-> > 
-> > The system is busy, so, order-3 alloc failure doesn't strike me as odd.
-> > 
-> > There are no allocation failures with order != 3.
-> > 
-> > Sometimes this can happen in very short sucession, i.e.
-> > and oom-killer did end up zapping 30 processes or so.
-> > 
+Is that check for the config option really necessary?  How would we get
+a page with PageTransHuge() set without it being enabled?
 
-Aside from the __GFP_NORETRY issue, could you post the full oom killer log 
-where it kills more than one process with /proc/sys/vm/oom_dump_tasks 
-enabled?  That shouldn't happen unless you have a memory leak.
+>  	trace_mm_filemap_delete_from_page_cache(page);
+>  	/*
+> @@ -127,13 +130,29 @@ void __delete_from_page_cache(struct page *page)
+>  	else
+>  		cleancache_invalidate_page(mapping, page);
+>  
+> -	radix_tree_delete(&mapping->page_tree, page->index);
+> +	if (thp) {
+> +		int i;
+> +
+> +		nr = HPAGE_CACHE_NR;
+> +		radix_tree_delete(&mapping->page_tree, page->index);
+> +		for (i = 1; i < HPAGE_CACHE_NR; i++) {
+> +			radix_tree_delete(&mapping->page_tree, page->index + i);
+> +			page[i].mapping = NULL;
+> +			page_cache_release(page + i);
+> +		}
+> +		__dec_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
+> +	} else {
+> +		BUG_ON(PageTransHuge(page));
+> +		nr = 1;
+> +		radix_tree_delete(&mapping->page_tree, page->index);
+> +	}
+>  	page->mapping = NULL;
+
+I like to rewrite your code. :)
+
+	nr = hpage_nr_pages(page);
+	for (i = 0; i < nr; i++) {
+		page[i].mapping = NULL;
+		radix_tree_delete(&mapping->page_tree, page->index + i);
+		/* tail pages: */
+		if (i)
+			page_cache_release(page + i);
+	}
+	if (thp)
+	     __dec_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
+
+I like this because it explicitly calls out the logic that tail pages
+are different from head pages.  We handle their reference counts
+differently.
+
+Which reminds me...  Why do we handle their reference counts differently? :)
+
+It seems like we could easily put a for loop in delete_from_page_cache()
+that will release their reference counts along with the head page.
+Wouldn't that make the code less special-cased for tail pages?
+
+>  	/* Leave page->index set: truncation lookup relies upon it */
+> -	mapping->nrpages--;
+> -	__dec_zone_page_state(page, NR_FILE_PAGES);
+> +	mapping->nrpages -= nr;
+> +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, -nr);
+>  	if (PageSwapBacked(page))
+> -		__dec_zone_page_state(page, NR_SHMEM);
+> +		__mod_zone_page_state(page_zone(page), NR_SHMEM, -nr);
+>  	BUG_ON(page_mapped(page));
+
+Man, we suck:
+
+	__dec_zone_page_state()
+and
+	__mod_zone_page_state()
+
+take a differently-typed first argument.  <sigh>
+
+Would there be any good to making __dec_zone_page_state() check to see
+if the page we passed in _is_ a compound page, and adjusting its
+behaviour accordingly?
+
+>  	/*
+> @@ -144,8 +163,8 @@ void __delete_from_page_cache(struct page *page)
+>  	 * having removed the page entirely.
+>  	 */
+>  	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+> -		dec_zone_page_state(page, NR_FILE_DIRTY);
+> -		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> +		mod_zone_page_state(page_zone(page), NR_FILE_DIRTY, -nr);
+> +		add_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE, -nr);
+>  	}
+>  }
+
+Ahh, I see now why you didn't need a dec_bdi_stat().  Oh well...
+
