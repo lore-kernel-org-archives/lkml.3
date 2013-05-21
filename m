@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab3EUMPh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 08:15:37 -0400
-Received: from smtp4.epfl.ch ([128.178.224.219]:51916 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750766Ab3EUMPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 08:15:35 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 08:15:35 EDT
-Message-ID: <519B63D3.7040600@epfl.ch>
-Date: Tue, 21 May 2013 14:08:51 +0200
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752163Ab3EUMWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 08:22:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379Ab3EUMWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 08:22:52 -0400
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+To: Severin Gsponer <svgsponer@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Staging: bcm: Fix of various code style issues.
+References: <1368801862-24405-1-git-send-email-svgsponer@gmail.com>
+Date: Tue, 21 May 2013 06:30:04 +0200
+In-Reply-To: <1368801862-24405-1-git-send-email-svgsponer@gmail.com> (Severin
+	Gsponer's message of "Fri, 17 May 2013 16:44:22 +0200")
+Message-ID: <m3li79arar.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@iki.fi>, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH] ARM: OMAP4: change the device names in usb_bind_phy
-References: <1366697656-14315-1-git-send-email-kishon@ti.com> <51936946.3030507@iki.fi> <20130516155857.GV5600@atomide.com> <519503DA.5070303@iki.fi> <20130516162034.GX5600@atomide.com> <5195C28C.40300@ti.com> <20130517172335.GX5600@atomide.com>
-In-Reply-To: <20130517172335.GX5600@atomide.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Severin Gsponer <svgsponer@gmail.com> writes:
 
-On 05/17/2013 07:23 PM, Tony Lindgren wrote:
-> * Kishon Vijay Abraham I <kishon@ti.com> [130516 22:45]:
->> Hi,
->>
->> On Thursday 16 May 2013 09:50 PM, Tony Lindgren wrote:
->>> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130516 09:11]:
->>>> On 16/05/13 18:58, Tony Lindgren wrote:
->>>>> * Tomi Valkeinen <tomi.valkeinen@iki.fi> [130515 03:59]:
->>>>>
->>>>> Just checking.. Do you have CONFIG_OMAP_OCP2SCP=y in your .config? Sounds
->>>>> like the some transceivers should depend on that for omap4.
->>>>
->>>> Yes, I have OCP2SCP=y.
->>>
->>> Hmm well no idea beyond that then. Sounds like Kishon should check it.
->>>
->>>>>> The musb-hdrc id is wrong on overo also.
->>>>>
->>>>> Hmm has there been a fix posted for that?
->>>>
->>>> I couldn't find with a quick look. We debugged and discussed this on an irc
->>>> channel with Kishon, who said he'll send a patch. Changing the musb-hdrc ID
->>>> on overo fixed the issue, and it looks very similar to the error on 4430sdp.
->>>> The overo fix was just:
->>
->> hmm.. I think using device name to bind the controller and the phy
->> can no longer be used reliably. I think it's better to have
->> something like what Grant suggested in my other patch series.. to
->> have the phy reference into the host controllers platform_data
->> structure. And for the phy reference I'll have label and id.
->>
->> Does this makes sense to you?
+> Changed comment style to C89 in Version.h
+> Fixed some whitespace issues in Typedefs.h
+> Changed comment style to C89 in vendorspecificextn.c
+> All issues found with checkpatch.pl
 >
-> Sounds OK to me, but I guess that would be for v3.11. I think we
-> still need a fix for at least overo for v3.10?
+> Signed-off-by: Severin Gsponer <svgsponer@gmail.com>
+> ---
+>  drivers/staging/bcm/Typedefs.h           |   22 ++--
+>  drivers/staging/bcm/Version.h            |    8 +-
+>  drivers/staging/bcm/vendorspecificextn.c |  197 +++++++++++++++---------------
+>  3 files changed, 110 insertions(+), 117 deletions(-)
 >
+> diff --git a/drivers/staging/bcm/Typedefs.h b/drivers/staging/bcm/Typedefs.h
+> index a985abf..3dea509 100644
+> --- a/drivers/staging/bcm/Typedefs.h
+> +++ b/drivers/staging/bcm/Typedefs.h
+> @@ -25,16 +25,16 @@ typedef unsigned int B_UINT32;
+>  typedef unsigned long ULONG;
+>  typedef unsigned long DWORD;
+>  
+> -typedef char* PCHAR;
+> -typedef short* PSHORT;
+> -typedef int* PINT;
+> -typedef long* PLONG;
+> -typedef void* PVOID;
+> -
+> -typedef unsigned char* PUCHAR;
+> -typedef unsigned short* PUSHORT;
+> -typedef unsigned int* PUINT;
+> -typedef unsigned long* PULONG;
+> +typedef char *PCHAR;
+> +typedef short *PSHORT;
+> +typedef int *PINT;
+> +typedef long *PLONG;
+> +typedef void *PVOID;
+> +
+> +typedef unsigned char *PUCHAR;
+> +typedef unsigned short *PUSHORT;
+> +typedef unsigned int *PUINT;
+> +typedef unsigned long *PULONG;
+>  typedef unsigned long long ULONG64;
+>  typedef unsigned long long LARGE_INTEGER;
+>  typedef unsigned int UINT32;
+> @@ -43,5 +43,5 @@ typedef unsigned int UINT32;
+>  #endif
 
-Indead, musb-hdrc is broken on overo with 3.10-rc2. The patch posted in this
-thread fixes the issue.
+I bet, there is no reason for such typedef's
 
-Regards,
-
-Florian
+-- 
+Nikola
