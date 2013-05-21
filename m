@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3EUKfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:35:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15884 "EHLO mx1.redhat.com"
+	id S1753908Ab3EUKkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:40:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51966 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab3EUKfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:35:04 -0400
-Date: Tue, 21 May 2013 20:34:39 +1000
-From: Dave Chinner <dchinner@redhat.com>
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] mm: vmscan: add BUG_ON on illegal return values from
- scan_objects
-Message-ID: <20130521103439.GH11167@devil.localdomain>
-References: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752391Ab3EUKko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:40:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="305622736"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linux-usb@vger.kernel.org
+Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v2 0/4] Add usb2 link powermanagement BESL support
+Date: Tue, 21 May 2013 13:43:33 +0300
+Message-Id: <1369133017-3035-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 11:14:27AM +0200, Oskar Andero wrote:
-> Add a BUG_ON to catch any illegal value from the shrinkers. This fixes a
-> potential bug if scan_objects returns a negative other than -1, which
-> would lead to undefined behaviour.
-> 
-> Cc: Glauber Costa <glommer@openvz.org>
-> Cc: Dave Chinner <dchinner@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
->  mm/vmscan.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6bac41e..fbe6742 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -293,6 +293,7 @@ shrink_slab_one(struct shrinker *shrinker, struct shrink_control *shrinkctl,
->  		ret = shrinker->scan_objects(shrinker, shrinkctl);
->  		if (ret == -1)
->  			break;
-> +		BUG_ON(ret < -1);
->  		freed += ret;
->  
->  		count_vm_events(SLABS_SCANNED, nr_to_scan);
+This series adds usb2 best effort service latency (BESL) link PM support                                   
+to xHCI. BESL is an updated alternative to host initated resume delay                                      
+(HIRD) method of describing idle link timeouts.                                                            
+                                                                                                           
+Additionally this series fixes port capability checking                                                    
+and replaces magic numbers with port register names.      
 
-NACK. we've got to fix the damn shrinkers first.
+Changes since v1:
+-Use kstrto* and unsigned values in sysfs functions as Alan Stern suggested
 
-If you want this sort of guard added to the patchset Glauber and I
-are working on that does this, then discuss it in the context of
-that patch set.
+Mathias Nyman (4):
+  usb: xhci: check usb2 port capabilities before adding hw link PM
+    support
+  usb: xhci: define port register names and use them instead of magic
+    numbers
+  usb: xhci: add USB2 Link power management BESL support
+  usb: add usb2 Link PM variables to sysfs and usb_device
 
-Even if you do, you'll get the same answer: we need to first all the
-busted shrinkers before we even consider being nasty about enforcing
-the API constraints to prevent furture breakage.
+ drivers/usb/core/sysfs.c         |   54 +++++++++
+ drivers/usb/host/xhci-ext-caps.h |    1 +
+ drivers/usb/host/xhci-hub.c      |   16 +--
+ drivers/usb/host/xhci-mem.c      |   33 +++++-
+ drivers/usb/host/xhci.c          |  234 +++++++++++++++++++++++++++-----------
+ drivers/usb/host/xhci.h          |   31 +++++
+ include/linux/usb.h              |   19 +++
+ 7 files changed, 308 insertions(+), 80 deletions(-)
 
-If you want to do something useful, look at all the comments about
-broken shrinkers in Glauber's patch set and work with the owners of
-the code to understand what they really need and get them fixed.
-
--Dave.
 -- 
-Dave Chinner
-dchinner@redhat.com
+1.7.4.1
+
