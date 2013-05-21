@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3EUKdt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:33:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15537 "EHLO mga11.intel.com"
+	id S1753822Ab3EUKfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:35:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab3EUKdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:33:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
-   d="scan'208";a="341022192"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        David Cohen <david.a.cohen@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 2/4] gpio-langwell: amend error messages
-Date: Tue, 21 May 2013 13:33:04 +0300
-Message-Id: <1369132386-11725-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1369132386-11725-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369132386-11725-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753537Ab3EUKfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 06:35:04 -0400
+Date: Tue, 21 May 2013 20:34:39 +1000
+From: Dave Chinner <dchinner@redhat.com>
+To: Oskar Andero <oskar.andero@sonymobile.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] mm: vmscan: add BUG_ON on illegal return values from
+ scan_objects
+Message-ID: <20130521103439.GH11167@devil.localdomain>
+References: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369041267-26424-1-git-send-email-oskar.andero@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of hardcoded names let's use __func__ macro.
+On Mon, May 20, 2013 at 11:14:27AM +0200, Oskar Andero wrote:
+> Add a BUG_ON to catch any illegal value from the shrinkers. This fixes a
+> potential bug if scan_objects returns a negative other than -1, which
+> would lead to undefined behaviour.
+> 
+> Cc: Glauber Costa <glommer@openvz.org>
+> Cc: Dave Chinner <dchinner@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+> ---
+>  mm/vmscan.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 6bac41e..fbe6742 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -293,6 +293,7 @@ shrink_slab_one(struct shrinker *shrinker, struct shrink_control *shrinkctl,
+>  		ret = shrinker->scan_objects(shrinker, shrinkctl);
+>  		if (ret == -1)
+>  			break;
+> +		BUG_ON(ret < -1);
+>  		freed += ret;
+>  
+>  		count_vm_events(SLABS_SCANNED, nr_to_scan);
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/gpio/gpio-langwell.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+NACK. we've got to fix the damn shrinkers first.
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index c1f33dd..ab797cc 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -392,7 +392,7 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, lnw);
- 	retval = gpiochip_add(&lnw->chip);
- 	if (retval) {
--		dev_err(&pdev->dev, "langwell gpiochip_add error %d\n", retval);
-+		dev_err(&pdev->dev, "%s error %d\n", __func__, retval);
- 		goto err_ioremap;
- 	}
- 
-@@ -459,8 +459,7 @@ static int wp_gpio_probe(struct platform_device *pdev)
- 	gc->can_sleep = 0;
- 	retval = gpiochip_add(gc);
- 	if (retval) {
--		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n",
--								retval);
-+		dev_err(&pdev->dev, "%s error %d\n", __func__, retval);
- 		goto err_ioremap;
- 	}
- 	platform_set_drvdata(pdev, lnw);
+If you want this sort of guard added to the patchset Glauber and I
+are working on that does this, then discuss it in the context of
+that patch set.
+
+Even if you do, you'll get the same answer: we need to first all the
+busted shrinkers before we even consider being nasty about enforcing
+the API constraints to prevent furture breakage.
+
+If you want to do something useful, look at all the comments about
+broken shrinkers in Glauber's patch set and work with the owners of
+the code to understand what they really need and get them fixed.
+
+-Dave.
 -- 
-1.8.2.rc0.22.gb3600c3
-
+Dave Chinner
+dchinner@redhat.com
