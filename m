@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3EUSNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:13:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755413Ab3EUSNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:13:13 -0400
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] ktap 0.1 released
-References: <519AF05E.1050808@huawei.com>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Tue, 21 May 2013 14:13:09 -0400
-In-Reply-To: <519AF05E.1050808@huawei.com> (jovi.zhangwei@huawei.com's message of "Tue, 21 May 2013 11:56:14 +0800")
-Message-ID: <y0m8v38jj62.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755508Ab3EUSNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:13:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46874 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab3EUSNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:13:36 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 21 May 2013 13:13:16 -0500
+Message-Id: <1369160001-4019-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1369160001-4019-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <20130521181230.GF1627@sirena.org.uk>
+ <1369160001-4019-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-SA-Exim-Connect-IP: 144.188.69.1
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 2/7] mfd: wm5102: Manually apply register patch
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"zhangwei(Jovi)" <jovi.zhangwei@huawei.com> writes:
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-> I'm pleased to announce that ktap release v0.1, this is the first official
-> release of ktap project [...]
+Future updates will require us to manually apply the register patch for
+wm5102.
 
-Congrats.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 81907f9..25bfd1e 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -368,6 +368,18 @@ static int arizona_runtime_resume(struct device *dev)
+ 		break;
+ 	}
+ 
++	switch (arizona->type) {
++	case WM5102:
++		ret = wm5102_patch(arizona);
++		if (ret != 0) {
++			dev_err(arizona->dev, "Failed to apply patch: %d\n",
++				ret);
++			goto err;
++		}
++	default:
++		break;
++	}
++
+ 	ret = regcache_sync(arizona->regmap);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to restore register cache\n");
+-- 
+1.7.10.4
 
-> = what's ktap?
->
->    Because this is the first release, so there wouldn't include too
->    much features, just contain several basic features about tracing,
->    [...]
-
-Nice progress.  Reviewing the safety/security items from
-https://lkml.org/lkml/2013/1/17/623, I see improvement in most.
-
-For example, you seem to be using GFP_ATOMIC for run-time memory
-allocation, which is safer than before (though still could exhaust
-resources).  OTOH your code doesn't handle *failure* of such
-allocation attempts (see call sites to kp_*alloc).
-
-There still doesn't seem to be safety constraints on the incoming
-byte code (like jump ranges, or loop counts).
-
-It's nice to see some arithmetic OP_* checks, and the user_string
-function is probably safe enough now.  You'll need something analogous
-for kernel space (and possibly as verification for the various %s
-kp_printfs).  The hash tables might be susceptible to the deliberate
-hash collision attacks from last year.
-
-It's nice to see the *_STACK_SIZE constraints in the bytecode
-interpreter; is there any C-level recursion remaining to consume
-excessive kernel stack?
-
-Exposing os.sleep/os.wait (or general kernel functions) to become
-callable from the scripts is fraught with danger.  You just can't call
-the underlying functions from random kernel context (imagine from the
-most pessimal possible kprobe or tracepoint, somewhere within an
-atomic section), and you'll get crashes.
-
-You should write several time/space/invasivity stress-tests to help
-see how future progress improves the code's performance/safety on
-these and other problem areas.
-
-
-> = Planned Changes
->
->    we are planning to enable more kernel ineroperability into ktap [...]
-
-As per the above, you'll want to be extremely careful about the idea
-to export FFI to let the lua scripts call into arbitrary kernel
-functions.  Perhaps wrap it into a 'guru' mode flag?
-
-
-- FChE
