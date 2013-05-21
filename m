@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab3EUXY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 19:24:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab3EUXY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 19:24:56 -0400
-Date: Tue, 21 May 2013 19:24:48 -0400
-From: Dave Jones <davej@redhat.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: [Intel-gfx] pipe_off wait timed out
-Message-ID: <20130521232448.GA14347@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Daniel Vetter <daniel@ffwll.ch>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>
-References: <20130521230108.GB12713@redhat.com>
- <CAKMK7uFB2u1hO+fLk49vVsT_+A-MDbMDPhGDtPmcK+aUQMipZw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uFB2u1hO+fLk49vVsT_+A-MDbMDPhGDtPmcK+aUQMipZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754193Ab3EUXZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 19:25:14 -0400
+Received: from kari2.ac-grenoble.fr ([193.54.149.72]:58317 "EHLO
+	kari2.ac-grenoble.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab3EUXZL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 19:25:11 -0400
+X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 19:25:11 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; CHARSET=US-ASCII
+From: Pellet Marie-Noelle <Marie-Noel.Pellet@ac-grenoble.fr>
+Reply-to: clearnzteam@gmail.com
+Message-id: <4d1f761e6daf00e3.519c4d51@ac-grenoble.fr>
+Date: Wed, 22 May 2013 04:45:05 +0530
+X-Mailer: Webmail Academie de Grenoble
+Content-language: fr
+Subject: Upgrade your Account
+X-Accept-Language: fr
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 01:10:36AM +0200, Daniel Vetter wrote:
- > On Wed, May 22, 2013 at 1:01 AM, Dave Jones <davej@redhat.com> wrote:
- > > This is new to me as of 3.10-rc2.
- > 
- > If this is an ironlake with a DP output it's a know issue which seems
- > to pop up every once in a while.
+ 
+ 
+--
+Your Mailbox needs an urgent upgrade to improve your email 
+performance in sending and receiving emails,to upgrade your 
+email please fill in your information in the the field below:
 
-00:02.0 VGA compatible controller: Intel Corporation Atom Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller (rev 02)
+  
 
- > Otherwise we need to take a look
- > here. If so can you please boot with drm.debug=0xe, reproduce the
- > issue and attach the complete dmesg?
- > 
- > Also does 3.10-rc1 work (since you mention -rc2 specifically and there
- > wasn't really a lot going into that for drm/i915).
+Email Address:
+User ID:
+Password:
+Confirm Password:
 
-It had been running rc1 for the last week or so without incident.
-Though I've been away, with the monitor turned off.
+  
 
-Judging by the trace, this seems to be related to console blanking ?
-(this is my home firewall, so spends most of its time with the screen
- turned off)
+Your Email Account will be De-activated if you do not 
+upgrade your mailbox within the next 48hours!!!
 
-I've added that debug option to my command line, I'll keep an eye on it
-and try to reproduce over the next few days.
+  
 
-	Dave
-
+ADMINISTRATOR
