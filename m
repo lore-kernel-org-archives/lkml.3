@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3EUOZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 10:25:05 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:42739
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753510Ab3EUOYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 10:24:55 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 9
-X-BigFish: VS9(z329eqzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kernel@pengutronix.de>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2 2/3] imx-drm: imx-tve: Let device core handle pinctrl
-Date: Tue, 21 May 2013 11:24:45 -0300
-Message-ID: <1369146286-24434-2-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1369146286-24434-1-git-send-email-fabio.estevam@freescale.com>
-References: <1369146286-24434-1-git-send-email-fabio.estevam@freescale.com>
+	id S1753970Ab3EUOZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 10:25:30 -0400
+Received: from 8bytes.org ([85.214.48.195]:48052 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753842Ab3EUOZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 10:25:27 -0400
+Date: Tue, 21 May 2013 16:25:23 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/2 V3] perf/x86/amd: IOMMU Performance Counter Support
+Message-ID: <20130521142523.GD7424@8bytes.org>
+References: <1368819813-6481-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <519A4429.30405@amd.com>
+ <20130521091157.GD26912@twins.programming.kicks-ass.net>
+ <519B76CB.1000208@amd.com>
+ <20130521135231.GK26912@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521135231.GK26912@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue May 21 16:25:24 2013
+X-DSPAM-Confidence: 0.9987
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 519b83d423346511488930
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ab78029 (drivers/pinctrl: grab default handles from device core)
-we can rely on device core for handling pinctrl, so remove 
-devm_pinctrl_get_select_default() from the driver.
+Hi Peter,
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
----
-Changes since v1:
-- Added Ack's
+On Tue, May 21, 2013 at 03:52:31PM +0200, Peter Zijlstra wrote:
+> OK, I'll take them and will push them to Ingo.
 
- drivers/staging/imx-drm/imx-tve.c | 10 ----------
- 1 file changed, 10 deletions(-)
+Please wait with that until I had a look at the IOMMU pieces.
 
-diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-index ce65ad3..a56797d 100644
---- a/drivers/staging/imx-drm/imx-tve.c
-+++ b/drivers/staging/imx-drm/imx-tve.c
-@@ -22,7 +22,6 @@
- #include <linux/clk-provider.h>
- #include <linux/module.h>
- #include <linux/of_i2c.h>
--#include <linux/pinctrl/consumer.h>
- #include <linux/regmap.h>
- #include <linux/regulator/consumer.h>
- #include <linux/spinlock.h>
-@@ -610,15 +609,6 @@ static int imx_tve_probe(struct platform_device *pdev)
- 	}
- 
- 	if (tve->mode == TVE_MODE_VGA) {
--		struct pinctrl *pinctrl;
--
--		pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
--		if (IS_ERR(pinctrl)) {
--			ret = PTR_ERR(pinctrl);
--			dev_warn(&pdev->dev, "failed to setup pinctrl: %d", ret);
--			return ret;
--		}
--
- 		ret = of_property_read_u32(np, "fsl,hsync-pin", &tve->hsync_pin);
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get vsync pin\n");
--- 
-1.8.1.2
+Thanks,
+
+	Joerg
 
 
