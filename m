@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab3EUWip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:38:45 -0400
-Received: from mout.gmx.net ([212.227.17.21]:51151 "EHLO mout.gmx.net"
+	id S1754042Ab3EUWiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:38:51 -0400
+Received: from mout.gmx.net ([212.227.17.21]:53395 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab3EUWio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:38:44 -0400
+	id S1753458Ab3EUWit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:38:49 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+rTpcPedOrtgMPqeCOxlTnpKOSsTwbM2WKnGUFZC
-	aWoLuewEhZ9MJQ
+X-Provags-ID: V01U2FsdGVkX1+eifY5tz+euQ9uXDj6bB8MZJmlB1WTus4mGiXC7m
+	itSc1E+KwHerlk
 From: Peter Huewe <peterhuewe@gmx.de>
 To: "David S. Miller" <davem@davemloft.net>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Francois Romieu <romieu@fr.zoreil.com>,
-        netdev@vger.kernel.org (open list:SIS 190 ETHERNET...),
+Cc: Peter Huewe <peterhuewe@gmx.de>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        netdev@vger.kernel.org (open list:TULIP NETWORK DRI...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 05/19] net/ethernet/sis/sis190: Use module_pci_driver to register driver
-Date: Wed, 22 May 2013 00:42:10 +0200
-Message-Id: <1369176146-19383-5-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 06/19] net/ethernet/dec/tulip/xircom_cb: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 00:42:11 +0200
+Message-Id: <1369176146-19383-6-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
 References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
@@ -30,30 +31,31 @@ register and unregister in the otherwise empty init/exit functions.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/net/ethernet/sis/sis190.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/net/ethernet/dec/tulip/xircom_cb.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/net/ethernet/sis/sis190.c b/drivers/net/ethernet/sis/sis190.c
-index 9a9c379..02df089 100644
---- a/drivers/net/ethernet/sis/sis190.c
-+++ b/drivers/net/ethernet/sis/sis190.c
-@@ -1934,15 +1934,4 @@ static struct pci_driver sis190_pci_driver = {
- 	.remove		= sis190_remove_one,
- };
+diff --git a/drivers/net/ethernet/dec/tulip/xircom_cb.c b/drivers/net/ethernet/dec/tulip/xircom_cb.c
+index cdbcd16..9b84cb0 100644
+--- a/drivers/net/ethernet/dec/tulip/xircom_cb.c
++++ b/drivers/net/ethernet/dec/tulip/xircom_cb.c
+@@ -1171,16 +1171,4 @@ investigate_write_descriptor(struct net_device *dev,
+ 	}
+ }
  
--static int __init sis190_init_module(void)
+-static int __init xircom_init(void)
 -{
--	return pci_register_driver(&sis190_pci_driver);
+-	return pci_register_driver(&xircom_ops);
 -}
 -
--static void __exit sis190_cleanup_module(void)
+-static void __exit xircom_exit(void)
 -{
--	pci_unregister_driver(&sis190_pci_driver);
+-	pci_unregister_driver(&xircom_ops);
 -}
 -
--module_init(sis190_init_module);
--module_exit(sis190_cleanup_module);
-+module_pci_driver(sis190_pci_driver);
+-module_init(xircom_init)
+-module_exit(xircom_exit)
+-
++module_pci_driver(xircom_ops);
 -- 
 1.8.1.5
 
