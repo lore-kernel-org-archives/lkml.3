@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3EUQGz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:06:55 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:43563 "EHLO
+	id S1754784Ab3EUQM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:12:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:43666 "EHLO
 	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab3EUQGy (ORCPT
+	with ESMTP id S1753501Ab3EUQM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:06:54 -0400
-Date: Tue, 21 May 2013 12:06:34 -0400
+	Tue, 21 May 2013 12:12:26 -0400
+Date: Tue, 21 May 2013 12:12:09 -0400
 From: Neil Horman <nhorman@tuxdriver.com>
 To: Ben Hutchings <ben@decadent.org.uk>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 0/5] perf: net_dropmonitor: Make it work and make it fast
-Message-ID: <20130521160634.GB3613@neilslaptop.think-freely.org>
+Message-ID: <20130521161209.GC3613@neilslaptop.think-freely.org>
 References: <1369096976.3469.131.camel@deadeye.wl.decadent.org.uk>
  <20130521133355.GA3613@neilslaptop.think-freely.org>
  <1369144440.3469.181.camel@deadeye.wl.decadent.org.uk>
@@ -42,12 +42,20 @@ On Tue, May 21, 2013 at 02:54:00PM +0100, Ben Hutchings wrote:
 > The parameter order for the trace event changed in 2.6.39, but that was
 > before this script went in.
 > 
-Hm, I wonder if I developed it on 2.6.38, that sounds like around the time it
-went it.
-Neil
-
 > Ben.
 > 
+Yeah, thats how this happened.  I posted right before 2.6.39, which was around
+July 4th:
+https://lkml.org/lkml/2011/7/4/273
+
+So I posted it, and shortly thereafter the perf infrastructure changed.  Acme
+didnt actually pull the patch in until Well into August, and so it was borked
+from there.  I never noticed as I had been using the netlink based utility since
+that time.
+
+Thanks for catching this!
+Neil
+
 > > Either way, this all looks good.  Thanks Ben.
 > > 
 > > Acked-by: Neil Horman <nhorman@tuxdriver.com>
