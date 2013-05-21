@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3EUGRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 02:17:01 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27726 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab3EUGQ7 (ORCPT
+	id S1756246Ab3EUGRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 02:17:18 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24624 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab3EUGRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 02:16:59 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-6b-519b115977ec
+	Tue, 21 May 2013 02:17:15 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-33-519b116ac40b
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/8] rtc: rtc-jz4740: use devm_*() functions
-Date: Tue, 21 May 2013 15:16:57 +0900
-Message-id: <000501ce55ea$cc10e2d0$6432a870$@samsung.com>
+Subject: [PATCH 3/8] rtc: rtc-m48t59: use devm_*() functions
+Date: Tue, 21 May 2013 15:17:13 +0900
+Message-id: <000601ce55ea$d5f478c0$81dd6a40$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5V6slUZvfzdHYVQ6uAQh+thUOCmQ==
+Thread-index: Ac5V6tVOXAAWgNOzRHWAwKlWaxCveQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zY91IwdmBBg93mFgsuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CV8fhjK0vBSfmKY0dmsDQwXpHsYuTkkBAwkZi0+w0bhC0mceHeeiCbi0NIYBmjxMFt
-	G5m6GDnAipasMwExhQSmM0o8LoIo+cUo8WDTanaQXjYBNYkvXw6zg9SICOhLtLVogNQwC3Qz
-	SjxqnssMUiMsYCOx5O57sF0sAqoS83dNYAWxeQUsJZZPfcQOYQtK/Jh8jwXEZhbQkli/8zgT
-	hC0vsXnNW2aIOxUkdpx9zQhiiwjoSfybuw+qXkRi34t3jCCLJQROsUv8mjmLHWKZgMS3yYdY
-	IH6Rldh0AGqOpMTBFTdYJjCKzUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV5
-	6XrJ+bmbGCFx17uD8fYB60OMyUDrJzJLiSbnA+M2ryTe0NjMyMLUxNTYyNzSjDRhJXFetRbr
-	QCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MdbIH5mi6Ti9m+fw2cx1DX3boCsELC08JrQzh
-	NChU/39X5wbb20BzrzX5LbJJs3afjZRLmLJI9u/dazZqMofVPlVuWrrZckdywVJPIS+x951L
-	u/qvKs9KLu6/W/zhqeWKI5dD56wwUuy88edUW9pmL8cJ/fMT1fbln/Svnh7F0ZJ3411PxtIf
-	SizFGYmGWsxFxYkANXVzD9ECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd1IwdmBBnMnGlgsuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
-	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPH4YytLwUn5imNHZrA0MF6R7GLk4JAQMJFY
-	ss6ki5ETyBSTuHBvPRtIWEhgOqPE46IuRi4g8xejxINNq9lBatgE1CS+fDnMDlIjIqAv0dai
-	AVLDLNDNKPGoeS4zSI2wgI3Ekrvv2UBsFgFVifm7JrCC2LwClhLLpz5ih7AFJX5MvscCYjML
-	aEms33mcCcKWl9i85i0zxD0KEjvOvmYEsUUE9CT+zd0HVS8ise/FO8YJjAKzkIyahWTULCSj
-	ZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOKqfSe9gXNVgcYhRgINRiYdXwHBW
-	oBBrYllxZe4hRgkOZiUR3u/NQCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OByacvJJ4Q2MT
-	MyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpgdF+9Zmban2qZkw4zN77d
-	wd3xcmrGxB0P53EvUp7/1EbiJtMGO6X3u8/957txZsLODBlOrv28DA9NFO1NLwcek/V6IDzb
-	eENKl/98rbPZC2f0fTTa/vlDwI5ry73PzVaV5TQ95bkhfc2tcoX5ah4VlSzit783qP4NWHxl
-	5rn/OR2CApveFgvnZyixFGckGmoxFxUnAgAvYlYOLgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zfd0swdmBBud6BCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
+	LdK3S+DKOHliMUvBAumKKdcPMTUwtot1MXJySAiYSCzfuZwJwhaTuHBvPVsXIxeHkMAyRomO
+	N3eZYYp+XD7CCJGYziix7OJKVgjnF6PEqocTwNrZBNQkvnw5zN7FyMEhIqAv0daiAVLDLNDN
+	KPGoeS7YJGEBG4mbS7aB2SwCqhL3Ps4A6+UVsJR4s7mBBcIWlPgx+R6YzSygJbF+53EmCFte
+	YvOat1AXKUjsOPuaEcQWEdCTWDPtCCtEjYjEvhfvwC6VEDjGLrFn5n0miGUCEt8mH2IBOU5C
+	QFZi0wGoOZISB1fcYJnAKDYLyepZSFbPQrJ6FpIVCxhZVjGKphYkFxQnpRcZ6hUn5haX5qXr
+	JefnbmKERF/vDsbbB6wPMSYDrZ/ILCWanA+M3rySeENjMyMLUxNTYyNzSzPShJXEedVarAOF
+	BNITS1KzU1MLUovii0pzUosPMTJxcEo1MPq5HtzK5fv6ifqH4mPycSw3rMVu9Kze2bksoOP/
+	I+UfWj6222a2c939v8ojPCKFQ0P3a8nitWuY31kULDAWir5woVxn5RLPzN51Zd8O7jDmz9lr
+	rpepZ7DP8AVfV4Kf5ayq1QcdwxcuO+2j1222M15jRrXtQSf2HPU2L4eliRtbt4iyHr39RYml
+	OCPRUIu5qDgRAOc5jT/UAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQd0swdmBBv2TeCyWXLzKbjFn/Ro2
+	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzDh5YjFLwQLpiinXDzE1MLaLdTFyckgImEj8
+	uHyEEcIWk7hwbz1bFyMXh5DAdEaJZRdXskI4vxglVj2cwARSxSagJvHly2H2LkYODhEBfYm2
+	Fg2QGmaBbkaJR81zmUFqhAVsJG4u2QZmswioStz7OAOsl1fAUuLN5gYWCFtQ4sfke2A2s4CW
+	xPqdx5kgbHmJzWveMkNcpCCx4+xrsOtEBPQk1kw7wgpRIyKx78U7xgmMArOQjJqFZNQsJKNm
+	IWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4tp9J72Bc1WBxiFGAg1GJh1fAcFag
+	EGtiWXFl7iFGCQ5mJRHe781AId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4Hpp28knhDYxMz
+	I0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBMnrdnW/SDR4Um0++oZmRP
+	bEhlnnJq9in2CHnJUsHfy+/vkDqgM/tAlI5bdeqxOIs3j8PvpBwTOG3/tpxtW8evsI9Prgce
+	lF+YErdiYaTR7asB5kxNk9sn/D7q061u8pVRPbViCaPmljMT+pPYFnf8EL1Rw7H+6SQOc47f
+	au7+1zhnrLbJnbREiaU4I9FQi7moOBEA8GsfxTEDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,146 +57,119 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-jz4740.c |   65 ++++++++++++----------------------------------
- 1 file changed, 16 insertions(+), 49 deletions(-)
+ drivers/rtc/rtc-m48t59.c |   53 +++++++++++++++-------------------------------
+ 1 file changed, 17 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
-index c6573585..1b126d2 100644
---- a/drivers/rtc/rtc-jz4740.c
-+++ b/drivers/rtc/rtc-jz4740.c
-@@ -14,6 +14,7 @@
-  *
-  */
+diff --git a/drivers/rtc/rtc-m48t59.c b/drivers/rtc/rtc-m48t59.c
+index d4d31fa..fcb0329 100644
+--- a/drivers/rtc/rtc-m48t59.c
++++ b/drivers/rtc/rtc-m48t59.c
+@@ -409,7 +409,8 @@ static int m48t59_rtc_probe(struct platform_device *pdev)
+ 	} else if (res->flags & IORESOURCE_MEM) {
+ 		/* we are memory-mapped */
+ 		if (!pdata) {
+-			pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++			pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata),
++						GFP_KERNEL);
+ 			if (!pdata)
+ 				return -ENOMEM;
+ 			/* Ensure we only kmalloc platform data once */
+@@ -425,7 +426,7 @@ static int m48t59_rtc_probe(struct platform_device *pdev)
+ 			pdata->read_byte = m48t59_mem_readb;
+ 	}
  
-+#include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -216,37 +217,34 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
- 	struct jz4740_rtc *rtc;
- 	uint32_t scratchpad;
- 
--	rtc = kzalloc(sizeof(*rtc), GFP_KERNEL);
-+	rtc = devm_kzalloc(&pdev->dev, sizeof(*rtc), GFP_KERNEL);
- 	if (!rtc)
+-	m48t59 = kzalloc(sizeof(*m48t59), GFP_KERNEL);
++	m48t59 = devm_kzalloc(&pdev->dev, sizeof(*m48t59), GFP_KERNEL);
+ 	if (!m48t59)
  		return -ENOMEM;
  
- 	rtc->irq = platform_get_irq(pdev, 0);
- 	if (rtc->irq < 0) {
--		ret = -ENOENT;
- 		dev_err(&pdev->dev, "Failed to get platform irq\n");
--		goto err_free;
-+		return -ENOENT;
- 	}
+@@ -433,9 +434,10 @@ static int m48t59_rtc_probe(struct platform_device *pdev)
  
- 	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!rtc->mem) {
--		ret = -ENOENT;
- 		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
--		goto err_free;
-+		return -ENOENT;
- 	}
- 
--	rtc->mem = request_mem_region(rtc->mem->start, resource_size(rtc->mem),
--					pdev->name);
-+	rtc->mem = devm_request_mem_region(&pdev->dev, rtc->mem->start,
-+					resource_size(rtc->mem), pdev->name);
- 	if (!rtc->mem) {
--		ret = -EBUSY;
- 		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
--		goto err_free;
-+		return -EBUSY;
- 	}
- 
--	rtc->base = ioremap_nocache(rtc->mem->start, resource_size(rtc->mem));
-+	rtc->base = devm_ioremap_nocache(&pdev->dev, rtc->mem->start,
-+					resource_size(rtc->mem));
- 	if (!rtc->base) {
--		ret = -EBUSY;
- 		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
--		goto err_release_mem_region;
-+		return -EBUSY;
- 	}
- 
- 	spin_lock_init(&rtc->lock);
-@@ -255,19 +253,19 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
- 
- 	device_init_wakeup(&pdev->dev, 1);
- 
--	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev, &jz4740_rtc_ops,
--					THIS_MODULE);
-+	rtc->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
-+					&jz4740_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc->rtc)) {
- 		ret = PTR_ERR(rtc->rtc);
- 		dev_err(&pdev->dev, "Failed to register rtc device: %d\n", ret);
--		goto err_iounmap;
-+		return ret;
- 	}
- 
--	ret = request_irq(rtc->irq, jz4740_rtc_irq, 0,
-+	ret = devm_request_irq(&pdev->dev, rtc->irq, jz4740_rtc_irq, 0,
- 				pdev->name, rtc);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to request rtc irq: %d\n", ret);
--		goto err_unregister_rtc;
-+		return ret;
- 	}
- 
- 	scratchpad = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SCRATCHPAD);
-@@ -276,43 +274,13 @@ static int jz4740_rtc_probe(struct platform_device *pdev)
- 		ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, 0);
- 		if (ret) {
- 			dev_err(&pdev->dev, "Could not write write to RTC registers\n");
--			goto err_free_irq;
+ 	if (!m48t59->ioaddr) {
+ 		/* ioaddr not mapped externally */
+-		m48t59->ioaddr = ioremap(res->start, resource_size(res));
++		m48t59->ioaddr = devm_ioremap(&pdev->dev, res->start,
++						resource_size(res));
+ 		if (!m48t59->ioaddr)
+-			goto out;
 +			return ret;
- 		}
  	}
+ 
+ 	/* Try to get irq number. We also can work in
+@@ -446,10 +448,11 @@ static int m48t59_rtc_probe(struct platform_device *pdev)
+ 		m48t59->irq = NO_IRQ;
+ 
+ 	if (m48t59->irq != NO_IRQ) {
+-		ret = request_irq(m48t59->irq, m48t59_rtc_interrupt,
+-			IRQF_SHARED, "rtc-m48t59", &pdev->dev);
++		ret = devm_request_irq(&pdev->dev, m48t59->irq,
++				m48t59_rtc_interrupt, IRQF_SHARED,
++				"rtc-m48t59", &pdev->dev);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
+ 	switch (pdata->type) {
+ 	case M48T59RTC_TYPE_M48T59:
+@@ -469,51 +472,29 @@ static int m48t59_rtc_probe(struct platform_device *pdev)
+ 		break;
+ 	default:
+ 		dev_err(&pdev->dev, "Unknown RTC type\n");
+-		ret = -ENODEV;
+-		goto out;
++		return -ENODEV;
+ 	}
+ 
+ 	spin_lock_init(&m48t59->lock);
+ 	platform_set_drvdata(pdev, m48t59);
+ 
+-	m48t59->rtc = rtc_device_register(name, &pdev->dev, ops, THIS_MODULE);
+-	if (IS_ERR(m48t59->rtc)) {
+-		ret = PTR_ERR(m48t59->rtc);
+-		goto out;
+-	}
++	m48t59->rtc = devm_rtc_device_register(&pdev->dev, name, ops,
++						THIS_MODULE);
++	if (IS_ERR(m48t59->rtc))
++		return PTR_ERR(m48t59->rtc);
+ 
+ 	m48t59_nvram_attr.size = pdata->offset;
+ 
+ 	ret = sysfs_create_bin_file(&pdev->dev.kobj, &m48t59_nvram_attr);
+-	if (ret) {
+-		rtc_device_unregister(m48t59->rtc);
+-		goto out;
+-	}
++	if (ret)
++		return ret;
  
  	return 0;
 -
--err_free_irq:
--	free_irq(rtc->irq, rtc);
--err_unregister_rtc:
--	rtc_device_unregister(rtc->rtc);
--err_iounmap:
--	iounmap(rtc->base);
--err_release_mem_region:
--	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
--err_free:
--	kfree(rtc);
--
+-out:
+-	if (m48t59->irq != NO_IRQ)
+-		free_irq(m48t59->irq, &pdev->dev);
+-	if (m48t59->ioaddr)
+-		iounmap(m48t59->ioaddr);
+-		kfree(m48t59);
 -	return ret;
  }
  
--static int jz4740_rtc_remove(struct platform_device *pdev)
--{
--	struct jz4740_rtc *rtc = platform_get_drvdata(pdev);
--
--	free_irq(rtc->irq, rtc);
--
--	rtc_device_unregister(rtc->rtc);
--
--	iounmap(rtc->base);
--	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
--
--	kfree(rtc);
--
--	return 0;
--}
--
--
- #ifdef CONFIG_PM
- static int jz4740_rtc_suspend(struct device *dev)
+ static int m48t59_rtc_remove(struct platform_device *pdev)
  {
-@@ -344,7 +312,6 @@ static const struct dev_pm_ops jz4740_pm_ops = {
+-	struct m48t59_private *m48t59 = platform_get_drvdata(pdev);
+-	struct m48t59_plat_data *pdata = pdev->dev.platform_data;
+-
+ 	sysfs_remove_bin_file(&pdev->dev.kobj, &m48t59_nvram_attr);
+-	if (!IS_ERR(m48t59->rtc))
+-		rtc_device_unregister(m48t59->rtc);
+-	if (m48t59->ioaddr && !pdata->ioaddr)
+-		iounmap(m48t59->ioaddr);
+-	if (m48t59->irq != NO_IRQ)
+-		free_irq(m48t59->irq, &pdev->dev);
+-	kfree(m48t59);
+ 	return 0;
+ }
  
- static struct platform_driver jz4740_rtc_driver = {
- 	.probe	 = jz4740_rtc_probe,
--	.remove	 = jz4740_rtc_remove,
- 	.driver	 = {
- 		.name  = "jz4740-rtc",
- 		.owner = THIS_MODULE,
 -- 
 1.7.10.4
 
