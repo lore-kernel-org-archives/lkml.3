@@ -1,170 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3EUWlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:41:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59404 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3EUWlj (ORCPT
+	id S1753620Ab3EUWlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:41:49 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:36400 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3EUWlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:41:39 -0400
-Date: Tue, 21 May 2013 15:41:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kexec-list (kexec@lists.infradead.org)" <kexec@lists.infradead.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: Re: [PATCH]Add kmsg_dump() to kexec path
-Message-Id: <20130521154137.0db53981578ee206b21850f9@linux-foundation.org>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFEF289@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AFEF289@USINDEM103.corp.hds.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 21 May 2013 18:41:47 -0400
+Date: Tue, 21 May 2013 18:41:25 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Feng Jin <joe.jin@oracle.com>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Yuval Shaia <yuval.shaia@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chien Yen <chien.yen@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
+ driver load first time
+Message-ID: <20130521224125.GA3483@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1305151037100.4799@kaball.uk.xensource.com>
+ <5195944A.3050608@oracle.com>
+ <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
+ <20130520175706.GA27973@phenom.dumpdata.com>
+ <20130520203855.GA30616@phenom.dumpdata.com>
+ <519B474E.4000202@citrix.com>
+ <20130521134059.GE492@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
+ <20130521204245.GA7073@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys, can we please get some review attention to this?
+On Tue, May 21, 2013 at 10:50:09PM +0100, Stefano Stabellini wrote:
+> On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+> > On Tue, May 21, 2013 at 05:51:02PM +0100, Stefano Stabellini wrote:
+> > > On Tue, 21 May 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > Looking at the hypervisor code I couldn't see anything obviously wrong.
+> > > > 
+> > > > I think the culprit is "physdev_unmap_pirq":
+> > > > 
+> > > >    if ( is_hvm_domain(d) )                                                     
+> > > >     {                                                                           
+> > > >         spin_lock(&d->event_lock);                                              
+> > > >         gdprintk(XENLOG_WARNING,"d%d, pirq: %d is %x %s, irq: %d\n",            
+> > > >             d->domain_id, pirq, domain_pirq_to_emuirq(d, pirq),                 
+> > > >             domain_pirq_to_emuirq(d, pirq) == IRQ_UNBOUND ? "unbound" : "",        
+> > > >             domain_pirq_to_irq(d, pirq));                                       
+> > > >                                                                                 
+> > > >         if ( domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND )                    
+> > > >             ret = unmap_domain_pirq_emuirq(d, pirq);                            
+> > > >         spin_unlock(&d->event_lock);                                            
+> > > >         if ( domid == DOMID_SELF || ret )                                       
+> > > >             goto free_domain;                                             
+> > > > 
+> > > > It always tells me unbound:
+> > > > 
+> > > > (XEN) physdev.c:237:d14 14, pirq: 54 is ffffffff
+> > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > > (XEN) physdev.c:237:d14 14, pirq: 53 is ffffffff
+> > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > > (XEN) physdev.c:237:d14 14, pirq: 52 is ffffffff
+> > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > > (XEN) physdev.c:237:d14 14, pirq: 51 is ffffffff
+> > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > > (XEN) physdev.c:237:d14 14, pirq: 50 is ffffffff
+> > > > (XEN) irq.c:1873:d14 14, nr_pirqs: 56
+> > > > (a bit older debug code, so the 'unbound' does not show up here).
+> > > > 
+> > > > Which means that the call to unmap_domain_pirq_emuirq does not happen.
+> > > > The checks in unmap_domain_pirq_emuirq also look to be depend
+> > > > on the code being IRQ_UNBOUND.
+> > > > 
+> > > > In other words, all of that code looks to only clear things when
+> > > > they are !IRQ_UNBOUND.
+> > > > 
+> > > > But the other logic (IRQ_UNBOUND) looks to be missing a removal
+> > > > in the radix tree:
+> > > > 
+> > > >   if ( emuirq != IRQ_PT )                                                     
+> > > >         radix_tree_delete(&d->arch.hvm_domain.emuirq_pirq, emuirq);             
+> > > >                                                                         
+> > > > And I think that is what is causing the leak - the radix tree
+> > > > needs to be pruned? Or perhaps the allocate_pirq should check
+> > > > the radix tree for IRQ_UNBOUND ones and re-use them?
+> > > 
+> > > I think that you are looking in the wrong place.
+> > > The issue is that QEMU doesn't call pt_msi_disable in
+> > > pt_msgctrl_reg_write if (!val & PCI_MSI_FLAGS_ENABLE).
+> > 
+> > In my test-case I am not even calling QEMU. I am just doing two hypercalls 
+> > hypercall - get_free_pirq and unmap.
+> > > 
+> > > The code above is correct as is because it is trying to handle emulated
+> > > IRQs and MSIs, not real passthrough MSIs. They latter are not added to
+> > > that radix tree, see physdev_hvm_map_pirq and physdev_map_pirq.
+> > 
+> > The bug is in the hypervisor. This little patch solves the test-case
+> > (I hadn't tried to do the PCI passthrough yet)
+> > 
+> > 
+> > diff --git a/xen/arch/x86/irq.c b/xen/arch/x86/irq.c
+> > index b0b0c65..b78717a 100644
+> > --- a/xen/arch/x86/irq.c
+> > +++ b/xen/arch/x86/irq.c
+> > @@ -1851,8 +1851,8 @@ static int pirq_guest_force_unbind(struct domain *d, struct pirq *pirq)
+> >  static inline bool_t is_free_pirq(const struct domain *d,
+> >                                    const struct pirq *pirq)
+> >  {
+> > -    return !pirq || (!pirq->arch.irq && (!is_hvm_domain(d) ||
+> > -        pirq->arch.hvm.emuirq == IRQ_UNBOUND));
+> > +    return !pirq || ((pirq->arch.irq == 0 || (pirq->arch.irq == PIRQ_ALLOCATED)) &&
+> > +           (!is_hvm_domain(d) || pirq->arch.hvm.emuirq == IRQ_UNBOUND));
+> >  }
+> >  
+> >  int get_free_pirq(struct domain *d, int type)
 
+To be fair, this diff is just to demonstrate that the pirq->arch.irq is
+the one that seems to gate things. I am not suggesting that this is the
+final patch - just the 'aha, this is what is happening!'.
+> > 
+> > 
+> > The reason is that pirq->arch.irq in PHYSDEVOP_get_free_pirq is set to
+> > from the value of zero to -1 (PIRQ_ALLOCATED). Then in map_domain_pirq
+> > we check it first:
+> > 
+> > 904     old_irq = domain_pirq_to_irq(d, pirq);                  
+> > .. snip..                    
+> > 1907     if ( (old_irq > 0 && (old_irq != irq) ) ||                                  
+> > 
+> > and since the 'old_irq' is -1 (or zero), and the irq passed in
+> > is different, then all checks pass and the value is over-written:
+> > 
+> >  1988         set_domain_irq_pirq(d, irq, info);                                      
+> > 
+> > And that is it.
+> 
+> 
+> We have to be careful about this: the point of PHYSDEVOP_get_free_pirq is
+> that Linux can know for sure the pirq that is going to be used to map the
+> MSI by QEMU. If you modify is_free_pirq that way, suddenly the pirq
+> could be allocated for something else after Linux called
+> PHYSDEVOP_get_free_pirq and before QEMU called xc_physdev_map_pirq_msi.
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-Subject: Add kmsg_dump() to kexec path
+Yes. And I think the 'is_free_pirq' modification above is incorrect.
 
-Problem
-=======
+I think the fix should be in the unmap_pirq code (hypervisor) to check
+if the arch.irq is either zero or PIRQ_ALLOCATED. Right now it only
+checks for zero.
 
->From our support service experience, we always need to detect root cause
-of OS panic.  And customers in enterprise area never forgive us if we
-can't detect the root cause of panic due to lack of materials for
-investigation.
+Then as you say there is also xc_physdev_map_pirq_msi, but the call
+chain looks to be INTx-MSIx. The pt_msi_update is the call that is
+used when guest writes the PIRQ (xc_domain_update_msi_irq -> XEN_DOMCTL_bind_pt_irq)
 
-Kdump is a powerful troubleshooting feature, but it may accesses to
-multiple hardware, like HBA, FC-cable, to get to dump disk.
+And that looks to be it. The pt_msi_update can be called multiple times if
+the guest decides to use a different PIRQ.
 
-This means kdump is not robust against hardware failure.
+> 
+> Right now the unmap is supposed to be done by QEMU, not Linux. So I
+> think that it is "normal" (although counterintuitive) that your little
+> test works that way.
 
-Solution
-========
+Yes, the test-case is flawed.
+> 
+> pirq allocated via PHYSDEVOP_get_free_pirq should be passed to QEMU,
+> mapped by QEMU, unmapped by QEMU and eventually freed by QEMU.
+> 
+> This is not the bestest interface ever written of course but that's how
+> it works now.
 
-Logging kernel message to persistent device is an effective way to get
-materials for investigation in case of kdump failure.
-
-So this patch adds kmsg_dump() to a kexec path.  Also, it adds
-KMSG_DUMP_KEXEC to pstore_cannot_block_path() so that it can avoid
-deadlocking in kexec path.
-
-Please see the detail of pstore_cannot_block_path(). 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/pstore/platform.c?id=9f244e9cfd70c7c0f82d3c92ce772ab2a92d9f64
-
-Actually, there are some objections about kmsg_dump(KMSG_DUMP_KEXEC) and
-EFI below.  But I still think adding kmsg_dump() to a kexec path is
-useful.
-
-- http://marc.info/?l=linux-kernel&m=130698519720887&w=2
-
-(1) kdump already saves kernel messages inside /proc/vmcore
-
-  - https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/kernel/kexec.c?id=a3dd3323058d281abd584b15ad4c5b65064d7a61
-
-  It is correct, but the content of /proc/vmcore is stored a dump disk
-  as well.  So, if kdump fails due to hardware failures, the kernel
-  messages will be lost.
-
-(2) EFI firmware is buggy
-
-  - http://marc.info/?l=linux-kernel&m=130698519720887&w=2
-
-  I haven't seen actual firmware bugs which may cause kdump failure.  So
-  I don't think we need to care about it too much.  However, just to be
-  safe, I introduced pstore_cannot_block_path() avoid deadlocking to
-  pstore.
-
-Also, this patch doesn't affect almost all users because kmsg_dump() is
-kicked only when specifying both pstore.backend and
-printk.always_kmsg_dump parameters.  Even if a buggy firmware causes a
-kdump failure and someone blames kdump, we can ask them to reproduce the
-kdump failure by removing the parameters.
-
-In addition, I checked current coding of platform drivers.  There is no
-obvious problem as follows.
-
-- mtdoops/ramoops
-  They are designed to be kicked in panic and oops cases only.
-  So, they never run in a kexec path.
-
-- erst/efi/early_printk_mrst/nvram driver for powerpc
-  I don't see any bugs which may causes kdump failure because
-  deadlocking/dynamic memory allocation don't happen in their write callbacks.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/pstore/platform.c      |    4 ++++
- include/linux/kmsg_dump.h |    1 +
- kernel/kexec.c            |    2 ++
- 3 files changed, 7 insertions(+)
-
-diff -puN fs/pstore/platform.c~add-kmsg_dump-to-kexec-path fs/pstore/platform.c
---- a/fs/pstore/platform.c~add-kmsg_dump-to-kexec-path
-+++ a/fs/pstore/platform.c
-@@ -91,6 +91,8 @@ static const char *get_reason_str(enum k
- 		return "Halt";
- 	case KMSG_DUMP_POWEROFF:
- 		return "Poweroff";
-+	case KMSG_DUMP_KEXEC:
-+		return "Kexec";
- 	default:
- 		return "Unknown";
- 	}
-@@ -110,6 +112,8 @@ bool pstore_cannot_block_path(enum kmsg_
- 	case KMSG_DUMP_PANIC:
- 	/* Emergency restart shouldn't be blocked by spin lock. */
- 	case KMSG_DUMP_EMERG:
-+	/* In kexec path, pstore shouldn't be blocked to avoid kexec failure. */
-+	case KMSG_DUMP_KEXEC:
- 		return true;
- 	default:
- 		return false;
-diff -puN include/linux/kmsg_dump.h~add-kmsg_dump-to-kexec-path include/linux/kmsg_dump.h
---- a/include/linux/kmsg_dump.h~add-kmsg_dump-to-kexec-path
-+++ a/include/linux/kmsg_dump.h
-@@ -28,6 +28,7 @@ enum kmsg_dump_reason {
- 	KMSG_DUMP_RESTART,
- 	KMSG_DUMP_HALT,
- 	KMSG_DUMP_POWEROFF,
-+	KMSG_DUMP_KEXEC,
- };
- 
- /**
-diff -puN kernel/kexec.c~add-kmsg_dump-to-kexec-path kernel/kexec.c
---- a/kernel/kexec.c~add-kmsg_dump-to-kexec-path
-+++ a/kernel/kexec.c
-@@ -32,6 +32,7 @@
- #include <linux/vmalloc.h>
- #include <linux/swap.h>
- #include <linux/syscore_ops.h>
-+#include <linux/kmsg_dump.h>
- 
- #include <asm/page.h>
- #include <asm/uaccess.h>
-@@ -1089,6 +1090,7 @@ void crash_kexec(struct pt_regs *regs)
- 
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
-+			kmsg_dump(KMSG_DUMP_KEXEC);
- 			machine_crash_shutdown(&fixed_regs);
- 			machine_kexec(kexec_crash_image);
- 		}
-_
-
+That is kindly said :-)
