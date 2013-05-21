@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab3EUSNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 14:13:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46821 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab3EUSNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 14:13:04 -0400
-Date: Tue, 21 May 2013 13:12:30 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Message-ID: <20130521181230.GF1627@sirena.org.uk>
+	id S1755479Ab3EUSNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 14:13:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755413Ab3EUSNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 14:13:13 -0400
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] ktap 0.1 released
+References: <519AF05E.1050808@huawei.com>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Tue, 21 May 2013 14:13:09 -0400
+In-Reply-To: <519AF05E.1050808@huawei.com> (jovi.zhangwei@huawei.com's message of "Tue, 21 May 2013 11:56:14 +0800")
+Message-ID: <y0m8v38jj62.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7phR3qVEw/4Cnor3"
-Content-Disposition: inline
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 0/7] mfd: arizona: Updates for v3.11
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"zhangwei(Jovi)" <jovi.zhangwei@huawei.com> writes:
 
---7phR3qVEw/4Cnor3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> I'm pleased to announce that ktap release v0.1, this is the first official
+> release of ktap project [...]
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+Congrats.
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
-are available in the git repository at:
+> = what's ktap?
+>
+>    Because this is the first release, so there wouldn't include too
+>    much features, just contain several basic features about tracing,
+>    [...]
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-v3.10-rc2
+Nice progress.  Reviewing the safety/security items from
+https://lkml.org/lkml/2013/1/17/623, I see improvement in most.
 
-for you to fetch changes up to f773fc6dca4619bdf8da767eaba101a83b766059:
+For example, you seem to be using GFP_ATOMIC for run-time memory
+allocation, which is safer than before (though still could exhaust
+resources).  OTOH your code doesn't handle *failure* of such
+allocation attempts (see call sites to kp_*alloc).
 
-  mfd: arizona: Change fast_start pdata name to better reflect functionality (2013-05-21 12:41:54 -0500)
+There still doesn't seem to be safety constraints on the incoming
+byte code (like jump ranges, or loop counts).
 
-----------------------------------------------------------------
-mfd: arizona: Updates for v3.10
+It's nice to see some arithmetic OP_* checks, and the user_string
+function is probably safe enough now.  You'll need something analogous
+for kernel space (and possibly as verification for the various %s
+kp_printfs).  The hash tables might be susceptible to the deliberate
+hash collision attacks from last year.
 
-A bunch of enhancements and fixes for the arizona devices, adding a few
-new features (the main one being device tree) and improving robustness.
+It's nice to see the *_STACK_SIZE constraints in the bytecode
+interpreter; is there any C-level recursion remaining to consume
+excessive kernel stack?
 
-----------------------------------------------------------------
+Exposing os.sleep/os.wait (or general kernel functions) to become
+callable from the scripts is fraught with danger.  You just can't call
+the underlying functions from random kernel context (imagine from the
+most pessimal possible kprobe or tracepoint, somewhere within an
+atomic section), and you'll get crashes.
 
-There's going to be some changes following on from this which overlap
-with ASoC, it might be simplest to merge all this stuff in via ASoC if
-that's OK?
+You should write several time/space/invasivity stress-tests to help
+see how future progress improves the code's performance/safety on
+these and other problem areas.
 
-Charles Keepax (2):
-      mfd: wm5102: Manually apply register patch
-      mfd: arizona: Change fast_start pdata name to better reflect functionality
 
-Mark Brown (5):
-      mfd: arizona: Read the device identification information after boot
-      mfd: arizona: Add missing cleanup on remove
-      mfd: arizona: Disable interrupts during suspend
-      mfd: Add device tree bindings for Arizona class devices
-      mfd: arizona: Support use of external DCVDD
+> = Planned Changes
+>
+>    we are planning to enable more kernel ineroperability into ktap [...]
 
- Documentation/devicetree/bindings/mfd/arizona.txt |   62 ++++++
- drivers/mfd/arizona-core.c                        |  234 ++++++++++++++++++---
- drivers/mfd/arizona-i2c.c                         |   10 +-
- drivers/mfd/arizona-spi.c                         |   10 +-
- drivers/mfd/arizona.h                             |   12 ++
- include/linux/mfd/arizona/core.h                  |    2 +
- include/linux/mfd/arizona/pdata.h                 |    2 +-
- 7 files changed, 294 insertions(+), 38 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/arizona.txt
+As per the above, you'll want to be extremely careful about the idea
+to export FFI to let the lua scripts call into arbitrary kernel
+functions.  Perhaps wrap it into a 'guru' mode flag?
 
---7phR3qVEw/4Cnor3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRm7kLAAoJELSic+t+oim96KQP/0KYkWcOlgwuv88GQOqBhKAk
-bYSZTeYr4WcFPQS6KeC/NkVor//O689XE5vfbZ3xhhArmtPkoMwcXFBQRpbY5y0i
-1sXpWBfB9dYyVeTSYmSTKDIO5OpaQkP35672/CvflgIqE2pjV8PN9HlpunKBb7PE
-xGc2SRIVDJGDUHcMxJswico46YXbEBO086+wZJ+Tes/UCoxo7rtPfIyROe6cdMOj
-DDCrSDfAL9yOBkyW4Y43k1gpp33W8f9YdDVERgIOS+ioK+wjvDUdjBOAhYR0KsDZ
-7HsUaIOUrx28EVo/6THw+fcMzJbQ16yxg3aEjyT1BaQpZ3Vg1gF7XDcjD/xAnlo4
-eFxF2AapBJ3Qe7FixJpT6PAfx9do/To+3fiqurY718j9akEcgL6GTvm9O/hfI/7o
-HvSzDAymPZYEJWSTAhWKVrunHPH/H05ZvkmdLxWSpmc+iNoyX8MbbUqsczpkV8KJ
-/DaWJ6e28etp90vx0B+4qFgqr+njjl2ua1UJ1rBG+RjeqRhijUQJalcIoDykTVcU
-guoNS08AEjvbaeEHrD2MyVFLy+YsGtpwgV7fuybSOVeKVADBPIpAPbekeiwNQvDp
-llpRrA0ReZubPixbqpvxojplQH2tiRbrMKTB5H4Fx/3Em0b0sxNgq+4Y+Tfk1AOc
-QrqwubYPntBBm2KCmIxE
-=AI1b
------END PGP SIGNATURE-----
-
---7phR3qVEw/4Cnor3--
+- FChE
