@@ -1,134 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab3EUVsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:48:46 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42120 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab3EUVsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:48:45 -0400
-X-Originating-IP: 173.246.103.110
-Date: Tue, 21 May 2013 14:48:32 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 13/13] rcu: Shrink TINY_RCU by reworking
- CPU-stall ifdefs
-Message-ID: <20130521214832.GC11463@jtriplet-mobl1>
-References: <20130520145751.GA32218@linux.vnet.ibm.com>
- <1369061900-546-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1369061900-546-13-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130521173140.GA3878@jtriplet-mobl1>
- <20130521210957.GV3578@linux.vnet.ibm.com>
+	id S1752799Ab3EUVtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:49:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab3EUVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:49:03 -0400
+Date: Wed, 22 May 2013 00:49:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Don Dutile <ddutile@redhat.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+Message-ID: <20130521214912.GA21713@redhat.com>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+ <1368498506-25857-7-git-send-email-yinghai@kernel.org>
+ <51925FB0.4080504@intel.com>
+ <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com>
+ <5192946F.1050700@intel.com>
+ <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
+ <5192AEF4.1070905@intel.com>
+ <519BE778.9040800@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130521210957.GV3578@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <519BE778.9040800@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 02:09:57PM -0700, Paul E. McKenney wrote:
-> On Tue, May 21, 2013 at 10:31:41AM -0700, Josh Triplett wrote:
-> > On Mon, May 20, 2013 at 07:58:20AM -0700, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > TINY_RCU's reset_cpu_stall_ticks() and check_cpu_stalls() functions
-> > > are defined unconditionally, and are empty functions if CONFIG_RCU_TRACE
-> > > is disabled (which in turns disables detection of RCU CPU stalls).
-> > > These empty functions can add a bit of bloat to TINY_RCU, so this
-> > > commit reworks the ifdefs so that these functions are defined only
-> > > if they actually do something.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > Strange.  Both of these functions are static, and called in only one
-> > place, so shouldn't the compiler inline them (and thus throw them away
-> > completely when empty)?  Why does it not do so?
+On Tue, May 21, 2013 at 05:30:32PM -0400, Don Dutile wrote:
+> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
+> >On 05/14/2013 12:59 PM, Yinghai Lu wrote:
+> >>On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
+> >><alexander.h.duyck@intel.com>  wrote:
+> >>>On 05/14/2013 11:44 AM, Yinghai Lu wrote:
+> >>>>On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
+> >>>><alexander.h.duyck@intel.com>  wrote:
+> >>>>>I'm sorry, but what is the point of this patch?  With device assignment
+> >>>>>it is always possible to have VFs loaded and the PF driver unloaded
+> >>>>>since you cannot remove the VFs if they are assigned to a VM.
+> >>>>unload PF driver will not call pci_disable_sriov?
+> >>>You cannot call pci_disable_sriov because you will panic all of the
+> >>>guests that have devices assigned.
+> >>ixgbe_remove did call pci_disable_sriov...
+> >>
+> >>for guest panic, that is another problem.
+> >>just like you pci passthrough with real pci device and hotremove the
+> >>card in host.
+> >>
+> >>...
+> >
+> >I suggest you take another look.  In ixgbe_disable_sriov, which is the
+> >function that is called we do a check for assigned VFs.  If they are
+> >assigned then we do not call pci_disable_sriov.
+> >
+> >>
+> >>>So how does your patch actually fix this problem?  It seems like it is
+> >>>just avoiding it.
+> >>yes, until the first one is done.
+> >
+> >Avoiding the issue doesn't fix the underlying problem and instead you
+> >are likely just introducing more bugs as a result.
+> >
+> >>> From what I can tell your problem is originating in pci_call_probe.  I
+> >>>believe it is calling work_on_cpu and that doesn't seem correct since
+> >>>the work should be taking place on a CPU already local to the PF. You
+> >>>might want to look there to see why you are trying to schedule work on a
+> >>>CPU which should be perfectly fine for you to already be doing your work on.
+> >>it always try to go with local cpu with same pxm.
+> >
+> >The problem is we really shouldn't be calling work_for_cpu in this case
+> >since we are already on the correct CPU.  What probably should be
+> >happening is that pci_call_probe should be doing a check to see if the
+> >current CPU is already contained within the device node map and if so
+> >just call local_pci_probe directly.  That way you can avoid deadlocking
+> >the system by trying to flush the CPU queue of the CPU you are currently on.
+> >
+> That's the patch that Michael Tsirkin posted for a fix,
+> but it was noted that if you have the case where the _same_ driver is used for vf & pf,
+> other deadlocks may occur.
+> It would work in the case of ixgbe/ixgbevf, but not for something like
+> the Mellanox pf/vf driver (which is the same).
 > 
-> Good point for most architectures.  But given Tiny RCU's purpose, it
-> should allow for stupid compilers.  And I do need to fix the commit
-> message to call out the other benefit, namely saving a couple of
-> lines of source code.
 
-Regarding function inlining, at least, GCC is usually equally stupid on
-all architectures.  I'd be quite surprised if any architecture actually
-emits code for these functions.  You could also try changing them to
-"static inline", in which case GCC should *definitely* never emit code
-for them when empty.
+I think our conclusion was this is a false positive for Mellanox.
+If not, we need to understand what the deadlock is better.
 
-- Josh Triplett
-
-> 							Thanx, Paul
-> 
-> > - Josh Triplett
-> > 
-> > > ---
-> > >  kernel/rcutiny.c        | 4 ++--
-> > >  kernel/rcutiny_plugin.h | 6 ++----
-> > >  2 files changed, 4 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> > > index 4adc9e2..aa34411 100644
-> > > --- a/kernel/rcutiny.c
-> > > +++ b/kernel/rcutiny.c
-> > > @@ -204,7 +204,7 @@ static int rcu_is_cpu_rrupt_from_idle(void)
-> > >   */
-> > >  static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-> > >  {
-> > > -	reset_cpu_stall_ticks(rcp);
-> > > +	RCU_TRACE(reset_cpu_stall_ticks(rcp));
-> > >  	if (rcp->rcucblist != NULL &&
-> > >  	    rcp->donetail != rcp->curtail) {
-> > >  		rcp->donetail = rcp->curtail;
-> > > @@ -251,7 +251,7 @@ void rcu_bh_qs(int cpu)
-> > >   */
-> > >  void rcu_check_callbacks(int cpu, int user)
-> > >  {
-> > > -	check_cpu_stalls();
-> > > +	RCU_TRACE(check_cpu_stalls());
-> > >  	if (user || rcu_is_cpu_rrupt_from_idle())
-> > >  		rcu_sched_qs(cpu);
-> > >  	else if (!in_softirq())
-> > > diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-> > > index 65ef180..0cd385a 100644
-> > > --- a/kernel/rcutiny_plugin.h
-> > > +++ b/kernel/rcutiny_plugin.h
-> > > @@ -158,15 +158,11 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
-> > >  		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
-> > >  }
-> > >  
-> > > -#endif /* #ifdef CONFIG_RCU_TRACE */
-> > > -
-> > >  static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
-> > >  {
-> > > -#ifdef CONFIG_RCU_TRACE
-> > >  	rcp->ticks_this_gp = 0;
-> > >  	rcp->gp_start = jiffies;
-> > >  	rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
-> > > -#endif /* #ifdef CONFIG_RCU_TRACE */
-> > >  }
-> > >  
-> > >  static void check_cpu_stalls(void)
-> > > @@ -174,3 +170,5 @@ static void check_cpu_stalls(void)
-> > >  	RCU_TRACE(check_cpu_stall(&rcu_bh_ctrlblk));
-> > >  	RCU_TRACE(check_cpu_stall(&rcu_sched_ctrlblk));
-> > >  }
-> > > +
-> > > +#endif /* #ifdef CONFIG_RCU_TRACE */
-> > > -- 
-> > > 1.8.1.5
-> > > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
+> >
+> >Alex
+> >--
+> >To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> >the body of a message to majordomo@vger.kernel.org
+> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
