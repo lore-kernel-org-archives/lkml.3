@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327Ab3EULRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 07:17:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:16362 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3EULRD (ORCPT
+	id S1752935Ab3EULR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 07:17:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21241 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab3EULRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 07:17:03 -0400
-X-Spam-Score: -100.8
-Message-ID: <519B577B.8080204@asianux.com>
-Date: Tue, 21 May 2013 19:16:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 21 May 2013 07:17:25 -0400
+X-IronPort-AV: E=Sophos;i="4.87,714,1363132800"; 
+   d="scan'208";a="25189317"
+Date: Tue, 21 May 2013 12:17:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, Bob Liu <bob.liu@oracle.com>,
+        <linux-mm@kvack.org>
+Subject: Re: Bye bye Mr tmem guy
+In-Reply-To: <c064ee79-6fa0-4833-b3f1-ca712b029a83@default>
+Message-ID: <alpine.DEB.2.02.1305211214520.4799@kaball.uk.xensource.com>
+References: <c064ee79-6fa0-4833-b3f1-ca712b029a83@default>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Ben Dooks <ben@fluff.org>
-Subject: Re: [PATCH] include/linux/posix_acl.h: need 'return NULL' when BUG(),
- if neither CONFIG_BUG nor HAVE_ARCH_BUG is defined.
-References: <5199DBE2.5080707@asianux.com> <97dada79-cd78-4799-8f18-ed2bf8eee508@email.android.com> <20130520163118.GX18614@n2100.arm.linux.org.uk> <519AD33D.1030106@asianux.com> <20130521105959.GZ18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130521105959.GZ18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2013 06:59 PM, Russell King - ARM Linux wrote:
-> On Tue, May 21, 2013 at 09:51:57AM +0800, Chen Gang wrote:
->> On 05/21/2013 12:31 AM, Russell King - ARM Linux wrote:
->>> On Mon, May 20, 2013 at 07:40:24AM -0700, Eric W. Biederman wrote:
->>>> Seriously?  The correct fix it would seem is to give a useful default BUG
->>>> definition.  Say *NULL.
->>>
->>> Absolutely.
->>>
->>> The real question is... how is this happening.  I've seen it occasionally
->>> in the randconfig builds - though I don't have any logs to hand which
->>> show that in the build system at the moment.  So, looking at the files:
->>>
->>
->> Maybe it is my fault for the incorrect configuration.
->>
->> My operation:
->>   make EXTRA_CFLAGS=-W ARCH=arm randconfig
->>   make EXTRA_CFLAGS=-W ARCH=arm menuconfig
->>     set 'arm-linux-gnu-' as cross compiler prefix.
->>     select "MMU-based Paged Memory" in "System Type".
->>     select "Samsung S5PV210/S5PC110" in "ARM System type"
->>   make EXTRA_CFLAGS=-W ARCH=arm
->>   ...
->>
->> In menuconfig, I do not touch the "S5PV210 Machines" or "S5PC110
->> Machines" in "System Type", and no machines will be chosen as default.
+On Mon, 20 May 2013, Dan Magenheimer wrote:
+> Hi Linux kernel folks and Xen folks --
 > 
-> You know, telling us that you're using a random configuration to produce
-> a problem and not providing the actual configuration file is utterly
-> insane.  How many iterations do you think it might take to generate a
-> random configuration which shows the same problem you're seeing?
+> Effective July 5, I will be resigning from Oracle and "retiring"
+> for a minimum of 12-18 months and probably/hopefully much longer.
+> Between now and July 5, I will be tying up loose ends related to
+> my patches but also using up accrued vacation days.  If you have
+> a loose end you'd like to see tied, please let me know ASAP and
+> I will do my best.
 > 
+> After July 5, any email to me via first DOT last AT oracle DOT com
+> will go undelivered and may bounce.  Please send email related to
+> my open source patches and contributions to Konrad Wilk and/or Bob Liu.
+> Personal email directed to me can be sent to first AT last DOT com.
 > 
+> Thanks much to everybody for the many educational opportunities,
+> the technical and political jousting, and the great times at
+> conferences and summits!  I wish you all the best of luck!
+> Or to quote Douglas Adams: "So long and thanks for all the fish!"
 
-Oh, it is my fault for my original reply (it is another issue which
-also need further discussed)
-
-But for current issue, we can repeat it only in menuconfig, unset " >
-General setup > Configure standard kernel features (expert users) >
-BUG() Support ", it will report related warnings.
-
-For arm architecture, allmodconfig
-
-  make ARCH=arm  allmodconfig
-  make ARCH=arm  menuconfig
-    set "arm-linux-gnu-" as cross compiler prefix.
-    unset " > General setup > Configure standard kernel features (expert users) > BUG() Support "
-  make ARCH=arm
-  ...
-  kernel/sched/core.c:2353:1: warning: control reaches end of non-void function [-Wreturn-type]
-  mm/bootmem.c:386:1: warning: control reaches end of non-void function [-Wreturn-type]
-  include/linux/posix_acl.h:108:1: warning: control reaches end of non-void function [-Wreturn-type]
-  ...
-
-For x86 architecture, allmodconfig:
-
-  make allmodconfig
-  make menuconfig
-    unset " > General setup > Configure standard kernel features (expert users) > BUG() Support "
-  make ARCH=arm
-  ...
-  arch/x86/kvm/x86.c:4298:5: warning: ‘exchanged’ may be used uninitialized in this function [-Wuninitialized]
-  kernel/sched/core.c:2353:1: warning: control reaches end of non-void function [-Wreturn-type]
-  mm/mempolicy.c:1755:1: warning: control reaches end of non-void function [-Wreturn-type]
-  include/linux/posix_acl.h:108:1: warning: control reaches end of non-void function [-Wreturn-type]
-  ...
-
-
-So, we need fix the generic bug.h code, it is not arm specific.
-
-
-Thanks.-- 
-Chen Gang
-
-Asianux Corporation
+Thanks for all your hard efforts on Xen and have fun on your open-ended
+vacation!
