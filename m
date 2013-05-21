@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab3EUUzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:55:08 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:36435 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab3EUUzD (ORCPT
+	id S1754756Ab3EUUzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:55:49 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:53069 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3EUUzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:55:03 -0400
+	Tue, 21 May 2013 16:55:07 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v4 1/6] mips/kvm: Fix ABI for use of FPU.
-Date: Tue, 21 May 2013 13:54:50 -0700
-Message-Id: <1369169695-10444-2-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v4 6/6] mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
+Date: Tue, 21 May 2013 13:54:55 -0700
+Message-Id: <1369169695-10444-7-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com>
@@ -23,59 +23,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Define a non-empty struct kvm_fpu.
+The Linux Way is to return -ENOIOCTLCMD to the vfs when an
+unimplemented ioctl is requested.  Do this in kvm_mips instead of a
+random mixture of -ENOTSUPP and -EINVAL.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/include/asm/kvm.h | 29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ arch/mips/kvm/kvm_mips.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/mips/include/asm/kvm.h b/arch/mips/include/asm/kvm.h
-index 85789ea..0e8f565 100644
---- a/arch/mips/include/asm/kvm.h
-+++ b/arch/mips/include/asm/kvm.h
-@@ -1,11 +1,12 @@
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index bc879bd..8ea4bc5 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -185,7 +185,7 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+ long
+ kvm_arch_dev_ioctl(struct file *filp, unsigned int ioctl, unsigned long arg)
+ {
+-	return -EINVAL;
++	return -ENOIOCTLCMD;
+ }
+ 
+ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+@@ -391,7 +391,7 @@ int
+ kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
+ 				    struct kvm_guest_debug *dbg)
+ {
+-	return -EINVAL;
++	return -ENOIOCTLCMD;
+ }
+ 
+ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *run)
+@@ -429,14 +429,14 @@ int
+ kvm_arch_vcpu_ioctl_get_mpstate(struct kvm_vcpu *vcpu,
+ 				struct kvm_mp_state *mp_state)
+ {
+-	return -EINVAL;
++	return -ENOIOCTLCMD;
+ }
+ 
+ int
+ kvm_arch_vcpu_ioctl_set_mpstate(struct kvm_vcpu *vcpu,
+ 				struct kvm_mp_state *mp_state)
+ {
+-	return -EINVAL;
++	return -ENOIOCTLCMD;
+ }
+ 
  /*
--* This file is subject to the terms and conditions of the GNU General Public
--* License.  See the file "COPYING" in the main directory of this archive
--* for more details.
--*
--* Copyright (C) 2012  MIPS Technologies, Inc.  All rights reserved.
--* Authors: Sanjay Lal <sanjayl@kymasys.com>
--*/
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2012  MIPS Technologies, Inc.  All rights reserved.
-+ * Copyright (C) 2013 Cavium, Inc.
-+ * Authors: Sanjay Lal <sanjayl@kymasys.com>
-+ */
+@@ -483,7 +483,7 @@ long kvm_arch_vm_ioctl(struct file *filp, unsigned int ioctl, unsigned long arg)
  
- #ifndef __LINUX_KVM_MIPS_H
- #define __LINUX_KVM_MIPS_H
-@@ -31,8 +32,20 @@ struct kvm_regs {
- struct kvm_sregs {
- };
+ 	switch (ioctl) {
+ 	default:
+-		r = -EINVAL;
++		r = -ENOIOCTLCMD;
+ 	}
  
--/* for KVM_GET_FPU and KVM_SET_FPU */
-+/*
-+ * for KVM_GET_FPU and KVM_SET_FPU
-+ *
-+ * If Status[FR] is zero (32-bit FPU), the upper 32-bits of the FPRs
-+ * are zero filled.
-+ */
- struct kvm_fpu {
-+	__u64 fpr[32];
-+	__u32 fir;
-+	__u32 fccr;
-+	__u32 fexr;
-+	__u32 fenr;
-+	__u32 fcsr;
-+	__u32 pad;
- };
+ 	return r;
+@@ -511,13 +511,13 @@ void kvm_arch_exit(void)
+ int
+ kvm_arch_vcpu_ioctl_get_sregs(struct kvm_vcpu *vcpu, struct kvm_sregs *sregs)
+ {
+-	return -ENOTSUPP;
++	return -ENOIOCTLCMD;
+ }
  
- struct kvm_debug_exit_arch {
+ int
+ kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu, struct kvm_sregs *sregs)
+ {
+-	return -ENOTSUPP;
++	return -ENOIOCTLCMD;
+ }
+ 
+ int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
+@@ -527,12 +527,12 @@ int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
+ 
+ int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
+ {
+-	return -ENOTSUPP;
++	return -ENOIOCTLCMD;
+ }
+ 
+ int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
+ {
+-	return -ENOTSUPP;
++	return -ENOIOCTLCMD;
+ }
+ 
+ int kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
 -- 
 1.7.11.7
 
