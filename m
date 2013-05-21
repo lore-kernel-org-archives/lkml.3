@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3EUTco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 15:32:44 -0400
-Received: from git.silcnet.org ([81.89.56.81]:34928 "EHLO git.silcnet.org"
+	id S1755832Ab3EUTcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 15:32:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3379 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab3EUTcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 15:32:42 -0400
-Date: Tue, 21 May 2013 21:31:51 +0200 (CEST)
-From: Pekka Riikonen <priikone@iki.fi>
-X-X-Sender: priikone@git.silcnet.org
-To: David Miller <davem@davemloft.net>
-cc: eric.dumazet@gmail.com, eliezer.tamir@linux.intel.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jesse.brandeburg@intel.com, donald.c.skidmore@intel.com,
-        e1000-devel@lists.sourceforge.net, willemb@google.com,
-        andi@firstfloor.org, hpa@zytor.com, eliezer@tamir.org.il
-Subject: Re: [PATCH v3 net-next 1/4] net: implement support for low latency
- socket polling
-In-Reply-To: <20130521.114921.460497085402760002.davem@davemloft.net>
-Message-ID: <alpine.GSO.2.00.1305212123120.15328@git.silcnet.org>
-References: <519B2237.20204@linux.intel.com> <1369142926.3301.213.camel@edumazet-glaptop> <alpine.GSO.2.00.1305211855120.9230@git.silcnet.org> <20130521.114921.460497085402760002.davem@davemloft.net>
-User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
+	id S1755723Ab3EUTcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 15:32:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,715,1363158000"; 
+   d="scan'208";a="305854405"
+Message-ID: <519BCBDE.2050504@intel.com>
+Date: Tue, 21 May 2013 12:32:46 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 10/39] thp: account anon transparent huge pages into
+ NR_ANON_PAGES
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-11-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1368321816-17719-11-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 May 2013, David Miller wrote:
+On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> We use NR_ANON_PAGES as base for reporting AnonPages to user.
+> There's not much sense in not accounting transparent huge pages there, but
+> add them on printing to user.
+> 
+> Let's account transparent huge pages in NR_ANON_PAGES in the first place.
 
-> From: Pekka Riikonen <priikone@iki.fi>
-> Date: Tue, 21 May 2013 19:02:19 +0200 (CEST)
->
->> On Tue, 21 May 2013, Eric Dumazet wrote:
->>
->> : > > Alternatively, use a napi_id instead of a pointer.
->> : >
->> : > I'm not sure I understand what you propose.
->> :
->> : Oh well.
->> :
->> : To get a pointer to a struct net_device, we can use ifindex, and do a
->> : rcu lookup into a hash table to get the net_device. We do not need
->> : {pointer,ifindex} but {ifindex} is enough
->> :
->> : My suggestion is to not have skb->skb_ref but skb->napi_index : Its safe
->> : to copy its value from skb->napi_index to sk->napi_index without
->> : refcounting.
->> :
->> : All NAPI need to get a unique napi_index, and be inserted in a hash
->> : table for immediate/fast lookup.
->> :
->> Maybe even that's not needed.  Couldn't skb->queue_mapping give the
->> correct NAPI instance in multiqueue nics?  The NAPI instance could be made
->> easily available from skb->dev.  In any case an index is much better than
->> a new pointer.
->
-> Queue mapping is more volatile, and consider layered devices.
->
-Yes, true.  The napi_index then is probably the way to go.  Main thing for 
-me is that it doesn't increase skb size when in union with dma_cookie (skb 
-has been growing lately).
+This is another one that needs to be pretty carefully considered
+_independently_ of the rest of this set.  It also has potential
+user-visible changes, so it would be nice to have a blurb in the patch
+description if you've thought about this, any why you think it's OK.
 
- 	Pekka
+But, it still makes solid sense to me, and simplifies the code.
 
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
