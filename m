@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab3EUUFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 16:05:08 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:57229 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab3EUUFF (ORCPT
+	id S1753157Ab3EUUKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 16:10:01 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53722 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab3EUUJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 16:05:05 -0400
+	Tue, 21 May 2013 16:09:59 -0400
+Date: Tue, 21 May 2013 13:09:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Florian Westphal <fw@strlen.de>, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sk_page_frag_refill OOM killing spree
+In-Reply-To: <1369150280.3301.230.camel@edumazet-glaptop>
+Message-ID: <alpine.DEB.2.02.1305211309100.31504@chino.kir.corp.google.com>
+References: <20130521122845.GD16412@breakpoint.cc> <1369150280.3301.230.camel@edumazet-glaptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1369160653.6828.151.camel@gandalf.local.home>
-References: <1369158390.6828.148.camel@gandalf.local.home>
-	<CAFTL4hyWAJyOs3NnqSOt1JQHTk4vRiGWz6xE1bDXsVWi6fQKrQ@mail.gmail.com>
-	<1369160653.6828.151.camel@gandalf.local.home>
-Date: Tue, 21 May 2013 22:05:03 +0200
-Message-ID: <CAFTL4hyvWUDjjVe+EAOXQgor4GvZLKJx8KJbO46+5JYRtiso2Q@mail.gmail.com>
-Subject: Re: [PATCH][3.10] nohz: Fix lockup on restart from wrong error code
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/21 Steven Rostedt <rostedt@goodmis.org>:
-> On Tue, 2013-05-21 at 20:12 +0200, Frederic Weisbecker wrote:
->
->> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->>
->> There has been this patch that makes it return -EPERM instead:
->> https://lkml.org/lkml/2013/5/20/386
->>
->> Not sure which is best. Both sort of make sense to me.
->
-> That's just as good, as it also fixes the issue.
->
-> You can take Li's and add my Acked-by to it. And perhaps even add some
-> of my change log as well.
+On Tue, 21 May 2013, Eric Dumazet wrote:
 
-Ok, thanks!
+> On Tue, 2013-05-21 at 14:28 +0200, Florian Westphal wrote:
+> > Hi Eric,
+> > 
+> > seems like sk_page_frag_refill() can cause oom-killer invocation:
+> > 
+> > postgres invoked oom-killer: gfp_mask=0x42d0, order=3, oom_score_adj=0
+> > Pid: 10551, comm: postgres Tainted: G           O 3.8.6-5.g613ca40-smp #1
+> > Call Trace:
+> >  [<c106dbd5>] ? dump_header+0x60/0x191
+> >  [<c1133d3a>] ? ___ratelimit+0xb2/0xc4
+> >  [<c106dfd3>] ? oom_kill_process+0x61/0x2d1
+> >  [<c1030042>] ? has_capability_noaudit+0x1c/0x23
+> >  [<c106df0f>] ? oom_badness+0x8c/0xef
+> >  [<c106e446>] ? out_of_memory+0x203/0x247
+> >  [<c107128a>] ? __alloc_pages_nodemask+0x42b/0x4c3
+> >  [<c11fa66a>] ? sk_page_frag_refill+0x6a/0xd2
+> >  [<c1233548>] ? tcp_sendmsg+0x3e8/0x7c6
+> >  [<c124f34b>] ? inet_sendmsg+0x6b/0x75
+> >  [<c11f74d8>] ? sock_sendmsg+0x8d/0xa6
+> >  [<c11f7b83>] ? sys_sendto+0x105/0x130
+> >  [<c1025927>] ? __kunmap_atomic+0x62/0x8a
+> >  [<c1025940>] ? __kunmap_atomic+0x7b/0x8a
+> >  [<c1073d78>] ? __lru_cache_add+0x18/0x47
+> >  [<c10812f9>] ? handle_pte_fault+0x745/0x751
+> >  [<c1025a2d>] ? kmap_atomic_prot+0xd3/0xf1
+> >  [<c10817da>] ? handle_mm_fault+0x112/0x121
+> >  [<c11f7be5>] ? sys_send+0x37/0x3b
+> > 
+> > The system is busy, so, order-3 alloc failure doesn't strike me as odd.
+> > 
+> > There are no allocation failures with order != 3.
+> > 
+> > Sometimes this can happen in very short sucession, i.e.
+> > and oom-killer did end up zapping 30 processes or so.
+> > 
+
+Aside from the __GFP_NORETRY issue, could you post the full oom killer log 
+where it kills more than one process with /proc/sys/vm/oom_dump_tasks 
+enabled?  That shouldn't happen unless you have a memory leak.
