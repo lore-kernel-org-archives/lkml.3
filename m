@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab3EUKAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 06:00:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33149 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab3EUKAf convert rfc822-to-8bit (ORCPT
+	id S1752956Ab3EUKEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 06:04:37 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:56195 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab3EUKEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 06:00:35 -0400
-Message-ID: <519B45C3.8050700@arm.com>
-Date: Tue, 21 May 2013 11:00:35 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Landley <rob@landley.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 0/2] PM / OPP: updates to enable sharing OPPs info
-References: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-In-Reply-To: <1367406679-21603-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 21 May 2013 10:00:31.0828 (UTC) FILETIME=[07A5A140:01CE560A]
-X-MC-Unique: 113052111003218201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 21 May 2013 06:04:36 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 0/2] Set ab8500-codec dai slots from machine drivers
+Date: Tue, 21 May 2013 12:04:07 +0200
+Message-Id: <1369130649-15179-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob, Grant,
+Hi Mark,
 
-On 01/05/13 12:11, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> These are couple of updates to existing PM/OPP library to support
-> sharing of OPPs between different device nodes.
-> 
-> Currently all the cpu nodes are parsed until the OPPs are found. This
-> is essential to support cpuhotplug without having to replicate OPP
-> information in all the cpu nodes.
-> 
-> However in systems with multiple cpu power domain, its better to have
-> OPP entry for each cpu. To avoid replication, phandle can be specified
-> to the node which contains the full OPP information.
-> 
-Is proposed option of phandle for OPP acceptable to avoid replication ?
-Any suggestions to proceed on this ? This is needed to support CPU
-hotplug on big LITTLE system where current methods like parsing all the
-nodes or just CPU0 node will not work.
+these two patches rework the slot selection code in ab8500-codec to use
+the slots masks provided by the machine drivers instead of the hardcoded
+ones as suggested.
 
-Regards,
-Sudeep
+The patches replaces some of the previous macros with a parametrized
+version in the effort of making the actual code compact and readable,
+and should be applied in order.  Also, the second patch drops the
+hardcoded defintions swapped in -rc2, so you may want to rebase the
+ux500 topic branch to avoid the conflict, or I can resend the patch
+based on the topic branch directly.  Just let me know.
+
+Big thanks to Ola for helping me figuring out the weird ab8500 slot
+mapping logic.
+
+Fabio
+
+Fabio Baltieri (2):
+  ASoC: ab8500-codec: Set tx dai slots from tx_mask
+  ASoC: ab8500-codec: Set rx dai slots from rx_mask
+
+ sound/soc/codecs/ab8500-codec.c | 60 ++++++++++++++++++++++++++---------------
+ sound/soc/codecs/ab8500-codec.h | 42 +++++++++++++++--------------
+ 2 files changed, 61 insertions(+), 41 deletions(-)
+
+-- 
+1.8.2
 
