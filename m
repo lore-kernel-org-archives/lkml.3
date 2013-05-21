@@ -1,238 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab3EUN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 09:56:24 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:54630 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab3EUN4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 09:56:23 -0400
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <tobetter@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: add max77686 node entry for ODROID-X
-Date: Tue, 21 May 2013 22:56:04 +0900
-Message-Id: <1369144571-16901-1-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	id S1753044Ab3EUN61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 09:58:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:60700 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab3EUN60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 09:58:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,714,1363158000"; 
+   d="scan'208";a="244628127"
+Date: Tue, 21 May 2013 15:58:17 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] [3.10] mei: bus: Reset event_cb when disabling a device
+Message-ID: <20130521135817.GE4589@zurbaran>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ODROID-X board have a max77686 PMIC on i2c channel 0. The properties of used
-LDO and BUCK are defined according the schematic.
+After cancelling all reads from the disable hook, we need to reset the
+event_cb pointer as well or else we won't be able to set a new one up
+when re-enabling the device.
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 ---
- arch/arm/boot/dts/exynos4412-odroidx.dts |  195 ++++++++++++++++++++++++++++++
- 1 file changed, 195 insertions(+)
+ drivers/misc/mei/bus.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos4412-odroidx.dts b/arch/arm/boot/dts/exynos4412-odroidx.dts
-index 53bc8bf..1786225 100644
---- a/arch/arm/boot/dts/exynos4412-odroidx.dts
-+++ b/arch/arm/boot/dts/exynos4412-odroidx.dts
-@@ -108,4 +108,199 @@
- 			clock-frequency = <24000000>;
- 		};
- 	};
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 1e935ea..9ecd49a 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -496,6 +496,8 @@ int mei_cl_disable_device(struct mei_cl_device *device)
+ 		}
+ 	}
+ 
++	device->event_cb = NULL;
 +
-+	i2c@13860000 {
-+		pinctrl-0 = <&i2c0_bus>;
-+		pinctrl-names = "default";
-+		status = "okay";
-+
-+		max77686: pmic@09 {
-+			compatible = "maxim,max77686";
-+			reg = <0x09>;
-+
-+			voltage-regulators {
-+				ldo1_reg: LDO1 {
-+					regulator-name = "VDD_ALIVE_1.0V";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo2_reg: LDO2 {
-+					regulator-name = "VDDQ_M1_2_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo3_reg: LDO3 {
-+					regulator-name = "VDDQ_EXT_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo4_reg: LDO4 {
-+					regulator-name = "VDDQ_MMC2_2.8V";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo5_reg: LDO5 {
-+					regulator-name = "VDDQ_MMC1_3_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo6_reg: LDO6 {
-+					regulator-name = "VDD10_MPLL_1.0V";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo7_reg: LDO7 {
-+					regulator-name = "VDD10_XPLL_1.0V";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo11_reg: LDO11 {
-+					regulator-name = "VDD18_ABB1_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+				};
-+
-+				ldo12_reg: LDO12 {
-+					regulator-name = "VDD33_USB_3.3V";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo13_reg: LDO13 {
-+					regulator-name = "VDDQ_C2C_W_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo14_reg: LDO14 {
-+					regulator-name = "VDD18_ABB0_2_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo15_reg: LDO15 {
-+					regulator-name = "VDD10_HSIC_1.0V";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo16_reg: LDO16 {
-+					regulator-name = "VDD18_HSIC_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo20_reg: LDO20 {
-+					regulator-name = "LDO20_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-boot-on;
-+				};
-+
-+				ldo21_reg: LDO21 {
-+					regulator-name = "LDO21_3.3V";
-+					regulator-min-microvolt = <3300000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				ldo25_reg: LDO25 {
-+					regulator-name = "VDDQ_LCD_1.8V";
-+					regulator-min-microvolt = <1800000>;
-+					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck1_reg: BUCK1 {
-+					regulator-name = "vdd_mif";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck2_reg: BUCK2 {
-+					regulator-name = "vdd_arm";
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt = <1300000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck3_reg: BUCK3 {
-+					regulator-name = "vdd_int";
-+					regulator-min-microvolt = <1000000>;
-+					regulator-max-microvolt = <1000000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck4_reg: BUCK4 {
-+					regulator-name = "vdd_g3d";
-+					regulator-min-microvolt = <900000>;
-+					regulator-max-microvolt = <1100000>;
-+					regulator-microvolt-offset = <50000>;
-+				};
-+
-+				buck5_reg: BUCK5 {
-+					regulator-name = "VDDQ_CKEM1_2_1.2V";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <1200000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck6_reg: BUCK6 {
-+					regulator-name = "BUCK6_1.35V";
-+					regulator-min-microvolt = <1350000>;
-+					regulator-max-microvolt = <1350000>;
-+					regulator-always-on;
-+					regulator-boot-on;
-+				};
-+
-+				buck7_reg: BUCK7 {
-+					regulator-name = "BUCK7_2.0V";
-+					regulator-min-microvolt = <2000000>;
-+					regulator-max-microvolt = <2000000>;
-+					regulator-always-on;
-+				};
-+
-+				buck8_reg: BUCK8 {
-+					regulator-name = "BUCK8_2.8V";
-+					regulator-min-microvolt = <2800000>;
-+					regulator-max-microvolt = <2800000>;
-+					regulator-always-on;
-+				};
-+			};
-+		};
-+	};
- };
+ 	mutex_unlock(&dev->device_lock);
+ 
+ 	if (!device->ops || !device->ops->disable)
 -- 
-1.7.9.5
+1.7.10.4
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
