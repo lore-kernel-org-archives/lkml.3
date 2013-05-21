@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3EUHqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 03:46:45 -0400
-Received: from mail.servclub.de ([46.4.228.165]:51557 "EHLO mail.servclub.de"
+	id S1753098Ab3EUHsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 03:48:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1907 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab3EUHqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 03:46:42 -0400
-X-Greylist: delayed 1692 seconds by postgrey-1.27 at vger.kernel.org; Tue, 21 May 2013 03:46:42 EDT
-Message-ID: <1369120690.1945.9.camel@bne>
-Subject: Re: [PATCH] tty: nwpserial: Pass correct pointer to free_irq()
-From: Benjamin Krill <ben@codiert.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 21 May 2013 09:18:10 +0200
-In-Reply-To: <1369069650-1742-1-git-send-email-lars@metafoo.de>
-References: <1369069650-1742-1-git-send-email-lars@metafoo.de>
+	id S1751764Ab3EUHsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 03:48:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,713,1363158000"; 
+   d="scan'208";a="340661528"
+Message-ID: <1369122596.4432.22.camel@ymzhang.sh.intel.com>
+Subject: Re: Subject : [ PATCH ]
+ pci-reset-error_state-to-pci_channel_io_normal-at-report_slot_reset
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: linasvepstas@gmail.com
+Cc: "Liu, Joseph" <Joseph.Liu@emulex.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Zhang, LongX" <longx.zhang@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Tue, 21 May 2013 15:49:56 +0800
+In-Reply-To: <CAHrUA36OxKn1ucaA4-1jHU=4P+hCWOTVa2ECAwpxEoBWSRAv8A@mail.gmail.com>
+References: <F7B8FD780A346D46A0042F5C63B06AE785E3B2@SHSMSX102.ccr.corp.intel.com>
+	 <CAErSpo7+AbHi_TwxwHTJunpFb=CMhwMdCni6+NjbhdA=35XhvA@mail.gmail.com>
+	 <CF6E51640088844D9CADE5541A7C2FEB33EBC11D@CMEXMB1.ad.emulex.com>
+	 <CAHrUA36OxKn1ucaA4-1jHU=4P+hCWOTVa2ECAwpxEoBWSRAv8A@mail.gmail.com>
+Organization: Intel.
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-off-by: Benjamin Krill <ben@codiert.org>
+On Mon, 2013-05-20 at 10:37 -0500, Linas Vepstas wrote:
+> I think Joe Liu has it right.  I'm going to top-post because things
+> are a bit tangled below.  I urge a review of
+> /Documentation/PCI/pci-error-recovery.txt, as that gives the details.
+> 
+> The intended sequence is that, after an error, the device driver gets
+> a shot at running some diagnostics & dumps, and then the pci
+> bridges/controllers/ports/links are reset (by platform code, viz. aer
+> in this case) to a state resembling a fresh power-on.  Then the
+> .slot_reset() callback is called on the device driver, to tell the
+> driver "hey everything upstream is now working, go set yourself up for
+> normal ops."  Thus, in particular, one should have pdev->error_state =
+> pci_channel_io_normal; before .slot_reset() is called, and the PCI
+> config space contents should resemble a fresh power-on state (and
+> **NOT** some other saved state!)
+> 
+> If the device driver wanted to leave the card in a dead state, it had
+> several opportunities to say so, earlier in the callback sequence.  If
+> the driver wanted to fiddle with the card with the old PCI config
+> space, it already had a chance to do that too, before the
+> bridges/controllers/ports/links were fully reset by the platform.   By
+> the time that .slot_reset() is being called, both the platform and the
+> device driver are expecting smooth sailing ahead.
+Yes. It's flexible for drivers to do that in many callbacks. AER framework
+provides such flexibility.
 
-On Mon, 2013-05-20 at 19:07 +0200, Lars-Peter Clausen wrote:
-> free_irq() expects the same pointer that was passed to request_irq(), otherwise
-> the IRQ is not freed.
 > 
-> The issue was found using the following coccinelle script:
+> So, looking at the original patch, it seems reasonable. 
+I agree.
+
+>  My impression
+> is that maybe the AER driver had been doing not quite the right thing
+> for a long time.
+Pls. provide evidence/facts. The new patch is to facilitate device driver
+implementation. It doesn't mean current AER driver is incorrect. We need
+a tradeoff.
+
+Just like what Bjoin says, we shouldn't change error_state to pci_channel_io_normal
+before we really recover the hardware. The patch changes it just because
+drivers might call some functions to recover the devices, while such functions
+need (error_state==pci_channel_io_normal).
+
 > 
-> <smpl>
-> @r1@
-> type T;
-> T devid;
-> @@
-> request_irq(..., devid)
-> 
-> @r2@
-> type r1.T;
-> T devid;
-> position p;
-> @@
-> free_irq@p(..., devid)
-> 
-> @@
-> position p != r2.p;
-> @@
-> *free_irq@p(...)
-> </smpl>
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  drivers/tty/serial/nwpserial.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/nwpserial.c b/drivers/tty/serial/nwpserial.c
-> index 77287c5..549c70a 100644
-> --- a/drivers/tty/serial/nwpserial.c
-> +++ b/drivers/tty/serial/nwpserial.c
-> @@ -199,7 +199,7 @@ static void nwpserial_shutdown(struct uart_port *port)
->  	dcr_write(up->dcr_host, UART_IER, up->ier);
->  
->  	/* free irq */
-> -	free_irq(up->port.irq, port);
-> +	free_irq(up->port.irq, up);
->  }
->  
->  static int nwpserial_verify_port(struct uart_port *port,
+> -- Linas Vepstas
 
 
