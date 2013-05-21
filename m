@@ -1,99 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab3EUVtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 17:49:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57579 "EHLO mx1.redhat.com"
+	id S1752883Ab3EUVtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 17:49:45 -0400
+Received: from www.sr71.net ([198.145.64.142]:45549 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab3EUVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 17:49:03 -0400
-Date: Wed, 22 May 2013 00:49:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
-Message-ID: <20130521214912.GA21713@redhat.com>
-References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
- <1368498506-25857-7-git-send-email-yinghai@kernel.org>
- <51925FB0.4080504@intel.com>
- <CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com>
- <5192946F.1050700@intel.com>
- <CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
- <5192AEF4.1070905@intel.com>
- <519BE778.9040800@redhat.com>
+	id S1751397Ab3EUVtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 17:49:43 -0400
+Message-ID: <519BEBF5.4060309@sr71.net>
+Date: Tue, 21 May 2013 14:49:41 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519BE778.9040800@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 21/39] thp, libfs: initial support of thp in simple_read/write_begin/write_end
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-22-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1368321816-17719-22-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 05:30:32PM -0400, Don Dutile wrote:
-> On 05/14/2013 05:39 PM, Alexander Duyck wrote:
-> >On 05/14/2013 12:59 PM, Yinghai Lu wrote:
-> >>On Tue, May 14, 2013 at 12:45 PM, Alexander Duyck
-> >><alexander.h.duyck@intel.com>  wrote:
-> >>>On 05/14/2013 11:44 AM, Yinghai Lu wrote:
-> >>>>On Tue, May 14, 2013 at 9:00 AM, Alexander Duyck
-> >>>><alexander.h.duyck@intel.com>  wrote:
-> >>>>>I'm sorry, but what is the point of this patch?  With device assignment
-> >>>>>it is always possible to have VFs loaded and the PF driver unloaded
-> >>>>>since you cannot remove the VFs if they are assigned to a VM.
-> >>>>unload PF driver will not call pci_disable_sriov?
-> >>>You cannot call pci_disable_sriov because you will panic all of the
-> >>>guests that have devices assigned.
-> >>ixgbe_remove did call pci_disable_sriov...
-> >>
-> >>for guest panic, that is another problem.
-> >>just like you pci passthrough with real pci device and hotremove the
-> >>card in host.
-> >>
-> >>...
-> >
-> >I suggest you take another look.  In ixgbe_disable_sriov, which is the
-> >function that is called we do a check for assigned VFs.  If they are
-> >assigned then we do not call pci_disable_sriov.
-> >
-> >>
-> >>>So how does your patch actually fix this problem?  It seems like it is
-> >>>just avoiding it.
-> >>yes, until the first one is done.
-> >
-> >Avoiding the issue doesn't fix the underlying problem and instead you
-> >are likely just introducing more bugs as a result.
-> >
-> >>> From what I can tell your problem is originating in pci_call_probe.  I
-> >>>believe it is calling work_on_cpu and that doesn't seem correct since
-> >>>the work should be taking place on a CPU already local to the PF. You
-> >>>might want to look there to see why you are trying to schedule work on a
-> >>>CPU which should be perfectly fine for you to already be doing your work on.
-> >>it always try to go with local cpu with same pxm.
-> >
-> >The problem is we really shouldn't be calling work_for_cpu in this case
-> >since we are already on the correct CPU.  What probably should be
-> >happening is that pci_call_probe should be doing a check to see if the
-> >current CPU is already contained within the device node map and if so
-> >just call local_pci_probe directly.  That way you can avoid deadlocking
-> >the system by trying to flush the CPU queue of the CPU you are currently on.
-> >
-> That's the patch that Michael Tsirkin posted for a fix,
-> but it was noted that if you have the case where the _same_ driver is used for vf & pf,
-> other deadlocks may occur.
-> It would work in the case of ixgbe/ixgbevf, but not for something like
-> the Mellanox pf/vf driver (which is the same).
+On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
+> For now we try to grab a huge cache page if gfp_mask has __GFP_COMP.
+> It's probably to weak condition and need to be reworked later.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  fs/libfs.c              |   50 ++++++++++++++++++++++++++++++++++++-----------
+>  include/linux/pagemap.h |    8 ++++++++
+>  2 files changed, 47 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/libfs.c b/fs/libfs.c
+> index 916da8c..ce807fe 100644
+> --- a/fs/libfs.c
+> +++ b/fs/libfs.c
+> @@ -383,7 +383,7 @@ EXPORT_SYMBOL(simple_setattr);
+>  
+>  int simple_readpage(struct file *file, struct page *page)
+>  {
+> -	clear_highpage(page);
+> +	clear_pagecache_page(page);
+>  	flush_dcache_page(page);
+>  	SetPageUptodate(page);
+>  	unlock_page(page);
+> @@ -394,21 +394,44 @@ int simple_write_begin(struct file *file, struct address_space *mapping,
+>  			loff_t pos, unsigned len, unsigned flags,
+>  			struct page **pagep, void **fsdata)
+>  {
+> -	struct page *page;
+> +	struct page *page = NULL;
+>  	pgoff_t index;
 
-I think our conclusion was this is a false positive for Mellanox.
-If not, we need to understand what the deadlock is better.
+I know ramfs uses simple_write_begin(), but it's not the only one.  I
+think you probably want to create a new ->write_begin() function just
+for ramfs rather than modifying this one.
 
-> >
-> >Alex
-> >--
-> >To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> >the body of a message to majordomo@vger.kernel.org
-> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The optimization that you just put in a few patches ago:
+
+>> +static inline struct page *grab_cache_page_write_begin(
+>> +{
+>> +	if (!transparent_hugepage_pagecache() && (flags & AOP_FLAG_TRANSHUGE))
+>> +		return NULL;
+>> +	return __grab_cache_page_write_begin(mapping, index, flags);
+
+
+is now worthless for any user of simple_readpage().
+
+>  	index = pos >> PAGE_CACHE_SHIFT;
+>  
+> -	page = grab_cache_page_write_begin(mapping, index, flags);
+> +	/* XXX: too weak condition? */
+
+Why would it be too weak?
+
+> +	if (mapping_can_have_hugepages(mapping)) {
+> +		page = grab_cache_page_write_begin(mapping,
+> +				index & ~HPAGE_CACHE_INDEX_MASK,
+> +				flags | AOP_FLAG_TRANSHUGE);
+> +		/* fallback to small page */
+> +		if (!page) {
+> +			unsigned long offset;
+> +			offset = pos & ~PAGE_CACHE_MASK;
+> +			len = min_t(unsigned long,
+> +					len, PAGE_CACHE_SIZE - offset);
+> +		}
+
+Why does this have to muck with 'len'?  It doesn't appear to be undoing
+anything from earlier in the function.  What is it fixing up?
+
+> +		BUG_ON(page && !PageTransHuge(page));
+> +	}
+
+So, those semantics for AOP_FLAG_TRANSHUGE are actually pretty strong.
+They mean that you can only return a transparent pagecache page, but you
+better not return a small page.
+
+Would it have been possible for a huge page to get returned from
+grab_cache_page_write_begin(), but had it split up between there and the
+BUG_ON()?
+
+Which reminds me... under what circumstances _do_ we split these huge
+pages?  How are those circumstances different from the anonymous ones?
+
+> +	if (!page)
+> +		page = grab_cache_page_write_begin(mapping, index, flags);
+>  	if (!page)
+>  		return -ENOMEM;
+> -
+>  	*pagep = page;
+>  
+> -	if (!PageUptodate(page) && (len != PAGE_CACHE_SIZE)) {
+> -		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+> -
+> -		zero_user_segments(page, 0, from, from + len, PAGE_CACHE_SIZE);
+> +	if (!PageUptodate(page)) {
+> +		unsigned from;
+> +
+> +		if (PageTransHuge(page) && len != HPAGE_PMD_SIZE) {
+> +			from = pos & ~HPAGE_PMD_MASK;
+> +			zero_huge_user_segment(page, 0, from);
+> +			zero_huge_user_segment(page,
+> +					from + len, HPAGE_PMD_SIZE);
+> +		} else if (len != PAGE_CACHE_SIZE) {
+> +			from = pos & ~PAGE_CACHE_MASK;
+> +			zero_user_segments(page, 0, from,
+> +					from + len, PAGE_CACHE_SIZE);
+> +		}
+>  	}
+>  	return 0;
+>  }
+> @@ -443,9 +466,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+>  
+>  	/* zero the stale part of the page if we did a short copy */
+>  	if (copied < len) {
+> -		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+> -
+> -		zero_user(page, from + copied, len - copied);
+> +		unsigned from;
+> +		if (PageTransHuge(page)) {
+> +			from = pos & ~HPAGE_PMD_MASK;
+> +			zero_huge_user(page, from + copied, len - copied);
+> +		} else {
+> +			from = pos & ~PAGE_CACHE_MASK;
+> +			zero_user(page, from + copied, len - copied);
+> +		}
+>  	}
+
+When I see stuff going in to the simple_* functions, I fear that this
+code will end up getting copied in to each and every one of the
+filesystems that implement these on their own.
+
+I guess this works for now, but I'm worried that the the next fs is just
+going to copy-and-paste these.  Guess I'll yell at them when they do it. :)
+
