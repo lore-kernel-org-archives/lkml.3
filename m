@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3EUJUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 05:20:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45800 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab3EUJUr (ORCPT
+	id S1751972Ab3EUJVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 05:21:42 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33225 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3EUJVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 05:20:47 -0400
-Date: Tue, 21 May 2013 11:19:47 +0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Irina Tirdea <irina.tirdea@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Tom Zanussi <tom.zanussi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@suse.de>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/5] perf: Reorder parameters of strglobmatch
-Message-ID: <20130521091947.GD10541@ghostprotocols.net>
-References: <20130516114839.13508.92844.stgit@mhiramat-M0-7522>
- <20130516114852.13508.72995.stgit@mhiramat-M0-7522>
- <1368716142.6828.98.camel@gandalf.local.home>
- <51959417.7070403@hitachi.com>
+	Tue, 21 May 2013 05:21:41 -0400
+X-Spam-Score: -100.8
+Message-ID: <519B3C72.9060405@asianux.com>
+Date: Tue, 21 May 2013 17:20:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51959417.7070403@hitachi.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Paul Mackerras <paulus@samba.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        zhangyanfei@cn.fujitsu.com, Jiri Kosina <jkosina@suse.cz>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] PowerPC: kernel: need return the related error code when
+ failure occurs
+References: <519B0ACA.6090008@asianux.com> <20130521081031.GA29303@iris.ozlabs.ibm.com> <519B3855.6050201@asianux.com>
+In-Reply-To: <519B3855.6050201@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, May 17, 2013 at 11:21:11AM +0900, Masami Hiramatsu escreveu:
-> (2013/05/16 23:55), Steven Rostedt wrote:
-> > I'm a bit confused to the rational here. Can you explain in more detail
-> > to why this patch is actually needed?
- 
-> Yes, actually, this patch is not needed from the viewpoint of execution,
-> but less misuse for future use of the strglobmatch, I think.
- 
-> For example, glob(3) has the pattern parameter as the first one,
-> 
->        int glob(const char *pattern, int flags,
->                 int (*errfunc) (const char *epath, int eerrno),
->                 glob_t *pglob);
- 
-> regexec(3) also has the compiled regexp at the first parameter,
- 
->        int regexec(const regex_t *preg, const char *string, size_t nmatch,
->                    regmatch_t pmatch[], int eflags);
- 
-> Thus, I think a new user of strglobmatch() may guess that the first
-> parameter should be the glob pattern.
- 
-> So, this patch is not technically needed, but from the viewpoint of coding
-> naturally, it should be changed, IMHO.
 
-So I suggest you state this in the changeset comment :-)
+When error occurs, need return the related error code to let upper
+caller know about it.
 
-- Arnaldo
+ppc_md.nvram_size() can return the error code (e.g. core99_nvram_size()
+in 'arch/powerpc/platforms/powermac/nvram.c').
+
+Also set ret value when only need it, so can save structions for normal
+cases.
+
+The original related patch: "f9ce299 [PATCH] powerpc: fix large nvram
+access".
+
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/powerpc/kernel/nvram_64.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
+index 48fbc2b..8213ee1 100644
+--- a/arch/powerpc/kernel/nvram_64.c
++++ b/arch/powerpc/kernel/nvram_64.c
+@@ -84,22 +84,30 @@ static ssize_t dev_nvram_read(struct file *file, char __user *buf,
+ 	char *tmp = NULL;
+ 	ssize_t size;
+ 
+-	ret = -ENODEV;
+-	if (!ppc_md.nvram_size)
++	if (!ppc_md.nvram_size) {
++		ret = -ENODEV;
+ 		goto out;
++	}
+ 
+-	ret = 0;
+ 	size = ppc_md.nvram_size();
+-	if (*ppos >= size || size < 0)
++	if (size < 0) {
++		ret = size;
++		goto out;
++	}
++
++	if (*ppos >= size) {
++		ret = 0;
+ 		goto out;
++	}
+ 
+ 	count = min_t(size_t, count, size - *ppos);
+ 	count = min(count, PAGE_SIZE);
+ 
+-	ret = -ENOMEM;
+ 	tmp = kmalloc(count, GFP_KERNEL);
+-	if (!tmp)
++	if (!tmp) {
++		ret = -ENOMEM;
+ 		goto out;
++	}
+ 
+ 	ret = ppc_md.nvram_read(tmp, count, ppos);
+ 	if (ret <= 0)
+-- 
+1.7.7.6
