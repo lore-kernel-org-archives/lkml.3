@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3EUQTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 12:19:06 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43846 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab3EUQTD (ORCPT
+	id S1754835Ab3EUQVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 12:21:22 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:19582
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754776Ab3EUQVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 12:19:03 -0400
-Date: Wed, 22 May 2013 00:18:50 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: gregkh@linuxfoundation.org, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] TTY:vt: convert remain take_over_console's users to
- do_take_over_console
-Message-ID: <20130521161849.GA11322@udknight.homenetwork>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	Peter Hurley <peter@hurleysoftware.com>, gregkh@linuxfoundation.org,
-	sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20130521051511.GA11435@udknight>
- <519B7249.2070207@hurleysoftware.com>
- <20130521144215.GA5302@udknight.homenetwork>
- <519B976A.3050708@hurleysoftware.com>
+	Tue, 21 May 2013 12:21:20 -0400
+X-Forefront-Antispam-Report: CIP:132.245.2.69;KIP:(null);UIP:(null);IPV:NLI;H:BN1PRD0712HT003.namprd07.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: PS-1(z37d5kzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+Message-ID: <519B9EF2.8020107@caviumnetworks.com>
+Date: Tue, 21 May 2013 09:21:06 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519B976A.3050708@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, <kvm@vger.kernel.org>,
+        Sanjay Lal <sanjayl@kymasys.com>, <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v3 5/5] mips/kvm: Fix ABI by moving manipulation of CP0
+ registers to KVM_{G,S}ET_MSRS
+References: <1369083686-27524-1-git-send-email-ddaney.cavm@gmail.com> <1369083686-27524-6-git-send-email-ddaney.cavm@gmail.com> <20130521153752.GD14287@redhat.com>
+In-Reply-To: <20130521153752.GD14287@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 11:48:58AM -0400, Peter Hurley wrote:
-> On 05/21/2013 10:42 AM, Wang YanQing wrote:
-> > On Tue, May 21, 2013 at 09:10:33AM -0400, Peter Hurley wrote:
-> >> I would rather revert dc9641895abb which purported to delete
-> >> _unneeded_ functions than have this. Obviously the functions
-> >> were needed.
-> >>
-> >
-> > Hi Peter, this series patches' goal is to reduce codes'
-> > redundance and function duplication. But if we keep take_over_console,
-> > then we have to rewrite it as a trivial wrapper over do_take_over_console,
-> > or we have to keep bind_con_driver and register_con_driver, and this
-> > will bring use codes' redundance.
-> >
-> > And if we rewrite take_over_console as a wrapper over
-> > do_take_over_console, it is so trivial, delete it and let kernel
-> > use the unified version of APIs will simplify the APIs.
-> 
-> Except now you're spreading the brokenness that is console_lock()
-> over many more source files than the single-use case of
-> do_take_over_console().
+On 05/21/2013 08:37 AM, Gleb Natapov wrote:
+> On Mon, May 20, 2013 at 02:01:26PM -0700, David Daney wrote:
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> Because not all 256 CP0 registers are ever implemented, we need a
+>> different method of manipulating them.  Use the
+>> KVM_GET_MSRS/KVM_SET_MSRS mechanism as x86 does for its MSRs.
+>>
+> Have you looked at KVM_(GET|SET)_ONE_REG interface (not used by x86, but is
+> used bu arm/ppc/s390). It looks like it is more suitable for your case.
+> Actually you can use it instead of KVM_(GET|SET)_REGS for all registers.
 
-> The actual interface is take_over_console(); the _workaround_ is
-> exposing do_take_over_console() for fbcon to wrap.
+Yes, I suppose it could be used.  One problem it has is that there is no 
+way to query the set of supported registers.  Also you have to make 
+multiple calls to set multiple registers, which involves vcpu_{load,put} 
+for each register.
 
-This _workaround_ willn't work, take_over_console will hold console_lock internal,
-but do_take_over_console need caller hold console_lock, then we can't rewrite 
-do_take_over_console as a wrap base on take_over_console. 
+We will definitely implement it for all the FP and General Purpose 
+registers.
 
-But the reverse is ok. So if we have to do it, then the actual interface 
-is do_take_over_console, and the "_workaround_" is exposing take_over_console 
-as a wrap base on do_take_over_console.
+>
+>> Code related to implementing KVM_GET_MSRS/KVM_SET_MSRS is consolidated
+
+
