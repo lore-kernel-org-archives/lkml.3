@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3EUWi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 18:38:58 -0400
-Received: from mout.gmx.net ([212.227.15.15]:52926 "EHLO mout.gmx.net"
+	id S1754166Ab3EUWjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 18:39:09 -0400
+Received: from mout.gmx.net ([212.227.17.22]:54647 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab3EUWi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 18:38:56 -0400
+	id S1752116Ab3EUWjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 18:39:03 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+QyEVk9auQvMN1d4m04kjGc2r+uV1pG77mA8olOO
-	lSqwq3tW1u2/my
+X-Provags-ID: V01U2FsdGVkX18AkB8r6NQAQICnnYuCKgQb5UgSoWvD0ZxSbMbMsQ
+	P6tGMPMzGQer2w
 From: Peter Huewe <peterhuewe@gmx.de>
 To: "David S. Miller" <davem@davemloft.net>
-Cc: Peter Huewe <peterhuewe@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Pirko <jiri@resnulli.us>, Bill Pemberton <wfp5p@virginia.edu>,
-        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+Cc: Peter Huewe <peterhuewe@gmx.de>, Francois Romieu <romieu@fr.zoreil.com>,
+        Sorbica Shieh <sorbica@icplus.com.tw>,
+        netdev@vger.kernel.org (open list:IP1000A 10/100/10...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 07/19] net/ethernet/toshiba/tc35815: Use module_pci_driver to register driver
-Date: Wed, 22 May 2013 00:42:12 +0200
-Message-Id: <1369176146-19383-7-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 08/19] net/ethernet/icplus/ipg: Use module_pci_driver to register driver
+Date: Wed, 22 May 2013 00:42:13 +0200
+Message-Id: <1369176146-19383-8-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
 References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
@@ -32,33 +31,30 @@ register and unregister in the otherwise empty init/exit functions.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/net/ethernet/toshiba/tc35815.c | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/net/ethernet/icplus/ipg.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/drivers/net/ethernet/toshiba/tc35815.c b/drivers/net/ethernet/toshiba/tc35815.c
-index fe25609..a971b9c 100644
---- a/drivers/net/ethernet/toshiba/tc35815.c
-+++ b/drivers/net/ethernet/toshiba/tc35815.c
-@@ -2209,18 +2209,6 @@ MODULE_PARM_DESC(speed, "0:auto, 10:10Mbps, 100:100Mbps");
- module_param_named(duplex, options.duplex, int, 0);
- MODULE_PARM_DESC(duplex, "0:auto, 1:half, 2:full");
+diff --git a/drivers/net/ethernet/icplus/ipg.c b/drivers/net/ethernet/icplus/ipg.c
+index 068d781..1fde90b 100644
+--- a/drivers/net/ethernet/icplus/ipg.c
++++ b/drivers/net/ethernet/icplus/ipg.c
+@@ -2298,15 +2298,4 @@ static struct pci_driver ipg_pci_driver = {
+ 	.remove		= ipg_remove,
+ };
  
--static int __init tc35815_init_module(void)
+-static int __init ipg_init_module(void)
 -{
--	return pci_register_driver(&tc35815_pci_driver);
+-	return pci_register_driver(&ipg_pci_driver);
 -}
 -
--static void __exit tc35815_cleanup_module(void)
+-static void __exit ipg_exit_module(void)
 -{
--	pci_unregister_driver(&tc35815_pci_driver);
+-	pci_unregister_driver(&ipg_pci_driver);
 -}
 -
--module_init(tc35815_init_module);
--module_exit(tc35815_cleanup_module);
--
-+module_pci_driver(tc35815_pci_driver);
- MODULE_DESCRIPTION("TOSHIBA TC35815 PCI 10M/100M Ethernet driver");
- MODULE_LICENSE("GPL");
+-module_init(ipg_init_module);
+-module_exit(ipg_exit_module);
++module_pci_driver(ipg_pci_driver);
 -- 
 1.8.1.5
 
