@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3EVVHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:07:41 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38840 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab3EVVHj (ORCPT
+	id S1757344Ab3EVVHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:07:19 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:45415 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3EVVHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:07:39 -0400
-Message-ID: <519D3395.9080200@kernel.org>
-Date: Wed, 22 May 2013 22:07:33 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 22 May 2013 17:07:13 -0400
 MIME-Version: 1.0
-To: Denis CIOCCA <denis.ciocca@st.com>
-CC: Paul Bolle <pebolle@tiscali.nl>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iio: STMicroelectronics: remove three useless selects
-References: <1368522350.1350.98.camel@x61.thuisdomein> <1426549.ftB3AjjfpY@elitebook-8460p>
-In-Reply-To: <1426549.ftB3AjjfpY@elitebook-8460p>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
+References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
+ <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
+ <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
+ <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
+ <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
+ <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
+ <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
+ <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
+From: Alex Riesen <raa.lkml@gmail.com>
+Date: Wed, 22 May 2013 23:06:53 +0200
+Message-ID: <CALxABCaubJgHkr60r4M5igJtZhCOMhZbzCvGByb3gOg5spSFUQ@mail.gmail.com>
+Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
+ HDA, codec VIA VT1802
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2013 10:30 AM, Denis CIOCCA wrote:
-> Hi Paul,
-> 
-> Acked-by: Denis Ciocca <denis.ciocca@st.com>
-Applied to togreg branch of iio.git.
-> 
-> Thanks,
-> Denis
-> 
-> On Tuesday, May 14, 2013 11:05:50 AM Paul Bolle wrote:
->> Drivers for STMicroelectronics accelerometers, gyroscopes, and
->> magnetometers were added in v3.9. They all have a (similar) select
->> statement in their Kconfig files for a non-existant Kconfig symbol.
->> These select statements can safely be removed.
+Ping? Can I do something for you?
+
+Regards,
+Alex
+
+On Sat, May 18, 2013 at 10:29 PM, Alex Riesen <raa.lkml@gmail.com> wrote:
+> Sorry for delayed replies. I have not much time for this lately.
+>
+> On Fri, May 17, 2013 at 8:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>>> Well... It seems that something went unnoticed. This command seems
+>>> to be essential for this (and the revised) patch to get the headphone
+>>> output at all:
+>>>
+>>>         hda-verb /dev/snd/hwC0D0 0x25 SET_PIN_WID 0xc0
 >>
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> 0) Untested.
+>> Do you mean that the headphone doesn't work without this even after
+>> the patch?  It's weird that the alsa-info.sh output you attached below
+>> already contains it, i.e. 0x25 showing 0xc0.
+>
+> Yes. It is after the latest patch.
+>
+>> Or, is the attached output the result after you ran hda-verb like the
+>> above?
+>
+> Er, yes.
+>
+>>> It does. And there is no output from the speakers.
 >>
->> 1) Perhaps it was intended (in development versions of these drivers) to
->> have separate buffer and core drivers. One hint is that in the buffer
->> related source files one can find the usual MODULE_* macros. Those
->> macros can also be found in the core source files. I do wonder what
->> happens at build time now these drivers have two copies of these macros.
->>
->>  drivers/iio/accel/Kconfig        | 1 -
->>  drivers/iio/gyro/Kconfig         | 1 -
->>  drivers/iio/magnetometer/Kconfig | 1 -
->>  3 files changed, 3 deletions(-)
->>
->> diff --git a/drivers/iio/accel/Kconfig b/drivers/iio/accel/Kconfig
->> index bb59496..719d83f 100644
->> --- a/drivers/iio/accel/Kconfig
->> +++ b/drivers/iio/accel/Kconfig
->> @@ -28,7 +28,6 @@ config IIO_ST_ACCEL_3AXIS
->>  	select IIO_ST_ACCEL_I2C_3AXIS if (I2C)
->>  	select IIO_ST_ACCEL_SPI_3AXIS if (SPI_MASTER)
->>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
->> -	select IIO_ST_ACCEL_BUFFER if (IIO_TRIGGERED_BUFFER)
->>  	help
->>  	  Say yes here to build support for STMicroelectronics accelerometers:
->>  	  LSM303DLH, LSM303DLHC, LIS3DH, LSM330D, LSM330DL, LSM330DLC,
->> diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
->> index 6be4628..b8daf1b 100644
->> --- a/drivers/iio/gyro/Kconfig
->> +++ b/drivers/iio/gyro/Kconfig
->> @@ -47,7 +47,6 @@ config IIO_ST_GYRO_3AXIS
->>  	select IIO_ST_GYRO_I2C_3AXIS if (I2C)
->>  	select IIO_ST_GYRO_SPI_3AXIS if (SPI_MASTER)
->>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
->> -	select IIO_ST_GYRO_BUFFER if (IIO_TRIGGERED_BUFFER)
->>  	help
->>  	  Say yes here to build support for STMicroelectronics gyroscopes:
->>  	  L3G4200D, LSM330DL, L3GD20, L3GD20H, LSM330DLC, L3G4IS, LSM330.
->> diff --git a/drivers/iio/magnetometer/Kconfig
->> b/drivers/iio/magnetometer/Kconfig
->  index bd1cfb6..c332b0a 100644
->> --- a/drivers/iio/magnetometer/Kconfig
->> +++ b/drivers/iio/magnetometer/Kconfig
->> @@ -32,7 +32,6 @@ config IIO_ST_MAGN_3AXIS
->>  	select IIO_ST_MAGN_I2C_3AXIS if (I2C)
->>  	select IIO_ST_MAGN_SPI_3AXIS if (SPI_MASTER)
->>  	select IIO_TRIGGERED_BUFFER if (IIO_BUFFER)
->> -	select IIO_ST_MAGN_BUFFER if (IIO_TRIGGERED_BUFFER)
->>  	help
->>  	  Say yes here to build support for STMicroelectronics magnetometers:
->>  	  LSM303DLHC, LSM303DLM, LIS3MDL.
->> -- 
->> 1.7.11.7
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>> Hmm.  I'm confused.  I thought you mentioned that the speaker is
+>> unmuted?
+>
+> I think I am as confused as you, if not more. I redid the tests
+> but recorded everything this time with script(1). It is without
+> timing information (would be boring anyway, with me figuring
+> the arguments), so just cat it. Just in case: it sets xterm title.
+> The transcript is in headphone.gz.
+>
+>> - Use the patched kernel, play without headphone, confirm that the
+>>   speaker works.  Get alsa-info.sh output at this point.
+>
+> That's 3.9.2-wo-headphone.alsa.gz
+>
+>> - Plug the headphone, play, and check whether the headphone works and
+>>   the speaker is muted.
+>>   Again, get alsa-info.sh output at this point, no matter whether the
+>>   headphone works or not.
+>
+> That's 3.9.2-w-headphone.alsa.gz. Headphone not working, speakers
+> correctly muted.
+>
+>> In anyway, if you make things working, please give exactly what you
+>> did, and take again alsa-info.sh output, too.
+>
+> 3.9.2-w-headphone-working.alsa.gz. The working state is lost after
+> unplugging and replugging the headphones. It is different to the
+> case when the alternate channel is used (Independent HP): replugging
+> does not break the output than.
+>
+> Sorry for confusion and thanks!
+>
+> Regards,
+> Alex
