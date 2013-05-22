@@ -1,231 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab3EVL61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 07:58:27 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:56816 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754174Ab3EVL60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 07:58:26 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <519CB2D8.103@yandex-team.ru>
-Date: Wed, 22 May 2013 15:58:16 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-References: <519B38EC.90401@yandex-team.ru>  <20130521120906.GD3578@linux.vnet.ibm.com>  <1369143885.3301.221.camel@edumazet-glaptop>  <519B8908.9080007@yandex-team.ru>  <1369150693.3301.233.camel@edumazet-glaptop>  <519BB90B.6080706@yandex-team.ru>  <1369188080.3301.268.camel@edumazet-glaptop> <1369201765.3301.299.camel@edumazet-glaptop>
-In-Reply-To: <1369201765.3301.299.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755976Ab3EVMBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:01:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40469 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754799Ab3EVMBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:01:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,719,1363158000"; 
+   d="scan'208";a="317704327"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <519BC3BE.3070702@sr71.net>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-5-git-send-email-kirill.shutemov@linux.intel.com>
+ <519BC3BE.3070702@sr71.net>
+Subject: Re: [PATCHv4 04/39] radix-tree: implement preload for multiple
+ contiguous elements
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130522120356.9CB12E0090@blue.fi.intel.com>
+Date: Wed, 22 May 2013 15:03:56 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2013 09:49, Eric Dumazet wrote:
-> On Tue, 2013-05-21 at 19:01 -0700, Eric Dumazet wrote:
->
->> Please use ACCESS_ONCE(), which is the standard way to deal with this,
->> and remove the rcu_dereference_raw() in
->> hlist_nulls_for_each_entry_rcu()
->>
->> something like : (for the nulls part only)
->
-> Thinking a bit more about this, I am a bit worried by other uses of
-> ACCESS_ONCE(ptr->field)
->
-> rcu_dereference(ptr->field) intent is to reload ptr->field every time
-> from memory.
+Dave Hansen wrote:
+> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
+> > This patch introduces radix_tree_preload_count(). It allows to
+> > preallocate nodes enough to insert a number of *contiguous* elements.
+> 
+> Would radix_tree_preload_contig() be a better name, then?
 
-Exactly.
+Yes. Will rename.
 
->
-> Do we really need a
->
-> #define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
->
-> #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
->
-> and change all rcu_dererence(ptr->field) occurrences ?
+> ...
+> > On 64-bit system:
+> > For RADIX_TREE_MAP_SHIFT=3, old array size is 43, new is 107.
+> > For RADIX_TREE_MAP_SHIFT=4, old array size is 31, new is 63.
+> > For RADIX_TREE_MAP_SHIFT=6, old array size is 21, new is 30.
+> > 
+> > On 32-bit system:
+> > For RADIX_TREE_MAP_SHIFT=3, old array size is 21, new is 84.
+> > For RADIX_TREE_MAP_SHIFT=4, old array size is 15, new is 46.
+> > For RADIX_TREE_MAP_SHIFT=6, old array size is 11, new is 19.
+> > 
+> > On most machines we will have RADIX_TREE_MAP_SHIFT=6.
+> 
+> Thanks for adding that to the description.  The array you're talking
+> about is just pointers, right?
+> 
+> 107-43 = 64.  So, we have 64 extra pointers * NR_CPUS, plus 64 extra
+> radix tree nodes that we will keep around most of the time.  On x86_64,
+> that's 512 bytes plus 64*560 bytes of nodes which is ~35k of memory per CPU.
+> 
+> That's not bad I guess, but I do bet it's something that some folks want
+> to configure out.  Please make sure to call out the actual size cost in
+> bytes per CPU in future patch postings, at least for the common case
+> (64-bit non-CONFIG_BASE_SMALL).
 
-Yes.
-But not all: only "head->first". The node variable (or any other iterator) is
-always a local variable that changes every cycle. So, we can rely on gcc here.
+I will add this to the commit message:
 
->
-> I probably miss something obvious.
->
-> Anyway, following patch seems to also solve the problem, I need a sleep to understand why.
->
->   	struct hlist_nulls_node *node;
-> @@ -420,7 +420,7 @@ static struct sock *udp4_lib_lookup2(struct net *net,
->   begin:
->   	result = NULL;
->   	badness = 0;
-> -	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
-> +	udp_portaddr_for_each_entry_rcu(sk, node, head) {
->   		score = compute_score2(sk, net, saddr, sport,
->   				      daddr, hnum, dif);
->   		if (score > badness) {
+On most machines we will have RADIX_TREE_MAP_SHIFT=6. In this case,
+on 64-bit system the per-CPU feature overhead is
+ for preload array:
+   (30 - 21) * sizeof(void*) = 72 bytes
+ plus, if the preload array is full
+   (30 - 21) * sizeof(struct radix_tree_node) = 9 * 560 = 5040 bytes
+ total: 5112 bytes
 
-
-IMHO, it doesn't solve.
-Ok, ok, it can actually solve, as fast ANY modification of related code.
-For instance, adding something like
-	unsigned int c = 0;
-	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
-		...
-		c++;
-		if (c > 1000000)
-			printk(...);
-	}
-also "solves" the problem.
-
-It looks like, that it's semantically strange to use the ACCESS_(FIELD)_ONCE
-macro for telling gcc to reread something every time.
-So, I created corresponding rcu_dereference_field(_raw/_bh) macros.
-
-Please, find my third attempt to create a patch below.
-
-Regards,
-Roman
-
------------------------------------------------------------------------
-
-rcu: fix a race in rcu lists traverse macros
-
-Some network functions (udp4_lib_lookup2(), for instance) use the
-rcu lists traverse macros (hlist_nulls_for_each_entry_rcu, for instance)
-in a way that assumes restarting of a loop. In this case, it is strictly
-necessary to reread the head->first value from the memory before each scan.
-Without additional hints, gcc caches this value in a register. In this case,
-if a cached node is moved to another chain during the scan, we can loop
-forever getting wrong nulls values and restarting the loop uninterruptedly.
-
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+on 32-bit system the per-CPU feature overhead is
+ for preload array:
+   (19 - 11) * sizeof(void*) = 32 bytes
+ plus, if the preload array is full
+   (19 - 11) * sizeof(struct radix_tree_node) = 8 * 296 = 2368 bytes
+ total: 2400 bytes
 ---
-  include/linux/compiler.h      | 6 ++++++
-  include/linux/rculist.h       | 9 +++++----
-  include/linux/rculist_nulls.h | 2 +-
-  include/linux/rcupdate.h      | 9 +++++++++
-  4 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 92669cd..4109fab 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -351,6 +351,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
-   */
-  #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+Is it good enough?
 
-+/*
-+ * Same as ACCESS_ONCE(), but used for accessing field of a structure.
-+ * The main goal is preventing compiler to store &ptr->field in a register.
-+ */
-+#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
-+
-  /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
-  #ifdef CONFIG_KPROBES
-  # define __kprobes	__attribute__((__section__(".kprobes.text")))
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 8089e35..7582cfe 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -282,7 +282,8 @@ static inline void list_splice_init_rcu(struct list_head *list,
-   * as long as the traversal is guarded by rcu_read_lock().
-   */
-  #define list_for_each_entry_rcu(pos, head, member) \
--	for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
-+	for (pos = list_entry_rcu(ACCESS_FIELD_ONCE(head, next), \
-+				  typeof(*pos), member); \
-  		&pos->member != (head); \
-  		pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
+I probably, will add !BASE_SMALL dependency to
+TRANSPARENT_HUGEPAGE_PAGECACHE config option.
 
-@@ -439,7 +440,7 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
-  }
+> 
+> > Since only THP uses batched preload at the , we disable (set max preload
+> > to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be changed
+> > in the future.
+> 
+> "at the..."  Is there something missing in that sentence?
 
-  #define __hlist_for_each_rcu(pos, head)				\
--	for (pos = rcu_dereference(hlist_first_rcu(head));	\
-+	for (pos = rcu_dereference_field(head, first);		\
-  	     pos;						\
-  	     pos = rcu_dereference(hlist_next_rcu(pos)))
+at the moment :)
 
-@@ -454,7 +455,7 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
-   * as long as the traversal is guarded by rcu_read_lock().
-   */
-  #define hlist_for_each_entry_rcu(pos, head, member)			\
--	for (pos = hlist_entry_safe (rcu_dereference_raw(hlist_first_rcu(head)),\
-+	for (pos = hlist_entry_safe(rcu_dereference_field_raw(head, first), \
-  			typeof(*(pos)), member);			\
-  		pos;							\
-  		pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(\
-@@ -471,7 +472,7 @@ static inline void hlist_add_after_rcu(struct hlist_node *prev,
-   * as long as the traversal is guarded by rcu_read_lock().
-   */
-  #define hlist_for_each_entry_rcu_bh(pos, head, member)			\
--	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_first_rcu(head)),\
-+	for (pos = hlist_entry_safe(rcu_dereference_field_bh(head, first), \
-  			typeof(*(pos)), member);			\
-  		pos;							\
-  		pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(\
-diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-index 2ae1371..ef431b4 100644
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -107,7 +107,7 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-   *
-   */
-  #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
--	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
-+	for (pos = rcu_dereference_field_raw(head, first);			\
-  		(!is_a_nulls(pos)) &&						\
-  		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
-  		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 4ccd68e..6fef0c2 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -640,6 +640,9 @@ static inline void rcu_preempt_sleep_check(void)
+> No major nits, so:
+> 
+> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-  #define rcu_dereference_raw(p) rcu_dereference_check(p, 1) /*@@@ needed? @@@*/
+Thanks!
 
-+#define rcu_dereference_field_raw(PTR, FIELD) \
-+		rcu_dereference_raw(ACCESS_FIELD_ONCE(PTR, FIELD))
-+
-  /**
-   * rcu_access_index() - fetch RCU index with no dereferencing
-   * @p: The index to read
-@@ -704,6 +707,9 @@ static inline void rcu_preempt_sleep_check(void)
-   */
-  #define rcu_dereference(p) rcu_dereference_check(p, 0)
-
-+#define rcu_dereference_field(PTR, FIELD)		\
-+	rcu_dereference(ACCESS_FIELD_ONCE(PTR, FIELD))
-+
-  /**
-   * rcu_dereference_bh() - fetch an RCU-bh-protected pointer for dereferencing
-   * @p: The pointer to read, prior to dereferencing
-@@ -712,6 +718,9 @@ static inline void rcu_preempt_sleep_check(void)
-   */
-  #define rcu_dereference_bh(p) rcu_dereference_bh_check(p, 0)
-
-+#define rcu_dereference_field_bh(PTR, FIELD)			\
-+	rcu_dereference_bh(ACCESS_FIELD_ONCE(PTR, FIELD))
-+
-  /**
-   * rcu_dereference_sched() - fetch RCU-sched-protected pointer for dereferencing
-   * @p: The pointer to read, prior to dereferencing
 -- 
-1.8.1.2
-
-
+ Kirill A. Shutemov
