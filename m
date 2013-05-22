@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab3EVKBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:01:07 -0400
-Received: from mx10.gouders.net ([89.244.147.155]:46073 "EHLO mx10.gouders.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314Ab3EVKBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:01:03 -0400
-Authentication-Results: mx10.gouders.net; dkim=none reason="no signature";
-	dkim-adsp=discard
-From: Dirk Gouders <dirk@gouders.net>
-To: Borislav Petkov <bp@suse.de>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: tools/lib/lk: redefinition of _FORTIFY_SOURCE (gcc-4.7.2)
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Wed, 22 May 2013 12:00:21 +0200
-Message-ID: <giy5b7uyfe.fsf@karga.hank.lab>
+	id S1755753Ab3EVKCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:02:21 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:44902 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3EVKCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:02:18 -0400
+Date: Wed, 22 May 2013 19:02:12 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+Message-ID: <20130522100212.GE3466@mtj.dyndns.org>
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+ <519C674A.50700@redhat.com>
+ <20130522093249.GC3466@mtj.dyndns.org>
+ <519C959A.3090100@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519C959A.3090100@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Borislav,
+On Wed, May 22, 2013 at 11:53:30AM +0200, Paolo Bonzini wrote:
+> Il 22/05/2013 11:32, Tejun Heo ha scritto:
+> > On Wed, May 22, 2013 at 08:35:54AM +0200, Paolo Bonzini wrote:
+> >> I'm not sure what is more ridiculous, whether the seven pings or the
+> >> lack of review...
+> > 
+> > So, ummm, I don't know what Jens is thinking but at this point I'm
+> > basically waiting for someone else to pick it up as review to return
+> > ratio is too low to continue.  It doesn't seem like I can get the
+> > series into a shape I can ack with reasonable amount of effort.
+> 
+> Then please say so.  I didn't find any comment in your review that I missed.
 
-I am having problems with building liblk, but opposed to the recent
-problem that Jiri noticed (commit b28b130719af6 Fix _FORTIFY_SOURCE
-builds) I am getting errors because _FORTIFY_SOURCE is redefined:
+Well, I've tried that multiple times and didn't get the results that I
+was expecting each time, so doing it all over again felt pointless.
+Even now, you just repeat what you've been saying and I'd have to
+fight through each and every point.  It just doesn't feel worth the
+effort.  It'd be far less effort to just slurp the patches and
+regurgitate them myself.  I don't care that much about the changes
+right now, so I'm just waiting for either someone else picking it up
+or my yield with you somehow magically improving and the next refresh
+addressing most of the issues.
 
-<command-line>:0:0: error: "_FORTIFY_SOURCE" redefined [-Werror]
-debugfs.c:1:0: note: this is the location of the previous definition
-cc1: all warnings being treated as errors
+So, I suppose this is bye bye at least on this thread.
 
-I guess this is because of different gcc versions being in use.
-With gcc-4.7.2 _FORTIFY_SOURCE is defined as
-
-$ gcc -E -dM - < /dev/null | grep -i fortify
-#define _FORTIFY_SOURCE ((defined __OPTIMIZE__ && __OPTIMIZE__ > 0) ? 2 : 0)
-
-gcc-4.6.4 uses
-
-#define _FORTIFY_SOURCE 2
-
-and would complain if we set _FORTIFY_SOURCE to something other than 2.
-
-gcc-4.2.2 seems to use no definition of _FORTIFY_SOURCE, by default.
-
-What probably might help in any case is undefining _FORTIFY_SOURCE before
-defining it, because as far as I know, there is no problem with
-undefining something that is not yet defined, but I could imagine,
-others might have more elegant suggestions:
-
-CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
-
-Dirk
+-- 
+tejun
