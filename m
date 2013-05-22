@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3EVNgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:36:45 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54665 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3EVNgn (ORCPT
+	id S1755097Ab3EVNhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:37:12 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55037 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754920Ab3EVNhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:36:43 -0400
-Message-ID: <1369229800.3301.332.camel@edumazet-glaptop>
-Subject: RE: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Roman Gushchin <klamm@yandex-team.ru>, paulmck@linux.vnet.ibm.com,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Wed, 22 May 2013 06:36:40 -0700
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7246@saturn3.aculab.com>
-References: <519B38EC.90401@yandex-team.ru>
-	  <20130521120906.GD3578@linux.vnet.ibm.com>
-	  <1369143885.3301.221.camel@edumazet-glaptop>
-	  <519B8908.9080007@yandex-team.ru>
-	  <1369150693.3301.233.camel@edumazet-glaptop>
-	  <519BB90B.6080706@yandex-team.ru>
-	  <1369188080.3301.268.camel@edumazet-glaptop>
-	 <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru>
-	 <1369225837.3301.324.camel@edumazet-glaptop>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B7246@saturn3.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 May 2013 09:37:09 -0400
+Date: Wed, 22 May 2013 14:33:17 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chen Gang <gang.chen@asianux.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] kernel/sched/core.c: need return NULL when BUG() is
+	defined as empty.
+Message-ID: <20130522133317.GC18614@n2100.arm.linux.org.uk>
+References: <5199D565.4070307@asianux.com> <20130522091156.GC18810@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522091156.GC18810@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-22 at 14:27 +0100, David Laight wrote:
-> > So yes, the patch appears to fix the bug, but it sounds not logical to
-> > me.
+On Wed, May 22, 2013 at 11:11:56AM +0200, Peter Zijlstra wrote:
+> On Mon, May 20, 2013 at 03:48:53PM +0800, Chen Gang wrote:
+> > 
+> > When neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, need let function
+> > return failure value ('NULL') instead of random value.
 > 
-> I was confused because the copy of the code I found was different
-> (it has some checks for reusaddr - which force a function call in the
-> loop).
+> What will such a kernel do? Happily continue running whenever we hit a
+> BUG? that seems like a particularly bad idea. Should we not have a stub
+> BUG() function like:
 > 
-> The code being compiled is:
-> 
-> begin:
-> 	result = NULL;
-> 	badness = -1;
-> 	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
+> void BUG(void) __attribute__((noreturn))
+> {
+> 	local_irq_disable();
+> 	while (1) ;
+> }
 
-Here this loops begin by
+Eww.  So you've a platform where you have things like panic_on_oops
+enabled, and you hit this bug... do we really want to just stop?
+Wouldn't replacing BUG() with panic("BUG"); be better ?
 
- someptr = rcu_dereference(somelocation);
+But, this begs the question - what is the point of being able to turn
+off BUG() ?  As BUG() on any sensible architecture is implemented by
+placing the minimum of code at the callsite (eg, one instruction if
+not using verbose) anything like the above is likely to be bigger.
 
-May claim is rcu_dereference() should force the compiler to read again
-somelocation. Its done thanks to ACCESS_ONCE(). But apparently in the
-specific case of &hslot->head, it doesnt work.
-
-When using head directly (ie the same value), the ACCESS_ONCE() does
-correctly its job.
-
-
-> 		score = compute_score2(sk, net, saddr, sport,
-> 				      daddr, hnum, dif);
-> 		if (score > badness) {
-> 			result = sk;
-> 			badness = score;
-> 			if (score == SCORE2_MAX)
-> 				goto exact_match;
-> 		}
-> 	}
-> 	/*
-> 	 * if the nulls value we got at the end of this lookup is
-> 	 * not the expected one, we must restart lookup.
-> 	 * We probably met an item that was moved to another chain.
-> 	 */
-> 	if (get_nulls_value(node) != slot2)
-> 		goto begin;
-> 
-> Which is entirely inlined - so the compiler is allowed to assume
-> that no other code modifies any of the data.
-
-You missed the rcu_dereference()/ACCESS_ONCE() we have in this loop.
-
-
-
-
-
+So, I'd actually argue that rather than trying to "fix" this, get rid
+of CONFIG_BUG and make it always enabled everywhere - just like what
+has recently been done with hotplug.
