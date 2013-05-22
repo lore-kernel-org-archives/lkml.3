@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab3EVLK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 07:10:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5582 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab3EVLK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 07:10:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,719,1363158000"; 
-   d="scan'208";a="245081418"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 13/15] chipidea: Allow user to select PCI/IMX options
-In-Reply-To: <519C8704.6060901@suse.cz>
-References: <1367936303-13386-1-git-send-email-jslaby@suse.cz> <1367936303-13386-13-git-send-email-jslaby@suse.cz> <87k3n9n8ln.fsf@ashishki-desk.ger.corp.intel.com> <5193B0CB.9080608@suse.cz> <87a9nvl10l.fsf@ashishki-desk.ger.corp.intel.com> <519C8704.6060901@suse.cz>
-User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 22 May 2013 14:10:52 +0300
-Message-ID: <87bo838e2r.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1755017Ab3EVLQf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 07:16:35 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:58895 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab3EVLQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 07:16:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20130522122700.104ca5cd@amdc308.digital.local>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
+	<20130522122700.104ca5cd@amdc308.digital.local>
+Date: Wed, 22 May 2013 16:46:31 +0530
+Message-ID: <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
+Subject: Re: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby <jslaby@suse.cz> writes:
+On 22 May 2013 15:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>> On 3 May 2013 19:37, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
 
-> On 05/16/2013 11:36 AM, Alexander Shishkin wrote:
->> The benefit from compiling it on non-arm (or non-imx) architectures for
->> me is compilation testing. We don't have a whole lot of architectures
->> with CONFIG_OF so it's nice to give it a stretch.
+> I think, that overclocking support is crucial here. As you pointed out
+> - ondemand and conservative benefit from it. Therefore, I would urge
+>   for its mainline acceptance.
 >
-> Yes, the newly added COMPILE_TEST config option will do the job. Stay
-> tuned...
-
-Seems to do the trick.
-
->> If you really want to save space in your rpm package, I would suggest
->> you add a condition to Makefile (ifeq ($(ARCH),arm) or something like
->> that) instead of a Kconfig option. I would prefer at least to avoid the
->> unnecessary kconfig option creep.
+> (code for reference)
+> http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
 >
-> Uhuh, why should *users* patch the kernel prior building it with
-> allmodconfig? We do not want to carry *any* patches with our kernels.
+> In this RFC (patch 1/3), I've decided to put the burden of overclocking
+> support to platform code (cpufreq/exynos-cpufreq.c and
+> cpufreq/exynos4x12-cpufreq.c).
+>
+> Those changes aren't intrusive for other boards/archs. Moreover
+> overclocking is closely related to processor clocking/power dissipation
+> capabilities, so SoC specific code is a good place for it.
+>
+>
+> What DO need a broad acceptance is the overclocking API proposed at:
+> include/linux/cpufreq.h
+>
+> This introduces interface to which others will be bind. It shouldn't be
+> difficult to implement overclocking at other SoCs (as it was proposed
+> for Exynos).
+>
+> Feedback is welcome, since I might have overlooked oddities present at
+> other SoCs.
 
-I meant that instead of adding more options we could use the existing
-ones in a Makefile, not that you do that in distro kernel only. But
-COMPILE_TEST seems to fit the bill quite nicely anyway.
+Hi..
 
-Regards,
---
-Alex
+I am not talking about the minute details here... for example I didn't like
+the way overclocking support is implemented... It has to be a bit more
+framework oriented then driver...
+
+What I am thinking right now is if it is worth to add both the features
+you are trying. i.e. overclocking and LAB..
+
+So, requested you to give some figures... of ondemand with and without
+overclocking... Leave LAB for now...
+
+Then we can give LAB a try with above...
