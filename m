@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab3EVQ7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:59:14 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:37022 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988Ab3EVQ7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:59:13 -0400
-Date: Wed, 22 May 2013 17:53:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-Message-ID: <20130522165353.GB18714@gmail.com>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
- <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
- <20130522155347.GJ1627@sirena.org.uk>
+	id S1756745Ab3EVQ7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:59:21 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:44205 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756573Ab3EVQ7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 12:59:19 -0400
+Date: Wed, 22 May 2013 10:59:08 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "tiejun.chen" <tiejun.chen@windriver.com>,
+        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
+ device tree nodes
+Message-ID: <20130522165908.GB12320@obsidianresearch.com>
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130521174849.GL26249@lunn.ch>
+ <519C9333.20609@gmail.com>
+ <519C9822.9040909@windriver.com>
+ <519C9A66.3050807@gmail.com>
+ <20130522131010.GB31290@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130522155347.GJ1627@sirena.org.uk>
+In-Reply-To: <20130522131010.GB31290@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013, Mark Brown wrote:
+On Wed, May 22, 2013 at 09:10:10AM -0400, Jason Cooper wrote:
 
-> On Wed, May 22, 2013 at 01:47:33PM +0100, Lee Jones wrote:
-> > This patch fixes a bug introduced in the v3.10 merge window.
-> > 
-> > Some platforms will not want external registers. Rather than setting up
-> > lots of different clauses in the core ab8500 regulator driver not to
-> > call ab8500-ext init() we just won't pass the initialisation data from
-> > platform code. This patch checks for it and if it's missing, we won't
-> > register the external regulators.
-> 
-> This seems problematic - if the regulators are unused then they
-> shouldn't have anything enabled in the constraints
+> iirc, our solution to this was to parse the ATAGs for the mac addr and
+> update the appended dtb.  This way, module load and unload would work
+> without loosing the mac address.  I believe Jason Gunthorpe has a patch
+> to atags_to_fdt() for this...  This should allow us to get rid of the
+> clocks hack.
 
-Right, that's what this does.
+Sorry, no, we don't use ATAGs here, our platforms start the kernel
+with a correct DTB that has the correct mac address to use. My patch
+was to have the driver accept it, and I think Sebastian has already
+got that functionality...
 
-"we just won't pass the initialisation data from platform code."
-
-'initialisation data' == 'constraints'.
-
-> and the regulator
-> driver ought to be read only in which case it doesn't matter if it's
-> running or not, the worst that should happen is that the state can be
-> read back.  I'd therefore expect the fix here to be in the board side
-> code that enables the regulators.
-
-It's both.
-
->From the platform side we have stopped passing the external regulator
-driver's constraints for Snowball:
-
-https://lkml.org/lkml/2013/5/22/280
-
-All I've done here is stop the ext driver from crapping out with the
-misleading error "Configuration error: size mismatch", because a)
-it's not an error, it's expected and b) It's not a size mismatch,
-instead we have chosen to keep the constraints back in the Snowball
-(and u8505) case.
-
-Strictly speaking 'this' part of the fix is not an -rc candidate, but
-without it someone could waste a great deal of time finding out why
-this 'error' has appeared when it's not actually an error at all. Thus,
-it would be more than helpful if it made it into the -rcs along with
-the real platform fix.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jason
