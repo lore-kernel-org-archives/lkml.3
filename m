@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3EVWLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:11:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42171 "EHLO
+	id S1757621Ab3EVWMS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:12:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42162 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab3EVWKy (ORCPT
+	with ESMTP id S1757538Ab3EVWKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:54 -0400
+	Wed, 22 May 2013 18:10:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jon Mason <jon.mason@intel.com>
-Subject: [ 20/21] NTB: Multiple NTB client fix
-Date: Wed, 22 May 2013 15:10:38 -0700
-Message-Id: <20130522205234.982721856@linuxfoundation.org>
+Subject: [ 17/21] NTB: Correctly handle receive buffers of the minimal size
+Date: Wed, 22 May 2013 15:10:35 -0700
+Message-Id: <20130522205234.618268643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
@@ -28,47 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jon Mason <jon.mason@intel.com>
 
-commit 8b19d450ad188d402a183ff4a4d40f31c3916fbf upstream.
+commit c9d534c8cbaedbb522a1d2cb037c6c394f610317 upstream.
 
-Fix issue with adding multiple ntb client devices to the ntb virtual
-bus.  Previously, multiple devices would be added with the same name,
-resulting in crashes.  To get around this issue, add a unique number to
-the device when it is added.
+The ring logic of the NTB receive buffer/transmit memory window requires
+there to be at least 2 payload sized allotments.  For the minimal size
+case, split the buffer into two and set the transport_mtu to the
+appropriate size.
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_transport.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/ntb/ntb_transport.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 --- a/drivers/ntb/ntb_transport.c
 +++ b/drivers/ntb/ntb_transport.c
-@@ -300,7 +300,7 @@ int ntb_register_client_dev(char *device
- {
- 	struct ntb_transport_client_dev *client_dev;
- 	struct ntb_transport *nt;
--	int rc;
-+	int rc, i = 0;
+@@ -490,11 +490,12 @@ static void ntb_transport_setup_qp_mw(st
+ 	rx_size -= sizeof(struct ntb_rx_info);
  
- 	if (list_empty(&ntb_transport_list))
- 		return -ENODEV;
-@@ -318,7 +318,7 @@ int ntb_register_client_dev(char *device
- 		dev = &client_dev->dev;
+ 	qp->rx_buff = qp->remote_rx_info + 1;
+-	qp->rx_max_frame = min(transport_mtu, rx_size);
++	/* Due to housekeeping, there must be atleast 2 buffs */
++	qp->rx_max_frame = min(transport_mtu, rx_size / 2);
+ 	qp->rx_max_entry = rx_size / qp->rx_max_frame;
+ 	qp->rx_index = 0;
  
- 		/* setup and register client devices */
--		dev_set_name(dev, "%s", device_name);
-+		dev_set_name(dev, "%s%d", device_name, i);
- 		dev->bus = &ntb_bus_type;
- 		dev->release = ntb_client_release;
- 		dev->parent = &ntb_query_pdev(nt->ndev)->dev;
-@@ -330,6 +330,7 @@ int ntb_register_client_dev(char *device
- 		}
+-	qp->remote_rx_info->entry = qp->rx_max_entry;
++	qp->remote_rx_info->entry = qp->rx_max_entry - 1;
  
- 		list_add_tail(&client_dev->entry, &nt->client_devs);
-+		i++;
- 	}
+ 	/* setup the hdr offsets with 0's */
+ 	for (i = 0; i < qp->rx_max_entry; i++) {
+@@ -818,7 +819,8 @@ static void ntb_transport_init_queue(str
+ 	tx_size -= sizeof(struct ntb_rx_info);
  
- 	return 0;
+ 	qp->tx_mw = qp->rx_info + 1;
+-	qp->tx_max_frame = min(transport_mtu, tx_size);
++	/* Due to housekeeping, there must be atleast 2 buffs */
++	qp->tx_max_frame = min(transport_mtu, tx_size / 2);
+ 	qp->tx_max_entry = tx_size / qp->tx_max_frame;
+ 
+ 	if (nt->debugfs_dir) {
 
 
