@@ -1,104 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3EVKYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:24:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755120Ab3EVKYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:24:11 -0400
-Message-ID: <519C9CBC.3050003@redhat.com>
-Date: Wed, 22 May 2013 12:23:56 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755691Ab3EVKZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:25:45 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45728 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3EVKZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:25:43 -0400
+Date: Wed, 22 May 2013 02:58:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Roman Gushchin <klamm@yandex-team.ru>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130522095839.GC3578@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <519B38EC.90401@yandex-team.ru>
+ <20130521120906.GD3578@linux.vnet.ibm.com>
+ <1369143885.3301.221.camel@edumazet-glaptop>
+ <519B8908.9080007@yandex-team.ru>
+ <1369150693.3301.233.camel@edumazet-glaptop>
+ <519BB90B.6080706@yandex-team.ru>
+ <1369188080.3301.268.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>
-In-Reply-To: <20130522100212.GE3466@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369188080.3301.268.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052210-7606-0000-0000-00000BA91B0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/05/2013 12:02, Tejun Heo ha scritto:
-> On Wed, May 22, 2013 at 11:53:30AM +0200, Paolo Bonzini wrote:
->> Il 22/05/2013 11:32, Tejun Heo ha scritto:
->>> On Wed, May 22, 2013 at 08:35:54AM +0200, Paolo Bonzini wrote:
->>>> I'm not sure what is more ridiculous, whether the seven pings or the
->>>> lack of review...
->>>
->>> So, ummm, I don't know what Jens is thinking but at this point I'm
->>> basically waiting for someone else to pick it up as review to return
->>> ratio is too low to continue.  It doesn't seem like I can get the
->>> series into a shape I can ack with reasonable amount of effort.
->>
->> Then please say so.  I didn't find any comment in your review that I missed.
+On Tue, May 21, 2013 at 07:01:20PM -0700, Eric Dumazet wrote:
+> On Tue, 2013-05-21 at 22:12 +0400, Roman Gushchin wrote:
+> > > If other rcu accessors have the same problem, a more complete patch is
+> > > needed.
+> > 
+> > [PATCH] rcu: fix a race in rcu lists traverse macros
+> > 
+> > Some network functions (udp4_lib_lookup2(), for instance) use the
+> > rcu lists traverse macros (hlist_nulls_for_each_entry_rcu, for instance)
+> > in a way that assumes restarting of a loop. In this case, it is strictly
+> > necessary to reread the head->first value from the memory before each scan.
+> > Without additional hints, gcc caches this value in a register. In this case,
+> > if a cached node is moved to another chain during the scan, we can loop
+> > forever getting wrong nulls values and restarting the loop uninterruptedly.
+> > 
+> > Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+> > Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
+> > ---
+> >   include/linux/compiler.h      | 6 ++++++
+> >   include/linux/rculist.h       | 6 ++++--
+> >   include/linux/rculist_nulls.h | 3 ++-
+> >   3 files changed, 12 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+> > index 92669cd..0e05d7c 100644
+> > --- a/include/linux/compiler.h
+> > +++ b/include/linux/compiler.h
+> > @@ -351,6 +351,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+> >    */
+> >   #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+> > 
+> > +/*
+> > + * Prevent the compiler from optimizing accesses to structure member.
+> > + */
+> > +#define GET_STRUCT_FIELD_VOLATILE(struct_ptr, field)		\
+> > +	(((volatile typeof(*struct_ptr) *)struct_ptr)->field)
+> > +
+> >   /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
+> >   #ifdef CONFIG_KPROBES
+> >   # define __kprobes	__attribute__((__section__(".kprobes.text")))
+> > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+> > index 8089e35..6c3eea7 100644
+> > --- a/include/linux/rculist.h
+> > +++ b/include/linux/rculist.h
+> > @@ -282,7 +282,8 @@ static inline void list_splice_init_rcu(struct list_head *list,
+> >    * as long as the traversal is guarded by rcu_read_lock().
+> >    */
+> >   #define list_for_each_entry_rcu(pos, head, member) \
+> > -	for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
+> > +	for (pos = list_entry_rcu(GET_STRUCT_FIELD_VOLATILE(head, next), \
+> > +				  typeof(*pos), member); \
+> >   		&pos->member != (head); \
+> >   		pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
+> > 
+> > @@ -348,7 +349,8 @@ static inline void hlist_replace_rcu(struct hlist_node *old,
+> >   /*
+> >    * return the first or the next element in an RCU protected hlist
+> >    */
+> > -#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)(&(head)->first)))
+> > +#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)		\
+> > +				   (&GET_STRUCT_FIELD_VOLATILE(head, first))))
+> >   #define hlist_next_rcu(node)	(*((struct hlist_node __rcu **)(&(node)->next)))
+> >   #define hlist_pprev_rcu(node)	(*((struct hlist_node __rcu **)((node)->pprev)))
+> > 
+> > diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+> > index 2ae1371..b04fd0a 100644
+> > --- a/include/linux/rculist_nulls.h
+> > +++ b/include/linux/rculist_nulls.h
+> > @@ -38,7 +38,8 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
+> >   }
+> > 
+> >   #define hlist_nulls_first_rcu(head) \
+> > -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+> > +	(*((struct hlist_nulls_node __rcu __force **)	\
+> > +	   &(GET_STRUCT_FIELD_VOLATILE(head, first))))
+> > 
+> >   #define hlist_nulls_next_rcu(node) \
+> >   	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
+
+Now that I am more awake...
+
+The RCU list macros assume that the list header is either statically
+allocated (in which case no ACCESS_ONCE() or whatever is needed) or
+that the caller did whatever was necessary to protect the list header,
+whether that be holding the right lock, using rcu_dereference() when
+traversing the pointer to the list header, or whatever.
+
+Maybe I need to document this assumption...
+
+						Thanx, Paul
+
+> Please use ACCESS_ONCE(), which is the standard way to deal with this,
+> and remove the rcu_dereference_raw() in 
+> hlist_nulls_for_each_entry_rcu()
 > 
-> Well, I've tried that multiple times and didn't get the results that I
-> was expecting each time, so doing it all over again felt pointless.
-> Even now, you just repeat what you've been saying and I'd have to
-> fight through each and every point.
+> something like : (for the nulls part only)
+> 
+> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
+> index 2ae1371..1d485d3 100644
+> --- a/include/linux/rculist_nulls.h
+> +++ b/include/linux/rculist_nulls.h
+> @@ -40,6 +40,9 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
+>  #define hlist_nulls_first_rcu(head) \
+>  	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+> 
+> +#define hlist_nulls_first_rcu_once(head) \
+> +	ACCESS_ONCE(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
+> +
+>  #define hlist_nulls_next_rcu(node) \
+>  	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
+> 
+> @@ -107,7 +110,7 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
+>   *
+>   */
+>  #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
+> -	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
+> +	for (pos = hlist_nulls_first_rcu_once(head);                            \
+>  		(!is_a_nulls(pos)) &&                                           \
+>  		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
+>                 pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+> 
+> 
+> 
 
-Yes, because I have no idea what _your_ point is.
-
-Let's look at the first submission.
-
-Patch 1 - acked by you.
-
-Patch 2 - discussions on the formatting.  Every comment of yours has
-been accounted for, except for one.  I wrote:
-
-     > If you want opcodes visible, you can make them the comments, right?
-
-     Yes, like "/* 0x00 */ CONSTANT, MASK".  I still have a slight
-preference
-     for the opcodes because if the constant ends up wrong, the
-     head-scratching would be higher than if the opcode is wrong (the opcode
-     is what you see in the dumps).
-
-You didn't answer; v2 was posted 15 days after the end of the v1 thread,
-so you had enough time to post more comments and have them addressed in
-v2.  Yo me that means "fair enough".
-
-Patch 3-5 - no comment.
-
-Patch 6 - long discussion, ending with "The vast majority of the
-          commands are added because Linux itself is using them", and
-          with me removing some commands from the list according to
-          your request.
-
-Patch 7-13 - no comment.
-
-Cover letter has no comment either.
-
-
-So you haven't commented on most patches or on the cover letter, and now
-you ask about clarification generically rather than about specific
-points of the commit messages or the cover letter.
-
-There is only sensible conclusion I can make.  Namely, that you haven't
-even read those commit messages.  So, I'm sorry if you did, but I don't
-have a crystal ball to understand what you found wrong, and there's
-nothing I can do about it.
-
-> It just doesn't feel worth the
-> effort.  It'd be far less effort to just slurp the patches and
-> regurgitate them myself.
-
-If there is a fundamental misunderstanding, that wouldn't help anyway.
-We would have the same discussion in reverse when I review your patches.
-
-> I don't care that much about the changes
-> right now, so I'm just waiting for either someone else picking it up
-> or my yield with you somehow magically improving and the next refresh
-> addressing most of the issues.
-
-Well, so far there was just one pass, and not even a full one.
-
-Paolo
