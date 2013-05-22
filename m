@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab3EVQdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:33:19 -0400
-Received: from kymasys.com ([64.62.140.43]:55042 "HELO kymasys.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751543Ab3EVQdS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:33:18 -0400
-Subject: Re: [PATCH v4 0/6] mips/kvm: Fix ABI for compatibility with 64-bit guests.
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Sanjay Lal <sanjayl@kymasys.com>
-In-Reply-To: <20130522125453.GN14287@redhat.com>
-Date: Wed, 22 May 2013 09:33:17 -0700
-Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <88128283-D1AD-4D69-B5B5-0579F346087C@kymasys.com>
-References: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com> <20130522125453.GN14287@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-X-Mailer: Apple Mail (2.1283)
+	id S1756648Ab3EVQhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:37:24 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39387 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751543Ab3EVQhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 12:37:22 -0400
+Message-ID: <1369240640.2143.74.camel@joe-AO722>
+Subject: Re: [PATCH] maintainers: Remove Kent from maintainers
+From: Joe Perches <joe@perches.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        tpmdd-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, Rajiv Andrade <mail@srajiv.net>,
+        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>,
+        LeonidasDaSilvaBarbosa <leosilva@linux.vnet.ibm.com>,
+        AshleyLai <ashley@ashleylai.com>
+Date: Wed, 22 May 2013 09:37:20 -0700
+In-Reply-To: <20130522155658.GA3740@ennui.austin.ibm.com>
+References: <20130522155658.GA3740@ennui.austin.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-05-22 at 10:56 -0500, Kent Yoder wrote:
 
-On May 22, 2013, at 5:54 AM, Gleb Natapov wrote:
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> @@ -3971,7 +3971,8 @@ S:	Maintained
+>  F:	arch/ia64/
+>  
+>  IBM Power in-Nest Crypto Acceleration
+> -M:	Kent Yoder <key@linux.vnet.ibm.com>
+> +M:	Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>
+> +M:	Fionnuala Gunter <fin@linux.vnet.ibm.com>
+>  L:	linux-crypto@vger.kernel.org
+>  S:	Supported
+>  F:	drivers/crypto/nx/
+> @@ -8212,7 +8213,8 @@ S:	Odd fixes
+>  F:	drivers/media/usb/tm6000/
+>  
+>  TPM DEVICE DRIVER
+> -M:	Kent Yoder <key@linux.vnet.ibm.com>
+> +M:	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>
+> +M:	Ashley Lai <ashley@ashleylai.com>
+>  M:	Rajiv Andrade <mail@srajiv.net>
+>  W:	http://tpmdd.sourceforge.net
+>  M:	Marcel Selhorst <tpmdd@selhorst.net>
 
-> On Tue, May 21, 2013 at 01:54:49PM -0700, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->> 
->> The initial patch set implementing MIPS KVM does not handle 64-bit
->> guests or use of the FPU.  This patch set corrects these ABI issues,
->> and does some very minor clean up.
->> 
-> Sanjay, is this looks good to you. 
-> 
-> What userspace MIPS is using for machine emulation? Is there corresponding
-> patches to the userspace?
+As far as I know, none of these people have
+previously submitted a single patch.
 
-Gleb, I'll post some comments on the patches later in the day.  We use QEMu for the machine emulation. I am in the process of integrating with the new ABI, and will post the QEMU patches shortly.
+None of them were cc'd neither. (now cc'd)
 
-Regards
-Sanjay
+I think a better way to do this sort of
+change is to have the people becoming
+MAINTAINERS submit the patches and the
+person departing ack it, or simply to
+remove yourself and let other people add
+themselves later.
+
 
