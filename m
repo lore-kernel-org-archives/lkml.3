@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3EVWPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:15:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42132 "EHLO
+	id S1757718Ab3EVWQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:16:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42129 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab3EVWKr (ORCPT
+	with ESMTP id S1757445Ab3EVWKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:47 -0400
+	Wed, 22 May 2013 18:10:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 09/21] drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
-Date: Wed, 22 May 2013 15:10:27 -0700
-Message-Id: <20130522205233.731157514@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 08/21] drm/nouveau/bios: fix thinko in ZM_MASK_ADD opcode
+Date: Wed, 22 May 2013 15:10:26 -0700
+Message-Id: <20130522205233.621865109@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
@@ -27,58 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit fc986034540102cd090237bf3f70262e1ae80d9c upstream.
+commit 46b47b8a7d9223b12ddcabf1f3fc6e753e2d84a1 upstream.
 
-Add ULL prefix to avoid overflow.
-
-Signed-off-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c  |    4 ++--
- drivers/gpu/drm/radeon/radeon_ttm.c |    2 +-
- drivers/gpu/drm/radeon/si.c         |    4 ++--
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -2400,8 +2400,8 @@ int evergreen_mc_init(struct radeon_devi
- 		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE);
- 	} else {
- 		/* size in MB on evergreen/cayman/tn */
--		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
--		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
-+		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
-+		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
- 	}
- 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
- 	r700_vram_gtt_location(rdev, &rdev->mc);
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -726,7 +726,7 @@ int radeon_ttm_init(struct radeon_device
- 		return r;
- 	}
- 	DRM_INFO("radeon: %uM of VRAM memory ready\n",
--		 (unsigned)rdev->mc.real_vram_size / (1024 * 1024));
-+		 (unsigned) (rdev->mc.real_vram_size / (1024 * 1024)));
- 	r = ttm_bo_init_mm(&rdev->mman.bdev, TTM_PL_TT,
- 				rdev->mc.gtt_size >> PAGE_SHIFT);
- 	if (r) {
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -2644,8 +2644,8 @@ static int si_mc_init(struct radeon_devi
- 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
- 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
- 	/* size in MB on si */
--	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
--	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
-+	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
-+	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
- 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
- 	si_vram_gtt_location(rdev, &rdev->mc);
- 	radeon_update_bandwidth_info(rdev);
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
+@@ -1926,8 +1926,8 @@ init_zm_mask_add(struct nvbios_init *ini
+ 	trace("ZM_MASK_ADD\tR[0x%06x] &= 0x%08x += 0x%08x\n", addr, mask, add);
+ 	init->offset += 13;
+ 
+-	data  =  init_rd32(init, addr) & mask;
+-	data |= ((data + add) & ~mask);
++	data =  init_rd32(init, addr);
++	data = (data & mask) | ((data + add) & ~mask);
+ 	init_wr32(init, addr, data);
+ }
+ 
 
 
