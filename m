@@ -1,149 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab3EVJuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:50:39 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:27050 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445Ab3EVJue convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:50:34 -0400
-Date: Wed, 22 May 2013 11:49:59 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-Message-ID: <20130522094958.GA4789@ab42.lan>
-References: <CACRpkdZd0_W432od5565phhUcJMRWiV9vXX4QVF4osKkxstC0Q@mail.gmail.com>
- <20130429161725.GB30136@ab42.lan>
- <5182B557.4040804@wwwdotorg.org>
- <CACRpkdaxO0q_P2wJFy3zv4F-QM9dZk54qW8ft350XqcBt1Gr1w@mail.gmail.com>
- <20130508164123.GA10248@ab42.lan>
- <518AAF31.8080502@wwwdotorg.org>
- <20130510082521.GA2125@ab42.lan>
- <CACRpkdbkqzyr0r0CostUx9RYa=pyPoyVvvW+VxEzyAYSESxp_g@mail.gmail.com>
- <20130515094146.GA19925@ab42.lan>
- <CACRpkdY2R9uf0s6LGVCSPZmdNTDQV4RT65SuxCR_+hQ2eK90Yg@mail.gmail.com>
+	id S1755543Ab3EVJvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:51:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59189 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab3EVJvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 05:51:09 -0400
+X-IronPort-AV: E=Sophos;i="4.87,719,1363104000"; 
+   d="scan'208";a="7333404"
+Message-ID: <519C9482.2050504@cn.fujitsu.com>
+Date: Wed, 22 May 2013 17:48:50 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CACRpkdY2R9uf0s6LGVCSPZmdNTDQV4RT65SuxCR_+hQ2eK90Yg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Jiang Liu <liuj97@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2, part3 00/11] Introduce PCI bus lock and state
+ machine
+References: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <1368719459-24800-1-git-send-email-jiang.liu@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 17:49:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 17:49:50,
+	Serialize complete at 2013/05/22 17:49:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 20, 2013 at 10:03:24AM +0200, Linus Walleij wrote:
-> On Wed, May 15, 2013 at 11:41 AM, Christian Ruppert
-> <christian.ruppert@abilis.com> wrote:
-> > On Tue, May 14, 2013 at 02:29:46PM +0200, Linus Walleij wrote:
+On 05/16/2013 11:50 PM, Jiang Liu wrote:
+
+> Hi all,
+> 	About one year ago, I started to solve issues triggered by concurrent
+> PCI device hotplug operations, and several different solutions have been
+> sent to community for comments. Now we have made important changes to the
+> solution, so start again with a "v1".
 > 
-> >> Look at for example
-> >> drivers/pinctrl/pinctrl-abx500.c:
-> >>
-> >> static u8 abx500_get_mode(struct pinctrl_dev *pctldev, struct gpio_chip *chip,
-> >>                           unsigned gpio)
-> >> {
-> >> (...)
-> >>         /* on ABx5xx, there is no GPIO0, so adjust the offset */
-> >>         unsigned offset = gpio - 1;
-> >>
-> >> As you can see, this driver, which does not use device tree,
-> >> is working around the same problem. Here the problem is that
-> >> the pins are numbered starting at 1 instead of 0, a very trivial
-> >> numberspace shuffleing.
-> >
-> > Let me see if I understand this right:
-> > In ABx5xx, the pin numbering is offset by 1 wrt. GPIO numbering?
+> This is the second take to resolve race conditions when hot-plugging PCI
+> devices/host bridges. Instead of using a globla lock to serialize all hotplug
+> operations as in previous version, now we introduce a state machine and lock
+> mechanism for PCI buses to serialize hotplug operations. For discussions
+> related to previous version, please refer to:
+> http://comments.gmane.org/gmane.linux.kernel.pci/15007
 > 
-> No, sorry that the code is strange... The variable is named "gpio"
-> because that is the numbering used in the data sheet.
+> This patch-set is still in early stages, so sending it out just requesting
+> for comments. Any comments are welcomed, especially about whether it's the
+> right/suitable way to solve these race condition issues.
 > 
-> Think of "gpio" as "the number in the data sheet".
+> There are multiple methods to trigger PCI hotplug requests/operations
+> concurrently, such as:
+> 1. Sysfs interfaces exported by the PCI core subsystem
+> 	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../remove
+> 	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../rescan
+> 	/sys/devices/pcissss:bb/ssss:bb:dd.f/.../pci_bus/ssss:bb/rescan
+> 	/sys/bus/pci/rescan
+> 2. Sysfs interfaces exported by the PCI hotplug subsystem
+> 	/sys/bus/pci/slots/xx/power
+> 3. PCI hotplug events triggered by PCI Hotplug Controllers
+> 4. ACPI hotplug events for PCI host bridges
+> 5. Driver binding/unbinding events
+> 	binding/unbinding pci drivers with SR-IOV support
+
+Hi Jiang,
+	We're gladly to see the new patch-set, and I tested all the whole 3 parts
+patch-set on the latest kernel tree. Because of the limitation of our test environment,
+we only use the method *1* to trigger PCI hotplug concurrently, and it works well.
+
+Though I'm not sure whether the way you introduced is the best one to solve these
+race condition issues, but it does fix the concurrent PCI hotplug(via sysfs)
+issues that disturb us.
+Let's wait and see other guys' feedback.:)
+
+Thanks,
+Gu
+
 > 
-> Then offset is calculated to start from 0.
-
-OK, seems like I thoroughly misunderstood what you were saying and drew
-some wrong conclusions from that. In order to avoid confusion I'll
-delete everything related to this misunderstanding below.
-
-> [...]
-> If you mean that you try to map the global GPIO number space
-> 1:1 on top of what your datasheet has, just *don't do that*.
-> Because we want to get rid of this global GPIO numberspace.
-> Alexandre is already working hard on this!
-
-Thanks for the hint. Defining a global GPIO number space in the data
-sheet was one of our ideas but I agree it would be preferable to do away
-with this completely and rather deal with GPIOs on a bank level.
-
-> >  - The custom logic inside many pinctrl drivers would be confined in one
-> >    translation function the driver provides instead of being spread out
-> >    all over the driver.
-> >  - "Sparse GPIO ranges" are easy to implement if required by the
-> >    platform/driver.
+> With current implementation, the PCI core subsystem doesn't support
+> concurrent hotplug operations yet. The existing pci_bus_sem lock only
+> protects several lists in struct pci_bus, such as children list,
+> devices list, but it doesn't protect the pci_bus or pci_dev structure
+> themselves.
 > 
-> This looks good.
+> Let's take pci_remove_bus_device() as an example, which are used by
+> PCI hotplug drivers to hot-remove PCI devices.  Currently all these
+> are free running without any protection, so it can't support reentrance.
+> pci_remove_bus_device()
+>     ->pci_stop_bus_device()
+>         ->pci_stop_bus_device()
+>             ->pci_stop_bus_devices()
+>         ->pci_stop_dev()
+> 
+> Patch 1-4:
+> 1) Introduce PCI bus lock and state machine
+> 2) Introduce a state machine for PCI devices to enable reentrance
+> 
+> Patch 5-8:
+> 1) Enhance PCI core to support new PCI bus lock and state machine
+> 2) Refine xen-pcifront code with new PCI interfaces
+> 
+> Patch 9-10:
+> 1) Give example about how to enhance PCI hotplug drivers with PCI bus
+>    lcok and state machine
+> 
+> Patch 11:
+> 1) Give an example about how to enhance arch specific PCI code with PCI
+>    bus lock and state machine
+> 
+> Jiang Liu (11):
+>   PCI: introduce bus lock and state machine to serialize PCI hotplug
+>     operations
+>   PCI: implement state machine for PCI bus
+>   PCI: introduce a state machine to manage PCI device lifecycle
+>   PCI: introduce helper function pci_stop_and_remove_device()
+>   PCI: enhance PCI core logic to support PCI bus lock
+>   PCI, sysfs: use PCI bus lock to serialize hotplug operations triggered
+>     by sysfs
+>   PCI, xen-pcifront: use new PCI interfaces to simplify implementation
+>   PCI, xen-pcifront: use PCI bus lock to protect PCI device hotplug
+>   PCI, acpiphp: use PCI bus lock to protect PCI device hotplug
+>   PCI, pciehp: use PCI bus lock to protect PCI device hotplug
+>   PCI, ACPI, pci_root: use PCI bus lock to protect PCI device hotplug
+> 
+>  arch/ia64/pci/pci.c                |   2 +-
+>  arch/x86/pci/acpi.c                |   3 +-
+>  drivers/acpi/pci_root.c            |  14 +-
+>  drivers/pci/Kconfig                |   3 +
+>  drivers/pci/bus.c                  | 274 ++++++++++++++++++++++++++++++++++++-
+>  drivers/pci/hotplug-pci.c          |   4 +
+>  drivers/pci/hotplug/acpiphp_glue.c |  16 ++-
+>  drivers/pci/hotplug/pciehp_pci.c   |  15 ++
+>  drivers/pci/pci-sysfs.c            |  52 ++++---
+>  drivers/pci/probe.c                |  33 ++++-
+>  drivers/pci/remove.c               | 151 +++++++++++++-------
+>  drivers/pci/xen-pcifront.c         |  95 +++++++------
+>  include/linux/pci.h                |  63 ++++++++-
+>  13 files changed, 588 insertions(+), 137 deletions(-)
+> 
 
-I think these advantages could be maintained through two alternative
-methods:
-1) Extend the GPIO ranges mechanism to allow for pin groups in addition
-   to contiguous pin ranges. This would be my preferred method since no
-   pin numbers are exposed to the user at all (neither kernel internal
-   nor physical). All pin numbering remains inside the driver. This
-   would be a clean version of what I did in the original patch.
-2) Add a physical-to-Linux-internal pin number translation callback to
-   the pinmux driver core interface. Map 1-to-1 if this callback is not
-   defined to maintain backwards compatibility. I don't like this
-   solution as much as 1) for the following reasons:
-     . It adds yet another number space to confuse things even more.
-     . Managing contiguous ranges becomes more difficult because ranges
-       contiguous in one number space (physical pins, Linux pins, GPIOs)
-       are not necessarily contiguous in the others, requiring more
-       complex translation mechanisms.
-     . Some chips have matrix like number schemes (A1, A2, ..., B1, B1,
-       ...) etc. which cannot be directly addressed with this and would
-       need to introduce yet another layer of indirection.
-     . In cases where different package options need to be supported, a
-       translation table is required for each inside the driver. For
-       modern SOCs, each of these tables can easily be a few kB in size
-       and I don't know if we want to add that amount of static data to
-       the kernel, esp. because all but one of the tables are unused.
 
-I don't know ACPI and one of the two solutions might not be applicable
-there.
-
-> [...]
-> We need to iterate this discussion a few turns until I actually
-> understand your problem I think.
-
-I agree. Let me resume my high level constraints again:
-- Align customer visible interfaces (such as device tree and
-  sys/class/gpio) with our hardware documentation.
-- Documentation can be augmented (e.g. a global GPIO number space
-  _could_ be added) but fundamentals (such as physical pin numbering,
-  our GPIO bank structure) must not be changed.
-- Several distinct naming schemes for the same thing (such as pins) are
-  only allowed if it is obvious to which naming scheme a given name
-  belongs. E.g. pins may have both a name (string) and a number (and
-  they actually have) but it is not allowed to have two different
-  numbers designating the same pin.
-
-Greetings,
-  Christian
-
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
