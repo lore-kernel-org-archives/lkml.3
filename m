@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab3EVLTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 07:19:15 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:43717 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab3EVLTM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 07:19:12 -0400
+	id S1755507Ab3EVLWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 07:22:30 -0400
+Received: from mx10.gouders.net ([89.244.147.155]:46152 "EHLO mx10.gouders.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753915Ab3EVLW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 07:22:28 -0400
+Authentication-Results: mx10.gouders.net; dkim=none reason="no signature";
+	dkim-adsp=discard
+From: Dirk Gouders <dirk@gouders.net>
+To: Borislav Petkov <bp@suse.de>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: tools/lib/lk: redefinition of _FORTIFY_SOURCE (gcc-4.7.2)
+In-Reply-To: <giy5b7uyfe.fsf@karga.hank.lab> (Dirk Gouders's message of "Wed,
+	22 May 2013 12:00:21 +0200")
+References: <giy5b7uyfe.fsf@karga.hank.lab>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Wed, 22 May 2013 13:22:14 +0200
+Message-ID: <gitxlvuumx.fsf@karga.hank.lab>
 MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-9-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-9-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Wed, 22 May 2013 19:19:11 +0800
-Message-ID: <CAJd=RBCOGY6Si+uORbqtFxLCD4fs3tyGvtS_y5hQTP6Y_6CeAg@mail.gmail.com>
-Subject: Re: [PATCHv4 08/39] thp: compile-time and sysfs knob for thp pagecache
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Dirk Gouders <dirk@gouders.net> writes:
+
+> What probably might help in any case is undefining _FORTIFY_SOURCE before
+> defining it, because as far as I know, there is no problem with
+> undefining something that is not yet defined, but I could imagine,
+> others might have more elegant suggestions:
 >
-> For now, TRANSPARENT_HUGEPAGE_PAGECACHE is only implemented for X86_64.
->
-How about THPC, TRANSPARENT_HUGEPAGE_CACHE?
+> CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -U_FORTIFY_SOURCE
+> -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
+
+More elegant would probably be to look at tools/perf/Makefile and handle
+the problem as is done there:
+
+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
+
+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -D_FORTIFY_SOURCE=2,-D_FORTIFY_SOURCE=2),y)
+               CFLAGS := $(CFLAGS) -D_FORTIFY_SOURCE=2
+endif
+
+I tested it here and it works well.
+
+Dirk
