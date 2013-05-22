@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3EVRzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:55:41 -0400
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:38196
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751456Ab3EVRzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:55:39 -0400
-X-Forefront-Antispam-Report: CIP:132.245.2.69;KIP:(null);UIP:(null);IPV:NLI;H:BN1PRD0712HT004.namprd07.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: PS-1(z37d5kzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <519D0688.40007@caviumnetworks.com>
-Date: Wed, 22 May 2013 10:55:20 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1754304Ab3EVR4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:56:35 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:50839 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab3EVR4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 13:56:33 -0400
+Date: Wed, 22 May 2013 13:56:17 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
+Cc: "luke.leighton" <luke.leighton@gmail.com>,
+        Ian Stirling <gplvio@mauve.plus.com>, legal@lists.gpl-violations.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Would like to form a pool of Linux copyright holders for faster
+ GPL enforcement against Anthrax Kernels
+Message-ID: <20130522175617.GA20848@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Denis 'GNUtoo' Carikli <GNUtoo@no-log.org>,
+	"luke.leighton" <luke.leighton@gmail.com>,
+	Ian Stirling <gplvio@mauve.plus.com>,
+	legal@lists.gpl-violations.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <51972CAF.3060802@gmail.com>
+ <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
+ <ce644e6e12d68aaabed7403b5f21c124@imap.plus.net>
+ <CAPweEDztcCOgKQmMSK3R6TMJoOo5m4b5KFg1nVySexqdVZu_DQ@mail.gmail.com>
+ <20130522181329.234f43f0@m4a785t-m.lan>
 MIME-Version: 1.0
-To: Sanjay Lal <sanjayl@kymasys.com>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v4 5/6] mips/kvm: Fix ABI by moving manipulation of CP0
- registers to KVM_{G,S}ET_ONE_REG
-References: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com> <1369169695-10444-6-git-send-email-ddaney.cavm@gmail.com> <16CE6694-CEAE-48F1-9F8E-723A657CE470@kymasys.com>
-In-Reply-To: <16CE6694-CEAE-48F1-9F8E-723A657CE470@kymasys.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522181329.234f43f0@m4a785t-m.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 10:44 AM, Sanjay Lal wrote:
->
-> On May 21, 2013, at 1:54 PM, David Daney wrote:
->
->> From: David Daney <david.daney@cavium.com>
->>
->> Because not all 256 CP0 registers are ever implemented, we need a
->> different method of manipulating them.  Use the
->> KVM_SET_ONE_REG/KVM_GET_ONE_REG mechanism.
->>
->> Code related to implementing KVM_SET_ONE_REG/KVM_GET_ONE_REG is
->> consolidated in to kvm_trap_emul.c, now unused code and definitions
->> are removed.
->>
->> Signed-off-by: David Daney <david.daney@cavium.com>
->> ---
->> arch/mips/include/asm/kvm.h      |  91 +++++++++--
->> arch/mips/include/asm/kvm_host.h |   4 -
->> arch/mips/kvm/kvm_mips.c         |  90 +----------
->> arch/mips/kvm/kvm_trap_emul.c    | 338 ++++++++++++++++++++++++++++++++++-----
->> 4 files changed, 383 insertions(+), 140 deletions(-)
-[...]
->>
->
-> Most of the functions that have been relocated to kvm_trap_emul.c should stay in kvm_mips.c. They are/will shared between the trap and emulate and VZ modes.  They include kvm_mips_reset_vcpu(), kvm_vcpu_ioctl_interrupt(), kvm_arch_vcpu_ioctl().
->
-> kvm_mips_get_reg() and kvm_mips_set_reg() should be in kvm_mips.c as they will be shared by the trap and emulate and VZ code.
->
+On Wed, May 22, 2013 at 06:13:29PM +0200, Denis 'GNUtoo' Carikli wrote:
+> On Sun, 19 May 2013 11:57:15 +0100 "luke.leighton" <luke.leighton@gmail.com> wrote:
+> >  so.  could someone please inform me what the procedure is: is it as
+> > simple as submitting a patch?
+> I think so(however I'm not a kernel maintainer),
+> I found that(however the patch is really old):
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=798b6b19d7a4b6e1ea5340ec8b3b92811e05b81b
+> So the idea would be to send a patch or series of patches to relicense
+> your code under the GPLv2+(GPLv2 or later).
 
-OK, I will revise the patch set to rearrange things in a manner that 
-leaves these in kvm_mips.c.  However, this is of secondary importance to 
-the question of the suitability of the ABI.
+Only if you own the copyright on all of the lines of code of the file
+in question.
 
-
-> If you plan on defining specific versions of these functions for Cavium's implementation of KVM, please make them callbacks.
->
-
-There will soon be follow on patches that do exactly that.
-
-
-
+						- Ted
