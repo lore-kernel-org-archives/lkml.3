@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3EVI7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:59:22 -0400
-Received: from gatzka.org ([85.214.228.118]:39468 "EHLO mail.gatzka.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab3EVI7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:59:21 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 04:59:20 EDT
+	id S1754668Ab3EVI7l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:59:41 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:55974 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab3EVI7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 04:59:39 -0400
+Message-ID: <519C88D9.30009@linux.vnet.ibm.com>
+Date: Wed, 22 May 2013 14:29:05 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Michael Ellerman <michael@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org
+Subject: Re: [PATCH 1/2] powerpc, perf: Ignore separate BHRB privilege state
+ filter request
+References: <1369201667-9048-1-git-send-email-khandual@linux.vnet.ibm.com> <1369201667-9048-2-git-send-email-khandual@linux.vnet.ibm.com> <1369206855.12874.9.camel@concordia>
+In-Reply-To: <1369206855.12874.9.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Date: Wed, 22 May 2013 10:59:19 +0200
-From: Stephan Gatzka <stephan.gatzka@gmail.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Tejun Heo <tj@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: function call =?UTF-8?Q?fw=5Fiso=5Fresource=5Fmange=28=2E=2E?=
- =?UTF-8?Q?=29=20=28core-iso=2Ec=29=20does=20not=20return?=
-Reply-To: stephan.gatzka@gmail.com
-Mail-Reply-To: stephan.gatzka@gmail.com
-In-Reply-To: <20130522094840.472b263e@stein>
-References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
- <519BA6AC.1080600@hurleysoftware.com> <20130521231847.GA6985@mtj.dyndns.org>
- <20130522094840.472b263e@stein>
-Message-ID: <51145028d1c880d68e0a88d863faa71c@gatzka.org>
-User-Agent: Roundcube Webmail/0.8.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052208-4790-0000-0000-0000086A4526
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> 
+> Your description from patch 0 should be here.
+>
 
-> A third (fourth?) way to fix it --- feasible or not --- would be to 
-> break
-> the dependency between the worklets.  In this case, use a timer to 
-> cancel
-> outbound transactions if the request-transmit IRQ event was not 
-> received
-> before a timeout.  We had such a timeout in the older ieee1394 drivers 
-> and
-> we also had it in earlier versions of the firewire drivers, at a risk 
-> of a
-> race between CPU and OHCI.
+Sure, will bring it here.
 
-Why do we need a timer? If we guarantee that bus_reset_work() always 
-make progress (if we put it into its own queue), it should always be 
-able to complete the corresponding completion object the other works are 
-waiting for.
+> 
+>> diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+>> index f7d1c4f..8ed323d 100644
+>> --- a/arch/powerpc/perf/power8-pmu.c
+>> +++ b/arch/powerpc/perf/power8-pmu.c
+>> @@ -525,16 +525,17 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+>>  	u64 pmu_bhrb_filter = 0;
+>>  	u64 br_privilege = branch_sample_type & ONLY_PLM;
+>>  
+>> -	/* BHRB and regular PMU events share the same prvillege state
+>> +	/* BHRB and regular PMU events share the same prvilege state
+> 
+> Please spell "privilege" correctly.
+> 
 
-Regards,
+My bad, will fix it.
 
-Stephan
+
+>>  	 * filter configuration. BHRB is always recorded along with 
+> It still says "privilege state filter criteria for the BHRB and the
+> companion PMU events has to be the same".
+> 
+> But they don't, right?
+> 
+
+Right
+
+
+> What it should say is "we ignore the privilege bits in the branch sample
+> type because they are handled by the underlying PMC configuration" - or
+> something like that.
+
+Here is the latest description for the code block
+
+	/* BHRB and regular PMU events share the same privilege state
+	 * filter configuration. BHRB is always recorded along with a
+	 * regular PMU event. As the privilege state filter is handled
+	 * in the basic PMC configuration of the accompanying regular
+	 * PMU event, we ignore any separate BHRB specific request.
+	 */
+
+Does it sound better ?
+
+> 
+>> -	if ((br_privilege != 7) && (br_privilege != 0))
+>> -		return -1;
+>> +
+>> +	if (br_privilege)
+>> +		pr_info("BHRB privilege state filter request %llx ignored\n",
+>> +								br_privilege);
+> 
+> Don't do that. Ignoring the br_privilege is either the right thing to do
+> in which case we do it and print nothing,
+
+
+I thought the informational print would at least make the user aware
+of the fact that the separate filter request for BHRB went ignored.
+Can we add this some where in the documentation ?
+
+  
+ or it doesn't make sense and
+> we reject it.
+>
+
+ 
+> cheers
+> 
+
