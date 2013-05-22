@@ -1,158 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3EVCrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:47:05 -0400
-Received: from [65.55.88.12] ([65.55.88.12]:25109 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753915Ab3EVCrD (ORCPT
+	id S1754716Ab3EVCzg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:55:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56987 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753842Ab3EVCzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:47:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(z616jzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <dwmw2@infradead.org>
-CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <vikram186@gmail.com>,
-        <computersforpeace@gmail.com>, Huang Shijie <b32955@freescale.com>
-Subject: [PATCH v6 05/10 fix2] mtd: get the ECC info from the Extended Parameter Page
-Date: Wed, 22 May 2013 10:28:27 +0800
-Message-ID: <1369189707-5568-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <5199BD45.5090100@gmail.com>
-References: <5199BD45.5090100@gmail.com>
+	Tue, 21 May 2013 22:55:35 -0400
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v7 0/8] kdump, vmcore: support mmap() on /proc/vmcore
+To: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org
+Cc: cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+Date: Wed, 22 May 2013 11:55:31 +0900
+Message-ID: <20130522025410.12215.16793.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
-to store the ECC info.
+Currently, read to /proc/vmcore is done by read_oldmem() that uses
+ioremap/iounmap per a single page. For example, if memory is 1GB,
+ioremap/iounmap is called (1GB / 4KB)-times, that is, 262144
+times. This causes big performance degradation due to repeated page
+table changes, TLB flush and build-up of VM related objects.
 
-The onfi spec tells us that if the nand chip's recommended ECC codeword
-size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
-read the Extended ECC information that is part of the extended parameter
-page to retrieve the ECC requirements for this device.
+In particular, the current main user of this mmap() is makedumpfile,
+which not only reads memory from /proc/vmcore but also does other
+processing like filtering, compression and IO work.
 
-This patch implement the reading of the Extended Parameter Page, and parses
-the sections for ECC type, and get the ECC info from the ECC section.
+To address the issue, this patch implements mmap() on /proc/vmcore to
+improve read performance.
 
-Tested this patch with Micron MT29F64G08CBABAWP.
+Benchmark
+=========
 
-Acked-by: Pekon Gupta <pekon@ti.com>
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+You can see two benchmarks on terabyte memory system. Both show about
+40 seconds on 2TB system. This is almost equal to performance by
+experimental kernel-side memory filtering.
+
+- makedumpfile mmap() benchmark, by Jingbai Ma
+  https://lkml.org/lkml/2013/3/27/19
+
+- makedumpfile: benchmark on mmap() with /proc/vmcore on 2TB memory system
+  https://lkml.org/lkml/2013/3/26/914
+
+ChangeLog
+=========
+
+v6 => v7)
+
+- Rebase 3.10-rc2.
+- Move roundup operation to note segment from patch 2/8 to patch 6/8.
+- Rewrite get_note_number_and_size_elf{64,32} and
+  copy_notes_elf{64,32} in patch 6/8.
+
+v5 => v6)
+
+- Change patch order: clenaup patch => PT_LOAD change patch =>
+  vmalloc-related patch => mmap patch.
+- Some cleanups: improve symbol names simply, add helper functoins for
+  processing ELF note segment and add comments for the helper
+  functions.
+- Fix patch description of patch 7/8.
+
+v4 => v5)
+
+- Rebase 3.10-rc1.
+- Introduce remap_vmalloc_range_partial() in order to remap vmalloc
+  memory in a part of vma area.
+- Allocate buffer for ELF note segment at 2nd kernel by vmalloc(). Use
+  remap_vmalloc_range_partial() to remap the memory to userspace.
+
+v3 => v4)
+
+- Rebase 3.9-rc7.
+- Drop clean-up patches orthogonal to the main topic of this patch set.
+- Copy ELF note segments in the 2nd kernel just as in v1. Allocate
+  vmcore objects per pages. => See [PATCH 5/8]
+- Map memory referenced by PT_LOAD entry directly even if the start or
+  end of the region doesn't fit inside page boundary, no longer copy
+  them as the previous v3. Then, holes, outside OS memory, are visible
+  from /proc/vmcore. => See [PATCH 7/8]
+
+v2 => v3)
+
+- Rebase 3.9-rc3.
+- Copy program headers separately from e_phoff in ELF note segment
+  buffer. Now there's no risk to allocate huge memory if program
+  header table positions after memory segment.
+- Add cleanup patch that removes unnecessary variable.
+- Fix wrongly using the variable that is buffer size configurable at
+  runtime. Instead, use the variable that has original buffer size.
+
+v1 => v2)
+
+- Clean up the existing codes: use e_phoff, and remove the assumption
+  on PT_NOTE entries.
+- Fix potential bug that ELF header size is not included in exported
+  vmcoreinfo size.
+- Divide patch modifying read_vmcore() into two: clean-up and primary
+  code change.
+- Put ELF note segments in page-size boundary on the 1st kernel
+  instead of copying them into the buffer on the 2nd kernel.
+
+Test
+====
+
+This patch set is composed based on v3.10-rc2, tested on x86_64,
+x86_32 both with 1GB and with 5GB (over 4GB) memory configurations.
+
 ---
- drivers/mtd/nand/nand_base.c |   87 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 87 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index b63b731..fa6ea8e 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2835,6 +2835,78 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
- 	return crc;
- }
- 
-+/* Parse the Extended Parameter Page. */
-+static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
-+		struct nand_chip *chip, struct nand_onfi_params *p)
-+{
-+	struct onfi_ext_param_page *ep;
-+	struct onfi_ext_section *s;
-+	struct onfi_ext_ecc_info *ecc;
-+	uint8_t *cursor;
-+	int ret = -EINVAL;
-+	int len;
-+	int i;
-+
-+	len = le16_to_cpu(p->ext_param_page_length) * 16;
-+	ep = kmalloc(len, GFP_KERNEL);
-+	if (!ep) {
-+		ret = -ENOMEM;
-+		goto ext_out;
-+	}
-+
-+	/* Send our own NAND_CMD_PARAM. */
-+	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
-+
-+	/* Use the Change Read Column command to skip the ONFI param pages. */
-+	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
-+			sizeof(*p) * p->num_of_param_pages , -1);
-+
-+	/* Read out the Extended Parameter Page. */
-+	chip->read_buf(mtd, (uint8_t *)ep, len);
-+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
-+		!= le16_to_cpu(ep->crc))) {
-+		pr_debug("fail in the CRC.\n");
-+		goto ext_out;
-+	}
-+
-+	/*
-+	 * Check the signature.
-+	 * Do not strictly follow the ONFI spec, maybe changed in future.
-+	 */
-+	if (strncmp(ep->sig, "EPPS", 4)) {
-+		pr_debug("The signature is invalid.\n");
-+		goto ext_out;
-+	}
-+
-+	/* find the ECC section. */
-+	cursor = (uint8_t *)(ep + 1);
-+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
-+		s = ep->sections + i;
-+		if (s->type == ONFI_SECTION_TYPE_2)
-+			break;
-+		cursor += s->length * 16;
-+	}
-+	if (i == ONFI_EXT_SECTION_MAX) {
-+		pr_debug("We can not find the ECC section.\n");
-+		goto ext_out;
-+	}
-+
-+	/* get the info we want. */
-+	ecc = (struct onfi_ext_ecc_info *)cursor;
-+
-+	if (ecc->codeword_size) {
-+		chip->ecc_strength_ds = ecc->ecc_bits;
-+		chip->ecc_step_ds = 1 << ecc->codeword_size;
-+	}
-+
-+	pr_info("ONFI extended param page detected.\n");
-+	return 0;
-+
-+ext_out:
-+	kfree(ep);
-+	return ret;
-+}
-+
- /*
-  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
-  */
-@@ -2903,6 +2975,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (p->ecc_bits != 0xff) {
- 		chip->ecc_strength_ds = p->ecc_bits;
- 		chip->ecc_step_ds = 512;
-+	} else if (chip->onfi_version >= 21 &&
-+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
-+
-+		/*
-+		 * The nand_flash_detect_ext_param_page() uses the
-+		 * Change Read Column command which maybe not supported
-+		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
-+		 * now. We do not replace user supplied command function.
-+		 */
-+		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
-+			chip->cmdfunc = nand_command_lp;
-+
-+		/* The Extended Parameter Page is supported since ONFI 2.1. */
-+		if (nand_flash_detect_ext_param_page(mtd, chip, p))
-+			pr_info("Failed to detect the extended param page.\n");
- 	}
- 
- 	pr_info("ONFI flash detected\n");
+HATAYAMA Daisuke (8):
+      vmcore: support mmap() on /proc/vmcore
+      vmcore: calculate vmcore file size from buffer size and total size of vmcore objects
+      vmcore: allocate ELF note segment in the 2nd kernel vmalloc memory
+      vmalloc: introduce remap_vmalloc_range_partial
+      vmalloc: make find_vm_area check in range
+      vmcore: treat memory chunks referenced by PT_LOAD program header entries in page-size boundary in vmcore_list
+      vmcore: allocate buffer for ELF headers on page-size alignment
+      vmcore: clean up read_vmcore()
+
+
+ fs/proc/vmcore.c        |  595 +++++++++++++++++++++++++++++++++++------------
+ include/linux/vmalloc.h |    4 
+ mm/vmalloc.c            |   65 ++++-
+ 3 files changed, 494 insertions(+), 170 deletions(-)
+
 -- 
-1.7.1
 
-
+Thanks.
+HATAYAMA, Daisuke
