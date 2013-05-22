@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3EVMGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:06:10 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29899 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754799Ab3EVMGI (ORCPT
+	id S1756023Ab3EVMHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:07:22 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60514 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754799Ab3EVMHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:06:08 -0400
-X-AuditID: cbfee61b-b7f0d6d00000450a-f5-519cb4ae17b2
-Date: Wed, 22 May 2013 14:05:50 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
-Subject: Re: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
-Message-id: <20130522140550.3fa3b4b3@amdc308.digital.local>
-In-reply-to: <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
- <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
- <20130522122700.104ca5cd@amdc308.digital.local>
- <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd11W+YEGqy4IWXxtOkHu8W8z7IW
-	nWefMFu8ecRtcXnXHDaLz71HGC1uN65gs+hf2Mtk0XHkG7PFxq8eDlwed67tYfNYN+0ts0ff
-	llWMHo8WtzB6fN4kF8AaxWWTkpqTWZZapG+XwJXxetV2loLjAhWTdnxgamDs5O1i5OSQEDCR
-	+HX/MzOELSZx4d56ti5GLg4hgemMEg/nnABLCAm0M0nMfc3RxcjBwSKgKnHpVzVImE1AT+Lz
-	3adMIGERAS2JlzdTQVqZBS4wSZy6NAssLizgJ3FkuSNIOa+AtcSk7Q+ZQGxOgWCJw+cvMUOs
-	6mCSWLColxEkwS8gKdH+7wfUPXYS5z5tYIdoFpT4MfkeC4jNDLRr87YmVghbXmLzmrfMExgF
-	ZyEpm4WkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPimfQOxlUNFocYBTgY
-	lXh4H9TODhRiTSwrrsw9xCjBwawkwqsQNCdQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutA
-	IYH0xJLU7NTUgtQimCwTB6dUA6Pt8uNNpc4Mjofivzirmsff8NoqUnQjeOtNm69qPfvmi9xs
-	K0g8X7yg+fXC/7GHvlywzU8wXl4kc3HX6WKGBe5nVnzm3Dz1Im/dJ67bvD52VUZfDaIZSo2X
-	Lyv4vHhd4s799c9Klru1rigtKdlcfVOx82JG098Kn8af4k5bmja+M52ZP1X3cboSS3FGoqEW
-	c1FxIgBWsilRhQIAAA==
+	Wed, 22 May 2013 08:07:21 -0400
+Message-ID: <1369224435.1811.22.camel@dabdike>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Wed, 22 May 2013 16:07:15 +0400
+In-Reply-To: <519C9CBC.3050003@redhat.com>
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+	 <519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>
+	 <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>
+	 <519C9CBC.3050003@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-> On 22 May 2013 15:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> >> On 3 May 2013 19:37, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
+On Wed, 2013-05-22 at 12:23 +0200, Paolo Bonzini wrote:
+> Il 22/05/2013 12:02, Tejun Heo ha scritto:
+> > On Wed, May 22, 2013 at 11:53:30AM +0200, Paolo Bonzini wrote:
+> >> Il 22/05/2013 11:32, Tejun Heo ha scritto:
+> >>> On Wed, May 22, 2013 at 08:35:54AM +0200, Paolo Bonzini wrote:
+> >>>> I'm not sure what is more ridiculous, whether the seven pings or the
+> >>>> lack of review...
+> >>>
+> >>> So, ummm, I don't know what Jens is thinking but at this point I'm
+> >>> basically waiting for someone else to pick it up as review to return
+> >>> ratio is too low to continue.  It doesn't seem like I can get the
+> >>> series into a shape I can ack with reasonable amount of effort.
+> >>
+> >> Then please say so.  I didn't find any comment in your review that I missed.
+> > 
+> > Well, I've tried that multiple times and didn't get the results that I
+> > was expecting each time, so doing it all over again felt pointless.
+> > Even now, you just repeat what you've been saying and I'd have to
+> > fight through each and every point.
 > 
-> > I think, that overclocking support is crucial here. As you pointed
-> > out
-> > - ondemand and conservative benefit from it. Therefore, I would urge
-> >   for its mainline acceptance.
-> >
-> > (code for reference)
-> > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> >
-> > In this RFC (patch 1/3), I've decided to put the burden of
-> > overclocking support to platform code (cpufreq/exynos-cpufreq.c and
-> > cpufreq/exynos4x12-cpufreq.c).
-> >
-> > Those changes aren't intrusive for other boards/archs. Moreover
-> > overclocking is closely related to processor clocking/power
-> > dissipation capabilities, so SoC specific code is a good place for
-> > it.
-> >
-> >
-> > What DO need a broad acceptance is the overclocking API proposed at:
-> > include/linux/cpufreq.h
-> >
-> > This introduces interface to which others will be bind. It
-> > shouldn't be difficult to implement overclocking at other SoCs (as
-> > it was proposed for Exynos).
-> >
-> > Feedback is welcome, since I might have overlooked oddities present
-> > at other SoCs.
-> 
-> Hi..
-> 
-> I am not talking about the minute details here... for example I
-> didn't like the way overclocking support is implemented... It has to
-> be a bit more framework oriented then driver...
+> Yes, because I have no idea what _your_ point is.
 
-Presented implementation is only RFC. As I've written, I'm open for
-suggestion.
+OK, let me try.  I did draw straws with Jens at LSF to see who would
+look at this and he lost, but the complexity of the patch set probably
+makes it hard for him to find the time.
 
-> 
-> What I am thinking right now is if it is worth to add both the
-> features you are trying. i.e. overclocking and LAB..
-> 
-> So, requested you to give some figures... of ondemand with and without
-> overclocking... 
+The first problem, which Tejun already pointed out is that you've
+combined a "bug fix" with a large feature set in such a way that they
+can't be separated, so saying the first four patches fix a bug isn't
+helpful.
 
-I will provide test results for ondemand with overclocking enabled and
-disabled. Thanks for clarification on this matter.
+The second problem is that it's not at all clear what the bug actually
+is.  You have to wade through tons of red hat bugzillas before you come
+up with the fact that there's one command which we allow users to send
+which is ambiguous: GPCMD_READ_SUBCHANNEL which has the same opcode as
+UNMAP on a disk.  Once you finally work this out, you wonder what all
+the fuss is about because UNMAP is advisory ... even if an unprivileged
+user can now send the command, it can't be used to damage any data or
+even get access to any data, so there doesn't seem to be an actual bug
+to fix at all.
 
-> Leave LAB for now...
+The various committees do try hard to ensure there's no opcode
+overlap ... although they don't always succeed as you see with the UNMAP
+above, so I'm not at all sure we need the huge complexity of per scsi
+device type command filter lists, which is what the rest of the feature
+additions is about.
 
-Seems fair. One step on a time. Lets focus on overclocking.
+The third problem is that in order to verify that all the code motion
+doesn't actually introduce a bug, you have to wade through about seven
+patches ... the patch split really isn't at all conducive to reviewing
+this critical piece.
 
-> 
-> Then we can give LAB a try with above...
+Finally, the patch for the feature I think you actually want, which is
+13/14, could have been implemented fairly simply as a single patch and
+doesn't have to be part of this series.
+
+James
 
 
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Poland (SRPOL) | Linux Platform Group
