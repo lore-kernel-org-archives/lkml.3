@@ -1,190 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3EVR1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:27:12 -0400
-Received: from smtp-out-044.synserver.de ([212.40.185.44]:1044 "EHLO
-	smtp-out-044.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab3EVR1L (ORCPT
+	id S1756783Ab3EVRc6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:32:58 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:38156 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3EVRc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:27:11 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13932
-Message-ID: <519CFFDD.4080203@metafoo.de>
-Date: Wed, 22 May 2013 19:26:53 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
+	Wed, 22 May 2013 13:32:56 -0400
+Message-ID: <519D0143.1000203@gmail.com>
+Date: Wed, 22 May 2013 19:32:51 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: Florian Meier <florian.meier@koalo.de>
-CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        swarren@wwwdotorg.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH] ASoC: Add support for BCM2708
-References: <519CD1CC.8070507@koalo.de>
-In-Reply-To: <519CD1CC.8070507@koalo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        "tiejun.chen" <tiejun.chen@windriver.com>,
+        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio device
+ tree nodes
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130521174849.GL26249@lunn.ch> <519C9333.20609@gmail.com> <519C9822.9040909@windriver.com> <519C9A66.3050807@gmail.com> <20130522131010.GB31290@titan.lakedaemon.net> <20130522165908.GB12320@obsidianresearch.com>
+In-Reply-To: <20130522165908.GB12320@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 04:10 PM, Florian Meier wrote:
-[...]
-> diff --git a/sound/soc/bcm2708/bcm2708-i2s.c b/sound/soc/bcm2708/bcm2708-i2s.c
-> new file mode 100644
-> index 0000000..a8e995f
-> --- /dev/null
-> +++ b/sound/soc/bcm2708/bcm2708-i2s.c
-> @@ -0,0 +1,964 @@
-[...]
-> +static int bcm2708_i2s_startup(struct snd_pcm_substream *substream,
-> +			       struct snd_soc_dai *dai)
-> +{
-> +	struct bcm2708_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
-> +
-> +	if (!dev->first_stream) {
-> +		dev->first_stream = substream;
-> +
-> +		/* should this still be running stop it */
-> +		bcm2708_i2s_stop_clock(dev);
-> +
-> +		/* enable PCM block */
-> +		bcm2708_i2s_set_bits(dev, BCM2708_I2S_CS_A_REG, BCM2708_I2S_EN);
-> +
-> +		/*
-> +		 * Disable STBY
-> +		 * Requires at least 4 PCM clock cycles to take effect
-> +		 */
-> +		bcm2708_i2s_set_bits(dev, BCM2708_I2S_CS_A_REG,
-> +				BCM2708_I2S_STBY);
-> +	} else {
-> +		struct snd_pcm_runtime *first_runtime =
-> +			dev->first_stream->runtime;
-> +
-> +		/*
-> +		 * This is the second stream open, so we need to impose
-> +		 * sample size and sampling rate constraints.
-> +		 * This is because frame length and clock cannot be specified
-> +		 * seperately.
-> +		 *
-> +		 * Note that this can cause a race condition if the
-> +		 * second stream is opened before the first stream is
-> +		 * fully initialized.  We provide some protection by
-> +		 * checking to make sure the first stream is
-> +		 * initialized, but it's not perfect.  ALSA sometimes
-> +		 * re-initializes the driver with a different sample
-> +		 * rate or size.  If the second stream is opened
-> +		 * before the first stream has received its final
-> +		 * parameters, then the second stream may be
-> +		 * constrained to the wrong sample rate or size.
-> +		 *
-> +		 * We will continue in case of failure and recheck the
-> +		 * constraint in hw_params.
-> +		 */
-> +		if (!first_runtime->format) {
-> +			dev_err(substream->pcm->card->dev,
-> +					"Set format in %s stream first! "
-> +					"Initialization may fail.\n",
-> +					substream->stream ==
-> +					SNDRV_PCM_STREAM_PLAYBACK
-> +					? "capture" : "playback");
-> +		} else {
-> +			snd_pcm_hw_constraint_minmax(substream->runtime,
-> +					SNDRV_PCM_HW_PARAM_FORMAT,
-> +					first_runtime->format,
-> +					first_runtime->format);
-> +		}
-> +
-> +		if (!first_runtime->rate) {
-> +			dev_err(substream->pcm->card->dev,
-> +					"Set sampling rate in %s stream first! "
-> +					"Initialization may fail!\n",
-> +					substream->stream ==
-> +					SNDRV_PCM_STREAM_PLAYBACK
-> +					? "capture" : "playback");
-> +		} else {
-> +			snd_pcm_hw_constraint_minmax(substream->runtime,
-> +					SNDRV_PCM_HW_PARAM_RATE,
-> +					first_runtime->rate,
-> +					first_runtime->rate);
-> +		}
+On 05/22/2013 06:59 PM, Jason Gunthorpe wrote:
+> On Wed, May 22, 2013 at 09:10:10AM -0400, Jason Cooper wrote:
+>> iirc, our solution to this was to parse the ATAGs for the mac addr and
+>> update the appended dtb.  This way, module load and unload would work
+>> without loosing the mac address.  I believe Jason Gunthorpe has a patch
+>> to atags_to_fdt() for this...  This should allow us to get rid of the
+>> clocks hack.
+>
+> Sorry, no, we don't use ATAGs here, our platforms start the kernel
+> with a correct DTB that has the correct mac address to use. My patch
+> was to have the driver accept it, and I think Sebastian has already
+> got that functionality...
 
-Setting the symmetric_rates lets the core take care of setting the proper
-constraints on the rate. It probably makes sense to also add a
-symmetric_formats since this isn't the only driver that has the requirement
-that the formats for playback and capture match.
+Not neccessary anyway, after talking Jason C in a Kirkwood-only
+workaround I prepared a patch that reads mac address registers early
+and stores it in the local-mac-address property.
 
-> +
-> +		dev->second_stream = substream;
-> +	}
-> +
-> +	snd_soc_dai_set_dma_data(dai, substream,
-> +			&dev->dma_params[substream->stream]);
-> +
-> +	return 0;
-> +}
-> +
-> +static void bcm2708_i2s_shutdown(struct snd_pcm_substream *substream,
-> +		struct snd_soc_dai *dai)
-> +{
-> +	struct bcm2708_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
-> +
-> +	bcm2708_i2s_stop(dev, substream);
-> +
-> +	if (dev->first_stream == substream)
-> +		dev->first_stream = dev->second_stream;
-> +
-> +	dev->second_stream = NULL;
-> +
-> +	/* If both streams are stopped, disable module and clock */
-> +	if (!dev->first_stream) {
-> +		/* Disable the module */
-> +		bcm2708_i2s_clear_bits(dev, BCM2708_I2S_CS_A_REG,
-> +				BCM2708_I2S_EN);
-> +
-> +		/*
-> +		 * Stopping clock is necessary, because stop does
-> +		 * not stop the clock when SND_SOC_DAIFMT_CONT
-> +		 */
-> +		bcm2708_i2s_stop_clock(dev);
-> +	}
-> +}
-[...]
-> diff --git a/sound/soc/bcm2708/bcm2708-pcm.c b/sound/soc/bcm2708/bcm2708-pcm.c
-> new file mode 100644
-> index 0000000..4b3e688
-> --- /dev/null
-> +++ b/sound/soc/bcm2708/bcm2708-pcm.c
-> @@ -0,0 +1,303 @@
+Just tested on Dockstar with gated clocks and modular DT mv643xx_eth.
 
-I think you should be able to remove the bulk of this driver by using the
-generic PCM dmaengine driver.
+Will append to the DT mv643xx_eth patch set if a v5 will be required
+or as single patch prior Jason C taking in the ARM part of it
+otherwise.
 
-[...]
-> +
-> +#include "bcm2708-pcm.h"
-> +
-> +static const struct snd_pcm_hardware bcm2708_pcm_hardware = {
-> +	.info			= SNDRV_PCM_INFO_MMAP |
-> +				  SNDRV_PCM_INFO_MMAP_VALID |
-> +				  SNDRV_PCM_INFO_INTERLEAVED |
-> +				  SNDRV_PCM_INFO_PAUSE |
-> +				  SNDRV_PCM_INFO_RESUME |
-> +				  SNDRV_PCM_INFO_JOINT_DUPLEX |
-> +				  SNDRV_PCM_INFO_NO_PERIOD_WAKEUP,
-
-I don't think you actually support the last one, and neither pause and
-resume are supported.
-
-> +	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
-> +				  SNDRV_PCM_FMTBIT_S32_LE,
-> +	.period_bytes_min	= 32,
-> +	.period_bytes_max	= 64 * 1024,
-> +	.periods_min		= 2,
-> +	.periods_max		= 255,
-> +	.buffer_bytes_max	= 128 * 1024,
-> +};
-> +
-[...]
+Sebastian
