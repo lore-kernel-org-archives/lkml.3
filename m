@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3EVURH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:17:07 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:47818 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab3EVURF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:17:05 -0400
-From: "Raphael S. Carvalho" <raphael.scarv@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Raphael S. Carvalho" <raphael.scarv@gmail.com>
-Subject: [PATCH 1/1] kernel/auditfilter.c: Fixing a warning. GCC warning message: kernel/auditfilter.c:426: warning: this decimal constant is unsigned only in ISO C90
-Date: Wed, 22 May 2013 17:14:47 -0300
-Message-Id: <1369253687-27636-1-git-send-email-raphael.scarv@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1756608Ab3EVUUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:20:10 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:50906 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843Ab3EVUUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:20:07 -0400
+Date: Wed, 22 May 2013 16:19:57 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+Message-ID: <20130522201957.GD20848@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Paolo Bonzini <pbonzini@redhat.com>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	Tejun Heo <tj@kernel.org>,
+	"James E.J. Bottomley" <JBottomley@parallels.com>,
+	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+	linux-scsi@vger.kernel.org
+References: <20130522100212.GE3466@mtj.dyndns.org>
+ <519C9CBC.3050003@redhat.com>
+ <20130522134134.GA15189@mtj.dyndns.org>
+ <519CD234.40608@redhat.com>
+ <20130522150335.GC2777@thunk.org>
+ <519CE9FE.2030007@redhat.com>
+ <yq1vc6b561q.fsf@sermon.lab.mkp.net>
+ <519CF99E.6010804@redhat.com>
+ <20130522181135.GC20848@thunk.org>
+ <519D1E92.7030505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519D1E92.7030505@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 22, 2013 at 09:37:54PM +0200, Paolo Bonzini wrote:
+> > If it's not theoretical, how does the cloud service control who has
+> > access to the CD burner, and how are the disks loaded into the CD
+> > burner?
+> 
+> CD burning would be used in a VM that runs on your local workstation, so
+> the VM gets access to the CD burner under your desk.  There was also a
+> developer of a CD burning tool that wanted to test it inside BSD,
+> Solaris and Windows VMs; the idea is the same.
 
-Signed-off-by: Raphael S. Carvalho <raphael.scarv@gmail.com>
----
- kernel/auditfilter.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+So in both cases all of the VM's and the host OS are within the same
+trust boundary.  This simplifies the security requirements than in the
+more generic cloud server caser where the VM's are mutually
+suspicious.  This simplifies the requirements of what we need to push
+into the kernel, yes?
 
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 83a2970..3f3f837 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -423,7 +423,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
- 		f->lsm_rule = NULL;
- 
- 		/* Support legacy tests for a valid loginuid */
--		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
-+		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295U)) {
- 			f->type = AUDIT_LOGINUID_SET;
- 			f->val = 0;
- 		}
--- 
-1.7.2.5
-
+						- Ted
