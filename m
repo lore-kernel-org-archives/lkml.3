@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab3EWAKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 20:10:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47723 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab3EWAKv (ORCPT
+	id S1756851Ab3EWAQA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 20:16:00 -0400
+Received: from mail-gg0-f179.google.com ([209.85.161.179]:36059 "EHLO
+	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab3EWAP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 20:10:51 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 22 May 2013 19:10:38 -0500
-Message-Id: <1369267838-12280-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: wm5110: Make DSPn_STATUS_3 readable
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 22 May 2013 20:15:59 -0400
+X-Greylist: delayed 1147 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 20:15:59 EDT
+Date: Wed, 22 May 2013 19:56:12 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These registers have been documented since the driver was originally
-submitted so expose them.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+> In any case while letting it run I got the following OOPS on 
+> Linux 3.10-rc2
 
-I'll add this to the pull request I sent yesterday.
+Included below is test code (based on the fuzzer output) that reliably 
+OOPSes my core2 machine.  It's a bit long, but I'm remote from the 
+machine now so I can't refine it (as the code locked up the machine the 
+last time I tested).
 
- drivers/mfd/wm5110-tables.c           |    8 ++++++++
- include/linux/mfd/arizona/registers.h |    3 +++
- 2 files changed, 11 insertions(+)
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index c415998..2a79723 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -2273,18 +2273,22 @@ static bool wm5110_readable_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_DSP1_CLOCKING_1:
- 	case ARIZONA_DSP1_STATUS_1:
- 	case ARIZONA_DSP1_STATUS_2:
-+	case ARIZONA_DSP1_STATUS_3:
- 	case ARIZONA_DSP2_CONTROL_1:
- 	case ARIZONA_DSP2_CLOCKING_1:
- 	case ARIZONA_DSP2_STATUS_1:
- 	case ARIZONA_DSP2_STATUS_2:
-+	case ARIZONA_DSP2_STATUS_3:
- 	case ARIZONA_DSP3_CONTROL_1:
- 	case ARIZONA_DSP3_CLOCKING_1:
- 	case ARIZONA_DSP3_STATUS_1:
- 	case ARIZONA_DSP3_STATUS_2:
-+	case ARIZONA_DSP3_STATUS_3:
- 	case ARIZONA_DSP4_CONTROL_1:
- 	case ARIZONA_DSP4_CLOCKING_1:
- 	case ARIZONA_DSP4_STATUS_1:
- 	case ARIZONA_DSP4_STATUS_2:
-+	case ARIZONA_DSP4_STATUS_3:
- 		return true;
- 	default:
- 		return false;
-@@ -2334,12 +2338,16 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
- 	case ARIZONA_DSP1_CLOCKING_1:
- 	case ARIZONA_DSP1_STATUS_1:
- 	case ARIZONA_DSP1_STATUS_2:
-+	case ARIZONA_DSP1_STATUS_3:
- 	case ARIZONA_DSP2_STATUS_1:
- 	case ARIZONA_DSP2_STATUS_2:
-+	case ARIZONA_DSP2_STATUS_3:
- 	case ARIZONA_DSP3_STATUS_1:
- 	case ARIZONA_DSP3_STATUS_2:
-+	case ARIZONA_DSP3_STATUS_3:
- 	case ARIZONA_DSP4_STATUS_1:
- 	case ARIZONA_DSP4_STATUS_2:
-+	case ARIZONA_DSP4_STATUS_3:
- 		return true;
- 	default:
- 		return false;
-diff --git a/include/linux/mfd/arizona/registers.h b/include/linux/mfd/arizona/registers.h
-index 715b6ba..4730b5c 100644
---- a/include/linux/mfd/arizona/registers.h
-+++ b/include/linux/mfd/arizona/registers.h
-@@ -1002,6 +1002,7 @@
- #define ARIZONA_DSP2_CLOCKING_1                  0x1201
- #define ARIZONA_DSP2_STATUS_1                    0x1204
- #define ARIZONA_DSP2_STATUS_2                    0x1205
-+#define ARIZONA_DSP2_STATUS_3                    0x1206
- #define ARIZONA_DSP2_SCRATCH_0                   0x1240
- #define ARIZONA_DSP2_SCRATCH_1                   0x1241
- #define ARIZONA_DSP2_SCRATCH_2                   0x1242
-@@ -1010,6 +1011,7 @@
- #define ARIZONA_DSP3_CLOCKING_1                  0x1301
- #define ARIZONA_DSP3_STATUS_1                    0x1304
- #define ARIZONA_DSP3_STATUS_2                    0x1305
-+#define ARIZONA_DSP3_STATUS_3                    0x1306
- #define ARIZONA_DSP3_SCRATCH_0                   0x1340
- #define ARIZONA_DSP3_SCRATCH_1                   0x1341
- #define ARIZONA_DSP3_SCRATCH_2                   0x1342
-@@ -1018,6 +1020,7 @@
- #define ARIZONA_DSP4_CLOCKING_1                  0x1401
- #define ARIZONA_DSP4_STATUS_1                    0x1404
- #define ARIZONA_DSP4_STATUS_2                    0x1405
-+#define ARIZONA_DSP4_STATUS_3                    0x1406
- #define ARIZONA_DSP4_SCRATCH_0                   0x1440
- #define ARIZONA_DSP4_SCRATCH_1                   0x1441
- #define ARIZONA_DSP4_SCRATCH_2                   0x1442
--- 
-1.7.10.4
+/* perf_mmap_close_bug.c */
+/* By Vince Weaver <vincent.weaver at maine.edu>                             */
+/* compile with "gcc -O2 -Wall -o perf_mmap_close_bug perf_mmap_close_bug.c  */
+/* This will reliably OOPS my core2 Linux 3.10-rc2 machine                   */
 
+#include <stdio.h>
+#include <linux/perf_event.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+
+int perf_event_open(struct perf_event_attr *hw_event_uptr,
+                    pid_t pid, int cpu, int group_fd, unsigned long flags) {
+
+   return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+                  group_fd, flags);
+}
+
+
+int main(int argc, char **argv) {
+
+	struct perf_event_attr pe1,pe2;
+	int fd1,fd2;
+
+	memset(&pe1,0,sizeof(struct perf_event_attr));
+	memset(&pe2,0,sizeof(struct perf_event_attr));
+
+	pe1.type=0;
+	pe1.size=0x60;
+	pe1.config=3;
+	pe1.sample_type=0x4f0;
+	pe1.read_format=5;
+	pe1.exclude_kernel=1;
+	pe1.bp_type=1;
+	pe1.config1=0x1d469257;
+	pe1.config2=2;
+
+	fd1=perf_event_open(&pe1,0,0,-1,3);
+	if (fd1<0) {
+		fprintf(stderr,"Error opening fd1 %s\n",strerror(errno));
+		exit(1);
+	}
+
+	mmap(NULL, 69632, PROT_READ|PROT_WRITE, MAP_SHARED, fd1, 0);
+
+	ioctl(fd1,PERF_EVENT_IOC_RESET,0);
+
+	pe2.type=1;
+	pe2.size=0x60;
+	pe2.config=2;
+	pe2.read_format=3;
+	pe2.exclusive=1;
+	pe2.exclude_user=1;
+	pe2.mmap=1;
+	pe2.inherit_stat=1;
+	pe2.enable_on_exec=1;
+	pe2.task=1;
+	pe2.watermark=1;
+	pe2.precise_ip=2;
+	pe2.sample_id_all=1;
+	pe2.exclude_guest=1;
+	pe2.wakeup_events=1500395763;
+
+	fd2=perf_event_open(&pe2,0,0,fd1,3);
+
+	fd1=perf_event_open(&pe1,0,0,-1,3);
+	if (fd2<0) {
+		fprintf(stderr,"Error opening fd2 %s\n",strerror(errno));
+		exit(1);
+	}
+
+	mmap(NULL, 69632, PROT_READ|PROT_WRITE, MAP_SHARED, fd2, 0);
+
+	ioctl(fd1,PERF_EVENT_IOC_ENABLE,0);
+
+	ioctl(fd2,PERF_EVENT_IOC_ENABLE,0);
+
+   	close(fd2);
+
+	return 0;
+}
