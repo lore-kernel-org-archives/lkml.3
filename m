@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3EVOXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:23:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58478 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab3EVOXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:23:00 -0400
-Date: Wed, 22 May 2013 10:22:52 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS assertion from truncate. (3.10-rc2)
-Message-ID: <20130522142252.GB1407@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20130521234016.GB14347@redhat.com>
- <20130521235410.GY29466@dastard>
- <20130522000803.GA19891@redhat.com>
- <20130522001603.GZ29466@dastard>
- <20130522025605.GA29767@redhat.com>
- <20130522040318.GG29466@dastard>
- <20130522041521.GA1837@redhat.com>
- <20130522051243.GH29466@dastard>
- <20130522052938.GA2573@redhat.com>
- <20130522055147.GI29466@dastard>
+	id S1756010Ab3EVOZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:25:51 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:46004 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754106Ab3EVOZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:25:50 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522055147.GI29466@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: RE: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
+Date: Wed, 22 May 2013 15:23:19 +0100
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7247@saturn3.aculab.com>
+In-Reply-To: <1369229800.3301.332.camel@edumazet-glaptop>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu macro
+Thread-Index: Ac5W8WiDxPADMNb8QdKdNB6bBsdiSwABNHEw
+References: <519B38EC.90401@yandex-team.ru>  <20130521120906.GD3578@linux.vnet.ibm.com>  <1369143885.3301.221.camel@edumazet-glaptop>  <519B8908.9080007@yandex-team.ru>  <1369150693.3301.233.camel@edumazet-glaptop>  <519BB90B.6080706@yandex-team.ru>  <1369188080.3301.268.camel@edumazet-glaptop> <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru> <1369225837.3301.324.camel@edumazet-glaptop> <AE90C24D6B3A694183C094C60CF0A2F6026B7246@saturn3.aculab.com> <1369229800.3301.332.camel@edumazet-glaptop>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Roman Gushchin" <klamm@yandex-team.ru>, <paulmck@linux.vnet.ibm.com>,
+        "Dipankar Sarma" <dipankar@in.ibm.com>, <zhmurov@yandex-team.ru>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Alexey Kuznetsov" <kuznet@ms2.inr.ac.ru>,
+        "James Morris" <jmorris@namei.org>,
+        "Hideaki YOSHIFUJI" <yoshfuji@linux-ipv6.org>,
+        "Patrick McHardy" <kaber@trash.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4MEPwwR028915
 
-On Wed, May 22, 2013 at 03:51:47PM +1000, Dave Chinner wrote:
+> Here this loops begin by
+> 
+>  someptr = rcu_dereference(somelocation);
+> 
+> May claim is rcu_dereference() should force the compiler to read again
+> somelocation. Its done thanks to ACCESS_ONCE(). But apparently in the
+> specific case of &hslot->head, it doesnt work.
 
- > > Tomorrow I'll also try running some older kernels with the same
- > > options to see if it's something new, or an older bug. This is a
- > > new machine, so it may be something that's been around for a
- > > while, and for whatever reason, my other machines don't hit
- > > this.
- > 
- > Another thing that just occurred to me - what compiler are you
- > using?  We had a report last week on #xfs that xfsdump was failing
- > with bad checksums because of link time optimisation (LTO) in
- > gcc-4.8.0. When they turned that off, everything worked fine. So if
- > you are using 4.8.0, perhaps trying a different compiler might be a
- > good idea, too.
+Hmmm....
+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+That might be doomed to fail for much the same reason as:
+void x(struct foo *unaligned_ptr)
+{
+    char *p = (void *)unaligned_ptr;
+    memcpy(tgt, p, sizeof *p);
+}
+generates alignment faults.
+And that casts to a union type don't get around 'strict aliasing'.
 
-Yeah, this is 4.8.0. This box is running F19-beta. 
-I managed to shoehorn the gcc-4.7 from f18 on there though.
-Bug reproduced instantly, so I think we can rule out compiler.
+Basically the compiler makes use of the fact that you should
+cast addresses back to their original type before dereferencing them.
 
-I ran 3.9 with the same debug options. Seems stable.
-I'll do a bisect.
+So I'm not sure you can use a cast to add a type qualifier.
+The front-end lets you remove 'const', but I suspect the optimiser
+is using the original types.
 
-	Dave
+	David
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
