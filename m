@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab3EVPPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:15:01 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48265 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753226Ab3EVPPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:15:00 -0400
-Date: Wed, 22 May 2013 11:14:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Chien Yen <chien.yen@oracle.com>, Feng Jin <joe.jin@oracle.com>,
-        Yuval Shaia <yuval.shaia@oracle.com>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated when
- driver load first time
-Message-ID: <20130522151437.GC8162@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
- <20130520175706.GA27973@phenom.dumpdata.com>
- <20130520203855.GA30616@phenom.dumpdata.com>
- <519B474E.4000202@citrix.com>
- <20130521134059.GE492@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
- <20130521204245.GA7073@phenom.dumpdata.com>
- <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
- <20130521224125.GA3483@phenom.dumpdata.com>
- <519CAE0302000078000D807A@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CAE0302000078000D807A@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1755643Ab3EVPRe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:17:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47695 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab3EVPRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:17:33 -0400
+Subject: RE: RapidIO subsystem and modularity
+From: Jean Delvare <jdelvare@suse.de>
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <8D983423E7EDF846BB3056827B8CC5D14BC34265@corpmail1.na.ads.idt.com>
+References: <1369226430.4718.123.camel@chaos.site>
+	 <8D983423E7EDF846BB3056827B8CC5D14BC34265@corpmail1.na.ads.idt.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Wed, 22 May 2013 17:17:23 +0200
+Message-ID: <1369235843.4718.285.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 10:37:39AM +0100, Jan Beulich wrote:
-> >>> On 22.05.13 at 00:41, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > On Tue, May 21, 2013 at 10:50:09PM +0100, Stefano Stabellini wrote:
-> >> We have to be careful about this: the point of PHYSDEVOP_get_free_pirq is
-> >> that Linux can know for sure the pirq that is going to be used to map the
-> >> MSI by QEMU. If you modify is_free_pirq that way, suddenly the pirq
-> >> could be allocated for something else after Linux called
-> >> PHYSDEVOP_get_free_pirq and before QEMU called xc_physdev_map_pirq_msi.
-> > 
-> > Yes. And I think the 'is_free_pirq' modification above is incorrect.
-> > 
-> > I think the fix should be in the unmap_pirq code (hypervisor) to check
-> > if the arch.irq is either zero or PIRQ_ALLOCATED. Right now it only
-> > checks for zero.
+Thanks for the quick answer Alexandre. Great that you are already
+working on this. I'll leave our configuration files as they are for the
+time being, and we'll modularize everything when this becomes possible.
+Perfect.
+
+Thanks,
+Jean
+
+Le Wednesday 22 May 2013 à 13:24 +0000, Bounine, Alexandre a écrit :
+> Hello Jean,
 > 
-> Which check are you talking about? Looking at physdev_unmap_pirq()
-
-Sorry about being so haphazard here. I am still digging in the code
-and trying to get a sense of how QEMU and hypervisor are suppose to
-dance together.
-
-The check was on the PHYSDEVOP_get_free_pirq, which calls get_free_pirq
-and uses the is_free_pirq check. After the get_free_pirq call, the logic
-in PHYSDEVOP_get_free_pirq sets info->arch.pirq = PIRQ_ALLOCATED to
-protect itself from giving the same PIRQ twice.
-
-The physdev_unmap_pirq (from PHYSDEVOP_unmap_pirq), only has this
-check:
- if (domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND)
-
-and since the arch.hvm.emuirq is IRQ_UNBOUND (-1), it does not
-call unmap_domain_pirq_emuirq. It probably shouldn't, but it should
-at least remove the info->arch.pirq = PIRQ_ALLOCATED as we are
-telling the hypervisor: "hey, I am done with this, return to the
-pool." But since that is not cleared, the PHYSDEVOP_get_free_pirq
-will skip this pirq as arch.pirq is still set to PIRQ_ALLOCATED.
-
-> I see none at all, unmap_domain_pirq() has a <= 0 check, and
-> unmap_domain_pirq_emuirq() again doesn't appear to have any.
-
-The 'unmap_domain_pirq' path would be if dom0 (so QEMU) did the
-unmap for the guest. That is via the PHYSDEVOP_unmap_pirq. And
-I think if that path was taken (as Stefano suggests QEMU should
-do when a MSI or MSI-X driver is unloaded and zero is writen as
-an PIRQ), we would end up calling clear_domain_irq_pirq, which
-would set arch.pirq = 0.
-
-Or to a negative value as you pointed out later. Which then
-means we won't be ever able to re-use the PIRQ (as
-PHYSDEVOP_get_free_pirq or rather get_free_pirq would skip over it
-as arch.pirq != 0).
+> You have got really good time for this question.
 > 
-> If you're talking about unmap_domain_pirq(), then you'll need to
-> be careful: A negative value here doesn't necessarily mean
-> PIRQ_ALLOCATED, but could also come from another run that
-> found it necessary to force the unbind. Hence the definition of
-> PIRQ_ALLOCATED would then collide with the (unlikely?) case of
-> IRQ1 having got assigned to a guest. To be on the safe side, we
-> should therefore redefine PIRQ_ALLOCATED to say INT_MIN.
+> We are working on RapidIO modularization right now. Drivers for switches are converted already and patches are planned to be submitted quite soon. After that we will work on mports and core itself (or maybe publish all things together). At this moment all switch initialization is reworked to be the standard module initialization and that built-in initialization magic is gone ;). Tsi721 driver should not be a problem to build as a module. We consider this modularization work as part of adding hot-plug support into RapidIO but modularization of the existing functionality may be published as a first step.
+> 
+> RapidIO has its primary use in embedded systems (wireless, military, medical etc.) where fast low-latency data transfers are required. It also may be used in high-performance storage systems. I do not think that it may be useful on standard desktop workstation (except demo and development work). Other distributions keep it disabled and we are fine with this. Most of RapidIO use at this time involves embedded powerpc platforms with x86(_64) picking up thanks to availability of Tsi721.
+> 
+> Regards,
+> 
+> Alex.
+> 
+> > -----Original Message-----
+> > From: Jean Delvare [mailto:jdelvare@suse.de]
+> > Sent: Wednesday, May 22, 2013 8:41 AM
+> > To: Matt Porter; Bounine, Alexandre
+> > Cc: Andrew Morton; linux-kernel
+> > Subject: RapidIO subsystem and modularity
+> > 
+> > Hi Matt, Alexandre, Andrew,
+> > 
+> > At the moment all pieces of the RapidIO subsystem are defined as bool
+> > and thus cannot be built as modules. This is a problem for distribution
+> > kernels, which are left with only two choices: disable RapidIO
+> > altogether (too bad if any user actually needed it), or enable it all
+> > (and waste memory and initialization time for every user without the
+> > hardware - most users as I understand it.)
+> > 
+> > I don't even know what RapidIO is good for. I read about it on the web
+> > but I have to admit I still have no clear idea, what systems use this
+> > technology.
+> > 
+> > This leads me to two questions:
+> > 
+> > 1* Is there a fundamental reason why (at least the device-specific
+> > parts
+> > of) RapidIO can't be modularized?
+> > 
+> > FWIW I tried making the device drivers (tsi721) modular and it builds
+> > and links OK, but I suppose one would have implement a proper remove
+> > function, otherwise module unloading will break.
+> > 
+> > I also tried making the switch drivers (tsi57x etc.) modular, all build
+> > just fine without any change, but there seems to be some initialization
+> > magic which may not work when the code is built as modules.
+> > 
+> > 2* What systems are expected to use RapidIO? It is enabled in the i386,
+> > x86_64, ppc and ppc64 generic openSUSE kernel configurations. If
+> > someone
+> > tells me that some or all of these generic kernels would never be used
+> > on systems which need RapidIO support, I would be happy to disable
+> > RapidIO support from these kernels, to make them smaller and decrease
+> > boot times.
+> > 
+> > Thanks for any insight,
+> > --
+> > Jean Delvare
+> > Suse L3
 
-You are right about being cautious - this is a bit of complex
-code interaction between Xen, QEMU, and Linux kernel.
+
