@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab3EVSps (ORCPT <rfc822;w@1wt.eu>);
+	id S1756933Ab3EVSpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:45:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34979 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756914Ab3EVSps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 May 2013 14:45:48 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60941 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab3EVSoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:44:08 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v5 4/6] mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in kvm_arch_vcpu_ioctl_{s,g}et_regs
-Date: Wed, 22 May 2013 11:43:54 -0700
-Message-Id: <1369248236-27237-5-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com>
+Message-ID: <519D11BF.5000604@redhat.com>
+Date: Wed, 22 May 2013 14:43:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Stanislav Meduna <stano@meduna.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com>
+In-Reply-To: <519D118B.6010306@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On 05/22/2013 02:42 PM, H. Peter Anvin wrote:
+> On 05/22/2013 11:35 AM, Rik van Riel wrote:
+>> On 05/22/2013 02:21 PM, Stanislav Meduna wrote:
+>>> On 22.05.2013 20:11, Steven Rostedt wrote:
+>>>
+>>>> Did you apply both patches? Without the first one, this one is
+>>>> meaningless.
+>>>
+>>> Sure.
+>>>
+>>> BTW, back when I tried to pinpoint it I also tried adding
+>>>     flush_tlb_page(vma, address)
+>>> at the beginning of handle_pte_fault, which as I read should
+>>> be basically the same. It did not not change anything.
+>>
+>> I'm stumped.
+>>
+>> If the Geode knows how to flush single TLB entries, it
+>> should do that when flush_tlb_page is called.
+>>
+>> If it does not know, it should throw an invalid instruction
+>> exception, and not quietly complete the instruction without
+>> doing anything.
+>>
+>
+> Some CPUs have had errata when it comes to flushing large pages that
+> have been split into small pages by hardware, e.g. due to MTRR
+> conflicts.  In that case, fragments of the large page may have been left
+> in the TLB.
+>
+> Could that explain what you are seeing?
 
-Also we cannot set special zero register, so force it to zero.
+That would be testable by changing __native_flush_tlb_single()
+to call __flush_tlb(), instead of doing an invlpg instruction.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/kvm/kvm_mips.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+In other words, make the code look like this, for testing:
 
-diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index 93da750..71a1fc1 100644
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -677,9 +677,9 @@ int kvm_arch_vcpu_ioctl_set_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
- {
- 	int i;
- 
--	for (i = 0; i < 32; i++)
-+	for (i = 1; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
- 		vcpu->arch.gprs[i] = regs->gpr[i];
--
-+	vcpu->arch.gprs[0] = 0; /* zero is special, and cannot be set. */
- 	vcpu->arch.hi = regs->hi;
- 	vcpu->arch.lo = regs->lo;
- 	vcpu->arch.pc = regs->pc;
-@@ -691,7 +691,7 @@ int kvm_arch_vcpu_ioctl_get_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
- {
- 	int i;
- 
--	for (i = 0; i < 32; i++)
-+	for (i = 0; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
- 		regs->gpr[i] = vcpu->arch.gprs[i];
- 
- 	regs->hi = vcpu->arch.hi;
--- 
-1.7.11.7
+static inline void __native_flush_tlb_single(unsigned long addr)
+{
+         __flush_tlb();
+}
 
+This on top of the other two patches.
