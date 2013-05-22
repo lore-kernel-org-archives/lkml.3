@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab3EVILr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:11:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46327 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab3EVILp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:11:45 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, stable@vger.kernel.org.#.3.9,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] memcg: don't initialize kmem-cache destroying work for root caches
-Date: Wed, 22 May 2013 12:09:19 +0400
-Message-Id: <1369210159-18735-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1753641Ab3EVING (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:13:06 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:37788 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752445Ab3EVINC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 04:13:02 -0400
+Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <519C7E08.3020105@yandex-team.ru>
+Date: Wed, 22 May 2013 12:12:56 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 072/102] ipv6: do not clear pinet6 field
+References: <20130517213244.277411019@linuxfoundation.org>  <20130517213251.913091371@linuxfoundation.org>  <519B5E29.5010605@yandex-team.ru> <1369172846.3301.258.camel@edumazet-glaptop>
+In-Reply-To: <1369172846.3301.258.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct memcg_cache_params has a union. Different parts of this union are
-used for root and non-root caches. A part with destroying work is used only
-for non-root caches.
+On 22.05.2013 01:47, Eric Dumazet wrote:
+> On Tue, 2013-05-21 at 15:44 +0400, Roman Gushchin wrote:
+>> Hi, all!
+>>
+>> I think, it's good, but not enough.
+>>
+>> We still can't rely on the sk->sk_family field by dereferencing the
+>> inet_sk(sk)->pinet6 field, because we can set the sk_family field to
+>> the PF_INET6 value before setting pinet6 to an appropriate value
+>> (assuming it is NULL just because it was not a PF_INET6 socket in a
+>> previous life).
+>>
+>> net/ipv6/af_inet6.c:
+>> static int inet6_create(struct net *net, struct socket *sock, int
+>> protocol, int kern)
+>> {
+>> 	<...>
+>> 	err = -ENOBUFS;
+>> 	sk = sk_alloc(net, PF_INET6, GFP_KERNEL, answer_prot);
+>> 	if (sk == NULL)
+>> 		goto out;
+>> 	<...>
+>> 	sk->sk_destruct		= inet_sock_destruct;
+>> 	sk->sk_family		= PF_INET6;
+>> 	sk->sk_protocol		= protocol;
+>>
+>> 	sk->sk_backlog_rcv	= answer->prot->backlog_rcv;
+>>
+>> 	inet_sk(sk)->pinet6 = np = inet6_sk_generic(sk);
+>> 	<...>
+>> }
+>>
+>> net/core/sock.c:
+>> struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
+>> 		      struct proto *prot)
+>> {
+>> 	struct sock *sk;
+>>
+>> 	sk = sk_prot_alloc(prot, priority | __GFP_ZERO, family);
+>> 	if (sk) {
+>> 		sk->sk_family = family;
+>> 	<...>
+>> }
+>>
+>>
+>> So, we need to care about setting sk_family to PF_INET6 _strictly_ after
+>> setting the pinet6 field to a valid value (using rcu_assign_pointer(),
+>> for instance).
+>
+> This can never happen.
+>
+> A socket cannot be find in a hash chain while pinet6 is not set.
+>
+> For a given socket pointer sk (say TCP or UDP), pinet6 is a constant and
+> cannot change. (This is a property of SLAB_DESTROY_BY_RCU : slab cannot
+> be merged, so all objects are of the same type)
 
-[  115.096202] BUG: unable to handle kernel paging request at 0000000fffffffe0
-[  115.096785] IP: [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-[  115.097024] PGD 7ace1067 PUD 0
-[  115.097024] Oops: 0000 [#4] SMP
-[  115.097024] Modules linked in: netlink_diag af_packet_diag udp_diag tcp_diag inet_diag unix_diag ip6table_filter ip6_tables i2c_piix4 virtio_net virtio_balloon microcode i2c_core pcspkr floppy
-[  115.097024] CPU: 0 PID: 1929 Comm: lt-vzctl Tainted: G      D      3.10.0-rc1+ #2
-[  115.097024] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  115.097024] task: ffff88007b5aaee0 ti: ffff88007bf0c000 task.ti: ffff88007bf0c000
-[  115.097024] RIP: 0010<ffffffff8116b641>]  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-[  115.097024] RSP: 0018:ffff88007bf0de68  EFLAGS: 00010202
-[  115.097024] RAX: 0000000fffffffe0 RBX: 00007fff4014f200 RCX: 0000000000000300
-[  115.097024] RDX: 0000000000000005 RSI: 00000000000000d0 RDI: ffff88007d001300
-[  115.097024] RBP: ffff88007bf0dea8 R08: 00007f849c3141b7 R09: ffffffff8118e100
-[  115.097024] R10: 0000000000000001 R11: 0000000000000246 R12: 00000000000000d0
-[  115.097024] R13: 0000000fffffffe0 R14: ffff88007d001300 R15: 0000000000001000
-[  115.097024] FS:  00007f849cbb8b40(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-[  115.097024] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  115.097024] CR2: 0000000fffffffe0 CR3: 000000007bc38000 CR4: 00000000000006f0
-[  115.097024] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  115.097024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  115.097024] Stack:
-[  115.097024]  ffffffff8118e100 ffffffff81149ea1 0000000000000008 00007fff4014f200
-[  115.097024]  00007fff4014f200 0000000000000000 0000000000000000 0000000000001000
-[  115.097024]  ffff88007bf0dee8 ffffffff8118e100 ffff880037598e00 00007fff4014f200
-[  115.097024] Call Trace:
-[  115.097024]  [<ffffffff8118e100>] ? getname_flags.part.34+0x30/0x140
-[  115.097024]  [<ffffffff81149ea1>] ? vma_rb_erase+0x121/0x210
-[  115.097024]  [<ffffffff8118e100>] getname_flags.part.34+0x30/0x140
-[  115.097024]  [<ffffffff8118e248>] getname+0x38/0x60
-[  115.097024]  [<ffffffff81181d55>] do_sys_open+0xc5/0x1e0
-[  115.097024]  [<ffffffff81181e92>] SyS_open+0x22/0x30
-[  115.097024]  [<ffffffff8161cb82>] system_call_fastpath+0x16/0x1b
-[  115.097024] Code: f4 53 48 83 ec 18 8b 05 8e 53 b7 00 4c 8b 4d 08 21 f0 a8 10 74 0d 4c 89 4d c0 e8 1b 76 4a 00 4c 8b 4d c0 e9 92 00 00 00 4d 89 f5 <4d> 8b 45 00 65 4c 03 04 25 48 cd 00 00 49 8b 50 08 4d 8b 38 49
-[  115.097024] RIP  [<ffffffff8116b641>] kmem_cache_alloc+0x41/0x1f0
-[  115.097024]  RSP <ffff88007bf0de68>
-[  115.097024] CR2: 0000000fffffffe0
-[  115.121352] ---[ end trace 16bb8e8408b97d0e ]---
+I missed that.
+>
+> So the order of writing sk_family / pinet6 is irrelevant.
 
-Cc: stable@vger.kernel.org # 3.9
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- mm/memcontrol.c | 2 --
- 1 file changed, 2 deletions(-)
+Agree.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cb1c9de..764b9e4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3141,8 +3141,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- 			return -ENOMEM;
- 		}
- 
--		INIT_WORK(&s->memcg_params->destroy,
--				kmem_cache_destroy_work_func);
- 		s->memcg_params->is_root_cache = true;
- 
- 		/*
--- 
-1.8.1.4
+Thank you for clarification!
 
+Regards,
+Roman
