@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab3EVJ7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:59:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62576 "EHLO mx1.redhat.com"
+	id S1755716Ab3EVKAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:00:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9880 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab3EVJ7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:59:41 -0400
-Date: Wed, 22 May 2013 12:58:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-am33-list@redhat.com, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] uaccess: better might_sleep/might_fault behavior
-Message-ID: <20130522095818.GB24931@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
- <201305221125.36284.arnd@arndb.de>
+	id S1753206Ab3EVKAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:00:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
+   d="scan'208";a="341297932"
+Date: Wed, 22 May 2013 12:00:02 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [GIT] [3.10] MFD fixes
+Message-ID: <20130522100001.GC20474@zurbaran>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201305221125.36284.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:25:36AM +0200, Arnd Bergmann wrote:
-> On Thursday 16 May 2013, Michael S. Tsirkin wrote:
-> > This improves the might_fault annotations used
-> > by uaccess routines:
-> > 
-> > 1. The only reason uaccess routines might sleep
-> >    is if they fault. Make this explicit for
-> >    all architectures.
-> > 2. Accesses (e.g through socket ops) to kernel memory
-> >    with KERNEL_DS like net/sunrpc does will never sleep.
-> >    Remove an unconditinal might_sleep in the inline
-> >    might_fault in kernel.h
-> >    (used when PROVE_LOCKING is not set).
-> > 3. Accesses with pagefault_disable return EFAULT
-> >    but won't cause caller to sleep.
-> >    Check for that and avoid might_sleep when
-> >    PROVE_LOCKING is set.
-> > 
-> > I'd like these changes to go in for the benefit of
-> > the vhost driver where we want to call socket ops
-> > under a spinlock, and fall back on slower thread handler
-> > on error.
-> 
-> Hi Michael,
-> 
-> I have recently stumbled over a related topic, which is the highly
-> inconsistent placement of might_fault() or might_sleep() in certain
-> classes of uaccess functions. Your patches seem completely reasonable,
-> but it would be good to also fix the other problem, at least on
-> the architectures we most care about.
-> 
-> Given the most commonly used functions and a couple of architectures
-> I'm familiar with, these are the ones that currently call might_fault()
-> 
-> 			x86-32	x86-64	arm	arm64	powerpc	s390	generic
-> copy_to_user		-	x	-	-	-	x	x
-> copy_from_user		-	x	-	-	-	x	x
-> put_user		x	x	x	x	x	x	x
-> get_user		x	x	x	x	x	x	x
-> __copy_to_user		x	x	-	-	x	-	-
-> __copy_from_user	x	x	-	-	x	-	-
-> __put_user		-	-	x	-	x	-	-
-> __get_user		-	-	x	-	x	-	-
-> 
-> WTF?
+Hi Linus,
 
-Yea.
+This is the first batch of MFD fixes for 3.10.
 
-> Calling might_fault() for every __get_user/__put_user is rather expensive
-> because it turns what should be a single instruction (plus fixup) into an
-> external function call.
+It's bigger than I would like, most of it is due to the big ab/db8500 merge
+that went through during the 3.10 merge window.
 
-You mean _cond_resched with CONFIG_PREEMPT_VOLUNTARY? Or do you
-mean when we build with PROVE_LOCKING?
+So we have:
 
-> My feeling is that we should do might_fault() only in access_ok() to get
-> the right balance.
-> 
-> 	Arnd
+- Some build fixes for the tps65912 and ab8500 drivers.
+- A couple of build fixes for the the si476x driver with pre 4.3 gcc
+  compilers.
+- A few runtime breakage fixes (probe failures or oopses) for the ab8500
+  and db8500 drivers.
+- Some sparse or regular gcc warning fixes for the si476x, ab8500 and
+  cros_ec drivers.
 
-Well access_ok is currently non-blocking I think - we'd have to audit
-all callers. There are some 200 of these in drivers and some
-1000 total so ... a bit risky.
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-fixes.git tags/mfd-fixes-3.10-1
+
+for you to fetch changes up to 5649d8f9e335f2b093751fcc2bdd5953f79f66ef:
+
+  mfd: ab8500-sysctrl: Let sysctrl driver work without pdata (2013-05-21 23:23:21 +0200)
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      mfd: ab8500: Debugfs code depends on gpadc
+
+David Rientjes (1):
+      mfd: tps65912: Select MFD_CORE
+
+Fabio Baltieri (5):
+      mfd: abx500-core: Fix sparse warning
+      mfd: ab8500-sysctrl: Fix sparse warning
+      mfd: ab8500-sysctrl: Set sysctrl_dev during probe
+      mfd: ab8500-sysctrl: Always enable pm_power_off handler
+      mfd: ab8500-sysctrl: Let sysctrl driver work without pdata
+
+Geert Uytterhoeven (3):
+      mfd: si476x: Do not use binary constants
+      mfd: cros_ec_spi: Use %z to format pointer differences
+      mfd: si476x: Use get_unaligned_be16() for unaligned be16 loads
+
+Lee Jones (4):
+      mfd: ab8500-gpadc: Suppress 'ignoring regulator_enable() return value' warning
+      mfd: ab8500-core: Use the correct driver name when enabling gpio/pinctrl
+      mfd: db8500-prcmu: Supply the pdata_size attribute for db8500-thermal
+      mfd: ab8500-core: Pass GPADC compatible string to MFD core
+
+Linus Walleij (1):
+      mfd: ab8500: Pass AB8500 IRQ to debugfs code by resource
+
+Ulf Hansson (1):
+      mfd: db8500-prcmu: Update stored DSI PLL divider value
+
+ drivers/mfd/Kconfig               |    3 +-
+ drivers/mfd/ab8500-core.c         |   24 +++++-
+ drivers/mfd/ab8500-debugfs.c      |   16 +++-
+ drivers/mfd/ab8500-gpadc.c        |    7 +-
+ drivers/mfd/ab8500-sysctrl.c      |   15 ++--
+ drivers/mfd/abx500-core.c         |    2 +-
+ drivers/mfd/cros_ec_spi.c         |    6 +-
+ drivers/mfd/db8500-prcmu.c        |    3 +
+ drivers/mfd/si476x-cmd.c          |  152 +++++++++++++++++++------------------
+ include/linux/mfd/abx500/ab8500.h |    2 -
+ 10 files changed, 134 insertions(+), 96 deletions(-)
 
 -- 
-MST
+Intel Open Source Technology Centre
+http://oss.intel.com/
