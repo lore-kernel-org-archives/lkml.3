@@ -1,117 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab3EVVWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:22:53 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:34648 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757148Ab3EVVWw (ORCPT
+	id S1757405Ab3EVVZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:25:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab3EVVZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:22:52 -0400
-From: Felipe Ferreri Tonello <eu@felipetonello.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-mmc@vger.kernel.org, ben-linux@fluff.org, cjb@laptop.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mmc: sdhci: Added set_power sdhci_ops handler.
-Date: Wed, 22 May 2013 14:22:45 -0700
-Message-ID: <2537252.KzShHU8h54@localhost.localdomain>
-User-Agent: KMail/4.10.2 (Linux/3.9.2-200.fc18.x86_64; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.64.1305222230050.19558@axis700.grange>
-References: <1369244832-23868-1-git-send-email-eu@felipetonello.com> <1369244832-23868-2-git-send-email-eu@felipetonello.com> <Pine.LNX.4.64.1305222230050.19558@axis700.grange>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 22 May 2013 17:25:33 -0400
+Date: Wed, 22 May 2013 14:25:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 09/14] bcon: remove version 1.0 support
+Message-Id: <20130522142532.58540f4917d6f5e89adf671c@linux-foundation.org>
+In-Reply-To: <20130522195108.GB7399@logfs.org>
+References: <1368132193-25817-1-git-send-email-joern@logfs.org>
+	<1368132193-25817-12-git-send-email-joern@logfs.org>
+	<20130522134837.f182d16882468e9e968f2647@linux-foundation.org>
+	<20130522195108.GB7399@logfs.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On Wed, 22 May 2013 15:51:09 -0400 J__rn Engel <joern@logfs.org> wrote:
 
-On Wednesday, May 22, 2013 10:30:40 PM Guennadi Liakhovetski wrote:
-> On Wed, 22 May 2013, Felipe F. Tonello wrote:
-> > From: "Felipe F. Tonello" <eu@felipetonello.com>
+> On Wed, 22 May 2013 13:48:37 -0700, Andrew Morton wrote:
+> > On Thu,  9 May 2013 16:43:07 -0400 Joern Engel <joern@logfs.org> wrote:
 > > 
-> > This is useful for power managment purposes if a sdhci child host wants to
-> > turn off some other peripheral also.
+> > > Very few machines ever ran with 1.0 format and by now I doubt whether a
+> > > single one still does.  No need to carry that code along.
+> > 
+> > aw geeze.  Can we please clean up the patch series?
 > 
-> Sorry, could you elaborate a bit? In what situations is it exactly useful?
-> And why cannot the regulator API be used there?
-
-Sorry about that.
-
-One example that I can think of is when you have a wifi module connected as a 
-mmc card via sdio. So you can register a callback function in your machine 
-source code to turn on/off the wifi module based on the mmc host power.
-
-I've seen this implementation in others mmc hosts, such as omap.
-
-Regards,
-
-Felipe
-
+> People started using my git tree, so I decided to keep it stable and
+> not fold fixes into the main patch.  That admittedly sucks for review.
 > 
-> Thanks
-> Guennadi
+> Would you like me to create a single patch for review?  And after
+> that, do you want to carry a single patch in your series or should I
+> keep my tree and try to get that merged?  Either way works for me.
 > 
-> > Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
-> > ---
-> > 
-> >  drivers/mmc/host/sdhci.c | 8 ++++++++
-> >  drivers/mmc/host/sdhci.h | 1 +
-> >  2 files changed, 9 insertions(+)
-> > 
-> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> > index 2ea429c..0a026c6 100644
-> > --- a/drivers/mmc/host/sdhci.c
-> > +++ b/drivers/mmc/host/sdhci.c
-> > @@ -1244,6 +1244,10 @@ static int sdhci_set_power(struct sdhci_host *host,
-> > unsigned short power)> 
-> >  	u8 pwr = 0;
-> >  	
-> >  	if (power != (unsigned short)-1) {
-> > 
-> > +
-> > +		if (host->ops->set_power)
-> > +			host->ops->set_power(host, true);
-> > +
-> > 
-> >  		switch (1 << power) {
-> >  		
-> >  		case MMC_VDD_165_195:
-> >  			pwr = SDHCI_POWER_180;
-> > 
-> > @@ -1259,6 +1263,10 @@ static int sdhci_set_power(struct sdhci_host *host,
-> > unsigned short power)> 
-> >  		default:
-> >  			BUG();
-> >  		
-> >  		}
-> > 
-> > +	} else {
-> > +
-> > +		if (host->ops->set_power)
-> > +			host->ops->set_power(host, false);
-> > 
-> >  	}
-> >  	
-> >  	if (host->pwr == pwr)
-> > 
-> > diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-> > index 379e09d..293d56d 100644
-> > --- a/drivers/mmc/host/sdhci.h
-> > +++ b/drivers/mmc/host/sdhci.h
-> > @@ -294,6 +294,7 @@ struct sdhci_ops {
-> > 
-> >  	void	(*platform_resume)(struct sdhci_host *host);
-> >  	void    (*adma_workaround)(struct sdhci_host *host, u32 intmask);
-> >  	void	(*platform_init)(struct sdhci_host *host);
-> > 
-> > +	void	(*set_power)(struct sdhci_host *host, bool power);
-> > 
-> >  };
-> >  
-> >  #ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
-> 
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
+
+Well I do think a significant amount of change is needed, in particular
+some more use of the /* operator.
+
+Can you set up a new tree for that and for linux-next and leave the
+existing one in place?
