@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab3EVWKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:10:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42102 "EHLO
+	id S1757726Ab3EVWQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:16:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42116 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3EVWKl (ORCPT
+	with ESMTP id S1755408Ab3EVWKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:41 -0400
+	Wed, 22 May 2013 18:10:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [ 01/21] arm64: debug: clear mdscr_el1 instead of taking the OS lock
-Date: Wed, 22 May 2013 15:10:19 -0700
-Message-Id: <20130522205232.804536363@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 04/21] hwmon: fix error return code in abituguru_probe()
+Date: Wed, 22 May 2013 15:10:22 -0700
+Message-Id: <20130522205233.157593375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
@@ -27,56 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 9c413e25d95fd3c0abe23eadad66191b22baa549 upstream.
+commit ecacb0b17c08fae89f65468727f0e4b8e91da4e1 upstream.
 
-During boot, we take the debug OS lock before interrupts are enabled.
-This is required to prevent clearing of PSTATE.D on the interrupt entry
-path, which could result in spurious debug exceptions before we've got
-round to resetting things like the hardware breakpoints registers to a
-sane state.
+Fix to return a negative error code from the error handling
+case instead of 0, as done elsewhere in this function.
 
-A problem with this approach is that taking the OS lock prevents an
-external JTAG debugger from debugging the system, which is especially
-irritating during boot, where JTAG debugging can be most useful.
-
-This patch clears mdscr_el1 rather than taking the lock, clearing the
-MDE and KDE bits and preventing self-hosted hardware debug exceptions
-from occurring.
-
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/debug-monitors.c |    2 --
- arch/arm64/mm/proc.S               |    3 +--
- 2 files changed, 1 insertion(+), 4 deletions(-)
+ drivers/hwmon/abituguru.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/arch/arm64/kernel/debug-monitors.c
-+++ b/arch/arm64/kernel/debug-monitors.c
-@@ -136,8 +136,6 @@ void disable_debug_monitors(enum debug_e
-  */
- static void clear_os_lock(void *unused)
- {
--	asm volatile("msr mdscr_el1, %0" : : "r" (0));
--	isb();
- 	asm volatile("msr oslar_el1, %0" : : "r" (0));
- 	isb();
- }
---- a/arch/arm64/mm/proc.S
-+++ b/arch/arm64/mm/proc.S
-@@ -119,8 +119,7 @@ ENTRY(__cpu_setup)
+--- a/drivers/hwmon/abituguru.c
++++ b/drivers/hwmon/abituguru.c
+@@ -1411,14 +1411,18 @@ static int abituguru_probe(struct platfo
+ 	pr_info("found Abit uGuru\n");
  
- 	mov	x0, #3 << 20
- 	msr	cpacr_el1, x0			// Enable FP/ASIMD
--	mov	x0, #1
--	msr	oslar_el1, x0			// Set the debug OS lock
-+	msr	mdscr_el1, xzr			// Reset mdscr_el1
- 	tlbi	vmalle1is			// invalidate I + D TLBs
- 	/*
- 	 * Memory region attributes for LPAE:
+ 	/* Register sysfs hooks */
+-	for (i = 0; i < sysfs_attr_i; i++)
+-		if (device_create_file(&pdev->dev,
+-				&data->sysfs_attr[i].dev_attr))
++	for (i = 0; i < sysfs_attr_i; i++) {
++		res = device_create_file(&pdev->dev,
++					 &data->sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
+-	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
+-		if (device_create_file(&pdev->dev,
+-				&abituguru_sysfs_attr[i].dev_attr))
++	}
++	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
++		res = device_create_file(&pdev->dev,
++					 &abituguru_sysfs_attr[i].dev_attr);
++		if (res)
+ 			goto abituguru_probe_error;
++	}
+ 
+ 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+ 	if (!IS_ERR(data->hwmon_dev))
 
 
