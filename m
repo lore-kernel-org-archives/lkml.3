@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab3EVHxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:53:38 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37417 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab3EVHxd (ORCPT
+	id S1755614Ab3EVHy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:54:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36606 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab3EVHyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:53:33 -0400
-Date: Wed, 22 May 2013 09:53:24 +0200
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "open list:IOC3 ETHERNET DRIVER" <linux-mips@linux-mips.org>,
-        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/19] net/ethernet/sgi/ioc3-eth: Use module_pci_driver
- to register driver
-Message-ID: <20130522075324.GA10769@linux-mips.org>
-References: <1369176146-19383-1-git-send-email-peterhuewe@gmx.de>
- <1369177096-19674-12-git-send-email-peterhuewe@gmx.de>
+	Wed, 22 May 2013 03:54:54 -0400
+Date: Wed, 22 May 2013 09:54:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH ipvs-next v3 0/2] sched: Add cond_resched_rcu_lock()
+ helper
+Message-ID: <20130522075438.GO26912@twins.programming.kicks-ass.net>
+References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369177096-19674-12-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1369201832-17163-1-git-send-email-horms@verge.net.au>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:58:07AM +0200, Peter Huewe wrote:
+On Wed, May 22, 2013 at 02:50:30PM +0900, Simon Horman wrote:
+> Add a helper that for use in loops which read data protected by RCU and
+> may have a large number of iterations.  Such an example is dumping the list
+> of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
+> 
+> This series also updates IPVS to use the helper.
+> 
+> Simon Horman (2):
+>   sched: add cond_resched_rcu() helper
+>   ipvs: use cond_resched_rcu() helper when walking connections
+> 
+>  include/linux/sched.h           |  9 +++++++++
+>  net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
+>  2 files changed, 17 insertions(+), 15 deletions(-)
 
-Looks good.
+Acked-by: Peter Zijlstra <peterz@infradead.org>
 
-  Ralf
+How do you want to go about merging this? Do you want to route it
+through the net tree or through -tip?
+
+
