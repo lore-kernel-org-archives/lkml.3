@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3EVBHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 21:07:48 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4725 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab3EVBHr (ORCPT
+	id S1754399Ab3EVBKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 21:10:20 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:36964 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873Ab3EVBKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 21:07:47 -0400
-Message-ID: <519C1A25.8020107@huawei.com>
-Date: Wed, 22 May 2013 09:06:45 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 21 May 2013 21:10:18 -0400
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Libo Chen <libo.chen@huawei.com>, <thomas.petazzoni@free-electrons.com>,
-        <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: Re: [PATCH 18/19] drivers/net/ethernet/marvell: add missing platform_driver
- owne
-References: <1369104171-8824-1-git-send-email-libo.chen@huawei.com> <519B728F.2000905@cogentembedded.com>
-In-Reply-To: <519B728F.2000905@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130520165559.GA19645@redhat.com>
+References: <20130520165559.GA19645@redhat.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 21 May 2013 22:09:57 -0300
+Message-ID: <CAKi4VAJfYJ1SJzBj7QwOOu9ZoKqvQUWefGyN8jKzDCTQ7AaqyA@mail.gmail.com>
+Subject: Re: [PATCH] usermodehelper: kill the sub_info->path[0] check
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/21 21:11, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 21-05-2013 6:42, Libo Chen wrote:
-> 
->> set the owner of platform_driver, to ensure that the
->> caller of driver holds a module refernece
-> 
->> Signed-off-by: Libo Chen <libo.chen@huawei.com>
->> ---
->>   drivers/net/ethernet/marvell/mvneta.c |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
-> 
->> diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
->> index c966785..be35a3e 100644
->> --- a/drivers/net/ethernet/marvell/mvneta.c
->> +++ b/drivers/net/ethernet/marvell/mvneta.c
->> @@ -2820,6 +2820,7 @@ static struct platform_driver mvneta_driver = {
->>       .remove = mvneta_remove,
->>       .driver = {
->>           .name = MVNETA_DRIVER_NAME,
->> +        .owner    = THIS_MODULE,
-> 
->    Indent this = with space or indent all ='s with tabs.
+Hi Oleg,
 
+On Mon, May 20, 2013 at 1:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> call_usermodehelper_exec() does nothing but returns success if
+> path[0] == 0. The only user which needs this strange feature is
+> request_module(), it can check modprobe_path[0] itself like other
+> users do if they want to detect the "disabled by admin" case.
+>
+> Kill it. Not only it looks strange, it can confuse other callers.
+> And this allows us to revert 264b83c0 "usermodehelper: check
+> subprocess_info->path != NULL", do_execve(NULL) is safe.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-thanks for your suggest.
+Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
 
-Regards,
+But... see below.
 
-Libo
-> 
->>           .of_match_table = mvneta_match,
->>       },
->>   };
-> 
-> WBR, Sergei
-> 
-> 
-> 
-> 
+> ---
+>  kernel/kmod.c |   11 +++--------
+>  1 files changed, 3 insertions(+), 8 deletions(-)
+>
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index 8241906..fb32636 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -147,6 +147,9 @@ int __request_module(bool wait, const char *fmt, ...)
+>          */
+>         WARN_ON_ONCE(wait && current_is_async());
+>
+> +       if (!modprobe_path[0])
+> +               return 0;
+> +
 
+Any reason to not return -EINVAL here except for maintaining the
+previous behavior? Checking the callers reveals just a few of them
+actually check the return value and IMO this is no different than the
+binary not existing and failing later on exec.
 
+>         va_start(args, fmt);
+>         ret = vsnprintf(module_name, MODULE_NAME_LEN, fmt, args);
+>         va_end(args);
+> @@ -569,14 +572,6 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+>         int retval = 0;
+>
+>         helper_lock();
+> -       if (!sub_info->path) {
+> -               retval = -EINVAL;
+> -               goto out;
+> -       }
+> -
+> -       if (sub_info->path[0] == '\0')
+> -               goto out;
+> -
+>         if (!khelper_wq || usermodehelper_disabled) {
+>                 retval = -EBUSY;
+>                 goto out;
+> --
+
+Lucas De Marchi
