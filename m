@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3EVNA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:00:56 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46532 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab3EVNAx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:00:53 -0400
-Date: Wed, 22 May 2013 06:00:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Roman Gushchin <klamm@yandex-team.ru>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130522130030.GB3431@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <519B38EC.90401@yandex-team.ru>
- <20130521120906.GD3578@linux.vnet.ibm.com>
- <1369143885.3301.221.camel@edumazet-glaptop>
- <519B8908.9080007@yandex-team.ru>
- <1369150693.3301.233.camel@edumazet-glaptop>
- <519BB90B.6080706@yandex-team.ru>
- <1369188080.3301.268.camel@edumazet-glaptop>
- <20130522095839.GC3578@linux.vnet.ibm.com>
- <1369225727.3301.322.camel@edumazet-glaptop>
+	id S1754459Ab3EVNGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:06:31 -0400
+Received: from gatzka.org ([85.214.228.118]:40522 "EHLO mail.gatzka.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab3EVNGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 09:06:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369225727.3301.322.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052213-7408-0000-0000-000010716CF3
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 22 May 2013 15:06:27 +0200
+From: Stephan Gatzka <stephan.gatzka@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Tejun Heo <tj@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: function call =?UTF-8?Q?fw=5Fiso=5Fresource=5Fmange=28=2E=2E?=
+ =?UTF-8?Q?=29=20=28core-iso=2Ec=29=20does=20not=20return?=
+Reply-To: stephan.gatzka@gmail.com
+Mail-Reply-To: stephan.gatzka@gmail.com
+In-Reply-To: <20130522145808.1ec7bea7@stein>
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
+ <519BA6AC.1080600@hurleysoftware.com> <20130521231847.GA6985@mtj.dyndns.org>
+ <20130522094840.472b263e@stein>
+ <51145028d1c880d68e0a88d863faa71c@gatzka.org>
+ <20130522145808.1ec7bea7@stein>
+Message-ID: <b41fcb8e7f7deafe8f8f4c708daf81d4@gatzka.org>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 05:28:47AM -0700, Eric Dumazet wrote:
-> On Wed, 2013-05-22 at 02:58 -0700, Paul E. McKenney wrote:
+> Solution 2 --- Perform interdependent works in different queue 
+> instances.
+> (Keep the WQ_MEM_RECLAIM flag set at those workqueues that have to take
+> work which is necessary for progress of memory reclaim.  If this and 
+> only
+> this solution is employed for an SBP-2 initiator, we need two if not 
+> more
+> WQ_MEM_RECLAIM workqueue instances.)
+
+I would go for this solution. I have no problems with lots of workqueues 
+around, because there is only a relatively small structure required for 
+each workqueue.
+
 > 
-> > Now that I am more awake...
-> > 
-> > The RCU list macros assume that the list header is either statically
-> > allocated (in which case no ACCESS_ONCE() or whatever is needed) or
-> > that the caller did whatever was necessary to protect the list header,
-> > whether that be holding the right lock, using rcu_dereference() when
-> > traversing the pointer to the list header, or whatever.
+> Solution 3 --- Remove the dependency between worklets:
 > 
-> Not sure what you mean, we do hold rcu_read_lock() here.
-> 
-> But when we jump back to begin, we do not do
-> "rcu_read_unlock()/rcu_read_lock()" pair.
+> 	Solution 3a --- Remove the lower-level worklet altogether.
+> 	E.g. reimplement the lower-level worklet as a tasklet.
 
-Right, rcu_read_lock() is part of the protection, but rcu_dereference()
-is the other part.
+No, I like the workqueue context. :)
 
-All that aside, I can't claim that I understand what problem the various
-patches would solve.  ;-)
 
-							Thanx, Paul
+> 	Solution 3b --- Remove the higher-level worklet's dependency.
+> 	E.g. reimplement the higher-level worklet such that it is woken by
+> 	a timer and then aborts or reschedules ( = lets the lower-level
+> 	worklet bubble up in the queue).
 
+This looks more difficult to me and not so easy to test.
+
+Stephan
