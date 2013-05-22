@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab3EVTbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:31:19 -0400
-Received: from mail-gh0-f181.google.com ([209.85.160.181]:53312 "EHLO
-	mail-gh0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3EVTbS (ORCPT
+	id S1756859Ab3EVTfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:35:24 -0400
+Received: from mx03.smart-weblications.de ([188.65.144.38]:49649 "EHLO
+	mx03.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755049Ab3EVTfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:31:18 -0400
-Date: Wed, 22 May 2013 15:35:41 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: OOPS in perf_mmap_close()
-Message-ID: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 22 May 2013 15:35:22 -0400
+Message-ID: <519D1DEF.8090206@smart-weblications.de>
+Date: Wed, 22 May 2013 21:35:11 +0200
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: davem@davemloft.net, liquidhorse@gmail.com, andy@greyhouse.net,
+        fubar@us.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com>
+In-Reply-To: <20130522190640.GA20276@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Hi Greg,
 
-I was fuzzing the kernel using my "perf_fuzzer" tool that builds on top of
-the trinity fuzzer.  (You can get it as part of of my perf_event_test
-suite https://github.com/deater/perf_event_tests )
+Am 22.05.2013 21:06, schrieb Greg KH:> On Wed, May 22, 2013 at 08:16:25PM +0200,
+Smart Weblications GmbH - Florian Wiessner wrote:
+>> Hi,
+>>
+>>
+>> Am 22.05.2013 18:23, schrieb Greg KH:
+>>> On Wed, May 22, 2013 at 06:16:11PM +0200, Smart Weblications GmbH - Florian
+Wiessner wrote:
+>>>> Am 22.05.2013 15:57, schrieb Greg KH:
+>>>>> On Wed, May 22, 2013 at 01:36:09PM +0200, Smart Weblications GmbH -
+Florian Wiessner wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> why is this patch still not backported to 3.4?
+>>>>>>
+>>>>>> I today tried 3.4.46 from kernel.org, but the patch STILL seems _NOT_
+included?
+>>>>>>
+>>>>>> WHY IS THAT?
+>>>>>
+>>>>> <formletter>
+>>>>>
+>>>>> This is not the correct way to submit patches for inclusion in the
+>>>>> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+>>>>> for how to do this properly.
+>>>>>
+>>>>> </formletter>
+>>>>>
+>>>>
+>>>>
+>>>> I don't want to submit a patch - i wanted to know why this patch still is
+not in
+>>>> the kernel (it is afaics at least 6 months old!)
+>>>
+>>> Perhaps because it was not submitted properly as documented above?
+>>>
+>>
+>> Well, i don't know. I have not written that patch, but tested and applied it
+>> against 3.4.36 where it worked fine.
+>>
+>> But i am unable to apply it to 3.4.46 (there are rejects if i try to apply it,
+>> obviously because there were changes in the meanwhile) - It would be cool if
+>> someone could tell if that patch is really needed anymore with 3.4.46.
+>>
+>> I am no C coder and only have little C experience, but i'd like to use this
+>> patch with current 3.4 stable Kernel or at least make sure that this patch is
+>> not needed anymore with current stable kernels...
+>
+> Why do you think that it is needed?  And does it match up to a specific
+> change that is already in Linus's tree?  That is a requirement here.
+>
 
-In any case while letting it run I got the following OOPS on 
-Linux 3.10-rc2
+It is needed, because without it (at least in 3.4.36) virtualized guests
+(kvm/qemu) are unable to use br0 (bridge) if the bridge uses a bond with mode 6
+(balance-alb).
 
-[142450.070877] IP: [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
-[142450.070890] PGD 59a8067 PUD 2947067 PMD 0 
-[142450.070899] Oops: 0002 [#1] SMP 
-[142450.070906] Modules linked in: bluetooth msr cpufreq_stats dn_rtmsg can_raw nfnetlink can_bcm can xfrm_user xfrm_algo nfc rfkill ax25 scsi_transport_iscsi atm ipt_ULOG x_tables ipx p8023 p8022 irda crc_ccitt appletalk psnap llc nfsd auth_rpcgss oid_registry nfs_acl nfs lockd dns_resolver fscache sunrpc loop fuse snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel kvm evdev nouveau mxm_wmi ttm drm_kms_helper microcode drm i2c_algo_bit video snd_hda_intel snd_hda_codec wmi snd_hwdep snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer snd psmouse serio_raw acpi_cpufreq mperf processor thermal_sys button pcspkr i2c_nforce2 shpchp soundcore i2c_core ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ata_generic r8169 mii ahci libahci ehci_pci ohci_hcd ehci_hcd libata scsi_mod usbcore usb_common
-[142450.071099] CPU: 0 PID: 2539 Comm: perf_fuzzer Tainted: G             3.10.0-rc2 #2
-[142450.071106] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
-[142450.071113] task: ffff880119e25830 ti: ffff880005aea000 task.ti: ffff880005aea000
-[142450.071120] RIP: 0010:[<ffffffff810a9859>]  [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
-[142450.071131] RSP: 0018:ffff880005aebea8  EFLAGS: 00010202[142450.071136] RAX: 0000000000000001 RBX: ffff88000455e800 RCX: ffffffffffffffff
-[142450.071143] RDX: ffff880004732ac0 RSI: ffff88000455ea30 RDI: ffff88000455ea30
-[142450.071151] RBP: 0000000000000000 R08: 00007f5adc87b000 R09: 00007f5adc87a000
-[142450.071157] R10: ffff880119684ce0 R11: 0000000000000206 R12: ffff880118697bc0
-[142450.071164] R13: ffff88000455ea30 R14: ffff880119684cc0 R15: ffff880118796368
-[142450.071171] FS:  00007f5adc881700(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-[142450.071178] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[142450.071184] CR2: 0000000000000060 CR3: 00000000029f1000 CR4: 00000000000407f0
-[142450.071190] DR0: 000000000b73c476 DR1: 000000000a837586 DR2: 00000000481f91c8
-[142450.071197] DR3: 000000005519375a DR6: 00000000ffff0ff0 DR7: 000000000051060a
-[142450.071203] Stack:
-[142450.071206]  ffff880119684cc0 0000000000000000 0000000000000000 00007f5adc87a000
-[142450.071218]  00007f5adc87b000 ffffffff810d2ce0 ffff880117183740 ffff880119684cc0
-[142450.071229]  ffffffff810d4342 ffff880119684cc0 ffff8801196c3430 ffff880117183748
-[142450.071241] Call Trace:
-[142450.071248]  [<ffffffff810d2ce0>] ? remove_vma+0x28/0x5f
-[142450.071255]  [<ffffffff810d4342>] ? do_munmap+0x2d5/0x306
-[142450.071262]  [<ffffffff810d43ab>] ? vm_munmap+0x38/0x4e
-[142450.071268]  [<ffffffff810d43db>] ? SyS_munmap+0x1a/0x1f
-[142450.071276]  [<ffffffff81369b12>] ? system_call_fastpath+0x16/0x1b
-[142450.071281] Code: 4c 89 ee e8 3e 21 fa ff 85 c0 74 6c 4c 8b a3 68 02 00 00 48 8b ab 60 02 00 00 41 8b 44 24 18 c1 e0 0c 48 98 48 c1 e8 0c 48 ff c0 <f0> 48 29 45 60 49 8b 46 40 48 63 93 5c 02 00 00 48 29 90 b8 00 
-[142450.071382] RIP  [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
-[142450.071390]  RSP <ffff880005aebea8>
-[142450.071394] CR2: 0000000000000060
-[142450.073009] ---[ end trace a49b6a0053924d8b ]---
+https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
 
-Vince Weaver
-vincent.weaver@maine.edu
-http://www.eece.maine.edu/~vweaver/
+http://lkml.indiana.edu/hypermail/linux/kernel/1302.0/00539.html
+
+
+Thanks,
+
+-- 
+
+Mit freundlichen Grüßen,
+
+Florian Wiessner
+
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
+
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
+
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
