@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3EVOlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:41:25 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55155 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab3EVOlY (ORCPT
+	id S1756239Ab3EVOlk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:41:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57016 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417Ab3EVOlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:41:24 -0400
-Date: Wed, 22 May 2013 15:40:42 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: nsekhar@ti.com, khilman@deeprootsystems.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] gpio: davinci: coding style correction
-Message-ID: <20130522144042.GG18614@n2100.arm.linux.org.uk>
-References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com> <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
+	Wed, 22 May 2013 10:41:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] ARM: ux500: Apply other compatible name to the u8540 DTS file
+Date: Wed, 22 May 2013 16:41:33 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
+References: <1369233402-19225-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1369233402-19225-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305221641.33602.arnd@arndb.de>
+X-Provags-ID: V02:K0:B/TzyfNY7WM8mntCHJmPf2ThloinSO9XNsj8rN+Y32P
+ mVrLpN4+TVcsQ5yF37YMDRzGehr3Y+tOCFcHtaM0g4ofQ3w/sM
+ B9SdFy3jh6C7JTtumU4zHeliEEfU08ss3QWdq7+isGV8rBMrpl
+ cbTiviZwFp67XCjBAN8a109jibRjz4yFo7u9tj91No2MvBUJtn
+ o+Mxrf+Jm/dMO2SLoq0N0+Wtrt6P0bgquamNRFw8DsMdbGcZig
+ 06TYO+QqE37PQzV4SVfBlDgWPJqpCQsuDPbbNuN8VB8lZDxrOI
+ wvAVs03FFxCzWoT94Irz51CiwvO5gWygDAfIcys63UmLnPl1E7
+ CMSKJY8M80KI1ME8keUs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:40:25PM +0530, Philip Avinash wrote:
->  /*
->   * Assuming the pin is muxed as a gpio output, set its output value.
->   */
-> -static void
-> -davinci_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-> +static void davinci_gpio_set(struct gpio_chip *chip, unsigned offset,
-> +		int value)
+On Wednesday 22 May 2013, Lee Jones wrote:
+> The common name for the 8540 is the u8540, but the fully qualified
+> name, or proper name is ccu8540. Ensure both are available to drivers
+> and platform code that wish to use them.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-This kind of stuff is just churn.  If you read Documentation/CodingStyle:
+I'm confused by this. I thought that u8540 is the chipset while ccu8540 is
+the board. Is that wrong?
 
-Statements longer than 80 columns will be broken into sensible chunks, unless
-exceeding 80 columns significantly increases readability and does not hide
-information. Descendants are always substantially shorter than the parent and
-are placed substantially to the right. The same applies to function headers
-with a long argument list. However, never break user-visible strings such as
-printk messages, because that breaks the ability to grep for them.
-
-"broken into sensible chunks".  Here's the question: is the former a
-sensible format?  Arguably it is because it results in all the arguments
-fitting on one line at the expense of missing the return value.
-
-The latter is also a sensible format - but breaks the arguments instead
-of the return value.
-
-Both formats can be found in their entirety by grep by function name alone:
-
-	grep -1 davinci_gpio_set
-
-or if you prefer to type some more then you end up with more specific
-
-	grep -A1 davinci_gpio_set
-or
-	grep -B1 davinci_gpio_set
-
-depending on the version.
-
-Where there's no clear advantage one way or the other, let the authors
-preference stand.
+	Arnd
