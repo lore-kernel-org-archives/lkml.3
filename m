@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab3EVHAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:00:53 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36401 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845Ab3EVHAu (ORCPT
+	id S1752488Ab3EVHHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:07:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33709 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3EVHHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:00:50 -0400
-Message-ID: <519C6CF3.1010502@huawei.com>
-Date: Wed, 22 May 2013 15:00:03 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] ktap 0.1 released
-References: <519AF05E.1050808@huawei.com> <CACVXFVMG73_OCJOJGWR0CCeoR3taXnj+PXXah0q7fyB=Y4vfwQ@mail.gmail.com> <CACVXFVOuz-RjoQLD5mb1c5vbaNZ-H9cY7T5p1ZVLWwftwbCBcQ@mail.gmail.com> <CACVXFVPgLiFPSyLi48fa=RbyOantEu-jRynuuZFJ_4Lt5OSXYQ@mail.gmail.com>
-In-Reply-To: <CACVXFVPgLiFPSyLi48fa=RbyOantEu-jRynuuZFJ_4Lt5OSXYQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 22 May 2013 03:07:49 -0400
+Date: Wed, 22 May 2013 00:07:48 -0700 (PDT)
+Message-Id: <20130522.000748.454683591881350280.davem@davemloft.net>
+To: akpm@linux-foundation.org
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dborkman@redhat.com,
+        netdev@vger.kernel.org, nschichan@freebox.fr
+Subject: Re: linux-next: manual merge of the akpm tree with the net-next
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org>
+References: <20130521142948.444f09820c5406f9adc4b7f1@canb.auug.org.au>
+	<20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/22 12:34, Ming Lei wrote:
-> On Wed, May 22, 2013 at 12:19 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> On Wed, May 22, 2013 at 12:15 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->>> On Tue, May 21, 2013 at 11:56 AM, zhangwei(Jovi)
->>>
->>> Nice job, I have run it on ARM already with only one line change.
->>>
->>> But looks 'Control-C' can't stop the tracing or need some time to complete it,
->>> see below:
->>
->> Sometimes, it doesn't work:
->>
->> $ sudo ./ktap ./scripts/kretprobe.kp
->> ......
->> vfs_read! (execname sshd); retval:38
->> ^Cvfs_read! (execname sshd); retval:38
->>
->> probe ending
->> vfs_read! (execname sshd); retval:48
->> vfs_read! (execname sshd); retval:2
->> ^C
->> ^C^C^C
->> ^C^C^C^C^C^C^C
->>
->> ^C^C^C^C^C^C
-> 
-> This one can be fixed by below patch, but can't work on
-> the last one.
-> 
-> diff --git a/vm.c b/vm.c
-> index c5f5733..a24a389 100644
-> --- a/vm.c
-> +++ b/vm.c
-> @@ -1060,7 +1060,7 @@ ktap_State *kp_newthread(ktap_State *mainthread)
-> 
->  void kp_user_complete(ktap_State *ks)
->  {
-> -	if (!ks || !G(ks)->user_completion)
-> +	if (!ks || !G(ks) || !G(ks)->user_completion)
->  		return;
-> 
->  	complete(G(ks)->user_completion);
-> 
-> 
-> 
-> Thanks,
-> 
-Hi Ming,
+From: Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 21 May 2013 13:04:38 -0700
 
-Thanks for testing and your fix.
+> Nicolas, I think the patches need a re-check so I'll drop the versions
+> which I presently have.  Please refresh, retest and resend when
+> convenient?  It'll need to be against linux-next, which is where the
+> conflicting (vfree/module_free) changes have occurred.
 
-the ktap exit mechanism is not quite safe as you saw, so I plan to rewrite the logic
-to make more safer, hopefully I could complete this work in next few days.
+How about working against net-next and submitting your patches to netdev
+just like the rest of the world?
 
-.jovi
-
-
-
-
-
-
-
+There is zero reason for these changes to go through Andrew's tree.
