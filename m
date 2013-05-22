@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab3EVPDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:03:47 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:50773 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756306Ab3EVPDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:03:45 -0400
-Date: Wed, 22 May 2013 11:03:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522150335.GC2777@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Paolo Bonzini <pbonzini@redhat.com>, Tejun Heo <tj@kernel.org>,
-	"James E.J. Bottomley" <JBottomley@parallels.com>,
-	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-	linux-scsi@vger.kernel.org
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
- <519C674A.50700@redhat.com>
- <20130522093249.GC3466@mtj.dyndns.org>
- <519C959A.3090100@redhat.com>
- <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CD234.40608@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1754554Ab3EVPKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:10:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60011 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176Ab3EVPKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:10:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,721,1363158000"; 
+   d="scan'208";a="341726697"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAJd=RBBogFk5F=yBtQ=TWTOND5HyUJN_XrdeRCqD6Y8skoquzw@mail.gmail.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAJd=RBBogFk5F=yBtQ=TWTOND5HyUJN_XrdeRCqD6Y8skoquzw@mail.gmail.com>
+Subject: Re: [PATCHv4 33/39] thp, mm: implement do_huge_linear_fault()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130522151302.24420E0090@blue.fi.intel.com>
+Date: Wed, 22 May 2013 18:13:02 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo,
+Hillf Danton wrote:
+> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > @@ -3301,12 +3335,23 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  {
+> >         pte_t *page_table;
+> >         spinlock_t *ptl;
+> > +       pgtable_t pgtable = NULL;
+> >         struct page *page, *cow_page, *dirty_page = NULL;
+> > -       pte_t entry;
+> >         bool anon = false, page_mkwrite = false;
+> >         bool write = flags & FAULT_FLAG_WRITE;
+> > +       bool thp = flags & FAULT_FLAG_TRANSHUGE;
+> > +       unsigned long addr_aligned;
+> >         struct vm_fault vmf;
+> > -       int ret;
+> > +       int nr, ret;
+> > +
+> > +       if (thp) {
+> > +               if (!transhuge_vma_suitable(vma, address))
+> > +                       return VM_FAULT_FALLBACK;
+> > +               if (unlikely(khugepaged_enter(vma)))
+> 
+> vma->vm_mm now is under the care of khugepaged, why?
 
-I'll probably regret butting my head into this, but it might be
-helpful if you talk about your particular use case which is driving
-your desire to make these changes.  For example, what do you think the
-SG_IO whitelist _should_ be used, and why should it be made more
-general?  What's the use case that is being impaired by the current
-state of how sg_io whitelists are being handled?
+Because it has at least once VMA suitable for huge pages.
 
-Secondly, when you are trying to get a security vulnerability fixed,
-it's helpful if you give the precise nature of the problem, and what
-the an attacker can do with it.  I think you are worried that if an
-attacker has read-only access, they can still send the UNMAP command
-which may (since it is advisory) result in a block no longer
-containing valid data, such that a read will return zero's or some
-other undefined garbage.   Yes?
+Yes, we can't collapse pages in file-backed VMAs yet, but It's better to
+be consistent to avoid issues when collapsing will be implemented.
 
-Now consider that if this is a high-priority fix, it's important to
-make the patch as small as possible, since distributions (like your
-employer) may want to backport the patch to older kernels.  And
-distribution release engineers will appreciate things if the patch is
-as small as possible, making the _minimum_ necessary changes to fix
-said security exposure.  Generally, a series of 14 patches is __not__
-the minimum necessary patch.
-
-Finally, please consider that your attitude is not going to win
-friends and influence people.  I don't know if the capability to work
-well with upstream developers (people which ***other*** Red Hat
-engineers have had no problems work with, and which I can attest,
-through personal experience, are very reasonable engineers who are
-easy to work with), is something which is a part of your performance
-review process.  But if it isn't, it probably should be, since the
-ability to listen to review feedback is going to be important for your
-long term career prospects, no matter whether it is with the Linux
-kernel, some other open source project, or even a proprietary softare
-project.
-
-Regards,
-
-					- Ted
+-- 
+ Kirill A. Shutemov
