@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab3EVW3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:29:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:37809 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757564Ab3EVW3o (ORCPT
+	id S1757882Ab3EVWaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:30:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17107 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757835Ab3EVWaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:29:44 -0400
+	Wed, 22 May 2013 18:30:11 -0400
 X-IronPort-AV: E=Sophos;i="4.87,724,1363158000"; 
-   d="scan'208";a="49762189"
-Date: Wed, 22 May 2013 15:29:42 -0700
+   d="scan'208";a="49865015"
+Date: Wed, 22 May 2013 15:30:10 -0700
 From: David Brown <davidb@codeaurora.org>
 To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: ohad@wizery.com, joerg.roedel@amd.com, LKML <linux-kernel@vger.kernel.org>,
-        joro@8bytes.org, Varun.Sethi@freescale.com,
-        iommu@lists.linux-foundation.org, mingo@kernel.org, ddutile@redhat.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] msm: iommu: fix leak and invalid access
-Message-ID: <20130522222942.GA5706@codeaurora.org>
+Message-ID: <20130522223009.GA11823@codeaurora.org>
 References: <51931347.7020600@huawei.com>
- <519C5E8F.7060006@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519C5E8F.7060006@huawei.com>
+In-Reply-To: <51931347.7020600@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 01:58:39PM +0800, Libo Chen wrote:
+On Wed, May 15, 2013 at 12:47:03PM +0800, Libo Chen wrote:
 
-> ping...
+> This patch merge two patch that I sended before:
+> 1. msm: iommu: add missing platform_device_unregister() in err case
+> 2. msm: iommu: no need kfree before kzalloc successful
+> 
+> It fixes two obvious problems:
+> 1. We have registered msm_iommu_driver first, and need unregister it when
+> registered msm_iommu_ctx_driver fail
+> 
+> 2. We don`t need to kfree drvdata before kzalloc successful
+> 
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> ---
+>  drivers/iommu/msm_iommu_dev.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
 
-This is the first I've seen this patch.  The original appears to have
-been sent to Andrew Morton and lkml.  I'll reply with an Ack there.
-
-David
+Acked-by: David Brown <davidb@codeaurora.org>
 
 -- 
 sent by an employee of the Qualcomm Innovation Center, Inc.
