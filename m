@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab3EVV02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:26:28 -0400
-Received: from mx04.smart-weblications.de ([188.65.144.39]:36807 "EHLO
-	mx04.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753218Ab3EVV00 (ORCPT
+	id S1757452Ab3EVV0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:26:46 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59235 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab3EVV0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:26:26 -0400
-Message-ID: <519D37F4.2030202@smart-weblications.de>
-Date: Wed, 22 May 2013 23:26:12 +0200
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 22 May 2013 17:26:45 -0400
+Date: Wed, 22 May 2013 15:58:24 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 01/14] do_mounts: constify name_to_dev_t parameter
+Message-ID: <20130522195822.GD7399@logfs.org>
+References: <1368132193-25817-1-git-send-email-joern@logfs.org>
+ <1368132193-25817-2-git-send-email-joern@logfs.org>
+ <20130522134812.40924cb34eaea1588b756a14@linux-foundation.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: davem@davemloft.net, liquidhorse@gmail.com, andy@greyhouse.net,
-        fubar@us.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com>
-In-Reply-To: <20130522200439.GA21367@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130522134812.40924cb34eaea1588b756a14@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-
-Am 22.05.2013 22:04, schrieb Greg KH:
-
-
->>
->> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
+On Wed, 22 May 2013 13:48:12 -0700, Andrew Morton wrote:
+> On Thu,  9 May 2013 16:42:57 -0400 Joern Engel <joern@logfs.org> wrote:
 > 
-> Ok, that's what we need.
+> > --- a/include/linux/mount.h
+> > +++ b/include/linux/mount.h
+> > @@ -74,6 +74,6 @@ extern struct vfsmount *vfs_kern_mount(struct file_system_type *type,
+> >  extern void mnt_set_expiry(struct vfsmount *mnt, struct list_head *expiry_list);
+> >  extern void mark_mounts_for_expiry(struct list_head *mounts);
+> >  
+> > -extern dev_t name_to_dev_t(char *name);
+> > +extern dev_t name_to_dev_t(const char *name);
+> >  
+> >  #endif /* _LINUX_MOUNT_H */
+> > diff --git a/init/do_mounts.c b/init/do_mounts.c
+> > index 1d1b634..da96f85 100644
+> > --- a/init/do_mounts.c
+> > +++ b/init/do_mounts.c
+> > @@ -202,7 +202,7 @@ done:
+> >   *	bangs.
+> >   */
+> >  
+> > -dev_t name_to_dev_t(char *name)
+> > +dev_t name_to_dev_t(const char *name)
+> >  {
+> >  	char s[32];
+> >  	char *p;
 > 
-> Now, please cc: the developers / maintainers of that patch and ask them
-> to have it included in the 3.4-stable kernel series.
-> 
-> Then, if they agree, the network maintainer will pick it up and send it
-> to me for inclusion.
-> 
+> A changelog would be nice.  There are 1.1 billion places in the kernel
+> where we could make such a change - why was this one made?
 
-i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
-know the network maintainer...
+I happened to hit this, got a compiler warning and decided that the
+proper fix was the patch above.  The alternative would have been to
+cast away the const in users of name_to_dev_t().  I can add some
+comment, sure.
 
-this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
-netdev on 2013-02-01:
-
-http://lists.openwall.net/netdev/2013/02/01/86
-
-but i couldn't find a trace of the patch in 3.4.36?!
-
-Instead, i read another try to get it backported fail:
-
-http://permalink.gmane.org/gmane.linux.network/264198
-
-
-
-
-
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
+JÃ¶rn
 
 --
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
+It is better to die of hunger having lived without grief and fear,
+than to live with a troubled spirit amid abundance.
+-- Epictetus
