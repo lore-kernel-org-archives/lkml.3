@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461Ab3EVMsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:48:05 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:51372 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab3EVMsA (ORCPT
+	id S1754654Ab3EVMsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:48:22 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:60364 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab3EVMsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:48:00 -0400
+	Wed, 22 May 2013 08:48:02 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         broonie@kernel.org, linus.walleij@linaro.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: Allow Snowball to pass its own regulator settings
-Date: Wed, 22 May 2013 13:47:32 +0100
-Message-Id: <1369226853-16978-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH] regulator: ab8500-ext: Don't register without initialisation data
+Date: Wed, 22 May 2013 13:47:33 +0100
+Message-Id: <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
 References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
@@ -24,70 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch fixes a bug introduced in the v3.10 merge window.
 
-Currently the external regulator settings are passed though to the AB8500
-regulator driver regards of whether they can or should be used on any
-ux500 based platform. They are not applicable for the u8505 and when
-enabled, they turn off AUX2 which adversely affects the eMMC on Snowball.
+Some platforms will not want external registers. Rather than setting up
+lots of different clauses in the core ab8500 regulator driver not to
+call ab8500-ext init() we just won't pass the initialisation data from
+platform code. This patch checks for it and if it's missing, we won't
+register the external regulators.
 
-The driver already knows that the external regulator settings are not
-appropriate for the u8505, however it's more difficult for driver code to
-distinguish between two different u8500 based platforms.
-
-Using the new semantics, we can just not pass the external regulator
-initialisation values from platform code and the external regulator
-driver will know not to register them.
-
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |    8 ++++++++
- arch/arm/mach-ux500/board-mop500-regulators.h |    1 +
- arch/arm/mach-ux500/board-mop500.c            |    2 ++
- 3 files changed, 11 insertions(+)
+ drivers/regulator/ab8500-ext.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index b34441b..7399e90 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -996,6 +996,14 @@ struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
- 	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
- };
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index b4d4547..8421537 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -334,6 +334,12 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
-+/* External regulators turn off VAUX2 when in use on Snowball. */
-+struct ab8500_regulator_platform_data snowball_regulator_plat_data = {
-+	.reg_init               = ab8500_reg_init,
-+	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
-+	.regulator              = ab8500_regulators,
-+	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
-+};
++	/* have any external regulators been specified? */
++	if (pdata->num_ext_regulator == 0) {
++		dev_warn(&pdev->dev, "Not using external regulators\n");
++		return 0;
++	}
 +
- struct ab8500_regulator_platform_data ab8505_regulator_plat_data = {
- 	.reg_init               = ab8505_reg_init,
- 	.num_reg_init           = ARRAY_SIZE(ab8505_reg_init),
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-index 039f513..6300e79 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.h
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-@@ -16,6 +16,7 @@
- 
- extern struct ab8500_regulator_platform_data ab8500_regulator_plat_data;
- extern struct ab8500_regulator_platform_data ab8505_regulator_plat_data;
-+extern struct ab8500_regulator_platform_data snowball_regulator_plat_data;
- extern struct regulator_init_data tps61052_regulator;
- extern struct regulator_init_data gpio_en_3v3_regulator;
- extern struct regulator_init_data sdi0_reg_init_data;
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 0b018c4..2d609d4 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -615,6 +615,8 @@ static void __init snowball_init_machine(void)
- 	struct device *parent = NULL;
- 	int i;
- 
-+	ab8500_platdata.regulator = &snowball_regulator_plat_data;
-+
- 	platform_device_register(&db8500_prcmu_device);
- 
- 	sdi0_reg_info.enable_gpio = SNOWBALL_SDMMC_EN_GPIO;
+ 	/* make sure the platform data has the correct size */
+ 	if (pdata->num_ext_regulator != ARRAY_SIZE(ab8500_ext_regulator_info)) {
+ 		dev_err(&pdev->dev, "Configuration error: size mismatch.\n");
 -- 
 1.7.10.4
 
