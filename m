@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab3EVQHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:07:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752176Ab3EVQHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:07:41 -0400
-Date: Wed, 22 May 2013 18:03:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: viro@zeniv.linux.org.uk, serge.hallyn@canonical.com, jlayton@redhat.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, bfields@fieldses.org,
-        ebiederm@xmission.com, bharrosh@panasas.com,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        devel@openvz.org
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-Message-ID: <20130522160353.GB16571@redhat.com>
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
+	id S1756215Ab3EVQIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:08:30 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:46963 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755409Ab3EVQI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 12:08:28 -0400
+Message-ID: <519CED72.40406@koalo.de>
+Date: Wed, 22 May 2013 18:08:18 +0200
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522072840.27720.85023.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] ASoC: Add support for BCM2708
+References: <519CD1CC.8070507@koalo.de> <519CE2B7.8080704@wwwdotorg.org>
+In-Reply-To: <519CE2B7.8080704@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22, Stanislav Kinsbursky wrote:
->
-> +static int umh_set_fs_root(struct subprocess_info *info, struct cred *new)
-> +{
-> +	set_fs_root(current->fs, info->data);
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Call a usermode helper with a specific fs root.
-> + *
-> + * The caller must hold extra reference to it otherwise, because it will be
-> + * put on usermodehelper thread exit.
-> + */
-> +int call_usermodehelper_root(char *path, char **argv, char **envp,
-> +			     struct path *root, int wait)
-> +{
-> +	struct subprocess_info *info;
-> +	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
-> +
-> +	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-> +					      umh_set_fs_root, NULL, root);
-> +	if (info == NULL)
-> +		return -ENOMEM;
-> +
-> +	return call_usermodehelper_exec(info, wait);
-> +}
-> +EXPORT_SYMBOL(call_usermodehelper_root);
+On 22.05.2013 17:22, Stephen Warren wrote:
+> On 05/22/2013 08:10 AM, Florian Meier wrote:
+>> This driver adds support for digital audio (I2S)
+>> for the BCM2708 SoC that is used by the
+>> Raspberry Pi. External audio codecs can be
+>> connected to the Raspberry Pi via P5 header.
+>>
+>> It relies on cyclic DMA engine support for BCM2708
+>> that is not included in this patch.
+> 
+> This SoC is actually the BCM2835, so the files should be named for that.
 
-Of course, I can't ack the placement (and yes, it was me who argued
-that kmod.c is probably not the best place), but the patch looks fine.
+Actually, I changed the name several times and in the end I sticked to
+https://github.com/raspberrypi/linux/issues/22
+but if you think it is better to use BCM2835 I am happy to agree with
+you and change it.
 
-I am not sure the new helper actually needs "int wait" but this matches
-call_usermodehelper().
+> Upstream only uses device tree for BCM2835. Does this driver support DT?
+> Where is the DT binding definition file?
 
-For what it's worth:
+I have not accomplished to use the mainline kernel and DT with the
+Raspberry Pi. Do you have any introductive information about how to do this?
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> I assume you're planning on sending the DMA driver upstream too? I guess
+> this driver isn't useful without it.
+
+I would like to, but it only supports cyclic DMA. Should I send it
+upstream anyway? In case you are interested:
+
+https://github.com/koalo/linux/blob/rpi-3.8.y-asocdev/drivers/dma/bcm2708-dmaengine.c
+
+> I'll take a look at the actual patch content later.
+
+That would be great!
+
 
