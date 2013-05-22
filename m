@@ -1,134 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab3EVI3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:29:00 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48267 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab3EVI1m (ORCPT
+	id S1753299Ab3EVIbR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:31:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34775 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3EVIbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:27:42 -0400
-X-AuditID: 9c93017e-b7c8fae000000f00-15-519c817c9983
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 2/5] perf gtk/hists: Add support for callchains
-Date: Wed, 22 May 2013 17:27:35 +0900
-Message-Id: <1369211258-3163-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
-References: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 May 2013 04:31:13 -0400
+Date: Wed, 22 May 2013 01:31:08 -0700 (PDT)
+Message-Id: <20130522.013108.58504645261021804.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: horms@verge.net.au, eric.dumazet@gmail.com, ja@ssi.bg, mingo@redhat.com,
+        paulmck@linux.vnet.ibm.com, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pablo@netfilter.org, dipankar@in.ibm.com
+Subject: Re: [PATCH ipvs-next v3 0/2] sched: Add cond_resched_rcu_lock()
+ helper
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130522075438.GO26912@twins.programming.kicks-ass.net>
+References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
+	<20130522075438.GO26912@twins.programming.kicks-ass.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 22 May 2013 09:54:38 +0200
 
-Add a new column to display callchain information.  It's only enabled
-when recorded with -g and has symbol sort key.
+> On Wed, May 22, 2013 at 02:50:30PM +0900, Simon Horman wrote:
+>> Add a helper that for use in loops which read data protected by RCU and
+>> may have a large number of iterations.  Such an example is dumping the list
+>> of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
+>> 
+>> This series also updates IPVS to use the helper.
+>> 
+>> Simon Horman (2):
+>>   sched: add cond_resched_rcu() helper
+>>   ipvs: use cond_resched_rcu() helper when walking connections
+>> 
+>>  include/linux/sched.h           |  9 +++++++++
+>>  net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
+>>  2 files changed, 17 insertions(+), 15 deletions(-)
+> 
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> How do you want to go about merging this? Do you want to route it
+> through the net tree or through -tip?
 
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/gtk/hists.c | 60 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
-
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index cb6a9b45f789..14d0b26c7c8a 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -124,6 +124,41 @@ void perf_gtk__init_hpp(void)
- 				perf_gtk__hpp_color_overhead_guest_us;
- }
- 
-+static void callchain_list__sym_name(struct callchain_list *cl,
-+				     char *bf, size_t bfsize)
-+{
-+	if (cl->ms.sym)
-+		scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+	else
-+		scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
-+}
-+
-+static void perf_gtk__add_callchain(struct rb_root *root, GtkTreeStore *store,
-+				    GtkTreeIter *parent, int col)
-+{
-+	struct rb_node *nd;
-+
-+	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node;
-+		struct callchain_list *chain;
-+		GtkTreeIter iter;
-+
-+		node = rb_entry(nd, struct callchain_node, rb_node);
-+
-+		list_for_each_entry(chain, &node->val, list) {
-+			char buf[128];
-+
-+			gtk_tree_store_append(store, &iter, parent);
-+
-+			callchain_list__sym_name(chain, buf, sizeof(buf));
-+			gtk_tree_store_set(store, &iter, col, buf, -1);
-+		}
-+
-+		/* Now 'iter' contains info of the last callchain_list */
-+		perf_gtk__add_callchain(&node->rb_root, store, &iter, col);
-+	}
-+}
-+
- static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 				 float min_pcnt)
- {
-@@ -156,6 +191,9 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		col_types[nr_cols++] = G_TYPE_STRING;
- 	}
- 
-+	if (symbol_conf.use_callchain && sort__has_sym)
-+		col_types[nr_cols++] = G_TYPE_STRING;
-+
- 	store = gtk_tree_store_newv(nr_cols, col_types);
- 
- 	view = gtk_tree_view_new();
-@@ -183,6 +221,23 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 							    col_idx++, NULL);
- 	}
- 
-+	if (symbol_conf.use_callchain && sort__has_sym) {
-+		GtkTreeViewColumn *chain_column;
-+
-+		chain_column = gtk_tree_view_column_new();
-+
-+		gtk_tree_view_column_set_title(chain_column, "Callchains");
-+		gtk_tree_view_column_pack_start(chain_column, renderer, TRUE);
-+		gtk_tree_view_column_add_attribute(chain_column, renderer,
-+						   "text", col_idx++);
-+
-+		gtk_tree_view_insert_column(GTK_TREE_VIEW(view),
-+					    chain_column, -1);
-+
-+		gtk_tree_view_set_expander_column(GTK_TREE_VIEW(view),
-+						  chain_column);
-+	}
-+
- 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
- 
- 	g_object_unref(GTK_TREE_MODEL(store));
-@@ -221,6 +276,11 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 
- 			gtk_tree_store_set(store, &iter, col_idx++, s, -1);
- 		}
-+
-+		if (symbol_conf.use_callchain && sort__has_sym) {
-+			gtk_tree_store_set(store, &iter, col_idx, "callchain", -1);
-+			perf_gtk__add_callchain(&h->sorted_chain, store, &iter, col_idx);
-+		}
- 	}
- 
- 	gtk_container_add(GTK_CONTAINER(window), view);
--- 
-1.7.11.7
-
+I think we can have Pablo merge it into his netfilter tree.
