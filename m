@@ -1,53 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3EVO5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:57:05 -0400
-Received: from www.sr71.net ([198.145.64.142]:52492 "EHLO blackbird.sr71.net"
+	id S1756538Ab3EVPBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:01:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30063 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756477Ab3EVO5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:57:02 -0400
-Message-ID: <519CDCBB.7050807@sr71.net>
-Date: Wed, 22 May 2013 07:56:59 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756218Ab3EVPBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:01:08 -0400
+Message-ID: <519CDDA4.2050100@redhat.com>
+Date: Wed, 22 May 2013 17:00:52 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 29/39] thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com> <519C01D8.4040301@sr71.net> <20130522143746.A7CE5E0090@blue.fi.intel.com>
-In-Reply-To: <20130522143746.A7CE5E0090@blue.fi.intel.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org>
+In-Reply-To: <20130522143019.GA18541@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 07:37 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
->>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>
->>> It's confusing that mk_huge_pmd() has sematics different from mk_pte()
->>> or mk_pmd().
->>>
->>> Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
->>> prototype to match mk_pte().
->>
->> Was there a motivation to do this beyond adding consistency?  Do you use
->> this later or something?
-> 
-> I spent some time on debugging problem caused by this inconsistency, so at
-> that point I was motivated to fix it. :)
+Il 22/05/2013 16:30, Tejun Heo ha scritto:
+> * Separate fixes from additions.  Transform existing code so that the
+>   visible behavior doesn't change but the required fix can be
+>   implemented on top.  Explicitly note what's going on in the commit
+>   messages.
 
-A little anecdote that this bit you in practice to help indicate this
-isn't just random code churn would be nice.
+Been there, done that.  Have you read the commit messages *at all*?
+
+Patch 2: "Right now, there is still just one bitmap and the mask is
+ignored, so there is no semantic change yet".
+
+Patch 3: "This patch already introduces some semantic change, albeit
+very limited; [...] a few commands are now forbidden for devices of type
+other than TYPE_ROM, where they are reserved or vendor-specific".
+
+> * Fix the frigging CVE bug that you've been waving around and do
+>   *just* that.
+
+Perhaps you've missed that this is v2, not v27.  Tell me a place in the
+original review where you've told me to split the series.
+
+> * Add the frigging "count me out" feature that you want for your use
+>   case.  It isn't controversial and is what you need and the
+>   maintainer can apply to the point where [s]he thinks acceptable.
+
+Sure.  Except I had sent it six months ago, and it lied unreviewed
+despite your acks for two months.  It is in the archives waiting to be
+picked up.
+
+> * If for whatever reason you have to add more command codes to the
+>   exception table, do them with explicit justifications.  How the hell
+>   "the vast majority of the commands are added because Linux itself is
+>   using them" a proper justification?   How are they used for what
+>   reason and why is adding them beneficial?
+
+For example, WRITE SAME is used to discard blocks.  If a Linux guest
+wants to discard blocks, it may send WRITE SAME.  If a disk advertises
+support for WRITE SAME, it is not nice if WRITE SAME then fails because
+of a stupid whitelist that was designed for CD-ROMs.
+
+And another disk instead works because it uses UNMAP instead of WRITE
+SAME.  It's a support nightmare, perhaps the cause is obvious to me by
+the time it reaches me, but that takes time---which is wasted time for
+everyone involved.
+
+>   How many times have I
+>   asked you to give at least some useful use cases?  And WTF is "vast
+>   majority", what about others then?
+
+The others are not in v2, or are sent by udev, or were added to the
+standard for a reason and applications are using them (e.g. COMPARE AND
+WRITE).
+
+>   Why do you need this at all if
+>   you have the "count me out" knob in the first place?
+
+Because the "count me out" knob needs privileges.  It opens up way, way
+more than what these patches do.
+
+And the frigging patch to make the whole whitelisting
+userspace-configurable with finer-grain (but still with appropriate
+capabilities) was nacked.  By you, for God's sake.
+
+http://permalink.gmane.org/gmane.linux.kernel/1378071
+
+>   You first
+>   built that command list by scanning the spec and just adding the
+>   commands that seemed "right" to you.
+
+And then in v2 I stated that I removed some disk commands because of
+discussion with you.  But of course you don't know, because you've not
+read the damn commit messages.
+
+>   I have near-zero confidence in
+>   your perception of the relationship between the specs and actual
+>   world.
+
+Thankyouverymuch.  Perhaps you should have read the commit messages (oh
+sorry, have I said it already?) and seen that it's not about commands
+that seemed "right":
+
+   Only commands that affect the medium are added.
+   Commands that affect other state of the LUN are all privileged, with
+   the sole exception of START STOP UNIT (which has always been
+   allowed for all file descriptors.  I do not really agree with that
+   and it's probably an artifact of when /dev/cdrom had
+   r--r--r-- permissions, but I'm not trying to change that.
+
+> So, stop quoting and repeating yourself.  You're overdoing yourself on
+> that department already.  Try to listen and understand for a change.
+
+Guy, calm down.  We're two.
+
+Paolo
 
