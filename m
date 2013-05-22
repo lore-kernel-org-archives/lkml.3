@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab3EVQJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:09:40 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62792 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab3EVQJj (ORCPT
+	id S1756339Ab3EVQO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:14:58 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:59489 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab3EVQO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:09:39 -0400
+	Wed, 22 May 2013 12:14:57 -0400
+Date: Wed, 22 May 2013 11:14:22 -0500
+From: Mark Brown <broonie@kernel.org>
+To: yizhang.mrvl@gmail.com
+Cc: lgirdwood@gmail.com, cxie4@marvell.com, jett.zhou@marvell.com,
+        linux-kernel@vger.kernel.org, Yi Zhang <yizhang@marvell.com>
+Message-ID: <20130522161422.GP1627@sirena.org.uk>
+References: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1369181381.6828.159.camel@gandalf.local.home>
-References: <1369158390.6828.148.camel@gandalf.local.home>
-	<CAFTL4hwWHqNhF3-iE+kspXO4gWFX81t8Sb30NS6UYxAO_bgG_g@mail.gmail.com>
-	<1369181381.6828.159.camel@gandalf.local.home>
-Date: Wed, 22 May 2013 18:09:37 +0200
-Message-ID: <CAFTL4hwdEM1HxsZ3Q=hnte9b26gv=in8GWHCrzKrLnuT6BXK1g@mail.gmail.com>
-Subject: Re: [PATCH][3.10] nohz: Fix lockup on restart from wrong error code
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EmwFttYoLalE/5Ab"
+Content-Disposition: inline
+In-Reply-To: <1369224653-27150-1-git-send-email-yizhang.mrvl@gmail.com>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 144.188.69.1
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: 88pm800: add regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/22, Steven Rostedt <rostedt@goodmis.org>:
-> On Tue, 2013-05-21 at 22:14 +0200, Frederic Weisbecker wrote:
->> 2013/5/21 Steven Rostedt <rostedt@goodmis.org>:
->> > commit a382bf934449 "nohz: Assign timekeeping duty to a CPU outside the
->> > full dynticks range" added a cpu notifier callback that would prevent
->> > the time keeping CPU from going offline if the have_nohz_full_mask was
->> > set.
->> >
->> > This also prevents the CPU from going offline on system reboot.
->> >
->> > Worse yet, the return code was -EINVAL, but the notifier does not
->> > recognize error codes, and it must be wrapped by a
->> > notifier_from_errno()
->> > function. This means that even though the CPU would fail to go down,
->> > the
->> > notifier would think it succeeded, and the cpu down process would
->> > continue.
->> >
->> > This caused two different problems. One, the migration thread after
->> > moving tasks from the CPU would park itself and then a task, namely the
->> > reboot task, could migrate onto that CPU. Then the reboot task spins
->> > waiting for the cpu to go idle. But because the reboot task happens to
->> > be spinning on the cpu its waiting for, the system hangs.
->>
->> Can that happen if that CPU is the boot CPU? Note this is the only
->> possible timekeeper with the upstream code.
->
-> Yep it can happen in upstream (that's all I'm using). In
-> tick_broadcast_setup_oneshot(), it sets the tick_do_timer_cpu to the
-> current CPU, which can be something other than the boot CPU. Now that
-> CPU wont be able to be hot plugged.
 
-Ah indeed it can happen on broadcast timer initialization. A secondary
-CPU then steal the duty from the boot CPU. Hmm this reminds me of this
-patch:  https://patchwork.kernel.org/patch/2302951/
-I thought it deserved some attention due its code simplification but
-it could also solve the issue.
+--EmwFttYoLalE/5Ab
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>
->> >
->> > The other error that happened was that the sched_domain re-setup would
->> > get confused, and in get_group() the cpu = cpumask_first() would
->> > process
->> > a mask that had nothing set, and return cpu > nr_cpu_ids. Later it
->> > would
->> > reference the per_cpu sg with this CPU and get a bogus pointer and
->> > crash.
->>
->> Ouch, when are we doing this domain re-setup? I remember we
->> repartition the domains after cpu down/up but I don't understand how
->> that can interfere with this issue.
->
-> I haven't looked hard enough yet, but this problem only appeared when
-> this bug triggered. By telling the system a CPU is offline, but still
-> having tasks schedule to it, causes all sorts of weird side effects. I
-> haven't figured out in detail how this affected the sched domains, but I
-> don't get the sched domain corruption after fixing this bug.
+On Wed, May 22, 2013 at 08:10:53PM +0800, yizhang.mrvl@gmail.com wrote:
 
-Weird. but the CPU refuses to offline so how could it see itself
-online? Anyway if that happen again I'll have a look when I'm fully
-back next week.
+You need a DT binding document for any new DT bindings like this one.
+
+> +static const unsigned int BUCK1_table[] = {
+> +	/* 0x00-0x4F: from 0.6 to 1.5875V with step 0.0125V */
+> +	/* 0x50-0x7F: from 1.6 to 1.8V with step 0.05V */
+
+Write this out as code, don't use a big table for large sets of
+voltages.
+
+> +static int pm800_list_voltage(struct regulator_dev *rdev, unsigned index)
+> +{
+> +	struct pm800_regulator_info *info = rdev_get_drvdata(rdev);
+> +	int ret = -EINVAL;
+> +
+> +	if (info->vol_table && (index < rdev->desc->n_voltages))
+> +		ret = info->vol_table[index];
+> +
+> +	return ret;
+> +}
+
+For things that are just table lookups use the framework helpers.
+
+> +static int choose_voltage(struct regulator_dev *rdev, int min_uv, int max_uv)
+> +{
+
+Similarly here.
+
+> +static int pm800_set_voltage(struct regulator_dev *rdev,
+> +			     int min_uv, int max_uv, unsigned *sel)
+> +{
+> +	*sel = choose_voltage(rdev, min_uv, max_uv);
+> +	if (*sel < 0)
+> +		return -EINVAL;
+> +	return regulator_set_voltage_sel_regmap(rdev, *sel);
+> +}
+
+Implement map_voltage.
+
+> +	for_each_child_of_node(nproot, np) {
+> +		if (!of_node_cmp(np->name, info->desc.name)) {
+> +			config->init_data =
+> +				of_get_regulator_init_data(&pdev->dev, np);
+> +			config->of_node = np;
+> +			break;
+> +		}
+> +	}
+
+Use of_regulator_match().
+
+--EmwFttYoLalE/5Ab
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRnO7bAAoJELSic+t+oim9BfkP/3Kg1KJxDYKLoQjqo3nWY9xr
+8nCOK5xwlY89o0h1t9cplkKCJvPww22foSBQ14dlSFlDuwu1aLWR4E4ZXaDKilsg
+NmLr6xH8KXhd/jg3XABMRrfzeIY20NPy8FcnmAvfs+An4SaQRJSoIfQ//QdTgNaY
+r7rvIOu1YEN8OCEHB4bZXX8oMrjuaFVESa03lTOOzksKH9rjGpsDE0qrQvbRn5pZ
+aeWwO1vSaidqwEOa1q+cQTESjWp8uvDpgRc4GRCB1Ydr0Udfru45YKnYslGXoSdV
+IA4vOUGkHhkmAtAmSgtInvyLV9pJ1Rz1BJG7ySHmBWF6YHZzbCikc3NeczjkSlcC
+Q1gfTY0mLlVwHw/73a9ihIjcJ7F+GlJwdikWU+xpLnreU+ImbfmGfT0PahGmph5I
+J69n13ibllWJbBtyZyFlWMd7EkwOOuE5hKr55y9lKNnfqOatCxHHgoN5khNG9k9B
+7BXr9FefhMcxDlJ0u2ICweGeYGvsEBYNou+jv7eK/7ezEtOXR9z+UmYifBBD/6hV
+vDOjS49irMBjSto61dFZ5cSeEbFwMzxHotT39J4KDjmG4gtoQ6ctaJJqR3zcMQRG
+8JRNmZD69701spOdkGagkBGq9W3Uie4PuLU5MTk6qF6l02d2PByjoeqrfQpQZaqL
+T1hxX+gMIxWEkyATW+5Q
+=Sv1+
+-----END PGP SIGNATURE-----
+
+--EmwFttYoLalE/5Ab--
