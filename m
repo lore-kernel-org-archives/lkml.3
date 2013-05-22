@@ -1,124 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab3EVK11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:27:27 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:18064 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab3EVK1X (ORCPT
+	id S1755912Ab3EVK25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:28:57 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35743 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab3EVK2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:27:23 -0400
-X-AuditID: cbfee61a-b7efb6d000003eed-29-519c9d8ade15
-Date: Wed, 22 May 2013 12:27:00 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
-Subject: Re: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
-Message-id: <20130522122700.104ca5cd@amdc308.digital.local>
-In-reply-to: <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
- <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jAd2uuXMCDVomClk8bfrBbjHvs6xF
-	59knzBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZdBz5xmyx8auHA5fHnWt72DzWTXvL7NG3
-	ZRWjx6PFLYwenzfJBbBGcdmkpOZklqUW6dslcGWc2HyUveCiYMW/u3fYGxi7+LoYOTgkBEwk
-	Gv9ndTFyApliEhfurWcDsYUEFjFKnNmQ1MXIBWS3M0nMmnWaFSTBIqAqceZkEyOIzSagJ/H5
-	7lMmkDkiAloSL2+mgtQzC1xgkjh1aRZYXFjAT+LIckcQk1fAWqJ7mTBIJ6dAsMSf3hXsEKv6
-	GSXeXOYGsfkFJCXa//1ghjjHTuLcpw1gNbwCghI/Jt9jAbGZgTZt3tbECmHLS2xe85Z5AqPg
-	LCRls5CUzUJStoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcDw8k9rBuLLB4hCjAAej
-	Eg/vg9rZgUKsiWXFlbmHGCU4mJVEeBWC5gQK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0o
-	JJCeWJKanZpakFoEk2Xi4JRqYAy7zHB560upHU0zD/50UdwboXJw+ZHGLZxTzwhdOaZqxr4/
-	+V3xVAbN3lKXmE7j2c9WspxZoxnb7eVR1xvDzHZwbnT99QtnA7b9VvratUnuhk2arp3A2jMe
-	p+aKqNYb+Kpe9Xn+U+auy3vNrIUH70hM2xWY7M7X5fB3f/GyyqagK04Re69eYldiKc5INNRi
-	LipOBAA9BvDmgwIAAA==
+	Wed, 22 May 2013 06:28:55 -0400
+Date: Wed, 22 May 2013 02:51:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com
+Subject: Re: WARNING: at kernel/rcutree.c:388 rcu_eqs_enter
+Message-ID: <20130522095129.GA3578@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130521173100.GA2076@redhat.com>
+ <20130521235813.GA18737@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521235813.GA18737@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052210-5406-0000-0000-000008B7A8B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-Thanks for reply.
-
-> On 3 May 2013 19:37, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
-> > From: Lukasz Majewski <l.majewski@samsung.com>
+On Tue, May 21, 2013 at 07:58:13PM -0400, Dave Jones wrote:
+> On Tue, May 21, 2013 at 01:31:00PM -0400, Dave Jones wrote:
 > 
-> > 2. New LAB governor.
-> > It calculates number of idle CPUs (based on scheduler data). On
-> > this basis it chose proper first level polynomial function for
-> > approximation. Moreover it enables overclocking when single, heavy
-> > loaded CPU is running.
+> I'm also seeing this quite often..
 > 
-> Hi Lukasz,
+> [  576.156848] WARNING: at kernel/rcutree.c:388 rcu_eqs_enter+0x9b/0xb0()
+> [  576.165962] Modules linked in: snd_seq_dummy tun fuse bnep hidp can_raw phonet rfcomm rose bluetooth netrom af_rxrpc scsi_transport_iscsi caif_socket caif ipt_ULOG af_key pppoe pppox af_802154 ppp_generic nfnetlink slhc llc2 can_bcm can irda atm ax25 ipx rds p8023 p8022 crc_ccitt x25 nfc rfkill decnet appletalk psnap llc snd_hda_codec_realtek snd_hda_codec_hdmi xfs libcrc32c microcode snd_hda_intel snd_hda_codec pcspkr i915 snd_hwdep snd_seq snd_seq_device e1000e snd_pcm i2c_algo_bit drm_kms_helper drm ptp snd_page_alloc snd_timer pps_core snd i2c_core soundcore video
+> [  576.235012] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc2+ #2
+> [  576.264999]  ffffffff819e8d1d ffffffff81c01e90 ffffffff816599f1 ffffffff81c01ec8
+> [  576.265002]  ffffffff8104a171 ffff8802449cdb60 0000000000000000 0000000000000000
+> [  576.265005]  ffffffff81c01fd8 ffffffff81c01fd8 ffffffff81c01ed8 ffffffff8104a24a
+> [  576.265006] Call Trace:
+> [  576.265011]  [<ffffffff816599f1>] dump_stack+0x19/0x1b
+> [  576.265015]  [<ffffffff8104a171>] warn_slowpath_common+0x61/0x80
+> [  576.265018]  [<ffffffff8104a24a>] warn_slowpath_null+0x1a/0x20
+> [  576.265022]  [<ffffffff81100b7b>] rcu_eqs_enter+0x9b/0xb0
+> [  576.265025]  [<ffffffff81100ba9>] rcu_idle_enter+0x19/0x40
+> [  576.265029]  [<ffffffff810a66e2>] cpu_startup_entry+0x92/0x420
+> [  576.265034]  [<ffffffff81645287>] rest_init+0x137/0x140
+> [  576.265037]  [<ffffffff81645155>] ? rest_init+0x5/0x140
+> [  576.265041]  [<ffffffff81ed3e1a>] start_kernel+0x3ec/0x3f9
+> [  576.265044]  [<ffffffff81ed3836>] ? repair_env_string+0x5c/0x5c
+> [  576.265048]  [<ffffffff81ed356f>] x86_64_start_reservations+0x2a/0x2c
+> [  576.265050]  [<ffffffff81ed363d>] x86_64_start_kernel+0xcc/0xcf
+> [  576.265052] ---[ end trace d18cda23dfca05cc ]---
 > 
-> I am still not sure about this governor. Do you have some results
-> with which you can tell how is it better than ondemand/conservative?
+> 	WARN_ON_ONCE((oldval & DYNTICK_TASK_NEST_MASK) == 0);
 
-I will provide proper test results. As a test platform I've used
-Exynos4 CPU (4 cores) with TIZEN OS on it.
+Hmmm...  Could you please try the patch below?  Untested, probably does
+not even compile.
 
-> 
-> With or without overclocking. i.e. Apply only overclocking support to
-> ondemand/conservative..
+[ . . . ]
 
-I think, that overclocking support is crucial here. As you pointed out
-- ondemand and conservative benefit from it. Therefore, I would urge
-  for its mainline acceptance.
+> I'm trying to collect all the WARN's in rcutree. 5/29 isn't a bad start :)
 
-(code for reference)
-http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+;-) ;-) ;-)
 
-In this RFC (patch 1/3), I've decided to put the burden of overclocking
-support to platform code (cpufreq/exynos-cpufreq.c and
-cpufreq/exynos4x12-cpufreq.c). 
+Just to make your testing more exiting...  I will be getting on a plane
+in a few hours, and will be on planes and in airports for about 30 hours.
+I will check in as connectivity permits.
 
-Those changes aren't intrusive for other boards/archs. Moreover
-overclocking is closely related to processor clocking/power dissipation
-capabilities, so SoC specific code is a good place for it.
+							Thanx, Paul
 
+------------------------------------------------------------------------
 
-What DO need a broad acceptance is the overclocking API proposed at:
-include/linux/cpufreq.h 
+trace: Allow idle-safe tracepoints to be called from irq
 
-This introduces interface to which others will be bind. It shouldn't be
-difficult to implement overclocking at other SoCs (as it was proposed
-for Exynos).
+__DECLARE_TRACE_RCU() currently creates an _rcuidle() tracepoint which
+may safely be invoked from what RCU considers to be an idle CPU.
+However, these _rcuidle() tracepoints may -not- be invoked from the
+handler of an irq taken from idle, because rcu_idle_enter() zeroes
+RCU's nesting-level counter, so that the rcu_irq_exit() returning to
+idle will trigger a WARN_ON_ONCE().
 
-Feedback is welcome, since I might have overlooked oddities present at
-other SoCs.
+This commit therefore substitutes rcu_irq_enter() for rcu_idle_exit()
+and rcu_irq_exit() for rcu_idle_enter() in order to make the _rcuidle()
+tracepoints usable from irq handlers as well as from process context.
 
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 2f322c3..f8e084d 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -145,8 +145,8 @@ static inline void tracepoint_synchronize_unregister(void)
+ 				TP_PROTO(data_proto),			\
+ 				TP_ARGS(data_args),			\
+ 				TP_CONDITION(cond),			\
+-				rcu_idle_exit(),			\
+-				rcu_idle_enter());			\
++				rcu_irq_enter(),			\
++				rcu_irq_exit());			\
+ 	}
+ #else
+ #define __DECLARE_TRACE_RCU(name, proto, args, cond, data_proto, data_args)
 
-> 
-> If you are using Android, maybe check Interactive too (Though it
-> itsn't mainlined yet).
-
-I will also delve into "Interactive" governor.
-
-
-
-
-As a side note:
-
-The "core" cpufreq code modification (patch 3/3) counts only 22 lines,
-so this patch series definitely is not intrusive.
-
-> 
-> @Rafael: What do you think about this patchset?
-> 
-> --
-> viresh
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Poland (SRPOL) | Linux Platform Group
