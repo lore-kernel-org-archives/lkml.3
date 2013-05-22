@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3EVJ0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:26:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55124 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3EVJ0t (ORCPT
+	id S1755536Ab3EVJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:27:19 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55358
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752255Ab3EVJ1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:26:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v2 00/10] uaccess: better might_sleep/might_fault behavior
-Date: Wed, 22 May 2013 11:25:36 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-m32r@ml.linux-m32r.org,
-        linux-m32r-ja@ml.linux-m32r.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-am33-list@redhat.com, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
-References: <cover.1368702323.git.mst@redhat.com>
-In-Reply-To: <cover.1368702323.git.mst@redhat.com>
+	Wed, 22 May 2013 05:27:17 -0400
+Date: Wed, 22 May 2013 11:27:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 7/9] liblockdep: Support using LD_PRELOAD
+Message-ID: <20130522092711.GI18810@twins.programming.kicks-ass.net>
+References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
+ <1368674141-10796-8-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201305221125.36284.arnd@arndb.de>
-X-Provags-ID: V02:K0:mMOYllaAGdpvGGXyygoxePEOPklx2HccUxiM2sTt0Y2
- LZPv3SZ7VA/FwFshZpYR9pm2P2yTBzOFOkVBycN68jW/eK9rxW
- DP2rUX0H8LNlWL5C10Z1lGIaWHgR+wliLhfi1ufjAgYQfTCRiG
- 1XekOOeRMzxh+pbHVXZ0EYVFazknFt0MnYj7wJaay7UcTnnb3u
- fg6QTTZaT4feUdDZoWxZBmq3xXno7YpRUKqn2xAf+72d8X1wMg
- ktOShj+YPl7f47Pvpd+6XK70GzK0r4ELmLZXR9G2XKaF/CCu3r
- EimLqbdGN77tux0Cl2HkJnmbbAt06cr18MA8+xJhZ3h5Rs5NJ+
- wJtRo19Fv+j54OOkSFRI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368674141-10796-8-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 16 May 2013, Michael S. Tsirkin wrote:
-> This improves the might_fault annotations used
-> by uaccess routines:
-> 
-> 1. The only reason uaccess routines might sleep
->    is if they fault. Make this explicit for
->    all architectures.
-> 2. Accesses (e.g through socket ops) to kernel memory
->    with KERNEL_DS like net/sunrpc does will never sleep.
->    Remove an unconditinal might_sleep in the inline
->    might_fault in kernel.h
->    (used when PROVE_LOCKING is not set).
-> 3. Accesses with pagefault_disable return EFAULT
->    but won't cause caller to sleep.
->    Check for that and avoid might_sleep when
->    PROVE_LOCKING is set.
-> 
-> I'd like these changes to go in for the benefit of
-> the vhost driver where we want to call socket ops
-> under a spinlock, and fall back on slower thread handler
-> on error.
+On Wed, May 15, 2013 at 11:15:39PM -0400, Sasha Levin wrote:
+> +
+> +/* pthread mutex API */
+> +
+> +#ifdef __GLIBC__
+> +extern int __pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+> +extern int __pthread_mutex_lock(pthread_mutex_t *mutex);
+> +extern int __pthread_mutex_trylock(pthread_mutex_t *mutex);
+> +extern int __pthread_mutex_unlock(pthread_mutex_t *mutex);
+> +extern int __pthread_mutex_destroy(pthread_mutex_t *mutex);
+> +#else
+> +#define __pthread_mutex_init	NULL
+> +#define __pthread_mutex_lock	NULL
+> +#define __pthread_mutex_trylock	NULL
+> +#define __pthread_mutex_unlock	NULL
+> +#define __pthread_mutex_destroy	NULL
+> +#endif
+> +static int (*ll_pthread_mutex_init)(pthread_mutex_t *mutex,
+> +			const pthread_mutexattr_t *attr)	= __pthread_mutex_init;
+> +static int (*ll_pthread_mutex_lock)(pthread_mutex_t *mutex)	= __pthread_mutex_lock;
+> +static int (*ll_pthread_mutex_trylock)(pthread_mutex_t *mutex)	= __pthread_mutex_trylock;
+> +static int (*ll_pthread_mutex_unlock)(pthread_mutex_t *mutex)	= __pthread_mutex_unlock;
+> +static int (*ll_pthread_mutex_destroy)(pthread_mutex_t *mutex)	= __pthread_mutex_destroy;
+> +
+> +/* pthread rwlock API */
+> +
+> +#ifdef __GLIBC__
+> +extern int __pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr);
+> +extern int __pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+> +extern int __pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+> +extern int __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock);
+> +extern int __pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+> +extern int __pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);
+> +extern int __pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
+> +#else
+> +#define __pthread_rwlock_init		NULL
+> +#define __pthread_rwlock_destroy	NULL
+> +#define __pthread_rwlock_wrlock		NULL
+> +#define __pthread_rwlock_trywrlock	NULL
+> +#define __pthread_rwlock_rdlock		NULL
+> +#define __pthread_rwlock_tryrdlock	NULL
+> +#define __pthread_rwlock_unlock		NULL
+> +#endif
+> +
+> +static int (*ll_pthread_rwlock_init)(pthread_rwlock_t *rwlock,
+> +			const pthread_rwlockattr_t *attr)		= __pthread_rwlock_init;
+> +static int (*ll_pthread_rwlock_destroy)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_destroy;
+> +static int (*ll_pthread_rwlock_rdlock)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_rdlock;
+> +static int (*ll_pthread_rwlock_tryrdlock)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_tryrdlock;
+> +static int (*ll_pthread_rwlock_trywrlock)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_trywrlock;
+> +static int (*ll_pthread_rwlock_wrlock)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_wrlock;
+> +static int (*ll_pthread_rwlock_unlock)(pthread_rwlock_t *rwlock)	= __pthread_rwlock_unlock;
+> +
 
-Hi Michael,
+> +__attribute__((constructor)) static void init_preload(void)
+> +{
+> +	if (__init_state != done)
+> +		return;
+> +
+> +#ifndef __GLIBC__
+> +	__init_state = prepare;
+> +
+> +	ll_pthread_mutex_init = dlsym(RTLD_NEXT, "pthread_mutex_init");
+> +	ll_pthread_mutex_lock = dlsym(RTLD_NEXT, "pthread_mutex_lock");
+> +	ll_pthread_mutex_trylock = dlsym(RTLD_NEXT, "pthread_mutex_trylock");
+> +	ll_pthread_mutex_unlock = dlsym(RTLD_NEXT, "pthread_mutex_unlock");
+> +	ll_pthread_mutex_destroy = dlsym(RTLD_NEXT, "pthread_mutex_destroy");
+> +
+> +	ll_pthread_rwlock_init = dlsym(RTLD_NEXT, "pthread_rwlock_init");
+> +	ll_pthread_rwlock_destroy = dlsym(RTLD_NEXT, "pthread_rwlock_destroy");
+> +	ll_pthread_rwlock_rdlock = dlsym(RTLD_NEXT, "pthread_rwlock_rdlock");
+> +	ll_pthread_rwlock_tryrdlock = dlsym(RTLD_NEXT, "pthread_rwlock_tryrdlock");
+> +	ll_pthread_rwlock_wrlock = dlsym(RTLD_NEXT, "pthread_rwlock_wrlock");
+> +	ll_pthread_rwlock_trywrlock = dlsym(RTLD_NEXT, "pthread_rwlock_trywrlock");
+> +	ll_pthread_rwlock_unlock = dlsym(RTLD_NEXT, "pthread_rwlock_unlock");
+> +#endif
+> +
+> +	printf("%p\n", ll_pthread_mutex_trylock);fflush(stdout);
+> +
+> +	lockdep_init();
+> +
+> +	__init_state = done;
+> +}
 
-I have recently stumbled over a related topic, which is the highly
-inconsistent placement of might_fault() or might_sleep() in certain
-classes of uaccess functions. Your patches seem completely reasonable,
-but it would be good to also fix the other problem, at least on
-the architectures we most care about.
-
-Given the most commonly used functions and a couple of architectures
-I'm familiar with, these are the ones that currently call might_fault()
-
-			x86-32	x86-64	arm	arm64	powerpc	s390	generic
-copy_to_user		-	x	-	-	-	x	x
-copy_from_user		-	x	-	-	-	x	x
-put_user		x	x	x	x	x	x	x
-get_user		x	x	x	x	x	x	x
-__copy_to_user		x	x	-	-	x	-	-
-__copy_from_user	x	x	-	-	x	-	-
-__put_user		-	-	x	-	x	-	-
-__get_user		-	-	x	-	x	-	-
-
-WTF?
-
-Calling might_fault() for every __get_user/__put_user is rather expensive
-because it turns what should be a single instruction (plus fixup) into an
-external function call.
-
-My feeling is that we should do might_fault() only in access_ok() to get
-the right balance.
-
-	Arnd
+I guess that begs the question do we really want to support !glibc?
