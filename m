@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab3EVGvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:51:43 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:46117 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496Ab3EVGvk (ORCPT
+	id S1755521Ab3EVHAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:00:53 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36401 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab3EVHAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:51:40 -0400
+	Wed, 22 May 2013 03:00:50 -0400
+Message-ID: <519C6CF3.1010502@huawei.com>
+Date: Wed, 22 May 2013 15:00:03 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-32-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-32-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Wed, 22 May 2013 14:51:39 +0800
-Message-ID: <CAJd=RBAV+dm2UE-kJ_SfW5mP9G+y5zcmgPoQQ6QAiiMEraWf5w@mail.gmail.com>
-Subject: Re: [PATCHv4 31/39] thp: consolidate code between handle_mm_fault()
- and do_huge_pmd_anonymous_page()
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Ming Lei <tom.leiming@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] ktap 0.1 released
+References: <519AF05E.1050808@huawei.com> <CACVXFVMG73_OCJOJGWR0CCeoR3taXnj+PXXah0q7fyB=Y4vfwQ@mail.gmail.com> <CACVXFVOuz-RjoQLD5mb1c5vbaNZ-H9cY7T5p1ZVLWwftwbCBcQ@mail.gmail.com> <CACVXFVPgLiFPSyLi48fa=RbyOantEu-jRynuuZFJ_4Lt5OSXYQ@mail.gmail.com>
+In-Reply-To: <CACVXFVPgLiFPSyLi48fa=RbyOantEu-jRynuuZFJ_4Lt5OSXYQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> do_huge_pmd_anonymous_page() has copy-pasted piece of handle_mm_fault()
-> to handle fallback path.
->
-> Let's consolidate code back by introducing VM_FAULT_FALLBACK return
-> code.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
+On 2013/5/22 12:34, Ming Lei wrote:
+> On Wed, May 22, 2013 at 12:19 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> On Wed, May 22, 2013 at 12:15 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>>> On Tue, May 21, 2013 at 11:56 AM, zhangwei(Jovi)
+>>>
+>>> Nice job, I have run it on ARM already with only one line change.
+>>>
+>>> But looks 'Control-C' can't stop the tracing or need some time to complete it,
+>>> see below:
+>>
+>> Sometimes, it doesn't work:
+>>
+>> $ sudo ./ktap ./scripts/kretprobe.kp
+>> ......
+>> vfs_read! (execname sshd); retval:38
+>> ^Cvfs_read! (execname sshd); retval:38
+>>
+>> probe ending
+>> vfs_read! (execname sshd); retval:48
+>> vfs_read! (execname sshd); retval:2
+>> ^C
+>> ^C^C^C
+>> ^C^C^C^C^C^C^C
+>>
+>> ^C^C^C^C^C^C
+> 
+> This one can be fixed by below patch, but can't work on
+> the last one.
+> 
+> diff --git a/vm.c b/vm.c
+> index c5f5733..a24a389 100644
+> --- a/vm.c
+> +++ b/vm.c
+> @@ -1060,7 +1060,7 @@ ktap_State *kp_newthread(ktap_State *mainthread)
+> 
+>  void kp_user_complete(ktap_State *ks)
+>  {
+> -	if (!ks || !G(ks)->user_completion)
+> +	if (!ks || !G(ks) || !G(ks)->user_completion)
+>  		return;
+> 
+>  	complete(G(ks)->user_completion);
+> 
+> 
+> 
+> Thanks,
+> 
+Hi Ming,
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Thanks for testing and your fix.
+
+the ktap exit mechanism is not quite safe as you saw, so I plan to rewrite the logic
+to make more safer, hopefully I could complete this work in next few days.
+
+.jovi
+
+
+
+
+
+
+
