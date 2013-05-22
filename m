@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3EVJZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:25:04 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55348
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752255Ab3EVJZC (ORCPT
+	id S1754878Ab3EVJ0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:26:18 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42987 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab3EVJ0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:25:02 -0400
-Date: Wed, 22 May 2013 11:24:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 7/9] liblockdep: Support using LD_PRELOAD
-Message-ID: <20130522092453.GH18810@twins.programming.kicks-ass.net>
-References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
- <1368674141-10796-8-git-send-email-sasha.levin@oracle.com>
+	Wed, 22 May 2013 05:26:17 -0400
+Message-ID: <519C8F24.5060207@linux.vnet.ibm.com>
+Date: Wed, 22 May 2013 17:25:56 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368674141-10796-8-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH v2] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <519AE7F2.706@linux.vnet.ibm.com> <20130522084947.GQ26912@twins.programming.kicks-ass.net>
+In-Reply-To: <20130522084947.GQ26912@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052209-0260-0000-0000-00000309D08F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:15:39PM -0400, Sasha Levin wrote:
-> +static struct lock_lookup __locks[LIBLOCKDEP_STATIC_ENTRIES];
-> +static int __locks_nr;
-> +
-> +static inline bool is_static_lock(struct lock_lookup *lock)
-> +{
-> +	return lock >= __locks && lock < __locks + ARRAY_SIZE(__locks);
-> +}
-> +
-> +static struct lock_lookup *alloc_lock(void)
-> +{
-> +	if (__init_state != done) {
-> +		/*
-> +		 * Some programs attempt to initialize and use locks in their
-> +		 * allocation path. This means that a call to malloc() would
-> +		 * result in locks being initialized and locked.
-> +		 *
-> +		 * Why is it an issue for us? dlsym() below will try allocating
-> +		 * to give us the original function. Since this allocation will
-> +		 * result in a locking operations, we have to let pthread deal
-> +		 * with it, but we can't! we don't have the pointer to the
-> +		 * original API since we're inside dlsym() trying to get it 
-> +		 */
-> +
-> +		int idx = __locks_nr++;
-> +		if (idx >= ARRAY_SIZE(__locks)) {
-> +			fprintf(stderr,
-> +		"LOCKDEP error: insufficient LIBLOCKDEP_STATIC_ENTRIES\n");
-> +			exit(EX_UNAVAILABLE);
-> +		}
-> +		return __locks + idx;
-> +	}
-> +
-> +	return malloc(sizeof(struct lock_lookup));
-> +}
+On 05/22/2013 04:49 PM, Peter Zijlstra wrote:
+[snip]
+>>
+>> CC: Ingo Molnar <mingo@kernel.org>
+>> CC: Peter Zijlstra <peterz@infradead.org>
+>> CC: Mike Galbraith <efault@gmx.de>
+>> CC: Alex Shi <alex.shi@intel.com>
+>> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-Do we still need this with the glibc __pthread_* static initialization?
+Thanks for your reply, I've looking forward it for a long time...
+
+> 
+> So I utterly hate this patch. I hate it worse than your initial buddy
+> patch :/
+
+Then we nuke it, and figure out the better one ;-)
+
+> 
+> And I know its got a Suggested-by there; but that was when you led me to
+> believe that wake_affine() itself was expensive to run; its not, its the
+> result of those runs you don't like.
+
+Both are the reason, it's just the game between gain & lost & cost, your
+suggestion definitely is a good choice, otherwise I won't pay time on
+it, and I will call it's the best one if we are searching for a quick fix.
+
+> 
+> While we have a ton (too many to be sure) scheduler tunables, users
+> shouldn't ever need to actually touch those. Its just that every time we
+> have to make a random choice its as easy to make it a debug knob as to
+> hardcode it.
+> 
+> The problem with this patch is that users _have_ to frob knobs and while
+> doing so potentially wreck other workloads.
+> 
+> To make it worse, the knob isn't anything fundamental, its a random
+> hack.
+
+So we discard.
+
+> 
+> So I would really either improve the smarts of wake_affine, with for
+> example your wake buddy relation thing (and simply exempt [Soft]IRQs) or
+> kill wake_affine and be done with it.
+
+No kill...we show mercy, I will back to the wakeup-buddy and let's
+forgot the IRQ case temporarily unless some regression report appear.
+
+> 
+> Either avenue has the risk of regressing some workload, but at least
+> when that happens (and people report it) we'll have a counter-example to
+> learn from and incorporate.
+
+I've not test the hackbench with wakeup-buddy before, will do it this
+time, I suppose the 15% illegal income will suffered, anyway, it's
+illegal :)
+
+Regards,
+Michael Wang
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
