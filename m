@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab3EVNHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:07:25 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:33665 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752588Ab3EVNHT (ORCPT
+	id S1754100Ab3EVNKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:10:46 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16214 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752588Ab3EVNKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:07:19 -0400
-Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Message-ID: <519CC2FB.2010006@yandex-team.ru>
-Date: Wed, 22 May 2013 17:07:07 +0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 22 May 2013 09:10:44 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/7cpzd0XSLgK6iiShg/jrRkFESdsqASnk=
+Date: Wed, 22 May 2013 09:10:10 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: "tiejun.chen" <tiejun.chen@windriver.com>, Andrew Lunn <andrew@lunn.ch>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
+ device tree nodes
+Message-ID: <20130522131010.GB31290@titan.lakedaemon.net>
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130521174849.GL26249@lunn.ch>
+ <519C9333.20609@gmail.com>
+ <519C9822.9040909@windriver.com>
+ <519C9A66.3050807@gmail.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-References: <519B38EC.90401@yandex-team.ru>   <20130521120906.GD3578@linux.vnet.ibm.com>   <1369143885.3301.221.camel@edumazet-glaptop>   <519B8908.9080007@yandex-team.ru>   <1369150693.3301.233.camel@edumazet-glaptop>   <519BB90B.6080706@yandex-team.ru>   <1369188080.3301.268.camel@edumazet-glaptop>  <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru> <1369225837.3301.324.camel@edumazet-glaptop>
-In-Reply-To: <1369225837.3301.324.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519C9A66.3050807@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2013 16:30, Eric Dumazet wrote:
-> On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
->
->> +/*
->> + * Same as ACCESS_ONCE(), but used for accessing field of a structure.
->> + * The main goal is preventing compiler to store &ptr->field in a register.
->
-> But &ptr->field is a constant during the whole duration of
-> udp4_lib_lookup2() and could be in a register, in my case field is at
-> offset 0, and ptr is a parameter (so could be in a 'register')
->
-> The bug you found is that compiler caches the indirection  (ptr->field)
-> into a register, not that compiler stores &ptr->field into a register.
->
->> + */
->> +#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
->> +
->
-> Here we force the compiler to consider ptr as volatile, but semantically
-> it is not required in rcu_dereference(ptr->field)
+On Wed, May 22, 2013 at 12:13:58PM +0200, Sebastian Hesselbarth wrote:
+> On 05/22/2013 12:04 PM, tiejun.chen wrote:
+> >On 05/22/2013 05:43 PM, Sebastian Hesselbarth wrote:
+> >>On 05/21/2013 07:48 PM, Andrew Lunn wrote:
+> >>>On Tue, May 21, 2013 at 06:41:44PM +0200, Sebastian Hesselbarth wrote:
+> >>>>This patch adds orion-eth and mvmdio device tree nodes for DT enabled
+> >>>>Dove boards. As there is only one ethernet controller on Dove, a
+> >>>>default
+> >>>>phy node is also added with a note to set its reg property on a
+> >>>>per-board
+> >>>>basis.
+> >>>>
+> >>>>Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+> >>>>---
+> >>...
+> >>>>+ ethernet-port@0 {
+> >>>>+ device_type = "network";
+> >>>>+ compatible = "marvell,orion-eth-port";
+> >>>>+ reg =<0>;
+> >>>>+ interrupts =<29>;
+> >>>>+ /* overwrite MAC address in bootloader */
+> >>>>+ local-mac-address = [00 00 00 00 00 00];
+> >>>
+> >>>Hi Sebastian
+> >>>
+> >>>Its probably a good idea to set the local administration bit in this
+> >>>MAC address. i.e. first byte is 02.
+> >>
+> >>Andrew,
+> >>
+> >>we just need an invalid address here to trigger the default behavior of
+> >>the driver and load the MAC address from its register. As PPC binding
+> >>documentation also has all zero, I just took it.
+> >
+> >The truth is in PPC case, often we set the real mac address with some
+> >variables like 'eth[x]addr' in u-boot prompt, then u-boot will parse
+> >that value to fill the dtb. At last the associated driver can get the
+> >actual mac address from the dtb. And especially for those older u-boot
+> >version, even you have to reset the 'local-mac-address' property in dts
+> >directly with the real mac address before generate the dtb since the
+> >older u-boot have no this ability to fill dtb again before pass the kernel.
+> 
+> Tiejun,
+> 
+> with Marvell SoCs it is no different, except that there is almost no dtb
+> support in their u-boot.
 
-Actually, we need to mark an "address of a place" where the field value is
-located as volatile before dereferencing. I have no idea how to do it in another way,
-except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
-	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
+iirc, our solution to this was to parse the ATAGs for the mac addr and
+update the appended dtb.  This way, module load and unload would work
+without loosing the mac address.  I believe Jason Gunthorpe has a patch
+to atags_to_fdt() for this...  This should allow us to get rid of the
+clocks hack.
 
->
-> We want field to be reloaded, not ptr.
->
-> So yes, the patch appears to fix the bug, but it sounds not logical to
-> me.
->
+thx,
 
-May be we can enhance it by providing better/more detailed comments here?
-Have you any suggestions?
-
-Thanks,
-Roman
+Jason.
