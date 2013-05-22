@@ -1,172 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3EVAnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 20:43:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59671 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab3EVAnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 20:43:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,717,1363158000"; 
-   d="scan'208";a="341107301"
-Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
- configurable
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20130521164154.bed705c6e117ceb76205cd65@linux-foundation.org>
-References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
-	 <20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
-	 <1369178849.27102.330.camel@schen9-DESK>
-	 <20130521164154.bed705c6e117ceb76205cd65@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 21 May 2013 17:43:10 -0700
-Message-ID: <1369183390.27102.337.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753730Ab3EVAqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 20:46:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:24270 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab3EVAqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 21 May 2013 20:46:36 -0400
+X-Spam-Score: -100.8
+Message-ID: <519C1539.10908@asianux.com>
+Date: Wed, 22 May 2013 08:45:45 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: compiling issue for allmodconfig, need "asm/parport.h"
+ by "drivers/parport/parport_pc.c"
+References: <5177551D.8090007@asianux.com> <20130424082237.GA23397@arm.com> <5177B1F0.10106@asianux.com> <20130424102327.GF21850@mudshark.cambridge.arm.com> <5177BAD0.9000500@asianux.com> <20130424110511.GK23397@arm.com> <5199A453.4080402@asianux.com> <20130521131734.GD27002@arm.com>
+In-Reply-To: <20130521131734.GD27002@arm.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 16:41 -0700, Andrew Morton wrote:
-
-> I think we could use __percpu_counter_add() unconditionally here and
-> just do
+On 05/21/2013 09:17 PM, Catalin Marinas wrote:
+> On Mon, May 20, 2013 at 05:19:31AM +0100, Chen Gang wrote:
+>>
+>> Need add the default file in 'asm/Kbuild' just like arm has done.
+>>
+>> The build command is:
+>>   make EXTRA_CFLAGS=-W ARCH=arm64 allmodconfig
+>>   make EXTRA_CFLAGS=-W ARCH=arm64 menuconfig
+>>     set "aarch64-linux-gnu-" as cross compiling prefix.
+>>   make EXTRA_CFLAGS=-W ARCH=arm64
+>>
+>> The related error:
+>>   drivers/parport/parport_pc.c:67:25: fatal error: asm/parport.h: No such file or directory
 > 
-> #ifdef CONFIG_SMP
-> #define vm_committed_as_batch 0
-> #else
-> int vm_committed_as_batch;
-> #endif
-> 
-> The EXPORT_SYMBOL(vm_committed_as_batch) is unneeded.
-> 
-
-Thanks.  I've made the changes suggested.
-
-> >  void __init mmap_init(void)
-> >  {
-> >  	int ret;
-> >  
-> >  	ret = percpu_counter_init(&vm_committed_as, 0);
-> > +	vm_committed_as_batch = mm_compute_batch();
-> >  	VM_BUG_ON(ret);
-> >  	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
-> 
-> I'm not sure that CONFIG_MMU=n && CONFIG_SMP=y even exists.  Perhaps it
-> does.  But there's no point in ruling out that option here.
-> 
-> The nommu code becomes identical to the mmu code so we should put it in
-> a shared file.  I suppose mmap.c would be as good a place as any.
+> As I don't see when we'd need this driver, you can probably change the
+> Kconfig entry (similar to the VGA_CONSOLE one).
 > 
 
-I've consolidated things in mman.h.
+Oh, really it is, it is for PC, it seems except x86, no one else will
+use it. And for x86, it will be less and less used, in the future.
 
-> We could make mm_compute_batch() __init and call it from mm_init(). 
-> But really it should be __meminit and there should be a memory-hotplug
-> notifier handler which adjusts vm_committed_as_batch's value.
-> 
-
-I'll spin off another version of the patch later to add the
-memory-hotplug notifier.  In the mean time, does the following looks
-good to you?
+It seems it is a better candidate than VGA_CONSOLE. I will define
+CONFIG_HAVE_PARPORT_PC for it.  :-)
 
 Thanks.
-
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- include/linux/mman.h | 20 +++++++++++++++++++-
- mm/mmap.c            |  4 ++++
- mm/nommu.c           |  4 ++++
- 3 files changed, 27 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index 9aa863d..443bcae 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -10,12 +10,30 @@
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern struct percpu_counter vm_committed_as;
-+#ifdef CONFIG_SMP
-+extern int vm_committed_as_batch;
-+
-+static inline void mm_compute_batch(void)
-+{
-+        int nr = num_present_cpus();
-+        int batch = max(32, nr*2);
-+
-+        /* batch size set to 0.4% of (total memory/#cpus) */
-+        vm_committed_as_batch = max((int) (totalram_pages/nr) / 256, batch);
-+}
-+#else
-+#define vm_committed_as_batch 0
-+
-+static inline void mm_compute_batch(void)
-+{
-+}
-+#endif
- 
- unsigned long vm_memory_committed(void);
- 
- static inline void vm_acct_memory(long pages)
- {
--	percpu_counter_add(&vm_committed_as, pages);
-+	__percpu_counter_add(&vm_committed_as, pages, vm_committed_as_batch);
- }
- 
- static inline void vm_unacct_memory(long pages)
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f681e18..55c8773 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -3145,11 +3145,15 @@ void mm_drop_all_locks(struct mm_struct *mm)
- /*
-  * initialise the VMA slab
-  */
-+
-+int vm_committed_as_batch;
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
- 	ret = percpu_counter_init(&vm_committed_as, 0);
-+	mm_compute_batch();
- 	VM_BUG_ON(ret);
- }
- 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 298884d..9ad16ba 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -527,11 +527,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
- /*
-  * initialise the VMA and region record slabs
-  */
-+
-+int vm_committed_as_batch;
-+
- void __init mmap_init(void)
- {
- 	int ret;
- 
- 	ret = percpu_counter_init(&vm_committed_as, 0);
-+	mm_compute_batch();
- 	VM_BUG_ON(ret);
- 	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
- }
 -- 
-1.7.11.7
+Chen Gang
 
-
-
+Asianux Corporation
