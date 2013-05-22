@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab3EVN5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:57:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755724Ab3EVN5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:57:44 -0400
-From: Igor Mammedov <imammedo@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: [PATCH linux-next] Driver core: cpu: remove not needed anymore hotplugable_cpu_attr_groups[]
-Date: Wed, 22 May 2013 15:53:32 +0200
-Message-Id: <1369230812-27375-1-git-send-email-imammedo@redhat.com>
-In-Reply-To: <20130522140213.eb65bcc559088b199db1857f@canb.auug.org.au>
-References: <20130522140213.eb65bcc559088b199db1857f@canb.auug.org.au>
+	id S1755825Ab3EVOBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:01:25 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62010 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3EVOBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:01:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH v2 07/10] powerpc: uaccess s/might_sleep/might_fault/
+Date: Wed, 22 May 2013 15:59:01 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-am33-list@redhat.com, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
+References: <cover.1368702323.git.mst@redhat.com> <2aa6c3da21a28120126732b5e0b4ecd6cba8ca3b.1368702323.git.mst@redhat.com>
+In-Reply-To: <2aa6c3da21a28120126732b5e0b4ecd6cba8ca3b.1368702323.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305221559.01806.arnd@arndb.de>
+X-Provags-ID: V02:K0:I+L8OK+vUI/Whd3VhevWoTLuuuCRfzu84Qwx2NRGHw3
+ GUT5b5BxpQIEEK6ds8h9WYzFhqDqTQe/EPy74Y2d7PUT7rAVcS
+ BrtUsng+nflnJyzzqL7MLxZt+6pJt9XBUmZvDzjY79KbhIYZOQ
+ jVBMf470rGZpDIMYw3d3aj6HVi20oFOXa0JOzlNsoU/KSRS5gz
+ 31lCYnsS5t76Y3QCYjSBniT3zmoLYWiW5ySKqHUYNPtKca9xos
+ EirdRrgDtaYD2/8zQ2oJbOovOs6CFG6Bfjin2gAR26hWxucJ7z
+ HJfo3RFa5Go02pFQzIs97eTlqXQ3HigYBQrpS6c2ZWv8Y9IQn5
+ Er/miao1ZEydm3SCRluk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-after fixing conflict between
-0902a9044 "Driver core: Use generic offline/online
-for CPU offline/online"
+On Thursday 16 May 2013, Michael S. Tsirkin wrote:
+> @@ -178,7 +178,7 @@ do {                                                                \
+>         long __pu_err;                                          \
+>         __typeof__(*(ptr)) __user *__pu_addr = (ptr);           \
+>         if (!is_kernel_addr((unsigned long)__pu_addr))          \
+> -               might_sleep();                                  \
+> +               might_fault();                                  \
+>         __chk_user_ptr(ptr);                                    \
+>         __put_user_size((x), __pu_addr, (size), __pu_err);      \
+>         __pu_err;                                               \
+> 
 
-and
+Another observation:
 
-1c4e2d70a "cpu: make sure that cpu/online file created
-before KOBJ_ADD is emitted"
+	if (!is_kernel_addr((unsigned long)__pu_addr))
+		might_sleep();
 
-there was left some not needed remnants of the last
-commit, remove them since the first commit does the
-same thing in another way.
+is almost the same as
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
-PS:
-Alernative way is just to drop 1c4e2d70a if rebase of tree
-is acceptable.
+	might_fault();
 
----
- drivers/base/cpu.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+except that it does not call might_lock_read().
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index ff97614..130ba0b 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -169,13 +169,6 @@ static const struct attribute_group *common_cpu_attr_groups[] = {
- 	NULL
- };
- 
--static const struct attribute_group *hotplugable_cpu_attr_groups[] = {
--#ifdef CONFIG_KEXEC
--	&crash_note_cpu_attr_group,
--#endif
--	NULL
--};
--
- /*
-  * Print cpu online, possible, present, and system maps
-  */
-@@ -292,8 +285,6 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
- 	cpu->dev.bus->uevent = arch_cpu_uevent;
- #endif
- 	cpu->dev.groups = common_cpu_attr_groups;
--	if (cpu->hotpluggable)
--		cpu->dev.groups = hotplugable_cpu_attr_groups;
- 	error = device_register(&cpu->dev);
- 	if (!error)
- 		per_cpu(cpu_sys_devices, num) = &cpu->dev;
--- 
-1.7.1
+The version above may have been put there intentionally and correctly, but
+if you want to replace it with might_fault(), you should remove the
+"if ()" condition.
 
+	Arnd
