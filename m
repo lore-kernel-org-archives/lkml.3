@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757154Ab3EVT4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:56:20 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40011 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757105Ab3EVT4R (ORCPT
+	id S1757220Ab3EVT5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:57:53 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57001 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757130Ab3EVT4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:56:17 -0400
+	Wed, 22 May 2013 15:56:19 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v7 04/11] KVM: MMU: zap pages in batch
-Date: Thu, 23 May 2013 03:55:53 +0800
-Message-Id: <1369252560-11611-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v7 06/11] KVM: MMU: show mmu_valid_gen in shadow page related tracepoints
+Date: Thu, 23 May 2013 03:55:55 +0800
+Message-Id: <1369252560-11611-7-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052219-2674-0000-0000-0000091330B5
+x-cbid: 13052219-5490-0000-0000-00000383A11C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zap at lease 10 pages before releasing mmu-lock to reduce the overload
-caused by requiring lock
-
-After the patch, kvm_zap_obsolete_pages can forward progress anyway,
-so update the comments
-
-[ It improves kernel building 0.6% ~ 1% ]
+Show sp->mmu_valid_gen
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c |   35 +++++++++++------------------------
- 1 files changed, 11 insertions(+), 24 deletions(-)
+ arch/x86/kvm/mmutrace.h |   22 ++++++++++++----------
+ 1 files changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index f302540..688e755 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -4203,14 +4203,18 @@ restart:
- 	spin_unlock(&kvm->mmu_lock);
- }
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index b8f6172..697f466 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -7,16 +7,18 @@
+ #undef TRACE_SYSTEM
+ #define TRACE_SYSTEM kvmmmu
  
-+#define BATCH_ZAP_PAGES	10
- static void kvm_zap_obsolete_pages(struct kvm *kvm)
- {
- 	struct kvm_mmu_page *sp, *node;
- 	LIST_HEAD(invalid_list);
-+	int batch = 0;
+-#define KVM_MMU_PAGE_FIELDS \
+-	__field(__u64, gfn) \
+-	__field(__u32, role) \
+-	__field(__u32, root_count) \
++#define KVM_MMU_PAGE_FIELDS			\
++	__field(unsigned long, mmu_valid_gen)	\
++	__field(__u64, gfn)			\
++	__field(__u32, role)			\
++	__field(__u32, root_count)		\
+ 	__field(bool, unsync)
  
- restart:
- 	list_for_each_entry_safe_reverse(sp, node,
- 	      &kvm->arch.active_mmu_pages, link) {
-+		int ret;
-+
- 		/*
- 		 * No obsolete page exists before new created page since
- 		 * active_mmu_pages is the FIFO list.
-@@ -4219,28 +4223,6 @@ restart:
- 			break;
+-#define KVM_MMU_PAGE_ASSIGN(sp)			     \
+-	__entry->gfn = sp->gfn;			     \
+-	__entry->role = sp->role.word;		     \
+-	__entry->root_count = sp->root_count;        \
++#define KVM_MMU_PAGE_ASSIGN(sp)				\
++	__entry->mmu_valid_gen = sp->mmu_valid_gen;	\
++	__entry->gfn = sp->gfn;				\
++	__entry->role = sp->role.word;			\
++	__entry->root_count = sp->root_count;		\
+ 	__entry->unsync = sp->unsync;
  
- 		/*
--		 * Do not repeatedly zap a root page to avoid unnecessary
--		 * KVM_REQ_MMU_RELOAD, otherwise we may not be able to
--		 * progress:
--		 *    vcpu 0                        vcpu 1
--		 *                         call vcpu_enter_guest():
--		 *                            1): handle KVM_REQ_MMU_RELOAD
--		 *                                and require mmu-lock to
--		 *                                load mmu
--		 * repeat:
--		 *    1): zap root page and
--		 *        send KVM_REQ_MMU_RELOAD
--		 *
--		 *    2): if (cond_resched_lock(mmu-lock))
--		 *
--		 *                            2): hold mmu-lock and load mmu
--		 *
--		 *                            3): see KVM_REQ_MMU_RELOAD bit
--		 *                                on vcpu->requests is set
--		 *                                then return 1 to call
--		 *                                vcpu_enter_guest() again.
--		 *            goto repeat;
--		 *
- 		 * Since we are reversely walking the list and the invalid
- 		 * list will be moved to the head, skip the invalid page
- 		 * can help us to avoid the infinity list walking.
-@@ -4248,13 +4230,18 @@ restart:
- 		if (sp->role.invalid)
- 			continue;
- 
--		if (need_resched() || spin_needbreak(&kvm->mmu_lock)) {
-+		if (batch >= BATCH_ZAP_PAGES &&
-+		      (need_resched() || spin_needbreak(&kvm->mmu_lock))) {
-+			batch = 0;
- 			kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 			cond_resched_lock(&kvm->mmu_lock);
- 			goto restart;
- 		}
- 
--		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
-+		ret = kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
-+		batch += ret;
-+
-+		if (ret)
- 			goto restart;
- 	}
- 
+ #define KVM_MMU_PAGE_PRINTK() ({				        \
+@@ -28,8 +30,8 @@
+ 								        \
+ 	role.word = __entry->role;					\
+ 									\
+-	trace_seq_printf(p, "sp gfn %llx %u%s q%u%s %s%s"		\
+-			 " %snxe root %u %s%c",				\
++	trace_seq_printf(p, "sp gen %lx gfn %llx %u%s q%u%s %s%s"	\
++			 " %snxe root %u %s%c",	__entry->mmu_valid_gen,	\
+ 			 __entry->gfn, role.level,			\
+ 			 role.cr4_pae ? " pae" : "",			\
+ 			 role.quadrant,					\
 -- 
 1.7.7.6
 
