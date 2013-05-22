@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab3EVREj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:04:39 -0400
-Received: from 18.mo4.mail-out.ovh.net ([188.165.54.143]:53032 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755063Ab3EVREi (ORCPT
+	id S1756673Ab3EVRLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:11:16 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:55722 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab3EVRLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:04:38 -0400
-X-Greylist: delayed 4661 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 13:04:38 EDT
-Date: Wed, 22 May 2013 17:45:09 +0200
-From: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
-To: "luke.leighton" <luke.leighton@gmail.com>
-Cc: Eric Appleman <erappleman@gmail.com>, legal@lists.gpl-violations.org,
-        linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: Would like to form a pool of Linux copyright holders for faster
- GPL enforcement against Anthrax Kernels
-Message-ID: <20130522174509.4f158f5d@m4a785t-m.lan>
-In-Reply-To: <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
-References: <51972CAF.3060802@gmail.com>
-	<CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 22 May 2013 13:11:15 -0400
+Message-ID: <519CFC2D.1020008@koalo.de>
+Date: Wed, 22 May 2013 19:11:09 +0200
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH] ASoC: Add support for BCM2708
+References: <519CD1CC.8070507@koalo.de> <519CE2B7.8080704@wwwdotorg.org> <519CED72.40406@koalo.de> <519CEF3C.4000502@wwwdotorg.org>
+In-Reply-To: <519CEF3C.4000502@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16734531791029435985
-X-Ovh-Remote: 87.5.240.193 (host193-240-dynamic.5-87-r.retail.telecomitalia.it)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  actually, that's a good point.  please can it be specifically noted,
-> from this moment onwards, that all contributions that i have made to
-> the linux kernel are dual-licensed under both the GPLv2 and also the
-> GPLv3+ license?
-Why not simply use "GPLv2 or later" ?
-For instance in the copyright header.
+On 22.05.2013 18:15, Stephen Warren wrote:
+> On 05/22/2013 10:08 AM, Florian Meier wrote:
+>> On 22.05.2013 17:22, Stephen Warren wrote:
+>>> On 05/22/2013 08:10 AM, Florian Meier wrote:
+>>>> This driver adds support for digital audio (I2S)
+>>>> for the BCM2708 SoC that is used by the
+>>>> Raspberry Pi. External audio codecs can be
+>>>> connected to the Raspberry Pi via P5 header.
+>>>>
+>>>> It relies on cyclic DMA engine support for BCM2708
+>>>> that is not included in this patch.
+>>>
+>>> This SoC is actually the BCM2835, so the files should be named for that.
+>>
+>> Actually, I changed the name several times and in the end I sticked to
+>> https://github.com/raspberrypi/linux/issues/22
+>> but if you think it is better to use BCM2835 I am happy to agree with
+>> you and change it.
+>>
+>>> Upstream only uses device tree for BCM2835. Does this driver support DT?
+>>> Where is the DT binding definition file?
+>>
+>> I have not accomplished to use the mainline kernel and DT with the
+>> Raspberry Pi. Do you have any introductive information about how to do this?
+> 
+> Oh, so is this patch intended for the downstream Raspberry Pi Foundation
+> kernel, or the upstream kernel?
+> 
+> The fact you haven't run it on the upstream kernel implies that you
+> intend the patch to be applied to the downstream kernel.
+> 
+> The fact you sent the driver to all the upstream mailing lists implies
+> that you intend the patch to be applied to the upstream kernel.
+>
+> BTW, I wrote a Google+ post on using the upstream kernel on the Pi:
+> https://plus.google.com/101715070573995136397/posts/gWkwrfNfYVm
 
-Denis.
+I chatted with Mark Brown about this issue and if I understood him
+correctly he suggested to send it upstream anyway.
+
+Either way, your blog post gives me great hope to get this running
+tomorrow so this won't be an issue anymore.
+
