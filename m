@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3EVSTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:19:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55122 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756653Ab3EVSTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:19:47 -0400
+	id S1756844Ab3EVSUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:20:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36883 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753426Ab3EVSTv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 14:19:51 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Kevin Hilman <khilman@deeprootsystems.com>,
@@ -15,9 +16,9 @@ CC: <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [RFC PATCH 1/4] regulator: Introduce OMAP regulator to control PMIC over VC/VP
-Date: Wed, 22 May 2013 13:18:34 -0500
-Message-ID: <1369246717-4167-2-git-send-email-nm@ti.com>
+Subject: [RFC PATCH 2/4] PM / AVS: Introduce support for OMAP Voltage Controller(VC) with device tree nodes
+Date: Wed, 22 May 2013 13:18:35 -0500
+Message-ID: <1369246717-4167-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369246717-4167-1-git-send-email-nm@ti.com>
 References: <1369246717-4167-1-git-send-email-nm@ti.com>
@@ -27,259 +28,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Texas Instrument's OMAP SoC generations since OMAP3-5 introduced
-an TI custom hardware block to better facilitate and standardize
-integration of Power Management ICs which communicate over I2C.
+Texas Instrument's OMAP SoC generations since OMAP3-5 introduced an TI
+custom hardware block to better facilitate and standardize integration
+of Power Management ICs which communicate over I2C called Voltage
+Controller(VC).
 
-In fact, many custom PMICs were designed to be usable over this
-interface. On the other hand, generic PMICs which are compatible
-to the I2C protocol supported by Voltage controller may also be
-used.
+This is an specialized hardware block meant to support PMIC chips and
+is customized to that requirement. Even though it functions as an I2C
+controller, it is a write-only interface whose configurations are custom
+to PMICs.
 
-In general, the following categories of PMICs exist:
+We have an existing implementation in mach-omap2 which has been
+re factored and moved out as a separate driver. This new driver is DT
+only and the separation was meant to get a maintainable driver which
+does not have to deal with legacy platform_data dependencies. The legacy
+driver is retained to support non-DT boot and functionality will be
+migrated to the DT-only version as we enable features.
 
-a) PMICs which are completely controlled by voltage controller/voltage
-processor pair - this implies even configuration needs to be done
-over the same interface. Example: TPS62361 used on PandaBoard-ES and
-many OMAP4460 based platforms. Few Maxim and Fairchild PMICs used on
-certain products would fall in this category.
-- Note: in this case, there may not even exist/needed to support an
-"traditional Linux regulator driver"
+Currently, this implementation considers only the basic steps needed for
+voltage scaling and exposing voltage controller as a device whose
+child devices are voltage controller channel devices.
 
-b) PMICs which provide two views over two I2C interfaces - however,
-voltage can only be set only on one of them. Example: TWL4030/5030:
-allows us to use Voltage controller once we set up a bit over regular
-I2C - This is used in OMAP3. TWO6030/TWL6032 - configuration *has*
-to be performed over regular i2c (example smps_offset) and voltage
-control *has* to be performed by using voltage controller/processor.
-- Note: in this case, there may exist "traditional Linux regulator driver"
-however, it may not support in any form SMPS modelling for that part of
-the device which is exposed to voltage controller/processor.
-c) PMICs which allow voltage and configurations over either i2c
-interfaces - TWL6035/TWL6037/Palmas family of TI processor
-- Note: in this case, there may exist "traditional Linux regulator driver"
-and, it may support in some form SMPS modelling for that part of
-the device which is exposed to voltage controller/processor.
-d) custom PMICs which are setup so that no configuration is needed to be
-performed and they operate with preset register offsets and minimal
-conferability using voltage controller/processor.
-- Note: in this case, there may not even exist/needed to support an
-"traditional Linux regulator driver"
+We may need to do additional timing configurations to enable Low power
+mode voltage transitions, but this will be completed in a following
+series. We may need a few tweaks to hook the Adaptive Voltage
+Scaling(AVS) implementation for OMAP which also uses the same voltage
+controller to talk to PMICs.
 
-However, no matter the type of PMIC used, the OMAP view of a PMIC is
-generic when used over voltage controller/processor. We attempt to
-model this generic view of the regulator represented by OMAP SoC.
-
-Alternative to this approach would be to "hack" into the get
-voltage/set voltage interfaces of regulator drivers which represent
-the rest of the PMIC controlled over regular I2C interface and
-re-route the requests to voltage controller/processor. But, by doing
-that, we needlessly create additional code which may be abstracted out
-into device tree node information.
-
-Since the regulator node representing PMIC, voltage controller,
-processors are probed at varied points in time, probe deferral is used
-to sequence in the right order. It is expected by the driver to register
-omap_pmic_register_controller_ops providing mandatory operations at the
-earliest possible opportunity.
-
-Despite the current SoCs implementing the solution based on voltage
-controller and voltage processor (which are part of the OMAP SoC modules
-which enable Adaptive Voltage Scaling class support), the interfaces are
-generic enough to handle future equivalent modules.
+This driver is meant to interface with voltage processor when the
+voltage processor attempts devm_omap_vc_channel_get for the
+VC channel corresponding to the voltage processor.
 
 [grygorii.strashko@ti.com: co-developer]
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- .../bindings/regulator/omap-pmic-regulator.txt     |  121 +++++
- drivers/regulator/Kconfig                          |   12 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/omap-pmic-regulator.c            |  554 ++++++++++++++++++++
- include/linux/regulator/omap-pmic-regulator.h      |  147 ++++++
- 5 files changed, 835 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/omap-pmic-regulator.txt
- create mode 100644 drivers/regulator/omap-pmic-regulator.c
- create mode 100644 include/linux/regulator/omap-pmic-regulator.h
+ .../devicetree/bindings/power/omap-vc.txt          |   99 ++
+ drivers/power/avs/Kconfig                          |   15 +
+ drivers/power/avs/Makefile                         |   20 +
+ drivers/power/avs/omap_vc.c                        | 1508 ++++++++++++++++++++
+ drivers/power/avs/omap_vc.h                        |   67 +
+ 5 files changed, 1709 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power/omap-vc.txt
+ create mode 100644 drivers/power/avs/omap_vc.c
+ create mode 100644 drivers/power/avs/omap_vc.h
 
-diff --git a/Documentation/devicetree/bindings/regulator/omap-pmic-regulator.txt b/Documentation/devicetree/bindings/regulator/omap-pmic-regulator.txt
+diff --git a/Documentation/devicetree/bindings/power/omap-vc.txt b/Documentation/devicetree/bindings/power/omap-vc.txt
 new file mode 100644
-index 0000000..b87dd3c
+index 0000000..f97737c
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/omap-pmic-regulator.txt
-@@ -0,0 +1,121 @@
-+Generic Power Management IC(PMIC) Regulator for Texas Instruments OMAP SoCs
++++ b/Documentation/devicetree/bindings/power/omap-vc.txt
+@@ -0,0 +1,99 @@
++Voltage Controller driver for Texas Instruments OMAP SoCs
 +
++Voltage Controller Properties:
++The following are the properties of the voltage controller node
 +Required Properties:
-+- compatible: Should be:
-+  - "ti,omap-pmic"
-+
-+- ti,i2c-slave-address - I2C slave address of the PMIC
-+- ti,i2c-voltage-register - I2C register address where voltage commands are
-+	to be set.
-+- ti,i2c-command-register - I2C register address where commands are to be set
-+	when OMAP enters low power state. This may be the same as
-+	ti,i2c-voltage-register depending on the PMIC.
-+- ti,slew-rate-microvolt - worst case slew rate of rise / fall for voltage
-+	transition in microvolts per microseconds (uV/uS)
-+- step-size-micro-volts - Step size in micovolts as to what one step in voltage
-+	selector increment translates to. See example.
-+- regulator-min-microvolt - Minimum voltage in microvolts which is supported by
-+	the PMIC in ti,step-size-microvolt increments. See example.
-+- regulator-max-microvolt - Maximum voltage in microvolts which is supported
-+	by the PMIC in ti,step-size-microvolt increments. See example.
++- compatible: Should be one of:
++  - "ti,omap3-vc" - for OMAP3 family of devices
++  - "ti,omap4-vc" - for OMAP4 family of devices
++  - "ti,omap5-vc" - for OMAP5 family of devices
++- reg: Address and length of the register set for the device. It contains
++  the information of registers in the same order as described by reg-names
++- reg-names: Should contain the reg names
++  - "base-address"	- contains base address of VC module
++- clocks: should point to the clock node used by VC module, usually sysclk
++- ti,i2c-clk-scl-low: is mandatory if ti,i2c-pad-load is not used. contains
++  hex to represent timing for slow I2C phase low clock time.
++- ti,i2c-clk-scl-high: is mandatory if ti,i2c-pad-load is not used. contains
++  hex to represent timing for slow I2C phase high clock time.
++- ti,i2c-clk-hsscl-low: is mandatory if ti,i2c-pad-load is not used and
++  ti,i2c-high-speed is used, contains hex to represent timing for high speed I2C
++  phase low clock time.
++- ti,i2c-clk-hsscl-high: is mandatory if ti,i2c-pad-load is not used and
++  ti,i2c-high-speed is used, contains hex to represent timing for high speed I2C
++  phase high clock time.
++- Must contain VC channel nodes which belong to the Voltage controller.
 +
 +Optional Properties:
-+- gpios: OF device-tree gpio specification - can be an array, will be setup
-+	in the order of definition and set to the flags.
-+- pinctrl: OF device-tree pinctrl definitions as needed (usually for the GPIOs)
-+- ti,boot-voltage-micro-volts - voltage in microvolts that bootloader is leaving
-+	over the PMIC at. This may be 'PMIC data manual configuration' if
-+	bootloader does not set an value, or appropritate value.
-+- ti,voltage-selector-set-bits - what bits to set permenantly for the PMIC
-+	voltage selector - this may have PMIC specific meaning.
-+- ti,voltage-selector-mask - what mask to use for the vsel value - this is
-+	useful for PMICs where the vsel has to be applied at an offset.
-+- ti,voltage-selector-offset - what offset to apply to conversion routine when
-+	operating on vsel.
-+- ti,non-zero-voltage-selector - Special case handling if 0 value does NOT
-+	indicates power-off for PMIC.
-+- ti,setup_commands - An array of 2-tuples items, and each item consists
-+  of register address and command like <address data>
-+	addr: I2C register address to send the command (over Voltage controller)
-+	data: What data to send
++- ti,i2c-high-speed: bool to indicate if VC should operate in high speed I2C
++  mode.
++- ti,i2c-pad-load: if ti,i2c-high-speed, then this is optional to auto load
++  pre-calculated I2C clock timing configuration. This is denoted in pico-farads.
++- ti,i2c-pcb-length: if ti,i2c-pad-load, then this is optional to select the
++  pre-calculated I2C clock timing configuration. default of '63' is used.
++  This is denoted in millimeters.
++- pinctrl: Most OMAP SoCs do not allow pinctrl option to select VC's I2C path.
++  it is usually hardcoded by default. Define "default" pinctrl-0 as needed.
 +
-+Example: defining step-size, min/max voltages
-+NOTE: OMAP can only handle continous voltages. In a case of an PMIC such as the
-+follows:
-+	vsel- corresponding voltage
-+	0x1 - 500mV
-+	0x2 - 800mV
-+	0x3 - 810mV
-+	0x4 - 820mV
-+	..
-+	0x14 - 1v
-+	0x15 - 1.5v
-+OMAP can only suppport voltages for voltage operations when the voltages
-+are in equal increments. In the above example, it is 800mV to 1v at 10mV steps
-+This corresponds to the following properties:
-+step-size-micro-volts  = <10000>;
-+regulator-min-microvolt = <800000>;
-+regulator-max-microvolt = <1000000>;
++Voltage Controller Channel Properties:
++The following are the properties of the voltage controller channel nodes
++Required Properties:
++- compatible: Should be one of:
++  - ti,omap3-vc-channel-0 - Channel 0 on OMAP3 family of devices
++  - ti,omap3-vc-channel-1 - Channel 1 on OMAP3 family of devices
++  - ti,omap4-vc-channel-mpu - Channel MPU on OMAP4 family of devices
++  - ti,omap4-vc-channel-iva - Channel IVA on OMAP4 family of devices
++  - ti,omap4-vc-channel-core - Channel CORE on OMAP4 family of devices
++  - ti,omap5-vc-channel-mpu - Channel MPU on OMAP5 family of devices
++  - ti,omap5-vc-channel-mm - Channel MM on OMAP5 family of devices
++  - ti,omap5-vc-channel-core - Channel CORE on OMAP5 family of devices
++- ti,master-channel: bool to mark the "master channel". Only ONE channel is
++  to be marked as master channel depending on SoC specification.
 +
-+Example: Setup PMIC with PFM mode to be enabled for voltage operations
-+Lets say that the bit in voltage selector(vsel) is 0x80. in this case,
-+ti,voltage-selector-set-bits =<0x80>;
++Optional Properties:
++- ti,retention-micro-volts: retention voltage for the voltage controller in
++  micro-volts
++- ti,off-micro-volts: OFF mode voltage for the voltage controller in micro-volts
++- ti,use-master-slave-addr: available only for a "non-master" channel. This
++  indicates the the channel will use master channel's slave address. Usually
++  used when the PMIC has the same slave address for all SMPSs.
++- ti,use-master-voltage-reg-addr: available only for a "non-master" channel.
++  channel will use voltage register of the master channel to send voltage
++  commands - usually used in "ganged" voltage rail configuration - NOTE: this
++  is useful only when doing voltage transitions alone and not using AVS.
++- ti,use-master-command-reg-addr: available only for a "non-master" channel.
++  channel will use command register of the master channel to send command
++  values - usually used in "ganged" voltage rail configuration - NOTE: this
++  is useful only when doing voltage transitions alone and not using AVS.
++- ti,use-master-command-reg-val: available only for a "non-master" channel.
++  channel will use command value of the master channel to send commands
++  - usually used in "ganged" voltage rail configuration - NOTE: this
++  is useful only when doing voltage transitions alone and not using AVS.
 +
-+Example: setup PMIC where the vsel bits are set from bits 7:4
-+Consider an following example
-+0x10 - 800mV
-+0xf0 - 1v
-+in this case,
-+ti,voltage-selector-mask = <0xF0>;
++Example:
++SoC file: (example from OMAP4)
++vc: vc@0x4A307B88 {
++		compatible = "ti,omap4-vc";
++		clocks = <&sysclk_in>;
++		reg = <0x4A307B88 0x40>;
++		reg-names = "base-address";
 +
-+Example: Conversion routine needs an offset
-+Consider an PMIC with the following behavior for vsel.
-+	0 - OFF voltage
-+	1 - 709mV
-+	2 - 721.66mV
-+	etc..
-+	regulator-min-microvolt would be 709, however vsel offsets needs to be
-+	accounted for. Hence, we could use
-+ti,voltage-selector-offset = <1>;	/* incremental vsel starts at 1 */
++		vc_mpu: vc_mpu {
++			compatible = "ti,omap4-vc-channel-mpu";
++			ti,master-channel;
++			ti,retention-micro-volts = <750000>;
++			ti,off-micro-volts = <0>;
++		};
 +
-+On the other hand, when 0 indicates voltage = regulator-min-microvolt, use:
-+ti,non-zero-voltage-selector;
++		vc_iva: vc_iva {
++			compatible = "ti,omap4-vc-channel-iva";
++			ti,retention-micro-volts = <750000>;
++			ti,off-micro-volts = <0>;
++		};
 +
-+Example: Sample PMIC description
-+omap_tps62361: tps62361 {
-+	compatible = "ti,omap-pmic";
-+	ti,non-zero-voltage-selector;
-+
-+	ti,i2c-slave-address = <0x60>;
-+	/* We have only one register to set voltage / low power voltage  to */
-+	ti,i2c-voltage-register = <0x01>; /* Set 1 register */
-+	ti,i2c-command-register = <0x01>; /* Set 1 register */
-+
-+	ti,slew-rate-microvolt = <32000>;
-+	ti,step-size-microvolt = <10000>;
-+	regulator-min-microvolt = <500000>;
-+	regulator-max-microvolt = <1770000>;
-+
-+	ti,voltage-selector-offset = <0x0>;
-+	ti,voltage-selector-set-bits =<0x80>; /* PFM mode */
-+	ti,non-zero-voltage-selector;
-+
-+	ti,setup_commands=<
-+		/* register_addr value */
-+		/* Setup Slew (ramp) rate (0 - 32mV/uS) */
-+		0x06	0x0
-+		/* Enable thermal shutdown - 0 is enable :( */
-+		0x5	0x0
-+	>;
-+};
-+
-+/* Board Specific configuration */
-+&omap_tps62361 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&tps62361_wkgpio_pins
-+	>;
-+	gpios = <&gpio1 7 1>;	/* gpio_wk7 */
-+
-+	ti,boot-voltage-micro-volts=<1200000>;
-+};
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 8bb2644..3a2d625 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -472,6 +472,18 @@ config REGULATOR_TWL4030
- 	  This driver supports the voltage regulators provided by
- 	  this family of companion chips.
++		vc_core: vc_core {
++			compatible = "ti,omap4-vc-channel-core";
++			ti,retention-micro-volts = <750000>;
++			ti,off-micro-volts = <0>;
++		};
++	};
+diff --git a/drivers/power/avs/Kconfig b/drivers/power/avs/Kconfig
+index 2a1008b..68dff06 100644
+--- a/drivers/power/avs/Kconfig
++++ b/drivers/power/avs/Kconfig
+@@ -10,3 +10,18 @@ menuconfig POWER_AVS
+ 	  AVS is also called SmartReflex on OMAP devices.
  
-+config REGULATOR_TI_OMAP_PMIC
-+	tristate "TI Generic regulator for Voltage Processor / Controller"
-+	depends on ARCH_OMAP
+ 	  Say Y here to enable Adaptive Voltage Scaling class support.
++
++config POWER_TI_HARDWARE_VOLTAGE_CONTROL
++	tristate "TI OMAP SoC Voltage Control support"
++	depends on OF && ARCH_OMAP && REGULATOR_TI_OMAP_PMIC
++	select REGMAP_MMIO
 +	help
-+	  Select this option to support PMICs over Texas Instruments'
-+	  custom Voltage Processor + Voltage Controller data interface
-+	  used in OMAP SoCs. This is a specific "write-only" interface
-+	  designed to interface with I2C based PMICs.
++	  Select this option to support Texas Instruments' custom Voltage
++	  Processor + Voltage Controller data interface used in OMAP SoCs
++	  to enable Adaptive Voltage Scaling(AVS) and Device Frequency and
++	  Voltage Scaling(DVFS). This is a specific "write-only" interface
++	  designed to interface with I2C based PMICs. These two subsystems
++	  in OMAP do not exist independent of each other as they are
++	  practically useless without each other.
 +
-+	  This option enables the regulator driver representing the PMIC
-+	  on the OMAP VC/VP hardware.
++	  Say Y here to enable TI OMAP SoC Voltage Control support.
+diff --git a/drivers/power/avs/Makefile b/drivers/power/avs/Makefile
+index 0843386..95d5f59 100644
+--- a/drivers/power/avs/Makefile
++++ b/drivers/power/avs/Makefile
+@@ -1 +1,21 @@
+ obj-$(CONFIG_POWER_AVS_OMAP)		+= smartreflex.o
 +
- config REGULATOR_VEXPRESS
- 	tristate "Versatile Express regulators"
- 	depends on VEXPRESS_CONFIG
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 47a34ff..32c882e 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -63,6 +63,7 @@ obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65912) += tps65912-regulator.o
- obj-$(CONFIG_REGULATOR_TPS80031) += tps80031-regulator.o
- obj-$(CONFIG_REGULATOR_TWL4030) += twl-regulator.o
-+obj-$(CONFIG_REGULATOR_TI_OMAP_PMIC) += omap-pmic-regulator.o
- obj-$(CONFIG_REGULATOR_VEXPRESS) += vexpress.o
- obj-$(CONFIG_REGULATOR_WM831X) += wm831x-dcdc.o
- obj-$(CONFIG_REGULATOR_WM831X) += wm831x-isink.o
-diff --git a/drivers/regulator/omap-pmic-regulator.c b/drivers/regulator/omap-pmic-regulator.c
++ifneq ($(CONFIG_POWER_TI_HARDWARE_VOLTAGE_CONTROL),)
++
++# OMAP Common
++omap-volt-common			=  omap_vc.o
++
++# OMAP SoC specific
++ifneq ($(CONFIG_ARCH_OMAP3),)
++obj-$(CONFIG_POWER_TI_HARDWARE_VOLTAGE_CONTROL) += $(omap-volt-common)
++endif
++
++ifneq ($(CONFIG_ARCH_OMAP4),)
++obj-$(CONFIG_POWER_TI_HARDWARE_VOLTAGE_CONTROL) += $(omap-volt-common)
++endif
++
++ifneq ($(CONFIG_SOC_OMAP5),)
++obj-$(CONFIG_POWER_TI_HARDWARE_VOLTAGE_CONTROL) += $(omap-volt-common)
++endif
++
++endif
+diff --git a/drivers/power/avs/omap_vc.c b/drivers/power/avs/omap_vc.c
 new file mode 100644
-index 0000000..31ac186
+index 0000000..4efb8ce
 --- /dev/null
-+++ b/drivers/regulator/omap-pmic-regulator.c
-@@ -0,0 +1,554 @@
++++ b/drivers/power/avs/omap_vc.c
+@@ -0,0 +1,1508 @@
 +/*
-+ * OMAP Generic PMIC Regulator
++ * OMAP Voltage Controller (VC) interface
 + *
-+ * Idea based on arch/arm/mach-omap2/omap_twl.c
-+ * Copyright (C) 2010 Texas Instruments Incorporated.
-+ * Thara Gopinath
-+ * Copyright (C) 2009 Texas Instruments Incorporated.
-+ * Nishanth Menon
-+ * Copyright (C) 2009 Nokia Corporation
-+ * Paul Walmsley
++ * Idea based on arch/arm/mach-omap2/vc.c
++ * Copyright (C) 2011 Texas Instruments Incorporated.
 + *
 + * Copyright (C) 2013 Texas Instruments Incorporated
 + * Grygorii Strashko
@@ -297,552 +255,1512 @@ index 0000000..31ac186
 +
 +#define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
 +
-+#include <linux/err.h>
-+#include <linux/gpio.h>
 +#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/of.h>
 +#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
 +#include <linux/regulator/omap-pmic-regulator.h>
++#include <linux/regmap.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include "omap_vc.h"
 +
-+#define DRIVER_NAME	"omap-pmic"
-+
-+static DEFINE_MUTEX(omap_pmic_cops_mutex);
-+static struct omap_pmic_controller_ops *pmic_cops;
++#define DRIVER_NAME	"omap-vc"
 +
 +/**
-+ * omap_pmic_register_controller_ops() - Register voltage operations
-+ * @cops:	voltage operations
++ * struct vc_channel_regs - Register description for VC channel
++ * @cfg_reg_offset:  Channel configuration register offset
++ * @sa_reg_offset: Slave Address configuration register offset
++ * @voltage_reg_offset: Voltage address register offset
++ * @command_addr_reg_offset: Command address register offset
++ * @command_val_reg_offset: Command value register offset
 + *
-+ * It is expected that appropriate controller register it's functions
-+ * with this driver using this interface, If this is not done, the probe
-+ * for the corresponding device will defer till it fails.
-+ *
-+ * Return: -EBUSY if already registered, else returns 0
++ * NOTE: All register offsets are from VC base, as certain flavor
++ * of SoCs use shared registers and other have unique register offsets
 + */
-+int omap_pmic_register_controller_ops(struct omap_pmic_controller_ops *cops)
++struct vc_channel_regs {
++	u16 cfg_reg_offset;
++	u16 sa_reg_offset;
++	u16 voltage_reg_offset;
++	u16 command_addr_reg_offset;
++	u16 command_val_reg_offset;
++
++	/* private: */
++	/* cfg_reg_offset details */
++	u32 racen_mask;
++	u32 rac_enable_mask;
++	u32 rav_enable_mask;
++	u32 cmd_sel_mask;
++	u32 sa_enable_mask;
++
++	/* sa_reg_offset details */
++	u32 sa_addr_mask;
++
++	/* voltage_reg_offset details */
++	u32 voltage_addr_mask;
++
++	/* command_addr_reg_offset details */
++	u32 command_addr_mask;
++
++	/* command_val_reg_offset details */
++	u32 command_val_on_mask;
++	u32 command_val_onlp_mask;
++	u32 command_val_ret_mask;
++	u32 command_val_off_mask;
++};
++
++/**
++ * struct omap_vc_channel - internal representation of VC channel
++ * @dev:		device pointer for VC channel device
++ * @list:		channel list
++ * @usage_count:	Usage count - only 1 user at a time.(not always module)
++ * @is_master_channel:	Is this channel the master channel?
++ * @use_master_channel_sa: if this channel uses master channel's slave address
++ * @use_master_channel_voltage_reg: if this channel uses master channel's
++ *			voltage register address
++ * @use_master_channel_cmd_reg: if this channel uses master channel's command
++ *			register address
++ * @use_master_channel_cmd_val: if this channel uses master channel's command
++ *			value address
++ * @ch_regs:		Channel register description
++ * @info:		exported information containing PMIC hooked to this
++ *			channel, low power state voltage information etc.
++ */
++struct omap_vc_channel {
++	struct device *dev;
++	struct list_head list;
++	int usage_count;
++	bool is_master_channel;
++	bool use_master_channel_sa;
++	bool use_master_channel_voltage_reg;
++	bool use_master_channel_cmd_reg;
++	bool use_master_channel_cmd_val;
++	const struct vc_channel_regs *ch_regs;
++	struct omap_vc_channel_info info;
++};
++
++/**
++ * struct omap_omap_vc_i2c_config - Voltage controller channel's I2C config
++ * @clk_rate:		Frequency of sys_clock for the voltage controller's I2C
++ * @highspeed:		used in I2C highspeed mode?
++ * @mcode:		Master Code used in High speed mode
++ * @i2c_clk_pad_load:	What is the pad load at i2c
++ * @i2c_clk_pcb_length:	What is the pcb length to the PMIC (all inclusive)
++ * @i2c_clk_scll:	Clock low timing config for slow speed
++ * @i2c_clk_sclh:	Clock high timing config for slow speed
++ * @i2c_clk_hsscll:	Clock low timing config for high speed
++ * @i2c_clk_hssclh:	Clock high timing config for high speed
++ *
++ * Used one time at boot.
++ */
++struct omap_omap_vc_i2c_config {
++	unsigned long clk_rate;
++	bool highspeed;
++	u8 mcode;
++	u32 i2c_clk_pad_load;
++	u32 i2c_clk_pcb_length;
++	u8 i2c_clk_scll;
++	u8 i2c_clk_sclh;
++	u8 i2c_clk_hsscll;
++	u8 i2c_clk_hssclh;
++};
++
++/**
++ * struct omap_vc_common_reg - Voltage Controller Common registers
++ * @i2c_clk_cfg_reg:	I2C clock configuration register offset
++ * @i2c_clk_mode_reg:	I2C clock operation mode register offset
++ * @bypass_cmd_reg:	VC_BYPASS (very low level control) register offset
++ *
++ * These may be -1 to indicate register not being present.
++ */
++struct omap_vc_common_reg {
++	s16 i2c_clk_cfg_reg;
++	u16 i2c_clk_mode_reg;
++	u16 bypass_cmd_reg;
++};
++
++/**
++ * struct omap_vc - represents the voltage controller(vc) device
++ * @regmap:	regmap to the entire voltage controller region(includes channel)
++ * @regs:	Voltage Controller common registers
++ * @master_channel_configured:	Is Master channel has been configured.
++ */
++struct omap_vc {
++	struct regmap *regmap;
++	const struct omap_vc_common_reg *regs;
++	bool master_channel_configured;
++};
++
++/* VC Channel register configurations */
++static const struct vc_channel_regs omap3_ch_1_regs = {
++	.cfg_reg_offset = 0x14,
++	.racen_mask = 0x80000,
++	.rac_enable_mask = 0x40000,
++	.rav_enable_mask = 0x20000,
++	.cmd_sel_mask = 0x100000,
++	.sa_enable_mask = 0x10000,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f0000,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF0000,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF0000,
++
++	.command_val_reg_offset = 0x10,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0xFF,
++};
++
++static const struct vc_channel_regs omap3_ch_0_regs = {
++	.cfg_reg_offset = 0x14,
++	.racen_mask = 0x8,
++	.rac_enable_mask = 0x4,
++	.rav_enable_mask = 0x2,
++	.cmd_sel_mask = 0x10,
++	.sa_enable_mask = 0x1,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF,
++
++	.command_val_reg_offset = 0xC,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0xFF,
++};
++
++static const struct vc_channel_regs omap4_ch_mpu_regs = {
++	.cfg_reg_offset = 0x1c,
++	.racen_mask = 0x100000,
++	.rac_enable_mask = 0x80000,
++	.rav_enable_mask = 0x40000,
++	.cmd_sel_mask = 0x20000,
++	.sa_enable_mask = 0x10000,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f0000,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF0000,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF0000,
++
++	.command_val_reg_offset = 0x10,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0xFF,
++};
++
++static const struct vc_channel_regs omap4_ch_iva_regs = {
++	.cfg_reg_offset = 0x1c,
++	.racen_mask = 0x800,
++	.rac_enable_mask = 0x400,
++	.rav_enable_mask = 0x200,
++	.cmd_sel_mask = 0x1000,
++	.sa_enable_mask = 0x100,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f00,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF00,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF00,
++
++	.command_val_reg_offset = 0x14,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0xFF,
++};
++
++static const struct vc_channel_regs omap4_ch_core_regs = {
++	.cfg_reg_offset = 0x1c,
++	.racen_mask = 0x8,
++	.rac_enable_mask = 0x4,
++	.rav_enable_mask = 0x2,
++	.cmd_sel_mask = 0x10,
++	.sa_enable_mask = 0x1,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF,
++
++	.command_val_reg_offset = 0xC,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0xFF,
++};
++
++static const struct vc_channel_regs omap5_ch_core_regs = {
++	.cfg_reg_offset = 0x0,
++	.racen_mask = 0x8000000,
++	.rac_enable_mask = 0x4000000,
++	.rav_enable_mask = 0x2000000,
++	.cmd_sel_mask = 0x10000000,
++	.sa_enable_mask = 0x1000000,
++
++	.sa_reg_offset = 0x0,
++	.sa_addr_mask = 0x7f,
++
++	.voltage_reg_offset = 0x0,
++	.voltage_addr_mask = 0xFF00,
++
++	.command_addr_reg_offset = 0x0,
++	.command_addr_mask = 0xFF0000,
++
++	.command_val_reg_offset = 0xC,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0x00,	/* Reserved */
++};
++
++static const struct vc_channel_regs omap5_ch_mm_regs = {
++	.cfg_reg_offset = 0x4,
++	.racen_mask = 0x8000000,
++	.rac_enable_mask = 0x4000000,
++	.rav_enable_mask = 0x2000000,
++	.cmd_sel_mask = 0x10000000,
++	.sa_enable_mask = 0x1000000,
++
++	.sa_reg_offset = 0x4,
++	.sa_addr_mask = 0x7f,
++
++	.voltage_reg_offset = 0x4,
++	.voltage_addr_mask = 0xFF00,
++
++	.command_addr_reg_offset = 0x4,
++	.command_addr_mask = 0xFF0000,
++
++	.command_val_reg_offset = 0x10,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0x00,	/* Reserved */
++};
++
++static const struct vc_channel_regs omap5_ch_mpu_regs = {
++	.cfg_reg_offset = 0x8,
++	.racen_mask = 0x8000000,
++	.rac_enable_mask = 0x4000000,
++	.rav_enable_mask = 0x2000000,
++	.cmd_sel_mask = 0x10000000,
++	.sa_enable_mask = 0x1000000,
++
++	.sa_reg_offset = 0x8,
++	.sa_addr_mask = 0x7f,
++
++	.voltage_reg_offset = 0x8,
++	.voltage_addr_mask = 0xFF00,
++
++	.command_addr_reg_offset = 0x8,
++	.command_addr_mask = 0xFF0000,
++
++	.command_val_reg_offset = 0x14,
++	.command_val_on_mask = 0xFF000000,
++	.command_val_onlp_mask = 0xFF0000,
++	.command_val_ret_mask = 0xFF00,
++	.command_val_off_mask = 0x00,	/* Reserved */
++};
++
++/* VC Generic register configurations */
++static const struct omap_vc_common_reg omap3_vc_regs = {
++	.i2c_clk_cfg_reg = -1,
++	/* NOTE: register is called I2C_CFG in TRM, but compatible with MODE */
++	.i2c_clk_mode_reg = 0x18,
++	.bypass_cmd_reg = 0x1C,
++};
++
++static const struct omap_vc_common_reg omap4_vc_regs = {
++	.i2c_clk_cfg_reg = 0x24,
++	.i2c_clk_mode_reg = 0x20,
++	.bypass_cmd_reg = 0x18,
++};
++
++static const struct omap_vc_common_reg omap5_vc_regs = {
++	.i2c_clk_cfg_reg = 0x30,
++	.i2c_clk_mode_reg = 0x2c,
++	.bypass_cmd_reg = 0x18,
++};
++
++/* VCBYPASS register bit definitions - No variance at all */
++#define VC_BYPASS_VALID_MASK	(0x01 << 24)
++#define VC_BYPASS_DATA_MASK	(0xff << 16)
++#define VC_BYPASS_REGADDR_MASK	(0xff << 8)
++#define VC_BYPASS_SA_MASK	(0x7f << 0)
++/* I2C_CLK_MODE register bit definitions - No variance at all */
++#define VC_MODE_REPEAT_START_MASK	BIT(4)
++#define VC_MODE_HSENABLE_MASK		BIT(3)
++#define VC_MODE_MCODE_MASK		(0x3 << 0)
++/* I2C_CLK_CONFIG register bit definitions - No variance at all */
++#define VC_CLK_CFG_HSSCLL_MASK		(0xff << 24)
++#define VC_CLK_CFG_HSSCLH_MASK		(0xff << 16)
++#define VC_CLK_CFG_SCLL_MASK		(0xff << 8)
++#define VC_CLK_CFG_SCLH_MASK		(0xff << 0)
++
++/* Stores the list containing all voltage controller channels */
++static LIST_HEAD(omap_vc_channel_list);
++static DEFINE_MUTEX(omap_vc_channel_list_mutex);
++
++/**
++ * omap_vc_channel_set_on_voltage() - Update the ON transition voltage
++ * @info:	channel info (must be valid pointer from
++ *		devm_omap_vc_channel_get)
++ * @uv:		ON voltage in micro volts.
++ *
++ * Updates the voltage that OMAP comes back to when resuming from a low
++ * power state. It is recommended to invoke this as part of voltage transition
++ * as the low power transitions are more performance sensitive that voltage
++ * transition path (part of DVFS).
++ *
++ * This needs to be invoked either as part of DVFS sequence or prior to
++ * attempting to enter low power state.
++ *
++ * NOTE: no extra error handling is performed to reduce overhead as much as
++ * sanely possible. No explicit locks are needed as regmap takes care of
++ * the same.
++ *
++ * Return: 0 if all operations are successful, else returns appropriate
++ * error value.
++ */
++int omap_vc_channel_set_on_voltage(struct omap_vc_channel_info *info, u32 uv)
 +{
++	struct omap_vc *vc;
++	struct omap_vc_channel *vc_channel;
++	struct device *dev;
++	const struct vc_channel_regs *ch_regs;
++	struct omap_pmic *pmic;
++	struct omap_pmic_ops *ops;
++	struct regmap *regmap;
++	int ret = 0;
++	u32 val = 0;
++	u8 vsel;
++
++	if (!info) {
++		pr_err("Bad parameters\n");
++		ret = -EINVAL;
++		goto out;
++	}
++
++	vc_channel = info->ch;
++	dev = vc_channel->dev;
++	ch_regs = vc_channel->ch_regs;
++	pmic = info->pmic;
++	ops = pmic->ops;
++
++	vc = dev_get_drvdata(dev->parent);
++	if (!vc) {
++		dev_err(dev, "Unable to find parent VC data\n");
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = ops->uv_to_vsel(pmic, uv, &vsel);
++	if (ret) {
++		dev_err(dev, "%s: Conversion onV %d to vsel fail(%d)\n",
++			__func__, uv, ret);
++		goto out;
++	}
++	regmap = vc->regmap;
++
++	if (ch_regs->command_val_onlp_mask) {
++		val = vsel << __ffs(ch_regs->command_val_onlp_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_onlp_mask,
++					 val);
++	}
++	if (ret)
++		goto fail_reg;
++
++	if (ch_regs->command_val_on_mask) {
++		val = vsel << __ffs(ch_regs->command_val_on_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_on_mask, val);
++	}
++
++fail_reg:
++	if (ret)
++		dev_err(dev, "%s: Register operation failed with %d\n",
++			__func__, ret);
++out:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(omap_vc_channel_set_on_voltage);
++
++/**
++ * omap_vc_channel_setup_lp() - Low power voltage configuration
++ * @vc_channel:	VC channel to configure for
++ * @vc:		VC to which this channel belongs to.
++ *
++ * The Low power states such as OFF, RETENTION are pre-determined SoC specific
++ * voltage values. These can be configured at boot time and the voltages are
++ * achieved as needed. This also configures the boot voltage as ON voltage if
++ * it is available.
++ */
++static int omap_vc_channel_setup_lp(struct omap_vc_channel *vc_channel,
++				    struct omap_vc *vc)
++{
++	struct device *dev = vc_channel->dev;
++	const struct vc_channel_regs *ch_regs = vc_channel->ch_regs;
++	struct regmap *regmap = vc->regmap;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	struct omap_pmic_ops *ops = pmic->ops;
++	struct omap_vc_channel_info *info = &vc_channel->info;
++	int ret = 0;
++	u32 val;
++	u8 vsel;
++
++	if (ch_regs->command_val_off_mask) {
++		ret = ops->uv_to_vsel(pmic, info->off_uV, &vsel);
++		if (ret) {
++			dev_err(dev, "%s: Conversion OFF %d to vsel fail(%d)\n",
++				__func__, info->off_uV, ret);
++			goto out;
++		}
++		val = vsel << __ffs(ch_regs->command_val_off_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_off_mask, val);
++		if (ret)
++			goto fail_reg;
++	}
++
++	if (ch_regs->command_val_ret_mask) {
++		ret = ops->uv_to_vsel(pmic, info->retention_uV, &vsel);
++		if (ret) {
++			dev_err(dev, "%s: Conversion RET %d to vsel fail(%d)\n",
++				__func__, info->retention_uV, ret);
++			goto out;
++		}
++		val = vsel << __ffs(ch_regs->command_val_ret_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_ret_mask, val);
++		if (ret)
++			goto fail_reg;
++	}
++
++	if (pmic->boot_voltage_uV && (ch_regs->command_val_on_mask |
++				      ch_regs->command_val_onlp_mask)) {
++		ret = ops->uv_to_vsel(pmic, pmic->boot_voltage_uV, &vsel);
++		if (ret) {
++			dev_err(dev, "%s: Conversion ON %d to vsel fail(%d)\n",
++				__func__,  pmic->boot_voltage_uV, ret);
++			goto out;
++		}
++	}
++	if (pmic->boot_voltage_uV && ch_regs->command_val_on_mask) {
++		val = vsel << __ffs(ch_regs->command_val_on_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_on_mask, val);
++		if (ret)
++			goto fail_reg;
++	}
++
++	if (pmic->boot_voltage_uV && ch_regs->command_val_onlp_mask) {
++		val = vsel << __ffs(ch_regs->command_val_onlp_mask);
++		ret = regmap_update_bits(regmap,
++					 ch_regs->command_val_reg_offset,
++					 ch_regs->command_val_onlp_mask,
++					 val);
++	}
++
++fail_reg:
++	if (ret)
++		dev_err(dev, "%s: Register operation failed with %d\n",
++			__func__, ret);
++
++out:
++	return ret;
++}
++
++/**
++ * omap_vc_send_msg() - Send a VC bypass command
++ * @vc:		Voltage controller
++ * @vc_channel:	Voltage controller channel
++ * @reg_addr:	Register address to write to
++ * @data:	data to write.
++ *
++ * This bypasses all channel scheduling mechanisms inside Voltage controller
++ * and must be used sparingly in controlled environments. Using this to scale
++ * voltage is NOT a recommended procedure.
++ *
++ * The only safe usage is when Voltage Processors, SmartReflex, VFSM(PRCM)
++ * is in idle or known state - example at boot, this may be used for
++ * configuration.
++ */
++static int omap_vc_send_msg(struct omap_vc *vc,
++			    struct omap_vc_channel *vc_channel, u8 reg_addr,
++			    u8 data)
++{
++	struct device *dev = vc_channel->dev;
++	struct regmap *regmap = vc->regmap;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	u32 loop_cnt = 0, retries_cnt = 0;
++	u32 vc_bypass_value;
 +	int ret = 0;
 +
-+	mutex_lock(&omap_pmic_cops_mutex);
-+	if (pmic_cops) {
-+		pr_err("Controller operations already registered\n");
++	ret = regmap_update_bits(regmap, vc->regs->bypass_cmd_reg,
++				 VC_BYPASS_DATA_MASK,
++				 data << __ffs(VC_BYPASS_DATA_MASK));
++	if (ret)
++		goto reg_fail;
++	ret = regmap_update_bits(regmap, vc->regs->bypass_cmd_reg,
++				 VC_BYPASS_REGADDR_MASK,
++				 reg_addr << __ffs(VC_BYPASS_REGADDR_MASK));
++	if (ret)
++		goto reg_fail;
++	ret = regmap_update_bits(regmap, vc->regs->bypass_cmd_reg,
++				 VC_BYPASS_SA_MASK,
++				 pmic->slave_addr << __ffs(VC_BYPASS_SA_MASK));
++	if (ret)
++		goto reg_fail;
++	/* Activate the transfer */
++	ret = regmap_update_bits(regmap, vc->regs->bypass_cmd_reg,
++				 VC_BYPASS_VALID_MASK, VC_BYPASS_VALID_MASK);
++	if (ret)
++		goto reg_fail;
++
++	/* See if transfer complete */
++	ret = regmap_read(regmap, vc->regs->bypass_cmd_reg, &vc_bypass_value);
++	if (ret)
++		goto reg_fail;
++
++	dev_dbg(dev,
++		"bypass_val = 0x%08x, sa=0x%02x, reg=0x%02x, data=0x%02x\n",
++		vc_bypass_value, pmic->slave_addr, reg_addr, data);
++
++	/*
++	 * Loop which polls continously 50 times before sleeping and retry
++	 * around for atleast pmic->i2c_timeout_us * 5. Rationale as follows:
++	 * 1) continuous poll loops for 50 times, if it cant get it, then (2)
++	 * 2) sleeps between 5-15 uSec. then try (1)
++	 * if it cant get in timeout_us *5 ish (in step 1) then give up
++	 *
++	 * The continous loop(1) is used because the first VALID setting
++	 * is expected to appear quiet fast. However, the delay occurs only
++	 * when VC internally does round robin scheduling between PRCM's VFSM,
++	 * VC channels (1-n) followed by vcbypass. Only if there is pending
++	 * transaction will the bypass valid bit get delayed, 99.99% of the
++	 * cases at this point in time(configuration and setup time), we do
++	 * not expect this conflict to take place.
++	 */
++	while (vc_bypass_value & VC_BYPASS_VALID_MASK) {
++		loop_cnt++;
++
++		/* Get at least 5 times pmic->i2c_timeout_us for completion */
++		if (retries_cnt > pmic->i2c_timeout_us) {
++			dev_err(dev, "%s: Retry count exceeded\n", __func__);
++			ret = -ETIMEDOUT;
++			goto out;
++		}
++
++		if (loop_cnt > 50) {
++			retries_cnt++;
++			loop_cnt = 0;
++			usleep_range(5, 15);
++		}
++		ret =
++		    regmap_read(regmap, vc->regs->bypass_cmd_reg,
++				&vc_bypass_value);
++		if (ret)
++			goto reg_fail;
++	}
++
++reg_fail:
++	if (ret)
++		dev_err(dev, "%s: register operation failed(%d)\n",
++			__func__, ret);
++
++out:
++	return ret;
++}
++
++/**
++ * omap_vc_channel_setup_pmic() - Setup PMIC configuration commands if any
++ * @vc_channel:	vc channel
++ * @vc:		vc
++ *
++ * Uses vc_bypass to send commands to the PMIC for mandatory configurations
++ * for the device to function.
++ */
++static int omap_vc_channel_setup_pmic(struct omap_vc_channel *vc_channel,
++				      struct omap_vc *vc)
++{
++	struct device *dev = vc_channel->dev;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	struct omap_pmic_setup_commands *cmd;
++	int i, ret = 0;
++
++	if (!pmic->setup_num_commands)
++		return 0;
++	if (!pmic->setup_command_list) {
++		dev_err(dev, "Bad setup command list\n");
++		return -EINVAL;
++	}
++	cmd = pmic->setup_command_list;
++
++	for (i = 0; i < pmic->setup_num_commands; i++, cmd++) {
++		ret = omap_vc_send_msg(vc, vc_channel, cmd->reg, cmd->cmd_val);
++		if (ret) {
++			dev_err(dev, "Failed cmd [r=0x%02x v=0x%02x] [%d]\n",
++				cmd->reg, cmd->cmd_val, ret);
++			return ret;
++		}
++	}
++
++	return ret;
++}
++
++/* Quick helper to avoid having to define /bits/ 8 <0x20> for 8 bit params */
++static inline int vc_property_read_u8(const struct device_node *np,
++				      const char *propname, u8 *out_value)
++{
++	u32 val;
++	int r;
++
++	r = of_property_read_u32(np, propname, &val);
++	if (r)
++		return r;
++
++	if (val > 0xFF)
++		return -ERANGE;
++
++	*out_value = (u8) val;
++	return 0;
++}
++
++/**
++ * omap_vc_channel_setup_sa() - setup Slave address
++ * @vc_channel:	vc channel
++ * @vc:		vc
++ *
++ * setups the slave address configuration as needed.
++ */
++static int omap_vc_channel_setup_sa(struct omap_vc_channel *vc_channel,
++				    struct omap_vc *vc)
++{
++	struct device *dev = vc_channel->dev;
++	const struct vc_channel_regs *ch_regs = vc_channel->ch_regs;
++	struct regmap *regmap = vc->regmap;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	int ret;
++	u32 enable_mask = 0;
++
++	if (!vc_channel->use_master_channel_sa) {
++		u32 val;
++
++		val = pmic->slave_addr << __ffs(ch_regs->sa_addr_mask);
++		ret =
++		    regmap_update_bits(regmap, ch_regs->sa_reg_offset,
++				       ch_regs->sa_addr_mask, val);
++		if (ret)
++			goto out;
++
++		/* SA bit is never set for master */
++		if (!vc_channel->is_master_channel)
++			enable_mask = ch_regs->sa_enable_mask;
++	}
++
++	ret = regmap_update_bits(regmap, ch_regs->cfg_reg_offset,
++				 ch_regs->sa_enable_mask, enable_mask);
++
++out:
++	if (ret)
++		dev_err(dev, "%s: update reg failed(%d)\n", __func__, ret);
++
++	return ret;
++}
++
++/**
++ * omap_vc_channel_setup_voltage() - configure channel's voltage register addr
++ * @vc_channel:	vc channel
++ * @vc:		voltage controller
++ */
++static int omap_vc_channel_setup_voltage(struct omap_vc_channel *vc_channel,
++					 struct omap_vc *vc)
++{
++	struct device *dev = vc_channel->dev;
++	struct regmap *regmap = vc->regmap;
++	const struct vc_channel_regs *ch_regs = vc_channel->ch_regs;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	int ret;
++	u32 enable_mask = 0;
++
++	if (!vc_channel->use_master_channel_voltage_reg) {
++		u32 val;
++
++		val =
++		    pmic->voltage_reg_addr << __ffs(ch_regs->voltage_addr_mask);
++		ret = regmap_update_bits(regmap, ch_regs->voltage_reg_offset,
++				       ch_regs->voltage_addr_mask, val);
++		if (ret)
++			goto out;
++
++		/* RAV bit is never set for master */
++		if (!vc_channel->is_master_channel)
++			enable_mask = ch_regs->rav_enable_mask;
++	}
++	ret = regmap_update_bits(regmap, ch_regs->cfg_reg_offset,
++				 ch_regs->rav_enable_mask, enable_mask);
++out:
++	if (ret)
++		dev_err(dev, "%s: update reg failed(%d)\n", __func__, ret);
++
++	return ret;
++}
++
++/**
++ * omap_vc_channel_setup_command() - configure channel's command register addr
++ * @vc_channel:	vc channel
++ * @vc:		voltage controller
++ */
++static int omap_vc_channel_setup_command(struct omap_vc_channel *vc_channel,
++					 struct omap_vc *vc)
++{
++	struct device *dev = vc_channel->dev;
++	struct regmap *regmap = vc->regmap;
++	const struct vc_channel_regs *ch_regs = vc_channel->ch_regs;
++	struct omap_pmic *pmic = vc_channel->info.pmic;
++	int ret;
++	u32 cmd_sel_mask = ch_regs->cmd_sel_mask;
++	u32 rac_enable_mask = 0;
++	u32 racen_mask = 0;
++
++	if (!vc_channel->use_master_channel_cmd_reg) {
++		u32 val;
++
++		val = pmic->cmd_reg_addr << __ffs(ch_regs->command_addr_mask);
++		ret =
++		    regmap_update_bits(regmap, ch_regs->command_addr_reg_offset,
++				       ch_regs->command_addr_mask, val);
++		if (ret)
++			goto out;
++
++		/* RAC bit is never set for master */
++		if (!vc_channel->is_master_channel)
++			rac_enable_mask = ch_regs->rac_enable_mask;
++	}
++
++	ret = regmap_update_bits(regmap, ch_regs->cfg_reg_offset,
++				 ch_regs->rac_enable_mask, rac_enable_mask);
++	if (ret)
++		goto out;
++
++	/* Retaining legacy logic - if needed for special case, switch to DT? */
++	if (pmic->cmd_reg_addr == pmic->voltage_reg_addr)
++		racen_mask = ch_regs->racen_mask;
++
++	ret = regmap_update_bits(regmap, ch_regs->cfg_reg_offset,
++				 ch_regs->racen_mask, racen_mask);
++	if (ret)
++		goto out;
++
++	/* CMD bit is never set for master */
++	if (vc_channel->is_master_channel ||
++	    vc_channel->use_master_channel_cmd_val)
++		cmd_sel_mask = 0;
++
++	ret = regmap_update_bits(regmap, ch_regs->cfg_reg_offset,
++				 ch_regs->cmd_sel_mask, cmd_sel_mask);
++out:
++	if (ret)
++		dev_err(dev, "%s: update reg failed(%d)\n", __func__, ret);
++
++	return ret;
++}
++
++/* Quick helper to find the OF node for a device matching to channel */
++static struct device_node *of_get_omap_vc_channel(struct device *dev)
++{
++	struct device_node *vc_channel_node = NULL;
++	char *prop_name = "ti,vc-channel";
++
++	dev_dbg(dev, "Looking up %s from device tree\n", prop_name);
++	vc_channel_node = of_parse_phandle(dev->of_node, prop_name, 0);
++
++	if (!vc_channel_node) {
++		dev_err(dev, "Looking up %s property in node %s failed",
++			prop_name, dev->of_node->full_name);
++		return ERR_PTR(-ENODEV);
++	}
++	return vc_channel_node;
++}
++
++/* Helper to cleanup when the managed device is released */
++static void devm_omap_vc_channel_release(struct device *dev, void *res)
++{
++	struct omap_vc_channel *vc_channel = *((struct omap_vc_channel **)res);
++
++	mutex_lock(&omap_vc_channel_list_mutex);
++
++	vc_channel->usage_count--;
++	if (!vc_channel->usage_count)
++		vc_channel->info.pmic = NULL;
++	module_put(vc_channel->dev->driver->owner);
++
++	mutex_unlock(&omap_vc_channel_list_mutex);
++
++	return;
++}
++
++/**
++ * devm_omap_vc_channel_get() - managed request to get a VC channel
++ * @dev:	Generic device to handle the request for
++ * @pmic:	PMIC resource this will be assigned to
++ *
++ * Ensures that usage count is maintained. Uses managed device,
++ * so everything is undone on driver detach.
++ *
++ * Return: -EPROBE_DEFER if the node is present, however device is
++ * not yet probed.
++ * -EINVAL if bad pointers or node description is not found.
++ * -ENODEV if the property cannot be found
++ * -ENOMEM if allocation could not be done.
++ *  device pointer to vp dev if all successful. error handling should be
++ *  performed with IS_ERR
++ */
++struct omap_vc_channel_info *devm_omap_vc_channel_get(struct device *dev,
++						      struct omap_pmic *pmic)
++{
++	struct omap_vc_channel *vc_channel, **ptr;
++	struct device_node *node;
++	struct device *vc_dev;
++	struct omap_vc_channel_info *info;
++	struct omap_vc *vc;
++	int ret = 0;
++
++	if (!dev || !dev->of_node || !pmic) {
++		pr_err("Invalid parameters\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	node = of_get_omap_vc_channel(dev);
++	if (IS_ERR(node))
++		return (void *)node;
++
++	mutex_lock(&omap_vc_channel_list_mutex);
++	list_for_each_entry(vc_channel, &omap_vc_channel_list, list)
++	    if (vc_channel->dev->of_node == node)
++		goto found;
++
++	/* Node definition is present, but not probed yet.. request defer */
++	info = ERR_PTR(-EPROBE_DEFER);
++	goto out_unlock;
++
++found:
++	vc_dev = vc_channel->dev;
++	if (!try_module_get(vc_dev->driver->owner)) {
++		dev_err(dev, "%s: Cant get device owner\n", __func__);
++		info = ERR_PTR(-EINVAL);
++		goto out_unlock;
++	}
++
++	/* Allow ONLY 1 user at a time */
++	if (vc_channel->usage_count) {
++		dev_err(dev, "%s: device %s is busy..\n", __func__,
++			dev_name(vc_dev));
 +		ret = -EBUSY;
 +		goto out;
 +	}
-+	if (!cops->devm_pmic_register || !cops->voltage_set ||
-+	    !cops->voltage_get || !cops->voltage_get_range) {
-+		pr_err("Missing operations!\n");
++	ptr = devres_alloc(devm_omap_vc_channel_release, sizeof(*ptr),
++			   GFP_KERNEL);
++	if (!ptr) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	info = &vc_channel->info;
++
++	vc = dev_get_drvdata(vc_dev->parent);
++	if (!vc) {
++		dev_err(dev, "Unable to find parent VC data\n");
 +		ret = -EINVAL;
 +		goto out;
 +	}
-+
-+	pmic_cops = cops;
-+out:
-+	mutex_unlock(&omap_pmic_cops_mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(omap_pmic_register_controller_ops);
-+
-+/**
-+ * omap_pmic_vsel_to_uv() - Convert voltage selector(vsel) to microvolts
-+ * @pmic:	pointer to pmic struct
-+ * @vsel:	voltage selector(vsel)
-+ * @uv:		If conversion is successful, returns the voltage in micro volts
-+ *
-+ * Return: 0 if conversion is successful and *uv has proper value, else
-+ * appropriate error value for failure.
-+ */
-+static int omap_pmic_vsel_to_uv(struct omap_pmic *pmic, u8 vsel, u32 *uv)
-+{
-+	u32 tmp = vsel;
-+
-+	if (!pmic || !uv) {
-+		pr_err("Bad parameters pmic=%p uv=%p!\n", pmic, uv);
-+		return -EINVAL;
-+	}
-+
-+	if (pmic->voltage_selector_mask) {
-+		tmp &= pmic->voltage_selector_mask;
-+		tmp >>= __ffs(pmic->voltage_selector_mask);
-+	}
-+
-+	if (!tmp && pmic->voltage_selector_zero)
++	info->pmic = pmic;
++	ret = omap_vc_channel_setup_sa(vc_channel, vc);
++	if (ret)
 +		goto out;
 +
-+	tmp -= pmic->voltage_selector_offset;
-+	tmp *= pmic->step_size_uV;
-+	tmp += pmic->min_uV;
++	ret = omap_vc_channel_setup_voltage(vc_channel, vc);
++	if (ret)
++		goto out;
 +
-+	if (tmp < pmic->min_uV || tmp > pmic->max_uV) {
-+		dev_dbg(pmic->dev, "%s: Out of range 0x%02x[%d] (%d <-> %d)\n",
-+			__func__, vsel, tmp, pmic->min_uV, pmic->max_uV);
-+		return -ERANGE;
-+	}
++	ret = omap_vc_channel_setup_command(vc_channel, vc);
++	if (ret)
++		goto out;
++
++	ret = omap_vc_channel_setup_pmic(vc_channel, vc);
++	if (ret)
++		goto out;
++
++	ret = omap_vc_channel_setup_lp(vc_channel, vc);
++	if (ret)
++		goto out;
++
++	if (vc_channel->is_master_channel)
++		vc->master_channel_configured = true;
++
++	*ptr = vc_channel;
++	vc_channel->usage_count++;
++	devres_add(dev, ptr);
 +
 +out:
-+	*uv = tmp;
-+	dev_dbg(pmic->dev, "%s: uv=%d vsel=0x%02x\n", __func__, *uv, vsel);
++	if (ret) {
++		module_put(vc_dev->driver->owner);
++		info = ERR_PTR(ret);
++		dev_err(dev, "Failed setup vc with (%d)\n", ret);
++	}
 +
-+	return 0;
++out_unlock:
++	mutex_unlock(&omap_vc_channel_list_mutex);
++
++	return info;
 +}
++EXPORT_SYMBOL_GPL(devm_omap_vc_channel_get);
 +
-+/**
-+ * omap_pmic_uv_to_vsel() - Convert microvolts to voltage selector(vsel)
-+ * @pmic:	pointer to pmic struct
-+ * @uv:		voltage in micro volts
-+ * @vsel:	If conversion is successful, voltage selector(vsel)
-+ *
-+ * Return: 0 if conversion is successful and *vsel has proper value, else
-+ * appropriate error value for failure.
-+ */
-+static int omap_pmic_uv_to_vsel(struct omap_pmic *pmic, u32 uv, u8 *vsel)
-+{
-+	u32 tmp = uv;
-+
-+	if (!pmic || !vsel) {
-+		pr_err("Bad parameters pmic=%p vsel=%p!\n", pmic, vsel);
-+		return -EINVAL;
-+	}
-+
-+	if (!tmp && pmic->voltage_selector_zero)
-+		goto skip_convert;
-+
-+	if (tmp > pmic->max_uV)
-+		goto skip_convert;
-+
-+	tmp -= pmic->min_uV;
-+	tmp = DIV_ROUND_UP(tmp, pmic->step_size_uV);
-+
-+	tmp += pmic->voltage_selector_offset;
-+
-+skip_convert:
-+	if (tmp > 0xFF) {
-+		dev_dbg(pmic->dev, "%s: Out of range 0x%04x[%d] (%d - %d)\n",
-+			__func__, tmp, uv, pmic->min_uV, pmic->max_uV);
-+		return -ERANGE;
-+	}
-+	if (pmic->voltage_selector_mask) {
-+		tmp <<= __ffs(pmic->voltage_selector_mask);
-+		if (tmp > 0xFF) {
-+			dev_warn(pmic->dev, "%s: Out of range 0x%04x[%d]\n",
-+				 __func__, tmp, uv);
-+			return -ERANGE;
-+		}
-+		tmp &= pmic->voltage_selector_mask;
-+	}
-+
-+	tmp |= pmic->voltage_selector_setbits;
-+
-+	*vsel = tmp;
-+	dev_dbg(pmic->dev, "%s: uv=%d vsel=0x%02x\n", __func__, uv, *vsel);
-+
-+	return 0;
-+}
-+
-+/**
-+ * omap_pmic_of_read_setup_commands() - read setup commands from OF
-+ * @dev:	device to pick up setup commands from
-+ * @pmic:	pointer to pmic structure
-+ */
-+static int omap_pmic_of_read_setup_commands(struct device *dev,
-+					    struct omap_pmic *pmic)
-+{
-+	char *pname = "ti,setup_commands";
-+	const struct property *prop;
-+	const __be32 *v;
-+	struct omap_pmic_setup_commands *setup;
-+	const u8 num_values = 2;
-+	u32 num_entries;
-+	int i;
-+
-+	prop = of_find_property(dev->of_node, pname, NULL);
-+	if (!prop)
-+		return 0;
-+
-+	if (!prop->value) {
-+		dev_err(dev, "Empty '%s' property?\n", pname);
-+		return -ENODATA;
-+	}
-+
-+	/* Each setup command is a tuple consisting of reg_addr, value */
-+	num_entries = prop->length / sizeof(u32);
-+	if (!num_entries || (num_entries % num_values)) {
-+		dev_err(dev, "All '%s' list entries need %d vals\n", pname,
-+			num_values);
-+		return -EINVAL;
-+	}
-+	num_entries /= num_values;
-+
-+	setup = devm_kzalloc(dev, sizeof(*setup) * num_entries, GFP_KERNEL);
-+	if (!setup) {
-+		dev_err(dev, "Can't allocate info table for '%s' property\n",
-+			pname);
-+		return -ENOMEM;
-+	}
-+
-+	pmic->setup_command_list = setup;
-+	pmic->setup_num_commands = num_entries;
-+
-+	v = prop->value;
-+	for (i = 0; i < num_entries; i++, setup++) {
-+		u32 reg, cmd_val;
-+
-+		/* NOTE: num_values should equal to entries picked up here */
-+		reg = be32_to_cpup(v++);
-+		cmd_val = be32_to_cpup(v++);
-+
-+		/* Setup commands and registers are 8 bit wide. */
-+		if (reg > 0xFF || cmd_val > 0xFF) {
-+			dev_err(dev, "Bad entries in '%s' property idx=%d\n",
-+				pname, i);
-+			return -EINVAL;
-+		}
-+
-+		setup->reg = reg;
-+		setup->cmd_val = cmd_val;
-+		dev_dbg(dev, "[setup cmd %d] reg=0x%02x val=0x%02x\n", i,
-+			setup->reg, setup->cmd_val);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * omap_pmic_of_setup_gpios() - Setup GPIO array if needed.
-+ * @dev:	device to pick up the gpios from
-+ */
-+static int omap_pmic_of_setup_gpios(struct device *dev)
-+{
-+	struct device_node *node = dev->of_node;
-+	int num_gpios, i, ret;
-+
-+	num_gpios = of_gpio_count(node);
-+	if (num_gpios < 0)
-+		return 0;
-+
-+	for (i = 0; i < num_gpios; i++) {
-+		int gpio;
-+		enum of_gpio_flags flags;
-+
-+		gpio = of_get_gpio_flags(node, i, &flags);
-+		if (!gpio_is_valid(gpio)) {
-+			dev_err(dev, "Invalid GPIO[%d]: %d\n", i, gpio);
-+			return -EINVAL;
-+		}
-+
-+		ret = devm_gpio_request(dev, gpio, dev_name(dev));
-+		if (ret) {
-+			dev_err(dev, "Unable to get GPIO %d (%d)\n", gpio, ret);
-+			return ret;
-+		}
-+		ret = gpio_direction_output(gpio,
-+					    !!(flags & OF_GPIO_ACTIVE_LOW));
-+		if (ret) {
-+			dev_err(dev, "Failed to set GPIO %d (%d)\n", gpio, ret);
-+			return ret;
-+		}
-+		dev_dbg(dev, "GPIO=%d set_to=%d\n", gpio,
-+			!!(flags & OF_GPIO_ACTIVE_LOW));
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * omap_pmic_set_voltage() - regulator interface to set voltage
-+ * @rdev:	regulator device
-+ * @min_uV:	min voltage in micro-volts
-+ * @max_uV:	max voltage in micro-volts
-+ * @unused:	unused.. we dont use sel
-+ *
-+ * Return: -ERANGE for out of range values, appropriate error code if conversion
-+ * fails, else returns 0.
-+ */
-+static int omap_pmic_set_voltage(struct regulator_dev *rdev, int min_uV,
-+				 int max_uV, unsigned *unused)
-+{
-+	struct omap_pmic *pmic = rdev_get_drvdata(rdev);
-+
-+	return pmic_cops->voltage_set(pmic->v_dev, min_uV);
-+}
-+
-+/**
-+ * omap_pmic_get_voltage() - regulator interface to get voltage
-+ * @rdev: regulator device
-+ *
-+ * Return: current voltage set on PMIC OR appropriate error value
-+ */
-+static int omap_pmic_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct omap_pmic *pmic = rdev_get_drvdata(rdev);
-+	int ret;
-+	u32 uv;
-+
-+	ret = pmic_cops->voltage_get(pmic->v_dev, &uv);
-+	if (ret)
-+		return ret;
-+
-+	return uv;
-+}
-+
-+static struct omap_pmic_ops omap_generic_pmic_ops = {
-+	.vsel_to_uv = omap_pmic_vsel_to_uv,
-+	.uv_to_vsel = omap_pmic_uv_to_vsel,
++static const struct of_device_id omap_vc_channel_of_match_tbl[] = {
++	{.compatible = "ti,omap3-vc-channel-0", .data = &omap3_ch_0_regs},
++	{.compatible = "ti,omap3-vc-channel-1", .data = &omap3_ch_1_regs},
++	{.compatible = "ti,omap4-vc-channel-mpu", .data = &omap4_ch_mpu_regs},
++	{.compatible = "ti,omap4-vc-channel-iva", .data = &omap4_ch_iva_regs},
++	{.compatible = "ti,omap4-vc-channel-core", .data = &omap4_ch_core_regs},
++	{.compatible = "ti,omap5-vc-channel-mpu", .data = &omap5_ch_mpu_regs},
++	{.compatible = "ti,omap5-vc-channel-mm", .data = &omap5_ch_mm_regs},
++	{.compatible = "ti,omap5-vc-channel-core", .data = &omap5_ch_core_regs},
++	{},
 +};
++MODULE_DEVICE_TABLE(of, omap_vc_channel_of_match_tbl);
 +
-+static struct regulator_ops omap_pmic_reg_ops = {
-+	.list_voltage = regulator_list_voltage_linear,
-+
-+	.set_voltage = omap_pmic_set_voltage,
-+	.get_voltage = omap_pmic_get_voltage,
-+};
-+
-+/**
-+ * omap_pmic_parse_of() - Do DT OF node parsing
-+ * @pmic:	pointer to PMIC
-+ */
-+static int omap_pmic_parse_of(struct omap_pmic *pmic)
++static int omap_vc_channel_probe(struct platform_device *pdev)
 +{
-+	struct device *dev = pmic->dev;
++	struct device *vc_dev, *dev = &pdev->dev;
 +	struct device_node *node = dev->of_node;
-+	u32 val = 0;
-+	char *pname;
-+	int ret;
-+
-+	pname = "ti,i2c-slave-address";
-+	ret = of_property_read_u32(node, pname, &val);
-+	/* Only 7 bit addressing allowed for slave address */
-+	if (ret || val >= 0x80)
-+		goto invalid_of_property;
-+	pmic->slave_addr = val;
-+
-+	pname = "ti,i2c-voltage-register";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (ret || val >= 0xFF)
-+		goto invalid_of_property;
-+	pmic->voltage_reg_addr = val;
-+
-+	pname = "ti,i2c-command-register";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (ret || val >= 0xFF)
-+		goto invalid_of_property;
-+	pmic->cmd_reg_addr = val;
-+
-+	pname = "ti,slew-rate-microvolt";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (ret || !val)
-+		goto invalid_of_property;
-+	pmic->slew_rate_uV = val;
-+
-+	pname = "ti,step-size-microvolt";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (ret || !val)
-+		goto invalid_of_property;
-+	pmic->step_size_uV = val;
-+
-+	/* Optional parameters */
-+	pmic->voltage_selector_zero =
-+	    !of_property_read_bool(node, "ti,non-zero-voltage-selector");
-+
-+	pname = "ti,boot-voltage-micro-volts";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (!ret) {
-+		if (!val)
-+			goto invalid_of_property;
-+		pmic->boot_voltage_uV = val;
-+	}
-+
-+	ret = of_property_read_u32(node, "ti,i2c-timeout-microsecond",
-+				   &pmic->i2c_timeout_us);
-+	/* If we dont have custom parameter, use arbitary un-realistic value */
-+	if (ret)
-+		pmic->i2c_timeout_us = 200;
-+
-+	pname = "ti,voltage-selector-offset";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (!ret) {
-+		if (val > 0xFF)
-+			goto invalid_of_property;
-+		pmic->voltage_selector_offset = val;
-+	}
-+	pname = "ti,voltage-selector-mask";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (!ret) {
-+		if (val > 0xFF)
-+			goto invalid_of_property;
-+		pmic->voltage_selector_mask = val;
-+	}
-+	pname = "ti,voltage-selector-set-bits";
-+	ret = of_property_read_u32(node, pname, &val);
-+	if (!ret) {
-+		if (val > 0xFF)
-+			goto invalid_of_property;
-+		pmic->voltage_selector_setbits = val;
-+	}
-+
-+	ret = omap_pmic_of_read_setup_commands(dev, pmic);
-+
-+	return ret;
-+
-+invalid_of_property:
-+	if (!ret) {
-+		dev_err(dev, "Invalid value 0x%x[%d] in '%s' property.\n",
-+			val, val, pname);
-+		ret = -EINVAL;
-+	} else {
-+		dev_err(dev, "Missing/Invalid '%s' property - error(%d)\n",
-+			pname, ret);
-+	}
-+	return ret;
-+}
-+
-+static int omap_pmic_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *node = dev->of_node;
-+	struct omap_pmic *pmic;
-+	struct regulator_desc *desc;
-+	struct regulation_constraints *c;
-+	struct regulator_config config = { };
-+	struct regulator_init_data *initdata = NULL;
-+	struct regulator_dev *rdev = NULL;
-+	int ret = 0;
-+	bool ops_ready;
++	struct omap_vc *vc;
++	struct omap_vc_channel *vc_channel;
++	struct omap_vc_channel_info *info;
++	const struct of_device_id *match;
 +
 +	if (!node) {
-+		dev_err(dev, "%s: missing device tree nodes?\n", __func__);
++		dev_err(dev, "%s: no OF information?\n", __func__);
 +		return -EINVAL;
 +	}
 +
-+	mutex_lock(&omap_pmic_cops_mutex);
-+	ops_ready = pmic_cops ? true : false;
-+	mutex_unlock(&omap_pmic_cops_mutex);
-+	if (!ops_ready) {
-+		dev_dbg(dev, "Voltage Operations not ready yet..\n");
++	match = of_match_device(omap_vc_channel_of_match_tbl, dev);
++	if (!match) {
++		/* We do not expect this to happen */
++		dev_err(dev, "%s: Unable to match device\n", __func__);
++		return -ENODEV;
++	}
++	if (!match->data) {
++		dev_err(dev, "%s: Bad data in match\n", __func__);
++		return -EINVAL;
++	}
++
++	if (!dev->parent) {
++		dev_err(dev, "%s: Unable to find parent VC device\n", __func__);
++		return -EINVAL;
++	}
++	vc_dev = dev->parent;
++
++	vc = dev_get_drvdata(vc_dev);
++	if (!vc) {
++		dev_err(dev, "%s: Unable to find parent VC data\n", __func__);
++		return -EINVAL;
++	}
++
++	vc_channel = devm_kzalloc(dev, sizeof(*vc_channel), GFP_KERNEL);
++	if (!vc_channel) {
++		dev_err(dev, "%s: Unable to allocate vc channel\n", __func__);
++		return -ENOMEM;
++	}
++	vc_channel->dev = dev;
++	vc_channel->ch_regs = match->data;
++	info = &vc_channel->info;
++	info->ch = vc_channel;
++
++	/* Pick up optional parameters */
++	of_property_read_u32(node, "ti,retention-micro-volts",
++			     &info->retention_uV);
++	of_property_read_u32(node, "ti,off-micro-volts", &info->off_uV);
++
++	vc_channel->is_master_channel =
++	    of_property_read_bool(node, "ti,master-channel");
++	if (vc_channel->is_master_channel && vc->master_channel_configured) {
++		dev_err(dev, "There can only be a single master channel!\n");
++		return -EINVAL;
++	}
++	vc_channel->use_master_channel_sa =
++	    of_property_read_bool(node, "ti,use-master-slave-addr");
++	vc_channel->use_master_channel_voltage_reg =
++	    of_property_read_bool(node, "ti,use-master-voltage-reg-addr");
++	vc_channel->use_master_channel_cmd_reg =
++	    of_property_read_bool(node, "ti,use-master-command-reg-addr");
++	vc_channel->use_master_channel_cmd_val =
++	    of_property_read_bool(node, "ti,use-master-command-reg-val");
++
++	if (vc_channel->is_master_channel &&
++	    (vc_channel->use_master_channel_sa ||
++	     vc_channel->use_master_channel_voltage_reg ||
++	     vc_channel->use_master_channel_cmd_reg ||
++	     vc_channel->use_master_channel_cmd_val)) {
++		dev_err(dev, "Master channel cannot route to slave channel!\n");
++		return -EINVAL;
++	}
++	if (!vc->master_channel_configured &&
++	    (vc_channel->use_master_channel_sa ||
++	     vc_channel->use_master_channel_voltage_reg ||
++	     vc_channel->use_master_channel_cmd_reg ||
++	     vc_channel->use_master_channel_cmd_val)) {
++		dev_dbg(dev, "Deferring - Master channel not yet ready!\n");
 +		return -EPROBE_DEFER;
 +	}
 +
-+	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
-+	if (!desc) {
-+		dev_err(dev, "%s: unable to allocate desc\n", __func__);
-+		return -ENOMEM;
-+	}
++	platform_set_drvdata(pdev, vc_channel);
 +
-+	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
-+	if (!pmic) {
-+		dev_err(dev, "%s: unable to allocate pmic\n", __func__);
-+		return -ENOMEM;
-+	}
++	/* Add it to VC channel list */
++	mutex_lock(&omap_vc_channel_list_mutex);
++	list_add(&vc_channel->list, &omap_vc_channel_list);
++	mutex_unlock(&omap_vc_channel_list_mutex);
 +
-+	/* Read mandatory OF parameters */
-+	pmic->dev = dev;
-+	pmic->ops = &omap_generic_pmic_ops;
++	return 0;
++}
 +
-+	initdata = of_get_regulator_init_data(dev, node);
-+	if (!initdata) {
-+		dev_err(dev, "%s: Unable to alloc regulator init data\n",
-+			__func__);
-+		return -ENOMEM;
-+	}
-+	c = &initdata->constraints;
-+	if (!c->max_uV) {
-+		dev_err(dev, "regulator-max-microvolt is set as 0?\n");
-+		return -EINVAL;
-+	}
++/**
++ * omap_vc_channel_remove() - Cleanup operations for channel
++ * @pdev:	platform device
++ *
++ * Return: -EBUSY if all users have not transitioned out, else return 0
++ */
++static int omap_vc_channel_remove(struct platform_device *pdev)
++{
++	struct omap_vc_channel *vc_channel = platform_get_drvdata(pdev);
++	int ret = 0;
 +
-+	pmic->min_uV = c->min_uV;
-+	pmic->max_uV = c->max_uV;
-+
-+	ret = omap_pmic_parse_of(pmic);
-+	if (ret)
-+		return ret;
-+
-+	ret = omap_pmic_of_setup_gpios(dev);
-+	if (ret)
-+		return ret;
-+
-+	pmic->v_dev = pmic_cops->devm_pmic_register(dev, pmic);
-+	if (IS_ERR(pmic->v_dev)) {
-+		dev_dbg(dev, "Registration of pmic failed (%d)\n", ret);
-+		ret = PTR_ERR(pmic->v_dev);
-+		return ret;
-+	}
-+	desc->name = dev_name(dev);
-+	desc->owner = THIS_MODULE;
-+	desc->type = REGULATOR_VOLTAGE;
-+	desc->ops = &omap_pmic_reg_ops;
-+	desc->uV_step = pmic->step_size_uV;
-+	desc->ramp_delay = pmic->slew_rate_uV;
-+
-+	c->valid_ops_mask |= REGULATOR_CHANGE_VOLTAGE;
-+	c->always_on = true;
-+	ret = pmic_cops->voltage_get_range(pmic->v_dev, &c->min_uV, &c->max_uV);
-+	if (ret) {
-+		dev_err(dev, "Voltage Range get failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	config.dev = dev;
-+	config.init_data = initdata;
-+	config.driver_data = pmic;
-+	config.of_node = node;
-+
-+	rdev = regulator_register(desc, &config);
-+	if (IS_ERR(rdev)) {
-+		ret = PTR_ERR(rdev);
-+		dev_err(dev, "%s: failed to register regulator(%d)\n",
-+			__func__, ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, rdev);
++	mutex_lock(&omap_vc_channel_list_mutex);
++	list_del(&vc_channel->list);
++	mutex_unlock(&omap_vc_channel_list_mutex);
 +
 +	return ret;
 +}
 +
-+static const struct of_device_id omap_pmic_of_match_tbl[] = {
-+	{.compatible = "ti,omap-pmic",},
++static struct platform_driver omap_vc_channel_driver = {
++	.driver = {
++		   .name = DRIVER_NAME "-channel",
++		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(omap_vc_channel_of_match_tbl),
++		   },
++	.probe = omap_vc_channel_probe,
++	.remove = omap_vc_channel_remove,
++};
++
++/* Regular 32 bit registers for Voltage controller */
++static struct regmap_config omap_vc_regmap_config = {
++	.reg_bits = 32,
++	.val_bits = 32,
++	.reg_stride = 4,
++};
++
++/**
++ * omap_vc_i2c_config() - configure the I2C clock and Mode registers
++ * @vc:		voltage controller
++ * @i2c_config:	i2c configuration to configure
++ */
++static int omap_vc_i2c_config(struct omap_vc *vc,
++			 struct omap_omap_vc_i2c_config *i2c_config)
++{
++	u32 mask;
++
++	mask = VC_MODE_HSENABLE_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_mode_reg, mask,
++			   i2c_config->highspeed << __ffs(mask));
++	mask = VC_MODE_MCODE_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_mode_reg, mask,
++			   i2c_config->mcode << __ffs(mask));
++	/* Disable repeated start */
++	mask = VC_MODE_REPEAT_START_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_mode_reg, mask, 0);
++
++	/* if there is clock config register on the SoC, skip.. */
++	if (vc->regs->i2c_clk_cfg_reg < 0)
++		return 0;
++
++	if (!i2c_config->i2c_clk_hsscll &&
++	    !i2c_config->i2c_clk_hssclh &&
++	    !i2c_config->i2c_clk_scll && !i2c_config->i2c_clk_sclh)
++		return -EINVAL;
++
++	/* Configure up clk timings */
++	mask = VC_CLK_CFG_HSSCLL_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_cfg_reg, mask,
++			   i2c_config->i2c_clk_hsscll << __ffs(mask));
++	mask = VC_CLK_CFG_HSSCLH_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_cfg_reg, mask,
++			   i2c_config->i2c_clk_hssclh << __ffs(mask));
++	mask = VC_CLK_CFG_SCLL_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_cfg_reg, mask,
++			   i2c_config->i2c_clk_scll << __ffs(mask));
++	mask = VC_CLK_CFG_SCLH_MASK;
++	regmap_update_bits(vc->regmap, vc->regs->i2c_clk_cfg_reg, mask,
++			   i2c_config->i2c_clk_sclh << __ffs(mask));
++	return 0;
++}
++
++/**
++ * struct i2c_load_data - table mapping load to clock configs
++ * @load:	load of the I2C bus
++ * @hsscll_38_4:	38.4MHz Sysclk HSSCLL configuration
++ * @hsscll_26:		26MHz Sysclk HSSCLL configuration
++ * @hsscll_19_2:	19.2MHz Sysclk HSSCLL configuration
++ * @hsscll_16_8:	16.8MHz Sysclk HSSCLL configuration
++ * @hsscll_12:		12MHz Sysclk HSSCLL configuration
++ *
++ * Instead of doing an hard multi-parameter computation, if load is provided by
++ * OF data then we pick the values from the table, There is always an option
++ * of defining the clocks from OF data itself.
++ */
++struct i2c_load_data {
++	u8 load;
++	u8 hsscll_38_4;
++	u8 hsscll_26;
++	u8 hsscll_19_2;
++	u8 hsscll_16_8;
++	u8 hsscll_12;
++};
++
++/**
++ * omap_vc_i2c_timing_init() - sets up board I2C timing parameters
++ * @dev:	vc channel device
++ * @cfg:	I2C configuration
++ *
++ * Use PMIC + board supplied settings for calculating the total I2C channel
++ * capacitance and set the timing parameters based on this. Pre-calculated
++ * values are provided in data tables, as it is not too straightforward to
++ * calculate these runtime.
++ */
++static int omap_vc_i2c_timing_init(struct device *dev,
++				   struct omap_omap_vc_i2c_config *cfg)
++{
++	u32 capacitance;
++	u16 hsscll;
++	const struct i2c_load_data i2c_timing_data[] = {
++		{
++		 .load = 50,
++		 .hsscll_38_4 = 13,
++		 .hsscll_26 = 11,
++		 .hsscll_19_2 = 9,
++		 .hsscll_16_8 = 9,
++		 .hsscll_12 = 8,
++		 },
++		{
++		 .load = 25,
++		 .hsscll_38_4 = 13,
++		 .hsscll_26 = 11,
++		 .hsscll_19_2 = 9,
++		 .hsscll_16_8 = 9,
++		 .hsscll_12 = 8,
++		 },
++		{
++		 .load = 12,
++		 .hsscll_38_4 = 11,
++		 .hsscll_26 = 10,
++		 .hsscll_19_2 = 9,
++		 .hsscll_16_8 = 9,
++		 .hsscll_12 = 8,
++		 },
++		{
++		 .load = 0,
++		 .hsscll_38_4 = 12,
++		 .hsscll_26 = 10,
++		 .hsscll_19_2 = 9,
++		 .hsscll_16_8 = 8,
++		 .hsscll_12 = 8,
++		 },
++	};
++	const struct i2c_load_data *i2c_data;
++
++	if (!cfg->i2c_clk_pad_load && !cfg->i2c_clk_pcb_length)
++		return 0;
++
++	/* PCB trace capacitance, 0.125pF / mm => mm / 8 */
++	capacitance = DIV_ROUND_UP(cfg->i2c_clk_pcb_length, 8);
++
++	/* OMAP pad capacitance */
++	capacitance += 4;
++
++	/* PMIC pad capacitance */
++	capacitance += cfg->i2c_clk_pad_load;
++
++	/* Search for capacitance match in the table */
++	i2c_data = i2c_timing_data;
++
++	while (i2c_data->load > capacitance)
++		i2c_data++;
++
++	/* Select proper values based on sysclk frequency */
++	switch (cfg->clk_rate) {
++	case 38400000:
++		hsscll = i2c_data->hsscll_38_4;
++		break;
++	case 26000000:
++		hsscll = i2c_data->hsscll_26;
++		break;
++	case 19200000:
++		hsscll = i2c_data->hsscll_19_2;
++		break;
++	case 16800000:
++		hsscll = i2c_data->hsscll_16_8;
++		break;
++	case 12000000:
++		hsscll = i2c_data->hsscll_12;
++		break;
++	default:
++		dev_err(dev, "%s: Unsupported sysclk rate: %ld!\n", __func__,
++			cfg->clk_rate);
++		return -ERANGE;
++	}
++
++	/* HSSCLH can always be zero */
++	cfg->i2c_clk_hssclh = 0x0;
++	cfg->i2c_clk_hsscll = hsscll;
++	/* FS timing - standard */
++	cfg->i2c_clk_scll = 0x28;
++	cfg->i2c_clk_sclh = 0x2C;
++
++	return 0;
++}
++
++static const struct of_device_id omap_vc_of_match_tbl[] = {
++	{.compatible = "ti,omap3-vc", .data = &omap3_vc_regs,},
++	{.compatible = "ti,omap4-vc", .data = &omap4_vc_regs,},
++	{.compatible = "ti,omap5-vc", .data = &omap5_vc_regs,},
 +	{},
 +};
-+MODULE_DEVICE_TABLE(of, omap_pmic_of_match_tbl);
++MODULE_DEVICE_TABLE(of, omap_vc_of_match_tbl);
 +
-+static struct platform_driver omap_pmic_driver = {
++static int omap_vc_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct omap_vc *vc;
++	struct omap_omap_vc_i2c_config i2c_config = { 0 };
++	int ret;
++	struct resource *res;
++	char *pname;
++	struct clk *clk;
++	void __iomem *base;
++	struct regmap *regmap;
++	struct device_node *node = dev->of_node;
++	const struct of_device_id *match;
++
++	if (!node) {
++		dev_err(dev, "no OF information?\n");
++		return -EINVAL;
++	}
++
++	match = of_match_device(omap_vc_of_match_tbl, dev);
++	if (!match) {
++		/* We do not expect this to happen */
++		dev_err(dev, "%s: Unable to match device\n", __func__);
++		return -ENODEV;
++	}
++	if (!match->data) {
++		dev_err(dev, "%s: Bad data in match\n", __func__);
++		return -EINVAL;
++	}
++
++	/* Read mandatory parameters */
++	clk = clk_get(dev, NULL);
++	if (IS_ERR(clk)) {
++		ret = PTR_ERR(clk);
++		dev_err(dev, "%s: Unable to get clk(%d)\n", __func__, ret);
++		return ret;
++	}
++	i2c_config.clk_rate = clk_get_rate(clk);
++	/* We do not need the clock any more */
++	clk_put(clk);
++
++	pname = "base-address";
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
++	base = devm_request_and_ioremap(dev, res);
++	if (!base) {
++		dev_err(dev, "Unable to map '%s'\n", pname);
++		return -EADDRNOTAVAIL;
++	}
++
++	regmap = devm_regmap_init_mmio(dev, base, &omap_vc_regmap_config);
++	if (IS_ERR(regmap)) {
++		ret = PTR_ERR(regmap);
++		dev_err(dev, "regmap init failed(%d)\n", ret);
++		return ret;
++	}
++
++	/* Read optional highspeed mode param */
++	pname = "ti,i2c-high-speed";
++	i2c_config.highspeed = of_property_read_bool(node, pname);
++
++	/* Mcode if the platform likes to set it explicitly */
++	if (i2c_config.highspeed)
++		vc_property_read_u8(node, "ti,i2c-high-speed-mcode",
++				    &i2c_config.mcode);
++
++	if (i2c_config.highspeed) {
++		pname = "ti,i2c-pad-load";
++		of_property_read_u32(node, pname, &i2c_config.i2c_clk_pad_load);
++		pname = "ti,i2c-pcb-length";
++		of_property_read_u32(node, pname,
++				     &i2c_config.i2c_clk_pcb_length);
++
++		if (i2c_config.i2c_clk_pad_load) {
++			if (!i2c_config.i2c_clk_pcb_length)
++				i2c_config.i2c_clk_pcb_length = 63;
++
++			ret = omap_vc_i2c_timing_init(dev, &i2c_config);
++			if (ret)
++				goto out;
++
++			goto skip_i2c_clk_config;
++		}
++	}
++
++	/* So, we do not have pad load defined, expect proper timing config */
++	pname = "ti,i2c-clk-scl-low";
++	ret = vc_property_read_u8(node, pname, &i2c_config.i2c_clk_scll);
++	if (ret)
++		goto invalid_of_property;
++
++	pname = "ti,i2c-clk-scl-high";
++	ret = vc_property_read_u8(node, pname, &i2c_config.i2c_clk_sclh);
++	if (ret)
++		goto invalid_of_property;
++
++	pname = "ti,i2c-clk-hsscl-low";
++	ret = vc_property_read_u8(node, pname, &i2c_config.i2c_clk_hsscll);
++	if (ret && i2c_config.highspeed)
++		goto invalid_of_property;
++
++	pname = "ti,i2c-clk-hsscl-high";
++	ret = vc_property_read_u8(node, pname, &i2c_config.i2c_clk_hssclh);
++	if (ret && i2c_config.highspeed)
++		goto invalid_of_property;
++
++skip_i2c_clk_config:
++	vc = devm_kzalloc(dev, sizeof(*vc), GFP_KERNEL);
++	if (!vc) {
++		dev_err(dev, "unable to allocate vc\n");
++		ret = -ENOMEM;
++		goto out;
++	}
++	vc->regmap = regmap;
++	vc->regs = match->data;
++
++	ret = omap_vc_i2c_config(vc, &i2c_config);
++	if (ret) {
++		dev_err(dev, "Bad I2C configuration: %d\n", ret);
++		goto out;
++	}
++
++	platform_set_drvdata(pdev, vc);
++	ret = of_platform_populate(dev->of_node,
++				   omap_vc_channel_of_match_tbl, NULL, dev);
++
++	if (ret)
++		dev_err(dev, "Failed to create DT children: %d\n", ret);
++
++out:
++	return ret;
++
++invalid_of_property:
++	dev_err(dev, "Missing/Invalid '%s' property - error(%d)\n", pname, ret);
++	return ret;
++}
++
++static struct platform_driver omap_vc_driver = {
 +	.driver = {
 +		   .name = DRIVER_NAME,
 +		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(omap_pmic_of_match_tbl),
++		   .of_match_table = of_match_ptr(omap_vc_of_match_tbl),
 +		   },
-+	.probe = omap_pmic_probe,
++	.probe = omap_vc_probe,
 +};
-+module_platform_driver(omap_pmic_driver);
 +
-+MODULE_DESCRIPTION("OMAP Generic PMIC Regulator");
++static int __init omap_vc_init(void)
++{
++	int ret = 0;
++
++	ret = platform_driver_register(&omap_vc_driver);
++	if (ret) {
++		pr_err("%s: platform driver register failed for VC\n",
++			__func__);
++		return ret;
++	}
++
++	ret = platform_driver_register(&omap_vc_channel_driver);
++	if (ret) {
++		pr_err("%s: platform driver register failed for VC\n",
++			__func__);
++		return ret;
++	}
++
++	return 0;
++}
++module_init(omap_vc_init);
++
++static void __exit omap_vc_exit(void)
++{
++	platform_driver_unregister(&omap_vc_channel_driver);
++	platform_driver_unregister(&omap_vc_driver);
++}
++module_exit(omap_vc_exit);
++
++MODULE_DESCRIPTION("OMAP Voltage Controller Driver");
 +MODULE_LICENSE("GPL v2");
 +MODULE_ALIAS("platform:" DRIVER_NAME);
 +MODULE_AUTHOR("Texas Instruments Inc.");
-diff --git a/include/linux/regulator/omap-pmic-regulator.h b/include/linux/regulator/omap-pmic-regulator.h
+diff --git a/drivers/power/avs/omap_vc.h b/drivers/power/avs/omap_vc.h
 new file mode 100644
-index 0000000..97e7697
+index 0000000..11503b0
 --- /dev/null
-+++ b/include/linux/regulator/omap-pmic-regulator.h
-@@ -0,0 +1,147 @@
++++ b/drivers/power/avs/omap_vc.h
+@@ -0,0 +1,67 @@
 +/*
-+ * OMAP Generic PMIC Regulator interfaces
++ * OMAP Voltage Controller (VC) interface exported functions
 + *
-+ * Idea based on arch/arm/mach-omap2/omap_twl.c and
-+ * arch/arm/mach-omap2/voltage.h
-+ * Copyright (C) 2010 Texas Instruments Incorporated.
-+ * Thara Gopinath
-+ * Copyright (C) 2009 Texas Instruments Incorporated.
-+ * Nishanth Menon
-+ * Copyright (C) 2009 Nokia Corporation
++ * Idea based on arch/arm/mach-omap2/vc.h
++ * Copyright (C) 2007, 2010 Texas Instruments, Inc.
++ * Rajendra Nayak <rnayak@ti.com>
++ * Lesly A M <x0080970@ti.com>
++ * Thara Gopinath <thara@ti.com>
++ *
++ * Copyright (C) 2008, 2011 Nokia Corporation
++ * Kalle Jokiniemi
 + * Paul Walmsley
 + *
-+ * Copyright (C) 2013 Texas Instruments Incorporated.
++ * Copyright (C) 2013 Texas Instruments Incorporated
 + * Grygorii Strashko
 + * Nishanth Menon
 + *
@@ -855,128 +1773,47 @@ index 0000000..97e7697
 + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + */
-+
-+#ifndef __POWER_OMAP_PMIC_H
-+#define __POWER_OMAP_PMIC_H
++#ifndef _POWER_AVS_OMAP_VC_H
++#define _POWER_AVS_OMAP_VC_H
 +
 +struct omap_pmic;
++/* Internal to VC */
++struct omap_vc_channel;
 +
 +/**
-+ * struct omap_pmic_setup_commands - setup commands over voltage controller
-+ * @reg:	device's i2c register address
-+ * @cmd_val:	command to send.
++ * struct omap_vc_channel_info - Channel information visible to users
++ * @pmic:		PMIC pointer
++ * @retention_uV:	retention voltage in micro volts
++ * @off_uV:		OFF voltage in micro volts
 + */
-+struct omap_pmic_setup_commands {
-+	u8 reg;
-+	u8 cmd_val;
++struct omap_vc_channel_info {
++	struct omap_pmic *pmic;
++	u32 retention_uV;
++	u32 off_uV;
++	/* private: */
++	/* Used internally by Voltage Controller driver */
++	struct omap_vc_channel *ch;
 +};
 +
-+/**
-+ * struct omap_pmic_ops - Conversion routines for voltage controller/processor
-+ * @vsel_to_uv: convert voltage selector to micro-volts
-+ * @uv_to_vsel: convert micro-volts to voltage selector
-+ *
-+ * voltage controller/processor drivers SHOULD NOT do modifications on vsel or
-+ * make any assumptions about vsel. Instead, they may operate on micro-volts
-+ * and request vsel conversion once they are ready to do hardware operations.
-+ *
-+ * This is provided over the omap_pmic structure.
-+ */
-+struct omap_pmic_ops {
-+	int (*vsel_to_uv) (struct omap_pmic *pmic, u8 vsel, u32 *uv);
-+	int (*uv_to_vsel) (struct omap_pmic *pmic, u32 uv, u8 *vsel);
-+};
-+
-+/**
-+ * struct omap_pmic_controller_ops - regulator operations implemented
-+ * @devm_pmic_register: managed registration of an PMIC device with a specific
-+ *			voltage processor. Voltage processor provides an device
-+ *			handle which is remaining operations.
-+ *			NOTE:
-+ *			- This will be first interface to be invoked by
-+ *			omap_pmic regulator.
-+ *			- if the underlying layers are not ready, this is
-+ *			expected to return -EPROBE_DEFER
-+ *			- if failure, appropriate error code is expected.
-+ *			- This is expected to be a managed device to avoid
-+ *			explicit cleanup operations
-+ *			- Once this succeeds, this returns the pointer to
-+ *			the controller device and all other operations are
-+ *			expected to be ready for functionality.
-+ * @voltage_set:	set the voltage - expected to be synchronous.
-+ * @voltage_get:	get the current voltage in micro-volts set on PMIC.
-+ * @voltage_get_range:	Get minimum and maxium permissible operational voltage
-+ *			range for the device - used to set initial regulator
-+ *			constraints.
-+ *
-+ * These voltage processor interfaces are registered by voltage processor driver
-+ * using omap_pmic_register_controller_ops. This allows the omap_pmic driver to
-+ * operate with a specific voltage processor driver.
-+ */
-+struct omap_pmic_controller_ops {
-+	struct device *(*devm_pmic_register) (struct device *dev,
-+					      struct omap_pmic *pmic);
-+	int (*voltage_set) (struct device *control_dev, u32 uv);
-+	int (*voltage_get) (struct device *control_dev, u32 *uv);
-+	int (*voltage_get_range) (struct device *control_dev, u32 *min_uv,
-+				  u32 *max_uv);
-+};
-+
-+/**
-+ * struct omap_pmic - represents the OMAP PMIC device.
-+ * @slave_addr:		7 bit address representing I2C slave address.
-+ * @voltage_reg_addr:	I2C register address for setting voltage
-+ * @cmd_reg_addr:	I2C register address for low power transition commands
-+ * @i2c_timeout_us:	worst case latency for I2C operations for the device
-+ * @slew_rate_uV:	Slew rate in uV/uSeconds for voltage transitions
-+ * @step_size_uV:	Step size in uV for one vsel increment.
-+ * @min_uV:		represents the minimum step_sized incremental voltage
-+ * @max_uV:		represents the maximum step_sized incremental voltage
-+ * @boot_voltage_uV:	voltage for the PMIC handed over to Linux kernel
-+ * @setup_command_list:	array of setup commands for PMIC to operate
-+ * @setup_num_commands:	number of setup commands for PMIC to operate
-+ * @ops:		PMIC conversion operations.
-+ *
-+ * NOTE: the fields marked Private are meant for PMIC driver.
-+ */
-+struct omap_pmic {
-+	u8 slave_addr;
-+	u8 voltage_reg_addr;
-+	u8 cmd_reg_addr;
-+	u32 i2c_timeout_us;
-+
-+	u32 boot_voltage_uV;
-+	u32 slew_rate_uV;
-+	u32 step_size_uV;
-+	u32 min_uV;
-+	u32 max_uV;
-+
-+	struct omap_pmic_setup_commands *setup_command_list;
-+	u8 setup_num_commands;
-+
-+	struct omap_pmic_ops *ops;
-+
-+	/* Private */
-+	u8 voltage_selector_offset;
-+	u8 voltage_selector_mask;
-+	u8 voltage_selector_setbits;
-+	bool voltage_selector_zero;
-+	struct device *dev;
-+	struct device *v_dev;
-+};
-+
-+#if IS_ENABLED(CONFIG_REGULATOR_TI_OMAP_PMIC)
-+int omap_pmic_register_controller_ops(struct omap_pmic_controller_ops *cops);
++#if IS_ENABLED(CONFIG_POWER_TI_HARDWARE_VOLTAGE_CONTROL)
++struct omap_vc_channel_info *devm_omap_vc_channel_get(struct device *dev,
++						      struct omap_pmic *pmic);
++int omap_vc_channel_set_on_voltage(struct omap_vc_channel_info *info, u32 uv);
 +#else
-+static inline int omap_pmic_register_controller_ops(struct
-+						    omap_pmic_controller_ops
-+						    *cops)
++struct inline omap_vc_channel_info *
++	devm_omap_vc_channel_get(struct device *dev, struct omap_pmic *pmic)
 +{
-+	return -EINVAL;
++	return ERR_PTR(-ENODEV);
++}
++
++static inline int omap_vc_channel_set_on_voltage(struct omap_vc_channel_info
++						 *info, u32 uv)
++{
++	return -ENODEV;
 +}
 +#endif
 +
-+#endif				/* __POWER_OMAP_PMIC_H */
++#endif				/* _POWER_AVS_OMAP_VC_H */
 -- 
 1.7.9.5
 
