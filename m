@@ -1,118 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555Ab3EVTRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:17:11 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:48966 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754882Ab3EVTRI (ORCPT
+	id S1756479Ab3EVTR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:17:56 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:56024 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755579Ab3EVTRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:17:08 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1155h)
-X-WSS-ID: 0MN7S6W-01-FL0-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
-CC: <ddutile@redhat.com>, <alex.williamson@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: [PATCH 0/3] iommu/amd: IOMMU Error Reporting/Handling/Filtering
-Date: Wed, 22 May 2013 14:15:52 -0500
-Message-ID: <1369250155-12226-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 22 May 2013 15:17:54 -0400
+Authentication-Results: smtpcorp2.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Message-ID: <519D19DA.50400@yandex-team.ru>
+Date: Wed, 22 May 2013 23:17:46 +0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: paulmck@linux.vnet.ibm.com
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+References: <20130521120906.GD3578@linux.vnet.ibm.com> <1369143885.3301.221.camel@edumazet-glaptop> <519B8908.9080007@yandex-team.ru> <1369150693.3301.233.camel@edumazet-glaptop> <519BB90B.6080706@yandex-team.ru> <1369188080.3301.268.camel@edumazet-glaptop> <1369201765.3301.299.camel@edumazet-glaptop> <519CB2D8.103@yandex-team.ru> <1369225837.3301.324.camel@edumazet-glaptop> <519CC2FB.2010006@yandex-team.ru> <20130522174532.GC3431@linux.vnet.ibm.com>
+In-Reply-To: <20130522174532.GC3431@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+On 22.05.2013 21:45, Paul E. McKenney wrote:
+> On Wed, May 22, 2013 at 05:07:07PM +0400, Roman Gushchin wrote:
+>> On 22.05.2013 16:30, Eric Dumazet wrote:
+>>> On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
+>>>
+>>>> +/*
+>>>> + * Same as ACCESS_ONCE(), but used for accessing field of a structure.
+>>>> + * The main goal is preventing compiler to store &ptr->field in a register.
+>>>
+>>> But &ptr->field is a constant during the whole duration of
+>>> udp4_lib_lookup2() and could be in a register, in my case field is at
+>>> offset 0, and ptr is a parameter (so could be in a 'register')
+>>>
+>>> The bug you found is that compiler caches the indirection  (ptr->field)
+>>> into a register, not that compiler stores &ptr->field into a register.
+>>>
+>>>> + */
+>>>> +#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
+>>>> +
+>>>
+>>> Here we force the compiler to consider ptr as volatile, but semantically
+>>> it is not required in rcu_dereference(ptr->field)
+>>
+>> Actually, we need to mark an "address of a place" where the field value is
+>> located as volatile before dereferencing. I have no idea how to do it in another way,
+>> except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
+>> 	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
 
-This patch set implements framework for handling errors reported via IOMMU 
-event log. It also implements mechanism to filter/suppress error messages when 
-IOMMU hardware generates large amount event logs, which is often caused by 
-devices performing invalid operations or from misconfiguring IOMMU hardware 
-(e.g. IO_PAGE_FAULT and INVALID_DEVICE_QEQUEST").
+Probably I miss one more ACCESS_ONCE() in this expression. Should be something like
+ACCESS_ONCE(typeof(&ptr->field)((char*)ACCESS_ONCE(ptr) + offsetof(typeof(*ptr), field))) .
+But this is not a working example, just an illustration against using ACCESS_ONCE() here.
 
-DEVICE vs IOMMU ERRORS:
-=======================
-Event types in AMD IOMMU event log can be categorized as:
-    - IOMMU error : An error which is specific to IOMMU hardware
-    - Device error: An error which is specific to a device
-    - Non-error   : Miscelleneous events which are not classified as errors.
-This patch set implements frameworks for handling "IOMMU error" and "device error".
-For IOMMU error, the driver will log the event in dmesg and panic since the IOMMU 
-hardware is no longer functioning. For device error, the driver will decode and 
-log the error in dmesg based on the error logging level specified at boot time.
+> Why not just ACCESS_ONCE(ptr->field)?  Or if it is the thing that
+> ptr->field points to that is subject to change, ACCESS_ONCE(*ptr->field)?
+>
+> Or rcu_dereference(ptr->field), as appropriate?
 
-ERROR LOGGING LEVEL:
-====================
-The filtering framework introduce 3 levels of event logging, 
-"AMD_IOMMU_LOG_[DEFAULT|VERBOSE|DEBUG]".  Users can specify the level 
-via a new boot option "amd_iommu_log=[default|verbose|debug]".
-    - default: Each error message is truncated. Filtering is enabled.
-    - verbose: Output detail error message. Filtering is enabled.
-    - debug  : Output detail error message. Filtering is disabled.
+It's not enough. So is the code now, and it doesn't work as expected.
+You can't write (ptr->field) without ptr being marked as a volatile pointer.
 
-ERROR THRESHOLD LEVEL:
-======================
-Error threshold is used by the log filtering logic to determine when to suppress 
-the errors from a particular device. The threshold is defined as "the number of errors
-(X) over a specified period (Y sec)". When the threshold is reached, IOMMU driver will
-suppress subsequent error messages from the device for a predefined period (Z sec). 
-X, Y, and Z is currently hard-coded to 10 errors, 5 sec, and 30 sec.
+I try to explain the problem once more from scratch:
 
-DATA STRUCTURE:
-===============
-A new structure "struct dte_err_info" is added. It contains error information
-specific to each device table entry (DTE). The structure is allocated dynamically 
-per DTE when IOMMU driver handle device error for the first time.
+1) We have the following pseudo-code (based on udp4_lib_lookup2()):
 
-ERROR STATES and LOG FILTERING:
-============================================
-The filtering framework define 3 device error states "NONE", "PROBATION" and "SUPPRESS". 
- 1. From IOMMU driver intialization, all devices are in DEV_ERR_NONE state.  
- 2. During interupt handling, IOMMU driver processes each entry in the event log.
- 3. If an entry is device error, the driver tags DTE with DEV_ERR_PROBATION and
-    report error via via dmesg. 
- 4. For non-debug mode, if the device threshold is reached, the device is moved into 
-    DEV_ERR_SUPPRESS state in which all error messages are suppressed.
- 5. After the suppress period has passed, the driver put the device in probation state,
-    and errors are reported once again. If the device continues to generate errors, 
-    it will be re-suppress once the next threshold is reached.
+static void some_func(struct hlist_nulls_head *head) {
+	struct hlist_nulls_node *node;
 
-EXAMPLE OUTPUT:
-===============
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x97040 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x97070 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x97060 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x4970 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x98840 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x98870 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x98860 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x4980 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x99040 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Event=IO_PAGE_FAULT dev=3:0.0 dom=0x1b addr=0x99060 flg=N Ex Sup M P W Pm Ill Ta
-AMD-Vi: Warning: IOMMU error threshold (10) reached for device=3:0.0. Suppress for 30 secs.!!!
+begin:
+	for (node = rcu_dereference(head->first);
+		!is_nulls(node) & ...;
+		node = rcu_dereference(node->next)) {
+		<...>
+	}
 
-Suravee Suthikulpanit (3):
-  iommu/amd: Adding amd_iommu_log cmdline option
-  iommu/amd: Add error handling/reporting/filtering logic
-  iommu/amd: Remove old event printing logic
+	if (restart_condition)
+		goto begin;
 
- Documentation/kernel-parameters.txt |   10 +
- drivers/iommu/Makefile              |    2 +-
- drivers/iommu/amd_iommu.c           |   85 +-------
- drivers/iommu/amd_iommu_fault.c     |  368 +++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_init.c      |   19 ++
- drivers/iommu/amd_iommu_proto.h     |    6 +
- drivers/iommu/amd_iommu_types.h     |   16 ++
- 7 files changed, 426 insertions(+), 80 deletions(-)
- create mode 100644 drivers/iommu/amd_iommu_fault.c
+2) A problem occurs when restart_condition is true and we jump to the begin label.
+We do not recalculate (head + offsetof(head, first)) address, we just dereference
+again the OLD (head->first) pointer. So, we get a node, that WAS the first node in a
+previous time instead of current first node. That node can be dead, or, for instance,
+can be a head of another chain.
 
--- 
-1.7.10.4
+It is correct from gcc's point of view, since it doesn't expect the head pointer
+to change, and this address is just (head + constant offset).
 
+3) If we start with a wrong first element, restart_condition can be always true, so,
+we get an infinite loop. In any case, we do not scan the whole (socket) chain,
+as expected.
 
+This scenario is absolutely real and causes our DNS servers to hang
+sometimes under high load.
+
+Note, that there are no problems if we don't restart a loop. Also, it is highly
+dependent on gcc options, and the code in the body of the loop. Even small changes
+in the code (like adding debugging print) preventing reproducing of the issue.
+
+Thanks!
+
+Regards,
+Roman
