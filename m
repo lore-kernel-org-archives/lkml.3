@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab3EVKNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:13:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35584 "EHLO
+	id S1755992Ab3EVKNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:13:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35587 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755001Ab3EVKNe (ORCPT
+	by vger.kernel.org with ESMTP id S1755842Ab3EVKNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:13:34 -0400
+	Wed, 22 May 2013 06:13:36 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v4 5/6] staging: android: binder: fix alignment issues
-Date: Wed, 22 May 2013 11:13:00 +0100
-Message-Id: <1369217581-16285-6-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v4 6/6] staging: android: binder: replace types with portable ones
+Date: Wed, 22 May 2013 11:13:01 +0100
+Message-Id: <1369217581-16285-7-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
 References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
@@ -22,100 +22,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Android userspace aligns the data written to the binder buffers to
-4bytes. Thus for 32bit platforms or 64bit platforms running an 32bit
-Android userspace we can have a buffer looking like this:
+Since this driver is meant to be used on different types of processors
+and a portable driver should specify the size a variable expects to be
+this patch changes the types used throughout the binder interface.
 
-platform    buffer(binder_cmd   pointer)      size
-32/32                 32b         32b          8B
-64/32                 32b         64b          12B
-64/64                 32b         64b          12B
+We use "userspace" types since this header will be exported and used by
+the Android filesystem.
 
-Thus the kernel needs to check that the buffer size is aligned to 4bytes
-not to (void *) that will be 8bytes on 64bit machines.
-
-The patch also fixes the alignment issues for the offsets buffer, where
-on 64bit systems, if the data_size is not aligned to 8bytes the offset's
-start address will be incorrectly calculated.
-
-The change does not affect existing 32bit ABI.
+The patch does not change in any way the functionality of the binder driver.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/staging/android/binder.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/android/binder.h |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index ca79084..72f5bb9 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -658,8 +658,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
- 		return NULL;
- 	}
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index c3562c4..bff1c74 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -123,10 +123,10 @@ struct binder_transaction_data {
+ 		void	*ptr;	/* target descriptor of return transaction */
+ 	} target;
+ 	void		*cookie;	/* target object cookie */
+-	unsigned int	code;		/* transaction command */
++	__u32		code;		/* transaction command */
  
--	size = ALIGN(data_size, sizeof(void *)) +
--		ALIGN(offsets_size, sizeof(void *));
-+	size = ALIGN(data_size, sizeof(u32)) +
-+		ALIGN(offsets_size, sizeof(u32));
+ 	/* General information about the transaction. */
+-	unsigned int	flags;
++	__u32	        flags;
+ 	pid_t		sender_pid;
+ 	uid_t		sender_euid;
+ 	size_t		data_size;	/* number of bytes of data */
+@@ -143,7 +143,7 @@ struct binder_transaction_data {
+ 			/* offsets from buffer to flat_binder_object structs */
+ 			const void __user	*offsets;
+ 		} ptr;
+-		uint8_t	buf[8];
++		__u8	buf[8];
+ 	} data;
+ };
  
- 	if (size < data_size || size < offsets_size) {
- 		binder_user_error("%d: got transaction with invalid size %zd-%zd\n",
-@@ -807,8 +807,8 @@ static void binder_free_buf(struct binder_proc *proc,
+@@ -153,18 +153,18 @@ struct binder_ptr_cookie {
+ };
  
- 	buffer_size = binder_buffer_size(proc, buffer);
+ struct binder_pri_desc {
+-	int priority;
+-	int desc;
++	__s32 priority;
++	__s32 desc;
+ };
  
--	size = ALIGN(buffer->data_size, sizeof(void *)) +
--		ALIGN(buffer->offsets_size, sizeof(void *));
-+	size = ALIGN(buffer->data_size, sizeof(u32)) +
-+		ALIGN(buffer->offsets_size, sizeof(u32));
+ struct binder_pri_ptr_cookie {
+-	int priority;
++	__s32 priority;
+ 	void *ptr;
+ 	void *cookie;
+ };
  
- 	binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
- 		     "%d: binder_free_buf %p size %zd buffer_size %zd\n",
-@@ -1238,7 +1238,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 	if (buffer->target_node)
- 		binder_dec_node(buffer->target_node, 1, 0);
+ enum binder_driver_return_protocol {
+-	BR_ERROR = _IOR('r', 0, int),
++	BR_ERROR = _IOR('r', 0, __s32),
+ 	/*
+ 	 * int: error code
+ 	 */
+@@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
+ 	 * binder_transaction_data: the received command.
+ 	 */
  
--	offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(void *)));
-+	offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(u32)));
- 	if (failed_at)
- 		off_end = failed_at;
- 	else
-@@ -1247,7 +1247,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 		struct flat_binder_object *fp;
- 		if (*offp > buffer->data_size - sizeof(*fp) ||
- 		    buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(void *))) {
-+		    !IS_ALIGNED(*offp, sizeof(u32))) {
- 			pr_err("transaction release %d bad offset %zd, size %zd\n",
- 			 debug_id, *offp, buffer->data_size);
- 			continue;
-@@ -1471,7 +1471,7 @@ static void binder_transaction(struct binder_proc *proc,
- 	if (target_node)
- 		binder_inc_node(target_node, 1, 0, NULL);
+-	BR_ACQUIRE_RESULT = _IOR('r', 4, int),
++	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+ 	/*
+ 	 * not currently supported
+ 	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
+@@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
+ 	 * binder_transaction_data: the sent command.
+ 	 */
  
--	offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(void *)));
-+	offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(u32)));
+-	BC_ACQUIRE_RESULT = _IOW('c', 2, int),
++	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
+ 	/*
+ 	 * not currently supported
+ 	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
+@@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
+ 	 * void *: ptr to transaction data received on a read
+ 	 */
  
- 	if (copy_from_user(t->buffer->data, tr->data.ptr.buffer, tr->data_size)) {
- 		binder_user_error("%d:%d got transaction with invalid data ptr\n",
-@@ -1496,7 +1496,7 @@ static void binder_transaction(struct binder_proc *proc,
- 		struct flat_binder_object *fp;
- 		if (*offp > t->buffer->data_size - sizeof(*fp) ||
- 		    t->buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(void *))) {
-+		    !IS_ALIGNED(*offp, sizeof(u32))) {
- 			binder_user_error("%d:%d got transaction with invalid offset, %zd\n",
- 					proc->pid, thread->pid, *offp);
- 			return_error = BR_FAILED_REPLY;
-@@ -2332,7 +2332,7 @@ retry:
- 					proc->user_buffer_offset;
- 		tr.data.ptr.offsets = tr.data.ptr.buffer +
- 					ALIGN(t->buffer->data_size,
--					    sizeof(void *));
-+					    sizeof(u32));
- 
- 		if (put_user(cmd, (uint32_t __user *)ptr))
- 			return -EFAULT;
+-	BC_INCREFS = _IOW('c', 4, int),
+-	BC_ACQUIRE = _IOW('c', 5, int),
+-	BC_RELEASE = _IOW('c', 6, int),
+-	BC_DECREFS = _IOW('c', 7, int),
++	BC_INCREFS = _IOW('c', 4, __u32),
++	BC_ACQUIRE = _IOW('c', 5, __u32),
++	BC_RELEASE = _IOW('c', 6, __u32),
++	BC_DECREFS = _IOW('c', 7, __u32),
+ 	/*
+ 	 * int:	descriptor
+ 	 */
 -- 
 1.7.9.5
 
