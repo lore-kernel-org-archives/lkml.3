@@ -1,164 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab3EVUjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:39:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab3EVUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:39:48 -0400
-Date: Wed, 22 May 2013 23:38:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org, rostedt@goodmis.org
-Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
-Message-ID: <20130522203831.GB28296@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
- <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
- <20130516184041.GP19669@dyad.programming.kicks-ass.net>
- <20130519093526.GD19883@redhat.com>
- <20130521115734.GA9554@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130521115734.GA9554@twins.programming.kicks-ass.net>
+	id S1757255Ab3EVUkZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:40:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33655 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab3EVUkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:40:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,723,1363158000"; 
+   d="scan'208";a="49724179"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC/PATCH 2/2] gpio/omap: Use of_node->id_entry directly
+Date: Wed, 22 May 2013 13:40:17 -0700
+Message-Id: <1369255217-29764-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
+In-Reply-To: <1369255217-29764-1-git-send-email-sboyd@codeaurora.org>
+References: <1369255217-29764-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 01:57:34PM +0200, Peter Zijlstra wrote:
-> On Sun, May 19, 2013 at 12:35:26PM +0300, Michael S. Tsirkin wrote:
-> > > > --- a/include/linux/kernel.h
-> > > > +++ b/include/linux/kernel.h
-> > > > @@ -198,7 +198,6 @@ void might_fault(void);
-> > > >  #else
-> > > >  static inline void might_fault(void)
-> > > >  {
-> > > > -	might_sleep();
-> > > 
-> > > This removes potential resched points for PREEMPT_VOLUNTARY -- was that
-> > > intentional?
-> > 
-> > No it's a bug. Thanks for pointing this out.
-> > OK so I guess it should be might_sleep_if(!in_atomic())
-> > and this means might_fault would have to move from linux/kernel.h to
-> > linux/uaccess.h, since in_atomic() is in linux/hardirq.h
-> > 
-> > Makes sense?
-> 
-> So the only difference between PROVE_LOCKING and not should be the
-> might_lock_read() thing; so how about something like this?
+Now that the driver core is assigning the of_device_id that
+matches to the of_node before calling probe we can skip this
+duplicate search and just use of_node->id_entry directly.
 
-So the problem with the below is that might_fault is needed
-in asm/uaccess.h.
-I'm still trying various approaches but the dependencies there
-are very complex.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/gpio/gpio-omap.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> ---
->  include/linux/kernel.h  |  7 ++-----
->  include/linux/uaccess.h | 26 ++++++++++++++++++++++++++
->  mm/memory.c             | 14 ++------------
->  3 files changed, 30 insertions(+), 17 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index e96329c..70812f4 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -194,12 +194,9 @@ extern int _cond_resched(void);
->  	})
->  
->  #ifdef CONFIG_PROVE_LOCKING
-> -void might_fault(void);
-> +void might_fault_lockdep(void);
->  #else
-> -static inline void might_fault(void)
-> -{
-> -	might_sleep();
-> -}
-> +static inline void might_fault_lockdep(void) { }
->  #endif
->  
->  extern struct atomic_notifier_head panic_notifier_list;
-> diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-> index 5ca0951..50a2cc9 100644
-> --- a/include/linux/uaccess.h
-> +++ b/include/linux/uaccess.h
-> @@ -38,6 +38,32 @@ static inline void pagefault_enable(void)
->  	preempt_check_resched();
->  }
->  
-> +static inline bool __can_fault(void)
-> +{
-> +	/*
-> +	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
-> +	 * holding the mmap_sem, this is safe because kernel memory doesn't
-> +	 * get paged out, therefore we'll never actually fault, and the
-> +	 * below annotations will generate false positives.
-> +	 */
-> +	if (segment_eq(get_fs(), KERNEL_DS))
-> +		return false;
-> +
-> +	if (in_atomic() /* || pagefault_disabled() */)
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +static inline void might_fault(void)
-> +{
-> +	if (!__can_fault())
-> +		return;
-> +
-> +	might_sleep();
-> +	might_fault_lockdep();
-> +}
-> +
->  #ifndef ARCH_HAS_NOCACHE_UACCESS
->  
->  static inline unsigned long __copy_from_user_inatomic_nocache(void *to,
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 6dc1882..266610c 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -4211,19 +4211,9 @@ void print_vma_addr(char *prefix, unsigned long ip)
->  }
->  
->  #ifdef CONFIG_PROVE_LOCKING
-> -void might_fault(void)
-> +void might_fault_lockdep(void)
->  {
->  	/*
-> -	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
-> -	 * holding the mmap_sem, this is safe because kernel memory doesn't
-> -	 * get paged out, therefore we'll never actually fault, and the
-> -	 * below annotations will generate false positives.
-> -	 */
-> -	if (segment_eq(get_fs(), KERNEL_DS))
-> -		return;
-> -
-> -	might_sleep();
-> -	/*
->  	 * it would be nicer only to annotate paths which are not under
->  	 * pagefault_disable, however that requires a larger audit and
->  	 * providing helpers like get_user_atomic.
-> @@ -4231,7 +4221,7 @@ void might_fault(void)
->  	if (!in_atomic() && current->mm)
->  		might_lock_read(&current->mm->mmap_sem);
->  }
-> -EXPORT_SYMBOL(might_fault);
-> +EXPORT_SYMBOL(might_fault_lockdep);
->  #endif
->  
->  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 2050891..04ae7e7 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1083,8 +1083,6 @@ static void omap_gpio_chip_init(struct gpio_bank *bank)
+ 	irq_set_handler_data(bank->irq, bank);
+ }
+ 
+-static const struct of_device_id omap_gpio_match[];
+-
+ static int omap_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -1094,7 +1092,7 @@ static int omap_gpio_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct gpio_bank *bank;
+ 
+-	match = of_match_device(of_match_ptr(omap_gpio_match), dev);
++	match = pdev->dev.of_node->id_entry;
+ 
+ 	pdata = match ? match->data : dev->platform_data;
+ 	if (!pdata)
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
