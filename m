@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3EVOU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:20:27 -0400
-Received: from www.sr71.net ([198.145.64.142]:52112 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab3EVOUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:20:24 -0400
-Message-ID: <519CD42C.6040600@sr71.net>
-Date: Wed, 22 May 2013 07:20:28 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756175Ab3EVOVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:21:20 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:53961 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755235Ab3EVOVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:21:19 -0400
+Date: Wed, 22 May 2013 10:21:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Wolfram Sang <wsa@the-dreams.de>
+cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/3] drivers/usb/host: remove leftover release_mem_region
+In-Reply-To: <1369228886-3527-2-git-send-email-wsa@the-dreams.de>
+Message-ID: <Pine.LNX.4.44L0.1305221021010.22289-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 04/39] radix-tree: implement preload for multiple contiguous
- elements
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-5-git-send-email-kirill.shutemov@linux.intel.com> <519BC3BE.3070702@sr71.net> <20130522120356.9CB12E0090@blue.fi.intel.com>
-In-Reply-To: <20130522120356.9CB12E0090@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 05:03 AM, Kirill A. Shutemov wrote:
-> On most machines we will have RADIX_TREE_MAP_SHIFT=6. In this case,
-> on 64-bit system the per-CPU feature overhead is
->  for preload array:
->    (30 - 21) * sizeof(void*) = 72 bytes
->  plus, if the preload array is full
->    (30 - 21) * sizeof(struct radix_tree_node) = 9 * 560 = 5040 bytes
->  total: 5112 bytes
-> 
-> on 32-bit system the per-CPU feature overhead is
->  for preload array:
->    (19 - 11) * sizeof(void*) = 32 bytes
->  plus, if the preload array is full
->    (19 - 11) * sizeof(struct radix_tree_node) = 8 * 296 = 2368 bytes
->  total: 2400 bytes
-> ---
-> 
-> Is it good enough?
+On Wed, 22 May 2013, Wolfram Sang wrote:
 
-Yup, just stick the calculations way down in the commit message.  You
-can put the description that it "eats about 5k more memory per-cpu than
-existing code" up in the very beginning.
+> When converting this driver to devm_ioremap_resource, the removal of this now
+> unneeded function has been forgotten.
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>  drivers/usb/host/ohci-nxp.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/usb/host/ohci-nxp.c b/drivers/usb/host/ohci-nxp.c
+> index f303cb0..f1db7eb 100644
+> --- a/drivers/usb/host/ohci-nxp.c
+> +++ b/drivers/usb/host/ohci-nxp.c
+> @@ -351,7 +351,6 @@ static int usb_hcd_nxp_remove(struct platform_device *pdev)
+>  
+>  	usb_remove_hcd(hcd);
+>  	nxp_stop_hc();
+> -	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+>  	usb_put_hcd(hcd);
+>  	clk_disable(usb_pll_clk);
+>  	clk_put(usb_pll_clk);
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
