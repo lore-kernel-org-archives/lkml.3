@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3EVNKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:10:46 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16214 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752588Ab3EVNKo (ORCPT
+	id S1754365Ab3EVNML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:12:11 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38426 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab3EVNMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:10:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/7cpzd0XSLgK6iiShg/jrRkFESdsqASnk=
-Date: Wed, 22 May 2013 09:10:10 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: "tiejun.chen" <tiejun.chen@windriver.com>, Andrew Lunn <andrew@lunn.ch>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
- device tree nodes
-Message-ID: <20130522131010.GB31290@titan.lakedaemon.net>
-References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130521174849.GL26249@lunn.ch>
- <519C9333.20609@gmail.com>
- <519C9822.9040909@windriver.com>
- <519C9A66.3050807@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519C9A66.3050807@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 May 2013 09:12:10 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 22 May 2013 15:11:46 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: stephan.gatzka@gmail.com
+Cc: linux1394-devel@lists.sourceforge.net, peter@hurleysoftware.com,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: function call fw_iso_resource_mange(..) (core-iso.c) does not
+ return
+Message-ID: <20130522151146.3d2595be@stein>
+In-Reply-To: <24da2e78e684e560c5aa034cebd3e26b@gatzka.org>
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
+	<20130521222817.3626b59d@stein>
+	<24da2e78e684e560c5aa034cebd3e26b@gatzka.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:13:58PM +0200, Sebastian Hesselbarth wrote:
-> On 05/22/2013 12:04 PM, tiejun.chen wrote:
-> >On 05/22/2013 05:43 PM, Sebastian Hesselbarth wrote:
-> >>On 05/21/2013 07:48 PM, Andrew Lunn wrote:
-> >>>On Tue, May 21, 2013 at 06:41:44PM +0200, Sebastian Hesselbarth wrote:
-> >>>>This patch adds orion-eth and mvmdio device tree nodes for DT enabled
-> >>>>Dove boards. As there is only one ethernet controller on Dove, a
-> >>>>default
-> >>>>phy node is also added with a note to set its reg property on a
-> >>>>per-board
-> >>>>basis.
-> >>>>
-> >>>>Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
-> >>>>---
-> >>...
-> >>>>+ ethernet-port@0 {
-> >>>>+ device_type = "network";
-> >>>>+ compatible = "marvell,orion-eth-port";
-> >>>>+ reg =<0>;
-> >>>>+ interrupts =<29>;
-> >>>>+ /* overwrite MAC address in bootloader */
-> >>>>+ local-mac-address = [00 00 00 00 00 00];
-> >>>
-> >>>Hi Sebastian
-> >>>
-> >>>Its probably a good idea to set the local administration bit in this
-> >>>MAC address. i.e. first byte is 02.
-> >>
-> >>Andrew,
-> >>
-> >>we just need an invalid address here to trigger the default behavior of
-> >>the driver and load the MAC address from its register. As PPC binding
-> >>documentation also has all zero, I just took it.
-> >
-> >The truth is in PPC case, often we set the real mac address with some
-> >variables like 'eth[x]addr' in u-boot prompt, then u-boot will parse
-> >that value to fill the dtb. At last the associated driver can get the
-> >actual mac address from the dtb. And especially for those older u-boot
-> >version, even you have to reset the 'local-mac-address' property in dts
-> >directly with the real mac address before generate the dtb since the
-> >older u-boot have no this ability to fill dtb again before pass the kernel.
+On May 22 Stephan Gatzka wrote:
+[I wrote:]
+> > Wait a minute --- I seem to be reading of Xenomai RT extensions for the
+> > first time in this thread.  Has the problem been reproduced on a mainline
+> > kernel too?  (Mainline plus Ralf's firewire upper layer driver maybe, but
+> > without any other 3rd party stuff please.  Actually the issue should be
+> > reproducible even without an upper layer driver performing
+> > fw_iso_resource_manage in fw_workqueue context, shouldn't it?)
 > 
-> Tiejun,
-> 
-> with Marvell SoCs it is no different, except that there is almost no dtb
-> support in their u-boot.
+> Unfortunately it's not that easy. While I agree that it should be 
+> reproducible just with mainline stuff, we have to force our system into 
+> the situation that it "thinks" it's under memory pressure to hand over 
+> the work to the rescuer thread. It looks that a simple printk from a 
+> different driver might lead to that situation on our system.
+[...]
 
-iirc, our solution to this was to parse the ATAGs for the mac addr and
-update the appended dtb.  This way, module load and unload would work
-without loosing the mac address.  I believe Jason Gunthorpe has a patch
-to atags_to_fdt() for this...  This should allow us to get rid of the
-clocks hack.
-
-thx,
-
-Jason.
+I retract my request to get it retested with mainline since a) the
+analysis has clearly shown that a mainline bug is at the root of the
+problem, and b) Ralf confirmed now that one of the possible fixes (using
+two queues) does in fact work for him like the theory says how it should
+work for mainline.
+-- 
+Stefan Richter
+-=====-===-= -=-= =-==-
+http://arcgraph.de/sr/
