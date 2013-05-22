@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab3EVWY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:24:56 -0400
-Received: from mx04.smart-weblications.de ([188.65.144.39]:37934 "EHLO
-	mx04.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756857Ab3EVWYy (ORCPT
+	id S1757841Ab3EVW3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:29:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37809 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757564Ab3EVW3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:24:54 -0400
-Message-ID: <519D45A4.7090505@smart-weblications.de>
-Date: Thu, 23 May 2013 00:24:36 +0200
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 22 May 2013 18:29:44 -0400
+X-IronPort-AV: E=Sophos;i="4.87,724,1363158000"; 
+   d="scan'208";a="49762189"
+Date: Wed, 22 May 2013 15:29:42 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+Cc: ohad@wizery.com, joerg.roedel@amd.com, LKML <linux-kernel@vger.kernel.org>,
+        joro@8bytes.org, Varun.Sethi@freescale.com,
+        iommu@lists.linux-foundation.org, mingo@kernel.org, ddutile@redhat.com
+Subject: Re: [PATCH] msm: iommu: fix leak and invalid access
+Message-ID: <20130522222942.GA5706@codeaurora.org>
+References: <51931347.7020600@huawei.com>
+ <519C5E8F.7060006@huawei.com>
 MIME-Version: 1.0
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        liquidhorse@gmail.com, andy@greyhouse.net,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de> <2972.1369259697@death.nxdomain>
-In-Reply-To: <2972.1369259697@death.nxdomain>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519C5E8F.7060006@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.05.2013 23:54, schrieb Jay Vosburgh:
-> Smart Weblications GmbH - Florian Wiessner wrote:
-> 
->> Am 22.05.2013 22:04, schrieb Greg KH:
->>
->>
->>>>
->>>> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
->>>
->>> Ok, that's what we need.
->>>
->>> Now, please cc: the developers / maintainers of that patch and ask them
->>> to have it included in the 3.4-stable kernel series.
->>>
->>> Then, if they agree, the network maintainer will pick it up and send it
->>> to me for inclusion.
->>>
->>
->> i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
->> know the network maintainer...
->>
->> this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
->> netdev on 2013-02-01:
->>
->> http://lists.openwall.net/netdev/2013/02/01/86
->>
->> but i couldn't find a trace of the patch in 3.4.36?!
-> 
-> 	The patch in question here is in net-next; the commit is:
-> 
-> commit 567b871e503316b0927e54a3d7c86d50b722d955
-> Author: zheng.li <zheng.x.li@oracle.com>
-> Date:   Tue Nov 27 23:57:04 2012 +0000
-> 
->     bonding: rlb mode of bond should not alter ARP originating via bridge
-> 
-> 
-> 	The additional change in the backport from Matthew O'Connor (to
-> add ether_addr_equal_64bits) appears to still be necessary for 3.4.46.
-> Alternatively, the patch could utilize ether_addr_equal instead, to
-> minimize the change set.  Greg, do you have a preference there?
-> 
-> 	Submissions for stable from networking normally go through
-> Davem; I can check the patch and repost it to netdev against 3.4.46 if
-> everybody is ok with that.
-> 
+On Wed, May 22, 2013 at 01:58:39PM +0800, Libo Chen wrote:
 
+> ping...
 
-i would be happy if someone could provide a patch that works against 3.4.46
+This is the first I've seen this patch.  The original appears to have
+been sent to Andrew Morton and lkml.  I'll reply with an Ack there.
 
-thank you.
-
-
+David
 
 -- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
