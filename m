@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3EVTtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:49:20 -0400
-Received: from mout.gmx.net ([212.227.17.21]:61581 "EHLO mout.gmx.net"
+	id S1757046Ab3EVTt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:49:27 -0400
+Received: from mout.gmx.net ([212.227.17.20]:51995 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756827Ab3EVTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:49:19 -0400
+	id S1757022Ab3EVTtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 15:49:25 -0400
 X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX19OnlcjAHROeiClg7Rdt97GoNsFj+VEhRvMaNy1TW
-	SHmJstd1tP6TGe
+X-Provags-ID: V01U2FsdGVkX19A3bZNPuBAfeWniVpAK8giyIOFTUduMnYRvHXAlA
+	0H9uCcYuBKIQUZ
 From: Marc Dietrich <marvin24@gmx.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] replace large udelay by mdelay
-Date: Wed, 22 May 2013 21:48:40 +0200
-Message-Id: <cover.1369251478.git.marvin24@gmx.de>
+Cc: GOTO Masanori <gotom@debian.or.jp>,
+        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 1/2] SCSI: nsp32: replace large udelay by mdelay
+Date: Wed, 22 May 2013 21:48:41 +0200
+Message-Id: <495d02a8263a553dd3f67b354f5ec9beb784a5d3.1369251478.git.marvin24@gmx.de>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1369251478.git.marvin24@gmx.de>
+References: <cover.1369251478.git.marvin24@gmx.de>
+In-Reply-To: <cover.1369251478.git.marvin24@gmx.de>
+References: <cover.1369251478.git.marvin24@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bad_udelay is generated on distro kernels which often enable all kinds
-of drivers. ARM has a max udelay of 2000, so this patchset converts large
-udelays to mdelays. This may also be observed using all_modconfig.
+ARM has a maximum of 2000 usec delay. Use mdelay for larger delays.
+This affects distro kernels mostly.
 
-Marc Dietrich (2):
-  SCSI: nsp32: replace large udelay by mdelay
-  nouveau: replace large udelay by mdelay
+Cc: GOTO Masanori <gotom@debian.or.jp>
+Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Marc Dietrich <marvin24@gmx.de>
+---
+ drivers/scsi/nsp32.c |    2 +-
+ drivers/scsi/nsp32.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
- drivers/gpu/drm/nouveau/core/engine/disp/dacnv50.c |    3 ++-
- drivers/scsi/nsp32.c                               |    2 +-
- drivers/scsi/nsp32.h                               |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
-
+diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
+index 1e3879d..e2f796f 100644
+--- a/drivers/scsi/nsp32.c
++++ b/drivers/scsi/nsp32.c
+@@ -2899,7 +2899,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
+ 	 * reset SCSI bus
+ 	 */
+ 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
+-	udelay(RESET_HOLD_TIME);
++	mdelay(RESET_HOLD_TIME);
+ 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
+ 	for(i = 0; i < 5; i++) {
+ 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+diff --git a/drivers/scsi/nsp32.h b/drivers/scsi/nsp32.h
+index c022182..b2b3dc6 100644
+--- a/drivers/scsi/nsp32.h
++++ b/drivers/scsi/nsp32.h
+@@ -605,7 +605,7 @@ typedef struct _nsp32_hw_data {
+ /*
+  * TIME definition
+  */
+-#define RESET_HOLD_TIME		10000	/* reset time in us (SCSI-2 says the
++#define RESET_HOLD_TIME		10	/* reset time in ms (SCSI-2 says the
+ 					   minimum is 25us) */
+ #define SEL_TIMEOUT_TIME	10000	/* 250ms defined in SCSI specification
+ 					   (25.6us/1unit) */
 -- 
 1.7.9.5
-
