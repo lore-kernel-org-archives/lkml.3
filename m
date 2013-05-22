@@ -1,167 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab3EVKO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:14:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35570 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755742Ab3EVKNU (ORCPT
+	id S1755926Ab3EVKQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:16:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39094 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab3EVKQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:13:20 -0400
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
-        Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v4 2/6] staging: android: binder: fix binder interface for 64bit compat layer
-Date: Wed, 22 May 2013 11:12:57 +0100
-Message-Id: <1369217581-16285-3-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
-References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
+	Wed, 22 May 2013 06:16:54 -0400
+Date: Wed, 22 May 2013 12:16:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, kvm@vger.kernel.org, rostedt@goodmis.org
+Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
+Message-ID: <20130522101610.GL18810@twins.programming.kicks-ass.net>
+References: <cover.1368702323.git.mst@redhat.com>
+ <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
+ <20130516184041.GP19669@dyad.programming.kicks-ass.net>
+ <20130519093526.GD19883@redhat.com>
+ <20130521115734.GA9554@twins.programming.kicks-ass.net>
+ <20130522094709.GA26451@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522094709.GA26451@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The changes in this patch will fix the binder interface for use on 64bit
-machines and stand as the base of the 64bit compat support. The changes
-apply to the structures that are passed between the kernel and
-userspace.
+On Wed, May 22, 2013 at 12:47:09PM +0300, Michael S. Tsirkin wrote:
+> >  
+> > +static inline bool __can_fault(void)
+> > +{
+> > +	/*
+> > +	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
+> > +	 * holding the mmap_sem, this is safe because kernel memory doesn't
+> > +	 * get paged out, therefore we'll never actually fault, and the
+> > +	 * below annotations will generate false positives.
+> > +	 */
+> > +	if (segment_eq(get_fs(), KERNEL_DS))
+> > +		return false;
+> > +
+> > +	if (in_atomic() /* || pagefault_disabled() */)
+> 
+> One question here: I'm guessing you put this comment here
+> for illustrative purposes, implying code that will
+> be enabled in -rt?
+> We don't want it upstream I think, right?
 
-Most of the  changes applied mirror the change to struct binder_version
-where there is no need for a 64bit wide protocol_version(on 64bit
-machines). The change inlines with the existing 32bit userspace(the
-structure has the same size) and simplifies the compat layer such that
-the same handler can service the BINDER_VERSION ioctl.
+Right, and as a reminder that when we do this we need to add a patch to
+-rt. But yeah, we should have a look and see if its worth pulling those
+patches from -rt into mainline in some way shape or form. They're big
+but trivial IIRC.
 
-Other changes make use of kernel types as well as user-exportable ones
-and fix format specifier issues.
-
-The changes do not affect existing 32bit ABI.
-
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/binder.c |   20 ++++++++++----------
- drivers/staging/android/binder.h |    8 ++++----
- 2 files changed, 14 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index ce70909..ca79084 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -1271,7 +1271,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 		case BINDER_TYPE_WEAK_HANDLE: {
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 			if (ref == NULL) {
--				pr_err("transaction release %d bad handle %ld\n",
-+				pr_err("transaction release %d bad handle %d\n",
- 				 debug_id, fp->handle);
- 				break;
- 			}
-@@ -1283,13 +1283,13 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 
- 		case BINDER_TYPE_FD:
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld\n", fp->handle);
-+				     "        fd %d\n", fp->handle);
- 			if (failed_at)
- 				task_close_fd(proc, fp->handle);
- 			break;
- 
- 		default:
--			pr_err("transaction release %d bad object type %lx\n",
-+			pr_err("transaction release %d bad object type %x\n",
- 				debug_id, fp->type);
- 			break;
- 		}
-@@ -1547,7 +1547,7 @@ static void binder_transaction(struct binder_proc *proc,
- 		case BINDER_TYPE_WEAK_HANDLE: {
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 			if (ref == NULL) {
--				binder_user_error("%d:%d got transaction with invalid handle, %ld\n",
-+				binder_user_error("%d:%d got transaction with invalid handle, %d\n",
- 						proc->pid,
- 						thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
-@@ -1590,13 +1590,13 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			if (reply) {
- 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
--					binder_user_error("%d:%d got reply with fd, %ld, but target does not allow fds\n",
-+					binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
- 						proc->pid, thread->pid, fp->handle);
- 					return_error = BR_FAILED_REPLY;
- 					goto err_fd_not_allowed;
- 				}
- 			} else if (!target_node->accept_fds) {
--				binder_user_error("%d:%d got transaction with fd, %ld, but target does not allow fds\n",
-+				binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fd_not_allowed;
-@@ -1604,7 +1604,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			file = fget(fp->handle);
- 			if (file == NULL) {
--				binder_user_error("%d:%d got transaction with invalid fd, %ld\n",
-+				binder_user_error("%d:%d got transaction with invalid fd, %d\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fget_failed;
-@@ -1618,13 +1618,13 @@ static void binder_transaction(struct binder_proc *proc,
- 			task_fd_install(target_proc, target_fd, file);
- 			trace_binder_transaction_fd(t, fp->handle, target_fd);
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld -> %d\n", fp->handle, target_fd);
-+				     "        fd %d -> %d\n", fp->handle, target_fd);
- 			/* TODO: fput? */
- 			fp->handle = target_fd;
- 		} break;
- 
- 		default:
--			binder_user_error("%d:%d got transaction with invalid object type, %lx\n",
-+			binder_user_error("%d:%d got transaction with invalid object type, %x\n",
- 				proc->pid, thread->pid, fp->type);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_object_type;
-@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
-+			     "%d:%d write %zd at %016lx, read %zd at %016lx\n",
- 			     proc->pid, thread->pid, bwr.write_size,
- 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
- 
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index edab249..2f94d16 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -48,13 +48,13 @@ enum {
-  */
- struct flat_binder_object {
- 	/* 8 bytes for large_flat_header. */
--	unsigned long		type;
--	unsigned long		flags;
-+	__u32		type;
-+	__u32		flags;
- 
- 	/* 8 bytes of data. */
- 	union {
- 		void __user	*binder;	/* local object */
--		signed long	handle;		/* remote object */
-+		__s32	    handle;		/* remote object */
- 	};
- 
- 	/* extra data associated with local object */
-@@ -78,7 +78,7 @@ struct binder_write_read {
- /* Use with BINDER_VERSION, driver fills in fields. */
- struct binder_version {
- 	/* driver protocol version -- increment with incompatible change */
--	signed long	protocol_version;
-+	__s32       protocol_version;
- };
- 
- /* This is the current protocol version. */
--- 
-1.7.9.5
-
+I'm fine with you leaving that comment out though.. 
