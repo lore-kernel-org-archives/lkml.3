@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab3EVSgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:36:20 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:42946 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab3EVSgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:36:18 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: viro@zeniv.linux.org.uk, serge.hallyn@canonical.com, jlayton@redhat.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, oleg@redhat.com, bfields@fieldses.org,
-        bharrosh@panasas.com, linux-fsdevel@vger.kernel.org,
-        akpm@linux-foundation.org, devel@openvz.org
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
-	<878v36ex6n.fsf@xmission.com>
-Date: Wed, 22 May 2013 11:35:56 -0700
-In-Reply-To: <878v36ex6n.fsf@xmission.com> (Eric W. Biederman's message of
-	"Wed, 22 May 2013 10:33:52 -0700")
-Message-ID: <87wqqqdfqr.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755476Ab3EVSiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:38:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab3EVSiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 14:38:13 -0400
+Message-ID: <519D0FF8.5080200@redhat.com>
+Date: Wed, 22 May 2013 14:35:36 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18zvPSviVCwMvCaYDq4blGDbkkVTsnojo8=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3326]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Stanislav Kinsbursky <skinsbursky@parallels.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Stanislav Meduna <stano@meduna.org>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org>
+In-Reply-To: <519D0CAB.7020800@meduna.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
+On 05/22/2013 02:21 PM, Stanislav Meduna wrote:
+> On 22.05.2013 20:11, Steven Rostedt wrote:
+>
+>> Did you apply both patches? Without the first one, this one is
+>> meaningless.
+>
+> Sure.
+>
+> BTW, back when I tried to pinpoint it I also tried adding
+>    flush_tlb_page(vma, address)
+> at the beginning of handle_pte_fault, which as I read should
+> be basically the same. It did not not change anything.
 
-> I am missing a lot of context here and capturing the context of a
-> process at time time we mount the filesystem and reconstituing it in
-> call user mode helper seems like something we could do.
+I'm stumped.
 
-If we want to do something like this the only sane thing I can see is to
-have a per container version of kthread call it uthread.  That the user
-mode helper code would use to launch a new process.
+If the Geode knows how to flush single TLB entries, it
+should do that when flush_tlb_page is called.
 
-Anything else and I expect we will be tearing our hair out for the rest
-of our lives with weird corner cases or unexpected semantics.
-
-At first glace I would exepct uthread to be per pid namespace in
-implementation.
-
-Eric
-
+If it does not know, it should throw an invalid instruction
+exception, and not quietly complete the instruction without
+doing anything.
 
