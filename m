@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab3EVWMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:12:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42162 "EHLO
+	id S1757602Ab3EVWMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:12:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab3EVWKw (ORCPT
+	with ESMTP id S1757543Ab3EVWKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:52 -0400
+	Wed, 22 May 2013 18:10:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Jon Mason <jon.mason@intel.com>
-Subject: [ 17/21] NTB: Correctly handle receive buffers of the minimal size
-Date: Wed, 22 May 2013 15:10:35 -0700
-Message-Id: <20130522205234.618268643@linuxfoundation.org>
+Subject: [ 19/21] ntb_netdev: remove from list on exit
+Date: Wed, 22 May 2013 15:10:37 -0700
+Message-Id: <20130522205234.847841053@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
@@ -28,46 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jon Mason <jon.mason@intel.com>
 
-commit c9d534c8cbaedbb522a1d2cb037c6c394f610317 upstream.
+commit 904435cf76a9bdd5eb41b1c4e049d5a64f3a8400 upstream.
 
-The ring logic of the NTB receive buffer/transmit memory window requires
-there to be at least 2 payload sized allotments.  For the minimal size
-case, split the buffer into two and set the transport_mtu to the
-appropriate size.
+The ntb_netdev device is not removed from the global list of devices
+upon device removal.  If the device is re-added, the removal code would
+find the first instance and try to remove an already removed device.
 
 Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ntb/ntb_transport.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/ntb_netdev.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/ntb/ntb_transport.c
-+++ b/drivers/ntb/ntb_transport.c
-@@ -490,11 +490,12 @@ static void ntb_transport_setup_qp_mw(st
- 	rx_size -= sizeof(struct ntb_rx_info);
+--- a/drivers/net/ntb_netdev.c
++++ b/drivers/net/ntb_netdev.c
+@@ -375,6 +375,8 @@ static void ntb_netdev_remove(struct pci
+ 	if (dev == NULL)
+ 		return;
  
- 	qp->rx_buff = qp->remote_rx_info + 1;
--	qp->rx_max_frame = min(transport_mtu, rx_size);
-+	/* Due to housekeeping, there must be atleast 2 buffs */
-+	qp->rx_max_frame = min(transport_mtu, rx_size / 2);
- 	qp->rx_max_entry = rx_size / qp->rx_max_frame;
- 	qp->rx_index = 0;
++	list_del(&dev->list);
++
+ 	ndev = dev->ndev;
  
--	qp->remote_rx_info->entry = qp->rx_max_entry;
-+	qp->remote_rx_info->entry = qp->rx_max_entry - 1;
- 
- 	/* setup the hdr offsets with 0's */
- 	for (i = 0; i < qp->rx_max_entry; i++) {
-@@ -818,7 +819,8 @@ static void ntb_transport_init_queue(str
- 	tx_size -= sizeof(struct ntb_rx_info);
- 
- 	qp->tx_mw = qp->rx_info + 1;
--	qp->tx_max_frame = min(transport_mtu, tx_size);
-+	/* Due to housekeeping, there must be atleast 2 buffs */
-+	qp->tx_max_frame = min(transport_mtu, tx_size / 2);
- 	qp->tx_max_entry = tx_size / qp->tx_max_frame;
- 
- 	if (nt->debugfs_dir) {
+ 	unregister_netdev(ndev);
 
 
