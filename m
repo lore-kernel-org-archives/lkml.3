@@ -1,228 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab3EVR70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:59:26 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:51487 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab3EVR6n (ORCPT
+	id S1752149Ab3EVSBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:01:21 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:64957 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3EVSBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:58:43 -0400
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/3] s390/kdump: Use vmcore for zfcpdump
-Date: Wed, 22 May 2013 19:58:37 +0200
-Message-Id: <1369245517-16204-4-git-send-email-holzheu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.6
-In-Reply-To: <1369245517-16204-1-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1369245517-16204-1-git-send-email-holzheu@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052217-5024-0000-0000-0000061FB1CA
+	Wed, 22 May 2013 14:01:19 -0400
+Date: Wed, 22 May 2013 14:01:14 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Christian Daudt <csd@broadcom.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
+        Stephen Warren <swarren@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wei WANG <wei_wang@realsil.com.cn>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        csd_b@daudt.org
+Subject: Re: [PATCH V2 2/2] ARM: mmc: bcm281xx SDHCI driver (dt mods)
+Message-ID: <20130522180114.GA8235@beef>
+References: <1368200883-15668-1-git-send-email-csd@broadcom.com>
+ <1368200883-15668-2-git-send-email-csd@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368200883-15668-2-git-send-email-csd@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Willeke <willeke@de.ibm.com>
+Hi Christian,
 
-This patch modifies the s390 copy_oldmem_page() function for zfcpdump
-to read from the HSA memory if memory below HSA_SIZE bytes is requested.
-Otherwise from real memory is read.
+On Fri, May 10, 2013 at 08:48:03AM -0700, Christian Daudt wrote:
+> Add SDHCI driver for the Broadcom 281xx SoCs. Also
+> add bindings for it into bcm281xx dts files.
 
-Signed-off-by: Jan Willeke <willeke@de.ibm.com>
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- arch/s390/Kconfig             |  3 +-
- arch/s390/include/asm/sclp.h  |  1 +
- arch/s390/kernel/crash_dump.c | 74 ++++++++++++++++++++++++++++++++++---------
- drivers/s390/char/zcore.c     |  6 ++--
- 4 files changed, 65 insertions(+), 19 deletions(-)
+Since this is independent of the driver, the description should probably
+be updated to reflect that this is just the DT support for the bcm281xx
+(or kona) SDHCI hw.
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 2c9789d..a0d78f1 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -516,6 +516,7 @@ config CRASH_DUMP
- 	bool "kernel crash dumps"
- 	depends on 64BIT && SMP
- 	select KEXEC
-+	select ZFCPDUMP
- 	help
- 	  Generate crash dump after being started by kexec.
- 	  Crash dump kernels are loaded in the main kernel with kexec-tools
-@@ -526,7 +527,7 @@ config CRASH_DUMP
- config ZFCPDUMP
- 	def_bool n
- 	prompt "zfcpdump support"
--	select SMP
-+	depends on SMP
- 	help
- 	  Select this option if you want to build an zfcpdump enabled kernel.
- 	  Refer to <file:Documentation/s390/zfcpdump.txt> for more details on this.
-diff --git a/arch/s390/include/asm/sclp.h b/arch/s390/include/asm/sclp.h
-index 06a1361..7dc7f9c 100644
---- a/arch/s390/include/asm/sclp.h
-+++ b/arch/s390/include/asm/sclp.h
-@@ -56,5 +56,6 @@ bool sclp_has_linemode(void);
- bool sclp_has_vt220(void);
- int sclp_pci_configure(u32 fid);
- int sclp_pci_deconfigure(u32 fid);
-+int memcpy_hsa(void *dest, unsigned long src, size_t count, int mode);
- 
- #endif /* _ASM_S390_SCLP_H */
-diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
-index 4fe7fa7..40373b3 100644
---- a/arch/s390/kernel/crash_dump.c
-+++ b/arch/s390/kernel/crash_dump.c
-@@ -16,6 +16,7 @@
- #include <asm/os_info.h>
- #include <asm/elf.h>
- #include <asm/ipl.h>
-+#include <asm/sclp.h>
- 
- #define PTR_ADD(x, y) (((char *) (x)) + ((unsigned long) (y)))
- #define PTR_SUB(x, y) (((char *) (x)) - ((unsigned long) (y)))
-@@ -24,6 +25,25 @@
- static size_t elfcorebuf_sz;
- static char *elfcorebuf;
- 
-+/* For pages below ZFCPDUMP_HSA_SIZE memory from the HSA is copied. Otherwise
-+ * real memory copy is used.
-+ */
-+static ssize_t copy_oldmem_page_zfcpdump(char *buf, size_t csize,
-+					 unsigned long src, int userbuf)
-+{
-+	if (src < ZFCPDUMP_HSA_SIZE) {
-+		if (memcpy_hsa(buf, src, csize, userbuf) < 0)
-+			return -EINVAL;
-+	} else {
-+		if (userbuf)
-+			copy_to_user_real((void __force __user *) buf,
-+					  (void *) src, csize);
-+		else
-+			memcpy_real(buf, (void *) src, csize);
-+	}
-+	return csize;
-+}
-+
- /*
-  * Copy one page from "oldmem"
-  *
-@@ -31,15 +51,10 @@ static char *elfcorebuf;
-  *  - [OLDMEM_BASE - OLDMEM_BASE + OLDMEM_SIZE] is mapped to [0 - OLDMEM_SIZE].
-  *  - [0 - OLDMEM_SIZE] is mapped to [OLDMEM_BASE - OLDMEM_BASE + OLDMEM_SIZE]
-  */
--ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
--			 size_t csize, unsigned long offset, int userbuf)
--{
--	unsigned long src;
-+static ssize_t copy_oldmem_page_kdump(char *buf, size_t csize,
-+				      unsigned long src, int userbuf)
- 
--	if (!csize)
--		return 0;
--
--	src = (pfn << PAGE_SHIFT) + offset;
-+{
- 	if (src < OLDMEM_SIZE)
- 		src += OLDMEM_BASE;
- 	else if (src > OLDMEM_BASE &&
-@@ -54,6 +69,23 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- }
- 
- /*
-+ * Copy one page from "oldmem"
-+ */
-+ssize_t copy_oldmem_page(unsigned long pfn, char *buf, size_t csize,
-+			 unsigned long offset, int userbuf)
-+{
-+	unsigned long src;
-+	if (!csize)
-+		return 0;
-+	src = (pfn << PAGE_SHIFT) + offset;
-+
-+	if (OLDMEM_BASE)
-+		return copy_oldmem_page_kdump(buf, csize, src, userbuf);
-+	else
-+		return copy_oldmem_page_zfcpdump(buf, csize, src, userbuf);
-+}
-+
-+/*
-  * Copy memory from old kernel
-  */
- int copy_from_oldmem(void *dest, void *src, size_t count)
-@@ -61,11 +93,21 @@ int copy_from_oldmem(void *dest, void *src, size_t count)
- 	unsigned long copied = 0;
- 	int rc;
- 
--	if ((unsigned long) src < OLDMEM_SIZE) {
--		copied = min(count, OLDMEM_SIZE - (unsigned long) src);
--		rc = memcpy_real(dest, src + OLDMEM_BASE, copied);
--		if (rc)
--			return rc;
-+	if (OLDMEM_BASE) {
-+		if ((unsigned long) src < OLDMEM_SIZE) {
-+			copied = min(count, OLDMEM_SIZE - (unsigned long) src);
-+			rc = memcpy_real(dest, src + OLDMEM_BASE, copied);
-+			if (rc)
-+				return rc;
-+		}
-+	} else {
-+		if ((unsigned long) src < ZFCPDUMP_HSA_SIZE) {
-+			copied = min(count,
-+				     ZFCPDUMP_HSA_SIZE - (unsigned long) src);
-+			rc = memcpy_hsa(dest, (unsigned long) src, copied, 0);
-+			if (rc)
-+				return rc;
-+		}
- 	}
- 	return memcpy_real(dest + copied, src + copied, count - copied);
- }
-@@ -448,7 +490,9 @@ void arch_free_crash_header(void)
-  */
- static int setup_kdump_elfcorehdr(void)
- {
--	if (!OLDMEM_BASE || is_kdump_kernel())
-+	if (!OLDMEM_BASE || (ipl_info.type != IPL_TYPE_FCP_DUMP))
-+		return -EINVAL;
-+	if (is_kdump_kernel())
- 		return -EINVAL;
- 	arch_vmcore_get_elf_hdr(&elfcorebuf, &elfcorebuf_sz);
- 	elfcorehdr_addr = ELFCORE_ADDR_NEWMEM;
-@@ -456,4 +500,4 @@ static int setup_kdump_elfcorehdr(void)
- 	return 0;
- }
- 
--subsys_initcall(setup_kdump_elfcorehdr);
-+subsys_initcall_sync(setup_kdump_elfcorehdr);
-diff --git a/drivers/s390/char/zcore.c b/drivers/s390/char/zcore.c
-index 9e5e146..794820a 100644
---- a/drivers/s390/char/zcore.c
-+++ b/drivers/s390/char/zcore.c
-@@ -30,8 +30,8 @@
- 
- #define TRACE(x...) debug_sprintf_event(zcore_dbf, 1, x)
- 
--#define TO_USER		0
--#define TO_KERNEL	1
-+#define TO_USER		1
-+#define TO_KERNEL	0
- #define CHUNK_INFO_SIZE	34 /* 2 16-byte char, each followed by blank */
- 
- enum arch_id {
-@@ -73,7 +73,7 @@ static struct ipl_parameter_block *ipl_block;
-  * @count: Size of buffer, which should be copied
-  * @mode:  Either TO_KERNEL or TO_USER
-  */
--static int memcpy_hsa(void *dest, unsigned long src, size_t count, int mode)
-+int memcpy_hsa(void *dest, unsigned long src, size_t count, int mode)
- {
- 	int offs, blk_num;
- 	static char buf[PAGE_SIZE] __attribute__((__aligned__(PAGE_SIZE)));
--- 
-1.8.1.6
+> Changes from V1:
+>  - split original patch into 2, one for driver and this one for dt
+> 
+> Signed-off-by: Christian Daudt <csd@broadcom.com>
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/bcm,kona-sdhci.txt b/Documentation/devicetree/bindings/mmc/bcm,kona-sdhci.txt
+> new file mode 100644
+> index 0000000..ad1c4bd
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/bcm,kona-sdhci.txt
+> @@ -0,0 +1,16 @@
+> +Broadcom BCM281xx SDHCI driver
 
+s/driver//
+
+> +
+> +This file documents differences between the core properties in mmc.txt
+> +and the properties in the bcm281xx driver.
+
+The hardware binding should not mention the supporting driver. Borrowing
+from other examples, you'd want something more like:
+
+"
+This file documents differences between the core properties described
+by mmc.txt and the properties that represent the bcm281xx [kona?] SDHCI.
+"
+
+-Matt
