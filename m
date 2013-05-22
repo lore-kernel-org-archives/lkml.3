@@ -1,98 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab3EVRqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:46:13 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34403 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab3EVRqL (ORCPT
+	id S1754767Ab3EVRr6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:47:58 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:42289 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab3EVRr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:46:11 -0400
-Date: Wed, 22 May 2013 10:45:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130522174532.GC3431@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130521120906.GD3578@linux.vnet.ibm.com>
- <1369143885.3301.221.camel@edumazet-glaptop>
- <519B8908.9080007@yandex-team.ru>
- <1369150693.3301.233.camel@edumazet-glaptop>
- <519BB90B.6080706@yandex-team.ru>
- <1369188080.3301.268.camel@edumazet-glaptop>
- <1369201765.3301.299.camel@edumazet-glaptop>
- <519CB2D8.103@yandex-team.ru>
- <1369225837.3301.324.camel@edumazet-glaptop>
- <519CC2FB.2010006@yandex-team.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CC2FB.2010006@yandex-team.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052217-3620-0000-0000-000002A141C6
+	Wed, 22 May 2013 13:47:57 -0400
+From: "Felipe F. Tonello" <eu@felipetonello.com>
+To: linux-mmc@vger.kernel.org
+Cc: ben-linux@fluff.org, cjb@laptop.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org,
+        "Felipe F. Tonello" <eu@felipetonello.com>
+Subject: [PATCH 0/2] Added set_power handler to mmc sdhci host
+Date: Wed, 22 May 2013 10:47:10 -0700
+Message-Id: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 05:07:07PM +0400, Roman Gushchin wrote:
-> On 22.05.2013 16:30, Eric Dumazet wrote:
-> >On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
-> >
-> >>+/*
-> >>+ * Same as ACCESS_ONCE(), but used for accessing field of a structure.
-> >>+ * The main goal is preventing compiler to store &ptr->field in a register.
-> >
-> >But &ptr->field is a constant during the whole duration of
-> >udp4_lib_lookup2() and could be in a register, in my case field is at
-> >offset 0, and ptr is a parameter (so could be in a 'register')
-> >
-> >The bug you found is that compiler caches the indirection  (ptr->field)
-> >into a register, not that compiler stores &ptr->field into a register.
-> >
-> >>+ */
-> >>+#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
-> >>+
-> >
-> >Here we force the compiler to consider ptr as volatile, but semantically
-> >it is not required in rcu_dereference(ptr->field)
-> 
-> Actually, we need to mark an "address of a place" where the field value is
-> located as volatile before dereferencing. I have no idea how to do it in another way,
-> except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
-> 	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
+From: "Felipe F. Tonello" <eu@felipetonello.com>
 
-Why not just ACCESS_ONCE(ptr->field)?  Or if it is the thing that
-ptr->field points to that is subject to change, ACCESS_ONCE(*ptr->field)?
+This set_power handler is useful for modules that need to be turned off when
+the mmc host turns off.
 
-Or rcu_dereference(ptr->field), as appropriate?
+Felipe F. Tonello (2):
+  mmc: sdhci: Added set_power sdhci_ops handler.
+  mmc: sdhci-s3c: Added set_power handler to platdata
 
-							Thanx, Paul
+ drivers/mmc/host/sdhci-s3c.c                | 8 ++++++++
+ drivers/mmc/host/sdhci.c                    | 8 ++++++++
+ drivers/mmc/host/sdhci.h                    | 1 +
+ include/linux/platform_data/mmc-sdhci-s3c.h | 1 +
+ 4 files changed, 18 insertions(+)
 
-> >We want field to be reloaded, not ptr.
-> >
-> >So yes, the patch appears to fix the bug, but it sounds not logical to
-> >me.
-> >
-> 
-> May be we can enhance it by providing better/more detailed comments here?
-> Have you any suggestions?
-> 
-> Thanks,
-> Roman
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+-- 
+1.8.1.4
 
