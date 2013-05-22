@@ -1,104 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab3EVGgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:36:07 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:42591 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3EVGgE (ORCPT
+	id S1755408Ab3EVGiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:38:20 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:19034 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab3EVGiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:36:04 -0400
-Message-ID: <519C674A.50700@redhat.com>
-Date: Wed, 22 May 2013 08:35:54 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 22 May 2013 02:38:17 -0400
+Message-ID: <519C673F.1090705@huawei.com>
+Date: Wed, 22 May 2013 14:35:43 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of
- the SG_IO command whitelist (CVE-2012-4542))
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: <vinod.koul@intel.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Libo Chen <libo.chen@huawei.com>, <agust@denx.de>, <phdm@macqel.be>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] bestcomm: no need to free when kzalloc fail
+References: <1367743104-3448-1-git-send-email-libo.chen@huawei.com>  <519C4E4D.1060101@huawei.com> <1369202788.3870.3.camel@pasglop>
+In-Reply-To: <1369202788.3870.3.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure what is more ridiculous, whether the seven pings or the
-lack of review...
+On 2013/5/22 14:06, Benjamin Herrenschmidt wrote:
+> On Wed, 2013-05-22 at 12:49 +0800, Libo Chen wrote:
+>> ping...
+> 
+> This is pointless. We routinely avoid adding such crap by having
+> the various free(...) routines cope with NULL. You just need to make
+> sure you are indeed NULL in the error case.
+> 
+> Ben.
 
-Paolo
+thanks,
 
-Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
-> This series regards the whitelist that is used for the SG_IO ioctl.  This
-> whitelist has three problems:
+Libo
+
 > 
-> * the bitmap of allowed commands is designed for MMC devices (roughly,
->   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
->   device classes and have different meanings for different classes.
-> 
-> * also because the bitmap of allowed commands is designed for MMC devices
->   only, some commands are missing even though they are generally useful and
->   not insecure.  At least not more insecure than anything else you can
->   do if you have access to /dev/sdX or /dev/stX nodes.
-> 
-> * the whitelist can be disabled per-process but not per-disk.  In addition,
->   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
->   resources, enough to make it insecure.
-> 
-> The series corrects these problems.  Patches 1-4 solve the first problem,
-> which also has an assigned CVE, by using different bitmaps for the various
-> device classes.  Patches 5-11 solve the second by adding more commands
-> to the bitmaps.  Patches 12 and 13 solve the third, and were already
-> posted but ignored by the maintainers despite multiple pings.
-> 
-> Note: checkpatch hates the formatting of the command table.  I know about this,
-> and ensured that there are no errors in the rest of the code.  The current
-> formatting is IMHO quite handy, and roughly based on the files available
-> from the SCSI standard body.
-> 
-> Ok for the next merge window?
-> 
-> Paolo
-> 
-> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
->         for details).  Added patch 14 and added a few more scanner
->         commands based on SANE (scanners are not whitelisted by default,
->         also were not in v1, but this makes it possible to opt into the
->         whitelist out of paranoia).  Removed C++ comments.  Removed the
->         large #if 0'd list of commands that the kernel does not pass
->         though.  Marked blk_set_cmd_filter_defaults as __init.
+>> On 2013/5/5 16:38, chenlibo.3@gmail.com wrote:
+>>> From: Libo Chen <libo.chen@huawei.com>
+>>>
+>>> There is no need to free bcom_eng if kzalloc fail
+>>>
+>>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+>>> ---
+>>>  drivers/dma/bestcomm/bestcomm.c | 3 ++-
+>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/dma/bestcomm/bestcomm.c b/drivers/dma/bestcomm/bestcomm.c
+>>> index a8c2e29..300ee2d 100644
+>>> --- a/drivers/dma/bestcomm/bestcomm.c
+>>> +++ b/drivers/dma/bestcomm/bestcomm.c
+>>> @@ -400,7 +400,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
+>>>  		printk(KERN_ERR DRIVER_NAME ": "
+>>>  			"Can't allocate state structure\n");
+>>>  		rv = -ENOMEM;
+>>> -		goto error_sramclean;
+>>> +		goto error_kzalloc;
+>>>  	}
+>>>  
+>>>  	/* Save the node */
+>>> @@ -449,6 +449,7 @@ error_release:
+>>>  	release_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma));
+>>>  error_sramclean:
+>>>  	kfree(bcom_eng);
+>>> +error_kzalloc:
+>>>  	bcom_sram_cleanup();
+>>>  error_ofput:
+>>>  	of_node_put(op->dev.of_node);
+>>>
+>>
 > 
 > 
-> Paolo Bonzini (14):
->   sg_io: pass request_queue to blk_verify_command
->   sg_io: reorganize list of allowed commands
->   sg_io: use different default filters for each device class
->   sg_io: resolve conflicts between commands assigned to multiple
->     classes (CVE-2012-4542)
->   sg_io: whitelist a few more commands for rare & obsolete device types
->   sg_io: whitelist another command for multimedia devices
->   sg_io: whitelist a few more commands for media changers
->   sg_io: whitelist a few more commands for tapes
->   sg_io: whitelist a few more commands for disks
->   sg_io: whitelist a few obsolete commands
->   sg_io: mark blk_set_cmd_filter_defaults as __init
->   sg_io: remove remnants of sysfs SG_IO filters
->   sg_io: introduce unpriv_sgio queue flag
->   sg_io: use unpriv_sgio to disable whitelisting for scanners
 > 
->  Documentation/block/queue-sysfs.txt |    8 +
->  block/blk-sysfs.c                   |   33 +++
->  block/bsg.c                         |    2 +-
->  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
->  drivers/scsi/scsi_scan.c            |   14 ++-
->  drivers/scsi/sg.c                   |    6 +-
->  include/linux/blkdev.h              |    8 +-
->  include/linux/genhd.h               |    9 -
->  include/scsi/scsi.h                 |    3 +
->  9 files changed, 344 insertions(+), 108 deletions(-)
+> .
 > 
+
 
