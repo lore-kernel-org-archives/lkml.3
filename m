@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab3EVQUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:20:21 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57163
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab3EVQUT (ORCPT
+	id S1756605Ab3EVQXj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:23:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39411 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab3EVQXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:20:19 -0400
-Date: Wed, 22 May 2013 18:19:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Chen Gang <gang.chen@asianux.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] kernel/sched/core.c: need return NULL when BUG() is
- defined as empty.
-Message-ID: <20130522161935.GR18810@twins.programming.kicks-ass.net>
-References: <5199D565.4070307@asianux.com>
- <20130522091156.GC18810@twins.programming.kicks-ass.net>
- <20130522133317.GC18614@n2100.arm.linux.org.uk>
+	Wed, 22 May 2013 12:23:37 -0400
+Date: Wed, 22 May 2013 09:23:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Cc: davem@davemloft.net, liquidhorse@gmail.com, andy@greyhouse.net,
+        fubar@us.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+Message-ID: <20130522162336.GA5761@kroah.com>
+References: <519CADA9.9060909@smart-weblications.de>
+ <20130522135745.GA14640@kroah.com>
+ <519CEF4B.5090108@smart-weblications.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130522133317.GC18614@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <519CEF4B.5090108@smart-weblications.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 02:33:17PM +0100, Russell King - ARM Linux wrote:
-> On Wed, May 22, 2013 at 11:11:56AM +0200, Peter Zijlstra wrote:
-> > On Mon, May 20, 2013 at 03:48:53PM +0800, Chen Gang wrote:
-> > > 
-> > > When neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, need let function
-> > > return failure value ('NULL') instead of random value.
+On Wed, May 22, 2013 at 06:16:11PM +0200, Smart Weblications GmbH - Florian Wiessner wrote:
+> Am 22.05.2013 15:57, schrieb Greg KH:
+> > On Wed, May 22, 2013 at 01:36:09PM +0200, Smart Weblications GmbH - Florian Wiessner wrote:
+> >> Hi,
+> >>
+> >> why is this patch still not backported to 3.4?
+> >>
+> >> I today tried 3.4.46 from kernel.org, but the patch STILL seems _NOT_ included?
+> >>
+> >> WHY IS THAT?
 > > 
-> > What will such a kernel do? Happily continue running whenever we hit a
-> > BUG? that seems like a particularly bad idea. Should we not have a stub
-> > BUG() function like:
+> > <formletter>
 > > 
-> > void BUG(void) __attribute__((noreturn))
-> > {
-> > 	local_irq_disable();
-> > 	while (1) ;
-> > }
+> > This is not the correct way to submit patches for inclusion in the
+> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> > for how to do this properly.
+> > 
+> > </formletter>
+> > 
 > 
-> Eww.  So you've a platform where you have things like panic_on_oops
-> enabled, and you hit this bug... do we really want to just stop?
-> Wouldn't replacing BUG() with panic("BUG"); be better ?
 > 
-> But, this begs the question - what is the point of being able to turn
-> off BUG() ?  As BUG() on any sensible architecture is implemented by
-> placing the minimum of code at the callsite (eg, one instruction if
-> not using verbose) anything like the above is likely to be bigger.
-> 
-> So, I'd actually argue that rather than trying to "fix" this, get rid
-> of CONFIG_BUG and make it always enabled everywhere - just like what
-> has recently been done with hotplug.
+> I don't want to submit a patch - i wanted to know why this patch still is not in
+> the kernel (it is afaics at least 6 months old!)
 
-Works for me. 
+Perhaps because it was not submitted properly as documented above?
+
+thanks,
+
+greg k-h
