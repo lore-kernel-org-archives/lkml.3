@@ -1,88 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab3EVHU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:20:29 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58708 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab3EVHU0 (ORCPT
+	id S1752633Ab3EVHUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:20:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34644 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752799Ab3EVHUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:20:26 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-b2-519c71b88118
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: EXYNOS: add __cpuinit annotation to write_pen_release()
-Date: Wed, 22 May 2013 16:20:24 +0900
-Message-id: <000201ce56bc$d399b770$7acd2650$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5WvMC/goR1YW5iSp+DM8QRnLJLfg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zI90dhXMCDXrPqltcXniJ1aJ3wVU2
-	i02Pr7FaXN41h81ixvl9TA6sHpuX1Hv0bVnF6PF5k1wAcxSXTUpqTmZZapG+XQJXxtONixgL
-	HnBVzPuk28DYydnFyMkhIWAi8WLKKzYIW0ziwr31QDYXh5DAMkaJ+Rc+McMUnfl2mR0iMZ1R
-	YsLZK0wQzi9Gid5DMxlBqtgE1CS+fDnMDmKLCGhIPN19hBGkiFmgl1Hi24SnYAlhAV+JScun
-	gDWwCKhK3F/dDLabV8BSYtq3ZhYIW1Dix+R7YDazgJbE+p3HmSBseYnNa95CnaQgsePsa0aI
-	ZXoS719BzGEWEJHY9+Id2GIJgU3sEl23ZrJCLBOQ+Db5ENBQDqCErMSmA1BzJCUOrrjBMoFR
-	bBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJs/4djHcPWB9i
-	TAZaP5FZSjQ5HxineSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpg5PYpP2YSuPamZ+ByvW15Cr7M+9Iv/tzGvdbX9NbJll+2u5MaHm1v5zbZf4x1
-	8lYOX9nID5qPPrTe82JmfxHwbLZHsdqXUIlbulGa0aGHQn5PffEq8/2bTdL79j2bvHxjUp/m
-	Lm7u4GtN29ezsTH2zv8pI3C7YOqd+VfDzQ99ymYyMz7FkrFzrhJLcUaioRZzUXEiAG4UdpvJ	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jQd0dhXMCDVa0KFtcXniJ1aJ3wVU2
-	i02Pr7FaXN41h81ixvl9TA6sHpuX1Hv0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8bTjYsYCx5wVcz7pNvA2MnZxcjJISFgInHm22V2CFtM4sK99Wxd
-	jFwcQgLTGSUmnL3CBOH8YpToPTSTEaSKTUBN4suXw2AdIgIaEk93H2EEKWIW6GWU+DbhKVhC
-	WMBXYtLyKWANLAKqEvdXN7OB2LwClhLTvjWzQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zlhni
-	JAWJHWdfM0Is05N4/wpiDrOAiMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0
-	XEO94sTc4tK8dL3k/NxNjOAofia1g3Flg8UhRgEORiUe3ge1swOFWBPLiitzDzFKcDArifAq
-	BM0JFOJNSaysSi3Kjy8qzUktPsSYDPTpRGYp0eR8YILJK4k3NDYxM7I0MrMwMjE3J01YSZz3
-	QKt1oJBAemJJanZqakFqEcwWJg5OqQbGBMG+4IMRKl/Yqo5d2zr/sLvBo4AVEk7POrylJmiZ
-	ns3z7FSdUTTrXa9tb5CO1Hz+zz/mXW+S1TR/rPWksC9zfaukf6Bq1L9P0ebGn1oNy67cynNO
-	eZDE5K/9kaP9+LaJvQpW074tFHhYuERmpWaE/robDpkRr3bz+YSKh7bN2Hz1qxf/m51KLMUZ
-	iYZazEXFiQCw6tVbJgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 22 May 2013 03:20:41 -0400
+Date: Wed, 22 May 2013 00:20:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ric Mason <ric.masonn@gmail.com>, Simon Jeons <simon.jeons@gmail.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 1/2] Make the batch size of the percpu_counter
+ configurable
+Message-Id: <20130522002020.60c3808f.akpm@linux-foundation.org>
+In-Reply-To: <1369183390.27102.337.camel@schen9-DESK>
+References: <8584b08e57e97ecc4769859b751ad459d038a730.1367574872.git.tim.c.chen@linux.intel.com>
+	<20130521134122.4d8ea920c0f851fc2d97abc9@linux-foundation.org>
+	<1369178849.27102.330.camel@schen9-DESK>
+	<20130521164154.bed705c6e117ceb76205cd65@linux-foundation.org>
+	<1369183390.27102.337.camel@schen9-DESK>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable __cpuinitdata pen_release is referenced by write_pen_release().
-Also, write_pen_release() is called by exynos_secondary_init() which is
-annotated with __cpuinit. Thus, __cpuinit should be added write_pen_release()
-to fix section mismatch warning.
+On Tue, 21 May 2013 17:43:10 -0700 Tim Chen <tim.c.chen@linux.intel.com> wrote:
 
-Fixed section mismatch warning as below:
+> 
+> I'll spin off another version of the patch later to add the
+> memory-hotplug notifier.  In the mean time, does the following looks
+> good to you?
+> 
+> ...
+>
+> --- a/include/linux/mman.h
+> +++ b/include/linux/mman.h
+> @@ -10,12 +10,30 @@
+>  extern int sysctl_overcommit_memory;
+>  extern int sysctl_overcommit_ratio;
+>  extern struct percpu_counter vm_committed_as;
+> +#ifdef CONFIG_SMP
+> +extern int vm_committed_as_batch;
+> +
+> +static inline void mm_compute_batch(void)
+> +{
+> +        int nr = num_present_cpus();
+> +        int batch = max(32, nr*2);
+> +
+> +        /* batch size set to 0.4% of (total memory/#cpus) */
+> +        vm_committed_as_batch = max((int) (totalram_pages/nr) / 256, batch);
 
-  WARNING: vmlinux.o(.text.unlikely+0x1f4): Section mismatch in reference from the function write_pen_release() to the variable
-.cpuinit.data:pen_release
-  The function write_pen_release() references the variable __cpuinitdata pen_release.
-  This is often because write_pen_release lacks a __cpuinitdata annotation or the annotation of pen_release is wrong.
+Use max_t() here.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- arch/arm/mach-exynos/platsmp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That expression will overflow when the machine has two exabytes of RAM ;)
 
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index a0e8ff7..9676af2 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -58,7 +58,7 @@ static inline void __iomem *cpu_boot_reg(int cpu)
-  * observers, irrespective of whether they're taking part in coherency
-  * or not.  This is necessary for the hotplug code to work reliably.
-  */
--static void write_pen_release(int val)
-+static void __cpuinit write_pen_release(int val)
- {
- 	pen_release = val;
- 	smp_wmb();
--- 
-1.7.10.4
+> +}
+> +#else
+> +#define vm_committed_as_batch 0
+> +
+> +static inline void mm_compute_batch(void)
+> +{
+> +}
+> +#endif
 
+I think it would be better if all the above was not inlined.  There's
+no particular reason to inline it, and putting it here requires that
+mman.h include a bunch more header files (which the patch forgot to
+do).
+
+>  unsigned long vm_memory_committed(void);
+>  
+>  static inline void vm_acct_memory(long pages)
+>  {
+> -	percpu_counter_add(&vm_committed_as, pages);
+> +	__percpu_counter_add(&vm_committed_as, pages, vm_committed_as_batch);
+>  }
+>  
+>  static inline void vm_unacct_memory(long pages)
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index f681e18..55c8773 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -3145,11 +3145,15 @@ void mm_drop_all_locks(struct mm_struct *mm)
+>  /*
+>   * initialise the VMA slab
+>   */
+> +
+> +int vm_committed_as_batch;
+> +
+>  void __init mmap_init(void)
+>  {
+>  	int ret;
+>  
+>  	ret = percpu_counter_init(&vm_committed_as, 0);
+> +	mm_compute_batch();
+>  	VM_BUG_ON(ret);
+>  }
+>  
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index 298884d..9ad16ba 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -527,11 +527,15 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
+>  /*
+>   * initialise the VMA and region record slabs
+>   */
+> +
+> +int vm_committed_as_batch;
+
+This definition duplicates the one in mmap.c?
+
+>  void __init mmap_init(void)
+>  {
+>  	int ret;
+>  
+>  	ret = percpu_counter_init(&vm_committed_as, 0);
+> +	mm_compute_batch();
+>  	VM_BUG_ON(ret);
+>  	vm_region_jar = KMEM_CACHE(vm_region, SLAB_PANIC);
+>  }
 
