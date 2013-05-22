@@ -1,98 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab3EVC4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:56:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754311Ab3EVC4O convert rfc822-to-8bit (ORCPT
+	id S1755225Ab3EVC4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:56:25 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57050 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab3EVC4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:56:14 -0400
-Date: Tue, 21 May 2013 22:56:05 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS assertion from truncate. (3.10-rc2)
-Message-ID: <20130522025605.GA29767@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20130521225257.GA12713@redhat.com>
- <20130521233429.GW29466@dastard>
- <20130521234016.GB14347@redhat.com>
- <20130521235410.GY29466@dastard>
- <20130522000803.GA19891@redhat.com>
- <20130522001603.GZ29466@dastard>
+	Tue, 21 May 2013 22:56:23 -0400
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v7 8/8] vmcore: support mmap() on /proc/vmcore
+To: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org
+Cc: cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+Date: Wed, 22 May 2013 11:56:18 +0900
+Message-ID: <20130522025618.12215.76429.stgit@localhost6.localdomain6>
+In-Reply-To: <20130522025410.12215.16793.stgit@localhost6.localdomain6>
+References: <20130522025410.12215.16793.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20130522001603.GZ29466@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 10:16:03AM +1000, Dave Chinner wrote:
+This patch introduces mmap_vmcore().
 
-Seems like I can trigger this from paths other than truncate too.. (eg, sys_open)
+Don't permit writable nor executable mapping even with mprotect()
+because this mmap() is aimed at reading crash dump memory.
+Non-writable mapping is also requirement of remap_pfn_range() when
+mapping linear pages on non-consecutive physical pages; see
+is_cow_mapping().
 
-Here's what I ended up with for debug
+Set VM_MIXEDMAP flag to remap memory by remap_pfn_range and by
+remap_vmalloc_range_pertial at the same time for a single
+vma. do_munmap() can correctly clean partially remapped vma with two
+functions in abnormal case. See zap_pte_range(), vm_normal_page() and
+their comments for details.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 2b39d16..b579dfe 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2792,6 +2792,7 @@ char *dentry_path(struct dentry *dentry, char *buf, int buflen)
- Elong:
-        return ERR_PTR(-ENAMETOOLONG);
+On x86-32 PAE kernels, mmap() supports at most 16TB memory only. This
+limitation comes from the fact that the third argument of
+remap_pfn_range(), pfn, is of 32-bit length on x86-32: unsigned long.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+---
+
+ fs/proc/vmcore.c |   86 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 86 insertions(+), 0 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 9f3e256..6ba32f8 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -20,6 +20,7 @@
+ #include <linux/init.h>
+ #include <linux/crash_dump.h>
+ #include <linux/list.h>
++#include <linux/vmalloc.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include "internal.h"
+@@ -200,9 +201,94 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	return acc;
  }
-+EXPORT_SYMBOL(dentry_path);
  
- /*
-  * NOTE! The user-level library version returns a
-diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-index d82efaa..8419e63 100644
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -47,6 +47,7 @@
- #include <linux/security.h>
- #include <linux/fiemap.h>
- #include <linux/slab.h>
-+#include <linux/dcache.h>
- 
- static int
- xfs_initxattrs(
-@@ -714,9 +715,20 @@ xfs_setattr_size(
-                return XFS_ERROR(error);
- 
-        ASSERT(S_ISREG(ip->i_d.di_mode));
--       ASSERT((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
-+       if ((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
-                        ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
--                       ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
-+                       ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0) {
++static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
++{
++	size_t size = vma->vm_end - vma->vm_start;
++	u64 start, end, len, tsz;
++	struct vmcore *m;
 +
-+               struct dentry *dentry = d_find_any_alias(VFS_I(ip));
-+               char buf[MAXPATHLEN];
++	start = (u64)vma->vm_pgoff << PAGE_SHIFT;
++	end = start + size;
 +
-+               dentry_path(dentry, buf, MAXPATHLEN);
-+               dput(dentry);
-+               xfs_warn(mp, "%s: mask 0x%x mismatch on file %s\n",
-+                        __func__, mask, buf);
++	if (size > vmcore_size || end > vmcore_size)
++		return -EINVAL;
 +
-+                ASSERT(0);
-+       }
++	if (vma->vm_flags & (VM_WRITE | VM_EXEC))
++		return -EPERM;
++
++	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
++	vma->vm_flags |= VM_MIXEDMAP;
++
++	len = 0;
++
++	if (start < elfcorebuf_sz) {
++		u64 pfn;
++
++		tsz = elfcorebuf_sz - start;
++		if (size < tsz)
++			tsz = size;
++		pfn = __pa(elfcorebuf + start) >> PAGE_SHIFT;
++		if (remap_pfn_range(vma, vma->vm_start, pfn, tsz,
++				    vma->vm_page_prot))
++			return -EAGAIN;
++		size -= tsz;
++		start += tsz;
++		len += tsz;
++
++		if (size == 0)
++			return 0;
++	}
++
++	if (start < elfcorebuf_sz + elfnotes_sz) {
++		void *kaddr;
++
++		tsz = elfcorebuf_sz + elfnotes_sz - start;
++		if (size < tsz)
++			tsz = size;
++		kaddr = elfnotes_buf + start - elfcorebuf_sz;
++		if (remap_vmalloc_range_partial(vma, vma->vm_start + len,
++						kaddr, tsz)) {
++			do_munmap(vma->vm_mm, vma->vm_start, len);
++			return -EAGAIN;
++		}
++		size -= tsz;
++		start += tsz;
++		len += tsz;
++
++		if (size == 0)
++			return 0;
++	}
++
++	list_for_each_entry(m, &vmcore_list, list) {
++		if (start < m->offset + m->size) {
++			u64 paddr = 0;
++
++			tsz = m->offset + m->size - start;
++			if (size < tsz)
++				tsz = size;
++			paddr = m->paddr + start - m->offset;
++			if (remap_pfn_range(vma, vma->vm_start + len,
++					    paddr >> PAGE_SHIFT, tsz,
++					    vma->vm_page_prot)) {
++				do_munmap(vma->vm_mm, vma->vm_start, len);
++				return -EAGAIN;
++			}
++			size -= tsz;
++			start += tsz;
++			len += tsz;
++
++			if (size == 0)
++				return 0;
++		}
++	}
++
++	return 0;
++}
++
+ static const struct file_operations proc_vmcore_operations = {
+ 	.read		= read_vmcore,
+ 	.llseek		= default_llseek,
++	.mmap		= mmap_vmcore,
+ };
  
-        if (!(flags & XFS_ATTR_NOLOCK)) {
-                lock_flags |= XFS_IOLOCK_EXCL;
-
-
-Something isn't right though I think.. Because the filenames it outputs
-look like crap.
-
-[   71.406552] XFS (sda2): xfs_setattr_size: mask 0xa068 mismatch on file 0\xffffffee<\xffffff88\xffffffff\xffffffff\xffffff80O\xffffff82\xffffffff\xffffffff\xffffffff\xffffffff
-
-The mask is always 0xa068 though if that helps.
-
-	Dave
+ static struct vmcore* __init get_new_element(void)
 
