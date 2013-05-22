@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab3EVRmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:42:42 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:44110 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab3EVRmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:42:40 -0400
-Message-ID: <519D038C.9000605@gmail.com>
-Date: Wed, 22 May 2013 19:42:36 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "tiejun.chen" <tiejun.chen@windriver.com>,
-        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio device
- tree nodes
-References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130521174849.GL26249@lunn.ch> <519C9333.20609@gmail.com> <519C9822.9040909@windriver.com> <519C9A66.3050807@gmail.com> <20130522131010.GB31290@titan.lakedaemon.net> <20130522165908.GB12320@obsidianresearch.com> <519D0143.1000203@gmail.com> <20130522173505.GH31290@titan.lakedaemon.net>
-In-Reply-To: <20130522173505.GH31290@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753458Ab3EVRnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:43:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab3EVRns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 13:43:48 -0400
+Date: Wed, 22 May 2013 13:41:11 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: [PATCH] mm: fix up a spurious page fault whenever it happens
+Message-ID: <20130522134111.33a695c5@cuia.bos.redhat.com>
+In-Reply-To: <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
+References: <5195ED8B.7060002@meduna.org>
+	<1369183168.6828.168.camel@gandalf.local.home>
+	<519CBB30.3060200@redhat.com>
+	<CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 07:35 PM, Jason Cooper wrote:
-> On Wed, May 22, 2013 at 07:32:51PM +0200, Sebastian Hesselbarth wrote:
->> On 05/22/2013 06:59 PM, Jason Gunthorpe wrote:
->>> On Wed, May 22, 2013 at 09:10:10AM -0400, Jason Cooper wrote:
->>>> iirc, our solution to this was to parse the ATAGs for the mac addr and
->>>> update the appended dtb.  This way, module load and unload would work
->>>> without loosing the mac address.  I believe Jason Gunthorpe has a patch
->>>> to atags_to_fdt() for this...  This should allow us to get rid of the
->>>> clocks hack.
->>>
->>> Sorry, no, we don't use ATAGs here, our platforms start the kernel
->>> with a correct DTB that has the correct mac address to use. My patch
->>> was to have the driver accept it, and I think Sebastian has already
->>> got that functionality...
->>
->> Not neccessary anyway, after talking Jason C in a Kirkwood-only
->> workaround I prepared a patch that reads mac address registers early
->> and stores it in the local-mac-address property.
->
-> Sweet!
->
->> Just tested on Dockstar with gated clocks and modular DT mv643xx_eth.
->>
->> Will append to the DT mv643xx_eth patch set if a v5 will be required
->> or as single patch prior Jason C taking in the ARM part of it
->> otherwise.
->
-> Please post, in-reply-to v4 is fine.
+On Wed, 22 May 2013 08:01:43 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Wed, May 22, 2013 at 5:33 AM, Rik van Riel <riel@redhat.com> wrote:
 
-Hmm, maybe a little bit too early. While restoring the MAC address now
-works, another bug arises which I guess is related with phy setup
-and aneg.
+> > Can you test the attached patch?
+> 
+> I think you should also remove the
+> 
+>         if (flags & FAULT_FLAG_WRITE)
+> 
+> test in handle_pte_fault(). Because if it's spurious, it might happen
+> on reads too, I think.
 
-Will investigate and update patch set accordingly.
+Here you are. I wonder if the conditional was put in because we
+originally did a global TLB flush (with IPIs) from the spurious
+fault handler...
 
-Sebastian
+Stanislav, could you add this patch to your test?
+
+---8<---
+Subject: [PATCH] mm: fix up a spurious page fault whenever it happens
+
+The kernel currently only handles spurious page faults when they
+"should" happen, but potentially this is not the only situation
+where they could happen.
+
+The spurious fault handler only flushes an entry from the local
+TLB; this should be a rare event with minimal side effects.
+
+This patch removes the conditional, allowing the spurious fault
+handler to execute whenever a spurious page fault happens, which
+should eliminate infinite page fault loops.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Stanislav Meduna <stano@meduna.org>
+---
+ mm/memory.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 6dc1882..962477d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3744,13 +3744,11 @@ int handle_pte_fault(struct mm_struct *mm,
+ 		update_mmu_cache(vma, address, pte);
+ 	} else {
+ 		/*
+-		 * This is needed only for protection faults but the arch code
+-		 * is not yet telling us if this is a protection fault or not.
+-		 * This still avoids useless tlb flushes for .text page faults
+-		 * with threads.
++		 * The page table entry is good, but the CPU generated a
++		 * spurious fault. Invalidate the corresponding TLB entry
++		 * on this CPU, so the next access can succeed.
+ 		 */
+-		if (flags & FAULT_FLAG_WRITE)
+-			flush_tlb_fix_spurious_fault(vma, address);
++		flush_tlb_fix_spurious_fault(vma, address);
+ 	}
+ unlock:
+ 	pte_unmap_unlock(pte, ptl);
