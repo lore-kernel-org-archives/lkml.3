@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab3EVLpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 07:45:45 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:34062 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3EVLpm (ORCPT
+	id S1755687Ab3EVLrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 07:47:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45632 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3EVLro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 07:45:42 -0400
+	Wed, 22 May 2013 07:47:44 -0400
+Message-ID: <519CB05E.3060903@canonical.com>
+Date: Wed, 22 May 2013 13:47:42 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-31-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-31-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Wed, 22 May 2013 19:45:42 +0800
-Message-ID: <CAJd=RBD3e0pJAt4QjE0CELCobSpiCWtYL5z5Ze7v8amuP3YJDA@mail.gmail.com>
-Subject: Re: [PATCHv4 30/39] thp: do_huge_pmd_anonymous_page() cleanup
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        robclark@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks,
+ v3
+References: <20130428165914.17075.57751.stgit@patser> <20130428170407.17075.80082.stgit@patser> <20130430191422.GA5763@phenom.ffwll.local> <519CA976.9000109@canonical.com> <20130522113736.GO18810@twins.programming.kicks-ass.net>
+In-Reply-To: <20130522113736.GO18810@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Op 22-05-13 13:37, Peter Zijlstra schreef:
+>> Are there any issues left? I included the patch you wrote for injecting -EDEADLK too
+>> in my tree. The overwhelming silence makes me think there are either none, or
+>> nobody cared enough to review it. :(
+> It didn't manage to reach my inbox it seems,.. I can only find a debug
+> patch in this thread.
 >
-> Minor cleanup: unindent most code of the fucntion by inverting one
-> condition. It's preparation for the next patch.
->
-> No functional changes.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Odd, maybe in your spam folder?
+It arrived on all mailing lists, so I have no idea why you were left out.
+
+http://www.spinics.net/lists/linux-arch/msg21425.html
+
+
+~Maarten
