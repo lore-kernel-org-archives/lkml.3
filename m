@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3EVPRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:17:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab3EVPRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:17:33 -0400
-Subject: RE: RapidIO subsystem and modularity
-From: Jean Delvare <jdelvare@suse.de>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <8D983423E7EDF846BB3056827B8CC5D14BC34265@corpmail1.na.ads.idt.com>
-References: <1369226430.4718.123.camel@chaos.site>
-	 <8D983423E7EDF846BB3056827B8CC5D14BC34265@corpmail1.na.ads.idt.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 22 May 2013 17:17:23 +0200
-Message-ID: <1369235843.4718.285.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1756380Ab3EVPSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:18:40 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:55432 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3EVPSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:18:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAK7N6vqcP+fcR0NYUzGDYT6q62KePTrg8yhQkuBq_zetkwUmUw@mail.gmail.com>
+References: <1369065716-22801-1-git-send-email-fweisbec@gmail.com>
+	<1369065716-22801-7-git-send-email-fweisbec@gmail.com>
+	<CAK7N6voNjWrDJNzAaVAndt8cGWR+AAERs_C-oCWe0rRO=XuutQ@mail.gmail.com>
+	<519B26FD.9080404@linux.vnet.ibm.com>
+	<CAK7N6vqcP+fcR0NYUzGDYT6q62KePTrg8yhQkuBq_zetkwUmUw@mail.gmail.com>
+Date: Wed, 22 May 2013 17:18:37 +0200
+Message-ID: <CAFTL4hwCQEr+aD8LG2QG13Jwxk+J2GOkU+Y9k179TnL7V+50AA@mail.gmail.com>
+Subject: Re: [RFC PATCH 6/8] kthread: Enable parking requests from setup() and
+ unpark() callbacks
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Don Zickus <dzickus@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the quick answer Alexandre. Great that you are already
-working on this. I'll leave our configuration files as they are for the
-time being, and we'll modularize everything when this becomes possible.
-Perfect.
+2013/5/21, anish singh <anish198519851985@gmail.com>:
+> On Tue, May 21, 2013 at 1:19 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 05/21/2013 11:04 AM, anish singh wrote:
+>>> On Mon, May 20, 2013 at 9:31 PM, Frederic Weisbecker <fweisbec@gmail.com>
+>>> wrote:
+>>>> When the watchdog code is boot-disabled by the user, for example
+>>>> through the 'nmi_watchdog=0' boot option, the setup() callback of
+>>>> the watchdog kthread requests to park the task, and that until the
+>>>> user later re-enables the watchdog through sysctl or procfs.
+>>>>
+>>>> However the parking request is not well handled when done from
+>>>> the setup() callback. After ->setup() is called, the generic smpboot
+>>>> kthread loop directly tries to call the thread function or wait
+>>>> for some event if ->thread_should_run() is false.
+>>>>
+>>>> In the case of the watchdog kthread, ->thread_should_run() returns
+>>>> false and the kthread goes to sleep and wait for the watchdog timer
+>>>> to wake it up. But the timer is not enabled since the user requested
+>>>> to disable the watchdog. We want the kthread to park instead of waiting
+>>>> for events that can't happen.
+>>>>
+>>>> As a result, later unpark requests after sysctl write through
+>>>> 'sysctl -w kernel.watchdog=1' won't wake up/unpark the task as
+>>>> expected, since it's not parked anyway, leaving the value modified
+>>>> without triggering any action.
+>>> Out of curiosity, this can happen only for short period of time
+>>> right?After
+>>> some time this will work right as the thread get back in action
+>>> after the schedule call.Then sysctl and procfs will work I think.
+>>
+>> kthread_unpark() can wake up a task only if the task is in TASK_PARKED
+>> state. But since the above task would be in TASK_INTERRUPTIBLE state
+>> (since it is not parked), kthread_unpark() will be powerless to do
+>> anything.
+> Yes but this will happen only for a short period of time right?
+> After the schdule() call the below code gets executed in while() loop.
+>
+> if (kthread_should_park()) {
+> __set_current_state(TASK_RUNNING);
+> preempt_enable();
+> if (ht->park && td->status == HP_THREAD_ACTIVE) {
+> BUG_ON(td->cpu != smp_processor_id());
+> ht->park(td->cpu);
+> td->status = HP_THREAD_PARKED;
+> }
+> kthread_parkme();
+> /* We might have been woken for stop */
+> continue;
+> }
+>
+> As we have already called kthread_park this above if() condition gets true
+> and
+> it will park the thread wouldn't it?But this will happen after the schedule
+> call which is not right as mentioned by fredrick.
+>
 
-Thanks,
-Jean
-
-Le Wednesday 22 May 2013 à 13:24 +0000, Bounine, Alexandre a écrit :
-> Hello Jean,
-> 
-> You have got really good time for this question.
-> 
-> We are working on RapidIO modularization right now. Drivers for switches are converted already and patches are planned to be submitted quite soon. After that we will work on mports and core itself (or maybe publish all things together). At this moment all switch initialization is reworked to be the standard module initialization and that built-in initialization magic is gone ;). Tsi721 driver should not be a problem to build as a module. We consider this modularization work as part of adding hot-plug support into RapidIO but modularization of the existing functionality may be published as a first step.
-> 
-> RapidIO has its primary use in embedded systems (wireless, military, medical etc.) where fast low-latency data transfers are required. It also may be used in high-performance storage systems. I do not think that it may be useful on standard desktop workstation (except demo and development work). Other distributions keep it disabled and we are fine with this. Most of RapidIO use at this time involves embedded powerpc platforms with x86(_64) picking up thanks to availability of Tsi721.
-> 
-> Regards,
-> 
-> Alex.
-> 
-> > -----Original Message-----
-> > From: Jean Delvare [mailto:jdelvare@suse.de]
-> > Sent: Wednesday, May 22, 2013 8:41 AM
-> > To: Matt Porter; Bounine, Alexandre
-> > Cc: Andrew Morton; linux-kernel
-> > Subject: RapidIO subsystem and modularity
-> > 
-> > Hi Matt, Alexandre, Andrew,
-> > 
-> > At the moment all pieces of the RapidIO subsystem are defined as bool
-> > and thus cannot be built as modules. This is a problem for distribution
-> > kernels, which are left with only two choices: disable RapidIO
-> > altogether (too bad if any user actually needed it), or enable it all
-> > (and waste memory and initialization time for every user without the
-> > hardware - most users as I understand it.)
-> > 
-> > I don't even know what RapidIO is good for. I read about it on the web
-> > but I have to admit I still have no clear idea, what systems use this
-> > technology.
-> > 
-> > This leads me to two questions:
-> > 
-> > 1* Is there a fundamental reason why (at least the device-specific
-> > parts
-> > of) RapidIO can't be modularized?
-> > 
-> > FWIW I tried making the device drivers (tsi721) modular and it builds
-> > and links OK, but I suppose one would have implement a proper remove
-> > function, otherwise module unloading will break.
-> > 
-> > I also tried making the switch drivers (tsi57x etc.) modular, all build
-> > just fine without any change, but there seems to be some initialization
-> > magic which may not work when the code is built as modules.
-> > 
-> > 2* What systems are expected to use RapidIO? It is enabled in the i386,
-> > x86_64, ppc and ppc64 generic openSUSE kernel configurations. If
-> > someone
-> > tells me that some or all of these generic kernels would never be used
-> > on systems which need RapidIO support, I would be happy to disable
-> > RapidIO support from these kernels, to make them smaller and decrease
-> > boot times.
-> > 
-> > Thanks for any insight,
-> > --
-> > Jean Delvare
-> > Suse L3
-
-
+But we are scheduling in TASK_INTERRUPTIBLE mode so we are going to
+sleep until some other thread wake us. But we are
+unparked instead of being awoken. This just have no effect because
+kthread_unpark() is a no-op on non-parked kthreads.
