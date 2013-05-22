@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3EVI1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:27:48 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:63709 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3EVI1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754522Ab3EVI1q (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 22 May 2013 04:27:46 -0400
-X-AuditID: 9c93017e-b7c8fae000000f00-1b-519c817d92b4
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48267 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab3EVI1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 04:27:41 -0400
+X-AuditID: 9c93017e-b7c8fae000000f00-08-519c817aab79
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,46 +15,40 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
         Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH 5/5] perf gtk/hists: Make column headers resizable
-Date: Wed, 22 May 2013 17:27:38 +0900
-Message-Id: <1369211258-3163-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 0/5] perf report: Add support for callchains on GTK browser
+Date: Wed, 22 May 2013 17:27:33 +0900
+Message-Id: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
-References: <1369211258-3163-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi,
 
-Sometimes it's annoying to see when some symbols have very wierd long
-names.  So it might be a good idea to make column size changable.
+This patchset implements callchain support in GTK report browser as
+Pekka requested.  I put callchain overhead on its own column because
+it looks more natural to me.  Please take a look and give me comments.
 
-Cc: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/gtk/hists.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+You can get it from 'perf/callchain-gtk-v1' branch on my tree at
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index 4e96f7a9f6d1..880110371ca5 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -327,6 +327,13 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
- 		}
- 	}
- 
-+	do {
-+		GtkTreeViewColumn *column;
-+
-+		column = gtk_tree_view_get_column(GTK_TREE_VIEW(view), col_idx);
-+		gtk_tree_view_column_set_resizable(column, TRUE);
-+	} while (col_idx--);
-+
- 	g_signal_connect(view, "row-activated",
- 			 G_CALLBACK(on_row_activated), NULL);
- 	gtk_container_add(GTK_CONTAINER(window), view);
+ git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks!
+Namhyung
+
+
+Namhyung Kim (5):
+  perf gtk/hists: Use GtkTreeStore instead of GtkListStore
+  perf gtk/hists: Add support for callchains
+  perf gtk/hists: Display callchain overhead also
+  perf gtk/hists: Add a double-click handler for callchains
+  perf gtk/hists: Make column headers resizable
+
+ tools/perf/ui/gtk/hists.c | 123 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 118 insertions(+), 5 deletions(-)
+
 -- 
 1.7.11.7
 
