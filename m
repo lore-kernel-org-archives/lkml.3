@@ -1,104 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab3EVUzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:55:50 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:52115 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756940Ab3EVUzs (ORCPT
+	id S1757267Ab3EVU5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:57:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50437 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757142Ab3EVU5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:55:48 -0400
-Message-ID: <519D30CF.9040904@gmail.com>
-Date: Wed, 22 May 2013 22:55:43 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 22 May 2013 16:57:30 -0400
+Date: Wed, 22 May 2013 16:57:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
+        Ian.Campbell@citrix.com, Jan Beulich <JBeulich@suse.com>,
+        xen-devel@lists.xen.org
+Subject: Re: [tpmdd-devel] [PATCH v2] drivers/tpm: add xen tpmfront interface
+Message-ID: <20130522205704.GB12923@phenom.dumpdata.com>
+References: <1365692161-13735-1-git-send-email-dgdegra@tycho.nsa.gov>
+ <20130522191551.GB10617@phenom.dumpdata.com>
+ <CAM0nabGSo9b7q1pGOsTGjFzJBi7cK=2s5mGmOgNjeAf-2+ZvDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Simon Baatz <gmbnomis@gmail.com>
-CC: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 11/12] ARM: kirkwood: remove redundant DT board files
-References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-12-git-send-email-sebastian.hesselbarth@gmail.com> <20130522203633.GA28394@schnuecks.de>
-In-Reply-To: <20130522203633.GA28394@schnuecks.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM0nabGSo9b7q1pGOsTGjFzJBi7cK=2s5mGmOgNjeAf-2+ZvDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 10:36 PM, Simon Baatz wrote:
-> Hi Sebastian,
->
-> On Tue, May 21, 2013 at 06:41:49PM +0200, Sebastian Hesselbarth wrote:
->> With DT support for mv643xx_eth, board specific init for some boards now
->> is unneccessary. Remove those board files, Kconfig entries, and
->> corresponding entries in kirkwood_defconfig.
->>
->> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->> ---
->> Note: board-km_kirkwood.c is also removed, as Valentin Longchamp confirmed
->> the lock-up is not caused by accessing clock gating registers but rather
->> non-existent device registers. This will be addressed by dtsi separation
->> for kirkwood and bobcat SoC variants.
->>
->> Changelog:
->> v3->v4:
->> - remove more boards that don't require board specific setup
->>
-...
-> We still have:
->
-> static const char * const kirkwood_dt_board_compat[] = {
-> 	"globalscale,dreamplug",
-> 	"globalscale,guruplug",
-> 	"dlink,dns-320",
-> 	"dlink,dns-325",
-> 	"iom,iconnect",
-> 	"raidsonic,ib-nas62x0",
-> 	"qnap,ts219",
-> 	"seagate,dockstar",
-> 	"seagate,goflexnet",
-> 	"buffalo,lsxl",
-> 	"iom,ix2-200",
-> 	"keymile,km_kirkwood",
-> 	"lacie,cloudbox",
-> 	"lacie,inetspace_v2",
-> 	"lacie,netspace_lite_v2",
-> 	"lacie,netspace_max_v2",
-> 	"lacie,netspace_mini_v2",
-> 	"lacie,netspace_v2",
-> 	"mpl,cec4",
-> 	"netgear,readynas-duo-v2",
-> 	"plathome,openblocks-a6",
-> 	"usi,topkick",
-> 	"zyxel,nsa310",
-> 	NULL
-> };
->
-> in that file. I think it does not make sense that we need to list
-> boards here that can be described fully by DT. When adding such a
-> board in the future, you will still need to adapt board-dt.c.
+On Wed, May 22, 2013 at 02:47:01PM -0500, Kent Yoder wrote:
+> >> +     notify_remote_via_evtchn(priv->evtchn);
+> >> +
+> >> +     ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+> >
+> > Um, + 6? Why? Is there an #define for that magic constant?
+> > Should this value be read before you do the wait_for_tpm_stat stuff?
+> 
+>   This is hardcoded to 6 even in tpm.c.  Time for a #define...
+> 
+> > Otherwise it looks OK to me. Should this go through me or Kent?
+> > And if so, is Kent waiting for my feedback?
+> 
+>   My comments were minor -- I was expecting feedback on your earlier
+> comments before merging.  I think this should go through the tpmdd
+> maintainer if its going to live in drivers/char/tpm though.
 
-True, will remove the redundant compatible strings for v5.
-Actually, if I am not missing something, all compatible strings except
-"marvell,kirkwood" are redundant as long as board.dts append it
-correctly.
+That is you I thought?
 
-> Should we remove the boards that you removed above here as well and
-> add
->
-> 	"marvell,kirkwood-88f6192",
-> 	"marvell,kirkwood-88f6281",
-> 	"marvell,kirkwood-88f6282",
-> 	"marvell,kirkwood-88f6283",
-> 	"marvell,kirkwood-88f6702",
-> 	"marvell,kirkwood-98DX4122",
->
-> or even just state "marvell,kirkwood"?
-
-I would stick with "marvell,kirkwood" only. This is SoC init code and
-we do not distinguish variants here at all.
-
-Sebastian
+konrad@phenom:~/mm$ scripts/get_maintainer.pl -f drivers/char/tpm
+Kent Yoder <key@linux.vnet.ibm.com> (maintainer:TPM DEVICE DRIVER)
+Rajiv Andrade <mail@srajiv.net> (maintainer:TPM DEVICE DRIVER)
+Marcel Selhorst <tpmdd@selhorst.net> (maintainer:TPM DEVICE DRIVER)
+Sirrix AG <tpmdd@sirrix.com> (maintainer:TPM DEVICE DRIVER)
+tpmdd-devel@lists.sourceforge.net (moderated list:TPM DEVICE DRIVER)
+linux-kernel@vger.kernel.org (open list)
