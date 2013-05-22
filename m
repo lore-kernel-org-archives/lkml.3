@@ -1,209 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3EVLR5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 07:17:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45295 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab3EVLRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 07:17:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Igor Mammedov <imammedo@redhat.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the pm tree
-Date: Wed, 22 May 2013 13:26:37 +0200
-Message-ID: <3737298.Dstqiqm06u@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130522140213.eb65bcc559088b199db1857f@canb.auug.org.au>
-References: <20130522134741.51b06d38cb4939003c8e37a0@canb.auug.org.au> <20130522140213.eb65bcc559088b199db1857f@canb.auug.org.au>
+	id S1755615Ab3EVLSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 07:18:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45405 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab3EVLST (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 07:18:19 -0400
+Message-ID: <519CA976.9000109@canonical.com>
+Date: Wed, 22 May 2013 13:18:14 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        peterz@infradead.org, x86@kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-media@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks,
+ v3
+References: <20130428165914.17075.57751.stgit@patser> <20130428170407.17075.80082.stgit@patser> <20130430191422.GA5763@phenom.ffwll.local>
+In-Reply-To: <20130430191422.GA5763@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 22, 2013 02:02:13 PM Stephen Rothwell wrote:
-> Hi all,
+Hey,
 
-Hi Stephen,
+Op 30-04-13 21:14, Daniel Vetter schreef:
+> On Sun, Apr 28, 2013 at 07:04:07PM +0200, Maarten Lankhorst wrote:
+>> Changes since RFC patch v1:
+>>  - Updated to use atomic_long instead of atomic, since the reservation_id was a long.
+>>  - added mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow
+>>  - removed mutex_locked_set_reservation_id (or w/e it was called)
+>> Changes since RFC patch v2:
+>>  - remove use of __mutex_lock_retval_arg, add warnings when using wrong combination of
+>>    mutex_(,reserve_)lock/unlock.
+>> Changes since v1:
+>>  - Add __always_inline to __mutex_lock_common, otherwise reservation paths can be
+>>    triggered from normal locks, because __builtin_constant_p might evaluate to false
+>>    for the constant 0 in that case. Tests for this have been added in the next patch.
+>>  - Updated documentation slightly.
+>> Changes since v2:
+>>  - Renamed everything to ww_mutex. (mlankhorst)
+>>  - Added ww_acquire_ctx and ww_class. (mlankhorst)
+>>  - Added a lot of checks for wrong api usage. (mlankhorst)
+>>  - Documentation updates. (danvet)
+> While writing the kerneldoc I've carefully check that all restrictions are
+> enforced through debug checks somehow. I think that with full mutex debug
+> (including lockdep) enabled, plus the slowpath injector patch I've just
+> posted, _all_ interface abuse will be catched at runtime as long as all
+> the single-threaded/uncontended cases are exercises sufficiently.
+>
+> So I think we've fully achieved level 5 on the Rusty API safety scale
+> here. Higher levels seem pretty hard given that the concepts are rather
+> fancy, but I think with the new (and much more consitent) naming, plus the
+> explicit introduction as (more abstruct) structures for ww_class and
+> ww_acquire_context the interface is about as intuitive as it gets.
+>
+> So all together I'm pretty happy with what the interface looks like. And
+> one quick bikeshed below on the implementation.
+> -Daniel
+I included your fix below. I'm hoping to get this included in 3.11 through the drm tree, so
+I can convert ttm to use it, but I haven't received any further reply on the patch series.
 
-Thanks for fixing this up!
+The 3.10 mutex improvement patches don't seem to cause any conflicts when merging
+linus' tree, so I'll use drm-next as a base.
 
-Hi Greg,
+Are there any issues left? I included the patch you wrote for injecting -EDEADLK too
+in my tree. The overwhelming silence makes me think there are either none, or
+nobody cared enough to review it. :(
 
-What about merging my acpi-hotplug branch into the driver-core tree?
+>> +/*
+>> + * after acquiring lock with fastpath or when we lost out in contested
+>> + * slowpath, set ctx and wake up any waiters so they can recheck.
+>> + *
+>> + * This function is never called when CONFIG_DEBUG_LOCK_ALLOC is set,
+>> + * as the fastpath and opportunistic spinning are disabled in that case.
+>> + */
+>> +static __always_inline void
+>> +ww_mutex_set_context_fastpath(struct ww_mutex *lock,
+>> +			       struct ww_acquire_ctx *ctx)
+>> +{
+>> +	unsigned long flags;
+>> +	struct mutex_waiter *cur;
+>> +
+>> +	ww_mutex_lock_acquired(lock, ctx, false);
+>> +
+>> +	lock->ctx = ctx;
+>> +	smp_mb__after_atomic_dec();
+> I think this should be
+>
+> +	smp_mb__after_atomic_dec();
+> +	lock->ctx = ctx;
+> +	smp_mb();
+>
+> Also I wonder a bit how much this hurts the fastpath, and whether we
+> should just shovel the ctx into the atomic field with a cmpxcht, like the
+> rt mutex code does with the current pointer.
+>
+Fixed. I'm not sure if the second smp_mb is really needed. If there was a
+smp_mb__before_atomic_read it would have been sufficient.
 
-That would make the Linus' life easier going forward I suppose.
-
-Thanks,
-Rafael
-
-
-> On Wed, 22 May 2013 13:47:41 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > Today's linux-next merge of the driver-core tree got a conflict in
-> > drivers/base/cpu.c between commit 0902a9044fa5 ("Driver core: Use generic
-> > offline/online for CPU offline/online") from the pm tree and commit
-> > 1c4e2d70afb1 ("cpu: make sure that cpu/online file created before
-> > KOBJ_ADD is emitted") from the driver-core tree.
-> > 
-> > I fixed it up (they do some bits in common - see below) and can carry the
-> > fix as necessary (no action is required).
-> > 
-> > diff --cc drivers/base/cpu.c
-> > index 7431ba6,c377673..0000000
-> > --- a/drivers/base/cpu.c
-> > +++ b/drivers/base/cpu.c
-> > @@@ -38,39 -34,66 +38,48 @@@ static void change_cpu_under_node(struc
-> >   	cpu->node_id = to_nid;
-> >   }
-> >   
-> >  -static ssize_t show_online(struct device *dev,
-> >  -			   struct device_attribute *attr,
-> >  -			   char *buf)
-> >  +static int __ref cpu_subsys_online(struct device *dev)
-> >   {
-> >   	struct cpu *cpu = container_of(dev, struct cpu, dev);
-> >  +	int cpuid = dev->id;
-> >  +	int from_nid, to_nid;
-> >  +	int ret;
-> >  +
-> >  +	cpu_hotplug_driver_lock();
-> >  +
-> >  +	from_nid = cpu_to_node(cpuid);
-> >  +	ret = cpu_up(cpuid);
-> >  +	/*
-> >  +	 * When hot adding memory to memoryless node and enabling a cpu
-> >  +	 * on the node, node number of the cpu may internally change.
-> >  +	 */
-> >  +	to_nid = cpu_to_node(cpuid);
-> >  +	if (from_nid != to_nid)
-> >  +		change_cpu_under_node(cpu, from_nid, to_nid);
-> >   
-> >  -	return sprintf(buf, "%u\n", !!cpu_online(cpu->dev.id));
-> >  +	cpu_hotplug_driver_unlock();
-> >  +	return ret;
-> >   }
-> >   
-> >  -static ssize_t __ref store_online(struct device *dev,
-> >  -				  struct device_attribute *attr,
-> >  -				  const char *buf, size_t count)
-> >  +static int cpu_subsys_offline(struct device *dev)
-> >   {
-> >  -	struct cpu *cpu = container_of(dev, struct cpu, dev);
-> >  -	int cpuid = cpu->dev.id;
-> >  -	int from_nid, to_nid;
-> >  -	ssize_t ret;
-> >  +	int ret;
-> >   
-> >   	cpu_hotplug_driver_lock();
-> >  -	switch (buf[0]) {
-> >  -	case '0':
-> >  -		ret = cpu_down(cpuid);
-> >  -		if (!ret)
-> >  -			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-> >  -		break;
-> >  -	case '1':
-> >  -		from_nid = cpu_to_node(cpuid);
-> >  -		ret = cpu_up(cpuid);
-> >  -
-> >  -		/*
-> >  -		 * When hot adding memory to memoryless node and enabling a cpu
-> >  -		 * on the node, node number of the cpu may internally change.
-> >  -		 */
-> >  -		to_nid = cpu_to_node(cpuid);
-> >  -		if (from_nid != to_nid)
-> >  -			change_cpu_under_node(cpu, from_nid, to_nid);
-> >  -
-> >  -		if (!ret)
-> >  -			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
-> >  -		break;
-> >  -	default:
-> >  -		ret = -EINVAL;
-> >  -	}
-> >  +	ret = cpu_down(dev->id);
-> >   	cpu_hotplug_driver_unlock();
-> >  -
-> >  -	if (ret >= 0)
-> >  -		ret = count;
-> >   	return ret;
-> >   }
-> >  -static DEVICE_ATTR(online, 0644, show_online, store_online);
-> >   
-> > + static struct attribute *hotplug_cpu_attrs[] = {
-> > + 	&dev_attr_online.attr,
-> > + 	NULL
-> > + };
-> > + 
-> > + static struct attribute_group hotplug_cpu_attr_group = {
-> > + 	.attrs = hotplug_cpu_attrs,
-> > + };
-> > + 
-> >   void unregister_cpu(struct cpu *cpu)
-> >   {
-> >   	int logical_cpu = cpu->dev.id;
-> > @@@ -102,20 -125,8 +111,19 @@@ static ssize_t cpu_release_store(struc
-> >   static DEVICE_ATTR(probe, S_IWUSR, NULL, cpu_probe_store);
-> >   static DEVICE_ATTR(release, S_IWUSR, NULL, cpu_release_store);
-> >   #endif /* CONFIG_ARCH_CPU_PROBE_RELEASE */
-> > - 
-> >   #endif /* CONFIG_HOTPLUG_CPU */
-> >   
-> >  +struct bus_type cpu_subsys = {
-> >  +	.name = "cpu",
-> >  +	.dev_name = "cpu",
-> >  +	.match = cpu_subsys_match,
-> >  +#ifdef CONFIG_HOTPLUG_CPU
-> >  +	.online = cpu_subsys_online,
-> >  +	.offline = cpu_subsys_offline,
-> >  +#endif
-> >  +};
-> >  +EXPORT_SYMBOL_GPL(cpu_subsys);
-> >  +
-> >   #ifdef CONFIG_KEXEC
-> >   #include <linux/kexec.h>
-> 
-> OK, after doing that I got this error:
-> 
-> drivers/base/cpu.c:75:3: error: 'dev_attr_online' undeclared here (not in a function)
->   &dev_attr_online.attr,
->    ^
-> 
-> So I applied this merge fix patch:
-> 
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 811bb5a..ff97614 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -71,15 +71,6 @@ static int cpu_subsys_offline(struct device *dev)
->  	return ret;
->  }
->  
-> -static struct attribute *hotplug_cpu_attrs[] = {
-> -	&dev_attr_online.attr,
-> -	NULL
-> -};
-> -
-> -static struct attribute_group hotplug_cpu_attr_group = {
-> -	.attrs = hotplug_cpu_attrs,
-> -};
-> -
->  void unregister_cpu(struct cpu *cpu)
->  {
->  	int logical_cpu = cpu->dev.id;
-> @@ -182,9 +173,6 @@ static const struct attribute_group *hotplugable_cpu_attr_groups[] = {
->  #ifdef CONFIG_KEXEC
->  	&crash_note_cpu_attr_group,
->  #endif
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -	&hotplug_cpu_attr_group,
-> -#endif
->  	NULL
->  };
->  
-> Better ideas welcome :-)
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+~Maarten
