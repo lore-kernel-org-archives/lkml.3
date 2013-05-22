@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3EVTYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:24:09 -0400
-Received: from fieldses.org ([174.143.236.118]:43256 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882Ab3EVTYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:24:08 -0400
-Date: Wed, 22 May 2013 15:23:39 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, viro@zeniv.linux.org.uk,
-        serge.hallyn@canonical.com, jlayton@redhat.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, oleg@redhat.com, bharrosh@panasas.com,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        devel@openvz.org
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-Message-ID: <20130522192339.GB31069@fieldses.org>
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
- <878v36ex6n.fsf@xmission.com>
- <87wqqqdfqr.fsf@xmission.com>
+	id S1756467Ab3EVTZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:25:50 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45165 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab3EVTZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 15:25:49 -0400
+Date: Wed, 22 May 2013 14:23:06 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com,
+        James Morris <jmorris@namei.org>
+Subject: [PATCHv2] maintainers: remove Kent from maintainers list
+Message-ID: <20130522192306.GA29733@ennui.austin.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87wqqqdfqr.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052219-3620-0000-0000-000002A1ECC0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:35:56AM -0700, Eric W. Biederman wrote:
-> ebiederm@xmission.com (Eric W. Biederman) writes:
-> 
-> > I am missing a lot of context here and capturing the context of a
-> > process at time time we mount the filesystem and reconstituing it in
-> > call user mode helper seems like something we could do.
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+---
+v2: Replace Kent with other so that NX isn't unmaintained,
+    leave tpmdd-devel as maintainer for TPM
 
-So it's not enough just to ensure that the user namespace is set
-correctly?  (To the namespace of the mount process in the nfs case, or
-of the process that starts nfsd in the nfsd case.)
+ MAINTAINERS | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> If we want to do something like this the only sane thing I can see is to
-> have a per container version of kthread call it uthread.  That the user
-> mode helper code would use to launch a new process.
-> 
-> Anything else and I expect we will be tearing our hair out for the rest
-> of our lives with weird corner cases or unexpected semantics.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 829c032..5ec293d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3971,7 +3971,8 @@ S:	Maintained
+ F:	arch/ia64/
+ 
+ IBM Power in-Nest Crypto Acceleration
+-M:	Kent Yoder <key@linux.vnet.ibm.com>
++M:	Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>
++M:	Fionnuala Gunter <fin@linux.vnet.ibm.com>
+ L:	linux-crypto@vger.kernel.org
+ S:	Supported
+ F:	drivers/crypto/nx/
+@@ -8212,7 +8213,6 @@ S:	Odd fixes
+ F:	drivers/media/usb/tm6000/
+ 
+ TPM DEVICE DRIVER
+-M:	Kent Yoder <key@linux.vnet.ibm.com>
+ M:	Rajiv Andrade <mail@srajiv.net>
+ W:	http://tpmdd.sourceforge.net
+ M:	Marcel Selhorst <tpmdd@selhorst.net>
+-- 
+1.7.11.7
 
-Could you give examples of weird corner cases or unexpected semantics?
-
---b.
-
-> At first glace I would exepct uthread to be per pid namespace in
-> implementation.
-> 
-> Eric
-> 
-> 
