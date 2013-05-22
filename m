@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab3EVWKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:10:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42125 "EHLO
+	id S1757578Ab3EVWK5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:10:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab3EVWKp (ORCPT
+	with ESMTP id S1757482Ab3EVWKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:45 -0400
+	Wed, 22 May 2013 18:10:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Anvin <hpa@linux.intel.com>,
-        =?UTF-8?q?Fernando=20Luis=20V=C3=A1zquez=20Cao?= 
-	<fernando@oss.ntt.co.jp>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/21] x86: Fix bit corruption at CPU resume time
-Date: Wed, 22 May 2013 15:10:25 -0700
-Message-Id: <20130522205233.510330591@linuxfoundation.org>
+        Jon Mason <jon.mason@intel.com>
+Subject: [ 15/21] NTB: Link toggle memory leak
+Date: Wed, 22 May 2013 15:10:33 -0700
+Message-Id: <20130522205234.378348774@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,40 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jon Mason <jon.mason@intel.com>
 
-commit 5e427ec2d066b48a5c27b3a5a3315f7e4e729077 upstream.
+commit b77b2637b39ecc380bb08992380d7d48452b0872 upstream.
 
-In commit 78d77df71510 ("x86-64, init: Do not set NX bits on non-NX
-capable hardware") we added the early_pmd_flags that gets the NX bit set
-when a CPU supports NX. However, the new variable was marked __initdata,
-because the main _use_ of this is in an __init routine.
+Each link-up will allocate a new NTB receive buffer when the NTB
+properties are negotiated with the remote system.  These allocations did
+not check for existing buffers and thus did not free them.  Now, the
+driver will check for an existing buffer and free it if not of the
+correct size, before trying to alloc a new one.
 
-However, the bit setting happens from secondary_startup_64(), which is
-called not only at bootup, but on every secondary CPU start.  Including
-resuming from STR and at CPU hotplug time.  So the value cannot be
-__initdata.
-
-Reported-bisected-and-tested-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Peter Anvin <hpa@linux.intel.com>
-Cc: Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jon Mason <jon.mason@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/head64.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ntb/ntb_transport.c |   32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -34,7 +34,7 @@
- extern pgd_t early_level4_pgt[PTRS_PER_PGD];
- extern pmd_t early_dynamic_pgts[EARLY_DYNAMIC_PAGE_TABLES][PTRS_PER_PMD];
- static unsigned int __initdata next_early_pgt = 2;
--pmdval_t __initdata early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
-+pmdval_t early_pmd_flags = __PAGE_KERNEL_LARGE & ~(_PAGE_GLOBAL | _PAGE_NX);
+--- a/drivers/ntb/ntb_transport.c
++++ b/drivers/ntb/ntb_transport.c
+@@ -507,17 +507,37 @@ static void ntb_transport_setup_qp_mw(st
+ 	qp->tx_pkts = 0;
+ }
  
- /* Wipe all early page tables except for the kernel symbol map */
- static void __init reset_early_page_tables(void)
++static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
++{
++	struct ntb_transport_mw *mw = &nt->mw[num_mw];
++	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
++
++	if (!mw->virt_addr)
++		return;
++
++	dma_free_coherent(&pdev->dev, mw->size, mw->virt_addr, mw->dma_addr);
++	mw->virt_addr = NULL;
++}
++
+ static int ntb_set_mw(struct ntb_transport *nt, int num_mw, unsigned int size)
+ {
+ 	struct ntb_transport_mw *mw = &nt->mw[num_mw];
+ 	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
+ 
++	/* No need to re-setup */
++	if (mw->size == ALIGN(size, 4096))
++		return 0;
++
++	if (mw->size != 0)
++		ntb_free_mw(nt, num_mw);
++
+ 	/* Alloc memory for receiving data.  Must be 4k aligned */
+ 	mw->size = ALIGN(size, 4096);
+ 
+ 	mw->virt_addr = dma_alloc_coherent(&pdev->dev, mw->size, &mw->dma_addr,
+ 					   GFP_KERNEL);
+ 	if (!mw->virt_addr) {
++		mw->size = 0;
+ 		dev_err(&pdev->dev, "Unable to allocate MW buffer of size %d\n",
+ 		       (int) mw->size);
+ 		return -ENOMEM;
+@@ -529,18 +549,6 @@ static int ntb_set_mw(struct ntb_transpo
+ 	return 0;
+ }
+ 
+-static void ntb_free_mw(struct ntb_transport *nt, int num_mw)
+-{
+-	struct ntb_transport_mw *mw = &nt->mw[num_mw];
+-	struct pci_dev *pdev = ntb_query_pdev(nt->ndev);
+-
+-	if (!mw->virt_addr)
+-		return;
+-
+-	dma_free_coherent(&pdev->dev, mw->size, mw->virt_addr, mw->dma_addr);
+-	mw->virt_addr = NULL;
+-}
+-
+ static void ntb_qp_link_cleanup(struct work_struct *work)
+ {
+ 	struct ntb_transport_qp *qp = container_of(work,
 
 
