@@ -1,111 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab3EVMBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:01:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40469 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754799Ab3EVMBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:01:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,719,1363158000"; 
-   d="scan'208";a="317704327"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <519BC3BE.3070702@sr71.net>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-5-git-send-email-kirill.shutemov@linux.intel.com>
- <519BC3BE.3070702@sr71.net>
-Subject: Re: [PATCHv4 04/39] radix-tree: implement preload for multiple
- contiguous elements
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130522120356.9CB12E0090@blue.fi.intel.com>
-Date: Wed, 22 May 2013 15:03:56 +0300 (EEST)
+	id S1755990Ab3EVMGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:06:10 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29899 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754799Ab3EVMGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:06:08 -0400
+X-AuditID: cbfee61b-b7f0d6d00000450a-f5-519cb4ae17b2
+Date: Wed, 22 May 2013 14:05:50 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
+Message-id: <20130522140550.3fa3b4b3@amdc308.digital.local>
+In-reply-to: <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
+ <20130522122700.104ca5cd@amdc308.digital.local>
+ <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd11W+YEGqy4IWXxtOkHu8W8z7IW
+	nWefMFu8ecRtcXnXHDaLz71HGC1uN65gs+hf2Mtk0XHkG7PFxq8eDlwed67tYfNYN+0ts0ff
+	llWMHo8WtzB6fN4kF8AaxWWTkpqTWZZapG+XwJXxetV2loLjAhWTdnxgamDs5O1i5OSQEDCR
+	+HX/MzOELSZx4d56ti5GLg4hgemMEg/nnABLCAm0M0nMfc3RxcjBwSKgKnHpVzVImE1AT+Lz
+	3adMIGERAS2JlzdTQVqZBS4wSZy6NAssLizgJ3FkuSNIOa+AtcSk7Q+ZQGxOgWCJw+cvMUOs
+	6mCSWLColxEkwS8gKdH+7wfUPXYS5z5tYIdoFpT4MfkeC4jNDLRr87YmVghbXmLzmrfMExgF
+	ZyEpm4WkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmPimfQOxlUNFocYBTgY
+	lXh4H9TODhRiTSwrrsw9xCjBwawkwqsQNCdQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutA
+	IYH0xJLU7NTUgtQimCwTB6dUA6Pt8uNNpc4Mjofivzirmsff8NoqUnQjeOtNm69qPfvmi9xs
+	K0g8X7yg+fXC/7GHvlywzU8wXl4kc3HX6WKGBe5nVnzm3Dz1Im/dJ67bvD52VUZfDaIZSo2X
+	Lyv4vHhd4s799c9Klru1rigtKdlcfVOx82JG098Kn8af4k5bmja+M52ZP1X3cboSS3FGoqEW
+	c1FxIgBWsilRhQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> > This patch introduces radix_tree_preload_count(). It allows to
-> > preallocate nodes enough to insert a number of *contiguous* elements.
+Hi Viresh,
+
+> On 22 May 2013 15:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> >> On 3 May 2013 19:37, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
 > 
-> Would radix_tree_preload_contig() be a better name, then?
-
-Yes. Will rename.
-
-> ...
-> > On 64-bit system:
-> > For RADIX_TREE_MAP_SHIFT=3, old array size is 43, new is 107.
-> > For RADIX_TREE_MAP_SHIFT=4, old array size is 31, new is 63.
-> > For RADIX_TREE_MAP_SHIFT=6, old array size is 21, new is 30.
-> > 
-> > On 32-bit system:
-> > For RADIX_TREE_MAP_SHIFT=3, old array size is 21, new is 84.
-> > For RADIX_TREE_MAP_SHIFT=4, old array size is 15, new is 46.
-> > For RADIX_TREE_MAP_SHIFT=6, old array size is 11, new is 19.
-> > 
-> > On most machines we will have RADIX_TREE_MAP_SHIFT=6.
+> > I think, that overclocking support is crucial here. As you pointed
+> > out
+> > - ondemand and conservative benefit from it. Therefore, I would urge
+> >   for its mainline acceptance.
+> >
+> > (code for reference)
+> > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+> >
+> > In this RFC (patch 1/3), I've decided to put the burden of
+> > overclocking support to platform code (cpufreq/exynos-cpufreq.c and
+> > cpufreq/exynos4x12-cpufreq.c).
+> >
+> > Those changes aren't intrusive for other boards/archs. Moreover
+> > overclocking is closely related to processor clocking/power
+> > dissipation capabilities, so SoC specific code is a good place for
+> > it.
+> >
+> >
+> > What DO need a broad acceptance is the overclocking API proposed at:
+> > include/linux/cpufreq.h
+> >
+> > This introduces interface to which others will be bind. It
+> > shouldn't be difficult to implement overclocking at other SoCs (as
+> > it was proposed for Exynos).
+> >
+> > Feedback is welcome, since I might have overlooked oddities present
+> > at other SoCs.
 > 
-> Thanks for adding that to the description.  The array you're talking
-> about is just pointers, right?
+> Hi..
 > 
-> 107-43 = 64.  So, we have 64 extra pointers * NR_CPUS, plus 64 extra
-> radix tree nodes that we will keep around most of the time.  On x86_64,
-> that's 512 bytes plus 64*560 bytes of nodes which is ~35k of memory per CPU.
-> 
-> That's not bad I guess, but I do bet it's something that some folks want
-> to configure out.  Please make sure to call out the actual size cost in
-> bytes per CPU in future patch postings, at least for the common case
-> (64-bit non-CONFIG_BASE_SMALL).
+> I am not talking about the minute details here... for example I
+> didn't like the way overclocking support is implemented... It has to
+> be a bit more framework oriented then driver...
 
-I will add this to the commit message:
-
-On most machines we will have RADIX_TREE_MAP_SHIFT=6. In this case,
-on 64-bit system the per-CPU feature overhead is
- for preload array:
-   (30 - 21) * sizeof(void*) = 72 bytes
- plus, if the preload array is full
-   (30 - 21) * sizeof(struct radix_tree_node) = 9 * 560 = 5040 bytes
- total: 5112 bytes
-
-on 32-bit system the per-CPU feature overhead is
- for preload array:
-   (19 - 11) * sizeof(void*) = 32 bytes
- plus, if the preload array is full
-   (19 - 11) * sizeof(struct radix_tree_node) = 8 * 296 = 2368 bytes
- total: 2400 bytes
----
-
-Is it good enough?
-
-I probably, will add !BASE_SMALL dependency to
-TRANSPARENT_HUGEPAGE_PAGECACHE config option.
+Presented implementation is only RFC. As I've written, I'm open for
+suggestion.
 
 > 
-> > Since only THP uses batched preload at the , we disable (set max preload
-> > to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be changed
-> > in the future.
+> What I am thinking right now is if it is worth to add both the
+> features you are trying. i.e. overclocking and LAB..
 > 
-> "at the..."  Is there something missing in that sentence?
+> So, requested you to give some figures... of ondemand with and without
+> overclocking... 
 
-at the moment :)
+I will provide test results for ondemand with overclocking enabled and
+disabled. Thanks for clarification on this matter.
 
-> No major nits, so:
+> Leave LAB for now...
+
+Seems fair. One step on a time. Lets focus on overclocking.
+
 > 
-> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Then we can give LAB a try with above...
 
-Thanks!
+
 
 -- 
- Kirill A. Shutemov
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Poland (SRPOL) | Linux Platform Group
