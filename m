@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab3EVGiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:38:20 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:19034 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174Ab3EVGiR (ORCPT
+	id S1755448Ab3EVGjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:39:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28349 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755277Ab3EVGjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:38:17 -0400
-Message-ID: <519C673F.1090705@huawei.com>
-Date: Wed, 22 May 2013 14:35:43 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <vinod.koul@intel.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Libo Chen <libo.chen@huawei.com>, <agust@denx.de>, <phdm@macqel.be>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] bestcomm: no need to free when kzalloc fail
-References: <1367743104-3448-1-git-send-email-libo.chen@huawei.com>  <519C4E4D.1060101@huawei.com> <1369202788.3870.3.camel@pasglop>
-In-Reply-To: <1369202788.3870.3.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+	Wed, 22 May 2013 02:39:07 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 0/8] PCI: Skip resource allocation for root bus without conresponding type resource
+Date: Tue, 21 May 2013 23:38:40 -0700
+Message-Id: <1369204728-11165-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1367837311.15842.31.camel@pasglop>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/22 14:06, Benjamin Herrenschmidt wrote:
-> On Wed, 2013-05-22 at 12:49 +0800, Libo Chen wrote:
->> ping...
-> 
-> This is pointless. We routinely avoid adding such crap by having
-> the various free(...) routines cope with NULL. You just need to make
-> sure you are indeed NULL in the error case.
-> 
-> Ben.
+BenH reported that there is some assign unassigned resource problem
+in powerpc.
 
-thanks,
+It turns out after
+| commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
+| Date:   Thu Feb 23 19:23:29 2012 -0800
+|
+|    PCI: Retry on IORESOURCE_IO type allocations
 
-Libo
+even the root bus does not have io port range, it will keep retrying
+to realloc with mmio.
 
-> 
->> On 2013/5/5 16:38, chenlibo.3@gmail.com wrote:
->>> From: Libo Chen <libo.chen@huawei.com>
->>>
->>> There is no need to free bcom_eng if kzalloc fail
->>>
->>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
->>> ---
->>>  drivers/dma/bestcomm/bestcomm.c | 3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/dma/bestcomm/bestcomm.c b/drivers/dma/bestcomm/bestcomm.c
->>> index a8c2e29..300ee2d 100644
->>> --- a/drivers/dma/bestcomm/bestcomm.c
->>> +++ b/drivers/dma/bestcomm/bestcomm.c
->>> @@ -400,7 +400,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
->>>  		printk(KERN_ERR DRIVER_NAME ": "
->>>  			"Can't allocate state structure\n");
->>>  		rv = -ENOMEM;
->>> -		goto error_sramclean;
->>> +		goto error_kzalloc;
->>>  	}
->>>  
->>>  	/* Save the node */
->>> @@ -449,6 +449,7 @@ error_release:
->>>  	release_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma));
->>>  error_sramclean:
->>>  	kfree(bcom_eng);
->>> +error_kzalloc:
->>>  	bcom_sram_cleanup();
->>>  error_ofput:
->>>  	of_node_put(op->dev.of_node);
->>>
->>
-> 
-> 
-> 
-> .
-> 
+Current retry logic is : try with must+optional at first, and if
+it fails will try must then try to extend must with optional.
+That will fail as mmio-non-pref and mmio-pref for bridge will
+be next to each other. So we have no chance to extend mmio-non-pref.
 
+This will be become more often when we have x86 8 sockets or 32 sockets
+system, and those system will have one root bus per socket.
+They will have some root buses do not have ioport range.
 
+We should not fall into retry in this case, as root bus does
+not io port range.
+
+We check if the root bus has ioport range, and set bus_res_type_mask,
+and pass it to assign_resources and don't add ioport res to failed list
+for root bus that does not have ioport range.
+So even BIOS set wrong value to pci devices and bridges will still
+get cleared.
+
+Then also check mmio-nonpref resource for root buses.
+
+First five are for 3.10, and others are targeted to 3.11
+
+-v4: split first patch into 4 patches per Bjorn.
+
+ PCI: Don't use temp bus for pci_bus_release_bridge_resources
+ PCI: Use pci_walk_bus to detect unassigned resources
+ PCI: Introduce enable_local to prepare per root bus handling
+ PCI: Split pci_assign_unassigned_resources to per root bus
+ PCI: Skip IORESOURCE_IO allocation for root bus without ioport range
+ PCI: Skip IORESOURCE_MMIO allocation for root bus without MMIO range
+ PCI: Enable pci bridge when it is needed
+ PCI: Retry assign unassigned resources for hotadd root bus
+
+Thanks
+
+Yinghai
