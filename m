@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab3EVRsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:48:30 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46569 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3EVRsK (ORCPT
+	id S1756238Ab3EVRsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:48:50 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49506 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752699Ab3EVRss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:48:10 -0400
-From: "Felipe F. Tonello" <eu@felipetonello.com>
-To: linux-mmc@vger.kernel.org
-Cc: ben-linux@fluff.org, cjb@laptop.org, arnd@arndb.de,
-        linux-kernel@vger.kernel.org,
-        "Felipe F. Tonello" <eu@felipetonello.com>
-Subject: [PATCH 2/2] mmc: sdhci-s3c: Added set_power handler to platdata
-Date: Wed, 22 May 2013 10:47:12 -0700
-Message-Id: <1369244832-23868-3-git-send-email-eu@felipetonello.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
-References: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
+	Wed, 22 May 2013 13:48:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/naf8nVyy0dIbXXCPjNz/lN6CK52cnIcg=
+Date: Wed, 22 May 2013 13:48:15 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "tiejun.chen" <tiejun.chen@windriver.com>,
+        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
+ device tree nodes
+Message-ID: <20130522174815.GI31290@titan.lakedaemon.net>
+References: <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130521174849.GL26249@lunn.ch>
+ <519C9333.20609@gmail.com>
+ <519C9822.9040909@windriver.com>
+ <519C9A66.3050807@gmail.com>
+ <20130522131010.GB31290@titan.lakedaemon.net>
+ <20130522165908.GB12320@obsidianresearch.com>
+ <519D0143.1000203@gmail.com>
+ <20130522173505.GH31290@titan.lakedaemon.net>
+ <519D038C.9000605@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519D038C.9000605@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Felipe F. Tonello" <eu@felipetonello.com>
+On Wed, May 22, 2013 at 07:42:36PM +0200, Sebastian Hesselbarth wrote:
+> On 05/22/2013 07:35 PM, Jason Cooper wrote:
+> >On Wed, May 22, 2013 at 07:32:51PM +0200, Sebastian Hesselbarth wrote:
+> >>On 05/22/2013 06:59 PM, Jason Gunthorpe wrote:
+> >>>On Wed, May 22, 2013 at 09:10:10AM -0400, Jason Cooper wrote:
+> >>>>iirc, our solution to this was to parse the ATAGs for the mac addr and
+> >>>>update the appended dtb.  This way, module load and unload would work
+> >>>>without loosing the mac address.  I believe Jason Gunthorpe has a patch
+> >>>>to atags_to_fdt() for this...  This should allow us to get rid of the
+> >>>>clocks hack.
+> >>>
+> >>>Sorry, no, we don't use ATAGs here, our platforms start the kernel
+> >>>with a correct DTB that has the correct mac address to use. My patch
+> >>>was to have the driver accept it, and I think Sebastian has already
+> >>>got that functionality...
+> >>
+> >>Not neccessary anyway, after talking Jason C in a Kirkwood-only
+> >>workaround I prepared a patch that reads mac address registers early
+> >>and stores it in the local-mac-address property.
+> >
+> >Sweet!
+> >
+> >>Just tested on Dockstar with gated clocks and modular DT mv643xx_eth.
+> >>
+> >>Will append to the DT mv643xx_eth patch set if a v5 will be required
+> >>or as single patch prior Jason C taking in the ARM part of it
+> >>otherwise.
+> >
+> >Please post, in-reply-to v4 is fine.
+> 
+> Hmm, maybe a little bit too early. While restoring the MAC address now
+> works, another bug arises which I guess is related with phy setup
+> and aneg.
+> 
+> Will investigate and update patch set accordingly.
 
-This is useful to turn off peripherals that are related to the mmc host. One
-common case is when the wifi module is connected as an mmc card to the host.
+Cool, chances are, we should be able to take that patch in by itself for
+this merge window...
 
-Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
----
- drivers/mmc/host/sdhci-s3c.c                | 8 ++++++++
- include/linux/platform_data/mmc-sdhci-s3c.h | 1 +
- 2 files changed, 9 insertions(+)
+thx,
 
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index c6f6246..f7e740c 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -360,11 +360,19 @@ static int sdhci_s3c_platform_bus_width(struct sdhci_host *host, int width)
- 	return 0;
- }
- 
-+static void sdhci_s3c_set_power(struct sdhci_host *host, bool power)
-+{
-+	struct sdhci_s3c *ourhost = to_s3c(host);
-+	if (ourhost->pdata->set_power)
-+		ourhost->pdata->set_power(power);
-+}
-+
- static struct sdhci_ops sdhci_s3c_ops = {
- 	.get_max_clock		= sdhci_s3c_get_max_clk,
- 	.set_clock		= sdhci_s3c_set_clock,
- 	.get_min_clock		= sdhci_s3c_get_min_clock,
- 	.platform_bus_width	= sdhci_s3c_platform_bus_width,
-+	.set_power		= sdhci_s3c_set_power,
- };
- 
- static void sdhci_s3c_notify_change(struct platform_device *dev, int state)
-diff --git a/include/linux/platform_data/mmc-sdhci-s3c.h b/include/linux/platform_data/mmc-sdhci-s3c.h
-index 249f023..55be925 100644
---- a/include/linux/platform_data/mmc-sdhci-s3c.h
-+++ b/include/linux/platform_data/mmc-sdhci-s3c.h
-@@ -50,6 +50,7 @@ struct s3c_sdhci_platdata {
- 						      int state));
- 
- 	void	(*cfg_gpio)(struct platform_device *dev, int width);
-+	void	(*set_power)(bool power);
- };
- 
- 
--- 
-1.8.1.4
-
+Jason.
