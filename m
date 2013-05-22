@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3EVCWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:22:11 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45493 "EHLO
+	id S1754909Ab3EVCW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:22:27 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:45506 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3EVCWI (ORCPT
+	with ESMTP id S1754742Ab3EVCWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:22:08 -0400
-X-AuditID: 85900ec0-d60ccb900000151e-80-519c2bcd11fb
-Subject: [PATCH v2 4/5] tracing/kprobes: Allow user to delete kprobe events by
- wild cards
+	Tue, 21 May 2013 22:22:11 -0400
+X-AuditID: 85900ec0-d24c6b900000151e-81-519c2bd041c4
+Subject: [PATCH v2 5/5] tracing: Support enable/disable multiple events
+ trigger by wild cards
 To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
         Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Date: Wed, 22 May 2013 11:19:17 +0900
-Message-ID: <20130522021917.4299.64635.stgit@mhiramat-M0-7522>
+Date: Wed, 22 May 2013 11:19:20 +0900
+Message-ID: <20130522021920.4299.11959.stgit@mhiramat-M0-7522>
 In-Reply-To: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
 References: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
 User-Agent: StGit/0.15
@@ -29,212 +29,304 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow user to delete multiple kprobe events by using
-wild cards. This makes removing events on a specific
-function easy.
+Support enable/disable multiple events trigger on ftrace
+by using wild cards. This makes enabling multiple events
+at once easy.
 
 e.g.)
- # echo p vfs_symlink >> kprobe_events
- # echo p vfs_symlink+5 >> kprobe_events
- # echo p vfs_read >> kprobe_events
- # cat kprobe_events
-p:kprobes/p_vfs_symlink_0 vfs_symlink
-p:kprobes/p_vfs_symlink_5 vfs_symlink+5
-p:kprobes/p_vfs_read_0 vfs_read
- # echo -:kprobes/\*vfs_symlink_\* >> kprobe_events
- # cat kprobe_events
-p:kprobes/p_vfs_read_0 vfs_read
+ # echo vfs_symlink:enable_event:\*:\*rq\* > set_ftrace_filter
+
+ # cat set_ftrace_filter
+#### all functions enabled ####
+vfs_symlink:enable_event:*:*rq*:unlimited
+
+ # grep 0\\* -r events/*/*/enable
+events/block/block_getrq/enable:0*
+events/block/block_rq_abort/enable:0*
+events/block/block_rq_complete/enable:0*
+events/block/block_rq_insert/enable:0*
+events/block/block_rq_issue/enable:0*
+events/block/block_rq_remap/enable:0*
+events/block/block_rq_requeue/enable:0*
+events/block/block_sleeprq/enable:0*
+events/irq/irq_handler_entry/enable:0*
+events/irq/irq_handler_exit/enable:0*
+events/irq/softirq_entry/enable:0*
+events/irq/softirq_exit/enable:0*
+events/irq/softirq_raise/enable:0*
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 ---
- Documentation/trace/kprobetrace.txt |   19 ++++---
- kernel/trace/trace_kprobe.c         |   97 +++++++++++++++++++++++++----------
- 2 files changed, 82 insertions(+), 34 deletions(-)
+ Documentation/trace/ftrace.txt |   12 ++--
+ kernel/trace/trace_events.c    |  123 +++++++++++++++++++++++++++++-----------
+ 2 files changed, 95 insertions(+), 40 deletions(-)
 
-diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
-index d68ea5f..04f22be 100644
---- a/Documentation/trace/kprobetrace.txt
-+++ b/Documentation/trace/kprobetrace.txt
-@@ -26,9 +26,9 @@ Synopsis of kprobe_events
-   r[:[GRP/]EVENT] [MOD:]SYM[+0] [FETCHARGS]		: Set a return probe
-   -:[GRP/]EVENT						: Clear a probe
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index bfe8c29..92ca5236 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -2407,11 +2407,11 @@ The following commands are supported:
+    echo '!native_flush_tlb_others:snapshot:0' > set_ftrace_filter
  
-- GRP		: Group name. If omitted, use "kprobes" for it.
-+ GRP		: Group name. If omitted, use "kprobes" for it.(*)
-  EVENT		: Event name. If omitted, the event name is generated
--		  based on SYM+offs or MEMADDR.
-+		  based on SYM+offs or MEMADDR.(*)
-  MOD		: Module name which has given SYM.
-  SYM[+offs]	: Symbol+offset where the probe is inserted.
-  MEMADDR	: Address where the probe is inserted.
-@@ -39,15 +39,16 @@ Synopsis of kprobe_events
-   @SYM[+|-offs]	: Fetch memory at SYM +|- offs (SYM should be a data symbol)
-   $stackN	: Fetch Nth entry of stack (N >= 0)
-   $stack	: Fetch stack address.
--  $retval	: Fetch return value.(*)
--  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
-+  $retval	: Fetch return value.(**)
-+  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(***)
-   NAME=FETCHARG : Set NAME as the argument name of FETCHARG.
-   FETCHARG:TYPE : Set TYPE as the type of FETCHARG. Currently, basic types
- 		  (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
- 		  are supported.
+ - enable_event/disable_event
+-  These commands can enable or disable a trace event. Note, because
++  These commands can enable or disable trace events. Note, because
+   function tracing callbacks are very sensitive, when these commands
+-  are registered, the trace point is activated, but disabled in
+-  a "soft" mode. That is, the tracepoint will be called, but
+-  just will not be traced. The event tracepoint stays in this mode
++  are registered, the tracepoints are activated, but disabled in
++  a "soft" mode. That is, the tracepoints will be called, but
++  just will not be traced. The event tracepoints stay in this mode
+   as long as there's a command that triggers it.
  
--  (*) only for return probe.
--  (**) this is useful for fetching a field of data structures.
-+  (*) both GRP and EVENT accept glob-style wild cards when clearing probes.
-+  (**) only for return probe.
-+  (***) this is useful for fetching a field of data structures.
+    echo 'try_to_wake_up:enable_event:sched:sched_switch:2' > \
+@@ -2422,8 +2422,10 @@ The following commands are supported:
+     <function>:enable_event:<system>:<event>[:count]
+     <function>:disable_event:<system>:<event>[:count]
  
- Types
- -----
-@@ -143,7 +144,11 @@ REC->dfd, REC->filename, REC->flags, REC->mode
+-  To remove the events commands:
++  Note that the system and event accept wildcards for operating
++  multiple events at once.
  
-   echo -:myprobe >> kprobe_events
++  To remove the events commands:
  
-- This clears probe points selectively.
-+ This removes a probe points selectively. Since the event name and group
-+ name accept wild cards only when removing, you can clear all event as
-+ below too.
-+
-+  echo '-:*/*' >> kprobe_events
+    echo '!try_to_wake_up:enable_event:sched:sched_switch:0' > \
+    	 set_ftrace_filter
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 27963e2..1376bb4 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1850,17 +1850,21 @@ __trace_add_event_dirs(struct trace_array *tr)
+ #define DISABLE_EVENT_STR	"disable_event"
  
-  Right after definition, each event is disabled by default. For tracing these
- events, you need to enable it.
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 9f46e98..b619853 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -171,16 +171,32 @@ static void free_trace_probe(struct trace_probe *tp)
- 	kfree(tp);
- }
- 
--static struct trace_probe *find_trace_probe(const char *event,
--					    const char *group)
-+/**
-+ * find_trace_probes - find matched trace_probe and return the number of it
-+ * @event: event name (glob pattern)
-+ * @group: group(subsystem) name (glob pattern)
-+ * @buf:   the address of an array of trace_probe *
-+ * @size:  the size of @buf array
-+ *
-+ * Search trace_probe matched with given name (pattern) and returns
-+ * the number of it. If @buf is not NULL, it records the address of
-+ * the matched trace_probe on it.
-+ */
-+static int
-+find_trace_probes(const char *event, const char *group,
-+		  struct trace_probe **buf, int size)
- {
- 	struct trace_probe *tp;
-+	int count = 0;
- 
- 	list_for_each_entry(tp, &probe_list, list)
--		if (strcmp(tp->call.name, event) == 0 &&
--		    strcmp(tp->call.class->system, group) == 0)
--			return tp;
--	return NULL;
-+		if (strglobmatch(event, tp->call.name) &&
-+		    strglobmatch(group, tp->call.class->system)) {
-+			if (buf && count < size)
-+				buf[count] = tp;
-+			count++;
-+		}
-+	return count;
- }
- 
- static int trace_probe_nr_files(struct trace_probe *tp)
-@@ -414,8 +430,9 @@ static int register_trace_probe(struct trace_probe *tp)
- 	mutex_lock(&probe_lock);
- 
- 	/* Delete old (same name) event if exist */
--	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
--	if (old_tp) {
-+	ret = find_trace_probes(tp->call.name, tp->call.class->system,
-+				&old_tp, 1);
-+	if (ret) {
- 		ret = unregister_trace_probe(old_tp);
- 		if (ret < 0)
- 			goto end;
-@@ -475,6 +492,49 @@ static struct notifier_block trace_probe_module_nb = {
- 	.priority = 1	/* Invoked after kprobe module callback */
+ struct event_probe_data {
+-	struct ftrace_event_file	*file;
++	struct ftrace_event_file	**files;
++	char				*event;
++	char				*system;
+ 	unsigned long			count;
+ 	int				ref;
+ 	bool				enable;
  };
  
-+static int delete_trace_probe(const char *event, const char *group)
-+{
-+	struct trace_probe **tps;
-+	int nr_tps, i, ret = 0;
-+
-+	if (!event) {
-+		pr_info("Delete command needs an event name.\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&probe_lock);
-+
-+	nr_tps = find_trace_probes(event, group, NULL, 0);
-+	if (nr_tps == 0) {
-+		pr_info("Event %s/%s doesn't matched.\n", group, event);
-+		ret = -ENOENT;
-+		goto out_unlock;
-+	}
-+
-+	tps = kzalloc(nr_tps * sizeof(*tps), GFP_KERNEL);
-+	if (!tps) {
-+		ret = -ENOMEM;
-+		goto out_unlock;
-+	}
-+
-+	find_trace_probes(event, group, tps, nr_tps);
-+
-+	for (i = 0; i < nr_tps; i++) {
-+		ret = unregister_trace_probe(tps[i]);
-+		if (ret < 0) {
-+			pr_info("Failed to delete event: %d\n", ret);
-+			continue;	/* Greedy cleanup */
+-static struct ftrace_event_file *
+-find_event_file(struct trace_array *tr, const char *system,  const char *event)
++static int
++find_event_files(struct trace_array *tr, const char *system, const char *event,
++		 struct ftrace_event_file **files, int size)
+ {
+ 	struct ftrace_event_file *file;
+ 	struct ftrace_event_call *call;
++	int nr = 0;
+ 
+ 	list_for_each_entry(file, &tr->events, list) {
+ 
+@@ -1872,11 +1876,14 @@ find_event_file(struct trace_array *tr, const char *system,  const char *event)
+ 		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
+ 			continue;
+ 
+-		if (strcmp(event, call->name) == 0 &&
+-		    strcmp(system, call->class->system) == 0)
+-			return file;
++		if (strglobmatch(event, call->name) &&
++		    strglobmatch(system, call->class->system)) {
++			if (files && nr < size)
++				files[nr] = file;
++			nr++;
 +		}
-+		free_trace_probe(tps[i]);
-+	}
-+	ret = 0;
-+	kfree(tps);
+ 	}
+-	return NULL;
++	return nr;
+ }
+ 
+ static void
+@@ -1884,14 +1891,24 @@ event_enable_probe(unsigned long ip, unsigned long parent_ip, void **_data)
+ {
+ 	struct event_probe_data **pdata = (struct event_probe_data **)_data;
+ 	struct event_probe_data *data = *pdata;
++	struct ftrace_event_file **file;
+ 
+ 	if (!data)
+ 		return;
+ 
+-	if (data->enable)
+-		clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
+-	else
+-		set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
++	file = data->files;
++	if (unlikely(!file))
++		return;
 +
-+ out_unlock:
-+	mutex_unlock(&probe_lock);
-+	return ret;
++	while (*file) {
++		if (data->enable)
++			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
++				  &(*file)->flags);
++		else
++			set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
++				  &(*file)->flags);
++		file++;
++	}
+ }
+ 
+ static void
+@@ -1906,10 +1923,6 @@ event_enable_count_probe(unsigned long ip, unsigned long parent_ip, void **_data
+ 	if (!data->count)
+ 		return;
+ 
+-	/* Skip if the event is in a state we want to switch to */
+-	if (data->enable == !(data->file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
+-		return;
+-
+ 	if (data->count != -1)
+ 		(data->count)--;
+ 
+@@ -1926,8 +1939,7 @@ event_enable_print(struct seq_file *m, unsigned long ip,
+ 
+ 	seq_printf(m, "%s:%s:%s",
+ 		   data->enable ? ENABLE_EVENT_STR : DISABLE_EVENT_STR,
+-		   data->file->event_call->class->system,
+-		   data->file->event_call->name);
++		   data->system, data->event);
+ 
+ 	if (data->count == -1)
+ 		seq_printf(m, ":unlimited\n");
+@@ -1948,6 +1960,40 @@ event_enable_init(struct ftrace_probe_ops *ops, unsigned long ip,
+ 	return 0;
+ }
+ 
++static int event_files_soft_mode(struct ftrace_event_file **files, int enable)
++{
++	struct ftrace_event_file **file = files;
++
++	if (!file)
++		return -EINVAL;
++
++	while (*file) {
++		/* Don't let event modules unload while probe registered */
++		if (enable) {
++			if (!try_module_get((*file)->event_call->mod))
++				goto rollback;
++		}
++
++		__ftrace_event_enable_disable(*file, enable, 1);
++
++		if (!enable)
++			module_put((*file)->event_call->mod);
++
++		file++;
++	}
++
++	return 0;
++
++ rollback:
++	while (file != files) {
++		file--;
++		__ftrace_event_enable_disable(*file, 0, 1);
++		module_put((*file)->event_call->mod);
++	}
++
++	return -EBUSY;
 +}
 +
- static int create_trace_probe(int argc, char **argv)
+ static void
+ event_enable_free(struct ftrace_probe_ops *ops, unsigned long ip,
+ 		  void **_data)
+@@ -1960,9 +2006,11 @@ event_enable_free(struct ftrace_probe_ops *ops, unsigned long ip,
+ 
+ 	data->ref--;
+ 	if (!data->ref) {
+-		/* Remove the SOFT_MODE flag */
+-		__ftrace_event_enable_disable(data->file, 0, 1);
+-		module_put(data->file->event_call->mod);
++		/* We don't need wait rcu because no one refers data here */
++		event_files_soft_mode(data->files, 0);
++		kfree(data->files);
++		kfree(data->event);
++		kfree(data->system);
+ 		kfree(data);
+ 	}
+ 	*pdata = NULL;
+@@ -2001,13 +2049,13 @@ event_enable_func(struct ftrace_hash *hash,
+ 		  char *glob, char *cmd, char *param, int enabled)
  {
- 	/*
-@@ -536,25 +596,8 @@ static int create_trace_probe(int argc, char **argv)
- 	if (!group)
- 		group = KPROBE_EVENT_SYSTEM;
+ 	struct trace_array *tr = top_trace_array();
+-	struct ftrace_event_file *file;
+ 	struct ftrace_probe_ops *ops;
+ 	struct event_probe_data *data;
+ 	const char *system;
+ 	const char *event;
+ 	char *number;
+ 	bool enable;
++	int nr_files;
+ 	int ret;
  
--	if (is_delete) {
--		if (!event) {
--			pr_info("Delete command needs an event name.\n");
--			return -EINVAL;
--		}
--		mutex_lock(&probe_lock);
--		tp = find_trace_probe(event, group);
--		if (!tp) {
--			mutex_unlock(&probe_lock);
--			pr_info("Event %s/%s doesn't exist.\n", group, event);
--			return -ENOENT;
--		}
--		/* delete an event */
--		ret = unregister_trace_probe(tp);
--		if (ret == 0)
--			free_trace_probe(tp);
--		mutex_unlock(&probe_lock);
--		return ret;
+ 	/* hash funcs only work with set_ftrace_filter */
+@@ -2026,8 +2074,8 @@ event_enable_func(struct ftrace_hash *hash,
+ 	mutex_lock(&event_mutex);
+ 
+ 	ret = -EINVAL;
+-	file = find_event_file(tr, system, event);
+-	if (!file)
++	nr_files = find_event_files(tr, system, event, NULL, 0);
++	if (nr_files == 0)
+ 		goto out;
+ 
+ 	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
+@@ -2050,7 +2098,17 @@ event_enable_func(struct ftrace_hash *hash,
+ 
+ 	data->enable = enable;
+ 	data->count = -1;
+-	data->file = file;
++	data->files = kzalloc((nr_files + 1) * sizeof(*data->files),
++			      GFP_KERNEL);
++	if (!data->files)
++		goto out_free;
++
++	find_event_files(tr, system, event, data->files, nr_files);
++
++	data->event = kstrdup(event, GFP_KERNEL);
++	data->system = kstrdup(system, GFP_KERNEL);
++	if (!data->event || !data->system)
++		goto out_free;
+ 
+ 	if (!param)
+ 		goto out_reg;
+@@ -2070,16 +2128,10 @@ event_enable_func(struct ftrace_hash *hash,
+ 		goto out_free;
+ 
+  out_reg:
+-	/* Don't let event modules unload while probe registered */
+-	ret = try_module_get(file->event_call->mod);
+-	if (!ret) {
+-		ret = -EBUSY;
++	ret = event_files_soft_mode(data->files, 1);
++	if (ret < 0)
+ 		goto out_free;
 -	}
-+	if (is_delete)
-+		return delete_trace_probe(event, group);
  
- 	if (argc < 2) {
- 		pr_info("Probe point is not specified.\n");
+-	ret = __ftrace_event_enable_disable(file, 1, 1);
+-	if (ret < 0)
+-		goto out_put;
+ 	ret = register_ftrace_function_probe(glob, ops, data);
+ 	/*
+ 	 * The above returns on success the # of functions enabled,
+@@ -2098,10 +2150,11 @@ event_enable_func(struct ftrace_hash *hash,
+ 	return ret;
+ 
+  out_disable:
+-	__ftrace_event_enable_disable(file, 0, 1);
+- out_put:
+-	module_put(file->event_call->mod);
++	event_files_soft_mode(data->files, 0);
+  out_free:
++	kfree(data->files);
++	kfree(data->event);
++	kfree(data->system);
+ 	kfree(data);
+ 	goto out;
+ }
 
