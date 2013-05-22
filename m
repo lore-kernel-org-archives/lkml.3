@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab3EVCW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:22:27 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45506 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab3EVCWL (ORCPT
+	id S1754836Ab3EVCWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:22:08 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55457 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab3EVCWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:22:11 -0400
-X-AuditID: 85900ec0-d24c6b900000151e-81-519c2bd041c4
-Subject: [PATCH v2 5/5] tracing: Support enable/disable multiple events
- trigger by wild cards
+	Tue, 21 May 2013 22:22:05 -0400
+X-AuditID: 85900ec0-d2ec7b900000151e-7f-519c2bca95be
+Subject: [PATCH v2 3/5] lib/string: Add a generic wildcard string matching
+ function
 To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         yrl.pp-manager.tt@hitachi.com, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Tom Zanussi <tom.zanussi@intel.com>
-Date: Wed, 22 May 2013 11:19:20 +0900
-Message-ID: <20130522021920.4299.11959.stgit@mhiramat-M0-7522>
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Tom Zanussi <tom.zanussi@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Wed, 22 May 2013 11:19:14 +0900
+Message-ID: <20130522021914.4299.35560.stgit@mhiramat-M0-7522>
 In-Reply-To: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
 References: <20130522021903.4299.85911.stgit@mhiramat-M0-7522>
 User-Agent: StGit/0.15
@@ -29,304 +33,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support enable/disable multiple events trigger on ftrace
-by using wild cards. This makes enabling multiple events
-at once easy.
-
-e.g.)
- # echo vfs_symlink:enable_event:\*:\*rq\* > set_ftrace_filter
-
- # cat set_ftrace_filter
-#### all functions enabled ####
-vfs_symlink:enable_event:*:*rq*:unlimited
-
- # grep 0\\* -r events/*/*/enable
-events/block/block_getrq/enable:0*
-events/block/block_rq_abort/enable:0*
-events/block/block_rq_complete/enable:0*
-events/block/block_rq_insert/enable:0*
-events/block/block_rq_issue/enable:0*
-events/block/block_rq_remap/enable:0*
-events/block/block_rq_requeue/enable:0*
-events/block/block_sleeprq/enable:0*
-events/irq/irq_handler_entry/enable:0*
-events/irq/irq_handler_exit/enable:0*
-events/irq/softirq_entry/enable:0*
-events/irq/softirq_exit/enable:0*
-events/irq/softirq_raise/enable:0*
+Add strglobmatch() for generic wildcard string matching.
+This code is originally from perf-tools. For porting in
+the kernel, the limitation of the number of wildcards is
+introduced, because of the limitation of the stack.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
 ---
- Documentation/trace/ftrace.txt |   12 ++--
- kernel/trace/trace_events.c    |  123 +++++++++++++++++++++++++++++-----------
- 2 files changed, 95 insertions(+), 40 deletions(-)
+ include/linux/string.h |    8 ++++
+ lib/string.c           |   91 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 99 insertions(+)
 
-diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-index bfe8c29..92ca5236 100644
---- a/Documentation/trace/ftrace.txt
-+++ b/Documentation/trace/ftrace.txt
-@@ -2407,11 +2407,11 @@ The following commands are supported:
-    echo '!native_flush_tlb_others:snapshot:0' > set_ftrace_filter
+diff --git a/include/linux/string.h b/include/linux/string.h
+index ac889c5..fcb1506 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -122,6 +122,14 @@ extern void argv_free(char **argv);
+ extern bool sysfs_streq(const char *s1, const char *s2);
+ extern int strtobool(const char *s, bool *res);
  
- - enable_event/disable_event
--  These commands can enable or disable a trace event. Note, because
-+  These commands can enable or disable trace events. Note, because
-   function tracing callbacks are very sensitive, when these commands
--  are registered, the trace point is activated, but disabled in
--  a "soft" mode. That is, the tracepoint will be called, but
--  just will not be traced. The event tracepoint stays in this mode
-+  are registered, the tracepoints are activated, but disabled in
-+  a "soft" mode. That is, the tracepoints will be called, but
-+  just will not be traced. The event tracepoints stay in this mode
-   as long as there's a command that triggers it.
- 
-    echo 'try_to_wake_up:enable_event:sched:sched_switch:2' > \
-@@ -2422,8 +2422,10 @@ The following commands are supported:
-     <function>:enable_event:<system>:<event>[:count]
-     <function>:disable_event:<system>:<event>[:count]
- 
--  To remove the events commands:
-+  Note that the system and event accept wildcards for operating
-+  multiple events at once.
- 
-+  To remove the events commands:
- 
-    echo '!try_to_wake_up:enable_event:sched:sched_switch:0' > \
-    	 set_ftrace_filter
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 27963e2..1376bb4 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1850,17 +1850,21 @@ __trace_add_event_dirs(struct trace_array *tr)
- #define DISABLE_EVENT_STR	"disable_event"
- 
- struct event_probe_data {
--	struct ftrace_event_file	*file;
-+	struct ftrace_event_file	**files;
-+	char				*event;
-+	char				*system;
- 	unsigned long			count;
- 	int				ref;
- 	bool				enable;
- };
- 
--static struct ftrace_event_file *
--find_event_file(struct trace_array *tr, const char *system,  const char *event)
-+static int
-+find_event_files(struct trace_array *tr, const char *system, const char *event,
-+		 struct ftrace_event_file **files, int size)
- {
- 	struct ftrace_event_file *file;
- 	struct ftrace_event_call *call;
-+	int nr = 0;
- 
- 	list_for_each_entry(file, &tr->events, list) {
- 
-@@ -1872,11 +1876,14 @@ find_event_file(struct trace_array *tr, const char *system,  const char *event)
- 		if (call->flags & TRACE_EVENT_FL_IGNORE_ENABLE)
- 			continue;
- 
--		if (strcmp(event, call->name) == 0 &&
--		    strcmp(system, call->class->system) == 0)
--			return file;
-+		if (strglobmatch(event, call->name) &&
-+		    strglobmatch(system, call->class->system)) {
-+			if (files && nr < size)
-+				files[nr] = file;
-+			nr++;
-+		}
- 	}
--	return NULL;
-+	return nr;
- }
- 
- static void
-@@ -1884,14 +1891,24 @@ event_enable_probe(unsigned long ip, unsigned long parent_ip, void **_data)
- {
- 	struct event_probe_data **pdata = (struct event_probe_data **)_data;
- 	struct event_probe_data *data = *pdata;
-+	struct ftrace_event_file **file;
- 
- 	if (!data)
- 		return;
- 
--	if (data->enable)
--		clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
--	else
--		set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &data->file->flags);
-+	file = data->files;
-+	if (unlikely(!file))
-+		return;
++/*
++ * Maximum number of wildcards in a glob pattern
++ * This limits the number of wildcards in a glob pattern, because
++ * more wildcards consume more kernel stack.
++ */
++#define MAX_GLOB_WILDCARDS	10
++extern bool strglobmatch(const char *glob, const char *str);
 +
-+	while (*file) {
-+		if (data->enable)
-+			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-+				  &(*file)->flags);
-+		else
-+			set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-+				  &(*file)->flags);
-+		file++;
-+	}
+ #ifdef CONFIG_BINARY_PRINTF
+ int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
+ int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
+diff --git a/lib/string.c b/lib/string.c
+index e5878de..640fb10 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -824,3 +824,94 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+ 	return check_bytes8(start, value, bytes % 8);
  }
- 
- static void
-@@ -1906,10 +1923,6 @@ event_enable_count_probe(unsigned long ip, unsigned long parent_ip, void **_data
- 	if (!data->count)
- 		return;
- 
--	/* Skip if the event is in a state we want to switch to */
--	if (data->enable == !(data->file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
--		return;
--
- 	if (data->count != -1)
- 		(data->count)--;
- 
-@@ -1926,8 +1939,7 @@ event_enable_print(struct seq_file *m, unsigned long ip,
- 
- 	seq_printf(m, "%s:%s:%s",
- 		   data->enable ? ENABLE_EVENT_STR : DISABLE_EVENT_STR,
--		   data->file->event_call->class->system,
--		   data->file->event_call->name);
-+		   data->system, data->event);
- 
- 	if (data->count == -1)
- 		seq_printf(m, ":unlimited\n");
-@@ -1948,6 +1960,40 @@ event_enable_init(struct ftrace_probe_ops *ops, unsigned long ip,
- 	return 0;
- }
- 
-+static int event_files_soft_mode(struct ftrace_event_file **files, int enable)
+ EXPORT_SYMBOL(memchr_inv);
++
++/* Character class matching */
++static bool __match_charclass(const char *pat, char c, const char **npat)
 +{
-+	struct ftrace_event_file **file = files;
++	bool complement = false, ret = true;
 +
-+	if (!file)
-+		return -EINVAL;
-+
-+	while (*file) {
-+		/* Don't let event modules unload while probe registered */
-+		if (enable) {
-+			if (!try_module_get((*file)->event_call->mod))
-+				goto rollback;
-+		}
-+
-+		__ftrace_event_enable_disable(*file, enable, 1);
-+
-+		if (!enable)
-+			module_put((*file)->event_call->mod);
-+
-+		file++;
++	if (*pat == '!') {
++		complement = true;
++		pat++;
 +	}
++	if (*pat++ == c)	/* First character is special */
++		goto end;
 +
-+	return 0;
-+
-+ rollback:
-+	while (file != files) {
-+		file--;
-+		__ftrace_event_enable_disable(*file, 0, 1);
-+		module_put((*file)->event_call->mod);
++	while (*pat && *pat != ']') {	/* Matching */
++		if (*pat == '-' && *(pat + 1) != ']') {	/* Range */
++			if (*(pat - 1) <= c && c <= *(pat + 1))
++				goto end;
++			if (*(pat - 1) > *(pat + 1))
++				goto error;
++			pat += 2;
++		} else if (*pat++ == c)
++			goto end;
 +	}
++	if (!*pat)
++		goto error;
++	ret = false;
 +
-+	return -EBUSY;
++end:
++	while (*pat && *pat != ']')	/* Searching closing */
++		pat++;
++	if (!*pat)
++		goto error;
++	*npat = pat + 1;
++	return complement ? !ret : ret;
++
++error:
++	return false;
 +}
 +
- static void
- event_enable_free(struct ftrace_probe_ops *ops, unsigned long ip,
- 		  void **_data)
-@@ -1960,9 +2006,11 @@ event_enable_free(struct ftrace_probe_ops *ops, unsigned long ip,
- 
- 	data->ref--;
- 	if (!data->ref) {
--		/* Remove the SOFT_MODE flag */
--		__ftrace_event_enable_disable(data->file, 0, 1);
--		module_put(data->file->event_call->mod);
-+		/* We don't need wait rcu because no one refers data here */
-+		event_files_soft_mode(data->files, 0);
-+		kfree(data->files);
-+		kfree(data->event);
-+		kfree(data->system);
- 		kfree(data);
- 	}
- 	*pdata = NULL;
-@@ -2001,13 +2049,13 @@ event_enable_func(struct ftrace_hash *hash,
- 		  char *glob, char *cmd, char *param, int enabled)
- {
- 	struct trace_array *tr = top_trace_array();
--	struct ftrace_event_file *file;
- 	struct ftrace_probe_ops *ops;
- 	struct event_probe_data *data;
- 	const char *system;
- 	const char *event;
- 	char *number;
- 	bool enable;
-+	int nr_files;
- 	int ret;
- 
- 	/* hash funcs only work with set_ftrace_filter */
-@@ -2026,8 +2074,8 @@ event_enable_func(struct ftrace_hash *hash,
- 	mutex_lock(&event_mutex);
- 
- 	ret = -EINVAL;
--	file = find_event_file(tr, system, event);
--	if (!file)
-+	nr_files = find_event_files(tr, system, event, NULL, 0);
-+	if (nr_files == 0)
- 		goto out;
- 
- 	enable = strcmp(cmd, ENABLE_EVENT_STR) == 0;
-@@ -2050,7 +2098,17 @@ event_enable_func(struct ftrace_hash *hash,
- 
- 	data->enable = enable;
- 	data->count = -1;
--	data->file = file;
-+	data->files = kzalloc((nr_files + 1) * sizeof(*data->files),
-+			      GFP_KERNEL);
-+	if (!data->files)
-+		goto out_free;
++/* Glob pattern(wildcard and char-class) matching */
++static bool __match_glob(const char *pat, const char *str, int nest)
++{
++	if (nest > MAX_GLOB_WILDCARDS)
++		return false;
 +
-+	find_event_files(tr, system, event, data->files, nr_files);
++	while (*str && *pat && *pat != '*') {
++		if (*pat == '?') {	/* Matches any single character */
++			str++;
++			pat++;
++			continue;
++		} else if (*pat == '[')	/* Character classes/Ranges */
++			if (__match_charclass(pat + 1, *str, &pat)) {
++				str++;
++				continue;
++			} else
++				return false;
++		else if (*pat == '\\') /* Escaped char match as normal char */
++			pat++;
++		if (*str++ != *pat++)
++			return false;
++	}
++	/* Check wild card */
++	if (*pat == '*') {
++		while (*pat == '*')
++			pat++;
++		if (!*pat)	/* Tail wild card matches all */
++			return true;
++		while (*str)
++			if (__match_glob(pat, str++, nest + 1))
++				return true;
++	}
++	return !*str && !*pat;
++}
 +
-+	data->event = kstrdup(event, GFP_KERNEL);
-+	data->system = kstrdup(system, GFP_KERNEL);
-+	if (!data->event || !data->system)
-+		goto out_free;
- 
- 	if (!param)
- 		goto out_reg;
-@@ -2070,16 +2128,10 @@ event_enable_func(struct ftrace_hash *hash,
- 		goto out_free;
- 
-  out_reg:
--	/* Don't let event modules unload while probe registered */
--	ret = try_module_get(file->event_call->mod);
--	if (!ret) {
--		ret = -EBUSY;
-+	ret = event_files_soft_mode(data->files, 1);
-+	if (ret < 0)
- 		goto out_free;
--	}
- 
--	ret = __ftrace_event_enable_disable(file, 1, 1);
--	if (ret < 0)
--		goto out_put;
- 	ret = register_ftrace_function_probe(glob, ops, data);
- 	/*
- 	 * The above returns on success the # of functions enabled,
-@@ -2098,10 +2150,11 @@ event_enable_func(struct ftrace_hash *hash,
- 	return ret;
- 
-  out_disable:
--	__ftrace_event_enable_disable(file, 0, 1);
-- out_put:
--	module_put(file->event_call->mod);
-+	event_files_soft_mode(data->files, 0);
-  out_free:
-+	kfree(data->files);
-+	kfree(data->event);
-+	kfree(data->system);
- 	kfree(data);
- 	goto out;
- }
++/**
++ * strglobmatch - glob expression pattern matching
++ * @pat: the pattern string to match
++ * @str: the target string to match
++ *
++ * This returns true if the @str matches @pat. @pat can includes wildcards
++ * ('*','?') and character classes ([CHARS], complementation and ranges are
++ * also supported). Also, this supports escape character ('\') to use special
++ * characters as normal character.
++ *
++ * Note: if @pat syntax is broken, this always returns false.
++ */
++bool strglobmatch(const char *pat, const char *str)
++{
++	return __match_glob(pat, str, 0);
++}
++EXPORT_SYMBOL(strglobmatch);
 
