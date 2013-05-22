@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3EVGeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:34:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755221Ab3EVGeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:34:18 -0400
-Date: Wed, 22 May 2013 09:34:13 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v6 3/7] KVM: MMU: fast invalidate all pages
-Message-ID: <20130522063413.GL14287@redhat.com>
-References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1368738782-18649-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130520194624.GA21392@amt.cnet>
- <20130520201545.GC14287@redhat.com>
- <20130520204047.GA23364@amt.cnet>
- <20130521083902.GW4725@redhat.com>
- <20130522013330.GA8583@amt.cnet>
+	id S1755465Ab3EVGgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:36:07 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:42591 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab3EVGgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 02:36:04 -0400
+Message-ID: <519C674A.50700@redhat.com>
+Date: Wed, 22 May 2013 08:35:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522013330.GA8583@amt.cnet>
+To: Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of
+ the SG_IO command whitelist (CVE-2012-4542))
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 10:33:30PM -0300, Marcelo Tosatti wrote:
-> On Tue, May 21, 2013 at 11:39:03AM +0300, Gleb Natapov wrote:
-> > > Any pages with stale information will be zapped by kvm_mmu_zap_all().
-> > > When that happens, page faults will take place which will automatically 
-> > > use the new generation number.
-> > > 
-> > > So still not clear why is this necessary.
-> > > 
-> > This is not, strictly speaking, necessary, but it is the sane thing to do.
-> > You cannot update page's generation number to prevent it from been
-> > destroyed since after kvm_mmu_zap_all() completes stale ptes in the
-> > shadow page may point to now deleted memslot. So why build shadow page
-> > table with a page that is in a process of been destroyed?
-> 
-> OK, can this be introduced separately, in a later patch, with separate
-> justification, then?
-> 
-> Xiao please have the first patches of the patchset focus on the problem
-> at hand: fix long mmu_lock hold times.
-> 
-> > Not sure what you mean again. We flush TLB once before entering this function.
-> > kvm_reload_remote_mmus() does this for us, no?
-> 
-> kvm_reload_remote_mmus() is used as an optimization, its separate from the
-> problem solution.
-> 
-> > > 
-> > > What was suggested was... go to phrase which starts with "The only purpose
-> > > of the generation number should be to".
-> > > 
-> > > The comment quoted here does not match that description.
-> > > 
-> > The comment describes what code does and in this it is correct.
-> > 
-> > You propose to not reload roots right away and do it only when root sp
-> > is encountered, right? So my question is what's the point? There are,
-> > obviously, root sps with invalid generation number at this point, so
-> > reload will happen regardless in kvm_mmu_prepare_zap_page(). So why not
-> > do it here right away and avoid it in kvm_mmu_prepare_zap_page() for
-> > invalid and obsolete sps as I proposed in one of my email?
-> 
-> Sure. But Xiao please introduce that TLB collapsing optimization as a
-> later patch, so we can reason about it in a more organized fashion.
+I'm not sure what is more ridiculous, whether the seven pings or the
+lack of review...
 
-So, if I understand correctly, you are asking to move is_obsolete_sp()
-check from kvm_mmu_get_page() and kvm_reload_remote_mmus() from
-kvm_mmu_invalidate_all_pages() to a separate patch. Fine by me, but if
-we drop kvm_reload_remote_mmus() from kvm_mmu_invalidate_all_pages() the
-call to kvm_mmu_invalidate_all_pages() in emulator_fix_hypercall() will
-become nop. But I question the need to zap all shadow pages tables there
-in the first place, why kvm_flush_remote_tlbs() is not enough?
+Paolo
 
---
-			Gleb.
+Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+> This series regards the whitelist that is used for the SG_IO ioctl.  This
+> whitelist has three problems:
+> 
+> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>   device classes and have different meanings for different classes.
+> 
+> * also because the bitmap of allowed commands is designed for MMC devices
+>   only, some commands are missing even though they are generally useful and
+>   not insecure.  At least not more insecure than anything else you can
+>   do if you have access to /dev/sdX or /dev/stX nodes.
+> 
+> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>   resources, enough to make it insecure.
+> 
+> The series corrects these problems.  Patches 1-4 solve the first problem,
+> which also has an assigned CVE, by using different bitmaps for the various
+> device classes.  Patches 5-11 solve the second by adding more commands
+> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+> posted but ignored by the maintainers despite multiple pings.
+> 
+> Note: checkpatch hates the formatting of the command table.  I know about this,
+> and ensured that there are no errors in the rest of the code.  The current
+> formatting is IMHO quite handy, and roughly based on the files available
+> from the SCSI standard body.
+> 
+> Ok for the next merge window?
+> 
+> Paolo
+> 
+> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>         for details).  Added patch 14 and added a few more scanner
+>         commands based on SANE (scanners are not whitelisted by default,
+>         also were not in v1, but this makes it possible to opt into the
+>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>         large #if 0'd list of commands that the kernel does not pass
+>         though.  Marked blk_set_cmd_filter_defaults as __init.
+> 
+> 
+> Paolo Bonzini (14):
+>   sg_io: pass request_queue to blk_verify_command
+>   sg_io: reorganize list of allowed commands
+>   sg_io: use different default filters for each device class
+>   sg_io: resolve conflicts between commands assigned to multiple
+>     classes (CVE-2012-4542)
+>   sg_io: whitelist a few more commands for rare & obsolete device types
+>   sg_io: whitelist another command for multimedia devices
+>   sg_io: whitelist a few more commands for media changers
+>   sg_io: whitelist a few more commands for tapes
+>   sg_io: whitelist a few more commands for disks
+>   sg_io: whitelist a few obsolete commands
+>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>   sg_io: remove remnants of sysfs SG_IO filters
+>   sg_io: introduce unpriv_sgio queue flag
+>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+> 
+>  Documentation/block/queue-sysfs.txt |    8 +
+>  block/blk-sysfs.c                   |   33 +++
+>  block/bsg.c                         |    2 +-
+>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>  drivers/scsi/scsi_scan.c            |   14 ++-
+>  drivers/scsi/sg.c                   |    6 +-
+>  include/linux/blkdev.h              |    8 +-
+>  include/linux/genhd.h               |    9 -
+>  include/scsi/scsi.h                 |    3 +
+>  9 files changed, 344 insertions(+), 108 deletions(-)
+> 
+
