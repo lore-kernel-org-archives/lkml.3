@@ -1,68 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3EVJVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:21:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22194 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754017Ab3EVJVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:21:46 -0400
-X-IronPort-AV: E=Sophos;i="4.87,719,1363104000"; 
-   d="scan'208";a="7333122"
-Message-ID: <519C8ED5.5010708@cn.fujitsu.com>
-Date: Wed, 22 May 2013 17:24:37 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755350Ab3EVJWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:22:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38093 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab3EVJWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 05:22:39 -0400
+Date: Wed, 22 May 2013 11:22:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/9] liblockdep: Add public headers for
+ pthread_mutex_t implementation
+Message-ID: <20130522092232.GF18810@twins.programming.kicks-ass.net>
+References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
+ <1368674141-10796-4-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org, laijs@cn.fujitsu.com,
-        davem@davemloft.net, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        gong.chen@linux.intel.com
-Subject: Re: [PATCH v2 01/13] x86: get pg_data_t's memory from other node
-References: <1367313683-10267-1-git-send-email-tangchen@cn.fujitsu.com> <1367313683-10267-2-git-send-email-tangchen@cn.fujitsu.com> <20130522085553.GB25406@gchen.bj.intel.com>
-In-Reply-To: <20130522085553.GB25406@gchen.bj.intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/22 17:20:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/22 17:20:24,
-	Serialize complete at 2013/05/22 17:20:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1368674141-10796-4-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 04:55 PM, Chen Gong wrote:
-......
->> -	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
->> +	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
->
-> go through the implementation of memblock_alloc_try_nid, it will call
-> panic when allocation fails(a.k.a alloc = 0), if so, below information
-> will be never printed. Do we really need this?
+On Wed, May 15, 2013 at 11:15:35PM -0400, Sasha Levin wrote:
+> These headers provide the same API as their pthread mutex
+> counterparts.
+> 
+> The design here is to allow to easily switch to liblockdep lock
+> validation just by adding a "liblockdep_" to pthread_mutex_*()
+> calls, which means that it's easy to integrate liblockdep into
+> existing codebases.
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  tools/lib/lockdep/include/liblockdep/common.h | 42 ++++++++++++++++
+>  tools/lib/lockdep/include/liblockdep/mutex.h  | 70 +++++++++++++++++++++++++++
+>  2 files changed, 112 insertions(+)
+>  create mode 100644 tools/lib/lockdep/include/liblockdep/common.h
+>  create mode 100644 tools/lib/lockdep/include/liblockdep/mutex.h
+> 
+> diff --git a/tools/lib/lockdep/include/liblockdep/common.h b/tools/lib/lockdep/include/liblockdep/common.h
+> new file mode 100644
+> index 0000000..1113cad
+> --- /dev/null
+> +++ b/tools/lib/lockdep/include/liblockdep/common.h
+> @@ -0,0 +1,42 @@
+> +#ifndef _LIBLOCKDEP_COMMON_H
+> +#define _LIBLOCKDEP_COMMON_H
+> +
+> +#include <pthread.h>
+> +
+> +#ifndef _THIS_IP_
 
-Oh, yes.
+#ifndef _RET_IP_ ?
 
-We don't need this. Will remove the following in the next version.
+> +#define _RET_IP_ (unsigned long)__builtin_return_address(0)
+> +#endif
+> +
+> +#define NR_LOCKDEP_CACHING_CLASSES 2
+> +#define MAX_LOCKDEP_SUBCLASSES 8UL
+> +
+> +struct lockdep_subclass_key {
+> +	char __one_byte;
+> +};
+> +
+> +struct lock_class_key {
+> +	struct lockdep_subclass_key subkeys[MAX_LOCKDEP_SUBCLASSES];
+> +};
+> +
+> +struct lockdep_map {
+> +	struct lock_class_key	*key;
+> +	struct lock_class	*class_cache[NR_LOCKDEP_CACHING_CLASSES];
+> +	const char		*name;
+> +#ifdef CONFIG_LOCK_STAT
+> +	int			cpu;
+> +	unsigned long		ip;
+> +#endif
+> +};
+> +
+> +void lockdep_init_map(struct lockdep_map *lock, const char *name,
+> +			struct lock_class_key *key, int subclass);
+> +void lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+> +			int trylock, int read, int check,
+> +			struct lockdep_map *nest_lock, unsigned long ip);
+> +void lock_release(struct lockdep_map *lock, int nested,
+> +			unsigned long ip);
+> +
+> +#define STATIC_LOCKDEP_MAP_INIT(_name, _key) \
+> +	{ .name = (_name), .key = (void *)(_key), }
+> +
+> +#endif
+> diff --git a/tools/lib/lockdep/include/liblockdep/mutex.h b/tools/lib/lockdep/include/liblockdep/mutex.h
+> new file mode 100644
+> index 0000000..c342f70
+> --- /dev/null
+> +++ b/tools/lib/lockdep/include/liblockdep/mutex.h
+> @@ -0,0 +1,70 @@
+> +#ifndef _LIBLOCKDEP_MUTEX_H
+> +#define _LIBLOCKDEP_MUTEX_H
+> +
+> +#include <pthread.h>
+> +#include "common.h"
+> +
+> +struct liblockdep_pthread_mutex {
+> +	pthread_mutex_t mutex;
+> +	struct lockdep_map dep_map;
+> +};
+> +
+> +typedef struct liblockdep_pthread_mutex liblockdep_pthread_mutex_t;
+> +
+> +#define LIBLOCKDEP_PTHREAD_MUTEX_INITIALIZER(mtx)			\
+> +		(const struct liblockdep_pthread_mutex) {		\
+> +	.mutex = PTHREAD_MUTEX_INITIALIZER,				\
+> +	.dep_map = STATIC_LOCKDEP_MAP_INIT(#mtx, &((&(mtx))->dep_map)),	\
+> +}
+> +
+> +static inline int __mutex_init(liblockdep_pthread_mutex_t *lock,
+> +				const char *name,
+> +				struct lock_class_key *key,
+> +				const pthread_mutexattr_t *__mutexattr)
+> +{
+> +	lockdep_init_map(&lock->dep_map, name, key, 0);
+> +	return pthread_mutex_init(&lock->mutex, __mutexattr);
+> +}
+> +
+> +#define liblockdep_pthread_mutex_init(mutex, mutexattr)		\
+> +({								\
+> +	static struct lock_class_key __key;			\
+> +								\
+> +	__mutex_init((mutex), #mutex, &__key, (mutexattr));	\
+> +})
 
-Thanks. :)
+OK, so people using liblockdep_pthread_mutex_init() do get the 'normal'
+class rules.
 
->
->>   	if (!nd_pa) {
->> -		pr_err("Cannot find %zu bytes in node %d\n",
->> -		       nd_size, nid);
->> +		pr_err("Cannot find %zu bytes in any node\n", nd_size);
->>   		return;
->>   	}
->>   	nd = __va(nd_pa);
->> --
->> 1.7.1
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+> +
+> +static inline int liblockdep_pthread_mutex_lock(liblockdep_pthread_mutex_t *lock)
+> +{
+> +	lock_acquire(&lock->dep_map, 0, 0, 0, 2, NULL, (unsigned long)_RET_IP_);
+> +	return pthread_mutex_lock(&lock->mutex);
+> +}
 
+They will however then also want all the 'normal' lockdep annotations to
+deal with that like:
+
+liblockdep_pthread_mutex_lock_nested()
+liblockdep_pthread_mutex_lock_nest_lock()
+
+*phew* and here I always though pthread_mutex_* was a long prefix...
+
+Also, the above doesn't have the full lockstat contention hooks -- not
+sure that's on purpose or not.
+
+> +
+> +static inline int liblockdep_pthread_mutex_unlock(liblockdep_pthread_mutex_t *lock)
+> +{
+> +	lock_release(&lock->dep_map, 0, (unsigned long)_RET_IP_);
+> +	return pthread_mutex_unlock(&lock->mutex);
+> +}
+> +
+> +static inline int liblockdep_pthread_mutex_trylock(liblockdep_pthread_mutex_t *lock)
+> +{
+> +	lock_acquire(&lock->dep_map, 0, 1, 0, 2, NULL, (unsigned long)_RET_IP_);
+> +	return pthread_mutex_trylock(&lock->mutex) == 0 ? 1 : 0;
+> +}
+> +
+> +static inline int liblockdep_pthread_mutex_destroy(liblockdep_pthread_mutex_t *lock)
+> +{
+> +	return pthread_mutex_destroy(&lock->mutex);
+> +}
+> +
+> +#ifdef __USE_LIBLOCKDEP
+> +
+> +#define pthread_mutex_t         liblockdep_pthread_mutex_t
+> +#define pthread_mutex_init      liblockdep_pthread_mutex_init
+> +#define pthread_mutex_lock      liblockdep_pthread_mutex_lock
+> +#define pthread_mutex_unlock    liblockdep_pthread_mutex_unlock
+> +#define pthread_mutex_trylock   liblockdep_pthread_mutex_trylock
+> +#define pthread_mutex_destroy   liblockdep_pthread_mutex_destroy
+
+Given the liblockdep_* things use 'proper' classes do you want this
+mapping? If you do, should we use the same alias nonsense glibc uses or
+are CPP macros good enough for us?
