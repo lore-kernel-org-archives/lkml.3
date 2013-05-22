@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab3EVSLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:11:54 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:50854 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab3EVSLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:11:52 -0400
-Date: Wed, 22 May 2013 14:11:35 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522181135.GC20848@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Paolo Bonzini <pbonzini@redhat.com>,
-	"Martin K. Petersen" <martin.petersen@oracle.com>,
-	Tejun Heo <tj@kernel.org>,
-	"James E.J. Bottomley" <JBottomley@parallels.com>,
-	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-	linux-scsi@vger.kernel.org
-References: <20130522093249.GC3466@mtj.dyndns.org>
- <519C959A.3090100@redhat.com>
- <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522150335.GC2777@thunk.org>
- <519CE9FE.2030007@redhat.com>
- <yq1vc6b561q.fsf@sermon.lab.mkp.net>
- <519CF99E.6010804@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CF99E.6010804@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1756766Ab3EVSMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:12:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3950 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab3EVSMA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 14:12:00 -0400
+X-Authority-Analysis: v=2.0 cv=IZAFqBWa c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rKI68ldaRsEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=54K5z7jWVYMA:10 a=4QIxAgZS9Tt0D_6QZzoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1369246316.6828.176.camel@gandalf.local.home>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Date: Wed, 22 May 2013 14:11:56 -0400
+In-Reply-To: <519D08B0.8050707@meduna.org>
+References: <5195ED8B.7060002@meduna.org>
+	 <1369183168.6828.168.camel@gandalf.local.home>
+	 <519CBB30.3060200@redhat.com>
+	 <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
+	 <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 07:00:14PM +0200, Paolo Bonzini wrote:
-> You have hardware providers selling cloud services that want to run
-> their own custom backup services from within a VM, which entails having
-> vendor-specific commands run from within a VM.  Or you have people that
-> run clusters that are half-physical and half-virtual and want to use the
-> same /dev/disk/by-id paths in both cases; perhaps, with NPIV, they want
-> to use one zoning approach for both physical and virtual machines.
-> Someone else they want to backup to tapes from a VM (for example s390
-> people who just put everything in a VM, so the distinction of physical
-> and virtual makes no sense for them).  Some people use virtual machines
-> as sandboxes, and want to burn the ISOs from the same VMs where they
-> download the ISOs.  Some people have vendor utilities that only run
-> under Windows, and want to run them in a VM.
+On Wed, 2013-05-22 at 20:04 +0200, Stanislav Meduna wrote:
+> On 22.05.2013 19:41, Rik van Riel wrote:
+> 
+> >> I think you should also remove the
+> >>
+> >>         if (flags & FAULT_FLAG_WRITE)
+> 
+> Done
+> 
+> >>> Can you test the attached patch?
+> 
+> Nope. Fails with the same symptoms, min_flt skyrockets,
+> the throttler activates and after 2 seconds all is well
+> again.
+> 
+> This is on Geode LX, I don't have the Celeron M at the hand now.
+> 
 
-So is this hypothetical or do you have a real customer in mind?  If
-it's not theoretical, how does the cloud service control who has
-access to the CD burner, and how are the disks loaded into the CD
-burner?  Trying to do it where you run cdrecord from the guest OS
-sounds **insane**.  The far better way of doing things is to export a
-web service where you ship a iso image plus a shipping address to a
-burn service, and you don't try to figure out how to make dozens of VM
-on a cloud server share a physical CD burner attached to a physical
-host OS.  That way leads to insanity.
+Did you apply both patches? Without the first one, this one is
+meaningless.
 
-						- Ted
+-- Steve
+
+
