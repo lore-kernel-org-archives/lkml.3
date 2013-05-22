@@ -1,66 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3EVChV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:37:21 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:45736 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab3EVChS (ORCPT
+	id S1754839Ab3EVCrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:47:05 -0400
+Received: from [65.55.88.12] ([65.55.88.12]:25109 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753915Ab3EVCrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:37:18 -0400
-Message-ID: <519C2F5D.8000809@igel.co.jp>
-Date: Wed, 22 May 2013 11:37:17 +0900
-From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 21 May 2013 22:47:03 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(z616jzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+From: Huang Shijie <b32955@freescale.com>
+To: <dwmw2@infradead.org>
+CC: <dedekind1@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <vikram186@gmail.com>,
+        <computersforpeace@gmail.com>, Huang Shijie <b32955@freescale.com>
+Subject: [PATCH v6 05/10 fix2] mtd: get the ECC info from the Extended Parameter Page
+Date: Wed, 22 May 2013 10:28:27 +0800
+Message-ID: <1369189707-5568-1-git-send-email-b32955@freescale.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <5199BD45.5090100@gmail.com>
+References: <5199BD45.5090100@gmail.com>
 MIME-Version: 1.0
-To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-CC: linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, msalter@redhat.com,
-        linux-c6x-dev@linux-c6x.org, deller@gmx.de,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] dma-mapping: Define dma_{alloc,free}_attrs() for
- all archs
-References: <1367290899-10410-1-git-send-email-dhobsong@igel.co.jp>
-In-Reply-To: <1367290899-10410-1-git-send-email-dhobsong@igel.co.jp>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-On 2013/04/30 12:01, Damian Hobson-Garcia wrote:
-> Most architectures that define CONFIG_HAVE_DMA=y, have implementations for
-> both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
-> not define CONFIG_HAVE_DMA also have both of these definitions provided by
-> dma-mapping-broken.h.
-> 
-> Provide a default definition for the archs that define CONFIG_HAVE_DMA=y,
-> but have no implementation for dma_{alloc,free}_attrs(). 
-> 
-> As I don't have hardware for any of these systems, the patches are only
-> compile-tested where I could (arm64, s390) and untested for the archs
-> where I couldn't find a readily available prebuilt cross-compiler (c6x, parisc).
-> 
+Since the ONFI 2.1, the onfi spec adds the Extended Parameter Page
+to store the ECC info.
 
+The onfi spec tells us that if the nand chip's recommended ECC codeword
+size is not 512 bytes, then the @ecc_bits is 0xff. The host _SHOULD_ then
+read the Extended ECC information that is part of the extended parameter
+page to retrieve the ECC requirements for this device.
 
->  arch/arm64/include/asm/dma-mapping.h  |   17 +++++++++++------
->  arch/c6x/include/asm/dma-mapping.h    |    3 +++
->  arch/parisc/include/asm/dma-mapping.h |    3 +++
->  arch/s390/include/asm/dma-mapping.h   |   17 +++++++++++------
->  4 files changed, 28 insertions(+), 12 deletions(-)
-> 
+This patch implement the reading of the Extended Parameter Page, and parses
+the sections for ECC type, and get the ECC info from the ECC section.
 
-Since this series spans several architectures, what would be the best
-way to have this patch series merged?
-Should I resubmit each patch to the mailing list for each architecture
-separately?
+Tested this patch with Micron MT29F64G08CBABAWP.
 
-Thank you,
-Damian
+Acked-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Huang Shijie <b32955@freescale.com>
+---
+ drivers/mtd/nand/nand_base.c |   87 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 87 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index b63b731..fa6ea8e 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2835,6 +2835,78 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
+ 	return crc;
+ }
+ 
++/* Parse the Extended Parameter Page. */
++static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
++		struct nand_chip *chip, struct nand_onfi_params *p)
++{
++	struct onfi_ext_param_page *ep;
++	struct onfi_ext_section *s;
++	struct onfi_ext_ecc_info *ecc;
++	uint8_t *cursor;
++	int ret = -EINVAL;
++	int len;
++	int i;
++
++	len = le16_to_cpu(p->ext_param_page_length) * 16;
++	ep = kmalloc(len, GFP_KERNEL);
++	if (!ep) {
++		ret = -ENOMEM;
++		goto ext_out;
++	}
++
++	/* Send our own NAND_CMD_PARAM. */
++	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
++
++	/* Use the Change Read Column command to skip the ONFI param pages. */
++	chip->cmdfunc(mtd, NAND_CMD_RNDOUT,
++			sizeof(*p) * p->num_of_param_pages , -1);
++
++	/* Read out the Extended Parameter Page. */
++	chip->read_buf(mtd, (uint8_t *)ep, len);
++	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
++		!= le16_to_cpu(ep->crc))) {
++		pr_debug("fail in the CRC.\n");
++		goto ext_out;
++	}
++
++	/*
++	 * Check the signature.
++	 * Do not strictly follow the ONFI spec, maybe changed in future.
++	 */
++	if (strncmp(ep->sig, "EPPS", 4)) {
++		pr_debug("The signature is invalid.\n");
++		goto ext_out;
++	}
++
++	/* find the ECC section. */
++	cursor = (uint8_t *)(ep + 1);
++	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
++		s = ep->sections + i;
++		if (s->type == ONFI_SECTION_TYPE_2)
++			break;
++		cursor += s->length * 16;
++	}
++	if (i == ONFI_EXT_SECTION_MAX) {
++		pr_debug("We can not find the ECC section.\n");
++		goto ext_out;
++	}
++
++	/* get the info we want. */
++	ecc = (struct onfi_ext_ecc_info *)cursor;
++
++	if (ecc->codeword_size) {
++		chip->ecc_strength_ds = ecc->ecc_bits;
++		chip->ecc_step_ds = 1 << ecc->codeword_size;
++	}
++
++	pr_info("ONFI extended param page detected.\n");
++	return 0;
++
++ext_out:
++	kfree(ep);
++	return ret;
++}
++
+ /*
+  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise.
+  */
+@@ -2903,6 +2975,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	if (p->ecc_bits != 0xff) {
+ 		chip->ecc_strength_ds = p->ecc_bits;
+ 		chip->ecc_step_ds = 512;
++	} else if (chip->onfi_version >= 21 &&
++		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
++
++		/*
++		 * The nand_flash_detect_ext_param_page() uses the
++		 * Change Read Column command which maybe not supported
++		 * by the chip->cmdfunc. So try to update the chip->cmdfunc
++		 * now. We do not replace user supplied command function.
++		 */
++		if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
++			chip->cmdfunc = nand_command_lp;
++
++		/* The Extended Parameter Page is supported since ONFI 2.1. */
++		if (nand_flash_detect_ext_param_page(mtd, chip, p))
++			pr_info("Failed to detect the extended param page.\n");
+ 	}
+ 
+ 	pr_info("ONFI flash detected\n");
 -- 
-Damian Hobson-Garcia
-IGEL Co.,Ltd
-http://www.igel.co.jp
+1.7.1
+
+
