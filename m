@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3EVDa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 23:30:27 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37753 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab3EVDa0 (ORCPT
+	id S1754955Ab3EVDbp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 23:31:45 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:28004 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915Ab3EVDbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 23:30:26 -0400
-Message-ID: <519C3BA5.1070109@huawei.com>
-Date: Wed, 22 May 2013 11:29:41 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 21 May 2013 23:31:43 -0400
+Message-ID: <519C3BD1.6050307@huawei.com>
+Date: Wed, 22 May 2013 11:30:25 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] ktap 0.1 released
-References: <519AF05E.1050808@huawei.com> <20130521161903.333d7e74@lwn.net>
-In-Reply-To: <20130521161903.333d7e74@lwn.net>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, Li Zefan <lizefan@huawei.com>
+CC: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: [PATCH v2] usb: omap2430: fix memleak in err case
+References: <5192E650.3070303@huawei.com>
+In-Reply-To: <5192E650.3070303@huawei.com>
+X-Forwarded-Message-Id: <5192E650.3070303@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
+X-Originating-IP: [10.135.72.158]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/22 6:19, Jonathan Corbet wrote:
-> On Tue, 21 May 2013 11:56:14 +0800
-> "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
-> 
->> we welcome bug reports and fixes for the issues.
-> 
-> I'm messing with it...first impression:
-> 
-> 	unable create tracepoint event sys_enter_mmap on cpu 4, err: -19
-> 	unable create tracepoint event sys_enter_mmap on cpu 5, err: -19
-> 	unable create tracepoint event sys_enter_mmap on cpu 6, err: -19
-> 	unable create tracepoint event sys_enter_mmap on cpu 7, err: -19
-> 	[...]
-> 
-> Unsurprising, this is a four-core system.  The code reads:
-> 
->> 	for_each_possible_cpu(cpu)
->> 		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
-> 
-> Maybe that needs to be for_each_online_cpu() instead?
-> 
-Jon, Really thank you for this bug report, fixed it as your suggestion.
 
-.jovi
+when omap_get_control_dev faild, we should release related platform_device
 
+* Changelog from v1:
+	* fix spell: s/fail/fails/, s/relational/related/ , thank Sergei <sergei.shtylyov@cogentembedded.com>
 
+Signed-off-by: Libo Chen <libo.chen@huawei.com>
+---
+ drivers/usb/musb/omap2430.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 3551f1a..b626f19 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -549,7 +549,8 @@ static int omap2430_probe(struct platform_device *pdev)
+ 		glue->control_otghs = omap_get_control_dev();
+ 		if (IS_ERR(glue->control_otghs)) {
+ 			dev_vdbg(&pdev->dev, "Failed to get control device\n");
+-			return -ENODEV;
++			ret = -ENODEV;
++			goto err2;
+ 		}
+ 	} else {
+ 		glue->control_otghs = ERR_PTR(-ENODEV);
+-- 
+1.7.1
 
 
 
