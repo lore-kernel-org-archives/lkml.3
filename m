@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879Ab3EVWg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:36:59 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:4219
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756990Ab3EVWg6 (ORCPT
+	id S1757787Ab3EVWnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:43:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42546 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab3EVWnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:36:58 -0400
-X-Forefront-Antispam-Report: CIP:132.245.2.69;KIP:(null);UIP:(null);IPV:NLI;H:BN1PRD0712HT004.namprd07.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bh8275dhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <519D4883.9050905@caviumnetworks.com>
-Date: Wed, 22 May 2013 15:36:51 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>
-Subject: Re: [PATCH] MIPS: Enable interrupts before WAIT instruction.
-References: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com> <1367527692-25809-1-git-send-email-ddaney.cavm@gmail.com> <20130522223225.GH31836@blackmetal.musicnaut.iki.fi>
-In-Reply-To: <20130522223225.GH31836@blackmetal.musicnaut.iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 22 May 2013 18:43:23 -0400
+Date: Wed, 22 May 2013 15:43:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>,
+        Steve Hodgson <steve@purestorage.com>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 02/14] add blockconsole version 1.1
+Message-Id: <20130522154322.36d2c230bbdabb7a18979f55@linux-foundation.org>
+In-Reply-To: <20130522210416.GF7399@logfs.org>
+References: <1368132193-25817-1-git-send-email-joern@logfs.org>
+	<1368132193-25817-5-git-send-email-joern@logfs.org>
+	<20130522134822.f2f5d17beb6196bc4c4deb7e@linux-foundation.org>
+	<20130522210416.GF7399@logfs.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 03:32 PM, Aaro Koskinen wrote:
-> Hi,
->
-> On Thu, May 02, 2013 at 01:48:12PM -0700, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->>
->> As noted by Thomas Gleixner:
->>
->>     commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
->>     not realize that MIPS wants to invoke the wait instructions with
->>     interrupts enabled.
->>
->> Instead of enabling interrupts in arch_cpu_idle() as Thomas' initial
->> patch does, we follow Linus' suggestion of doing it in the assembly
->> code to prevent the compiler from rearranging things.
->>
->> Signed-off-by: David Daney <david.daney@cavium.com>
->> Reported-by: EunBong Song <eunb.song@samsung.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Jonas Gorski <jogo@openwrt.org>
->> ---
->>
->> This is only very lightly tested, we need more testing before
->> declaring it the definitive fix.
->
-> I wonder what is the status of this patch? Or is there some alternative
-> fix?
->
-> I have Octeon+ board that hangs during 3.10-rc2 boot in spawn_ksoftirqd()
-> without this. Also, this patch does not apply cleanly to 3.10-rc2
-> anymore...
->
-> A.
->
+On Wed, 22 May 2013 17:04:16 -0400 J__rn Engel <joern@logfs.org> wrote:
 
-Ralf has an alternate fix here:
+> > >  Documentation/block/blockconsole.txt            |   94 ++++
+> > >  Documentation/block/blockconsole/bcon_tail      |   62 +++
+> > >  Documentation/block/blockconsole/mkblockconsole |   29 ++
+> > 
+> > We really need somewhere better to put userspace tools.
+> 
+> Agreed.  It started as "use this horrible code as a bad example" and
+> turned into a repository for userspace code, which it should have
+> been.
+> 
+> Do you have an opinion on tools/ vs. a standalong git tree for the
+> tools?
 
-http://git.linux-mips.org/pub/scm/ralf/upstream-linus.git
+./tools/blockconsole/ sounds nice.  I like maintaining simple userspace
+utils in the main kernel tree - it's very easy and efficient for us.
 
-If all goes well, it will be merged soon.
+> > > +#define BCON_MAX_ERRORS	10
+> > > +static void bcon_end_io(struct bio *bio, int err)
+> > > +{
+> > > +	struct bcon_bio *bcon_bio = container_of(bio, struct bcon_bio, bio);
+> > > +	struct blockconsole *bc = bio->bi_private;
+> > > +	unsigned long flags;
+> > > +
+> > > +	/*
+> > > +	 * We want to assume the device broken and free this console if
+> > > +	 * we accumulate too many errors.  But if errors are transient,
+> > > +	 * we also want to forget about them once writes succeed again.
+> > > +	 * Oh, and we only want to reset the counter if it hasn't reached
+> > > +	 * the limit yet, so we don't bcon_put() twice from here.
+> > > +	 */
+> > > +	spin_lock_irqsave(&bc->end_io_lock, flags);
+> > > +	if (err) {
+> > > +		if (bc->error_count++ == BCON_MAX_ERRORS) {
+> > > +			pr_info("no longer logging to %s\n", bc->devname);
+> > 
+> > pr_info() may be too low a severity level?
+> 
+> There is no distinction between "someone pulled the usb device" and
+> "broken cable".  Blockconsole will continue writing and retire the
+> device if errors accumulate.  The code is deliberately stupid, because
+> stupid code tends to be more robust and devoid of strange
+> corner-cases.
 
-David Daney
+I meant should we use pr_err() or pr_emerg() rather than pr_info(). 
+Chances are that pr_info() is being hidden.
 
+> > How does the code handle the obvious recursion concern here?
+> 
+> I think your next comment answers that.
 
+hm, that was clever of me.  I meant more generally, if we do a printk()
+from within this code how do we prevent arbitrarily deep recursion?
 
+> > > +		memcpy(bc->bio_array[i].sector +
+> > > +				__bcon_console_ofs(console_bytes), msg, n);
+> > > +		len -= n;
+> > > +		msg += n;
+> > > +		bcon_advance_console_bytes(bc, n);
+> > > +	}
+> > > +	wake_up_process(bc->writeback_thread);
+> > > +	mod_timer(&bc->pad_timer, jiffies + HZ);
+> > > +}
+> > > +
+> > > +static void bcon_init_bios(struct blockconsole *bc)
+> > 
+> > This code really needs some comments :(
+> > 
+> > Oh I see.  It's BIOs, not BIOS.  Had me fooled there.
+> 
+> But, but, but isn't this obvious to someone who has just written said
+> function?  It has been a year now, so my own definition of obvious may
+> have changed as well.
+
+heh.  I blame Jens for calling it a "bio".
+
+> > > +void bcon_add(const char *name)
+> > > +{
+> > > +	/*
+> > > +	 * We add each name to a small static buffer and ask for a workqueue
+> > > +	 * to go pick it up asap.  Once it is picked up, the buffer is empty
+> > > +	 * again, so hopefully it will suffice for all sane users.
+> > > +	 */
+> > > +	spin_lock(&device_lock);
+> > > +	if (scanned_devices[0])
+> > > +		strncat(scanned_devices, ",", sizeof(scanned_devices));
+> > > +	strncat(scanned_devices, name, sizeof(scanned_devices));
+> > > +	spin_unlock(&device_lock);
+> > > +	schedule_work(&bcon_add_work);
+> > > +}
+> > 
+> > What's all this do?
+> 
+> Work around init ordering problems.  Quite likely there is a much
+> nicer way to this that I should know about and don't.
+
+Well, without adequate description of the problem, nobody can help
+solve it!
