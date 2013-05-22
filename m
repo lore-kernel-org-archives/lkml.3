@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3EVHsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:48:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19470 "EHLO mga03.intel.com"
+	id S1755547Ab3EVHs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:48:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab3EVHrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:47:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="245013067"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        David Cohen <david.a.cohen@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 2/4] gpio-langwell: do not use direct access to iomapped memory
-Date: Wed, 22 May 2013 10:47:37 +0300
-Message-Id: <1369208859-16514-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755384Ab3EVHs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 03:48:56 -0400
+Message-ID: <519C785B.6070104@redhat.com>
+Date: Wed, 22 May 2013 09:48:43 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: akpm@linux-foundation.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, nschichan@freebox.fr
+Subject: Re: linux-next: manual merge of the akpm tree with the net-next tree
+References: <20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org> <20130522.000748.454683591881350280.davem@davemloft.net> <20130522001458.af0f4ab5.akpm@linux-foundation.org> <20130522.001909.837849096281513655.davem@davemloft.net>
+In-Reply-To: <20130522.001909.837849096281513655.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We better to use readl() function instead of bad looking direct access.
+On 05/22/2013 09:19 AM, David Miller wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Date: Wed, 22 May 2013 00:14:58 -0700
+>
+>> On Wed, 22 May 2013 00:07:48 -0700 (PDT) David Miller <davem@davemloft.net> wrote:
+>>
+>>> From: Andrew Morton <akpm@linux-foundation.org>
+>>> Date: Tue, 21 May 2013 13:04:38 -0700
+>>>
+>>>> Nicolas, I think the patches need a re-check so I'll drop the versions
+>>>> which I presently have.  Please refresh, retest and resend when
+>>>> convenient?  It'll need to be against linux-next, which is where the
+>>>> conflicting (vfree/module_free) changes have occurred.
+>>>
+>>> How about working against net-next and submitting your patches to netdev
+>>> just like the rest of the world?
+>>
+>> Well that's probably practical.  But the patchset is a seccomp
+>> enhancement for (at present) ARM.  Not exactly net stuff, or anything
+>> which netdev readers are likely to spend a lot of time testing and
+>> reviewing.
+>
+> The seccomp BPF bits we reviewed and were interested in completely, because
+> we're going to have to support JIT'ing all of that stuff on every cpu and
+> we're interested how it fits into the existing BPF codes and infrastructure.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/gpio/gpio-langwell.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
++1
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index c1f33dd..8203084 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -65,7 +65,7 @@ enum GPIO_REG {
- 
- struct lnw_gpio {
- 	struct gpio_chip		chip;
--	void				*reg_base;
-+	void __iomem			*reg_base;
- 	spinlock_t			lock;
- 	struct pci_dev			*pdev;
- 	struct irq_domain		*domain;
-@@ -318,9 +318,9 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
- };
- 
- static int lnw_gpio_probe(struct pci_dev *pdev,
--			const struct pci_device_id *id)
-+			  const struct pci_device_id *id)
- {
--	void *base;
-+	void __iomem *base;
- 	resource_size_t start, len;
- 	struct lnw_gpio *lnw;
- 	u32 gpio_base;
-@@ -346,8 +346,10 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
- 		retval = -EFAULT;
- 		goto err_ioremap;
- 	}
--	irq_base = *(u32 *)base;
--	gpio_base = *((u32 *)base + 1);
-+
-+	irq_base = readl(base);
-+	gpio_base = readl(sizeof(u32) + base);
-+
- 	/* release the IO mapping, since we already get the info from bar1 */
- 	iounmap(base);
- 	/* get the register base from bar0 */
--- 
-1.8.2.rc0.22.gb3600c3
-
+seccomp is wired with BPF (JITs in arch/*/net/ + net/core/filter.c) and that's
+part of networking, so they should go through netdev. This makes it also way
+easier for review.
