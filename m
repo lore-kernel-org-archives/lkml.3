@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3EVUay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:30:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63621 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab3EVUaw (ORCPT
+	id S1756722Ab3EVUcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:32:18 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:60398 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab3EVUcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:30:52 -0400
-Date: Wed, 22 May 2013 22:30:40 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Felipe F. Tonello" <eu@felipetonello.com>
-cc: linux-mmc@vger.kernel.org, ben-linux@fluff.org, cjb@laptop.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mmc: sdhci: Added set_power sdhci_ops handler.
-In-Reply-To: <1369244832-23868-2-git-send-email-eu@felipetonello.com>
-Message-ID: <Pine.LNX.4.64.1305222230050.19558@axis700.grange>
-References: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
- <1369244832-23868-2-git-send-email-eu@felipetonello.com>
+	Wed, 22 May 2013 16:32:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:SzGX9OEkaIsWr6/kw9Fn8nj4qe0503AjOJb3YzDIU/b
- lsIVmqQGC/kgogXL2apGu7GnWQPNIvN9vWnCmQlgla9GlZI705
- DNZpCOxgTNcrydr6Ybm0zYlJ7e+pvQxa8NS3XcW88tM2xZBq4R
- 1KwwjofbNs3/WApmHZKbqtVgiIlZ+WHZDly/v5DXMhqK0QPANl
- KNb45lShiEkCu2+atZdS9IqaGzaAFG0tihaPUONIFVjXOvYzeu
- S5B9xmQmU3DE4o+LTYwt9ZuSScfaiPWA0AT48KFHe1n5o10mS4
- ONmwWSWm7WDoCTDS/lg+91B1ZZPKQ0xbRYePcDZlYlmUmyH8jE
- FmZIZziXKvJxzIZNnCNJ/mz2mjP3gnjzluQNrkdicDnawn2J7a
- y25V2MQhxSY2w==
+In-Reply-To: <519C278F.5030809@signal11.us>
+References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
+	<1369188080-8904-1-git-send-email-alan@signal11.us>
+	<519C278F.5030809@signal11.us>
+Date: Wed, 22 May 2013 22:32:15 +0200
+X-Google-Sender-Auth: Fgd79xV2KlhJsJ9JjPlzLUWx1FY
+Message-ID: <CAO+c-UV1bZZEE=9=7VVn3f1eLWzCpYCK9eZnnvzNwcPOKKtKLA@mail.gmail.com>
+Subject: Re: [PATCH beta 1] 0/3] Fix race conditions in mrf24j40 interrupts
+From: David Hauweele <david@hauweele.net>
+To: Alan Ott <alan@signal11.us>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013, Felipe F. Tonello wrote:
+Hello,
 
-> From: "Felipe F. Tonello" <eu@felipetonello.com>
-> 
-> This is useful for power managment purposes if a sdhci child host wants to
-> turn off some other peripheral also.
+I cannot use level-triggered interrupts with GPIO on the RPi, so I
+cannot test this specific patch.
+However I agree with the idea of level-triggered interrupts, that
+would fix all major problems related to missed interrupts.
 
-Sorry, could you elaborate a bit? In what situations is it exactly useful? 
-And why cannot the regulator API be used there?
+Beside this I'm running a ping -f since more than two hours now and it
+seems to work well.
 
-Thanks
-Guennadi
+David
 
-> 
-> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
-> ---
->  drivers/mmc/host/sdhci.c | 8 ++++++++
->  drivers/mmc/host/sdhci.h | 1 +
->  2 files changed, 9 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 2ea429c..0a026c6 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1244,6 +1244,10 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
->  	u8 pwr = 0;
->  
->  	if (power != (unsigned short)-1) {
-> +
-> +		if (host->ops->set_power)
-> +			host->ops->set_power(host, true);
-> +
->  		switch (1 << power) {
->  		case MMC_VDD_165_195:
->  			pwr = SDHCI_POWER_180;
-> @@ -1259,6 +1263,10 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
->  		default:
->  			BUG();
->  		}
-> +	} else {
-> +
-> +		if (host->ops->set_power)
-> +			host->ops->set_power(host, false);
->  	}
->  
->  	if (host->pwr == pwr)
-> diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-> index 379e09d..293d56d 100644
-> --- a/drivers/mmc/host/sdhci.h
-> +++ b/drivers/mmc/host/sdhci.h
-> @@ -294,6 +294,7 @@ struct sdhci_ops {
->  	void	(*platform_resume)(struct sdhci_host *host);
->  	void    (*adma_workaround)(struct sdhci_host *host, u32 intmask);
->  	void	(*platform_init)(struct sdhci_host *host);
-> +	void	(*set_power)(struct sdhci_host *host, bool power);
->  };
->  
->  #ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
-> -- 
-> 1.8.1.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+2013/5/22 Alan Ott <alan@signal11.us>:
+> On 05/21/2013 10:01 PM, Alan Ott wrote:
+>> David Hauweele noticed that the mrf24j40 would hang arbitrarily after some
+>> period of heavy traffic.  Two race conditions were discovered, and the
+>> driver was changed to use threaded interrupts, since the enable/disable of
+>> interrupts in the driver has recently been a lighning rod whenever issues
+>> arise related to interrupts (costing engineering time), and since threaded
+>> interrupts are the right way to do it.
+>>
+>> Alan Ott (3):
+>>   mrf24j40: Move INIT_COMPLETION() to before packet transmission
+>>   mrf24j40: Use threaded IRQ handler
+>>   mrf24j40: Use level-triggered interrupts
+>>
+>>  drivers/net/ieee802154/mrf24j40.c | 31 +++++++++----------------------
+>>  1 file changed, 9 insertions(+), 22 deletions(-)
+>
+> I forgot to add, I ran ping -f both ways all afternoon (6.5 hours), and
+> it seems solid.
+>
