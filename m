@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3EVPa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:30:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38677 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3EVPa0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:30:26 -0400
-Date: Wed, 22 May 2013 08:30:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: CAI Qian <caiqian@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, stable@vger.kernel.org
-Subject: Re: 3.9.2: trinity triggered oops
-Message-ID: <20130522153024.GA10402@kroah.com>
-References: <1889683289.4496510.1369211505160.JavaMail.root@redhat.com>
- <519C848D.3080401@huawei.com>
+	id S1756514Ab3EVPbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:31:42 -0400
+Received: from www.sr71.net ([198.145.64.142]:52755 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755409Ab3EVPbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:31:40 -0400
+Message-ID: <519CE4DB.9070303@sr71.net>
+Date: Wed, 22 May 2013 08:31:39 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <519C848D.3080401@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 09/39] thp, mm: introduce mapping_can_have_hugepages()
+ predicate
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-10-git-send-email-kirill.shutemov@linux.intel.com> <519BCACD.4020106@sr71.net> <20130522135112.32C3EE0090@blue.fi.intel.com>
+In-Reply-To: <20130522135112.32C3EE0090@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 04:40:45PM +0800, Li Zefan wrote:
-> On 2013/5/22 16:31, CAI Qian wrote:
-> > Reproduced on a few systems.
-> > CAI Qian
-> > 
-> > created 375 sockets 
-> > Generating file descriptors 
-> > Added 45 filenames from /dev 
-> > Added 19858 filenames from /proc 
-> > Added 11816 filenames from /sys 
-> > [1143] Random reseed: 1433907474 
-> > trinity(1143): Randomness reseeded to 0x5577b112 
-> > trinity: trinity(1143) Randomness reseeded to 0x5577b112 
-> > msgrcv (70) returned ENOSYS, marking as inactive. 
-> > uselib (134) returned ENOSYS, marking as inactive. 
-> > [1143] Random reseed: 801659033 
-> > trinity(1143): Randomness reseeded to 0x2fc85899 
-> > trinity: trinity(1143) Randomness reseeded to 0x2fc85899 
-> > nfsservctl (180) returned ENOSYS, marking as inactive. 
-> > kcmp (312) returned ENOSYS, marking as inactive. 
-> > [watchdog] 1329 iterations. [F:1158 S:168] 
-> > [1143] Random reseed: 715320073 
-> > trinity(1143): Randomness reseeded to 0x2aa2eb09 
-> > trinity: trinity(1143) Randomness reseeded to 0x2aa2eb09 
-> > [watchdog] 3567 iterations. [F:3060 S:506] 
-> > [watchdog] 4953 iterations. [F:4255 S:697] 
-> > [ 4508.627400] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008 
-> > [ 4508.670547] IP: [<ffffffff81286682>] newseg+0x102/0x310 
-> > [ 4508.698846] PGD 18d827067 PUD 19a85f067 PMD 0  
-> > [ 4508.723288] Oops: 0000 [#1] SMP  
-> > [ 4508.741135] Modules linked in: ipt_ULOG(F) scsi_transport_iscsi(F) pppoe(F) pppox(F) ppp_generic(F) slhc(F) af_key(F) nfc(F) af_802154(F) atm(F) rds(F) btrfs(F) zlib_deflate(F) raid6_pq(F) xor(F) vfat(F) fat(F) nfsv3(F) nfs_acl(F) nfsv2(F) nfs(F) lockd(F) sunrpc(F) fscache(F) nfnetlink_log(F) nfnetlink(F) bluetooth(F) rfkill(F) arc4(F) md4(F) nls_utf8(F) cifs(F) dns_resolver(F) nf_tproxy_core(F) nls_koi8_u(F) nls_cp932(F) ts_kmp(F) sctp(F) nf_conntrack_netbios_ns(F) nf_conntrack_broadcast(F) ipt_MASQUERADE(F) ip6table_nat(F) nf_nat_ipv6(F) ip6table_mangle(F) ip6t_REJECT(F) nf_conntrack_ipv6(F) nf_defrag_ipv6(F) iptable_nat(F) nf_nat_ipv4(F) nf_nat(F) iptable_mangle(F) ipt_REJECT(F) nf_conntrack_ipv4(F) nf_defrag_ipv4(F) xt_conntrack(F) nf_conntrack(F) ebtable_filter(F) ebtables(F) ip6table_filter(F) ip6_tables(F) iptable_filter(F) ip_tables(F) sg(F) iTCO_wdt(F) iTCO_vendor_support(F) e1000e(F) bnx2x(F) hpwdt(F) ptp(F) mdio(F) hpilo(F) serio_raw(F) lpc_ich(F) pps_core(F)!
->  p!
-> > cspkr(F) mfd_core(F) microcode(F) xfs(F) libcrc32c(F) ata_generic(F) mgag200(F) pata_acpi(F) i2c_algo_bit(F) sd_mod(F) ata_piix(F) drm_kms_helper(F) ttm(F) crc_t10dif(F) drm(F) hpsa(F) libata(F) i2c_core(F) dm_mirror(F) dm_region_hash(F) dm_log(F) dm_mod(F) [last unloaded: brd] 
-> > [ 4509.308340] CPU 3  
-> > [ 4509.318654] Pid: 4068, comm: trinity-child2 Tainted: GF            3.9.2 #1 HP ProLiant DL120 G7 
-> > [ 4509.363440] RIP: 0010:[<ffffffff81286682>]  [<ffffffff81286682>] newseg+0x102/0x310 
+On 05/22/2013 06:51 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> Also, what happens if "transparent_hugepage_flags &
+>> (1<<TRANSPARENT_HUGEPAGE_PAGECACHE)" becomes false at runtime and you
+>> have some already-instantiated huge page cache mappings around?  Will
+>> things like mapping_align_mask() break?
 > 
-> The fix has already been queued for 3.9.3.
+> We will not touch existing huge pages in existing VMAs. The userspace can
+> use them until they will be unmapped or split. It's consistent with anon
+> THP pages.
 > 
-> commit 091d0d55b286c9340201b4ed4470be87fc568228
-> ("shm: fix null pointer deref when userspace specifies invalid hugepage size")
+> If anybody mmap() the file after disabling the feature, we will not
+> setup huge pages anymore: transparent_hugepage_enabled() check in
+> handle_mm_fault will fail and the page fill be split.
+> 
+> mapping_align_mask() is part of mmap() call path, so there's only chance
+> that we will get VMA aligned more strictly then needed. Nothing to worry
+> about.
 
-Yes, can you please test 3.9.3 to verify that this is fixed?
+Could we get a little blurb along those lines somewhere?  Maybe even in
+your docs that you've added to Documentation/.  Oh, wait, you don't have
+any documentation? :)
 
-thanks,
+You did add a sysfs knob, so you do owe us some docs for it.
 
-greg k-h
+"If the THP-cache sysfs tunable is disabled, huge pages will no longer
+be mapped with new mmap()s, but they will remain in place in the page
+cache.  You might still see some benefits from read/write operations,
+etc..."
