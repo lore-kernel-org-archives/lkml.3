@@ -1,63 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab3EVJRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:17:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38005 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3EVJRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:17:23 -0400
-Date: Wed, 22 May 2013 11:17:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/9] liblockdep: Wrap kernel/lockdep.c to allow usage
- from userspace
-Message-ID: <20130522091718.GE18810@twins.programming.kicks-ass.net>
-References: <1368674141-10796-1-git-send-email-sasha.levin@oracle.com>
- <1368674141-10796-3-git-send-email-sasha.levin@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1368674141-10796-3-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755553Ab3EVJS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:18:28 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:49122 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752255Ab3EVJS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 05:18:27 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>
+Subject: [PATCH] build some drivers only when compile-testing
+Date: Wed, 22 May 2013 11:18:46 +0200
+Message-Id: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 15, 2013 at 11:15:34PM -0400, Sasha Levin wrote:
-> --- /dev/null
-> +++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
-> @@ -0,0 +1,55 @@
-> +#ifndef _LIBLOCKDEP_LOCKDEP_H_
-> +#define _LIBLOCKDEP_LOCKDEP_H_
-> +
-> +#include <sys/prctl.h>
-> +#include <sys/syscall.h>
-> +#include <string.h>
-> +#include <limits.h>
-> +#include <linux/utsname.h>
-> +
-> +
-> +#define MAX_LOCK_DEPTH 2000UL
-> +
-> +#include "../../../include/linux/lockdep.h"
-> +
-> +struct task_struct {
-> +	u64 curr_chain_key;
-> +	int lockdep_depth;
-> +	unsigned int lockdep_recursion;
-> +	struct held_lock held_locks[MAX_LOCK_DEPTH];
-> +	gfp_t lockdep_reclaim_gfp;
-> +	int pid;
-> +	char comm[17];
-> +};
+Some drivers can be built on more platforms than they run on. This
+causes users and distributors packaging burden when they have to
+manually deselect some drivers from their allmodconfigs. Or sometimes
+it is even impossible to disable the drivers without patching the
+kernel.
 
-Whee that's a totally awesome MAX_LOCK_DEPTH.. :-)
+Introduce a new config option COMPILE_TEST and make all those drivers
+to depend on the platform they run on, or on the COMPILE_TEST option.
+Now, when users/distributors choose COMPILE_TEST=n they will not have
+the drivers in their allmodconfig setups, but developers still can
+compile-test them with COMPILE_TEST=y.
 
-Should we not also extend the other static allocations, or have you not
-yet ran into them? I would suspect that without proper classes we're
-bound to run out of class and link storage quite quickly.
+Now the drivers where we use this new option:
+* PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
+  processors so it should depend on x86.
+* FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
+* USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
+  systems -- which do not actually support the hardware via that
+  method.
 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-geode@lists.infradead.org
+Cc: linux-fbdev@vger.kernel.org
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: netdev@vger.kernel.org
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: "Keller, Jacob E" <jacob.e.keller@intel.com>
+---
+ drivers/ptp/Kconfig           |  1 +
+ drivers/usb/chipidea/Kconfig  |  6 ++++++
+ drivers/usb/chipidea/Makefile |  4 +---
+ drivers/video/geode/Kconfig   |  2 +-
+ init/Kconfig                  | 14 ++++++++++++++
+ 5 files changed, 23 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
+index 1ea6f1d..5be73ba 100644
+--- a/drivers/ptp/Kconfig
++++ b/drivers/ptp/Kconfig
+@@ -72,6 +72,7 @@ config DP83640_PHY
+ 
+ config PTP_1588_CLOCK_PCH
+ 	tristate "Intel PCH EG20T as PTP clock"
++	depends on X86 || COMPILE_TEST
+ 	select PTP_1588_CLOCK
+ 	help
+ 	  This driver adds support for using the PCH EG20T as a PTP
+diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
+index b2df442..3491d86 100644
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -31,4 +31,10 @@ config USB_CHIPIDEA_DEBUG
+ 	help
+ 	  Say Y here to enable debugging output of the ChipIdea driver.
+ 
++config USB_CHIPIDEA_IMX
++	bool "ChipIdea IMX support"
++	depends on OF_DEVICE && (ARM || COMPILE_TEST)
++	help
++	  This option enables ChipIdea support on IMX.
++
+ endif
+diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
+index 4ab83e9..76d66ff 100644
+--- a/drivers/usb/chipidea/Makefile
++++ b/drivers/usb/chipidea/Makefile
+@@ -16,6 +16,4 @@ ifneq ($(CONFIG_PCI),)
+ 	obj-$(CONFIG_USB_CHIPIDEA)	+= ci13xxx_pci.o
+ endif
+ 
+-ifneq ($(CONFIG_OF_DEVICE),)
+-	obj-$(CONFIG_USB_CHIPIDEA)	+= ci13xxx_imx.o usbmisc_imx.o
+-endif
++obj-$(CONFIG_USB_CHIPIDEA_IMX)	+= ci13xxx_imx.o usbmisc_imx.o
+diff --git a/drivers/video/geode/Kconfig b/drivers/video/geode/Kconfig
+index 21e351a..1e85552 100644
+--- a/drivers/video/geode/Kconfig
++++ b/drivers/video/geode/Kconfig
+@@ -3,7 +3,7 @@
+ #
+ config FB_GEODE
+ 	bool "AMD Geode family framebuffer support"
+-	depends on FB && PCI && X86
++	depends on FB && PCI && (X86_32 || (X86 && COMPILE_TEST))
+ 	---help---
+ 	  Say 'Y' here to allow you to select framebuffer drivers for
+ 	  the AMD Geode family of processors.
+diff --git a/init/Kconfig b/init/Kconfig
+index 7fb26a6..1233309 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -53,6 +53,20 @@ config CROSS_COMPILE
+ 	  need to set this unless you want the configured kernel build
+ 	  directory to select the cross-compiler automatically.
+ 
++config COMPILE_TEST
++	bool "Compile also drivers which will not load" if EXPERT
++	default n
++	help
++	  Some drivers can be compiled on a different platform than they are
++	  intended to be run on. Despite they cannot be loaded there (or even
++	  when they load they cannot be used due to missing HW support),
++	  developers still, opposing to distributors, might want to build such
++	  drivers to compile-test them.
++
++	  If you are a developer and want to build everything possible, say Y
++	  here. If you are a user/distributor, say N here to exclude useless
++	  drivers to be distributed.
++
+ config LOCALVERSION
+ 	string "Local version - append to kernel release"
+ 	help
+-- 
+1.8.2.3
 
