@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3EVPBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:01:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756218Ab3EVPBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:01:08 -0400
-Message-ID: <519CDDA4.2050100@redhat.com>
-Date: Wed, 22 May 2013 17:00:52 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1756554Ab3EVPBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:01:46 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:57810 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab3EVPBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:01:44 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org>
-In-Reply-To: <20130522143019.GA18541@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <519CBB30.3060200@redhat.com>
+References: <5195ED8B.7060002@meduna.org>
+	<1369183168.6828.168.camel@gandalf.local.home>
+	<519CBB30.3060200@redhat.com>
+Date: Wed, 22 May 2013 08:01:43 -0700
+X-Google-Sender-Auth: TyfK3VQnxA744ZqCwaUNiPJ3UkM
+Message-ID: <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
+Subject: Re: [PATCH - sort of] x86: Livelock in handle_pte_fault
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/05/2013 16:30, Tejun Heo ha scritto:
-> * Separate fixes from additions.  Transform existing code so that the
->   visible behavior doesn't change but the required fix can be
->   implemented on top.  Explicitly note what's going on in the commit
->   messages.
+On Wed, May 22, 2013 at 5:33 AM, Rik van Riel <riel@redhat.com> wrote:
+>
+> That sounds like maybe we DO want a TLB flush on spurious
+> page faults, so we get rid of this problem.
 
-Been there, done that.  Have you read the commit messages *at all*?
+Hmm. If it was just the Geode, I wouldn't be surprised. But with a Celeron too?
 
-Patch 2: "Right now, there is still just one bitmap and the mask is
-ignored, so there is no semantic change yet".
+Anyway, worth testing..
 
-Patch 3: "This patch already introduces some semantic change, albeit
-very limited; [...] a few commands are now forbidden for devices of type
-other than TYPE_ROM, where they are reserved or vendor-specific".
+> We can get flush_tlb_fix_spurious_fault to do a local TLB
+> invalidate of just the address in question by removing the
+> x86-specific dummy version, falling back to the asm-generic
+> version that does something.
+>
+> Can you test the attached patch?
 
-> * Fix the frigging CVE bug that you've been waving around and do
->   *just* that.
+I think you should also remove the
 
-Perhaps you've missed that this is v2, not v27.  Tell me a place in the
-original review where you've told me to split the series.
+        if (flags & FAULT_FLAG_WRITE)
 
-> * Add the frigging "count me out" feature that you want for your use
->   case.  It isn't controversial and is what you need and the
->   maintainer can apply to the point where [s]he thinks acceptable.
+test in handle_pte_fault(). Because if it's spurious, it might happen
+on reads too, I think.
 
-Sure.  Except I had sent it six months ago, and it lied unreviewed
-despite your acks for two months.  It is in the archives waiting to be
-picked up.
+RT people - does RT do anything special with the page tables?
 
-> * If for whatever reason you have to add more command codes to the
->   exception table, do them with explicit justifications.  How the hell
->   "the vast majority of the commands are added because Linux itself is
->   using them" a proper justification?   How are they used for what
->   reason and why is adding them beneficial?
+Stanislav, the patch you sent out may well work, but it's damned odd.
+On UP, we don't do the leave_mm() optimization that makes that code
+necessary. So I agree with Rik that it's more likely somewhere else
+(and infinite page faults do imply the TLB not getting flushed by the
+page fault exception), and your patch might just be working around it
+by simply flushing the TLB at least when switching between threads,
+which still happens.
 
-For example, WRITE SAME is used to discard blocks.  If a Linux guest
-wants to discard blocks, it may send WRITE SAME.  If a disk advertises
-support for WRITE SAME, it is not nice if WRITE SAME then fails because
-of a stupid whitelist that was designed for CD-ROMs.
-
-And another disk instead works because it uses UNMAP instead of WRITE
-SAME.  It's a support nightmare, perhaps the cause is obvious to me by
-the time it reaches me, but that takes time---which is wasted time for
-everyone involved.
-
->   How many times have I
->   asked you to give at least some useful use cases?  And WTF is "vast
->   majority", what about others then?
-
-The others are not in v2, or are sent by udev, or were added to the
-standard for a reason and applications are using them (e.g. COMPARE AND
-WRITE).
-
->   Why do you need this at all if
->   you have the "count me out" knob in the first place?
-
-Because the "count me out" knob needs privileges.  It opens up way, way
-more than what these patches do.
-
-And the frigging patch to make the whole whitelisting
-userspace-configurable with finer-grain (but still with appropriate
-capabilities) was nacked.  By you, for God's sake.
-
-http://permalink.gmane.org/gmane.linux.kernel/1378071
-
->   You first
->   built that command list by scanning the spec and just adding the
->   commands that seemed "right" to you.
-
-And then in v2 I stated that I removed some disk commands because of
-discussion with you.  But of course you don't know, because you've not
-read the damn commit messages.
-
->   I have near-zero confidence in
->   your perception of the relationship between the specs and actual
->   world.
-
-Thankyouverymuch.  Perhaps you should have read the commit messages (oh
-sorry, have I said it already?) and seen that it's not about commands
-that seemed "right":
-
-   Only commands that affect the medium are added.
-   Commands that affect other state of the LUN are all privileged, with
-   the sole exception of START STOP UNIT (which has always been
-   allowed for all file descriptors.  I do not really agree with that
-   and it's probably an artifact of when /dev/cdrom had
-   r--r--r-- permissions, but I'm not trying to change that.
-
-> So, stop quoting and repeating yourself.  You're overdoing yourself on
-> that department already.  Try to listen and understand for a change.
-
-Guy, calm down.  We're two.
-
-Paolo
-
+                   Linus
