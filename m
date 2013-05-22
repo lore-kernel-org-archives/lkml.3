@@ -1,196 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab3EVTaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:30:16 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48312 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab3EVTaO (ORCPT
+	id S1756733Ab3EVTbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:31:19 -0400
+Received: from mail-gh0-f181.google.com ([209.85.160.181]:53312 "EHLO
+	mail-gh0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab3EVTbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:30:14 -0400
-Date: Thu, 23 May 2013 04:30:09 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522193009.GA23845@mtj.dyndns.org>
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
- <519C674A.50700@redhat.com>
- <20130522093249.GC3466@mtj.dyndns.org>
- <519C959A.3090100@redhat.com>
- <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522143019.GA18541@mtj.dyndns.org>
- <519CDDA4.2050100@redhat.com>
+	Wed, 22 May 2013 15:31:18 -0400
+Date: Wed, 22 May 2013 15:35:41 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: OOPS in perf_mmap_close()
+Message-ID: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CDDA4.2050100@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 05:00:52PM +0200, Paolo Bonzini wrote:
-> Il 22/05/2013 16:30, Tejun Heo ha scritto:
-> > * Separate fixes from additions.  Transform existing code so that the
-> >   visible behavior doesn't change but the required fix can be
-> >   implemented on top.  Explicitly note what's going on in the commit
-> >   messages.
-> 
-> Been there, done that.  Have you read the commit messages *at all*?
+Hello
 
-Yeah, I was summarizing all the points that I raised during the
-review.  This part is almost there but still not quite there.
+I was fuzzing the kernel using my "perf_fuzzer" tool that builds on top of
+the trinity fuzzer.  (You can get it as part of of my perf_event_test
+suite https://github.com/deater/perf_event_tests )
 
-> Patch 2: "Right now, there is still just one bitmap and the mask is
-> ignored, so there is no semantic change yet".
-> 
-> Patch 3: "This patch already introduces some semantic change, albeit
-> very limited; [...] a few commands are now forbidden for devices of type
-> other than TYPE_ROM, where they are reserved or vendor-specific".
+In any case while letting it run I got the following OOPS on 
+Linux 3.10-rc2
 
-The thing is that the behavior change is now implemented in an
-inactive form by #2 and then flipped on by #3.  #2 both change the
-format and the content of the table.  This should have been like the
-following.
+[142450.070877] IP: [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
+[142450.070890] PGD 59a8067 PUD 2947067 PMD 0 
+[142450.070899] Oops: 0002 [#1] SMP 
+[142450.070906] Modules linked in: bluetooth msr cpufreq_stats dn_rtmsg can_raw nfnetlink can_bcm can xfrm_user xfrm_algo nfc rfkill ax25 scsi_transport_iscsi atm ipt_ULOG x_tables ipx p8023 p8022 irda crc_ccitt appletalk psnap llc nfsd auth_rpcgss oid_registry nfs_acl nfs lockd dns_resolver fscache sunrpc loop fuse snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel kvm evdev nouveau mxm_wmi ttm drm_kms_helper microcode drm i2c_algo_bit video snd_hda_intel snd_hda_codec wmi snd_hwdep snd_pcm snd_page_alloc snd_seq snd_seq_device snd_timer snd psmouse serio_raw acpi_cpufreq mperf processor thermal_sys button pcspkr i2c_nforce2 shpchp soundcore i2c_core ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ata_generic r8169 mii ahci libahci ehci_pci ohci_hcd ehci_hcd libata scsi_mod usbcore usb_common
+[142450.071099] CPU: 0 PID: 2539 Comm: perf_fuzzer Tainted: G             3.10.0-rc2 #2
+[142450.071106] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BIOS 080015  10/19/2012
+[142450.071113] task: ffff880119e25830 ti: ffff880005aea000 task.ti: ffff880005aea000
+[142450.071120] RIP: 0010:[<ffffffff810a9859>]  [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
+[142450.071131] RSP: 0018:ffff880005aebea8  EFLAGS: 00010202[142450.071136] RAX: 0000000000000001 RBX: ffff88000455e800 RCX: ffffffffffffffff
+[142450.071143] RDX: ffff880004732ac0 RSI: ffff88000455ea30 RDI: ffff88000455ea30
+[142450.071151] RBP: 0000000000000000 R08: 00007f5adc87b000 R09: 00007f5adc87a000
+[142450.071157] R10: ffff880119684ce0 R11: 0000000000000206 R12: ffff880118697bc0
+[142450.071164] R13: ffff88000455ea30 R14: ffff880119684cc0 R15: ffff880118796368
+[142450.071171] FS:  00007f5adc881700(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
+[142450.071178] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[142450.071184] CR2: 0000000000000060 CR3: 00000000029f1000 CR4: 00000000000407f0
+[142450.071190] DR0: 000000000b73c476 DR1: 000000000a837586 DR2: 00000000481f91c8
+[142450.071197] DR3: 000000005519375a DR6: 00000000ffff0ff0 DR7: 000000000051060a
+[142450.071203] Stack:
+[142450.071206]  ffff880119684cc0 0000000000000000 0000000000000000 00007f5adc87a000
+[142450.071218]  00007f5adc87b000 ffffffff810d2ce0 ffff880117183740 ffff880119684cc0
+[142450.071229]  ffffffff810d4342 ffff880119684cc0 ffff8801196c3430 ffff880117183748
+[142450.071241] Call Trace:
+[142450.071248]  [<ffffffff810d2ce0>] ? remove_vma+0x28/0x5f
+[142450.071255]  [<ffffffff810d4342>] ? do_munmap+0x2d5/0x306
+[142450.071262]  [<ffffffff810d43ab>] ? vm_munmap+0x38/0x4e
+[142450.071268]  [<ffffffff810d43db>] ? SyS_munmap+0x1a/0x1f
+[142450.071276]  [<ffffffff81369b12>] ? system_call_fastpath+0x16/0x1b
+[142450.071281] Code: 4c 89 ee e8 3e 21 fa ff 85 c0 74 6c 4c 8b a3 68 02 00 00 48 8b ab 60 02 00 00 41 8b 44 24 18 c1 e0 0c 48 98 48 c1 e8 0c 48 ff c0 <f0> 48 29 45 60 49 8b 46 40 48 63 93 5c 02 00 00 48 29 90 b8 00 
+[142450.071382] RIP  [<ffffffff810a9859>] perf_mmap_close+0x52/0xa8
+[142450.071390]  RSP <ffff880005aebea8>
+[142450.071394] CR2: 0000000000000060
+[142450.073009] ---[ end trace a49b6a0053924d8b ]---
 
-#2: Convert to the new table for mat but set all bits for all commands
-    as that's what the old table looks like in the new format.
-
-#3: Implement per-type filtering.  Now this wouldn't change any
-    behavior as the new table is the same as the old one.  This can be
-    rolled into #2.
-
-#4: Update the filtering table to fix the security issue and *just*
-    the identified security issue with UNMAP.  This way, the behavior
-    change is limited to the identified security issue and distros can
-    backport upto this to address the security issue.
-
-#5: Update the filtering table further so that commands which don't
-    make sense for the class are not allowed.  Note that this has some
-    possibility of breaking existing users and we do want this in a
-    separate patch from #4.
-
-One thing I don't get is why you're saying the original patch 3
-"introduces some semantic changes, albeit very limited" because the
-update to the command table in the previous patch is rather extensive.
-Why do you say it's very limited?
-
-> > * Fix the frigging CVE bug that you've been waving around and do
-> >   *just* that.
-> 
-> Perhaps you've missed that this is v2, not v27.  Tell me a place in the
-> original review where you've told me to split the series.
-
-Hmmmm.... so the thing is that it took us a lot of fighting and
-bickering for the patchset to look like what it looks like right now
-and I clearly recall talking about minimal fixes for the identified
-security issue.  It's just exhausting that it still isn't split
-properly after so much effort and to have to continue the same type of
-point-by-point fight to get the rest of them across, especially when
-none of these points are controversial at all.
-
-> > * Add the frigging "count me out" feature that you want for your use
-> >   case.  It isn't controversial and is what you need and the
-> >   maintainer can apply to the point where [s]he thinks acceptable.
-> 
-> Sure.  Except I had sent it six months ago, and it lied unreviewed
-> despite your acks for two months.  It is in the archives waiting to be
-> picked up.
-
-Yeah, well, probably Jens was busy at the moment or something and then
-there were activities related to the changes, so it got delayed until
-the whole series is resolved.  Anyways, my point was that you wanna
-put that right after the security fix, not at the end of the series
-with contentious changes in the middle.  That way, the security fix
-and the part that your use case requires can be picked up separately.
-In fact, at this point, it chould be helpful to make them separate
-patchset.
-
-> > * If for whatever reason you have to add more command codes to the
-> >   exception table, do them with explicit justifications.  How the hell
-> >   "the vast majority of the commands are added because Linux itself is
-> >   using them" a proper justification?   How are they used for what
-> >   reason and why is adding them beneficial?
-> 
-> For example, WRITE SAME is used to discard blocks.  If a Linux guest
-> wants to discard blocks, it may send WRITE SAME.  If a disk advertises
-> support for WRITE SAME, it is not nice if WRITE SAME then fails because
-> of a stupid whitelist that was designed for CD-ROMs.
-
-So, as I've said multiple times, let's *please* do this case-by-base -
-build the command table gradually with explicit use cases at each
-stage because SG_IO is very easy to get wrong for both the users and
-the hardware devices and the kernel isn't policing the content of
-what's being issued, because it is very nice to be able to know
-exactly the intents behind such table contents later, and because we
-wanna debate whether we even want to support specific use cases.  It's
-one thing to allow WRITE SAME passthrough and it's a different thing
-to try to allow all commands which may be issued by udev.
-
-> >   Why do you need this at all if
-> >   you have the "count me out" knob in the first place?
-> 
-> Because the "count me out" knob needs privileges.  It opens up way, way
-
-So does giving out access to the device node itself.  While it could
-be cumbersome, requiring privileges there for arbitration isn't a new
-thing.
-
-> more than what these patches do.
-
-So, your use case wouldn't work with this?
-
-> And the frigging patch to make the whole whitelisting
-> userspace-configurable with finer-grain (but still with appropriate
-> capabilities) was nacked.  By you, for God's sake.
-> 
-> http://permalink.gmane.org/gmane.linux.kernel/1378071
-
-Yeah, that's still nack.
-
-> >   You first
-> >   built that command list by scanning the spec and just adding the
-> >   commands that seemed "right" to you.
-> 
-> And then in v2 I stated that I removed some disk commands because of
-> discussion with you.  But of course you don't know, because you've not
-> read the damn commit messages.
-
-I did read.  Here's the patch description from patch 5.
-
- Start cleaning up the table, moving out of the way four rare &
- obsolete device types: printers, communication devices (network
- cards) and scanners (both TYPE_PROCESSOR and TYPE_SCANNER).  Add
- missing commands for these four device types.
-
-No real discussion or justifications for those "missing commands".
-Similar deal for other patches.  If I argue about command X to make a
-general point, what I get is "all - X".  Build from ground up, not the
-other way around.
-
-> >   I have near-zero confidence in
-> >   your perception of the relationship between the specs and actual
-> >   world.
-> 
-> Thankyouverymuch.  Perhaps you should have read the commit messages (oh
-> sorry, have I said it already?) and seen that it's not about commands
-> that seemed "right":
-> 
->    Only commands that affect the medium are added.
->    Commands that affect other state of the LUN are all privileged, with
->    the sole exception of START STOP UNIT (which has always been
->    allowed for all file descriptors.  I do not really agree with that
->    and it's probably an artifact of when /dev/cdrom had
->    r--r--r-- permissions, but I'm not trying to change that.
-
-Yeah, that one was better than others, but it still doesn't explain
-and justify why those specific commands are being added.
-
--- 
-tejun
+Vince Weaver
+vincent.weaver@maine.edu
+http://www.eece.maine.edu/~vweaver/
