@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab3EVFAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 01:00:49 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:43504 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab3EVFAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 01:00:48 -0400
-Message-ID: <519C507C.50708@huawei.com>
-Date: Wed, 22 May 2013 12:58:36 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1753829Ab3EVFHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 01:07:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab3EVFG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 01:06:59 -0400
+Date: Wed, 22 May 2013 08:07:18 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the vhost tree
+Message-ID: <20130522050718.GA7993@redhat.com>
+References: <20130522143704.3431658328f8f879f55b0910@canb.auug.org.au>
 MIME-Version: 1.0
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-CC: <vinod.koul@intel.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Libo Chen <libo.chen@huawei.com>, <agust@denx.de>, <phdm@macqel.be>,
-        <benh@kernel.crashing.org>
-Subject: Re: [PATCH] bestcomm: no need to free when kzalloc fail
-References: <1367743104-3448-1-git-send-email-libo.chen@huawei.com> <519C4E4D.1060101@huawei.com>
-In-Reply-To: <519C4E4D.1060101@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522143704.3431658328f8f879f55b0910@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/22 12:49, Libo Chen wrote:
+On Wed, May 22, 2013 at 02:37:04PM +1000, Stephen Rothwell wrote:
+> Hi Michael,
 > 
-> ping...
+> After merging the vhost tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> On 2013/5/5 16:38, chenlibo.3@gmail.com wrote:
->> From: Libo Chen <libo.chen@huawei.com>
->>
->> There is no need to free bcom_eng if kzalloc fail
->>
+> In file included from arch/powerpc/include/asm/uaccess.h:12:0,
+>                  from arch/powerpc/lib/checksum_wrappers_64.c:24:
+> include/asm-generic/uaccess.h: In function 'might_fault':
+> include/asm-generic/uaccess.h:36:2: error: implicit declaration of function 'segment_eq' [-Werror=implicit-function-declaration]
+>   if (_might_fault())
+>   ^
+> include/asm-generic/uaccess.h:36:2: error: implicit declaration of function 'get_fs' [-Werror=implicit-function-declaration]
+> include/asm-generic/uaccess.h:29:47: error: 'KERNEL_DS' undeclared (first use in this function)
+>  #define _might_fault() (!segment_eq(get_fs(), KERNEL_DS) && !in_atomic())
+>                                                ^
+> include/asm-generic/uaccess.h:36:6: note: in expansion of macro '_might_fault'
+>   if (_might_fault())
+>       ^
+> 
+> and many, many more.
+> 
+> Caused by commit d198a8acf543 ("kernel: might_fault does not imply
+> might_sleep").
+> 
+> I have used the version of the vhost tree from next-20130521 for today.
+> 
+> It was unexpected that such patches would turn up in the "vhost" tree ...
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-kfree(NULL) is fine. We gain nothing from this patch, and it even adds one
-more line to the code, so just drop thi patch.
 
->> Signed-off-by: Libo Chen <libo.chen@huawei.com>
->> ---
->>  drivers/dma/bestcomm/bestcomm.c | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/dma/bestcomm/bestcomm.c b/drivers/dma/bestcomm/bestcomm.c
->> index a8c2e29..300ee2d 100644
->> --- a/drivers/dma/bestcomm/bestcomm.c
->> +++ b/drivers/dma/bestcomm/bestcomm.c
->> @@ -400,7 +400,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
->>  		printk(KERN_ERR DRIVER_NAME ": "
->>  			"Can't allocate state structure\n");
->>  		rv = -ENOMEM;
->> -		goto error_sramclean;
->> +		goto error_kzalloc;
->>  	}
->>  
->>  	/* Save the node */
->> @@ -449,6 +449,7 @@ error_release:
->>  	release_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma));
->>  error_sramclean:
->>  	kfree(bcom_eng);
->> +error_kzalloc:
->>  	bcom_sram_cleanup();
->>  error_ofput:
->>  	of_node_put(op->dev.of_node);
->>
-> 
-> 
-> .
-> 
-
+Looks like I pushed a wrong commit. Sorry, will fix this up ASAP.
