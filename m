@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab3EVHvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:51:35 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:10582 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab3EVHvb (ORCPT
+	id S1754670Ab3EVHxc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:53:32 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54902
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752799Ab3EVHx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:51:31 -0400
-Message-ID: <519C78C0.3050204@huawei.com>
-Date: Wed, 22 May 2013 15:50:24 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Wed, 22 May 2013 03:53:29 -0400
+Date: Wed, 22 May 2013 09:53:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        michael@ellerman.id.au, mikey@neuling.org, eranian@google.com,
+        ak@linux.intel.com, mingo@kernel.org
+Subject: Re: [PATCH 2/5] powerpc, perf: Enable conditional branch filter for
+ POWER8
+Message-ID: <20130522075305.GN26912@twins.programming.kicks-ass.net>
+References: <1369203761-12649-1-git-send-email-khandual@linux.vnet.ibm.com>
+ <1369203761-12649-3-git-send-email-khandual@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Andrew Vagin <avagin@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>, Andrey Vagin <avagin@openvz.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
- root caches
-References: <1368535118-27369-1-git-send-email-avagin@openvz.org> <20130514160859.GC5055@dhcp22.suse.cz> <20130522074055.GA16207@paralelels.com>
-In-Reply-To: <20130522074055.GA16207@paralelels.com>
-Content-Type: text/plain; charset="KOI8-R"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369203761-12649-3-git-send-email-khandual@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/5/22 15:40, Andrew Vagin wrote:
-> On Tue, May 14, 2013 at 06:08:59PM +0200, Michal Hocko wrote:
->>
->> Forgot to add
->> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->> +
->> Cc: stable # 3.9
->>
->> Thanks
+On Wed, May 22, 2013 at 11:52:38AM +0530, Anshuman Khandual wrote:
+> Enables conditional branch filter support for POWER8
+> utilizing MMCRA register based filter and also invalidates
+> a BHRB branch filter combination involving conditional
+> branches.
 > 
-> Who usually picks up such patches?
+> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/perf/power8-pmu.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+> index 8ed323d..e60b38f 100644
+> --- a/arch/powerpc/perf/power8-pmu.c
+> +++ b/arch/powerpc/perf/power8-pmu.c
+> @@ -548,11 +548,21 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
+>  		return -1;
+>  
+> +	/* Invalid branch filter combination - HW does not support */
+> +	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
+> +			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
+> +		return -1;
+> +
+>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
+>  		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
+>  		return pmu_bhrb_filter;
+>  	}
+>  
+> +	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
+> +		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
+> +		return pmu_bhrb_filter;
+> +	}
+> +
+>  	/* Every thing else is unsupported */
+>  	return -1;
+>  }
 
-The famous AKPM.
+So I suppose you've seen what x86 does in this case? ;-) I'm not saying
+you _have_ to do the software filter, but I would like the changelog to at
+least mention the issue.
+
+In fact, I suppose that should have been in the original patches :/ as
+this patch series only adds the conditional branch support. 
 
