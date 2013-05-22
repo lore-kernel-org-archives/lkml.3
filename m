@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab3EVJ3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:29:48 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:34352 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab3EVJ3q (ORCPT
+	id S1755750Ab3EVJ3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:29:54 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59470 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab3EVJ3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:29:46 -0400
+	Wed, 22 May 2013 05:29:48 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>,
@@ -14,59 +14,45 @@ Cc: Michal Hocko <mhocko@suse.cz>,
         David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
         Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 1/4] mm/memory-hotplug: fix lowmem count overflow when offline pages 
-Date: Wed, 22 May 2013 17:29:27 +0800
-Message-Id: <1369214970-1526-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 3/4] mm/hugetlb: remove hugetlb_prefault 
+Date: Wed, 22 May 2013 17:29:29 +0800
+Message-Id: <1369214970-1526-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1369214970-1526-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1369214970-1526-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052220-3568-0000-0000-000003A7B70A
+x-cbid: 13052209-5140-0000-0000-0000033FA7F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Logic memory-remove code fails to correctly account the Total High Memory 
-when a memory block which contains High Memory is offlined as shown in the
-example below. The following patch fixes it.
-
-cat /proc/meminfo 
-MemTotal:        7079452 kB
-MemFree:         5805976 kB
-Buffers:           94372 kB
-Cached:           872000 kB
-SwapCached:            0 kB
-Active:           626936 kB
-Inactive:         519236 kB
-Active(anon):     180780 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296292 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5181024 kB
-LowTotal:       4294752076 kB
-LowFree:          624952 kB
+hugetlb_prefault are not used any more, this patch remove it.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/page_alloc.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/hugetlb.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 98cbdf6..80474b2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6140,6 +6140,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 		list_del(&page->lru);
- 		rmv_page_order(page);
- 		zone->free_area[order].nr_free--;
-+#ifdef CONFIG_HIGHMEM
-+		if (PageHighMem(page))
-+			totalhigh_pages -= 1 << order;
-+#endif
- 		for (i = 0; i < (1 << order); i++)
- 			SetPageReserved((page+i));
- 		pfn += (1 << order);
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 6b4890f..a811149 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -55,7 +55,6 @@ void __unmap_hugepage_range_final(struct mmu_gather *tlb,
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 				unsigned long start, unsigned long end,
+ 				struct page *ref_page);
+-int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+ void hugetlb_report_meminfo(struct seq_file *);
+ int hugetlb_report_node_meminfo(int, char *);
+ void hugetlb_show_meminfo(void);
+@@ -110,7 +109,6 @@ static inline unsigned long hugetlb_total_pages(void)
+ #define follow_hugetlb_page(m,v,p,vs,a,b,i,w)	({ BUG(); 0; })
+ #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
+ #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+-#define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
+ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ {
+ }
 -- 
 1.8.1.2
 
