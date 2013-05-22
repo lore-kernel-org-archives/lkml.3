@@ -1,88 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab3EVKVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:21:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47581 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847Ab3EVKUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:20:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="341609009"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        David Cohen <david.a.cohen@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 1/5] gpio-langwell: initialize lock before usage
-Date: Wed, 22 May 2013 13:20:10 +0300
-Message-Id: <1369218014-28990-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1755813Ab3EVKYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:24:12 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45153 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab3EVKYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:24:07 -0400
+Date: Wed, 22 May 2013 02:36:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: rostedt@goodmis.org, fweisbec@gmail.com
+Subject: Re: rcu_read_lock() used illegally while idle!
+Message-ID: <20130522093624.GZ3578@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130521173100.GA2076@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521173100.GA2076@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052210-7606-0000-0000-00000BA9176E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we will end up with traceback from LOCKDEP:
+On Tue, May 21, 2013 at 01:31:00PM -0400, Dave Jones wrote:
+> Back from vacation, and breaking stuff already :)
+> 
+> -rc2, plus some small local mods that shouldn't be a cause.
 
-INFO: trying to register non-static key.
-the code is fine but needs lockdep annotation.
-turning off the locking correctness validator.
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-rc2-next-20130521-00028-g09aa9fc #487
- 00000000 00000000 f6c55c54 c1541fe4 f6040bf8 f6c55c8c c1069ef1 c1726bc1
- c1726cc8 c1726c9e 00000000 f6c584e0 f6c58000 f6c55ce8 00000000 f6040bf8
- f6040bf8 00000046 f6c58000 f6c55d00 c106a18d 00000a2b 00000003 00004f02
-Call Trace:
- [<c1541fe4>] dump_stack+0x49/0x77
- [<c1069ef1>] register_lock_class+0x58/0x260
- [<c106a18d>] __lock_acquire+0x94/0xcff
- [<c106adc8>] ? __lock_acquire+0xccf/0xcff
- [<c106b2ad>] lock_acquire+0xcc/0x10d
- [<c1269c7c>] ? lnw_irq_type+0x63/0xe9
- [<c1545da0>] _raw_spin_lock_irqsave+0x32/0x42
- [<c1269c7c>] ? lnw_irq_type+0x63/0xe9
- [<c1269c7c>] lnw_irq_type+0x63/0xe9
- [<c108f454>] __irq_set_trigger+0x98/0x123
- [<c1090225>] irq_set_irq_type+0x2f/0x51
- [<c1090225>] ? irq_set_irq_type+0x2f/0x51
- [<c1269d02>] ? lnw_irq_type+0xe9/0xe9
- [<c1269d34>] lnw_gpio_irq_map+0x32/0x3b
- [<c10914f2>] irq_domain_add_legacy+0xe2/0x107
- [<c1091b53>] irq_domain_add_simple+0x47/0x60
- [<c1269f6e>] lnw_gpio_probe+0x119/0x217
- [<c1271018>] pci_device_probe+0x5a/0x92
-...
+Hmmm...  I thought that ftrace already took care to let RCU know that
+the CPU should be considered non-idle before using RCU read-side critical
+sections.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/gpio/gpio-langwell.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Adding Steven and Frederic to CC for their insight.
 
-diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index 62ef10a..c1f33dd 100644
---- a/drivers/gpio/gpio-langwell.c
-+++ b/drivers/gpio/gpio-langwell.c
-@@ -380,6 +380,8 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
- 	lnw->chip.can_sleep = 0;
- 	lnw->pdev = pdev;
- 
-+	spin_lock_init(&lnw->lock);
-+
- 	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ngpio, irq_base,
- 					    &lnw_gpio_irq_ops, lnw);
- 	if (!lnw->domain) {
-@@ -399,8 +401,6 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
- 	irq_set_handler_data(pdev->irq, lnw);
- 	irq_set_chained_handler(pdev->irq, lnw_irq_handler);
- 
--	spin_lock_init(&lnw->lock);
--
- 	pm_runtime_put_noidle(&pdev->dev);
- 	pm_runtime_allow(&pdev->dev);
- 
--- 
-1.8.2.rc0.22.gb3600c3
+							Thanx, Paul
+
+> [  839.278967] ===============================
+> [  839.279023] [ INFO: suspicious RCU usage. ]
+> [  839.279080] 3.10.0-rc2+ #1 Not tainted
+> [  839.279129] -------------------------------
+> [  839.279185] include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+> [  839.279273] 
+> other info that might help us debug this:
+> 
+> [  839.279370] 
+> RCU used illegally from idle CPU!
+> rcu_scheduler_active = 1, debug_locks = 0
+> [  839.279497] RCU used illegally from extended quiescent state!
+> [  839.279566] 2 locks held by cc1/63645:
+> [  839.279614]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816b39fd>] __schedule+0xed/0x9b0
+> [  839.279754]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8109d645>] cpuacct_charge+0x5/0x1f0
+> [  839.279895] 
+> stack backtrace:
+> [  839.279954] CPU: 1 PID: 63645 Comm: cc1 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 25/277 64369]
+> [  839.280074] Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+> [  839.280182]  0000000000000000 ffff88010f78fcf8 ffffffff816ae383 ffff88010f78fd28
+> [  839.280301]  ffffffff810b698d ffff88011c092548 000000000023d073 ffff88011c092500
+> [  839.280419]  0000000000000001 ffff88010f78fd60 ffffffff8109d7c5 ffffffff8109d645
+> [  839.280537] Call Trace:
+> [  839.280578]  [<ffffffff816ae383>] dump_stack+0x19/0x1b
+> [  839.280645]  [<ffffffff810b698d>] lockdep_rcu_suspicious+0xfd/0x130
+> [  839.280723]  [<ffffffff8109d7c5>] cpuacct_charge+0x185/0x1f0
+> [  839.280793]  [<ffffffff8109d645>] ? cpuacct_charge+0x5/0x1f0
+> [  839.280865]  [<ffffffff8108dffc>] update_curr+0xec/0x240
+> [  839.283157]  [<ffffffff8108f528>] put_prev_task_fair+0x228/0x480
+> [  839.285453]  [<ffffffff816b3a71>] __schedule+0x161/0x9b0
+> [  839.287753]  [<ffffffff816b4721>] preempt_schedule+0x51/0x80
+> [  839.290056]  [<ffffffff816b4800>] ? __cond_resched_softirq+0x60/0x60
+> [  839.292347]  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+> [  839.294620]  [<ffffffff810ff3cc>] ftrace_ops_control_func+0x1dc/0x210
+> [  839.296880]  [<ffffffff816be280>] ftrace_call+0x5/0x2f
+> [  839.299107]  [<ffffffff816b681d>] ? retint_careful+0xb/0x2e
+> [  839.301319]  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+> [  839.303524]  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+> [  839.305709]  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+> [  839.959586] ------------[ cut here ]------------
+> [  839.962342] WARNING: at kernel/context_tracking.c:55 user_enter+0xb5/0xd0()
+> [  839.965471] Modules linked in: 8021q garp stp mrp rfcomm cmtp kernelcapi hidp fuse phonet af_key rose caif_socket af_rxrpc caif netrom llc2 bnep can_bcm can_raw can ipt_ULOG nfnetlink l2tp_ppp l2tp_netlink l2tp_core pppoe pppox ppp_generic slhc scsi_transport_iscsi ipx x25 p8023 appletalk psnap p8022 llc irda nfc crc_ccitt rds ax25 decnet af_802154 atm kvm_amd kvm microcode edac_core btusb bluetooth serio_raw pcspkr snd_hda_codec_realtek snd_hda_intel rfkill snd_hda_codec snd_pcm r8169 mii snd_page_alloc snd_timer snd soundcore sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
+> [  839.983088] CPU: 1 PID: 275 Comm: jbd2/sda5-8 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 41/277 64411]
+> [  839.986926] Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+> [  839.990687]  ffffffff819ffcdc ffff88011cf6d6e8 ffffffff816ae383 ffff88011cf6d720
+> [  839.994267]  ffffffff81043280 0000000000000000 ffff88011cf6dfd8 00000000ffffffff
+> [  839.997861]  ffff88012a8046c0 ffff88012b1d7320 ffff88011cf6d730 ffffffff8104336a
+> [  840.001431] Call Trace:
+> [  840.004284]  [<ffffffff816ae383>] dump_stack+0x19/0x1b
+> [  840.007486]  [<ffffffff81043280>] warn_slowpath_common+0x70/0xa0
+> [  840.010807]  [<ffffffff8104336a>] warn_slowpath_null+0x1a/0x20
+> [  840.014079]  [<ffffffff8113acc5>] user_enter+0xb5/0xd0
+> [  840.017255]  [<ffffffff816b496d>] preempt_schedule_irq+0x7d/0x90
+> [  840.020548]  [<ffffffff816b68f6>] retint_kernel+0x26/0x30
+> [  840.023760]  [<ffffffff81190bf7>] ? deactivate_slab+0x627/0x740
+> [  840.027035]  [<ffffffff810b83fd>] ? trace_hardirqs_on+0xd/0x10
+> [  840.030303]  [<ffffffff816ac6ca>] ? __slab_alloc+0x433/0x4dd
+> [  840.033547]  [<ffffffff8126bc98>] ? ext4_ext_find_extent+0x438/0x520
+> [  840.036917]  [<ffffffff816be280>] ? ftrace_call+0x5/0x2f
+> [  840.040147]  [<ffffffff8126bc98>] ? ext4_ext_find_extent+0x438/0x520
+> [  840.043497]  [<ffffffff8126bc98>] ? ext4_ext_find_extent+0x438/0x520
+> [  840.046854]  [<ffffffff8126bc98>] ? ext4_ext_find_extent+0x438/0x520
+> [  840.050171]  [<ffffffff81192172>] __kmalloc+0x302/0x400
+> [  840.053339]  [<ffffffff8126bc98>] ext4_ext_find_extent+0x438/0x520
+> [  840.056660]  [<ffffffff812701ea>] ext4_ext_map_blocks+0x6a/0x12b0
+> [  840.059942]  [<ffffffff816be280>] ? ftrace_call+0x5/0x2f
+> [  840.063114]  [<ffffffff81243a4d>] ext4_map_blocks+0x23d/0x4a0
+> [  840.066325]  [<ffffffff81243e40>] ? _ext4_get_block+0x190/0x190
+> [  840.069563]  [<ffffffff81243d33>] _ext4_get_block+0x83/0x190
+> [  840.072754]  [<ffffffff81243e56>] ext4_get_block+0x16/0x20
+> [  840.075939]  [<ffffffff811e609f>] generic_block_bmap+0x3f/0x50
+> [  840.079189]  [<ffffffff811e6065>] ? generic_block_bmap+0x5/0x50
+> [  840.082433]  [<ffffffff81241610>] ? ext4_num_dirty_pages.isra.46+0x210/0x210
+> [  840.085817]  [<ffffffff81147302>] ? mapping_tagged+0x12/0x20
+> [  840.088981]  [<ffffffff8124169c>] ext4_bmap+0x8c/0xf0
+> [  840.092065]  [<ffffffff811cb021>] bmap+0x21/0x30
+> [  840.095078]  [<ffffffff8129b073>] jbd2_journal_bmap+0x33/0xb0
+> [  840.098238]  [<ffffffff8129b175>] jbd2_journal_next_log_block+0x85/0xa0
+> [  840.101479]  [<ffffffff81291728>] jbd2_journal_commit_transaction+0x8f8/0x25e0
+> [  840.104763]  [<ffffffff816be280>] ? ftrace_call+0x5/0x2f
+> [  840.107774]  [<ffffffff816b5b52>] ? _raw_spin_unlock_irqrestore+0x42/0x80
+> [  840.110983]  [<ffffffff81297f61>] kjournald2+0xe1/0x400
+> [  840.114003]  [<ffffffff81072d30>] ? wake_up_bit+0x40/0x40
+> [  840.117017]  [<ffffffff81297e80>] ? commit_timeout+0x10/0x10
+> [  840.120065]  [<ffffffff81071c3d>] kthread+0xed/0x100
+> [  840.123001]  [<ffffffff81071b50>] ? insert_kthread_work+0x80/0x80
+> [  840.126086]  [<ffffffff816be59c>] ret_from_fork+0x7c/0xb0
+> [  840.129092]  [<ffffffff81071b50>] ? insert_kthread_work+0x80/0x80
+> [  840.132199] ---[ end trace 407275e2f13d1407 ]---
+> 
+> 
+> 
+> $ grep RCU .config
+> # RCU Subsystem
+> CONFIG_TREE_PREEMPT_RCU=y
+> CONFIG_PREEMPT_RCU=y
+> CONFIG_RCU_STALL_COMMON=y
+> CONFIG_RCU_USER_QS=y
+> CONFIG_RCU_FANOUT=64
+> CONFIG_RCU_FANOUT_LEAF=16
+> # CONFIG_RCU_FANOUT_EXACT is not set
+> # CONFIG_RCU_FAST_NO_HZ is not set
+> # CONFIG_TREE_RCU_TRACE is not set
+> CONFIG_RCU_BOOST=y
+> CONFIG_RCU_BOOST_PRIO=1
+> CONFIG_RCU_BOOST_DELAY=500
+> CONFIG_RCU_NOCB_CPU=y
+> CONFIG_RCU_NOCB_CPU_ALL=y
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+> # RCU Debugging
+> CONFIG_PROVE_RCU=y
+> # CONFIG_PROVE_RCU_REPEATEDLY is not set
+> CONFIG_PROVE_RCU_DELAY=y
+> CONFIG_SPARSE_RCU_POINTER=y
+> # CONFIG_RCU_TORTURE_TEST is not set
+> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> CONFIG_RCU_CPU_STALL_VERBOSE=y
+> CONFIG_RCU_CPU_STALL_INFO=y
+> # CONFIG_RCU_TRACE is not set
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
