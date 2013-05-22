@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3EVPLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:11:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22983 "EHLO mga14.intel.com"
+	id S1756232Ab3EVPMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:12:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54145 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753906Ab3EVPLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:11:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,721,1363158000"; 
-   d="scan'208";a="338255454"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBB-LdPFpC-V07FYKEH7OXMwDgVr4RASqcrvPmcaKv+P5w@mail.gmail.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBB-LdPFpC-V07FYKEH7OXMwDgVr4RASqcrvPmcaKv+P5w@mail.gmail.com>
-Subject: Re: [PATCHv4 33/39] thp, mm: implement do_huge_linear_fault()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130522151401.E69EDE0090@blue.fi.intel.com>
-Date: Wed, 22 May 2013 18:14:01 +0300 (EEST)
+	id S1753081Ab3EVPMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 11:12:20 -0400
+Date: Wed, 22 May 2013 12:06:55 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v6 3/7] KVM: MMU: fast invalidate all pages
+Message-ID: <20130522150655.GA32275@amt.cnet>
+References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1368738782-18649-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130520194624.GA21392@amt.cnet>
+ <20130520201545.GC14287@redhat.com>
+ <20130520204047.GA23364@amt.cnet>
+ <20130521083902.GW4725@redhat.com>
+ <20130522013330.GA8583@amt.cnet>
+ <20130522063413.GL14287@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522063413.GL14287@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > @@ -3316,17 +3361,25 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> >                 if (unlikely(anon_vma_prepare(vma)))
-> >                         return VM_FAULT_OOM;
-> >
-> > -               cow_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
-> > +               cow_page = alloc_fault_page_vma(vma, address, flags);
-> >                 if (!cow_page)
-> > -                       return VM_FAULT_OOM;
-> > +                       return VM_FAULT_OOM | VM_FAULT_FALLBACK;
-> >
+On Wed, May 22, 2013 at 09:34:13AM +0300, Gleb Natapov wrote:
+> On Tue, May 21, 2013 at 10:33:30PM -0300, Marcelo Tosatti wrote:
+> > On Tue, May 21, 2013 at 11:39:03AM +0300, Gleb Natapov wrote:
+> > > > Any pages with stale information will be zapped by kvm_mmu_zap_all().
+> > > > When that happens, page faults will take place which will automatically 
+> > > > use the new generation number.
+> > > > 
+> > > > So still not clear why is this necessary.
+> > > > 
+> > > This is not, strictly speaking, necessary, but it is the sane thing to do.
+> > > You cannot update page's generation number to prevent it from been
+> > > destroyed since after kvm_mmu_zap_all() completes stale ptes in the
+> > > shadow page may point to now deleted memslot. So why build shadow page
+> > > table with a page that is in a process of been destroyed?
+> > 
+> > OK, can this be introduced separately, in a later patch, with separate
+> > justification, then?
+> > 
+> > Xiao please have the first patches of the patchset focus on the problem
+> > at hand: fix long mmu_lock hold times.
+> > 
+> > > Not sure what you mean again. We flush TLB once before entering this function.
+> > > kvm_reload_remote_mmus() does this for us, no?
+> > 
+> > kvm_reload_remote_mmus() is used as an optimization, its separate from the
+> > problem solution.
+> > 
+> > > > 
+> > > > What was suggested was... go to phrase which starts with "The only purpose
+> > > > of the generation number should be to".
+> > > > 
+> > > > The comment quoted here does not match that description.
+> > > > 
+> > > The comment describes what code does and in this it is correct.
+> > > 
+> > > You propose to not reload roots right away and do it only when root sp
+> > > is encountered, right? So my question is what's the point? There are,
+> > > obviously, root sps with invalid generation number at this point, so
+> > > reload will happen regardless in kvm_mmu_prepare_zap_page(). So why not
+> > > do it here right away and avoid it in kvm_mmu_prepare_zap_page() for
+> > > invalid and obsolete sps as I proposed in one of my email?
+> > 
+> > Sure. But Xiao please introduce that TLB collapsing optimization as a
+> > later patch, so we can reason about it in a more organized fashion.
 > 
-> Fallback makes sense with !thp ?
+> So, if I understand correctly, you are asking to move is_obsolete_sp()
+> check from kvm_mmu_get_page() and kvm_reload_remote_mmus() from
+> kvm_mmu_invalidate_all_pages() to a separate patch.
 
-No, it's nop. handle_pte_fault() will notice only VM_FAULT_OOM. That's
-what we need.
+- Move the is_obsolete_sp() check from kvm_mmu_get_page() to a separate
+optimization patch.
+- Move kvm_reload_remote_mmus() optimization to a separate optimization
+patch.
+- Leave the is_obsolete_sp() check in kvm_mmu_invalidate_all_pages(), as
+it is necessary to guarantee forward progress, in the initial patches.
 
--- 
- Kirill A. Shutemov
+> Fine by me, but if
+> we drop kvm_reload_remote_mmus() from kvm_mmu_invalidate_all_pages() the
+> call to kvm_mmu_invalidate_all_pages() in emulator_fix_hypercall() will
+> become nop. But I question the need to zap all shadow pages tables there
+> in the first place, why kvm_flush_remote_tlbs() is not enough?
+
+Good question.
+
