@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3EVHKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:10:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56823 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3EVHKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:10:06 -0400
+	id S1753707Ab3EVHKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:10:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45493 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab3EVHKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 03:10:32 -0400
 From: Philip Avinash <avinashphilip@ti.com>
 To: <nsekhar@ti.com>, <khilman@deeprootsystems.com>, <linux@arm.linux.org.uk>,
         <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>
 CC: <linux-arm-kernel@lists.infradead.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-kernel@vger.kernel.org>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 02/11] gpio: davinci: coding style correction
-Date: Wed, 22 May 2013 12:40:25 +0530
-Message-ID: <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
+        <linux-kernel@vger.kernel.org>, KV Sujith <sujithkv@ti.com>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH 03/11] gpio: davinci: Modify to platform driver
+Date: Wed, 22 May 2013 12:40:26 +0530
+Message-ID: <1369206634-6778-4-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
 References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
@@ -25,432 +25,301 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Corrects coding and commenting styles
-2. Variables name change to meaningful name
-3. Remove unnecessary variable usage
-4. Add BINTEN macro definition
+From: KV Sujith <sujithkv@ti.com>
 
+Modify GPIO Davinci driver to be compliant to standard platform drivers.
+The driver did not have platform driver structure or a probe. Instead,
+had a davinci_gpio_setup() function which is called in the pure_init
+sequence. The function also had dependency on davinci_soc_info structure
+of the corresponding platform. For Device Tree(DT) implementation, we
+need to get rid of the dependency on the davinci_soc_info structure.
+Hence as a first stage of DT conversion, we implement a probe. Future
+commits shall modify the probe to read platform related data from DT.
+
+- Add platform_driver structure and driver register function for davinci
+  GPIO driver. The driver registration is made to happen in
+  postcore_initcall. This is required since machine init functions like
+  da850_lcd_hw_init() make use of GPIO.
+- Convert the davinci_gpio_setup() to davinci_gpio_probe().
+- Remove access of members in soc_info structure. Instead, relevant data
+  are taken from davinci_gpio_platform_data structure pointed by
+  pdev->dev.platform_data.
+- Change clk_get() to devm_clk_get() as devm_clk_get() is a device
+  managed function and makes error handling simpler.
+- Change pr_err to dev_err for ngpio error reporting.
+- Arrange include files and variables in alphabetical order
+
+Signed-off-by: KV Sujith <sujithkv@ti.com>
+[avinashphilip@ti.com: Move global definition for "struct
+davinci_gpio_controller" variable to local in probe and set it as driver
+data.]
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 ---
- drivers/gpio/gpio-davinci.c |  182 +++++++++++++++++++++----------------------
- 1 file changed, 89 insertions(+), 93 deletions(-)
+ arch/arm/mach-davinci/include/mach/gpio-davinci.h |    2 +
+ drivers/gpio/gpio-davinci.c                       |  121 +++++++++++++++------
+ 2 files changed, 87 insertions(+), 36 deletions(-)
 
+diff --git a/arch/arm/mach-davinci/include/mach/gpio-davinci.h b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
+index 1fdd1fd..b325a1d 100644
+--- a/arch/arm/mach-davinci/include/mach/gpio-davinci.h
++++ b/arch/arm/mach-davinci/include/mach/gpio-davinci.h
+@@ -60,6 +60,8 @@ struct davinci_gpio_controller {
+ 	void __iomem		*set_data;
+ 	void __iomem		*clr_data;
+ 	void __iomem		*in_data;
++	int			gpio_unbanked;
++	unsigned		gpio_irq;
+ };
+ 
+ /* The __gpio_to_controller() and __gpio_mask() functions inline to constants
 diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-index 17df6db..d308955 100644
+index d308955..08830aa 100644
 --- a/drivers/gpio/gpio-davinci.c
 +++ b/drivers/gpio/gpio-davinci.c
-@@ -9,12 +9,12 @@
-  * the Free Software Foundation; either version 2 of the License, or
-  * (at your option) any later version.
+@@ -11,10 +11,17 @@
   */
--#include <linux/gpio.h>
--#include <linux/errno.h>
--#include <linux/kernel.h>
-+
+ 
  #include <linux/clk.h>
--#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/gpio.h>
++#include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
  #include <linux/io.h>
-+#include <linux/kernel.h>
++#include <linux/interrupt.h>
++#include <linux/irqdomain.h>
+ #include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/platform_data/gpio-davinci.h>
++#include <mach/gpio-davinci.h>
  
  #include <asm/mach/irq.h>
  
-@@ -31,10 +31,11 @@ struct davinci_gpio_regs {
- 	u32	intstat;
- };
- 
-+#define BINTEN	0x08 /* GPIO Interrupt Per-Bank Enable Register */
+@@ -35,10 +42,9 @@ struct davinci_gpio_regs {
  #define chip2controller(chip)	\
  	container_of(chip, struct davinci_gpio_controller, chip)
  
--static struct davinci_gpio_controller chips[DIV_ROUND_UP(DAVINCI_N_GPIO, 32)];
-+static struct davinci_gpio_controller ctlrs[DIV_ROUND_UP(DAVINCI_N_GPIO, 32)];
+-static struct davinci_gpio_controller ctlrs[DIV_ROUND_UP(DAVINCI_N_GPIO, 32)];
  static void __iomem *gpio_base;
  
- static struct davinci_gpio_regs __iomem __init *gpio2regs(unsigned gpio)
-@@ -53,42 +54,37 @@ static struct davinci_gpio_regs __iomem __init *gpio2regs(unsigned gpio)
- 		ptr = gpio_base + 0xb0;
- 	else
- 		ptr = NULL;
-+
- 	return ptr;
- }
- 
- static inline struct davinci_gpio_regs __iomem *irq2regs(int irq)
+-static struct davinci_gpio_regs __iomem __init *gpio2regs(unsigned gpio)
++static struct davinci_gpio_regs __iomem *gpio2regs(unsigned gpio)
  {
--	struct davinci_gpio_regs __iomem *g;
--
--	g = (__force struct davinci_gpio_regs __iomem *)irq_get_chip_data(irq);
--
--	return g;
-+	return (__force struct davinci_gpio_regs __iomem *)
-+		irq_get_chip_data(irq);
+ 	void __iomem *ptr;
+ 
+@@ -64,7 +70,7 @@ static inline struct davinci_gpio_regs __iomem *irq2regs(int irq)
+ 		irq_get_chip_data(irq);
  }
  
- static int __init davinci_gpio_irq_setup(void);
+-static int __init davinci_gpio_irq_setup(void);
++static int davinci_gpio_irq_setup(struct platform_device *pdev);
  
--/*--------------------------------------------------------------------------*/
--
--/* board setup code *MUST* setup pinmux and enable the GPIO clock. */
  static inline int __davinci_direction(struct gpio_chip *chip,
  			unsigned offset, bool out, int value)
- {
--	struct davinci_gpio_controller *d = chip2controller(chip);
--	struct davinci_gpio_regs __iomem *g = d->regs;
-+	struct davinci_gpio_controller *ctlr = chip2controller(chip);
-+	struct davinci_gpio_regs __iomem *regs = ctlr->regs;
- 	unsigned long flags;
- 	u32 temp;
- 	u32 mask = 1 << offset;
+@@ -127,33 +133,52 @@ static void davinci_gpio_set(struct gpio_chip *chip, unsigned offset,
+ 	__raw_writel((1 << offset), value ? &regs->set_data : &regs->clr_data);
+ }
  
--	spin_lock_irqsave(&d->lock, flags);
--	temp = __raw_readl(&g->dir);
-+	spin_lock_irqsave(&ctlr->lock, flags);
-+	temp = __raw_readl(&regs->dir);
- 	if (out) {
- 		temp &= ~mask;
--		__raw_writel(mask, value ? &g->set_data : &g->clr_data);
-+		__raw_writel(mask, value ? &regs->set_data : &regs->clr_data);
- 	} else {
- 		temp |= mask;
+-static int __init davinci_gpio_setup(void)
++static int davinci_gpio_probe(struct platform_device *pdev)
+ {
+ 	int i, base;
+ 	unsigned ngpio;
+-	struct davinci_soc_info *soc_info = &davinci_soc_info;
++	struct davinci_gpio_controller *ctlrs;
++	struct davinci_gpio_platform_data *pdata;
+ 	struct davinci_gpio_regs *regs;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
+ 
+-	if (soc_info->gpio_type != GPIO_TYPE_DAVINCI)
+-		return 0;
++	pdata = dev->platform_data;
++	if (!pdata) {
++		dev_err(dev, "GPIO: No Platform Data Supplied\n");
++		return -EINVAL;
++	}
+ 
+ 	/*
+ 	 * The gpio banks conceptually expose a segmented bitmap,
+ 	 * and "ngpio" is one more than the largest zero-based
+ 	 * bit index that's valid.
+ 	 */
+-	ngpio = soc_info->gpio_num;
++	ngpio = pdata->ngpio;
+ 	if (ngpio == 0) {
+-		pr_err("GPIO setup:  how many GPIOs?\n");
++		dev_err(dev, "GPIO Probe: how many GPIOs?\n");
+ 		return -EINVAL;
  	}
--	__raw_writel(temp, &g->dir);
--	spin_unlock_irqrestore(&d->lock, flags);
-+	__raw_writel(temp, &regs->dir);
-+	spin_unlock_irqrestore(&ctlr->lock, flags);
  
- 	return 0;
- }
-@@ -98,8 +94,8 @@ static int davinci_direction_in(struct gpio_chip *chip, unsigned offset)
- 	return __davinci_direction(chip, offset, false, 0);
- }
+ 	if (WARN_ON(DAVINCI_N_GPIO < ngpio))
+ 		ngpio = DAVINCI_N_GPIO;
  
--static int
--davinci_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-+static int davinci_direction_out(struct gpio_chip *chip, unsigned offset,
-+		int value)
- {
- 	return __davinci_direction(chip, offset, true, value);
- }
-@@ -113,22 +109,22 @@ davinci_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-  */
- static int davinci_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
--	struct davinci_gpio_controller *d = chip2controller(chip);
--	struct davinci_gpio_regs __iomem *g = d->regs;
-+	struct davinci_gpio_controller *ctlr = chip2controller(chip);
-+	struct davinci_gpio_regs __iomem *regs = ctlr->regs;
- 
--	return (1 << offset) & __raw_readl(&g->in_data);
-+	return (1 << offset) & __raw_readl(&regs->in_data);
- }
- 
- /*
-  * Assuming the pin is muxed as a gpio output, set its output value.
-  */
--static void
--davinci_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-+static void davinci_gpio_set(struct gpio_chip *chip, unsigned offset,
-+		int value)
- {
--	struct davinci_gpio_controller *d = chip2controller(chip);
--	struct davinci_gpio_regs __iomem *g = d->regs;
-+	struct davinci_gpio_controller *ctlr = chip2controller(chip);
-+	struct davinci_gpio_regs __iomem *regs = ctlr->regs;
- 
--	__raw_writel((1 << offset), value ? &g->set_data : &g->clr_data);
-+	__raw_writel((1 << offset), value ? &regs->set_data : &regs->clr_data);
- }
- 
- static int __init davinci_gpio_setup(void)
-@@ -160,30 +156,30 @@ static int __init davinci_gpio_setup(void)
+-	gpio_base = ioremap(soc_info->gpio_base, SZ_4K);
+-	if (WARN_ON(!gpio_base))
++	ctlrs = devm_kzalloc(dev,
++		ngpio * sizeof(struct davinci_gpio_controller), GFP_KERNEL);
++	if (!ctlrs) {
++		dev_err(dev, "Memory alloc failed\n");
  		return -ENOMEM;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (unlikely(!res)) {
++		dev_err(dev, "Invalid mem resource\n");
++		return -ENODEV;
++	}
++
++	gpio_base = devm_ioremap_resource(dev, res);
++	if (!gpio_base)
++		return -EADDRNOTAVAIL;
  
  	for (i = 0, base = 0; base < ngpio; i++, base += 32) {
--		chips[i].chip.label = "DaVinci";
-+		ctlrs[i].chip.label = "DaVinci";
- 
--		chips[i].chip.direction_input = davinci_direction_in;
--		chips[i].chip.get = davinci_gpio_get;
--		chips[i].chip.direction_output = davinci_direction_out;
--		chips[i].chip.set = davinci_gpio_set;
-+		ctlrs[i].chip.direction_input = davinci_direction_in;
-+		ctlrs[i].chip.direction_output = davinci_direction_out;
-+		ctlrs[i].chip.get = davinci_gpio_get;
-+		ctlrs[i].chip.set = davinci_gpio_set;
- 
--		chips[i].chip.base = base;
--		chips[i].chip.ngpio = ngpio - base;
--		if (chips[i].chip.ngpio > 32)
--			chips[i].chip.ngpio = 32;
-+		ctlrs[i].chip.base = base;
-+		ctlrs[i].chip.ngpio = ngpio - base;
-+		if (ctlrs[i].chip.ngpio > 32)
-+			ctlrs[i].chip.ngpio = 32;
- 
--		spin_lock_init(&chips[i].lock);
-+		spin_lock_init(&ctlrs[i].lock);
- 
- 		regs = gpio2regs(base);
--		chips[i].regs = regs;
--		chips[i].set_data = &regs->set_data;
--		chips[i].clr_data = &regs->clr_data;
--		chips[i].in_data = &regs->in_data;
-+		ctlrs[i].regs = regs;
-+		ctlrs[i].set_data = &regs->set_data;
-+		ctlrs[i].clr_data = &regs->clr_data;
-+		ctlrs[i].in_data = &regs->in_data;
- 
--		gpiochip_add(&chips[i].chip);
-+		gpiochip_add(&ctlrs[i].chip);
+ 		ctlrs[i].chip.label = "DaVinci";
+@@ -179,13 +204,10 @@ static int __init davinci_gpio_setup(void)
+ 		gpiochip_add(&ctlrs[i].chip);
  	}
  
--	soc_info->gpio_ctlrs = chips;
-+	soc_info->gpio_ctlrs = ctlrs;
- 	soc_info->gpio_ctlrs_num = DIV_ROUND_UP(ngpio, 32);
- 
- 	davinci_gpio_irq_setup();
-@@ -191,7 +187,6 @@ static int __init davinci_gpio_setup(void)
+-	soc_info->gpio_ctlrs = ctlrs;
+-	soc_info->gpio_ctlrs_num = DIV_ROUND_UP(ngpio, 32);
+-
+-	davinci_gpio_irq_setup();
++	platform_set_drvdata(pdev, ctlrs);
++	davinci_gpio_irq_setup(pdev);
+ 	return 0;
  }
- pure_initcall(davinci_gpio_setup);
+-pure_initcall(davinci_gpio_setup);
  
--/*--------------------------------------------------------------------------*/
  /*
   * We expect irqs will normally be set up as input pins, but they can also be
-  * used as output pins ... which is convenient for testing.
-@@ -205,16 +200,16 @@ pure_initcall(davinci_gpio_setup);
+@@ -297,14 +319,14 @@ static int gpio_to_irq_banked(struct gpio_chip *chip, unsigned offset)
  
- static void gpio_irq_disable(struct irq_data *d)
+ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
  {
--	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
-+	struct davinci_gpio_regs __iomem *regs = irq2regs(d->irq);
- 	u32 mask = (u32) irq_data_get_irq_handler_data(d);
- 
--	__raw_writel(mask, &g->clr_falling);
--	__raw_writel(mask, &g->clr_rising);
-+	__raw_writel(mask, &regs->clr_falling);
-+	__raw_writel(mask, &regs->clr_rising);
- }
- 
- static void gpio_irq_enable(struct irq_data *d)
- {
--	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
-+	struct davinci_gpio_regs __iomem *regs = irq2regs(d->irq);
- 	u32 mask = (u32) irq_data_get_irq_handler_data(d);
- 	unsigned status = irqd_get_trigger_type(d);
- 
-@@ -223,9 +218,9 @@ static void gpio_irq_enable(struct irq_data *d)
- 		status = IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING;
- 
- 	if (status & IRQ_TYPE_EDGE_FALLING)
--		__raw_writel(mask, &g->set_falling);
-+		__raw_writel(mask, &regs->set_falling);
- 	if (status & IRQ_TYPE_EDGE_RISING)
--		__raw_writel(mask, &g->set_rising);
-+		__raw_writel(mask, &regs->set_rising);
- }
- 
- static int gpio_irq_type(struct irq_data *d, unsigned trigger)
-@@ -244,15 +239,15 @@ static struct irq_chip gpio_irqchip = {
- 	.flags		= IRQCHIP_SET_TYPE_MASKED,
- };
- 
--static void
--gpio_irq_handler(unsigned irq, struct irq_desc *desc)
-+static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- {
--	struct davinci_gpio_regs __iomem *g;
- 	u32 mask = 0xffff;
--	struct davinci_gpio_controller *d;
-+	struct davinci_gpio_controller *ctlr;
-+	struct davinci_gpio_regs __iomem *regs;
- 
--	d = (struct davinci_gpio_controller *)irq_desc_get_handler_data(desc);
--	g = (struct davinci_gpio_regs __iomem *)d->regs;
-+	ctlr = (struct davinci_gpio_controller *)
-+		irq_desc_get_handler_data(desc);
-+	regs = ctlr->regs;
- 
- 	/* we only care about one bank */
- 	if (irq & 1)
-@@ -267,13 +262,13 @@ gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- 		int		res;
- 
- 		/* ack any irqs */
--		status = __raw_readl(&g->intstat) & mask;
-+		status = __raw_readl(&regs->intstat) & mask;
- 		if (!status)
- 			break;
--		__raw_writel(status, &g->intstat);
-+		__raw_writel(status, &regs->intstat);
- 
- 		/* now demux them to the right lowlevel handler */
--		n = d->irq_base;
-+		n = ctlr->irq_base;
- 		if (irq & 1) {
- 			n += 16;
- 			status >>= 16;
-@@ -292,10 +287,10 @@ gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- 
- static int gpio_to_irq_banked(struct gpio_chip *chip, unsigned offset)
- {
--	struct davinci_gpio_controller *d = chip2controller(chip);
+-	struct davinci_soc_info *soc_info = &davinci_soc_info;
 +	struct davinci_gpio_controller *ctlr = chip2controller(chip);
  
--	if (d->irq_base >= 0)
--		return d->irq_base + offset;
-+	if (ctlr->irq_base >= 0)
-+		return ctlr->irq_base + offset;
+ 	/*
+ 	 * NOTE:  we assume for now that only irqs in the first gpio_chip
+ 	 * can provide direct-mapped IRQs to AINTC (up to 32 GPIOs).
+ 	 */
+-	if (offset < soc_info->gpio_unbanked)
+-		return soc_info->gpio_irq + offset;
++	if (offset < ctlr->irq_base)
++		return ctlr->gpio_irq + offset;
  	else
  		return -ENODEV;
  }
-@@ -304,7 +299,8 @@ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
+@@ -313,12 +335,11 @@ static int gpio_irq_type_unbanked(struct irq_data *data, unsigned trigger)
  {
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
- 
--	/* NOTE:  we assume for now that only irqs in the first gpio_chip
-+	/*
-+	 * NOTE:  we assume for now that only irqs in the first gpio_chip
- 	 * can provide direct-mapped IRQs to AINTC (up to 32 GPIOs).
- 	 */
- 	if (offset < soc_info->gpio_unbanked)
-@@ -315,22 +311,22 @@ static int gpio_to_irq_unbanked(struct gpio_chip *chip, unsigned offset)
- 
- static int gpio_irq_type_unbanked(struct irq_data *data, unsigned trigger)
- {
--	struct davinci_gpio_controller *d;
--	struct davinci_gpio_regs __iomem *g;
-+	struct davinci_gpio_controller *ctlr;
-+	struct davinci_gpio_regs __iomem *regs;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
+ 	struct davinci_gpio_controller *ctlr;
+ 	struct davinci_gpio_regs __iomem *regs;
+-	struct davinci_soc_info *soc_info = &davinci_soc_info;
  	u32 mask;
  
--	d = (struct davinci_gpio_controller *)data->handler_data;
--	g = (struct davinci_gpio_regs __iomem *)d->regs;
-+	ctlr = (struct davinci_gpio_controller *)data->handler_data;
-+	regs = (struct davinci_gpio_regs __iomem *)ctlr->regs;
- 	mask = __gpio_mask(data->irq - soc_info->gpio_irq);
+ 	ctlr = (struct davinci_gpio_controller *)data->handler_data;
+ 	regs = (struct davinci_gpio_regs __iomem *)ctlr->regs;
+-	mask = __gpio_mask(data->irq - soc_info->gpio_irq);
++	mask = __gpio_mask(data->irq - ctlr->gpio_irq);
  
  	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
  		return -EINVAL;
+@@ -339,23 +360,33 @@ static int gpio_irq_type_unbanked(struct irq_data *data, unsigned trigger)
+  * (dm6446) can be set appropriately for GPIOV33 pins.
+  */
  
- 	__raw_writel(mask, (trigger & IRQ_TYPE_EDGE_FALLING)
--		     ? &g->set_falling : &g->clr_falling);
-+		     ? &regs->set_falling : &regs->clr_falling);
- 	__raw_writel(mask, (trigger & IRQ_TYPE_EDGE_RISING)
--		     ? &g->set_rising : &g->clr_rising);
-+		     ? &regs->set_rising : &regs->clr_rising);
- 
- 	return 0;
- }
-@@ -345,12 +341,11 @@ static int gpio_irq_type_unbanked(struct irq_data *data, unsigned trigger)
- 
- static int __init davinci_gpio_irq_setup(void)
+-static int __init davinci_gpio_irq_setup(void)
++static int davinci_gpio_irq_setup(struct platform_device *pdev)
  {
--	unsigned	gpio, irq, bank;
+-	u32		binten = 0;
+-	unsigned	gpio, irq, bank, ngpio, bank_irq;
 -	struct clk	*clk;
- 	u32		binten = 0;
--	unsigned	ngpio, bank_irq;
-+	unsigned	gpio, irq, bank, ngpio, bank_irq;
-+	struct clk	*clk;
-+	struct davinci_gpio_regs __iomem *regs;
- 	struct davinci_soc_info *soc_info = &davinci_soc_info;
--	struct davinci_gpio_regs	__iomem *g;
++	u32 binten = 0;
++	unsigned gpio, irq, bank, ngpio, bank_irq;
++	struct clk *clk;
++	struct davinci_gpio_controller *ctlrs = platform_get_drvdata(pdev);
++	struct davinci_gpio_platform_data *pdata;
+ 	struct davinci_gpio_regs __iomem *regs;
+-	struct davinci_soc_info *soc_info = &davinci_soc_info;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++
++	pdata = dev->platform_data;
++	ngpio = pdata->ngpio;
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (unlikely(!res)) {
++		dev_err(dev, "Invalid IRQ resource\n");
++		return -ENODEV;
++	}
  
- 	ngpio = soc_info->gpio_num;
+-	ngpio = soc_info->gpio_num;
++	bank_irq = res->start;
  
-@@ -368,16 +363,16 @@ static int __init davinci_gpio_irq_setup(void)
+-	bank_irq = soc_info->gpio_irq;
+-	if (bank_irq == 0) {
+-		printk(KERN_ERR "Don't know first GPIO bank IRQ.\n");
+-		return -EINVAL;
++	if (unlikely(!bank_irq)) {
++		dev_err(dev, "Invalid IRQ resource\n");
++		return -ENODEV;
  	}
- 	clk_prepare_enable(clk);
  
--	/* Arrange gpio_to_irq() support, handling either direct IRQs or
-+	/*
-+	 * Arrange gpio_to_irq() support, handling either direct IRQs or
- 	 * banked IRQs.  Having GPIOs in the first GPIO bank use direct
- 	 * IRQs, while the others use banked IRQs, would need some setup
- 	 * tweaks to recognize hardware which can do that.
+-	clk = clk_get(NULL, "gpio");
++	clk = devm_clk_get(dev, "gpio");
+ 	if (IS_ERR(clk)) {
+ 		printk(KERN_ERR "Error %ld getting gpio clock?\n",
+ 		       PTR_ERR(clk));
+@@ -371,8 +402,8 @@ static int __init davinci_gpio_irq_setup(void)
  	 */
  	for (gpio = 0, bank = 0; gpio < ngpio; bank++, gpio += 32) {
--		chips[bank].chip.to_irq = gpio_to_irq_banked;
--		chips[bank].irq_base = soc_info->gpio_unbanked
--			? -EINVAL
--			: (soc_info->intc_irq_num + gpio);
-+		ctlrs[bank].chip.to_irq = gpio_to_irq_banked;
-+		ctlrs[bank].irq_base = soc_info->gpio_unbanked ?
-+			-EINVAL : (soc_info->intc_irq_num + gpio);
+ 		ctlrs[bank].chip.to_irq = gpio_to_irq_banked;
+-		ctlrs[bank].irq_base = soc_info->gpio_unbanked ?
+-			-EINVAL : (soc_info->intc_irq_num + gpio);
++		ctlrs[bank].irq_base = pdata->gpio_unbanked ?
++			-EINVAL : (pdata->intc_irq_num + gpio);
  	}
  
  	/*
-@@ -389,7 +384,7 @@ static int __init davinci_gpio_irq_setup(void)
+@@ -380,7 +411,7 @@ static int __init davinci_gpio_irq_setup(void)
+ 	 * controller only handling trigger modes.  We currently assume no
+ 	 * IRQ mux conflicts; gpio_irq_type_unbanked() is only for GPIOs.
+ 	 */
+-	if (soc_info->gpio_unbanked) {
++	if (pdata->gpio_unbanked) {
  		static struct irq_chip_type gpio_unbanked;
  
  		/* pass "bank 0" GPIO IRQs to AINTC */
--		chips[0].chip.to_irq = gpio_to_irq_unbanked;
-+		ctlrs[0].chip.to_irq = gpio_to_irq_unbanked;
- 		binten = BIT(0);
- 
- 		/* AINTC handles mask/unmask; GPIO handles triggering */
-@@ -400,14 +395,14 @@ static int __init davinci_gpio_irq_setup(void)
- 		gpio_unbanked.chip.irq_set_type = gpio_irq_type_unbanked;
- 
- 		/* default trigger: both edges */
--		g = gpio2regs(0);
--		__raw_writel(~0, &g->set_falling);
--		__raw_writel(~0, &g->set_rising);
-+		regs = gpio2regs(0);
-+		__raw_writel(~0, &regs->set_falling);
-+		__raw_writel(~0, &regs->set_rising);
+@@ -400,7 +431,7 @@ static int __init davinci_gpio_irq_setup(void)
+ 		__raw_writel(~0, &regs->set_rising);
  
  		/* set the direct IRQs up to use that irqchip */
- 		for (gpio = 0; gpio < soc_info->gpio_unbanked; gpio++, irq++) {
+-		for (gpio = 0; gpio < soc_info->gpio_unbanked; gpio++, irq++) {
++		for (gpio = 0; gpio < pdata->gpio_unbanked; gpio++, irq++) {
  			irq_set_chip(irq, &gpio_unbanked.chip);
--			irq_set_handler_data(irq, &chips[gpio / 32]);
-+			irq_set_handler_data(irq, &ctlrs[gpio / 32]);
+ 			irq_set_handler_data(irq, &ctlrs[gpio / 32]);
  			irq_set_status_flags(irq, IRQ_TYPE_EDGE_BOTH);
- 		}
+@@ -455,3 +486,21 @@ done:
  
-@@ -424,9 +419,9 @@ static int __init davinci_gpio_irq_setup(void)
- 		unsigned		i;
- 
- 		/* disabled by default, enabled only as needed */
--		g = gpio2regs(gpio);
--		__raw_writel(~0, &g->clr_falling);
--		__raw_writel(~0, &g->clr_rising);
-+		regs = gpio2regs(gpio);
-+		__raw_writel(~0, &regs->clr_falling);
-+		__raw_writel(~0, &regs->clr_rising);
- 
- 		/* set up all irqs in this bank */
- 		irq_set_chained_handler(bank_irq, gpio_irq_handler);
-@@ -436,11 +431,11 @@ static int __init davinci_gpio_irq_setup(void)
- 		 * gpio irqs. Pass the irq bank's corresponding controller to
- 		 * the chained irq handler.
- 		 */
--		irq_set_handler_data(bank_irq, &chips[gpio / 32]);
-+		irq_set_handler_data(bank_irq, &ctlrs[gpio / 32]);
- 
- 		for (i = 0; i < 16 && gpio < ngpio; i++, irq++, gpio++) {
- 			irq_set_chip(irq, &gpio_irqchip);
--			irq_set_chip_data(irq, (__force void *)g);
-+			irq_set_chip_data(irq, (__force void *)regs);
- 			irq_set_handler_data(irq, (void *)__gpio_mask(gpio));
- 			irq_set_handler(irq, handle_simple_irq);
- 			set_irq_flags(irq, IRQF_VALID);
-@@ -450,10 +445,11 @@ static int __init davinci_gpio_irq_setup(void)
- 	}
- 
- done:
--	/* BINTEN -- per-bank interrupt enable. genirq would also let these
-+	/*
-+	 * BINTEN -- per-bank interrupt enable. genirq would also let these
- 	 * bits be set/cleared dynamically.
- 	 */
--	__raw_writel(binten, gpio_base + 0x08);
-+	__raw_writel(binten, gpio_base + BINTEN);
- 
- 	printk(KERN_INFO "DaVinci: %d gpio irqs\n", irq - gpio_to_irq(0));
- 
+ 	return 0;
+ }
++
++static struct platform_driver davinci_gpio_driver = {
++	.probe		= davinci_gpio_probe,
++	.driver		= {
++		.name	= "davinci_gpio",
++		.owner	= THIS_MODULE,
++	},
++};
++
++/**
++ * gpio driver register needs to be done before machine_init functions
++ * access gpio APIs. Hence davinci_gpio_drv_reg() is a postcore_initcall.
++ */
++static int __init davinci_gpio_drv_reg(void)
++{
++	return platform_driver_register(&davinci_gpio_driver);
++}
++postcore_initcall(davinci_gpio_drv_reg);
 -- 
 1.7.9.5
 
