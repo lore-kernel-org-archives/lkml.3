@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab3EVRDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:03:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48014 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab3EVRD2 (ORCPT
+	id S1756735Ab3EVREj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:04:39 -0400
+Received: from 18.mo4.mail-out.ovh.net ([188.165.54.143]:53032 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755063Ab3EVREi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:03:28 -0400
-Date: Wed, 22 May 2013 19:03:05 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130522170305.GD9563@kernel.dk>
-References: <cover.1369155164.git.agordeev@redhat.com>
- <20130521235003.GE6985@mtj.dyndns.org>
- <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+	Wed, 22 May 2013 13:04:38 -0400
+X-Greylist: delayed 4661 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 13:04:38 EDT
+Date: Wed, 22 May 2013 17:45:09 +0200
+From: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
+To: "luke.leighton" <luke.leighton@gmail.com>
+Cc: Eric Appleman <erappleman@gmail.com>, legal@lists.gpl-violations.org,
+        linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: Would like to form a pool of Linux copyright holders for faster
+ GPL enforcement against Anthrax Kernels
+Message-ID: <20130522174509.4f158f5d@m4a785t-m.lan>
+In-Reply-To: <CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
+References: <51972CAF.3060802@gmail.com>
+	<CAPweEDxgT+ZygfPZDd8YePe7RurTU7o_UtiBqjUvCMimChpTug@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16734531791029435985
+X-Ovh-Remote: 87.5.240.193 (host193-240-dynamic.5-87-r.retail.telecomitalia.it)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22 2013, Alexander Gordeev wrote:
-> On Wed, May 22, 2013 at 08:50:03AM +0900, Tejun Heo wrote:
-> > Hmmmmmm..... I'd normally apply this patch but block layer is just
-> > growing multi-queue support and libata is likely to be converted to mq
-> > in foreseeable future, so I'm a bit hesitant to make irq handling more
-> > sophiscated right now.  Would you be interested in looking into
-> > converting libata to blk mq support?  I'm pretty sure it'd yield far
-> > better outcome if done properly.
-> 
-> I am not committing, but will look into it, sure.
+>  actually, that's a good point.  please can it be specifically noted,
+> from this moment onwards, that all contributions that i have made to
+> the linux kernel are dual-licensed under both the GPLv2 and also the
+> GPLv3+ license?
+Why not simply use "GPLv2 or later" ?
+For instance in the copyright header.
 
-Would be most awesome, I'm sure Nic would not mind a bit of help on the
-SCSI/libata side :-)
-
-And personally, can't wait to run it on the laptop! That's right, I
-alpha test on the laptop.
-
--- 
-Jens Axboe
-
+Denis.
