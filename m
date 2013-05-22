@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab3EVVHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:07:19 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:45415 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756925Ab3EVVHN (ORCPT
+	id S1757371Ab3EVVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:08:09 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:63351 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757350Ab3EVVIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:07:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
-References: <CALxABCbP9hkNQ=xTEUMWb+6UhmVs2N-5kauYJe7d=j1z_RL+LA@mail.gmail.com>
- <s5h8v3irjeb.wl%tiwai@suse.de> <s5hy5biq3kr.wl%tiwai@suse.de>
- <CALxABCbyALmAKwCC6wNOgQWs8jD2X72aH8_++OW6R7m7C3vgfw@mail.gmail.com>
- <s5hr4haw190.wl%tiwai@suse.de> <s5hd2stq152.wl%tiwai@suse.de>
- <CALxABCaxJkG486g2reFDJD_nKzyaZkJnsRrwaLFNC9eFZBcXTg@mail.gmail.com>
- <s5ha9nwx1j3.wl%tiwai@suse.de> <CALxABCZMyqh5SSo=RpQCJNUR_p9yrG5x9DimFpzvgkCFLr4eug@mail.gmail.com>
- <s5h1u97jik9.wl%tiwai@suse.de> <CALxABCa27gVVJGWM-crvFOPmJXdZ0FEBc3=dPZ0pG+AhDB78cA@mail.gmail.com>
- <s5hk3myuoq6.wl%tiwai@suse.de> <CALxABCZHwKPDKPsjWJmK=-QzcC3fs2bKqHU0SCUmdH7OqGDNdA@mail.gmail.com>
-From: Alex Riesen <raa.lkml@gmail.com>
-Date: Wed, 22 May 2013 23:06:53 +0200
-Message-ID: <CALxABCaubJgHkr60r4M5igJtZhCOMhZbzCvGByb3gOg5spSFUQ@mail.gmail.com>
-Subject: Re: regression: from 3.8 to 3.9: headphones output no sound on Intel
- HDA, codec VIA VT1802
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 May 2013 17:08:06 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, trinity@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/5] x86: oops on uaccess faults outside of user addresses
+Date: Wed, 22 May 2013 14:07:39 -0700
+Message-Id: <cover.1369177867.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? Can I do something for you?
+Currently, __get_user can't trigger an OOPS -- any exception will be
+caught and return -EFAULT.  This means that, if an access_ok check is
+missing somewhere, then an attacker can freely use it to probe for valid
+kernel mappings.
 
-Regards,
-Alex
+This series annotates all of the exception fixups as "catch anything" or
+"catch valid uaccess faults", and skips the fixup (and hence oopses) if
+an instruction of the latter type faults for any reason other than a
+page fault to a user address.
 
-On Sat, May 18, 2013 at 10:29 PM, Alex Riesen <raa.lkml@gmail.com> wrote:
-> Sorry for delayed replies. I have not much time for this lately.
->
-> On Fri, May 17, 2013 at 8:04 AM, Takashi Iwai <tiwai@suse.de> wrote:
->>> Well... It seems that something went unnoticed. This command seems
->>> to be essential for this (and the revised) patch to get the headphone
->>> output at all:
->>>
->>>         hda-verb /dev/snd/hwC0D0 0x25 SET_PIN_WID 0xc0
->>
->> Do you mean that the headphone doesn't work without this even after
->> the patch?  It's weird that the alsa-info.sh output you attached below
->> already contains it, i.e. 0x25 showing 0xc0.
->
-> Yes. It is after the latest patch.
->
->> Or, is the attached output the result after you ran hda-verb like the
->> above?
->
-> Er, yes.
->
->>> It does. And there is no output from the speakers.
->>
->> Hmm.  I'm confused.  I thought you mentioned that the speaker is
->> unmuted?
->
-> I think I am as confused as you, if not more. I redid the tests
-> but recorded everything this time with script(1). It is without
-> timing information (would be boring anyway, with me figuring
-> the arguments), so just cat it. Just in case: it sets xterm title.
-> The transcript is in headphone.gz.
->
->> - Use the patched kernel, play without headphone, confirm that the
->>   speaker works.  Get alsa-info.sh output at this point.
->
-> That's 3.9.2-wo-headphone.alsa.gz
->
->> - Plug the headphone, play, and check whether the headphone works and
->>   the speaker is muted.
->>   Again, get alsa-info.sh output at this point, no matter whether the
->>   headphone works or not.
->
-> That's 3.9.2-w-headphone.alsa.gz. Headphone not working, speakers
-> correctly muted.
->
->> In anyway, if you make things working, please give exactly what you
->> did, and take again alsa-info.sh output, too.
->
-> 3.9.2-w-headphone-working.alsa.gz. The working state is lost after
-> unplugging and replugging the headphones. It is different to the
-> case when the alternate channel is used (Independent HP): replugging
-> does not break the output than.
->
-> Sorry for confusion and thanks!
->
-> Regards,
-> Alex
+I know of only one bug of this type; it's fixed in patch 5.
+
+Perhaps surprisingly, this seems to survive Trinity fairly well.
+
+Andy Lutomirski (5):
+  x86: Split "utter crap" pnpbios fixup out of fixup_exception
+  x86: Clean up extable entry format (and free up a bit)
+  x86: Annotate _ASM_EXTABLE users to distinguish uaccess from
+    everything else
+  x86: Don't fixup uaccess faults to kernel or non-canonical addresses
+  net: Block MSG_CMSG_COMPAT in send(m)msg and recv(m)msg
+
+ arch/x86/ia32/ia32entry.S             |   4 +-
+ arch/x86/include/asm/asm.h            |  75 ++++++++----
+ arch/x86/include/asm/fpu-internal.h   |   6 +-
+ arch/x86/include/asm/futex.h          |   8 +-
+ arch/x86/include/asm/kvm_host.h       |   2 +-
+ arch/x86/include/asm/msr.h            |   4 +-
+ arch/x86/include/asm/segment.h        |   2 +-
+ arch/x86/include/asm/special_insns.h  |   2 +-
+ arch/x86/include/asm/traps.h          |   6 +
+ arch/x86/include/asm/uaccess.h        |  10 +-
+ arch/x86/include/asm/word-at-a-time.h |   2 +-
+ arch/x86/include/asm/xsave.h          |   6 +-
+ arch/x86/kernel/entry_32.S            |  26 ++---
+ arch/x86/kernel/entry_64.S            |   6 +-
+ arch/x86/kernel/ftrace.c              |   4 +-
+ arch/x86/kernel/kprobes/core.c        |   4 +-
+ arch/x86/kernel/test_nx.c             |   2 +-
+ arch/x86/kernel/test_rodata.c         |   2 +-
+ arch/x86/kernel/traps.c               |  12 +-
+ arch/x86/kvm/emulate.c                |   4 +-
+ arch/x86/lib/checksum_32.S            |   4 +-
+ arch/x86/lib/copy_user_64.S           |  50 ++++----
+ arch/x86/lib/copy_user_nocache_64.S   |  44 +++----
+ arch/x86/lib/csum-copy_64.S           |   6 +-
+ arch/x86/lib/getuser.S                |  12 +-
+ arch/x86/lib/mmx_32.c                 |  12 +-
+ arch/x86/lib/msr-reg.S                |   4 +-
+ arch/x86/lib/putuser.S                |  10 +-
+ arch/x86/lib/usercopy_32.c            | 212 +++++++++++++++++-----------------
+ arch/x86/lib/usercopy_64.c            |   4 +-
+ arch/x86/mm/extable.c                 |  41 +++----
+ arch/x86/mm/fault.c                   |  36 ++++--
+ arch/x86/mm/init_32.c                 |   2 +-
+ arch/x86/um/checksum_32.S             |   4 +-
+ arch/x86/xen/xen-asm_32.S             |   2 +-
+ net/socket.c                          |  33 +++++-
+ 36 files changed, 375 insertions(+), 288 deletions(-)
+
+-- 
+1.8.1.4
+
