@@ -1,301 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab3EVGjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:39:19 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755442Ab3EVGjP (ORCPT
+	id S1755596Ab3EVGjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:39:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47773 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535Ab3EVGjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:39:15 -0400
+	Wed, 22 May 2013 02:39:17 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Gavin Shan <shangw@linux.vnet.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 5/8] PCI: Skip IORESOURCE_IO allocation for root bus without ioport range
-Date: Tue, 21 May 2013 23:38:45 -0700
-Message-Id: <1369204728-11165-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 7/8] PCI: Enable pci bridge when it is needed
+Date: Tue, 21 May 2013 23:38:47 -0700
+Message-Id: <1369204728-11165-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1369204728-11165-1-git-send-email-yinghai@kernel.org>
 References: <1369204728-11165-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BenH reported that there is some assign unassigned resource problem
-in powerpc.
+Current we enable bridges after bus scan and assign resources.
+and it is spreaded a lot of places.
 
-It turns out after
-| commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
-| Date:   Thu Feb 23 19:23:29 2012 -0800
-|
-|    PCI: Retry on IORESOURCE_IO type allocations
+We can move it to where pci device is enabled, and need
+to go up to root bus and enable bridge one by one down to pci
+dev.
 
-even the root bus does not have io port range, it will keep retrying
-to realloc with mmio.
+So that will delay enable bridge late as needed bassis,
+also kill one inconsistent between boot path and hotplug
+path in acpi_pci_root_add().
 
-Current retry logic is : try with must+optional at first, and if
-it fails will try must then try to extend must with optional.
-That will fail as mmio-non-pref and mmio-pref for bridge will
-be next to each other. So we have no chance to extend mmio-non-pref.
-
-This will be become more often when we have x86 8 sockets or 32 sockets
-system, and those system will have one root bus per socket.
-They will have some root buses do not have ioport range.
-
-We should not fall into retry in this case, as root bus does
-not io port range.
-
-We check if the root bus has ioport range, and set bus_res_type_mask,
-and pass it to assign_resources and don't add ioport res to failed list
-for root bus that does not have ioport range.
-So even BIOS set wrong value to pci devices and bridges will still
-get cleared.
-
-For the retry failing, we could allocate mmio-non-pref bottom-up
-and mmio-pref will be top-down, but that is not easy and could not be
-material for v3.10.
-
--v2: remove wrong __init with pci_bus_res_type_mask()
-     don't check bridge size/flags, and clear bus io resources.
--v3: change to skip adding to failed_list instead.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- drivers/pci/setup-bus.c |   86 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 66 insertions(+), 20 deletions(-)
+ arch/arm/kernel/bios32.c           |    5 -----
+ arch/m68k/platform/coldfire/pci.c  |    1 -
+ arch/mips/pci/pci.c                |    1 -
+ arch/sh/drivers/pci/pci.c          |    1 -
+ drivers/acpi/pci_root.c            |    4 ----
+ drivers/parisc/lba_pci.c           |    1 -
+ drivers/pci/bus.c                  |   19 -------------------
+ drivers/pci/hotplug/acpiphp_glue.c |    1 -
+ drivers/pci/pci.c                  |   20 ++++++++++++++++++++
+ drivers/pci/probe.c                |    1 -
+ drivers/pci/setup-bus.c            |   10 +++-------
+ drivers/pcmcia/cardbus.c           |    1 -
+ include/linux/pci.h                |    1 -
+ 13 files changed, 23 insertions(+), 43 deletions(-)
 
+Index: linux-2.6/arch/arm/kernel/bios32.c
+===================================================================
+--- linux-2.6.orig/arch/arm/kernel/bios32.c
++++ linux-2.6/arch/arm/kernel/bios32.c
+@@ -524,11 +524,6 @@ void pci_common_init(struct hw_pci *hw)
+ 			 * Assign resources.
+ 			 */
+ 			pci_bus_assign_resources(bus);
+-
+-			/*
+-			 * Enable bridges
+-			 */
+-			pci_enable_bridges(bus);
+ 		}
+ 
+ 		/*
+Index: linux-2.6/arch/m68k/platform/coldfire/pci.c
+===================================================================
+--- linux-2.6.orig/arch/m68k/platform/coldfire/pci.c
++++ linux-2.6/arch/m68k/platform/coldfire/pci.c
+@@ -319,7 +319,6 @@ static int __init mcf_pci_init(void)
+ 	pci_fixup_irqs(pci_common_swizzle, mcf_pci_map_irq);
+ 	pci_bus_size_bridges(rootbus);
+ 	pci_bus_assign_resources(rootbus);
+-	pci_enable_bridges(rootbus);
+ 	pci_bus_add_devices(rootbus);
+ 	return 0;
+ }
+Index: linux-2.6/arch/mips/pci/pci.c
+===================================================================
+--- linux-2.6.orig/arch/mips/pci/pci.c
++++ linux-2.6/arch/mips/pci/pci.c
+@@ -113,7 +113,6 @@ static void pcibios_scanbus(struct pci_c
+ 		if (!pci_has_flag(PCI_PROBE_ONLY)) {
+ 			pci_bus_size_bridges(bus);
+ 			pci_bus_assign_resources(bus);
+-			pci_enable_bridges(bus);
+ 		}
+ 	}
+ }
+Index: linux-2.6/arch/sh/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/arch/sh/drivers/pci/pci.c
++++ linux-2.6/arch/sh/drivers/pci/pci.c
+@@ -69,7 +69,6 @@ static void pcibios_scanbus(struct pci_c
+ 
+ 		pci_bus_size_bridges(bus);
+ 		pci_bus_assign_resources(bus);
+-		pci_enable_bridges(bus);
+ 	} else {
+ 		pci_free_resource_list(&resources);
+ 	}
+Index: linux-2.6/drivers/acpi/pci_root.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/pci_root.c
++++ linux-2.6/drivers/acpi/pci_root.c
+@@ -537,10 +537,6 @@ static int acpi_pci_root_add(struct acpi
+ 		pci_assign_unassigned_bus_resources(root->bus);
+ 	}
+ 
+-	/* need to after hot-added ioapic is registered */
+-	if (system_state != SYSTEM_BOOTING)
+-		pci_enable_bridges(root->bus);
+-
+ 	pci_bus_add_devices(root->bus);
+ 	return 1;
+ 
+Index: linux-2.6/drivers/parisc/lba_pci.c
+===================================================================
+--- linux-2.6.orig/drivers/parisc/lba_pci.c
++++ linux-2.6/drivers/parisc/lba_pci.c
+@@ -1533,7 +1533,6 @@ lba_driver_probe(struct parisc_device *d
+ 		lba_dump_res(&lba_dev->hba.lmmio_space, 2);
+ #endif
+ 	}
+-	pci_enable_bridges(lba_bus);
+ 
+ 	/*
+ 	** Once PCI register ops has walked the bus, access to config
+Index: linux-2.6/drivers/pci/bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/bus.c
++++ linux-2.6/drivers/pci/bus.c
+@@ -216,24 +216,6 @@ void pci_bus_add_devices(const struct pc
+ 	}
+ }
+ 
+-void pci_enable_bridges(struct pci_bus *bus)
+-{
+-	struct pci_dev *dev;
+-	int retval;
+-
+-	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		if (dev->subordinate) {
+-			if (!pci_is_enabled(dev)) {
+-				retval = pci_enable_device(dev);
+-				if (retval)
+-					dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n", retval);
+-				pci_set_master(dev);
+-			}
+-			pci_enable_bridges(dev->subordinate);
+-		}
+-	}
+-}
+-
+ /** pci_walk_bus - walk devices on/under bus, calling callback.
+  *  @top      bus whose devices should be walked
+  *  @cb       callback to be called for each device found
+@@ -286,4 +268,3 @@ EXPORT_SYMBOL_GPL(pci_walk_bus);
+ EXPORT_SYMBOL(pci_bus_alloc_resource);
+ EXPORT_SYMBOL_GPL(pci_bus_add_device);
+ EXPORT_SYMBOL(pci_bus_add_devices);
+-EXPORT_SYMBOL(pci_enable_bridges);
+Index: linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-2.6/drivers/pci/hotplug/acpiphp_glue.c
+@@ -704,7 +704,6 @@ static int __ref enable_device(struct ac
+ 	acpiphp_sanitize_bus(bus);
+ 	acpiphp_set_hpp_values(bus);
+ 	acpiphp_set_acpi_region(slot);
+-	pci_enable_bridges(bus);
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		/* Assume that newly added devices are powered on already. */
+Index: linux-2.6/drivers/pci/pci.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci.c
++++ linux-2.6/drivers/pci/pci.c
+@@ -1145,6 +1145,24 @@ int pci_reenable_device(struct pci_dev *
+ 	return 0;
+ }
+ 
++static void pci_enable_bridge(struct pci_dev *dev)
++{
++	int retval;
++
++	if (!dev)
++		return;
++
++	pci_enable_bridge(dev->bus->self);
++
++	if (pci_is_enabled(dev))
++		return;
++	retval = pci_enable_device(dev);
++	if (retval)
++		dev_err(&dev->dev, "Error enabling bridge (%d), continuing\n",
++			retval);
++	pci_set_master(dev);
++}
++
+ static int pci_enable_device_flags(struct pci_dev *dev, unsigned long flags)
+ {
+ 	int err;
+@@ -1165,6 +1183,8 @@ static int pci_enable_device_flags(struc
+ 	if (atomic_inc_return(&dev->enable_cnt) > 1)
+ 		return 0;		/* already enabled */
+ 
++	pci_enable_bridge(dev->bus->self);
++
+ 	/* only skip sriov related */
+ 	for (i = 0; i <= PCI_ROM_RESOURCE; i++)
+ 		if (dev->resource[i].flags & flags)
+Index: linux-2.6/drivers/pci/probe.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/probe.c
++++ linux-2.6/drivers/pci/probe.c
+@@ -1948,7 +1948,6 @@ unsigned int __ref pci_rescan_bus(struct
+ 
+ 	max = pci_scan_child_bus(bus);
+ 	pci_assign_unassigned_bus_resources(bus);
+-	pci_enable_bridges(bus);
+ 	pci_bus_add_devices(bus);
+ 
+ 	return max;
 Index: linux-2.6/drivers/pci/setup-bus.c
 ===================================================================
 --- linux-2.6.orig/drivers/pci/setup-bus.c
 +++ linux-2.6/drivers/pci/setup-bus.c
-@@ -272,7 +272,8 @@ out:
-  * requests that could not satisfied to the failed_list.
-  */
- static void assign_requested_resources_sorted(struct list_head *head,
--				 struct list_head *fail_head)
-+				 struct list_head *fail_head,
-+				 unsigned long bus_res_type_mask)
- {
- 	struct resource *res;
- 	struct pci_dev_resource *dev_res;
-@@ -288,8 +289,19 @@ static void assign_requested_resources_s
- 				 * if the failed res is for ROM BAR, and it will
- 				 * be enabled later, don't add it to the list
- 				 */
--				if (!((idx == PCI_ROM_RESOURCE) &&
--				      (!(res->flags & IORESOURCE_ROM_ENABLE))))
-+				bool is_rom_res_not_enabled =
-+					 (idx == PCI_ROM_RESOURCE) &&
-+					 (!(res->flags & IORESOURCE_ROM_ENABLE));
-+				/*
-+				 * if the failed res is io port, but bus does
-+				 * not have io port support, don't add it
-+				 */
-+				bool is_ioport_res_without_bus_support =
-+					 (!(bus_res_type_mask & IORESOURCE_IO)) &&
-+					 (res->flags & IORESOURCE_IO);
-+
-+				if (!is_rom_res_not_enabled &&
-+				    !is_ioport_res_without_bus_support)
- 					add_to_list(fail_head,
- 						    dev_res->dev, res,
- 						    0 /* dont care */,
-@@ -302,7 +314,8 @@ static void assign_requested_resources_s
+@@ -1498,7 +1498,7 @@ again:
  
- static void __assign_resources_sorted(struct list_head *head,
- 				 struct list_head *realloc_head,
--				 struct list_head *fail_head)
-+				 struct list_head *fail_head,
-+				 unsigned long bus_res_type_mask)
- {
- 	/*
- 	 * Should not assign requested resources at first.
-@@ -336,7 +349,8 @@ static void __assign_resources_sorted(st
- 							dev_res->res);
+ 	/* any device complain? */
+ 	if (list_empty(&fail_head))
+-		goto enable_and_dump;
++		goto dump;
  
- 	/* Try updated head list with add_size added */
--	assign_requested_resources_sorted(head, &local_fail_head);
-+	assign_requested_resources_sorted(head, &local_fail_head,
-+					  bus_res_type_mask);
+ 	if (tried_times >= pci_try_num) {
+ 		if (enable_local == undefined)
+@@ -1507,7 +1507,7 @@ again:
+ 			dev_info(&bus->dev, "Automatically enabled pci realloc, if you have problem, try booting with pci=realloc=off\n");
  
- 	/* all assigned with add_size ? */
- 	if (list_empty(&local_fail_head)) {
-@@ -365,7 +379,8 @@ static void __assign_resources_sorted(st
+ 		free_list(&fail_head);
+-		goto enable_and_dump;
++		goto dump;
+ 	}
  
- requested_and_reassign:
- 	/* Satisfy the must-have resource requests */
--	assign_requested_resources_sorted(head, fail_head);
-+	assign_requested_resources_sorted(head, fail_head,
-+					  bus_res_type_mask);
+ 	dev_printk(KERN_DEBUG, &bus->dev,
+@@ -1540,10 +1540,7 @@ again:
  
- 	/* Try to satisfy any additional optional resource
- 		requests */
-@@ -376,18 +391,21 @@ requested_and_reassign:
+ 	goto again;
  
- static void pdev_assign_resources_sorted(struct pci_dev *dev,
- 				 struct list_head *add_head,
--				 struct list_head *fail_head)
-+				 struct list_head *fail_head,
-+				 unsigned long bus_res_type_mask)
- {
- 	LIST_HEAD(head);
- 
- 	__dev_sort_resources(dev, &head);
--	__assign_resources_sorted(&head, add_head, fail_head);
-+	__assign_resources_sorted(&head, add_head, fail_head,
-+					bus_res_type_mask);
- 
+-enable_and_dump:
+-	/* Depth last, update the hardware. */
+-	pci_enable_bridges(bus);
+-
++dump:
+ 	/* dump the resource on buses */
+ 	pci_bus_dump_resources(bus);
  }
- 
- static void pbus_assign_resources_sorted(const struct pci_bus *bus,
- 					 struct list_head *realloc_head,
--					 struct list_head *fail_head)
-+					 struct list_head *fail_head,
-+					 unsigned long bus_res_type_mask)
- {
- 	struct pci_dev *dev;
- 	LIST_HEAD(head);
-@@ -395,7 +413,8 @@ static void pbus_assign_resources_sorted
- 	list_for_each_entry(dev, &bus->devices, bus_list)
- 		__dev_sort_resources(dev, &head);
- 
--	__assign_resources_sorted(&head, realloc_head, fail_head);
-+	__assign_resources_sorted(&head, realloc_head, fail_head,
-+					bus_res_type_mask);
+@@ -1618,7 +1615,6 @@ enable_all:
+ 	if (retval)
+ 		dev_err(&bridge->dev, "Error reenabling bridge (%d)\n", retval);
+ 	pci_set_master(bridge);
+-	pci_enable_bridges(parent);
  }
+ EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
  
- void pci_setup_cardbus(struct pci_bus *bus)
-@@ -1117,19 +1136,22 @@ EXPORT_SYMBOL(pci_bus_size_bridges);
+Index: linux-2.6/drivers/pcmcia/cardbus.c
+===================================================================
+--- linux-2.6.orig/drivers/pcmcia/cardbus.c
++++ linux-2.6/drivers/pcmcia/cardbus.c
+@@ -91,7 +91,6 @@ int __ref cb_alloc(struct pcmcia_socket
+ 	if (s->tune_bridge)
+ 		s->tune_bridge(s, bus);
  
- static void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
- 					 struct list_head *realloc_head,
--					 struct list_head *fail_head)
-+					 struct list_head *fail_head,
-+					 unsigned long bus_res_type_mask)
- {
- 	struct pci_bus *b;
- 	struct pci_dev *dev;
+-	pci_enable_bridges(bus);
+ 	pci_bus_add_devices(bus);
  
--	pbus_assign_resources_sorted(bus, realloc_head, fail_head);
-+	pbus_assign_resources_sorted(bus, realloc_head, fail_head,
-+					bus_res_type_mask);
+ 	return 0;
+Index: linux-2.6/include/linux/pci.h
+===================================================================
+--- linux-2.6.orig/include/linux/pci.h
++++ linux-2.6/include/linux/pci.h
+@@ -1040,7 +1040,6 @@ int __must_check pci_bus_alloc_resource(
+ 						  resource_size_t,
+ 						  resource_size_t),
+ 			void *alignf_data);
+-void pci_enable_bridges(struct pci_bus *bus);
  
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		b = dev->subordinate;
- 		if (!b)
- 			continue;
- 
--		__pci_bus_assign_resources(b, realloc_head, fail_head);
-+		__pci_bus_assign_resources(b, realloc_head, fail_head,
-+						 bus_res_type_mask);
- 
- 		switch (dev->class >> 8) {
- 		case PCI_CLASS_BRIDGE_PCI:
-@@ -1151,24 +1173,28 @@ static void __ref __pci_bus_assign_resou
- 
- void __ref pci_bus_assign_resources(const struct pci_bus *bus)
- {
--	__pci_bus_assign_resources(bus, NULL, NULL);
-+	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-+				  IORESOURCE_PREFETCH;
-+
-+	__pci_bus_assign_resources(bus, NULL, NULL, type_mask);
- }
- EXPORT_SYMBOL(pci_bus_assign_resources);
- 
- static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
- 					 struct list_head *add_head,
--					 struct list_head *fail_head)
-+					 struct list_head *fail_head,
-+					 unsigned long bus_res_type_mask)
- {
- 	struct pci_bus *b;
- 
- 	pdev_assign_resources_sorted((struct pci_dev *)bridge,
--					 add_head, fail_head);
-+				     add_head, fail_head, bus_res_type_mask);
- 
- 	b = bridge->subordinate;
- 	if (!b)
- 		return;
- 
--	__pci_bus_assign_resources(b, add_head, fail_head);
-+	__pci_bus_assign_resources(b, add_head, fail_head, bus_res_type_mask);
- 
- 	switch (bridge->class >> 8) {
- 	case PCI_CLASS_BRIDGE_PCI:
-@@ -1385,6 +1411,21 @@ static enum enable_type __init pci_reall
- }
- #endif
- 
-+static unsigned long pci_bus_res_type_mask(struct pci_bus *bus)
-+{
-+	int i;
-+	struct resource *r;
-+	unsigned long mask = 0;
-+	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-+				  IORESOURCE_PREFETCH;
-+
-+	pci_bus_for_each_resource(bus, r, i)
-+		if (r)
-+			mask |= r->flags & type_mask;
-+
-+	return mask;
-+}
-+
- /*
-  * first try will not touch pci bridge res
-  * second  and later try will clear small leaf bridge res
-@@ -1404,6 +1445,7 @@ pci_assign_unassigned_root_bus_resources
- 				  IORESOURCE_PREFETCH;
- 	int pci_try_num = 1;
- 	enum enable_type enable_local;
-+	unsigned long bus_res_type_mask = pci_bus_res_type_mask(bus);
- 
- 	/* don't realloc if asked to do so */
- 	enable_local = pci_realloc_detect(bus, pci_realloc_enable);
-@@ -1428,7 +1470,8 @@ again:
- 	__pci_bus_size_bridges(bus, add_list);
- 
- 	/* Depth last, allocate resources and update the hardware. */
--	__pci_bus_assign_resources(bus, add_list, &fail_head);
-+	__pci_bus_assign_resources(bus, add_list, &fail_head,
-+				   bus_res_type_mask);
- 	if (add_list)
- 		BUG_ON(!list_empty(add_list));
- 	tried_times++;
-@@ -1504,10 +1547,12 @@ void pci_assign_unassigned_bridge_resour
- 	int retval;
- 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
- 				  IORESOURCE_PREFETCH;
-+	unsigned long bus_res_type_mask = pci_bus_res_type_mask(bridge->bus);
- 
- again:
- 	__pci_bus_size_bridges(parent, &add_list);
--	__pci_bridge_assign_resources(bridge, &add_list, &fail_head);
-+	__pci_bridge_assign_resources(bridge, &add_list, &fail_head,
-+					bus_res_type_mask);
- 	BUG_ON(!list_empty(&add_list));
- 	tried_times++;
- 
-@@ -1562,6 +1607,7 @@ void pci_assign_unassigned_bus_resources
- 	struct pci_dev *dev;
- 	LIST_HEAD(add_list); /* list of resources that
- 					want additional resources */
-+	unsigned long bus_res_type_mask = pci_bus_res_type_mask(bus);
- 
- 	down_read(&pci_bus_sem);
- 	list_for_each_entry(dev, &bus->devices, bus_list)
-@@ -1571,6 +1617,6 @@ void pci_assign_unassigned_bus_resources
- 				__pci_bus_size_bridges(dev->subordinate,
- 							 &add_list);
- 	up_read(&pci_bus_sem);
--	__pci_bus_assign_resources(bus, &add_list, NULL);
-+	__pci_bus_assign_resources(bus, &add_list, NULL, bus_res_type_mask);
- 	BUG_ON(!list_empty(&add_list));
- }
+ /* Proper probing supporting hot-pluggable devices */
+ int __must_check __pci_register_driver(struct pci_driver *, struct module *,
