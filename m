@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab3EVM62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:58:28 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38115 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab3EVM61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:58:27 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 22 May 2013 14:58:08 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: stephan.gatzka@gmail.com
-Cc: Tejun Heo <tj@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: function call fw_iso_resource_mange(..) (core-iso.c) does not
- return
-Message-ID: <20130522145808.1ec7bea7@stein>
-In-Reply-To: <51145028d1c880d68e0a88d863faa71c@gatzka.org>
-References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
-	<519BA6AC.1080600@hurleysoftware.com>
-	<20130521231847.GA6985@mtj.dyndns.org>
-	<20130522094840.472b263e@stein>
-	<51145028d1c880d68e0a88d863faa71c@gatzka.org>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755265Ab3EVM6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:58:45 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50087 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752744Ab3EVM6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:58:39 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Vasiliy Kulikov <segooon@gmail.com>, Thomas Renninger <trenn@suse.de>,
+        Jiri Slaby <jslaby@suse.cz>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH -resend 5/6] acpi: ec_sys: access user space with get_user()/put_user()
+Date: Wed, 22 May 2013 14:59:11 +0200
+Message-Id: <1369227552-11743-5-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
+References: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 22 Stephan Gatzka wrote:
-[I wrote:]
-> > A third (fourth?) way to fix it --- feasible or not --- would be to break
-> > the dependency between the worklets.  In this case, use a timer to cancel
-> > outbound transactions if the request-transmit IRQ event was not received
-> > before a timeout.  We had such a timeout in the older ieee1394 drivers and
-> > we also had it in earlier versions of the firewire drivers, at a risk of a
-> > race between CPU and OHCI.
-> 
-> Why do we need a timer? If we guarantee that bus_reset_work() always 
-> make progress (if we put it into its own queue), it should always be 
-> able to complete the corresponding completion object the other works are 
-> waiting for.
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-We don't need a timer if the dual-wq solution is implemented.  It's just
-that there are four different solutions possible in principle.  Any one
-of these fixes is sufficient on its own:
+User space pointer may not be dereferenced. Use get_user()/put_user()
+instead and check their return codes.
 
-Problem --- A WQ_MEM_RECLAIM workqueue will, for some periods of time,
-offer a concurrency level of only 1; particularly during memory reclaim,
-but also in some other situations due to the way how it is implemented (as
-far as I understood yesterday's posts).  Therefore, interdependent works
-must not be inserted into the same WQ_MEM_RECLAIM workqueue instance.
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+---
+ drivers/acpi/ec_sys.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-Solution 1 --- Don't set the WQ_MEM_RECLAIM flag.  This is only possible
-if memory reclaim does not depend on any one of the works that are
-inserted into this queue.  (This solution is therefore not available to
-an SBP-2 initiator.)
-
-Solution 2 --- Perform interdependent works in different queue instances.
-(Keep the WQ_MEM_RECLAIM flag set at those workqueues that have to take
-work which is necessary for progress of memory reclaim.  If this and only
-this solution is employed for an SBP-2 initiator, we need two if not more
-WQ_MEM_RECLAIM workqueue instances.)
-
-Solution 3 --- Remove the dependency between worklets:
-
-	Solution 3a --- Remove the lower-level worklet altogether.
-	E.g. reimplement the lower-level worklet as a tasklet.
-
-	Solution 3b --- Remove the higher-level worklet's dependency.
-	E.g. reimplement the higher-level worklet such that it is woken by
-	a timer and then aborts or reschedules ( = lets the lower-level
-	worklet bubble up in the queue).
+diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
+index 7586544..4e7b798 100644
+--- a/drivers/acpi/ec_sys.c
++++ b/drivers/acpi/ec_sys.c
+@@ -12,6 +12,7 @@
+ #include <linux/acpi.h>
+ #include <linux/debugfs.h>
+ #include <linux/module.h>
++#include <linux/uaccess.h>
+ #include "internal.h"
+ 
+ MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
+@@ -34,7 +35,6 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
+ 	 * struct acpi_ec *ec = ((struct seq_file *)f->private_data)->private;
+ 	 */
+ 	unsigned int size = EC_SPACE_SIZE;
+-	u8 *data = (u8 *) buf;
+ 	loff_t init_off = *off;
+ 	int err = 0;
+ 
+@@ -47,9 +47,15 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
+ 		size = count;
+ 
+ 	while (size) {
+-		err = ec_read(*off, &data[*off - init_off]);
++		u8 byte_read;
++		err = ec_read(*off, &byte_read);
+ 		if (err)
+ 			return err;
++		if (put_user(byte_read, buf + *off - init_off)) {
++			if (*off - init_off)
++				return *off - init_off; /* partial read */
++			return -EFAULT;
++		}
+ 		*off += 1;
+ 		size--;
+ 	}
+@@ -65,7 +71,6 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
+ 
+ 	unsigned int size = count;
+ 	loff_t init_off = *off;
+-	u8 *data = (u8 *) buf;
+ 	int err = 0;
+ 
+ 	if (*off >= EC_SPACE_SIZE)
+@@ -76,7 +81,12 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
+ 	}
+ 
+ 	while (size) {
+-		u8 byte_write = data[*off - init_off];
++		u8 byte_write;
++		if (get_user(byte_write, buf + *off - init_off)) {
++			if (*off - init_off)
++				return *off - init_off; /* partial write */
++			return -EFAULT;
++		}
+ 		err = ec_write(*off, byte_write);
+ 		if (err)
+ 			return err;
 -- 
-Stefan Richter
--=====-===-= -=-= =-==-
-http://arcgraph.de/sr/
+1.8.2.3
+
