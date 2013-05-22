@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab3EVWQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:16:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42129 "EHLO
+	id S1757480Ab3EVWKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:10:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757445Ab3EVWKq (ORCPT
+	with ESMTP id S1757445Ab3EVWKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:10:46 -0400
+	Wed, 22 May 2013 18:10:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 08/21] drm/nouveau/bios: fix thinko in ZM_MASK_ADD opcode
-Date: Wed, 22 May 2013 15:10:26 -0700
-Message-Id: <20130522205233.621865109@linuxfoundation.org>
+        Gabriel de Perthuis <g2p.code+btrfs@gmail.com>,
+        Josef Bacik <jbacik@fusionio.com>
+Subject: [ 03/21] btrfs: dont stop searching after encountering the wrong item
+Date: Wed, 22 May 2013 15:10:21 -0700
+Message-Id: <20130522205233.040345329@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522205232.597066680@linuxfoundation.org>
 References: <20130522205232.597066680@linuxfoundation.org>
@@ -26,29 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Gabriel de Perthuis <g2p.code@gmail.com>
 
-commit 46b47b8a7d9223b12ddcabf1f3fc6e753e2d84a1 upstream.
+commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+The search ioctl skips items that are too large for a result buffer, but
+inline items of a certain size occuring before any search result is
+found would trigger an overflow and stop the search entirely.
+
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
+
+Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/bios/init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/btrfs/ioctl.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/init.c
-@@ -1926,8 +1926,8 @@ init_zm_mask_add(struct nvbios_init *ini
- 	trace("ZM_MASK_ADD\tR[0x%06x] &= 0x%08x += 0x%08x\n", addr, mask, add);
- 	init->offset += 13;
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1796,7 +1796,11 @@ static noinline int copy_to_sk(struct bt
+ 		item_off = btrfs_item_ptr_offset(leaf, i);
+ 		item_len = btrfs_item_size_nr(leaf, i);
  
--	data  =  init_rd32(init, addr) & mask;
--	data |= ((data + add) & ~mask);
-+	data =  init_rd32(init, addr);
-+	data = (data & mask) | ((data + add) & ~mask);
- 	init_wr32(init, addr, data);
- }
+-		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
++		btrfs_item_key_to_cpu(leaf, key, i);
++		if (!key_in_sk(key, sk))
++			continue;
++
++		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
+ 			item_len = 0;
  
+ 		if (sizeof(sh) + item_len + *sk_offset >
+@@ -1805,10 +1809,6 @@ static noinline int copy_to_sk(struct bt
+ 			goto overflow;
+ 		}
+ 
+-		btrfs_item_key_to_cpu(leaf, key, i);
+-		if (!key_in_sk(key, sk))
+-			continue;
+-
+ 		sh.objectid = key->objectid;
+ 		sh.offset = key->offset;
+ 		sh.type = key->type;
 
 
