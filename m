@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab3EVOgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:36:49 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:35529 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3EVOgs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:36:48 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: Apply other compatible name to the u8540 DTS file
-Date: Wed, 22 May 2013 15:36:42 +0100
-Message-Id: <1369233402-19225-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756197Ab3EVOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:39:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754040Ab3EVOjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:39:08 -0400
+Date: Wed, 22 May 2013 16:39:24 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+ <20130521235003.GE6985@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521235003.GE6985@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The common name for the 8540 is the u8540, but the fully qualified
-name, or proper name is ccu8540. Ensure both are available to drivers
-and platform code that wish to use them.
+On Wed, May 22, 2013 at 08:50:03AM +0900, Tejun Heo wrote:
+> Hmmmmmm..... I'd normally apply this patch but block layer is just
+> growing multi-queue support and libata is likely to be converted to mq
+> in foreseeable future, so I'm a bit hesitant to make irq handling more
+> sophiscated right now.  Would you be interested in looking into
+> converting libata to blk mq support?  I'm pretty sure it'd yield far
+> better outcome if done properly.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/ccu8540.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I am not committing, but will look into it, sure.
 
-diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-index 18daa01..af4487f 100644
---- a/arch/arm/boot/dts/ccu8540.dts
-+++ b/arch/arm/boot/dts/ccu8540.dts
-@@ -14,7 +14,7 @@
- 
- / {
- 	model = "ST-Ericsson U8540 platform with Device Tree";
--	compatible = "st-ericsson,u8540";
-+	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
- 
- 	memory {
- 		reg = <0x00000000 0x20000000>;
+> Thanks.
+> 
+> -- 
+> tejun
+
 -- 
-1.7.10.4
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
