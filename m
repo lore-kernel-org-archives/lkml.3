@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab3EVRp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:45:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55623 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab3EVRp6 (ORCPT
+	id S1754633Ab3EVRqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:46:13 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34403 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab3EVRqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:45:58 -0400
-Date: Wed, 22 May 2013 12:45:16 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Message-ID: <20130522174516.GT1627@sirena.org.uk>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
- <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
- <20130522155347.GJ1627@sirena.org.uk>
- <20130522165353.GB18714@gmail.com>
+	Wed, 22 May 2013 13:46:11 -0400
+Date: Wed, 22 May 2013 10:45:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
+ macro
+Message-ID: <20130522174532.GC3431@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130521120906.GD3578@linux.vnet.ibm.com>
+ <1369143885.3301.221.camel@edumazet-glaptop>
+ <519B8908.9080007@yandex-team.ru>
+ <1369150693.3301.233.camel@edumazet-glaptop>
+ <519BB90B.6080706@yandex-team.ru>
+ <1369188080.3301.268.camel@edumazet-glaptop>
+ <1369201765.3301.299.camel@edumazet-glaptop>
+ <519CB2D8.103@yandex-team.ru>
+ <1369225837.3301.324.camel@edumazet-glaptop>
+ <519CC2FB.2010006@yandex-team.ru>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OFqRauS4h7B9gLIC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130522165353.GB18714@gmail.com>
-X-Cookie: You will have long and healthy life.
+In-Reply-To: <519CC2FB.2010006@yandex-team.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052217-3620-0000-0000-000002A141C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 22, 2013 at 05:07:07PM +0400, Roman Gushchin wrote:
+> On 22.05.2013 16:30, Eric Dumazet wrote:
+> >On Wed, 2013-05-22 at 15:58 +0400, Roman Gushchin wrote:
+> >
+> >>+/*
+> >>+ * Same as ACCESS_ONCE(), but used for accessing field of a structure.
+> >>+ * The main goal is preventing compiler to store &ptr->field in a register.
+> >
+> >But &ptr->field is a constant during the whole duration of
+> >udp4_lib_lookup2() and could be in a register, in my case field is at
+> >offset 0, and ptr is a parameter (so could be in a 'register')
+> >
+> >The bug you found is that compiler caches the indirection  (ptr->field)
+> >into a register, not that compiler stores &ptr->field into a register.
+> >
+> >>+ */
+> >>+#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
+> >>+
+> >
+> >Here we force the compiler to consider ptr as volatile, but semantically
+> >it is not required in rcu_dereference(ptr->field)
+> 
+> Actually, we need to mark an "address of a place" where the field value is
+> located as volatile before dereferencing. I have no idea how to do it in another way,
+> except using multiple casts and offsetof's, but, IMHO, it will be even more complex:
+> 	ACCESS_ONCE(typeof(&ptr->field)((char*)ptr + offsetof(typeof(*ptr), field)))
 
---OFqRauS4h7B9gLIC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Why not just ACCESS_ONCE(ptr->field)?  Or if it is the thing that
+ptr->field points to that is subject to change, ACCESS_ONCE(*ptr->field)?
 
-On Wed, May 22, 2013 at 05:53:53PM +0100, Lee Jones wrote:
-> On Wed, 22 May 2013, Mark Brown wrote:
+Or rcu_dereference(ptr->field), as appropriate?
 
-> > running or not, the worst that should happen is that the state can be
-> > read back.  I'd therefore expect the fix here to be in the board side
-> > code that enables the regulators.
+							Thanx, Paul
 
-> It's both.
+> >We want field to be reloaded, not ptr.
+> >
+> >So yes, the patch appears to fix the bug, but it sounds not logical to
+> >me.
+> >
+> 
+> May be we can enhance it by providing better/more detailed comments here?
+> Have you any suggestions?
+> 
+> Thanks,
+> Roman
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-> From the platform side we have stopped passing the external regulator
-> driver's constraints for Snowball:
-
-> https://lkml.org/lkml/2013/5/22/280
-
-> All I've done here is stop the ext driver from crapping out with the
-> misleading error "Configuration error: size mismatch", because a)
-> it's not an error, it's expected and b) It's not a size mismatch,
-> instead we have chosen to keep the constraints back in the Snowball
-> (and u8505) case.
-
-OK, so the regulator driver is buggy and insisting on having constraints
-passed in for every regulator then?
-
---OFqRauS4h7B9gLIC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRnQQpAAoJELSic+t+oim9/1oP/3JbR6vPFzPMt9eqpyTrUiwL
-U54m4JEf/8n5gO98GoltDLSJiUKu3VB/Blkjwk0m5/hTBgHmA8Hep4ekflC/Kx4/
-Sw7mo/63vx7kMDtPCWQO3g1/fES/haBzNu4izx50BdgZjkOVIzFyqd2GrlYm0int
-SU7342dGh+BuxILiJZ309WH7koX/MqM6hLAe5sIrYk/dIMXvEMO9Wp5N2x5sKiHb
-Py3P6xGlqQEL3j+WNYUisjB90BZoZFgJ+0F1iIRpFxSCaPFQcXDdb57aCYT6y2n1
-LTTTpNMqJgPFDxkEalbvaF8WcVdOJhgaQ6bozWTIkTsPQSEARnhedpA9NM/z2JY3
-qaEZ4elLYkcpPsZOz8iB18bQkJU6UhI7T0KjJXHUeLhdqPnS1ijIl49CnwTfiBnp
-GycvXo9rnm2k5bQjYEL7kQWaxS/6opj+bA3M+4KN8Eu3bqW47/vlXsXaYxbglzQS
-h62UZevxLM2L8XanuLZimKQm42f8LQNAjeHSEx+cd8rWIzXNltxOnvCFKL4gS0sU
-MctHvZVL3S+G7ZcgO2MO9lE1BbRHeshzTzwYUFBNU/IGVDqyrk34EazF69ovauey
-jiknGz9VYkwJNvnBISLcZOI2C9WUmQguls6yQG0gGnXXmRQyrNNq5hBKWFdc4Mq9
-DK+3l83pK+LHDwMcFTIg
-=lVfF
------END PGP SIGNATURE-----
-
---OFqRauS4h7B9gLIC--
