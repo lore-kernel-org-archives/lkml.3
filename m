@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab3EVMJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:09:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40729 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab3EVMJb (ORCPT
+	id S1756120Ab3EVMJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:09:45 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:53210 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755392Ab3EVMJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:09:31 -0400
-Date: Wed, 22 May 2013 14:07:32 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH v3 2/3] mutex: add support for wound/wait style locks, v3
-Message-ID: <20130522120732.GA17463@dyad.programming.kicks-ass.net>
-References: <20130428165914.17075.57751.stgit@patser>
- <20130428170407.17075.80082.stgit@patser>
- <20130430191422.GA5763@phenom.ffwll.local>
- <519CA976.9000109@canonical.com>
- <20130522113736.GO18810@twins.programming.kicks-ass.net>
- <519CB05E.3060903@canonical.com>
+	Wed, 22 May 2013 08:09:44 -0400
+From: <yizhang.mrvl@gmail.com>
+To: <sameo@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <yizhang.mrvl@gmail.com>
+CC: <cxie4@marvell.com>, <arnd@arndb.de>, <yizhang@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/4] mfd: 88pm800: remove "IRQF_TRIGGER_FALLING" flag
+Date: Wed, 22 May 2013 20:07:07 +0800
+Message-ID: <1369224429-27077-3-git-send-email-yizhang.mrvl@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1369224429-27077-1-git-send-email-yizhang.mrvl@gmail.com>
+References: <1369224429-27077-1-git-send-email-yizhang.mrvl@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519CB05E.3060903@canonical.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 01:47:42PM +0200, Maarten Lankhorst wrote:
-> Op 22-05-13 13:37, Peter Zijlstra schreef:
-> >> Are there any issues left? I included the patch you wrote for injecting -EDEADLK too
-> >> in my tree. The overwhelming silence makes me think there are either none, or
-> >> nobody cared enough to review it. :(
-> > It didn't manage to reach my inbox it seems,.. I can only find a debug
-> > patch in this thread.
-> >
-> Odd, maybe in your spam folder?
+From: Yi Zhang <yizhang@marvell.com>
 
-Couldn't spot it there either.. weird.
+for interrupt controller such as GIC who is level triggered,
+"IRQF_TRIGGER_FALLING" will fail to request irq
 
-> It arrived on all mailing lists,
+Signed-off-by: Yi Zhang <yizhang@marvell.com>
+---
+ drivers/mfd/88pm800.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I should both clean up my one huge lkml maildir and hack notmuch into
-submission so I can read LKML again :/
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index bbb6aa8..618a6b9 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -318,7 +318,7 @@ out:
+ static int device_irq_init_800(struct pm80x_chip *chip)
+ {
+ 	struct regmap *map = chip->regmap;
+-	unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
++	unsigned long flags = IRQF_ONESHOT;
+ 	int data, mask, ret = -EINVAL;
+ 
+ 	if (!map || !chip->irq) {
+-- 
+1.7.0.4
 
-> so I have no idea why you were left out.
-> 
-> http://www.spinics.net/lists/linux-arch/msg21425.html
-
-Thanks, I'll go stare at it.
