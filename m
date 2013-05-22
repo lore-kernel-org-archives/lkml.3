@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab3EVSpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:45:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34979 "EHLO mx1.redhat.com"
+	id S1756947Ab3EVSqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:46:12 -0400
+Received: from plane.gmane.org ([80.91.229.3]:35639 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756914Ab3EVSps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:45:48 -0400
-Message-ID: <519D11BF.5000604@redhat.com>
-Date: Wed, 22 May 2013 14:43:11 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Stanislav Meduna <stano@meduna.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com>
-In-Reply-To: <519D118B.6010306@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753432Ab3EVSpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 14:45:53 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Michael =?UTF-8?B?R3Jvw59ow6R1c2Vy?= 
+	<michael.grosshaeuser@t-online.de>
+Subject: Re: Fans at full speed after resume
+Date: Wed, 22 May 2013 20:46:53 +0200
+Message-ID: <knj3oe$h88$1@ger.gmane.org>
+References: <CAPz6YkWr_D504UdeqXB0FXxgqOt3GYnF09ctoMaZ8P-znbVMGQ@mail.gmail.com> <1368591999.5890.9.camel@rzhang1-mobl4> <1368592193.5890.10.camel@rzhang1-mobl4>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p5ddcb680.dip0.t-ipconnect.de
+User-Agent: KNode/4.10.3
+Cc: linux-pm@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 02:42 PM, H. Peter Anvin wrote:
-> On 05/22/2013 11:35 AM, Rik van Riel wrote:
->> On 05/22/2013 02:21 PM, Stanislav Meduna wrote:
->>> On 22.05.2013 20:11, Steven Rostedt wrote:
->>>
->>>> Did you apply both patches? Without the first one, this one is
->>>> meaningless.
->>>
->>> Sure.
->>>
->>> BTW, back when I tried to pinpoint it I also tried adding
->>>     flush_tlb_page(vma, address)
->>> at the beginning of handle_pte_fault, which as I read should
->>> be basically the same. It did not not change anything.
->>
->> I'm stumped.
->>
->> If the Geode knows how to flush single TLB entries, it
->> should do that when flush_tlb_page is called.
->>
->> If it does not know, it should throw an invalid instruction
->> exception, and not quietly complete the instruction without
->> doing anything.
->>
->
-> Some CPUs have had errata when it comes to flushing large pages that
-> have been split into small pages by hardware, e.g. due to MTRR
-> conflicts.  In that case, fragments of the large page may have been left
-> in the TLB.
->
-> Could that explain what you are seeing?
+Zhang Rui wrote:
 
-That would be testable by changing __native_flush_tlb_single()
-to call __flush_tlb(), instead of doing an invlpg instruction.
+> On Wed, 2013-05-15 at 12:26 +0800, Zhang Rui wrote:
+>> please
+>> 
+>> On Tue, 2013-05-14 at 21:18 -0700, Sonny Rao wrote:
+>> > Hi, I've seen a regression in kernels since 3.7 on x86 devices where
+>> > the kernel turns the system fans on to max speed after resuming from
+>> > ram.  Other people have noticed it as well, for example see
+>> > https://bugzilla.redhat.com/show_bug.cgi?id=895276
+>> > 
+>> please check if this is a duplicate of bug
+>> https://bugzilla.kernel.org/show_bug.cgi?id=56591
+> or you can try 3.10-rc1 to see if the problem still exists or not.
+> 
+> thanks,
+> rui
 
-In other words, make the code look like this, for testing:
 
-static inline void __native_flush_tlb_single(unsigned long addr)
-{
-         __flush_tlb();
-}
+Hi,
 
-This on top of the other two patches.
+I can confirm the same problem on a HP/Compaq 2510p with 3.10-rc2.
+
+Best Regards,
+Michael
+
