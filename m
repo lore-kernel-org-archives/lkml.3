@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab3EVKOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:14:08 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:48784 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863Ab3EVKOE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:14:04 -0400
-Message-ID: <519C9A66.3050807@gmail.com>
-Date: Wed, 22 May 2013 12:13:58 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1755935Ab3EVKNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:13:30 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:49448 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755896Ab3EVKN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:13:26 -0400
+Message-ID: <519C9A3D.1010902@imgtec.com>
+Date: Wed, 22 May 2013 11:13:17 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "tiejun.chen" <tiejun.chen@windriver.com>
-CC: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio device
- tree nodes
-References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130521174849.GL26249@lunn.ch> <519C9333.20609@gmail.com> <519C9822.9040909@windriver.com>
-In-Reply-To: <519C9822.9040909@windriver.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 3/5] clk: add support for clock reparent on set_rate
+References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com> <1369056507-32521-4-git-send-email-james.hogan@imgtec.com> <519B01DF.1080700@codeaurora.org>
+In-Reply-To: <519B01DF.1080700@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_05_22_11_13_19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 12:04 PM, tiejun.chen wrote:
-> On 05/22/2013 05:43 PM, Sebastian Hesselbarth wrote:
->> On 05/21/2013 07:48 PM, Andrew Lunn wrote:
->>> On Tue, May 21, 2013 at 06:41:44PM +0200, Sebastian Hesselbarth wrote:
->>>> This patch adds orion-eth and mvmdio device tree nodes for DT enabled
->>>> Dove boards. As there is only one ethernet controller on Dove, a
->>>> default
->>>> phy node is also added with a note to set its reg property on a
->>>> per-board
->>>> basis.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>> ---
->> ...
->>>> + ethernet-port@0 {
->>>> + device_type = "network";
->>>> + compatible = "marvell,orion-eth-port";
->>>> + reg =<0>;
->>>> + interrupts =<29>;
->>>> + /* overwrite MAC address in bootloader */
->>>> + local-mac-address = [00 00 00 00 00 00];
->>>
->>> Hi Sebastian
->>>
->>> Its probably a good idea to set the local administration bit in this
->>> MAC address. i.e. first byte is 02.
->>
->> Andrew,
->>
->> we just need an invalid address here to trigger the default behavior of
->> the driver and load the MAC address from its register. As PPC binding
->> documentation also has all zero, I just took it.
+On 21/05/13 06:10, Saravana Kannan wrote:
+> On 05/20/2013 06:28 AM, James Hogan wrote:
+>> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+>> index dd7adff..8138c94 100644
+>> --- a/include/linux/clk-private.h
+>> +++ b/include/linux/clk-private.h
+>> @@ -33,8 +33,11 @@ struct clk {
+>>       const char        **parent_names;
+>>       struct clk        **parents;
+>>       u8            num_parents;
+>> +    u8            new_parent_index;
+> 
+> Why do you need this? Given the new_parent, can't the specific clock
+> implementation just look it up when set_rate() is called? Wouldn't that
+> be the only time you would actually need the index?
 >
-> The truth is in PPC case, often we set the real mac address with some
-> variables like 'eth[x]addr' in u-boot prompt, then u-boot will parse
-> that value to fill the dtb. At last the associated driver can get the
-> actual mac address from the dtb. And especially for those older u-boot
-> version, even you have to reset the 'local-mac-address' property in dts
-> directly with the real mac address before generate the dtb since the
-> older u-boot have no this ability to fill dtb again before pass the kernel.
+> If it's just for optimization of some error cases, I think we should
+> drop this to keep the code simpler. One less state to keep track of when
+> reading, writing or reviewing the clock framework.
 
-Tiejun,
+clk_change_rate cannot currently return an error condition so I had
+assumed it was better to check that the requested parent clock has a
+valid parent index prior to starting to change any clock rates or firing
+off any notifications.
 
-with Marvell SoCs it is no different, except that there is almost no dtb
-support in their u-boot. The default behavior of the driver always was
-to load the MAC address from its register if there is no valid overwrite
-value. Using an invalid address (and all zero above is invalid) will
-cause of_get_mac_address() to fail (which we allow), the corresponding
-platform_data will never be written, and cause the default behavior.
+Cheers
+James
 
-We only need an invalid address passed initially on local-mac-address.
-DT aware boot loader will overwrite but DT agnositic boot loader will
-not. I can put any invalid MAC address in here, so I have chosen the
-very first I can think of.
-
-Sebastian
