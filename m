@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3EVXUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 19:20:54 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46409 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab3EVXUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 19:20:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] Driver core / memory: Simplify __memory_block_change_state()
-Date: Thu, 23 May 2013 01:29:36 +0200
-Message-ID: <2523424.su5lDNaCQ2@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130522221443.GA7427@kroah.com>
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1594596.DcsjzgnrZI@vostro.rjw.lan> <20130522221443.GA7427@kroah.com>
+	id S1756351Ab3EVX3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 19:29:11 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:52212 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882Ab3EVX3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 19:29:09 -0400
+Message-ID: <519D54BE.1030409@gmail.com>
+Date: Thu, 23 May 2013 03:29:02 +0400
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: a.zummo@towertech.it, akpm@linuxfoundation.org, ldewangan@nvidia.com,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] rtc: tps6586x: device wakeup flags correction
+References: <1368368706-21261-1-git-send-email-digetx@gmail.com> <20130522152204.d46057964fa06cc0d56f8e6b@linux-foundation.org>
+In-Reply-To: <20130522152204.d46057964fa06cc0d56f8e6b@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 22, 2013 03:14:43 PM Greg Kroah-Hartman wrote:
-> On Thu, May 23, 2013 at 12:06:50AM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > As noted by Tang Chen, the last_online field in struct memory_block
-> > introduced by commit 4960e05 (Driver core: Introduce offline/online
-> > callbacks for memory blocks) is not really necessary, because
-> > online_pages() restores the previous state if passed ONLINE_KEEP as
-> > the last argument.  Therefore, remove that field along with the code
-> > referring to it.
-> > 
-> > References: http://marc.info/?l=linux-kernel&m=136919777305599&w=2
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Use device_init_wakeup() instead of device_set_wakeup_capable() and move it
+before rtc dev registering. This fixes alarmtimer not registered when tps6586x
+rtc is the only wakeup compatible rtc in the system.
 
-Thanks!
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+---
+ V2: changed description
 
+ drivers/rtc/rtc-tps6586x.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/rtc/rtc-tps6586x.c b/drivers/rtc/rtc-tps6586x.c
+index 459c2ff..426901c 100644
+--- a/drivers/rtc/rtc-tps6586x.c
++++ b/drivers/rtc/rtc-tps6586x.c
+@@ -273,6 +273,8 @@ static int tps6586x_rtc_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+
++	device_init_wakeup(&pdev->dev, 1);
++
+ 	platform_set_drvdata(pdev, rtc);
+ 	rtc->rtc = devm_rtc_device_register(&pdev->dev, dev_name(&pdev->dev),
+ 				       &tps6586x_rtc_ops, THIS_MODULE);
+@@ -292,7 +294,6 @@ static int tps6586x_rtc_probe(struct platform_device *pdev)
+ 		goto fail_rtc_register;
+ 	}
+ 	disable_irq(rtc->irq);
+-	device_set_wakeup_capable(&pdev->dev, 1);
+ 	return 0;
+
+ fail_rtc_register:
+-- 
+1.8.2.1
