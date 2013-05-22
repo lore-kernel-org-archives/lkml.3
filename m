@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab3EVVzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:55:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42006 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab3EVVza (ORCPT
+	id S1757328Ab3EVVzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:55:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51643 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756475Ab3EVVze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:55:30 -0400
-Date: Wed, 22 May 2013 14:55:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bernie Thompson <bhthompson@chromium.org>
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dianders@chromium.org
-Subject: Re: [PATCH] rtc: add in ability to push out an existing wakealarm
- using sysfs
-Message-Id: <20130522145529.a03f3344f58b4b9ddacb25b7@linux-foundation.org>
-In-Reply-To: <1368233611-1690-1-git-send-email-bhthompson@chromium.org>
-References: <1368233611-1690-1-git-send-email-bhthompson@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 May 2013 17:55:34 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: f.wiessner@smart-weblications.de
+cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        liquidhorse@gmail.com, andy@greyhouse.net,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        nikolay@redhat.com, vfalico@redhat.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+In-reply-to: <519D37F4.2030202@smart-weblications.de>
+References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de>
+Comments: In-reply-to Smart Weblications GmbH - Florian Wiessner <f.wiessner@smart-weblications.de>
+   message dated "Wed, 22 May 2013 23:26:12 +0200."
+X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.2.1
+Date: Wed, 22 May 2013 14:54:57 -0700
+Message-ID: <2972.1369259697@death.nxdomain>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052221-3620-0000-0000-000002A2D66B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 May 2013 17:53:31 -0700 Bernie Thompson <bhthompson@chromium.org> wrote:
+Smart Weblications GmbH - Florian Wiessner wrote:
 
-> This adds in the ability for the rtc sysfs code to handle += characters
-> at the beginning of a wakealarm setting string. This will allow the user to
-> attempt to push out an existing wakealarm by a provided amount.
-> 
-> In the case that the += characters are provided but the alarm is not active
-> -EVINVAL is returned.
-> 
+>Am 22.05.2013 22:04, schrieb Greg KH:
+>
+>
+>>>
+>>> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
+>> 
+>> Ok, that's what we need.
+>> 
+>> Now, please cc: the developers / maintainers of that patch and ask them
+>> to have it included in the 3.4-stable kernel series.
+>> 
+>> Then, if they agree, the network maintainer will pick it up and send it
+>> to me for inclusion.
+>> 
+>
+>i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
+>know the network maintainer...
+>
+>this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
+>netdev on 2013-02-01:
+>
+>http://lists.openwall.net/netdev/2013/02/01/86
+>
+>but i couldn't find a trace of the patch in 3.4.36?!
 
-Well that sounds useful, but I'm not personally in a position to
-confidently judge whether it's useful enough to merge the patch.  The
-changelog doesn't make a compelling case and everybody else has chosen
-to sit on their hands.
+	The patch in question here is in net-next; the commit is:
 
-So I really don't know what to do with this patch.
+commit 567b871e503316b0927e54a3d7c86d50b722d955
+Author: zheng.li <zheng.x.li@oracle.com>
+Date:   Tue Nov 27 23:57:04 2012 +0000
+
+    bonding: rlb mode of bond should not alter ARP originating via bridge
+
+
+	The additional change in the backport from Matthew O'Connor (to
+add ether_addr_equal_64bits) appears to still be necessary for 3.4.46.
+Alternatively, the patch could utilize ether_addr_equal instead, to
+minimize the change set.  Greg, do you have a preference there?
+
+	Submissions for stable from networking normally go through
+Davem; I can check the patch and repost it to netdev against 3.4.46 if
+everybody is ok with that.
+
+	-J
+
+---
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
 
