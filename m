@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab3EVWSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:18:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42217 "EHLO
+	id S1757770Ab3EVWTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:19:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab3EVWSV (ORCPT
+	with ESMTP id S1756754Ab3EVWSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:18:21 -0400
+	Wed, 22 May 2013 18:18:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gabriel de Perthuis <g2p.code+btrfs@gmail.com>,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 1/5] btrfs: dont stop searching after encountering the wrong item
-Date: Wed, 22 May 2013 15:18:07 -0700
-Message-Id: <20130522221331.060603003@linuxfoundation.org>
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [ 3/5] i2c: designware: always clear interrupts before enabling them
+Date: Wed, 22 May 2013 15:18:09 -0700
+Message-Id: <20130522221331.487538409@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522221330.720801923@linuxfoundation.org>
 References: <20130522221330.720801923@linuxfoundation.org>
@@ -27,49 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabriel de Perthuis <g2p.code@gmail.com>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit 03b71c6ca6286625d8f1ed44aabab9b5bf5dac10 upstream.
+commit 2a2d95e9d6d29e726cc294b65391917ed2e32bf4 upstream.
 
-The search ioctl skips items that are too large for a result buffer, but
-inline items of a certain size occuring before any search result is
-found would trigger an overflow and stop the search entirely.
+If the I2C bus is put to a low power state by an ACPI method it might pull
+the SDA line low (as its power is removed). Once the bus is put to full
+power state again, the SDA line is pulled back to high. This transition
+looks like a STOP condition from the controller point-of-view which sets
+STOP detected bit in its status register causing the driver to fail
+subsequent transfers.
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=57641
+Fix this by always clearing all interrupts before we start a transfer.
 
-Signed-off-by: Gabriel de Perthuis <g2p.code+btrfs@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ioctl.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/i2c/busses/i2c-designware-core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1653,7 +1653,11 @@ static noinline int copy_to_sk(struct bt
- 		item_off = btrfs_item_ptr_offset(leaf, i);
- 		item_len = btrfs_item_size_nr(leaf, i);
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -349,7 +349,8 @@ static void i2c_dw_xfer_init(struct dw_i
+ 	/* Enable the adapter */
+ 	dw_writel(dev, 1, DW_IC_ENABLE);
  
--		if (item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
-+		btrfs_item_key_to_cpu(leaf, key, i);
-+		if (!key_in_sk(key, sk))
-+			continue;
-+
-+		if (sizeof(sh) + item_len > BTRFS_SEARCH_ARGS_BUFSIZE)
- 			item_len = 0;
+-	/* Enable interrupts */
++	/* Clear and enable interrupts */
++	i2c_dw_clear_int(dev);
+ 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
+ }
  
- 		if (sizeof(sh) + item_len + *sk_offset >
-@@ -1662,10 +1666,6 @@ static noinline int copy_to_sk(struct bt
- 			goto overflow;
- 		}
- 
--		btrfs_item_key_to_cpu(leaf, key, i);
--		if (!key_in_sk(key, sk))
--			continue;
--
- 		sh.objectid = key->objectid;
- 		sh.offset = key->offset;
- 		sh.type = key->type;
 
 
