@@ -1,50 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab3EVUAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:00:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11311 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab3EVUAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:00:21 -0400
-Date: Wed, 22 May 2013 16:00:12 -0400
-From: Dave Jones <davej@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: microcode loading got really slow.
-Message-ID: <20130522200012.GA15456@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-References: <20130521230332.GC12713@redhat.com>
- <519D1668.6000601@zytor.com>
+	id S1755963Ab3EVUAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:00:40 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:48573 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3EVUAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:00:39 -0400
+Message-ID: <519D24BA.7000702@gmail.com>
+Date: Thu, 23 May 2013 00:34:10 +0430
+From: mohsen alizadeh <0x21hate@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D1668.6000601@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: s
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 12:03:04PM -0700, H. Peter Anvin wrote:
- > On 05/21/2013 04:03 PM, Dave Jones wrote:
- > > In 3.10-rc2 I see this happening..
- > > 
- > > [   72.318133] microcode: CPU1 sig=0x306c3, pf=0x2, revision=0x6
- > > [  132.446449] microcode: CPU2 sig=0x306c3, pf=0x2, revision=0x6
- > > [  192.573101] microcode: CPU3 sig=0x306c3, pf=0x2, revision=0x6
- > > [  252.702055] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
- > > 
- > > For some reason the events for udev seem to be getting delayed 60s for each core.
- > > 
- > > 	Dave
- > > 
- > 
- > Is this a regression from -rc1?
-
-No. Looks like it was introduced between 3.9 and 3.10-rc1
-
-I see bisecting in my future.
-
-	Dave
-
+unsubscribe linux-kernel
