@@ -1,62 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab3EVMrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:47:06 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:46258 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab3EVMrF (ORCPT
+	id S1754229Ab3EVMr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:47:59 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:58592 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3EVMr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:47:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Wed, 22 May 2013 20:47:03 +0800
-Message-ID: <CAJd=RBBogFk5F=yBtQ=TWTOND5HyUJN_XrdeRCqD6Y8skoquzw@mail.gmail.com>
-Subject: Re: [PATCHv4 33/39] thp, mm: implement do_huge_linear_fault()
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 May 2013 08:47:58 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        broonie@kernel.org, linus.walleij@linaro.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Subject: [RC FIXES] Fix broken MMC devices on Snowball
+Date: Wed, 22 May 2013 13:47:31 +0100
+Message-Id: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> @@ -3301,12 +3335,23 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  {
->         pte_t *page_table;
->         spinlock_t *ptl;
-> +       pgtable_t pgtable = NULL;
->         struct page *page, *cow_page, *dirty_page = NULL;
-> -       pte_t entry;
->         bool anon = false, page_mkwrite = false;
->         bool write = flags & FAULT_FLAG_WRITE;
-> +       bool thp = flags & FAULT_FLAG_TRANSHUGE;
-> +       unsigned long addr_aligned;
->         struct vm_fault vmf;
-> -       int ret;
-> +       int nr, ret;
-> +
-> +       if (thp) {
-> +               if (!transhuge_vma_suitable(vma, address))
-> +                       return VM_FAULT_FALLBACK;
-> +               if (unlikely(khugepaged_enter(vma)))
+The newly introduced ab8500 external regulator driver causes an
+unexpected quirk when used with the Snowball low-cost development
+board. When the 3 ab8500 external regulators are registered, the
+ones which can be freed, are. Unfortunately, on Snowball one of
+them is connected to the MMC power line. Once freed, this turns
+off the MMC device. External regulators are not used on Snowball,
+so it's pointless registering them in the first place.
 
-vma->vm_mm now is under the care of khugepaged, why?
+These two patches ensure external regulators aren't registered 
+on Snowball or any other platforms which do not require them.
 
-> +                       return VM_FAULT_OOM;
-> +               addr_aligned = address & HPAGE_PMD_MASK;
-> +       } else
-> +               addr_aligned = address & PAGE_MASK;
->
