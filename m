@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab3EVWcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:32:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42373 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889Ab3EVWck (ORCPT
+	id S1757879Ab3EVWg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:36:59 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:4219
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756990Ab3EVWg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:32:40 -0400
-Date: Wed, 22 May 2013 15:32:39 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jay Vosburgh <fubar@us.ibm.com>
-Cc: f.wiessner@smart-weblications.de, davem@davemloft.net,
-        liquidhorse@gmail.com, andy@greyhouse.net,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-Message-ID: <20130522223239.GA26297@kroah.com>
-References: <519CADA9.9060909@smart-weblications.de>
- <20130522135745.GA14640@kroah.com>
- <519CEF4B.5090108@smart-weblications.de>
- <20130522162336.GA5761@kroah.com>
- <519D0B79.6010307@smart-weblications.de>
- <20130522190640.GA20276@kroah.com>
- <519D1DEF.8090206@smart-weblications.de>
- <20130522200439.GA21367@kroah.com>
- <519D37F4.2030202@smart-weblications.de>
- <2972.1369259697@death.nxdomain>
+	Wed, 22 May 2013 18:36:58 -0400
+X-Forefront-Antispam-Report: CIP:132.245.2.69;KIP:(null);UIP:(null);IPV:NLI;H:BN1PRD0712HT004.namprd07.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275bh8275dhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+Message-ID: <519D4883.9050905@caviumnetworks.com>
+Date: Wed, 22 May 2013 15:36:51 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2972.1369259697@death.nxdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <ralf@linux-mips.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jonas Gorski <jogo@openwrt.org>
+Subject: Re: [PATCH] MIPS: Enable interrupts before WAIT instruction.
+References: <CA+55aFwDGyHOzu=Qh7SJOBK6QvAwAh7pMDL6LfMUE=AW_kapAw@mail.gmail.com> <1367527692-25809-1-git-send-email-ddaney.cavm@gmail.com> <20130522223225.GH31836@blackmetal.musicnaut.iki.fi>
+In-Reply-To: <20130522223225.GH31836@blackmetal.musicnaut.iki.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 02:54:57PM -0700, Jay Vosburgh wrote:
-> Smart Weblications GmbH - Florian Wiessner wrote:
-> 
-> >Am 22.05.2013 22:04, schrieb Greg KH:
-> >
-> >
-> >>>
-> >>> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
-> >> 
-> >> Ok, that's what we need.
-> >> 
-> >> Now, please cc: the developers / maintainers of that patch and ask them
-> >> to have it included in the 3.4-stable kernel series.
-> >> 
-> >> Then, if they agree, the network maintainer will pick it up and send it
-> >> to me for inclusion.
-> >> 
-> >
-> >i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
-> >know the network maintainer...
-> >
-> >this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
-> >netdev on 2013-02-01:
-> >
-> >http://lists.openwall.net/netdev/2013/02/01/86
-> >
-> >but i couldn't find a trace of the patch in 3.4.36?!
-> 
-> 	The patch in question here is in net-next; the commit is:
-> 
-> commit 567b871e503316b0927e54a3d7c86d50b722d955
-> Author: zheng.li <zheng.x.li@oracle.com>
-> Date:   Tue Nov 27 23:57:04 2012 +0000
-> 
->     bonding: rlb mode of bond should not alter ARP originating via bridge
-> 
-> 
-> 	The additional change in the backport from Matthew O'Connor (to
-> add ether_addr_equal_64bits) appears to still be necessary for 3.4.46.
-> Alternatively, the patch could utilize ether_addr_equal instead, to
-> minimize the change set.  Greg, do you have a preference there?
+On 05/22/2013 03:32 PM, Aaro Koskinen wrote:
+> Hi,
+>
+> On Thu, May 02, 2013 at 01:48:12PM -0700, David Daney wrote:
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> As noted by Thomas Gleixner:
+>>
+>>     commit cdbedc61c8 (mips: Use generic idle loop) broke MIPS as I did
+>>     not realize that MIPS wants to invoke the wait instructions with
+>>     interrupts enabled.
+>>
+>> Instead of enabling interrupts in arch_cpu_idle() as Thomas' initial
+>> patch does, we follow Linus' suggestion of doing it in the assembly
+>> code to prevent the compiler from rearranging things.
+>>
+>> Signed-off-by: David Daney <david.daney@cavium.com>
+>> Reported-by: EunBong Song <eunb.song@samsung.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Jonas Gorski <jogo@openwrt.org>
+>> ---
+>>
+>> This is only very lightly tested, we need more testing before
+>> declaring it the definitive fix.
+>
+> I wonder what is the status of this patch? Or is there some alternative
+> fix?
+>
+> I have Octeon+ board that hangs during 3.10-rc2 boot in spawn_ksoftirqd()
+> without this. Also, this patch does not apply cleanly to 3.10-rc2
+> anymore...
+>
+> A.
+>
 
-What ever matches upstream is best.
+Ralf has an alternate fix here:
 
-> 	Submissions for stable from networking normally go through
-> Davem; I can check the patch and repost it to netdev against 3.4.46 if
-> everybody is ok with that.
+http://git.linux-mips.org/pub/scm/ralf/upstream-linus.git
 
-Yes, I need networking stable patches to come to me from David.
+If all goes well, it will be merged soon.
 
-thanks,
+David Daney
 
-greg k-h
+
+
