@@ -1,37 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3EVT00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:26:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43132 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756373Ab3EVT0Z convert rfc822-to-8bit (ORCPT
+	id S1756701Ab3EVT1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:27:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16853 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab3EVT1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:26:25 -0400
-Date: Wed, 22 May 2013 12:26:24 -0700 (PDT)
-Message-Id: <20130522.122624.266893118412034519.davem@davemloft.net>
-To: emilio@elopez.com.ar
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+	Wed, 22 May 2013 15:27:39 -0400
+X-IronPort-AV: E=Sophos;i="4.87,723,1363158000"; 
+   d="scan'208";a="49695772"
+Message-ID: <519D1C1C.4000309@codeaurora.org>
+Date: Wed, 22 May 2013 12:27:24 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree
- (net-next tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <519CC70C.30604@elopez.com.ar>
-References: <20130522155537.3cc0ee6254775cc88cf2218f@canb.auug.org.au>
-	<519CC70C.30604@elopez.com.ar>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 3/3] gpio: msm: Add device tree and irqdomain support
+ for gpio-msm-v2
+References: <1369161163-6448-1-git-send-email-rvaswani@codeaurora.org> <1369161163-6448-4-git-send-email-rvaswani@codeaurora.org> <519C9180.2060408@mm-sol.com>
+In-Reply-To: <519C9180.2060408@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio López <emilio@elopez.com.ar>
-Date: Wed, 22 May 2013 10:24:28 -0300
+On 5/22/2013 2:36 AM, Stanimir Varbanov wrote:
+> Hi, Rohit
+>
+> Thanks for the patch!
+Thanks for the comments... more below
+>
+> On 05/21/2013 09:32 PM, Rohit Vaswani wrote:
+>> This cleans up the gpio-msm-v2 driver of all the global define usage.
+>> The number of gpios are now defined in the device tree. This enables
+>> adding irqdomain support as well.
+>>
+>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+>> ---
+> <cut>
+>
+>>   
+>>   static DEFINE_SPINLOCK(tlmm_lock);
+>> @@ -168,18 +173,20 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
+>>   
+>>   static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+>>   {
+>> -	return MSM_GPIO_TO_INT(chip->base + offset);
+>> +	struct msm_gpio_dev *g_dev = to_msm_gpio_dev(chip);
+>> +	struct irq_domain *domain = g_dev->domain;
+>> +	return irq_create_mapping(domain, offset);
+> IMO here you should use irq_find_mapping() and create irq mapping once
+> in .probe. See below comment.
+Looking at this more, I  would prefer to get rid of the entire for loop 
+and the irq_create_mapping in probe and
+just have the irq_create_mapping in msm_gpio_to_irq. This way we are not 
+allocating a descriptor for every gpio and only for the ones that call 
+the msm_gpio_to_irq.
 
-> @David, what would you like me to do? I can send another set of patches
-> fixing this, resend the full original series but fixed, or resend just
-> the affected patches.
+>
+>>   }
+>>   
+> <cut>
+>
+>> -static int msm_gpio_probe(struct platform_device *dev)
+>> +static struct lock_class_key msm_gpio_lock_class;
+>> +
+>> +static int msm_gpio_irq_domain_map(struct irq_domain *d, unsigned int irq,
+>> +				   irq_hw_number_t hwirq)
+>> +{
+>> +	irq_set_lockdep_class(irq, &msm_gpio_lock_class);
+>> +	irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
+>> +			handle_level_irq);
+>> +	set_irq_flags(irq, IRQF_VALID);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct irq_domain_ops msm_gpio_irq_domain_ops = {
+>> +	.xlate = irq_domain_xlate_twocell,
+>> +	.map = msm_gpio_irq_domain_map,
+>> +};
+>> +
+>> +static int msm_gpio_irqdomain_init(struct device_node *node, int ngpio)
+>>   {
+>> -	int i, irq, ret;
+>> +	msm_gpio.domain = irq_domain_add_linear(node, ngpio,
+>> +			&msm_gpio_irq_domain_ops, &msm_gpio);
+>> +	if (!msm_gpio.domain) {
+>> +		WARN(1, "Cannot allocate irq_domain\n");
+> Are you sure that we want to WARN if no memory? I'd return an error and
+> fail the probe if the driver can't works without interrupts.
+Done.
+>
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int msm_gpio_probe(struct platform_device *pdev)
+>> +{
+>> +	int i, irq, ret, ngpio;
+>> +	struct resource *res;
+>> +
+>> +	msm_gpio.gpio_chip.label = pdev->name;
+>> +	msm_gpio.gpio_chip.dev = &pdev->dev;
+>> +	of_property_read_u32(pdev->dev.of_node, "ngpio", &ngpio);
+>> +	msm_gpio.gpio_chip.ngpio = ngpio;
+>> +
+>> +	res = platform_get_resource(&pdev->dev, IORESOURCE_MEM, 0);
+>> +	if (!res) {
+>> +		dev_err(&pdev->dev, "%s: no mem resource\n", __func__);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	msm_tlmm_base = devm_ioremap_resource(pdev->dev, res);
+>> +	if (!msm_tlmm_base) {
+>> +		dev_err(&pdev->dev, "Couldn't allocate memory for msm tlmm base\n");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	msm_gpio.enabled_irqs = devm_kzalloc(&pdev->dev,
+>> +						sizeof(unsigned long) * ngpio,
+>> +						GFP_KERNEL);
+>> +	msm_gpio.wake_irqs = devm_kzalloc(&pdev->dev,
+>> +						sizeof(unsigned long) * ngpio,
+>> +						GFP_KERNEL);
+>> +	msm_gpio.dual_edge_irqs = devm_kzalloc(&pdev->dev,
+>> +						sizeof(unsigned long) * ngpio,
+>> +						GFP_KERNEL);
+>> +	bitmap_zero(msm_gpio.enabled_irqs, ngpio);
+>> +	bitmap_zero(msm_gpio.wake_irqs, ngpio);
+>> +	bitmap_zero(msm_gpio.dual_edge_irqs, ngpio);
+>>   
+>> -	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
+>> -	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
+>> -	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
+>> -	msm_gpio.gpio_chip.label = dev->name;
+>>   	ret = gpiochip_add(&msm_gpio.gpio_chip);
+>> -	if (ret < 0)
+>> +	if (ret < 0) {
+>> +		dev_err(&pdev->dev, "gpiochip_add failed with error %d\n", ret);
+>>   		return ret;
+>> +	}
+>> +
+>> +	summary_irq = platform_get_irq(pdev, 0);
+>> +	if (summary_irq < 0) {
+>> +		dev_err(&pdev->dev, "No Summary irq defined for msmgpio\n");
+>> +		return summary_irq;
+>> +	}
+>> +
+>> +	msm_gpio_irqdomain_init(pdev->dev.of_node, msm_gpio.gpio_chip.ngpio);
+> Adding irqdomain might fail, could you check the return value. And if
+> irqdomain init fail do we need to set up chained handler for summary_irq
+> at all?
+Done.
+>
+>>   
+>>   	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
+>>   		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
+> I'd call irq_create_mapping() instead. This way the mapping will be
+> created once in .probe and use irq_find_mapping() in gpio_to_irq.
+Will get rid of this for loop as mentioned above. Thanks for catching this.
 
-Your patch series is in my tree and will not be reverted, we never do
-that.  Therefore you must send me patches which fix up these problems.
+>
+>> +		irq_set_lockdep_class(irq, &msm_gpio_lock_class);
+>>   		irq_set_chip_and_handler(irq, &msm_gpio_irq_chip,
+>>   					 handle_level_irq);
+>>   		set_irq_flags(irq, IRQF_VALID);
+> These three function calls are not needed anymore because
+> irq_create_mapping() will call internally irqdomain .map operation. The
+> .map already calls these three functions.
+Done.
+>
+>>   	}
+>>   
+>> -	irq_set_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
+>> -				msm_summary_irq_handler);
+>> +	irq_set_chained_handler(summary_irq, msm_summary_irq_handler);
+>> +
+>>   	return 0;
+>>   }
+>>   
+> - Stan
+
+
+Thanks,
+Rohit Vaswani
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+
