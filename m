@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3EVJBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:01:32 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55220
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752324Ab3EVJB3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:01:29 -0400
-Date: Wed, 22 May 2013 11:00:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: horms@verge.net.au, eric.dumazet@gmail.com, ja@ssi.bg, mingo@redhat.com,
-        paulmck@linux.vnet.ibm.com, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pablo@netfilter.org, dipankar@in.ibm.com
-Subject: Re: [PATCH ipvs-next v3 0/2] sched: Add cond_resched_rcu_lock()
- helper
-Message-ID: <20130522090051.GA18810@twins.programming.kicks-ass.net>
-References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
- <20130522075438.GO26912@twins.programming.kicks-ass.net>
- <20130522.013108.58504645261021804.davem@davemloft.net>
+	id S1754932Ab3EVJC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:02:26 -0400
+Received: from gatzka.org ([85.214.228.118]:39488 "EHLO mail.gatzka.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094Ab3EVJCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 05:02:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522.013108.58504645261021804.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 22 May 2013 10:52:37 +0200
+From: Stephan Gatzka <stephan.gatzka@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, Tejun Heo <tj@kernel.org>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: function call =?UTF-8?Q?fw=5Fiso=5Fresource=5Fmange=28=2E=2E?=
+ =?UTF-8?Q?=29=20=28core-iso=2Ec=29=20does=20not=20return?=
+Reply-To: stephan.gatzka@gmail.com
+Mail-Reply-To: stephan.gatzka@gmail.com
+In-Reply-To: <519BF0DB.6040108@hurleysoftware.com>
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
+ <519BA6AC.1080600@hurleysoftware.com>
+ <62922216e6007f9ef83956e0ca202644@gatzka.org>
+ <20130521235329.48ba65e2@stein> <519BF0DB.6040108@hurleysoftware.com>
+Message-ID: <1c680aea58e7923c02b88a41c1b2bd7c@gatzka.org>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 01:31:08AM -0700, David Miller wrote:
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Wed, 22 May 2013 09:54:38 +0200
-> 
-> > On Wed, May 22, 2013 at 02:50:30PM +0900, Simon Horman wrote:
-> >> Add a helper that for use in loops which read data protected by RCU and
-> >> may have a large number of iterations.  Such an example is dumping the list
-> >> of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
-> >> 
-> >> This series also updates IPVS to use the helper.
-> >> 
-> >> Simon Horman (2):
-> >>   sched: add cond_resched_rcu() helper
-> >>   ipvs: use cond_resched_rcu() helper when walking connections
-> >> 
-> >>  include/linux/sched.h           |  9 +++++++++
-> >>  net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
-> >>  2 files changed, 17 insertions(+), 15 deletions(-)
-> > 
-> > Acked-by: Peter Zijlstra <peterz@infradead.org>
-> > 
-> > How do you want to go about merging this? Do you want to route it
-> > through the net tree or through -tip?
-> 
-> I think we can have Pablo merge it into his netfilter tree.
 
-Works for me. Thanks!
+> An important note with case b) is that Ralf (the original reporter) was
+> running 3.4.something.  I'm aware that some work has gone into 
+> workqueue
+> locks in 3.9 and 3.10. I asked Ralf if he could reproduce on a more
+> recent kernel but never heard back. Maybe these are two different 
+> problems
+> (ie, a failure to guarantee forward progress on a single workqueue and
+> a straightforward deadlock when using two wqs)?
+> 
+> Stephan Gatzka,
+> what kernel version did you instrument and reproduce this with?
+> 
+
+Ralf and I are working together on the same system. It's kernel 3.4.28, 
+patched with Xenomai 2.6.1.
+
+Regards,
+
+Stephan
