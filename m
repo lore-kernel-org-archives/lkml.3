@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3EVSpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:45:16 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:65002 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288Ab3EVSoJ (ORCPT
+	id S1756919Ab3EVSps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:45:48 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60941 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab3EVSoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:44:09 -0400
+	Wed, 22 May 2013 14:44:08 -0400
 From: David Daney <ddaney.cavm@gmail.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
         Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v5 6/6] mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
-Date: Wed, 22 May 2013 11:43:56 -0700
-Message-Id: <1369248236-27237-7-git-send-email-ddaney.cavm@gmail.com>
+Subject: [PATCH v5 4/6] mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in kvm_arch_vcpu_ioctl_{s,g}et_regs
+Date: Wed, 22 May 2013 11:43:54 -0700
+Message-Id: <1369248236-27237-5-git-send-email-ddaney.cavm@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com>
 References: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com>
@@ -23,94 +23,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-The Linux Way is to return -ENOIOCTLCMD to the vfs when an
-unimplemented ioctl is requested.  Do this in kvm_mips instead of a
-random mixture of -ENOTSUPP and -EINVAL.
+Also we cannot set special zero register, so force it to zero.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- arch/mips/kvm/kvm_mips.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ arch/mips/kvm/kvm_mips.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index 5aec4f4..13e9438 100644
+index 93da750..71a1fc1 100644
 --- a/arch/mips/kvm/kvm_mips.c
 +++ b/arch/mips/kvm/kvm_mips.c
-@@ -195,7 +195,7 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
- long
- kvm_arch_dev_ioctl(struct file *filp, unsigned int ioctl, unsigned long arg)
+@@ -677,9 +677,9 @@ int kvm_arch_vcpu_ioctl_set_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
  {
--	return -EINVAL;
-+	return -ENOIOCTLCMD;
- }
+ 	int i;
  
- void kvm_arch_free_memslot(struct kvm_memory_slot *free,
-@@ -401,7 +401,7 @@ int
- kvm_arch_vcpu_ioctl_set_guest_debug(struct kvm_vcpu *vcpu,
- 				    struct kvm_guest_debug *dbg)
+-	for (i = 0; i < 32; i++)
++	for (i = 1; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
+ 		vcpu->arch.gprs[i] = regs->gpr[i];
+-
++	vcpu->arch.gprs[0] = 0; /* zero is special, and cannot be set. */
+ 	vcpu->arch.hi = regs->hi;
+ 	vcpu->arch.lo = regs->lo;
+ 	vcpu->arch.pc = regs->pc;
+@@ -691,7 +691,7 @@ int kvm_arch_vcpu_ioctl_get_regs(struct kvm_vcpu *vcpu, struct kvm_regs *regs)
  {
--	return -EINVAL;
-+	return -ENOIOCTLCMD;
- }
+ 	int i;
  
- int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu, struct kvm_run *run)
-@@ -475,14 +475,14 @@ int
- kvm_arch_vcpu_ioctl_get_mpstate(struct kvm_vcpu *vcpu,
- 				struct kvm_mp_state *mp_state)
- {
--	return -EINVAL;
-+	return -ENOIOCTLCMD;
- }
+-	for (i = 0; i < 32; i++)
++	for (i = 0; i < ARRAY_SIZE(vcpu->arch.gprs); i++)
+ 		regs->gpr[i] = vcpu->arch.gprs[i];
  
- int
- kvm_arch_vcpu_ioctl_set_mpstate(struct kvm_vcpu *vcpu,
- 				struct kvm_mp_state *mp_state)
- {
--	return -EINVAL;
-+	return -ENOIOCTLCMD;
- }
- 
- #define KVM_REG_MIPS_CP0_INDEX (0x10000 + 8 * 0 + 0)
-@@ -799,7 +799,7 @@ long kvm_arch_vm_ioctl(struct file *filp, unsigned int ioctl, unsigned long arg)
- 
- 	switch (ioctl) {
- 	default:
--		r = -EINVAL;
-+		r = -ENOIOCTLCMD;
- 	}
- 
- 	return r;
-@@ -827,13 +827,13 @@ void kvm_arch_exit(void)
- int
- kvm_arch_vcpu_ioctl_get_sregs(struct kvm_vcpu *vcpu, struct kvm_sregs *sregs)
- {
--	return -ENOTSUPP;
-+	return -ENOIOCTLCMD;
- }
- 
- int
- kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu, struct kvm_sregs *sregs)
- {
--	return -ENOTSUPP;
-+	return -ENOIOCTLCMD;
- }
- 
- int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
-@@ -843,12 +843,12 @@ int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
- 
- int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- {
--	return -ENOTSUPP;
-+	return -ENOIOCTLCMD;
- }
- 
- int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- {
--	return -ENOTSUPP;
-+	return -ENOIOCTLCMD;
- }
- 
- int kvm_arch_vcpu_fault(struct kvm_vcpu *vcpu, struct vm_fault *vmf)
+ 	regs->hi = vcpu->arch.hi;
 -- 
 1.7.11.7
 
