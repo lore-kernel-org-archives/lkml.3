@@ -1,129 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab3EVUiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:38:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869Ab3EVUiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:38:18 -0400
-Date: Wed, 22 May 2013 23:36:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, kvm@vger.kernel.org, rostedt@goodmis.org
-Subject: Re: [PATCH v2 10/10] kernel: might_fault does not imply might_sleep
-Message-ID: <20130522203645.GA28296@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
- <1f85dc8e6a0149677563a2dfb4cef9a9c7eaa391.1368702323.git.mst@redhat.com>
- <20130516184041.GP19669@dyad.programming.kicks-ass.net>
+	id S1757095Ab3EVUjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:39:13 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:62991 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756268Ab3EVUjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:39:11 -0400
+Date: Thu, 23 May 2013 05:39:06 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+Message-ID: <20130522203906.GC23845@mtj.dyndns.org>
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+ <519C674A.50700@redhat.com>
+ <20130522093249.GC3466@mtj.dyndns.org>
+ <519C959A.3090100@redhat.com>
+ <20130522100212.GE3466@mtj.dyndns.org>
+ <519C9CBC.3050003@redhat.com>
+ <20130522134134.GA15189@mtj.dyndns.org>
+ <519CD234.40608@redhat.com>
+ <20130522150335.GC2777@thunk.org>
+ <519CE9FE.2030007@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130516184041.GP19669@dyad.programming.kicks-ass.net>
+In-Reply-To: <519CE9FE.2030007@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 08:40:41PM +0200, Peter Zijlstra wrote:
-> On Thu, May 16, 2013 at 02:16:10PM +0300, Michael S. Tsirkin wrote:
-> > There are several ways to make sure might_fault
-> > calling function does not sleep.
-> > One is to use it on kernel or otherwise locked memory - apparently
-> > nfs/sunrpc does this. As noted by Ingo, this is handled by the
-> > migh_fault() implementation in mm/memory.c but not the one in
-> > linux/kernel.h so in the current code might_fault() schedules
-> > differently depending on CONFIG_PROVE_LOCKING, which is an undesired
-> > semantical side effect.
-> > 
-> > Another is to call pagefault_disable: in this case the page fault
-> > handler will go to fixups processing and we get an error instead of
-> > sleeping, so the might_sleep annotation is a false positive.
-> > vhost driver wants to do this now in order to reuse socket ops
-> > under a spinlock (and fall back on slower thread handler
-> > on error).
-> 
-> Are you using the assumption that spin_lock() implies preempt_disable() implies
-> pagefault_disable()? Note that this assumption isn't valid for -rt where the
-> spinlock becomes preemptible but we'll not disable pagefaults.
-> 
-> > Address both issues by:
-> > 	- dropping the unconditional call to might_sleep
-> > 	  from the fast might_fault code in linux/kernel.h
-> > 	- checking for pagefault_disable() in the
-> > 	  CONFIG_PROVE_LOCKING implementation
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/linux/kernel.h |  1 -
-> >  mm/memory.c            | 14 +++++++++-----
-> >  2 files changed, 9 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > index e96329c..322b065 100644
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -198,7 +198,6 @@ void might_fault(void);
-> >  #else
-> >  static inline void might_fault(void)
-> >  {
-> > -	might_sleep();
-> 
-> This removes potential resched points for PREEMPT_VOLUNTARY -- was that
-> intentional?
+Hey,
 
-OK so I'm thinking of going back to this idea:
-it has the advantage of being very simple,
-and just might make some workloads faster
-if they do lots of copy_XX_user in a loop.
+On Wed, May 22, 2013 at 05:53:34PM +0200, Paolo Bonzini wrote:
+> I do listen to review feedback, but I also expect the other side to
+> listen to me, ask me what is not clear, and possess some knowledge of
+> the domain that he's reviewing patches for.  All of which, quite
+> frankly, I have not seen in this case.
 
-Will have to be tested of course - anyone
-has objections?
+Heh, nice one.  As we've talked on RH mailing list, I don't doubt this
+has been a pretty bad experience for you but it also has been one of
+the worst review experiences for me too.  It's on both of us that we
+do get frustrated easily and the discussions escalate very quickly;
+however, the biggest issue from my side is that it's very difficult to
+get a point across and even when the point seems to have been made
+what comes out of it is the mimum possible change around that point
+rather than wider interpretation and application of the point made.
+I'm not saying you don't listen to reviews at all but the reception
+definitely feels very low-gain.
 
-> >  }
-> >  #endif
-> >  
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 6dc1882..1b8327b 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -4222,13 +4222,17 @@ void might_fault(void)
-> >  	if (segment_eq(get_fs(), KERNEL_DS))
-> >  		return;
-> >  
-> > -	might_sleep();
-> >  	/*
-> > -	 * it would be nicer only to annotate paths which are not under
-> > -	 * pagefault_disable, however that requires a larger audit and
-> > -	 * providing helpers like get_user_atomic.
-> > +	 * It would be nicer to annotate paths which are under preempt_disable
-> > +	 * but not under pagefault_disable, however that requires a new flag
-> > +	 * for differentiating between the two.
-> 
-> -rt has this, pagefault_disable() doesn't change the preempt count but pokes
-> at task_struct::pagefault_disable.
-> 
-> >  	 */
-> > -	if (!in_atomic() && current->mm)
-> > +	if (in_atomic())
-> > +		return;
-> > +
-> > +	might_sleep();
-> > +
-> > +	if (current->mm)
-> >  		might_lock_read(&current->mm->mmap_sem);
-> >  }
-> >  EXPORT_SYMBOL(might_fault);
-> > -- 
-> > MST
+Anyways, at this point, the easiest way to make forward progress is
+completely separating out security fix from the rest along with the
+"count me out" knob, which should be able to cover most of the
+described use cases anyway.  Let's please do further modifications to
+the filtering table as a separate step.
+
+-- 
+tejun
