@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3EVKF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:05:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62744 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3EVKFZ (ORCPT
+	id S1755872Ab3EVKNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:13:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35555 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755001Ab3EVKNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:05:25 -0400
-Message-ID: <519C9822.9040909@windriver.com>
-Date: Wed, 22 May 2013 18:04:18 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 22 May 2013 06:13:10 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v4 0/6] Android Binder IPC Fixes
+Date: Wed, 22 May 2013 11:12:55 +0100
+Message-Id: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        <linux-kernel@vger.kernel.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>, <netdev@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, David Miller <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio device
- tree nodes
-References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130521174849.GL26249@lunn.ch> <519C9333.20609@gmail.com>
-In-Reply-To: <519C9333.20609@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.227]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 05:43 PM, Sebastian Hesselbarth wrote:
-> On 05/21/2013 07:48 PM, Andrew Lunn wrote:
->> On Tue, May 21, 2013 at 06:41:44PM +0200, Sebastian Hesselbarth wrote:
->>> This patch adds orion-eth and mvmdio device tree nodes for DT enabled
->>> Dove boards. As there is only one ethernet controller on Dove, a default
->>> phy node is also added with a note to set its reg property on a per-board
->>> basis.
->>>
->>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>> ---
-> ...
->>> +            ethernet-port@0 {
->>> +                device_type = "network";
->>> +                compatible = "marvell,orion-eth-port";
->>> +                reg =<0>;
->>> +                interrupts =<29>;
->>> +                /* overwrite MAC address in bootloader */
->>> +                local-mac-address = [00 00 00 00 00 00];
->>
->> Hi Sebastian
->>
->> Its probably a good idea to set the local administration bit in this
->> MAC address. i.e. first byte is 02.
->
-> Andrew,
->
-> we just need an invalid address here to trigger the default behavior of
-> the driver and load the MAC address from its register. As PPC binding
-> documentation also has all zero, I just took it.
+Hi all,
 
-The truth is in PPC case, often we set the real mac address with some variables 
-like 'eth[x]addr' in u-boot prompt, then u-boot will parse that value to fill 
-the dtb. At last the associated driver can get the actual mac address from the 
-dtb. And especially for those older u-boot version, even you have to reset the 
-'local-mac-address' property in dts directly with the real mac address before 
-generate the dtb since the older u-boot have no this ability to fill dtb again 
-before pass the kernel.
+This set of patches will clean-up and fix some of the issues that arise
+with the current binder interface when moving to a 64bit kernel. All these
+changes will not affect the existing 32bit Android interface and are meant
+to stand as the base for the 64bit binder compat layer(kernel or userpsace).
 
-Tiejun
+The patch set has been successfully tested with a 64bit Linux userspace and
+64bit binder unit-tests.
+
+This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+kernel binder compat layer.
+
+Changes for v4:
+1: 5/6: Fix the offset buffer alignment such that it will work for cases where
+buffer start + buffer size are not aligned to (void *)
+
+Changes for v3:
+1:  Dropped the patch that was replacing uint32_t types with unsigned int
+2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
+    staging tree)
+3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
+4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
+5:  Modified the binder command IOCTL declarations according to Arve's review
+
+Changes for v2:
+1: 1/7: Modified the commit message according to Greg's feedback;
+2: 3/7: Merged with the patch fixing the printk format specifiers.
+
+Serban Constantinescu (6):
+  staging: android: binder: modify struct binder_write_read to use
+    size_t
+  staging: android: binder: fix binder interface for 64bit compat layer
+  staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+  staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+  staging: android: binder: fix alignment issues
+  staging: android: binder: replace types with portable ones
+
+ drivers/staging/android/binder.c |   46 +++++++++++++++++++-------------------
+ drivers/staging/android/binder.h |   46 +++++++++++++++++++-------------------
+ 2 files changed, 46 insertions(+), 46 deletions(-)
+
+-- 
+1.7.9.5
 
