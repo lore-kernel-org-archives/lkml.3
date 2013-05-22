@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab3EVPXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 11:23:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45406 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753030Ab3EVPXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 11:23:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,722,1363158000"; 
-   d="scan'208";a="341450498"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBAwi6mUv0GqTobfPS7X4kpaRVD_NFg6WvCodkSmy+7uKA@mail.gmail.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBAwi6mUv0GqTobfPS7X4kpaRVD_NFg6WvCodkSmy+7uKA@mail.gmail.com>
-Subject: Re: [PATCHv4 33/39] thp, mm: implement do_huge_linear_fault()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130522152615.A4E22E0090@blue.fi.intel.com>
-Date: Wed, 22 May 2013 18:26:15 +0300 (EEST)
+	id S1756416Ab3EVPZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 11:25:17 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60215 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3EVPZP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Wed, 22 May 2013 11:25:15 -0400
+Message-Id: <519CFF7602000078000D82E6@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 22 May 2013 16:25:10 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Chien Yen" <chien.yen@oracle.com>, "Feng Jin" <joe.jin@oracle.com>,
+        "Yuval Shaia" <yuval.shaia@oracle.com>,
+        "Zhenzhong Duan" <zhenzhong.duan@oracle.com>,
+        "Ingo Molnar" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] xen: reuse the same pirq allocated
+ when driver load first time
+References: <alpine.DEB.2.02.1305201121370.4799@kaball.uk.xensource.com>
+ <20130520175706.GA27973@phenom.dumpdata.com>
+ <20130520203855.GA30616@phenom.dumpdata.com> <519B474E.4000202@citrix.com>
+ <20130521134059.GE492@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305211748030.4799@kaball.uk.xensource.com>
+ <20130521204245.GA7073@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1305212242540.4799@kaball.uk.xensource.com>
+ <20130521224125.GA3483@phenom.dumpdata.com>
+ <519CAE0302000078000D807A@nat28.tlf.novell.com>
+ <20130522151437.GC8162@phenom.dumpdata.com>
+In-Reply-To: <20130522151437.GC8162@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> >         page = vmf.page;
-> > +
-> > +       /*
-> > +        * If we asked for huge page we expect to get it or VM_FAULT_FALLBACK.
-> > +        * If we don't ask for huge page it must be splitted in ->fault().
-> > +        */
-> > +       BUG_ON(PageTransHuge(page) != thp);
-> > +
-> Based on the log message in 34/39(
-> If the area of page cache required to create huge is empty, we create a
-> new huge page and return it.), the above trap looks bogus.
+>>> On 22.05.13 at 17:14, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> The physdev_unmap_pirq (from PHYSDEVOP_unmap_pirq), only has this
+> check:
+>  if (domain_pirq_to_emuirq(d, pirq) != IRQ_UNBOUND)
+> 
+> and since the arch.hvm.emuirq is IRQ_UNBOUND (-1), it does not
+> call unmap_domain_pirq_emuirq. It probably shouldn't, but it should
+> at least remove the info->arch.pirq = PIRQ_ALLOCATED as we are
+> telling the hypervisor: "hey, I am done with this, return to the
+> pool." But since that is not cleared, the PHYSDEVOP_get_free_pirq
+> will skip this pirq as arch.pirq is still set to PIRQ_ALLOCATED.
 
-The statement in 34/39 is true for (flags & FAULT_FLAG_TRANSHUGE).
-For !(flags & FAULT_FLAG_TRANSHUGE) huge page must be split in ->fault.
+Okay, that clarifies it quite a bit. For one, I'll leave any of the
+emuirq stuff to Stefano, who wrote this originally. And then, from
+the beginning of this thread, I'm not convinced that freeing a pirq
+is really the right thing here: unmap_pirq() is the counterpart of
+map_pirq(), not get_free_pirq(). I would think that is a guest
+allocates a pirq and then unmaps it without first mapping it, it's
+the guest's fault that it now lost one pirq resource. It should not
+have allocated one in the first place if it didn't mean to use it for
+anything.
 
-The BUG_ON() above is shortcut for two checks:
+>> I see none at all, unmap_domain_pirq() has a <= 0 check, and
+>> unmap_domain_pirq_emuirq() again doesn't appear to have any.
+> 
+> The 'unmap_domain_pirq' path would be if dom0 (so QEMU) did the
+> unmap for the guest. That is via the PHYSDEVOP_unmap_pirq. And
+> I think if that path was taken (as Stefano suggests QEMU should
+> do when a MSI or MSI-X driver is unloaded and zero is writen as
+> an PIRQ), we would end up calling clear_domain_irq_pirq, which
+> would set arch.pirq = 0.
+> 
+> Or to a negative value as you pointed out later. Which then
+> means we won't be ever able to re-use the PIRQ (as
+> PHYSDEVOP_get_free_pirq or rather get_free_pirq would skip over it
+> as arch.pirq != 0).
 
-if (thp)
-	BUG_ON(!PageTransHuge(page));
-if (!thp)
-	BUG_ON(PageTransHuge(page));
+That setting to a negative value is not causing the slot to be
+permanently lost, it merely defers its freeing. It was the only
+way I could find back then to reasonably handle an unmap
+being done before the matched unbind.
 
--- 
- Kirill A. Shutemov
+Jan
+
