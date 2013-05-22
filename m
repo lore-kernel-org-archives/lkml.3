@@ -1,128 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab3EVH6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:58:49 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35745 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab3EVH6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:58:45 -0400
-Message-ID: <519C7AAC.1010707@linux.vnet.ibm.com>
-Date: Wed, 22 May 2013 15:58:36 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755065Ab3EVIBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:01:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28724 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab3EVIBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 04:01:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
+   d="scan'208";a="245017462"
+Date: Wed, 22 May 2013 11:05:30 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        David Cohen <david.a.cohen@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] gpio-langwell: use managed functions pcim_* and
+ devm_*
+Message-ID: <20130522080529.GW11878@intel.com>
+References: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1369208859-16514-4-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-To: Peter Boonstoppel <pboonstoppel@nvidia.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>
-Subject: Re: [PATCH RFC] sched/rt: preserve global runtime/period ratio in
- do_balance_runtime()
-References: <5FBF8E85CA34454794F0F7ECBA79798F37ADA53CA7@HQMAIL04.nvidia.com>
-In-Reply-To: <5FBF8E85CA34454794F0F7ECBA79798F37ADA53CA7@HQMAIL04.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052207-5816-0000-0000-00000814EE6E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369208859-16514-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Peter
-
-On 05/22/2013 05:30 AM, Peter Boonstoppel wrote:
-> RT throttling aims to prevent starvation of non-SCHED_FIFO threads
-> when a rogue RT thread is hogging the CPU. It does so by piggybacking
-> on the rt_bandwidth system and allocating at most rt_runtime per
-> rt_period to SCHED_FIFO tasks (e.g. 950ms out of every second,
-> allowing 'regular' tasks to run for at least 50ms every second).
+On Wed, May 22, 2013 at 10:47:38AM +0300, Andy Shevchenko wrote:
+> This makes the error handling much more simpler than open-coding everything and
+> in addition makes the probe function smaller an tidier.
 > 
-> However, when multiple cores are available, rt_bandwidth allows cores
-> to borrow rt_runtime from one another. This means that a core with a
-> rogue RT thread, consuming 100% CPU cycles, can borrow enough runtime
-> from other cores to allow the RT thread to run continuously, with no
-> runtime for regular tasks on this core.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-IMHO, such kind of starving should attributed to the Admin...
+In general this change looks good. Getting rid of 61 lines is certainly an
+improvement!
 
-Reserve cpu will make realtime misnomer, then Admin will blame the
-scheduler when his RT task got a higher latency...
+David, are you able to check that this still works on your hardware? (I'm
+pretty sure that Andy has tested this already on Medfield)
 
-Regards,
-Michael Wang
+I have few minor comments, though. See below.
 
-> 
-> Although regular tasks can get scheduled on other available cores
-> (which are guaranteed to have some non-RT runtime avaible, since they
-> just lent some RT time to us), tasks that are specifically affined to
-> a particular core may not be able to make progress (e.g. workqueues,
-> timer functions). This can break e.g. watchdog-like functionality that
-> is supposed to kill the rogue RT thread.
-> 
-> This patch changes do_balance_runtime() in such a way that no core can
-> aquire (borrow) more runtime than the globally set rt_runtime /
-> rt_period ratio. This guarantees there will always be some non-RT
-> runtime available on every individual core.
-> 
-> Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
 > ---
->  kernel/sched/rt.c |   21 ++++++++++++++++++---
->  1 files changed, 18 insertions(+), 3 deletions(-)
+>  drivers/gpio/gpio-langwell.c | 82 ++++++++++++--------------------------------
+>  1 file changed, 21 insertions(+), 61 deletions(-)
 > 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index 127a2c4..5ec4eab 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -571,11 +571,25 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
->  	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
->  	int i, weight, more = 0;
->  	u64 rt_period;
-> +	u64 max_runtime;
-> 
->  	weight = cpumask_weight(rd->span);
-> 
->  	raw_spin_lock(&rt_b->rt_runtime_lock);
->  	rt_period = ktime_to_ns(rt_b->rt_period);
-> +
-> +	/* Don't allow more runtime than global ratio */
-> +	if (global_rt_runtime() == RUNTIME_INF)
-> +		max_runtime = rt_period;
-> +	else
-> +		max_runtime = div64_u64(global_rt_runtime() * rt_period,
-> +					global_rt_period());
-> +
-> +	if (rt_rq->rt_runtime >= max_runtime) {
-> +		raw_spin_unlock(&rt_b->rt_runtime_lock);
-> +		return more;
-> +	}
-> +
->  	for_each_cpu(i, rd->span) {
->  		struct rt_rq *iter = sched_rt_period_rt_rq(rt_b, i);
->  		s64 diff;
-> @@ -592,6 +606,7 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
->  		if (iter->rt_runtime == RUNTIME_INF)
->  			goto next;
-> 
-> +
->  		/*
->  		 * From runqueues with spare time, take 1/n part of their
->  		 * spare time, but no more than our period.
-> @@ -599,12 +614,12 @@ static int do_balance_runtime(struct rt_rq *rt_rq)
->  		diff = iter->rt_runtime - iter->rt_time;
->  		if (diff > 0) {
->  			diff = div_u64((u64)diff, weight);
-> -			if (rt_rq->rt_runtime + diff > rt_period)
-> -				diff = rt_period - rt_rq->rt_runtime;
-> +			if (rt_rq->rt_runtime + diff > max_runtime)
-> +				diff = max_runtime - rt_rq->rt_runtime;
->  			iter->rt_runtime -= diff;
->  			rt_rq->rt_runtime += diff;
->  			more = 1;
-> -			if (rt_rq->rt_runtime == rt_period) {
-> +			if (rt_rq->rt_runtime == max_runtime) {
->  				raw_spin_unlock(&iter->rt_runtime_lock);
->  				break;
->  			}
-> 
+> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+> index 8203084..8672282 100644
+> --- a/drivers/gpio/gpio-langwell.c
+> +++ b/drivers/gpio/gpio-langwell.c
+> @@ -320,56 +320,35 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
+>  static int lnw_gpio_probe(struct pci_dev *pdev,
+>  			  const struct pci_device_id *id)
+>  {
+> -	void __iomem *base;
+> -	resource_size_t start, len;
+>  	struct lnw_gpio *lnw;
+>  	u32 gpio_base;
+>  	u32 irq_base;
+>  	int retval;
+>  	int ngpio = id->driver_data;
+>  
+> -	retval = pci_enable_device(pdev);
+> +	retval = pcim_enable_device(pdev);
+>  	if (retval)
+>  		return retval;
+>  
+> -	retval = pci_request_regions(pdev, "langwell_gpio");
+> +	retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
 
+I wonder if "langwell_gpio" is still a better name compared to
+pci_name(pdev)?
+
+>  	if (retval) {
+> -		dev_err(&pdev->dev, "error requesting resources\n");
+> -		goto err_pci_req_region;
+> -	}
+> -	/* get the gpio_base from bar1 */
+> -	start = pci_resource_start(pdev, 1);
+> -	len = pci_resource_len(pdev, 1);
+> -	base = ioremap_nocache(start, len);
+> -	if (!base) {
+> -		dev_err(&pdev->dev, "error mapping bar1\n");
+> -		retval = -EFAULT;
+> -		goto err_ioremap;
+> +		dev_err(&pdev->dev, "I/O memory mapping error\n");
+> +		return retval;
+>  	}
+>  
+> -	irq_base = readl(base);
+> -	gpio_base = readl(sizeof(u32) + base);
+> +	irq_base = readl(pcim_iomap_table(pdev)[1]);
+> +	gpio_base = readl(sizeof(u32) + pcim_iomap_table(pdev)[1]);
+
+Using pcim_iomap_table(pdev)[] is a bit confusing, at least for me. Can you
+add a variable where you store that pointer and use that instead?
+
+>  	/* release the IO mapping, since we already get the info from bar1 */
+> -	iounmap(base);
+> -	/* get the register base from bar0 */
+> -	start = pci_resource_start(pdev, 0);
+> -	len = pci_resource_len(pdev, 0);
+> -	base = devm_ioremap_nocache(&pdev->dev, start, len);
+> -	if (!base) {
+> -		dev_err(&pdev->dev, "error mapping bar0\n");
+> -		retval = -EFAULT;
+> -		goto err_ioremap;
+> -	}
+> +	pcim_iounmap_regions(pdev, 1 << 1);
+>  
+>  	lnw = devm_kzalloc(&pdev->dev, sizeof(*lnw), GFP_KERNEL);
+>  	if (!lnw) {
+>  		dev_err(&pdev->dev, "can't allocate langwell_gpio chip data\n");
+> -		retval = -ENOMEM;
+> -		goto err_ioremap;
+> +		return -ENOMEM;
+>  	}
+>  
+> -	lnw->reg_base = base;
+> +	lnw->reg_base = pcim_iomap_table(pdev)[0];
+>  	lnw->chip.label = dev_name(&pdev->dev);
+>  	lnw->chip.request = lnw_gpio_request;
+>  	lnw->chip.direction_input = lnw_gpio_direction_input;
