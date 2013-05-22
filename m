@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab3EVM6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:58:45 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50087 "EHLO
+	id S1755153Ab3EVM6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:58:44 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50076 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752744Ab3EVM6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754021Ab3EVM6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 May 2013 08:58:39 -0400
+X-Greylist: delayed 13212 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 08:58:38 EDT
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Vasiliy Kulikov <segooon@gmail.com>, Thomas Renninger <trenn@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH -resend 5/6] acpi: ec_sys: access user space with get_user()/put_user()
-Date: Wed, 22 May 2013 14:59:11 +0200
-Message-Id: <1369227552-11743-5-git-send-email-jslaby@suse.cz>
+        Jeff Mahoney <jeffm@suse.com>, Jiri Slaby <jslaby@suse.cz>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org
+Subject: [PATCH -resend 4/6] netfilter: Implement RFC 1123 for FTP conntrack
+Date: Wed, 22 May 2013 14:59:10 +0200
+Message-Id: <1369227552-11743-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
 References: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
@@ -22,80 +26,203 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-User space pointer may not be dereferenced. Use get_user()/put_user()
-instead and check their return codes.
+ The FTP conntrack code currently only accepts the following format for
+ the 227 response for PASV:
+ 227 Entering Passive Mode (148,100,81,40,31,161).
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
+ It doesn't accept the following format from an obscure server:
+ 227 Data transfer will passively listen to 67,218,99,134,50,144
+
+ From RFC 1123:
+ The format of the 227 reply to a PASV command is not
+ well standardized.  In particular, an FTP client cannot
+ assume that the parentheses shown on page 40 of RFC-959
+ will be present (and in fact, Figure 3 on page 43 omits
+ them).  Therefore, a User-FTP program that interprets
+ the PASV reply must scan the reply for the first digit
+ of the host and port numbers.
+
+ This patch adds support for the RFC 1123 clarification by:
+ - Allowing a search filter to specify NUL as the terminator so that
+   try_number will return successfully if the array of numbers has been
+   filled when an unexpected character is encountered.
+ - Using space as the separator for the 227 reply and then scanning for
+   the first digit of the number sequence. The number sequence is parsed
+   out using the existing try_rfc959 but with a NUL terminator.
+
+References: https://bugzilla.novell.com/show_bug.cgi?id=466279
+References: http://bugzilla.netfilter.org/show_bug.cgi?id=574
+Reported-by: Mark Post <mpost@novell.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Len Brown <lenb@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netfilter-devel@vger.kernel.org
+Cc: netfilter@vger.kernel.org
+Cc: coreteam@netfilter.org
+Cc: netdev@vger.kernel.org
 ---
- drivers/acpi/ec_sys.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ net/netfilter/nf_conntrack_ftp.c | 73 +++++++++++++++++++++++++++++-----------
+ 1 file changed, 54 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/acpi/ec_sys.c b/drivers/acpi/ec_sys.c
-index 7586544..4e7b798 100644
---- a/drivers/acpi/ec_sys.c
-+++ b/drivers/acpi/ec_sys.c
-@@ -12,6 +12,7 @@
- #include <linux/acpi.h>
- #include <linux/debugfs.h>
- #include <linux/module.h>
-+#include <linux/uaccess.h>
- #include "internal.h"
+diff --git a/net/netfilter/nf_conntrack_ftp.c b/net/netfilter/nf_conntrack_ftp.c
+index 6b21707..b8a0924 100644
+--- a/net/netfilter/nf_conntrack_ftp.c
++++ b/net/netfilter/nf_conntrack_ftp.c
+@@ -55,10 +55,14 @@ unsigned int (*nf_nat_ftp_hook)(struct sk_buff *skb,
+ 				struct nf_conntrack_expect *exp);
+ EXPORT_SYMBOL_GPL(nf_nat_ftp_hook);
  
- MODULE_AUTHOR("Thomas Renninger <trenn@suse.de>");
-@@ -34,7 +35,6 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
- 	 * struct acpi_ec *ec = ((struct seq_file *)f->private_data)->private;
- 	 */
- 	unsigned int size = EC_SPACE_SIZE;
--	u8 *data = (u8 *) buf;
- 	loff_t init_off = *off;
- 	int err = 0;
+-static int try_rfc959(const char *, size_t, struct nf_conntrack_man *, char);
+-static int try_eprt(const char *, size_t, struct nf_conntrack_man *, char);
++static int try_rfc959(const char *, size_t, struct nf_conntrack_man *,
++		      char, unsigned int *);
++static int try_rfc1123(const char *, size_t, struct nf_conntrack_man *,
++		       char, unsigned int *);
++static int try_eprt(const char *, size_t, struct nf_conntrack_man *,
++		    char, unsigned int *);
+ static int try_epsv_response(const char *, size_t, struct nf_conntrack_man *,
+-			     char);
++			     char, unsigned int *);
  
-@@ -47,9 +47,15 @@ static ssize_t acpi_ec_read_io(struct file *f, char __user *buf,
- 		size = count;
+ static struct ftp_search {
+ 	const char *pattern;
+@@ -66,7 +70,7 @@ static struct ftp_search {
+ 	char skip;
+ 	char term;
+ 	enum nf_ct_ftp_type ftptype;
+-	int (*getnum)(const char *, size_t, struct nf_conntrack_man *, char);
++	int (*getnum)(const char *, size_t, struct nf_conntrack_man *, char, unsigned int *);
+ } search[IP_CT_DIR_MAX][2] = {
+ 	[IP_CT_DIR_ORIGINAL] = {
+ 		{
+@@ -90,10 +94,8 @@ static struct ftp_search {
+ 		{
+ 			.pattern	= "227 ",
+ 			.plen		= sizeof("227 ") - 1,
+-			.skip		= '(',
+-			.term		= ')',
+ 			.ftptype	= NF_CT_FTP_PASV,
+-			.getnum		= try_rfc959,
++			.getnum		= try_rfc1123,
+ 		},
+ 		{
+ 			.pattern	= "229 ",
+@@ -132,8 +134,9 @@ static int try_number(const char *data, size_t dlen, u_int32_t array[],
+ 			i++;
+ 		else {
+ 			/* Unexpected character; true if it's the
+-			   terminator and we're finished. */
+-			if (*data == term && i == array_size - 1)
++			   terminator (or we don't care about one)
++			   and we're finished. */
++			if ((*data == term || !term) && i == array_size - 1)
+ 				return len;
  
- 	while (size) {
--		err = ec_read(*off, &data[*off - init_off]);
-+		u8 byte_read;
-+		err = ec_read(*off, &byte_read);
- 		if (err)
- 			return err;
-+		if (put_user(byte_read, buf + *off - init_off)) {
-+			if (*off - init_off)
-+				return *off - init_off; /* partial read */
-+			return -EFAULT;
-+		}
- 		*off += 1;
- 		size--;
- 	}
-@@ -65,7 +71,6 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
+ 			pr_debug("Char %u (got %u nums) `%u' unexpected\n",
+@@ -148,7 +151,8 @@ static int try_number(const char *data, size_t dlen, u_int32_t array[],
  
- 	unsigned int size = count;
- 	loff_t init_off = *off;
--	u8 *data = (u8 *) buf;
- 	int err = 0;
+ /* Returns 0, or length of numbers: 192,168,1,1,5,6 */
+ static int try_rfc959(const char *data, size_t dlen,
+-		      struct nf_conntrack_man *cmd, char term)
++		      struct nf_conntrack_man *cmd, char term,
++		      unsigned int *offset)
+ {
+ 	int length;
+ 	u_int32_t array[6];
+@@ -163,6 +167,33 @@ static int try_rfc959(const char *data, size_t dlen,
+ 	return length;
+ }
  
- 	if (*off >= EC_SPACE_SIZE)
-@@ -76,7 +81,12 @@ static ssize_t acpi_ec_write_io(struct file *f, const char __user *buf,
- 	}
++/*
++ * From RFC 1123:
++ * The format of the 227 reply to a PASV command is not
++ * well standardized.  In particular, an FTP client cannot
++ * assume that the parentheses shown on page 40 of RFC-959
++ * will be present (and in fact, Figure 3 on page 43 omits
++ * them).  Therefore, a User-FTP program that interprets
++ * the PASV reply must scan the reply for the first digit
++ * of the host and port numbers.
++ */
++static int try_rfc1123(const char *data, size_t dlen,
++		       struct nf_conntrack_man *cmd, char term,
++		       unsigned int *offset)
++{
++	int i;
++	for (i = 0; i < dlen; i++)
++		if (isdigit(data[i]))
++			break;
++
++	if (i == dlen)
++		return 0;
++
++	*offset += i;
++
++	return try_rfc959(data + i, dlen - i, cmd, 0, offset);
++}
++
+ /* Grab port: number up to delimiter */
+ static int get_port(const char *data, int start, size_t dlen, char delim,
+ 		    __be16 *port)
+@@ -191,7 +222,7 @@ static int get_port(const char *data, int start, size_t dlen, char delim,
  
- 	while (size) {
--		u8 byte_write = data[*off - init_off];
-+		u8 byte_write;
-+		if (get_user(byte_write, buf + *off - init_off)) {
-+			if (*off - init_off)
-+				return *off - init_off; /* partial write */
-+			return -EFAULT;
-+		}
- 		err = ec_write(*off, byte_write);
- 		if (err)
- 			return err;
+ /* Returns 0, or length of numbers: |1|132.235.1.2|6275| or |2|3ffe::1|6275| */
+ static int try_eprt(const char *data, size_t dlen, struct nf_conntrack_man *cmd,
+-		    char term)
++		    char term, unsigned int *offset)
+ {
+ 	char delim;
+ 	int length;
+@@ -239,7 +270,8 @@ static int try_eprt(const char *data, size_t dlen, struct nf_conntrack_man *cmd,
+ 
+ /* Returns 0, or length of numbers: |||6446| */
+ static int try_epsv_response(const char *data, size_t dlen,
+-			     struct nf_conntrack_man *cmd, char term)
++			     struct nf_conntrack_man *cmd, char term,
++			     unsigned int *offset)
+ {
+ 	char delim;
+ 
+@@ -261,9 +293,10 @@ static int find_pattern(const char *data, size_t dlen,
+ 			unsigned int *numlen,
+ 			struct nf_conntrack_man *cmd,
+ 			int (*getnum)(const char *, size_t,
+-				      struct nf_conntrack_man *, char))
++				      struct nf_conntrack_man *, char,
++				      unsigned int *))
+ {
+-	size_t i;
++	size_t i = plen;
+ 
+ 	pr_debug("find_pattern `%s': dlen = %Zu\n", pattern, dlen);
+ 	if (dlen == 0)
+@@ -293,16 +326,18 @@ static int find_pattern(const char *data, size_t dlen,
+ 	pr_debug("Pattern matches!\n");
+ 	/* Now we've found the constant string, try to skip
+ 	   to the 'skip' character */
+-	for (i = plen; data[i] != skip; i++)
+-		if (i == dlen - 1) return -1;
++	if (skip) {
++		for (i = plen; data[i] != skip; i++)
++			if (i == dlen - 1) return -1;
+ 
+-	/* Skip over the last character */
+-	i++;
++		/* Skip over the last character */
++		i++;
++	}
+ 
+ 	pr_debug("Skipped up to `%c'!\n", skip);
+ 
+ 	*numoff = i;
+-	*numlen = getnum(data + i, dlen - i, cmd, term);
++	*numlen = getnum(data + i, dlen - i, cmd, term, numoff);
+ 	if (!*numlen)
+ 		return -1;
+ 
 -- 
 1.8.2.3
 
