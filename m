@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab3EVFHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 01:07:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab3EVFG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 01:06:59 -0400
-Date: Wed, 22 May 2013 08:07:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the vhost tree
-Message-ID: <20130522050718.GA7993@redhat.com>
-References: <20130522143704.3431658328f8f879f55b0910@canb.auug.org.au>
+	id S1754311Ab3EVFLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 01:11:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59840 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab3EVFLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 01:11:47 -0400
+X-IronPort-AV: E=Sophos;i="4.87,719,1363104000"; 
+   d="scan'208";a="7330659"
+Message-ID: <519C543E.9040401@cn.fujitsu.com>
+Date: Wed, 22 May 2013 13:14:38 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522143704.3431658328f8f879f55b0910@canb.auug.org.au>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH v4 00/22] x86, ACPI, numa: Parse numa info early
+References: <1365728168-32067-1-git-send-email-yinghai@kernel.org> <517F7110.6000705@cn.fujitsu.com> <518B645C.10408@cn.fujitsu.com> <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
+In-Reply-To: <CAE9FiQWPFL0qagAmkcyj_XfjWQtONtomwQPAimKUm+nJi5dHTw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 13:10:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 13:10:26,
+	Serialize complete at 2013/05/22 13:10:26
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 02:37:04PM +1000, Stephen Rothwell wrote:
-> Hi Michael,
-> 
-> After merging the vhost tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> In file included from arch/powerpc/include/asm/uaccess.h:12:0,
->                  from arch/powerpc/lib/checksum_wrappers_64.c:24:
-> include/asm-generic/uaccess.h: In function 'might_fault':
-> include/asm-generic/uaccess.h:36:2: error: implicit declaration of function 'segment_eq' [-Werror=implicit-function-declaration]
->   if (_might_fault())
->   ^
-> include/asm-generic/uaccess.h:36:2: error: implicit declaration of function 'get_fs' [-Werror=implicit-function-declaration]
-> include/asm-generic/uaccess.h:29:47: error: 'KERNEL_DS' undeclared (first use in this function)
->  #define _might_fault() (!segment_eq(get_fs(), KERNEL_DS) && !in_atomic())
->                                                ^
-> include/asm-generic/uaccess.h:36:6: note: in expansion of macro '_might_fault'
->   if (_might_fault())
->       ^
-> 
-> and many, many more.
-> 
-> Caused by commit d198a8acf543 ("kernel: might_fault does not imply
-> might_sleep").
-> 
-> I have used the version of the vhost tree from next-20130521 for today.
-> 
-> It was unexpected that such patches would turn up in the "vhost" tree ...
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+On 05/10/2013 02:24 AM, Yinghai Lu wrote:
+......
 
+>> If you have any thinking of this patch-set, please let me know.
+>
+> Talked to HPA, and he will put my patchset into tip/x86/mm after v3.10-rc1.
+>
+> after that we can work on put pagetable on local node for hotadd path.
+>
 
-Looks like I pushed a wrong commit. Sorry, will fix this up ASAP.
+Hi,
+
+It is Linux v3.10-rc2 now. But I didn't find this patch-set merged into
+tip/x86/mm. was it merged to somewhere else, or we have any other plan
+to push ?
+
+By the way, I have done some tests for this patch-set, and the test results
+have been sent. Please refer to:
+https://lkml.org/lkml/2013/4/30/45
+
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Thanks. :)
+
