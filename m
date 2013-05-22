@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab3EVUkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:40:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33655 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab3EVUkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:40:20 -0400
-X-IronPort-AV: E=Sophos;i="4.87,723,1363158000"; 
-   d="scan'208";a="49724176"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC/PATCH 0/2] Remove most of_device_match() calls
-Date: Wed, 22 May 2013 13:40:15 -0700
-Message-Id: <1369255217-29764-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.rc3.8.g5e49f30.dirty
+	id S1757106Ab3EVUqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:46:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755651Ab3EVUqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:46:52 -0400
+Date: Wed, 22 May 2013 16:46:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: ebiederm@xmission.com, akpm@linux-foundation.org, cpw@sgi.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com, linux-mm@kvack.org,
+        riel@redhat.com, walken@google.com, hughd@google.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH v7 7/8] vmcore: calculate vmcore file size from buffer
+ size and total size of vmcore objects
+Message-ID: <20130522204603.GC15738@redhat.com>
+References: <20130522025410.12215.16793.stgit@localhost6.localdomain6>
+ <20130522025612.12215.74462.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522025612.12215.74462.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sending this as an RFC with one driver converted to see what people
-think. The goal is to avoid having to run the match twice and be
-similar to how platform_device_id works right now. If people agree
-I can go through and send out patches for all the drivers doing
-the duplicate search (~100 files).
+On Wed, May 22, 2013 at 11:56:12AM +0900, HATAYAMA Daisuke wrote:
 
-Stephen Boyd (2):
-  of: Assign of_device_id to matching device_node
-  gpio/omap: Use of_node->id_entry directly
+[..]
+> -static u64 __init get_vmcore_size_elf64(char *elfptr, size_t elfsz)
+> +static u64 __init get_vmcore_size_elf64(size_t elfsz, size_t elfnotesegsz,
+> +					struct list_head *vc_list)
+>  {
+> -	int i;
+>  	u64 size;
+> -	Elf64_Ehdr *ehdr_ptr;
+> -	Elf64_Phdr *phdr_ptr;
+> +	struct vmcore *m;
+>  
+> -	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+> -	size = elfsz;
+> -	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+> -		size += phdr_ptr->p_memsz;
+> -		phdr_ptr++;
+> +	size = elfsz + elfnotesegsz;
+> +	list_for_each_entry(m, vc_list, list) {
+> +		size += m->size;
+>  	}
+>  	return size;
+>  }
+>  
+> -static u64 __init get_vmcore_size_elf32(char *elfptr, size_t elfsz)
+> +static u64 __init get_vmcore_size_elf32(size_t elfsz, size_t elfnotesegsz,
+> +					struct list_head *vc_list)
+>  {
+> -	int i;
+>  	u64 size;
+> -	Elf32_Ehdr *ehdr_ptr;
+> -	Elf32_Phdr *phdr_ptr;
+> +	struct vmcore *m;
+>  
+> -	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+> -	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+> -	size = elfsz;
+> -	for (i = 0; i < ehdr_ptr->e_phnum; i++) {
+> -		size += phdr_ptr->p_memsz;
+> -		phdr_ptr++;
+> +	size = elfsz + elfnotesegsz;
+> +	list_for_each_entry(m, vc_list, list) {
+> +		size += m->size;
 
- drivers/gpio/gpio-omap.c  |  4 +---
- drivers/of/device.c       | 18 ++++++++++++++++++
- include/linux/of.h        |  1 +
- include/linux/of_device.h | 12 ++----------
- 4 files changed, 22 insertions(+), 13 deletions(-)
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Now get_vmcore_size_elf64() and get_vmcore_size_elf32() function are same.
+We can get rid of one and rename other get_vmcore_size().
+
+Thanks
+Vivek
 
