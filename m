@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab3EVWTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:19:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42242 "EHLO
+	id S1757830Ab3EVWT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:19:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312Ab3EVWTq (ORCPT
+	with ESMTP id S1757704Ab3EVWTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:19:46 -0400
+	Wed, 22 May 2013 18:19:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 0/3] 3.0.80-stable review
-Date: Wed, 22 May 2013 15:19:42 -0700
-Message-Id: <20130522221334.510217272@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 3/3] media: mantis: fix silly crash case
+Date: Wed, 22 May 2013 15:19:45 -0700
+Message-Id: <20130522221335.222721682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130522221334.510217272@linuxfoundation.org>
+References: <20130522221334.510217272@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.80 release.
-There are 3 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Fri May 24 22:11:00 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.80-rc1.gz
-and the diffstat can be found below.
+From: Alan Cox <alan@linux.intel.com>
 
-thanks,
+commit e1d45ae10aea8e8a403e5d96bf5902ee670007ff upstream.
 
-greg k-h
+If we set mantis->fe to NULL on an error its not a good idea to then try
+passing NULL to the unregister paths and oopsing really.
 
--------------
-Pseudo-Shortlog of commits:
+Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=16473
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.80-rc1
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Alan Cox <alan@linux.intel.com>
-    media: mantis: fix silly crash case
+---
+ drivers/media/dvb/mantis/mantis_dvb.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-    hwmon: fix error return code in abituguru_probe()
-
-Gabriel de Perthuis <g2p.code@gmail.com>
-    btrfs: don't stop searching after encountering the wrong item
-
-
--------------
-
-Diffstat:
-
- Makefile                              |  4 ++--
- drivers/hwmon/abituguru.c             | 16 ++++++++++------
- drivers/media/dvb/mantis/mantis_dvb.c |  6 ++++--
- fs/btrfs/ioctl.c                      | 10 +++++-----
- 4 files changed, 21 insertions(+), 15 deletions(-)
+--- a/drivers/media/dvb/mantis/mantis_dvb.c
++++ b/drivers/media/dvb/mantis/mantis_dvb.c
+@@ -248,8 +248,10 @@ int __devinit mantis_dvb_init(struct man
+ err5:
+ 	tasklet_kill(&mantis->tasklet);
+ 	dvb_net_release(&mantis->dvbnet);
+-	dvb_unregister_frontend(mantis->fe);
+-	dvb_frontend_detach(mantis->fe);
++	if (mantis->fe) {
++		dvb_unregister_frontend(mantis->fe);
++		dvb_frontend_detach(mantis->fe);
++	}
+ err4:
+ 	mantis->demux.dmx.remove_frontend(&mantis->demux.dmx, &mantis->fe_mem);
+ 
 
 
