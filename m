@@ -1,57 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab3EVKNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:13:30 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:49448 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755896Ab3EVKN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:13:26 -0400
-Message-ID: <519C9A3D.1010902@imgtec.com>
-Date: Wed, 22 May 2013 11:13:17 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Saravana Kannan <skannan@codeaurora.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3/5] clk: add support for clock reparent on set_rate
-References: <1369056507-32521-1-git-send-email-james.hogan@imgtec.com> <1369056507-32521-4-git-send-email-james.hogan@imgtec.com> <519B01DF.1080700@codeaurora.org>
-In-Reply-To: <519B01DF.1080700@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_05_22_11_13_19
+	id S1755999Ab3EVKO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:14:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35570 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755742Ab3EVKNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:13:20 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v4 2/6] staging: android: binder: fix binder interface for 64bit compat layer
+Date: Wed, 22 May 2013 11:12:57 +0100
+Message-Id: <1369217581-16285-3-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
+References: <1369217581-16285-1-git-send-email-serban.constantinescu@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/05/13 06:10, Saravana Kannan wrote:
-> On 05/20/2013 06:28 AM, James Hogan wrote:
->> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
->> index dd7adff..8138c94 100644
->> --- a/include/linux/clk-private.h
->> +++ b/include/linux/clk-private.h
->> @@ -33,8 +33,11 @@ struct clk {
->>       const char        **parent_names;
->>       struct clk        **parents;
->>       u8            num_parents;
->> +    u8            new_parent_index;
-> 
-> Why do you need this? Given the new_parent, can't the specific clock
-> implementation just look it up when set_rate() is called? Wouldn't that
-> be the only time you would actually need the index?
->
-> If it's just for optimization of some error cases, I think we should
-> drop this to keep the code simpler. One less state to keep track of when
-> reading, writing or reviewing the clock framework.
+The changes in this patch will fix the binder interface for use on 64bit
+machines and stand as the base of the 64bit compat support. The changes
+apply to the structures that are passed between the kernel and
+userspace.
 
-clk_change_rate cannot currently return an error condition so I had
-assumed it was better to check that the requested parent clock has a
-valid parent index prior to starting to change any clock rates or firing
-off any notifications.
+Most of the  changes applied mirror the change to struct binder_version
+where there is no need for a 64bit wide protocol_version(on 64bit
+machines). The change inlines with the existing 32bit userspace(the
+structure has the same size) and simplifies the compat layer such that
+the same handler can service the BINDER_VERSION ioctl.
 
-Cheers
-James
+Other changes make use of kernel types as well as user-exportable ones
+and fix format specifier issues.
+
+The changes do not affect existing 32bit ABI.
+
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+---
+ drivers/staging/android/binder.c |   20 ++++++++++----------
+ drivers/staging/android/binder.h |    8 ++++----
+ 2 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index ce70909..ca79084 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1271,7 +1271,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_HANDLE: {
+ 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
+ 			if (ref == NULL) {
+-				pr_err("transaction release %d bad handle %ld\n",
++				pr_err("transaction release %d bad handle %d\n",
+ 				 debug_id, fp->handle);
+ 				break;
+ 			}
+@@ -1283,13 +1283,13 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 
+ 		case BINDER_TYPE_FD:
+ 			binder_debug(BINDER_DEBUG_TRANSACTION,
+-				     "        fd %ld\n", fp->handle);
++				     "        fd %d\n", fp->handle);
+ 			if (failed_at)
+ 				task_close_fd(proc, fp->handle);
+ 			break;
+ 
+ 		default:
+-			pr_err("transaction release %d bad object type %lx\n",
++			pr_err("transaction release %d bad object type %x\n",
+ 				debug_id, fp->type);
+ 			break;
+ 		}
+@@ -1547,7 +1547,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 		case BINDER_TYPE_WEAK_HANDLE: {
+ 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
+ 			if (ref == NULL) {
+-				binder_user_error("%d:%d got transaction with invalid handle, %ld\n",
++				binder_user_error("%d:%d got transaction with invalid handle, %d\n",
+ 						proc->pid,
+ 						thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+@@ -1590,13 +1590,13 @@ static void binder_transaction(struct binder_proc *proc,
+ 
+ 			if (reply) {
+ 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
+-					binder_user_error("%d:%d got reply with fd, %ld, but target does not allow fds\n",
++					binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
+ 						proc->pid, thread->pid, fp->handle);
+ 					return_error = BR_FAILED_REPLY;
+ 					goto err_fd_not_allowed;
+ 				}
+ 			} else if (!target_node->accept_fds) {
+-				binder_user_error("%d:%d got transaction with fd, %ld, but target does not allow fds\n",
++				binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
+ 					proc->pid, thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+ 				goto err_fd_not_allowed;
+@@ -1604,7 +1604,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 
+ 			file = fget(fp->handle);
+ 			if (file == NULL) {
+-				binder_user_error("%d:%d got transaction with invalid fd, %ld\n",
++				binder_user_error("%d:%d got transaction with invalid fd, %d\n",
+ 					proc->pid, thread->pid, fp->handle);
+ 				return_error = BR_FAILED_REPLY;
+ 				goto err_fget_failed;
+@@ -1618,13 +1618,13 @@ static void binder_transaction(struct binder_proc *proc,
+ 			task_fd_install(target_proc, target_fd, file);
+ 			trace_binder_transaction_fd(t, fp->handle, target_fd);
+ 			binder_debug(BINDER_DEBUG_TRANSACTION,
+-				     "        fd %ld -> %d\n", fp->handle, target_fd);
++				     "        fd %d -> %d\n", fp->handle, target_fd);
+ 			/* TODO: fput? */
+ 			fp->handle = target_fd;
+ 		} break;
+ 
+ 		default:
+-			binder_user_error("%d:%d got transaction with invalid object type, %lx\n",
++			binder_user_error("%d:%d got transaction with invalid object type, %x\n",
+ 				proc->pid, thread->pid, fp->type);
+ 			return_error = BR_FAILED_REPLY;
+ 			goto err_bad_object_type;
+@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			goto err;
+ 		}
+ 		binder_debug(BINDER_DEBUG_READ_WRITE,
+-			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
++			     "%d:%d write %zd at %016lx, read %zd at %016lx\n",
+ 			     proc->pid, thread->pid, bwr.write_size,
+ 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
+ 
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index edab249..2f94d16 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -48,13 +48,13 @@ enum {
+  */
+ struct flat_binder_object {
+ 	/* 8 bytes for large_flat_header. */
+-	unsigned long		type;
+-	unsigned long		flags;
++	__u32		type;
++	__u32		flags;
+ 
+ 	/* 8 bytes of data. */
+ 	union {
+ 		void __user	*binder;	/* local object */
+-		signed long	handle;		/* remote object */
++		__s32	    handle;		/* remote object */
+ 	};
+ 
+ 	/* extra data associated with local object */
+@@ -78,7 +78,7 @@ struct binder_write_read {
+ /* Use with BINDER_VERSION, driver fills in fields. */
+ struct binder_version {
+ 	/* driver protocol version -- increment with incompatible change */
+-	signed long	protocol_version;
++	__s32       protocol_version;
+ };
+ 
+ /* This is the current protocol version. */
+-- 
+1.7.9.5
 
