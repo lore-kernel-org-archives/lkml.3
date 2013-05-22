@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3EVOgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:36:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15074 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab3EVOgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:36:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,721,1363158000"; 
-   d="scan'208";a="338237683"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <519C01D8.4040301@sr71.net>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-30-git-send-email-kirill.shutemov@linux.intel.com>
- <519C01D8.4040301@sr71.net>
-Subject: Re: [PATCHv4 29/39] thp: move maybe_pmd_mkwrite() out of
- mk_huge_pmd()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130522143746.A7CE5E0090@blue.fi.intel.com>
-Date: Wed, 22 May 2013 17:37:46 +0300 (EEST)
+	id S1756216Ab3EVOgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:36:49 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35529 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab3EVOgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:36:48 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] ARM: ux500: Apply other compatible name to the u8540 DTS file
+Date: Wed, 22 May 2013 15:36:42 +0100
+Message-Id: <1369233402-19225-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 05/11/2013 06:23 PM, Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > It's confusing that mk_huge_pmd() has sematics different from mk_pte()
-> > or mk_pmd().
-> > 
-> > Let's move maybe_pmd_mkwrite() out of mk_huge_pmd() and adjust
-> > prototype to match mk_pte().
-> 
-> Was there a motivation to do this beyond adding consistency?  Do you use
-> this later or something?
+The common name for the 8540 is the u8540, but the fully qualified
+name, or proper name is ccu8540. Ensure both are available to drivers
+and platform code that wish to use them.
 
-I spent some time on debugging problem caused by this inconsistency, so at
-that point I was motivated to fix it. :)
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/ccu8540.dts |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
+index 18daa01..af4487f 100644
+--- a/arch/arm/boot/dts/ccu8540.dts
++++ b/arch/arm/boot/dts/ccu8540.dts
+@@ -14,7 +14,7 @@
+ 
+ / {
+ 	model = "ST-Ericsson U8540 platform with Device Tree";
+-	compatible = "st-ericsson,u8540";
++	compatible = "st-ericsson,ccu8540", "st-ericsson,u8540";
+ 
+ 	memory {
+ 		reg = <0x00000000 0x20000000>;
 -- 
- Kirill A. Shutemov
+1.7.10.4
+
