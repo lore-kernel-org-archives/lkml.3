@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab3EVOpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 10:45:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8891 "EHLO mx1.redhat.com"
+	id S1756283Ab3EVOqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 10:46:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41795 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756113Ab3EVOpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 10:45:34 -0400
-Date: Wed, 22 May 2013 17:44:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-m32r-ja@ml.linux-m32r.org, kvm@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Howells <dhowells@redhat.com>,
-        linux-mm@kvack.org, Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        linux-am33-list@redhat.com, Hirokazu Takata <takata@linux-m32r.org>,
-        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        microblaze-uclinux@itee.uq.edu.au, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, Michal Simek <monstr@monstr.eu>,
-        linux-m32r@ml.linux-m32r.org, linux-kernel@vger.kernel.org,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 00/10] uaccess: better might_sleep/might_fault behavior
-Message-ID: <20130522144406.GB21886@redhat.com>
-References: <cover.1368702323.git.mst@redhat.com>
- <201305221125.36284.arnd@arndb.de>
- <20130522134124.GD18614@n2100.arm.linux.org.uk>
- <201305221604.49185.arnd@arndb.de>
+	id S1754696Ab3EVOqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 10:46:44 -0400
+Date: Wed, 22 May 2013 16:46:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, penberg@kernel.org,
+        levinsasha928@gmail.com, mtosatti@redhat.com, tglx@linutronix.de,
+        bp@suse.de, fengguang.wu@intel.com, linux-tip-commits@vger.kernel.org
+Subject: [PATCH -v2] x86: Add a kvm config file
+Message-ID: <20130522144638.GB15085@pd.tnic>
+References: <20130503142900.GA3433@pd.tnic>
+ <5183CFAC.8020005@infradead.org>
+ <20130503150818.GC3433@pd.tnic>
+ <5183D357.8000204@suse.cz>
+ <20130503153134.GD3433@pd.tnic>
+ <alpine.DEB.2.02.1305030952140.30317@chino.kir.corp.google.com>
+ <aea679e3-048a-4f28-b164-73191095a995@email.android.com>
+ <alpine.DEB.2.02.1305031016290.32047@chino.kir.corp.google.com>
+ <51840B70.2000205@linux.intel.com>
+ <20130503233610.GE3433@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201305221604.49185.arnd@arndb.de>
+In-Reply-To: <20130503233610.GE3433@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 04:04:48PM +0200, Arnd Bergmann wrote:
-> On Wednesday 22 May 2013, Russell King - ARM Linux wrote:
-> > On Wed, May 22, 2013 at 11:25:36AM +0200, Arnd Bergmann wrote:
-> > > Given the most commonly used functions and a couple of architectures
-> > > I'm familiar with, these are the ones that currently call might_fault()
-> > > 
-> > >                       x86-32  x86-64  arm     arm64   powerpc s390    generic
-> > > copy_to_user          -       x       -       -       -       x       x
-> > > copy_from_user        -       x       -       -       -       x       x
-> > > put_user              x       x       x       x       x       x       x
-> > > get_user              x       x       x       x       x       x       x
-> > > __copy_to_user        x       x       -       -       x       -       -
-> > > __copy_from_user      x       x       -       -       x       -       -
-> > > __put_user            -       -       x       -       x       -       -
-> > > __get_user            -       -       x       -       x       -       -
-> > > 
-> > > WTF?
-> > 
-> > I think your table is rather screwed - especially on ARM.  Tell me -
-> > how can __copy_to_user() use might_fault() but copy_to_user() not when
-> > copy_to_user() is implemented using __copy_to_user() ?  Same for
-> > copy_from_user() but the reverse argument - there's nothing special
-> > in our copy_from_user() which would make it do might_fault() when
-> > __copy_from_user() wouldn't.
-> 
-> I think something went wrong with formatting of the tabstobs in
-> the table. I've tried to correct it above to the same version I
-> see on the mailing list.
-> 
-> > The correct position for ARM is: our (__)?(pu|ge)t_user all use
-> > might_fault(), but (__)?copy_(to|from)_user do not.  Neither does
-> > (__)?clear_user.  We might want to fix those to use might_fault().
-> 
-> Yes, that sounds like a good idea, especially since they are all
-> implemented out-of-line.
-> 
-> For __get_user()/__put_user(), I would probably do the reverse and make
-> them not call might_fault() though, like we do on most other architectures:
-> 
-> Look at the object code produced for setup_sigframe for instance, it calls
-> might_fault() around 25 times where one should really be enough.
+Add an config file snippet which enables additional options useful for
+running the kernel in a kvm guest. When you execute 'make kvmconfig' it
+merges those options with an already existing user config before you
+build the kernel.
 
-Well it depends on what config options you set.
-But with VOLUNTARY you are right.
-Also, look at memcpy_fromiovec and weep.
+Based on an patch from the external lkvm tree.
 
-> Using
-> __put_user() instead of put_user() is normally an indication that the
-> author of that function has made performance considerations and move the
-> (trivial) access_ok() call out, but now we add a more expensive
-> call instead.
-> 
-> 	Arnd
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
 
-I think exactly the same rules should apply to __XXX_user and
-__copy_XXX_user - otherwise it's really confusing.
+So I've been running this for a while now and seems like the cleanest
+solution to me ATM.
 
-Maybe a preempt point in might_fault should go away?
-Basically
+ arch/x86/Makefile                 |  6 ++++++
+ arch/x86/configs/kvm_guest.config | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+ create mode 100644 arch/x86/configs/kvm_guest.config
 
-#define might_fault() __might_sleep(__FILE__, __LINE__, 0)
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 5c477260294f..91ee171f1cff 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,6 +220,11 @@ archclean:
+ 	$(Q)$(MAKE) $(clean)=$(boot)
+ 	$(Q)$(MAKE) $(clean)=arch/x86/tools
+ 
++kvmconfig:
++	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
++	$(Q)yes "" | $(MAKE) oldconfig
++
+ define archhelp
+   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
+   echo  '  install      - Install kernel using'
+@@ -233,4 +238,5 @@ define archhelp
+   echo  '                  bzdisk/fdimage*/isoimage also accept:'
+   echo  '                  FDARGS="..."  arguments for the booted kernel'
+   echo  '                  FDINITRD=file initrd for the booted kernel'
++  echo  '  kvmconfig	- Enable additional options for guest kernel support'
+ endef
+diff --git a/arch/x86/configs/kvm_guest.config b/arch/x86/configs/kvm_guest.config
+new file mode 100644
+index 000000000000..f9affcc3b9f1
+--- /dev/null
++++ b/arch/x86/configs/kvm_guest.config
+@@ -0,0 +1,28 @@
++CONFIG_NET=y
++CONFIG_NET_CORE=y
++CONFIG_NETDEVICES=y
++CONFIG_BLOCK=y
++CONFIG_BLK_DEV=y
++CONFIG_NETWORK_FILESYSTEMS=y
++CONFIG_INET=y
++CONFIG_TTY=y
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_BINFMT_ELF=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_VIRTUALIZATION=y
++CONFIG_HYPERVISOR_GUEST=y
++CONFIG_PARAVIRT=y
++CONFIG_KVM_GUEST=y
++CONFIG_VIRTIO=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BLK=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_VIRTIO_NET=y
++CONFIG_9P_FS=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
+-- 
+1.8.3.rc0
 
-Possibly adding the in_atomic() etc checks that Peter suggested.
-
-Ingo, what do you think? And what testing would be appropriate
-for such a change?
-
-
-Thanks,
 
 -- 
-MST
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
