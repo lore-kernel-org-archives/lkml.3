@@ -1,33 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3EVUsm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:48:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41724 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756898Ab3EVUsj (ORCPT
+	id S1757190Ab3EVUzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:55:50 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:52115 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940Ab3EVUzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:48:39 -0400
-Date: Wed, 22 May 2013 13:48:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joern Engel <joern@logfs.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 09/14] bcon: remove version 1.0 support
-Message-Id: <20130522134837.f182d16882468e9e968f2647@linux-foundation.org>
-In-Reply-To: <1368132193-25817-12-git-send-email-joern@logfs.org>
-References: <1368132193-25817-1-git-send-email-joern@logfs.org>
-	<1368132193-25817-12-git-send-email-joern@logfs.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 22 May 2013 16:55:48 -0400
+Message-ID: <519D30CF.9040904@gmail.com>
+Date: Wed, 22 May 2013 22:55:43 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Simon Baatz <gmbnomis@gmail.com>
+CC: David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 11/12] ARM: kirkwood: remove redundant DT board files
+References: <1367854420-8006-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com> <1369154510-4927-12-git-send-email-sebastian.hesselbarth@gmail.com> <20130522203633.GA28394@schnuecks.de>
+In-Reply-To: <20130522203633.GA28394@schnuecks.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  9 May 2013 16:43:07 -0400 Joern Engel <joern@logfs.org> wrote:
+On 05/22/2013 10:36 PM, Simon Baatz wrote:
+> Hi Sebastian,
+>
+> On Tue, May 21, 2013 at 06:41:49PM +0200, Sebastian Hesselbarth wrote:
+>> With DT support for mv643xx_eth, board specific init for some boards now
+>> is unneccessary. Remove those board files, Kconfig entries, and
+>> corresponding entries in kirkwood_defconfig.
+>>
+>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>> ---
+>> Note: board-km_kirkwood.c is also removed, as Valentin Longchamp confirmed
+>> the lock-up is not caused by accessing clock gating registers but rather
+>> non-existent device registers. This will be addressed by dtsi separation
+>> for kirkwood and bobcat SoC variants.
+>>
+>> Changelog:
+>> v3->v4:
+>> - remove more boards that don't require board specific setup
+>>
+...
+> We still have:
+>
+> static const char * const kirkwood_dt_board_compat[] = {
+> 	"globalscale,dreamplug",
+> 	"globalscale,guruplug",
+> 	"dlink,dns-320",
+> 	"dlink,dns-325",
+> 	"iom,iconnect",
+> 	"raidsonic,ib-nas62x0",
+> 	"qnap,ts219",
+> 	"seagate,dockstar",
+> 	"seagate,goflexnet",
+> 	"buffalo,lsxl",
+> 	"iom,ix2-200",
+> 	"keymile,km_kirkwood",
+> 	"lacie,cloudbox",
+> 	"lacie,inetspace_v2",
+> 	"lacie,netspace_lite_v2",
+> 	"lacie,netspace_max_v2",
+> 	"lacie,netspace_mini_v2",
+> 	"lacie,netspace_v2",
+> 	"mpl,cec4",
+> 	"netgear,readynas-duo-v2",
+> 	"plathome,openblocks-a6",
+> 	"usi,topkick",
+> 	"zyxel,nsa310",
+> 	NULL
+> };
+>
+> in that file. I think it does not make sense that we need to list
+> boards here that can be described fully by DT. When adding such a
+> board in the future, you will still need to adapt board-dt.c.
 
-> Very few machines ever ran with 1.0 format and by now I doubt whether a
-> single one still does.  No need to carry that code along.
+True, will remove the redundant compatible strings for v5.
+Actually, if I am not missing something, all compatible strings except
+"marvell,kirkwood" are redundant as long as board.dts append it
+correctly.
 
-aw geeze.  Can we please clean up the patch series?
+> Should we remove the boards that you removed above here as well and
+> add
+>
+> 	"marvell,kirkwood-88f6192",
+> 	"marvell,kirkwood-88f6281",
+> 	"marvell,kirkwood-88f6282",
+> 	"marvell,kirkwood-88f6283",
+> 	"marvell,kirkwood-88f6702",
+> 	"marvell,kirkwood-98DX4122",
+>
+> or even just state "marvell,kirkwood"?
+
+I would stick with "marvell,kirkwood" only. This is SoC init code and
+we do not distinguish variants here at all.
+
+Sebastian
