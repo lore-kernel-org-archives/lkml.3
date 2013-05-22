@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757662Ab3EVWRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:17:44 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:65041 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab3EVWRm (ORCPT
+	id S1757422Ab3EVWSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42213 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab3EVWSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:17:42 -0400
-Date: Thu, 23 May 2013 07:17:37 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522221737.GA12339@mtj.dyndns.org>
-References: <20130522093249.GC3466@mtj.dyndns.org>
- <519C959A.3090100@redhat.com>
- <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522143019.GA18541@mtj.dyndns.org>
- <519CDDA4.2050100@redhat.com>
- <20130522193009.GA23845@mtj.dyndns.org>
- <519D360D.4050309@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D360D.4050309@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 22 May 2013 18:18:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/5] 3.4.47-stable review
+Date: Wed, 22 May 2013 15:18:06 -0700
+Message-Id: <20130522221330.720801923@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:18:05PM +0200, Paolo Bonzini wrote:
-> Ok, so I can split it in 10 patches one per command, but at some point I
-> wonder if it is overkill.  For example, for disks:
-> 
-> - WRITE AND VERIFY(16) is needed to support >2TB disks, and the
-> corresponding 12-byte CDB is whitelisted already.  I didn't get reports
-> about _these_ command but I do get bug reports about >2TB disks.
-> SYNCHRONIZE CACHE(16) is similarly the 16-byte extension of another
-> 10-byte command.
-> 
-> - I added ATA PASS-THROUGH(16) because ATA PASS-THROUGH(12) is present;
-> using the (16) version is preferrable because (12) conflicts with the
-> destructive MMC command BLANK, see the sg_sat_identify man page.
-> 
-> - WRITE SAME(16), WRITE SAME(10), UNMAP are needed for discard.
-> 
-> - COMPARE AND WRITE is used by cluster software.
-> 
-> Should this be four separate patches?  Or is it enough to write this in
-> the commit message?  I honestly find this level of detail to be way way
-> higher than the normal requirement of kernel patches, but I'm happy to
-> comply.
+This is the start of the stable review cycle for the 3.4.47 release.
+There are 5 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-I think the larger point is that it really is an extension of the
-existing kludge.  As mentioned before, cdb filtering itself isn't
-something desirable.  It was added as a kludge to work around CD
-burning problem.  We should have limited to MMC devices from the
-beginning but forgot that and it of course developed uses which were
-never intended which in turn pushes the expansion of the kludge.
+Responses should be made by Fri May 24 22:10:47 UTC 2013.
+Anything received after that time might be too late.
 
-The primary point where we don't see eye-to-eye is how manageable we
-find SG_IO to be.  I have deep seated distrust on exposing SG_IOs in
-controlled way.  The drivers try really hard to avoid certain command
-sequences or sub-operations.  We end up with all sorts of black and
-white lists and careful code sequences grown over time to avoid
-obscure issues.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.47-rc1.gz
+and the diffstat can be found below.
 
-If the userland is trusted enough to be responsible for all that, it's
-fine and that's what "count me out" knob is about which makes sense to
-me.  Per-cdb filtering to a lesser security domain, not so much.  An
-argument could be made that, as a side effect of the misused cdb
-filter, we already have it and might as well expand on it; however, as
-Martin reiterated in this thread, this is a fundamentally broken
-approach.  Well, it at least seems that way to me.
+thanks,
 
-So, what I'm asking is not about splitting the patches in extreme
-granularity or adding absurd amount of details, but more the general
-discussion and justification of the approach taken for prospect use
-cases and how the commands being added would be part of such approach.
+greg k-h
 
-> >>>   Why do you need this at all if
-> >>>   you have the "count me out" knob in the first place?
-> >>
-> >> Because the "count me out" knob needs privileges.  It opens up way, way
-> > 
-> > So does giving out access to the device node itself.
-> 
-> No, it doesn't.  You can use SCM_RIGHTS, and pass a file descriptor for
-> the device node to an unprivileged program.  You can choose the
-> users/groups that are allowed to access the device.  In either case, the
-> privileged action is limited in time or in scope.
-> 
-> The count-me-out knob affects all processes that use the device node,
-> and won't be cleaned up properly if you SIGKILL the (privileged)
-> process that sets it.  So if you can avoid it, you should.
+-------------
+Pseudo-Shortlog of commits:
 
-Then let's make it fit the use case better.  I really can't see much
-point in crafting the cdb filter when you basically have to entrust
-the device to the user anyway.  Let's either trust the user with the
-device or not.  I'm very doubtful that the filtered access via SG_IO
-can be reliable or secure enough.  Let's please avoid extending a
-broken thing.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.47-rc1
 
-> There are many use cases, I listed some in my reply to Martin.
-> Sometimes you have trust over the guest and can use count-me-out.  But
-> in some cases you don't, and yet the current whitelist is not enough
-> (e.g. tapes).
+Alan Cox <alan@linux.intel.com>
+    media: mantis: fix silly crash case
 
-Can you elaborate?  Why can't a tape device be entrusted to the user?
+Niels Ole Salscheider <niels_ole@salscheider-online.de>
+    drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
 
--- 
-tejun
+Mika Westerberg <mika.westerberg@linux.intel.com>
+    i2c: designware: always clear interrupts before enabling them
+
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    hwmon: fix error return code in abituguru_probe()
+
+Gabriel de Perthuis <g2p.code@gmail.com>
+    btrfs: don't stop searching after encountering the wrong item
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                 |  4 ++--
+ drivers/gpu/drm/radeon/evergreen.c       |  4 ++--
+ drivers/gpu/drm/radeon/radeon_ttm.c      |  2 +-
+ drivers/gpu/drm/radeon/si.c              |  4 ++--
+ drivers/hwmon/abituguru.c                | 16 ++++++++++------
+ drivers/i2c/busses/i2c-designware-core.c |  3 ++-
+ drivers/media/dvb/mantis/mantis_dvb.c    |  6 ++++--
+ fs/btrfs/ioctl.c                         | 10 +++++-----
+ 8 files changed, 28 insertions(+), 21 deletions(-)
+
+
