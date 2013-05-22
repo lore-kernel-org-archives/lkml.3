@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3EVMzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:55:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15421 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769Ab3EVMzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:55:07 -0400
-Date: Wed, 22 May 2013 15:54:53 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v4 0/6] mips/kvm: Fix ABI for compatibility with 64-bit
- guests.
-Message-ID: <20130522125453.GN14287@redhat.com>
-References: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com>
+	id S1754775Ab3EVM40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:56:26 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:41487 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab3EVM4Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:56:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1368321816-17719-34-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Wed, 22 May 2013 20:56:23 +0800
+Message-ID: <CAJd=RBB-LdPFpC-V07FYKEH7OXMwDgVr4RASqcrvPmcaKv+P5w@mail.gmail.com>
+Subject: Re: [PATCHv4 33/39] thp, mm: implement do_huge_linear_fault()
+From: Hillf Danton <dhillf@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 01:54:49PM -0700, David Daney wrote:
-> From: David Daney <david.daney@cavium.com>
-> 
-> The initial patch set implementing MIPS KVM does not handle 64-bit
-> guests or use of the FPU.  This patch set corrects these ABI issues,
-> and does some very minor clean up.
-> 
-Sanjay, is this looks good to you. 
+On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> @@ -3316,17 +3361,25 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>                 if (unlikely(anon_vma_prepare(vma)))
+>                         return VM_FAULT_OOM;
+>
+> -               cow_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+> +               cow_page = alloc_fault_page_vma(vma, address, flags);
+>                 if (!cow_page)
+> -                       return VM_FAULT_OOM;
+> +                       return VM_FAULT_OOM | VM_FAULT_FALLBACK;
+>
 
-What userspace MIPS is using for machine emulation? Is there corresponding
-patches to the userspace?
+Fallback makes sense with !thp ?
 
-> Chandes from v3: Use KVM_SET_ONE_REG instead of KVM_SET_MSRS.  Added
->                  ENOIOCTLCMD patch.
-> 
-> Changes from v2: Split into five parts, no code change.
-> 
-> David Daney (6):
->   mips/kvm: Fix ABI for use of FPU.
->   mips/kvm: Fix ABI for use of 64-bit registers.
->   mips/kvm: Fix name of gpr field in struct kvm_regs.
->   mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in
->     kvm_arch_vcpu_ioctl_{s,g}et_regs
->   mips/kvm: Fix ABI by moving manipulation of CP0 registers to
->     KVM_{G,S}ET_ONE_REG
->   mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
-> 
->  arch/mips/include/asm/kvm.h      | 137 ++++++++++++----
->  arch/mips/include/asm/kvm_host.h |   4 -
->  arch/mips/kvm/kvm_mips.c         | 118 +++-----------
->  arch/mips/kvm/kvm_trap_emul.c    | 338 ++++++++++++++++++++++++++++++++++-----
->  4 files changed, 430 insertions(+), 167 deletions(-)
-> 
-> -- 
-> 1.7.11.7
-
---
-			Gleb.
+>                 if (mem_cgroup_newpage_charge(cow_page, mm, GFP_KERNEL)) {
+>                         page_cache_release(cow_page);
+> -                       return VM_FAULT_OOM;
+> +                       return VM_FAULT_OOM | VM_FAULT_FALLBACK;
+>                 }
+>         } else
+>                 cow_page = NULL;
