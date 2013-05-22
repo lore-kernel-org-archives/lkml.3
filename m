@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3EVWTW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:19:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42225 "EHLO
+	id S1757792Ab3EVWTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:19:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab3EVWSW (ORCPT
+	with ESMTP id S1757312Ab3EVWTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:18:22 -0400
+	Wed, 22 May 2013 18:19:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [ 3/5] i2c: designware: always clear interrupts before enabling them
-Date: Wed, 22 May 2013 15:18:09 -0700
-Message-Id: <20130522221331.487538409@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/3] 3.0.80-stable review
+Date: Wed, 22 May 2013 15:19:42 -0700
+Message-Id: <20130522221334.510217272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130522221330.720801923@linuxfoundation.org>
-References: <20130522221330.720801923@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.0.80 release.
+There are 3 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Fri May 24 22:11:00 UTC 2013.
+Anything received after that time might be too late.
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.80-rc1.gz
+and the diffstat can be found below.
 
-commit 2a2d95e9d6d29e726cc294b65391917ed2e32bf4 upstream.
+thanks,
 
-If the I2C bus is put to a low power state by an ACPI method it might pull
-the SDA line low (as its power is removed). Once the bus is put to full
-power state again, the SDA line is pulled back to high. This transition
-looks like a STOP condition from the controller point-of-view which sets
-STOP detected bit in its status register causing the driver to fail
-subsequent transfers.
+greg k-h
 
-Fix this by always clearing all interrupts before we start a transfer.
+-------------
+Pseudo-Shortlog of commits:
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.80-rc1
 
----
- drivers/i2c/busses/i2c-designware-core.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Alan Cox <alan@linux.intel.com>
+    media: mantis: fix silly crash case
 
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -349,7 +349,8 @@ static void i2c_dw_xfer_init(struct dw_i
- 	/* Enable the adapter */
- 	dw_writel(dev, 1, DW_IC_ENABLE);
- 
--	/* Enable interrupts */
-+	/* Clear and enable interrupts */
-+	i2c_dw_clear_int(dev);
- 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
- }
- 
+Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+    hwmon: fix error return code in abituguru_probe()
+
+Gabriel de Perthuis <g2p.code@gmail.com>
+    btrfs: don't stop searching after encountering the wrong item
+
+
+-------------
+
+Diffstat:
+
+ Makefile                              |  4 ++--
+ drivers/hwmon/abituguru.c             | 16 ++++++++++------
+ drivers/media/dvb/mantis/mantis_dvb.c |  6 ++++--
+ fs/btrfs/ioctl.c                      | 10 +++++-----
+ 4 files changed, 21 insertions(+), 15 deletions(-)
 
 
