@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3EVBw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 21:52:28 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:58915 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3EVBwZ (ORCPT
+	id S1754788Ab3EVCBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 22:01:30 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:45992 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754565Ab3EVCB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 21:52:25 -0400
-X-AuditID: 9c93017d-b7b64ae000000e51-d0-519c24d66ee9
-From: "Jongsung Kim" <neidhard.kim@lge.com>
-To: "'Stephen Warren'" <swarren@wwwdotorg.org>
-Cc: <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <linux-serial@vger.kernel.org>, <linux-rpi-kernel@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-References: <519AD82A.6090809@wwwdotorg.org> <1369116149-2361-1-git-send-email-neidhard.kim@lge.com> <519BA209.6050407@wwwdotorg.org> <519C22CB.5040009@wwwdotorg.org>
-In-Reply-To: <519C22CB.5040009@wwwdotorg.org>
-Subject: RE: [PATCH] ARM: bcm2835: override the HW UART periphid
-Date: Wed, 22 May 2013 10:52:22 +0900
-Organization: LG Electronics
-Message-ID: <013101ce568f$002d6490$00882db0$@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQJimAmS1Ox6IL9ILOhuUBuCvH+n3gI42OjzAY749IMDfUY5gpetxHdg
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 21 May 2013 22:01:27 -0400
+X-Sasl-enc: Vi8O3eaEeDim2sOrfvuRjwLCGhVuUC6BaFpvsZgLZETv 1369188086
+From: Alan Ott <alan@signal11.us>
+To: david@hauweele.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net, Alan Ott <alan@signal11.us>
+Subject: [PATCH beta 1] 3/3] mrf24j40: Use level-triggered interrupts
+Date: Tue, 21 May 2013 22:01:20 -0400
+Message-Id: <1369188080-8904-4-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1369188080-8904-1-git-send-email-alan@signal11.us>
+References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
+ <1369188080-8904-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren <swarren@wwwdotorg.org> :
-> Looking at the TRM, it seems this is really the only change, according
-> to the changelog in the documentation (although it's a little difficult
-> to tell since the document seems to have a bunch of changes that
-presumably
-> don't affect behaviour). So, faking the periphid seems OK.
->
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
->
-> Let's apply for 3.10.
+The mrf24j40 generates level interrupts. There are rare cases where it
+appears that the interrupt line never gets de-asserted between interrupts,
+causing interrupts to be lost, and causing a hung device from the driver's
+perspective.  Switching the driver to interpret these interrupts as
+level-triggered fixes this issue.
 
-Thank you, Stephen.
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ drivers/net/ieee802154/mrf24j40.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index a55ab8d..d59dbff 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -685,7 +685,7 @@ static int mrf24j40_probe(struct spi_device *spi)
+ 	ret = request_threaded_irq(spi->irq,
+ 				   NULL,
+ 				   mrf24j40_isr,
+-				   IRQF_TRIGGER_FALLING|IRQF_ONESHOT,
++				   IRQF_TRIGGER_LOW|IRQF_ONESHOT,
+ 				   dev_name(&spi->dev),
+ 				   devrec);
+ 
+-- 
+1.7.11.2
 
