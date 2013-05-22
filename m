@@ -1,41 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab3EVIht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:37:49 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:47459 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3EVIhp (ORCPT
+	id S1754961Ab3EVIiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:38:00 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:5179 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab3EVIhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:37:45 -0400
-Message-ID: <519C83D6.8020805@kernel.org>
-Date: Wed, 22 May 2013 11:37:42 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 22 May 2013 04:37:55 -0400
+Message-ID: <519C838B.9060609@huawei.com>
+Date: Wed, 22 May 2013 16:36:27 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/5] perf gtk/hists: Use GtkTreeStore instead of GtkListStore
-References: <1369211258-3163-1-git-send-email-namhyung@kernel.org> <1369211258-3163-2-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1369211258-3163-2-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH 5/9] memcg: use css_get/put when charging/uncharging kmem
+References: <5195D5F8.7000609@huawei.com> <5195D666.6030408@huawei.com> <20130517180822.GC12632@mtj.dyndns.org>
+In-Reply-To: <20130517180822.GC12632@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2013 11:27 AM, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
->
-> The GtkTreeStore can save items in a tree-like way.  This is a
-> preparation for supporting callgraphs in the hist browser.
->
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+On 2013/5/18 2:08, Tejun Heo wrote:
+> Hey,
+> 
+> On Fri, May 17, 2013 at 03:04:06PM +0800, Li Zefan wrote:
+>> +	/*
+>> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
+>> +	 * this last uncharge is racing with the offlining code or it is
+>> +	 * outliving the memcg existence.
+>> +	 *
+>> +	 * The memory barrier imposed by test&clear is paired with the
+>> +	 * explicit one in kmem_cgroup_css_offline.
+> 
+> Paired with the wmb to achieve what?
+> 
+>> +	 */
+>>  	if (memcg_kmem_test_and_clear_dead(memcg))
+>> -		mem_cgroup_put(memcg);
+>> +		css_put(&memcg->css);
+> 
+> The other side is wmb, so there gotta be something which wants to read
+> which were written before wmb here but the only thing after the
+> barrier is css_put() which doesn't need such thing, so I'm lost on
+> what the barrier pair is achieving here.
+> 
+> In general, please be *very* explicit about what's going on whenever
+> something is depending on barrier pairs.  It'll make it easier for
+> both the author and reviewers to actually understand what's going on
+> and why it's necessary.
+> 
+> ...
+>> @@ -5858,23 +5856,39 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>>  	return mem_cgroup_sockets_init(memcg, ss);
+>>  }
+>>  
+>> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+>> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>>  {
+>> -	mem_cgroup_sockets_destroy(memcg);
+>> +	if (!memcg_kmem_is_active(memcg))
+>> +		return;
+>>  
+>> +	/*
+>> +	 * kmem charges can outlive the cgroup. In the case of slab
+>> +	 * pages, for instance, a page contain objects from various
+>> +	 * processes. As we prevent from taking a reference for every
+>> +	 * such allocation we have to be careful when doing uncharge
+>> +	 * (see memcg_uncharge_kmem) and here during offlining.
+>> +	 *
+>> +	 * The idea is that that only the _last_ uncharge which sees
+>> +	 * the dead memcg will drop the last reference. An additional
+>> +	 * reference is taken here before the group is marked dead
+>> +	 * which is then paired with css_put during uncharge resp. here.
+>> +	 *
+>> +	 * Although this might sound strange as this path is called when
+>> +	 * the reference has already dropped down to 0 and shouldn't be
+>> +	 * incremented anymore (css_tryget would fail) we do not have
+> 
+> Hmmm?  offline is called on cgroup destruction regardless of css
+> refcnt.  The above comment seems a bit misleading.
+> 
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+The comment is wrong. I'll fix it.
+
+>> +	 * other options because of the kmem allocations lifetime.
+>> +	 */
+>> +	css_get(&memcg->css);
+>> +
+>> +	/* see comment in memcg_uncharge_kmem() */
+>> +	wmb();
+>>  	memcg_kmem_mark_dead(memcg);
+> 
+> Is the wmb() trying to prevent reordering between css_get() and
+> memcg_kmem_mark_dead()?  If so, it isn't necessary - the compiler
+> isn't allowed to reorder two atomic ops (they're all asm volatiles)
+> and the visibility order is guaranteed by the nature of the two
+> operations going on here - both perform modify-and-test on one end of
+> the operations.
+> 
+
+Yeah, I think you're right.
+
+> It could be argued that having memory barriers is better for
+> completeness of mark/test interface but then those barriers should
+> really moved into memcg_kmem_mark_dead() and its clearing counterpart.
+> 
+> While it's all clever and dandy, my recommendation would be just using
+> a lock for synchronization.  It isn't a hot path.  Why be clever?
+> 
+
+I don't quite like adding a lock not to protect data but just ensure code
+orders.
+
+Michal, what's your preference? I want to be sure that everyone is happy
+so the next version will hopefully be the last version.
 
