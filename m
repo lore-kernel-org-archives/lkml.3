@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab3EVNSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:18:04 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:56458 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab3EVNSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:18:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
-	<1369226853-16978-3-git-send-email-lee.jones@linaro.org>
-Date: Wed, 22 May 2013 15:18:01 +0200
-Message-ID: <CACRpkdYHiwbGonH80aJfHxP6F+hLb+_KdCr_g5ae1Yr-v=WcxA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754945Ab3EVNTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:19:54 -0400
+Received: from sauhun.de ([89.238.76.85]:55343 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab3EVNTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 09:19:53 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Deepak Saxena <dsaxena@plexity.net>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [PATCH 1/3] drivers/char/hw_random: remove leftover release_mem_region
+Date: Wed, 22 May 2013 15:21:24 +0200
+Message-Id: <1369228886-3527-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 2:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
+When converting this driver to devm_ioremap_resource, the removal of this now
+unneeded function has been forgotten.
 
-> This patch fixes a bug introduced in the v3.10 merge window.
->
-> Some platforms will not want external registers. Rather than setting up
-> lots of different clauses in the core ab8500 regulator driver not to
-> call ab8500-ext init() we just won't pass the initialisation data from
-> platform code. This patch checks for it and if it's missing, we won't
-> register the external regulators.
->
-> Cc: Mark Brown <broonie@kernel.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/regulator/ab8500-ext.c |    6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-> index b4d4547..8421537 100644
-> --- a/drivers/regulator/ab8500-ext.c
-> +++ b/drivers/regulator/ab8500-ext.c
-> @@ -334,6 +334,12 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
->                 return -EINVAL;
->         }
->
-> +       /* have any external regulators been specified? */
-> +       if (pdata->num_ext_regulator == 0) {
-> +               dev_warn(&pdev->dev, "Not using external regulators\n");
-> +               return 0;
-> +       }
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/char/hw_random/omap-rng.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-dev_warn() is really when we warn about something really nasty, worse
-than dev_err(). It seems dev_info() is more apropriate.
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index d2903e7..7af2b24 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -52,7 +52,6 @@
+  */
+ struct omap_rng_private_data {
+ 	void __iomem *base;
+-	struct resource *mem_res;
+ };
+ 
+ static inline u32 omap_rng_read_reg(struct omap_rng_private_data *priv, int reg)
+@@ -107,6 +106,7 @@ static struct hwrng omap_rng_ops = {
+ static int omap_rng_probe(struct platform_device *pdev)
+ {
+ 	struct omap_rng_private_data *priv;
++	struct resource *mem_res;
+ 	int ret;
+ 
+ 	priv = kzalloc(sizeof(struct omap_rng_private_data), GFP_KERNEL);
+@@ -118,8 +118,8 @@ static int omap_rng_probe(struct platform_device *pdev)
+ 	omap_rng_ops.priv = (unsigned long)priv;
+ 	dev_set_drvdata(&pdev->dev, priv);
+ 
+-	priv->mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	priv->base = devm_ioremap_resource(&pdev->dev, priv->mem_res);
++	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	priv->base = devm_ioremap_resource(&pdev->dev, mem_res);
+ 	if (IS_ERR(priv->base)) {
+ 		ret = PTR_ERR(priv->base);
+ 		goto err_ioremap;
+@@ -160,8 +160,6 @@ static int __exit omap_rng_remove(struct platform_device *pdev)
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	release_mem_region(priv->mem_res->start, resource_size(priv->mem_res));
+-
+ 	kfree(priv);
+ 
+ 	return 0;
+-- 
+1.7.10.4
 
-Anyway since it's an urgent regression:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Linus
