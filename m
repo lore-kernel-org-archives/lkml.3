@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab3EVUcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:32:18 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:60398 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab3EVUcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:32:17 -0400
+	id S1756811Ab3EVUd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:33:28 -0400
+Received: from mout.gmx.net ([212.227.17.22]:63926 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab3EVUd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:33:27 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX1/mUh9XOGTmjv0jaIZaivP09Xnbix6IvapebbGZFq
+	ULmxR98o+pOp7D
+From: Marc Dietrich <marvin24@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: GOTO Masanori <gotom@debian.or.jp>,
+        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/2] SCSI: nsp32: replace large udelay by mdelay
+Date: Wed, 22 May 2013 22:33:18 +0200
+Message-ID: <3402164.UHqBT8YQpR@fb07-iapwap2.physik.uni-giessen.de>
+User-Agent: KMail/4.10.2 (Linux/3.9.2-8.g04040b9-desktop; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <495d02a8263a553dd3f67b354f5ec9beb784a5d3.1369251478.git.marvin24@gmx.de>
+References: <cover.1369251478.git.marvin24@gmx.de> <495d02a8263a553dd3f67b354f5ec9beb784a5d3.1369251478.git.marvin24@gmx.de>
 MIME-Version: 1.0
-In-Reply-To: <519C278F.5030809@signal11.us>
-References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
-	<1369188080-8904-1-git-send-email-alan@signal11.us>
-	<519C278F.5030809@signal11.us>
-Date: Wed, 22 May 2013 22:32:15 +0200
-X-Google-Sender-Auth: Fgd79xV2KlhJsJ9JjPlzLUWx1FY
-Message-ID: <CAO+c-UV1bZZEE=9=7VVn3f1eLWzCpYCK9eZnnvzNwcPOKKtKLA@mail.gmail.com>
-Subject: Re: [PATCH beta 1] 0/3] Fix race conditions in mrf24j40 interrupts
-From: David Hauweele <david@hauweele.net>
-To: Alan Ott <alan@signal11.us>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Looks like Arndt already send a fix for this. Sorry for the noise.
 
-I cannot use level-triggered interrupts with GPIO on the RPi, so I
-cannot test this specific patch.
-However I agree with the idea of level-triggered interrupts, that
-would fix all major problems related to missed interrupts.
-
-Beside this I'm running a ping -f since more than two hours now and it
-seems to work well.
-
-David
-
-2013/5/22 Alan Ott <alan@signal11.us>:
-> On 05/21/2013 10:01 PM, Alan Ott wrote:
->> David Hauweele noticed that the mrf24j40 would hang arbitrarily after some
->> period of heavy traffic.  Two race conditions were discovered, and the
->> driver was changed to use threaded interrupts, since the enable/disable of
->> interrupts in the driver has recently been a lighning rod whenever issues
->> arise related to interrupts (costing engineering time), and since threaded
->> interrupts are the right way to do it.
->>
->> Alan Ott (3):
->>   mrf24j40: Move INIT_COMPLETION() to before packet transmission
->>   mrf24j40: Use threaded IRQ handler
->>   mrf24j40: Use level-triggered interrupts
->>
->>  drivers/net/ieee802154/mrf24j40.c | 31 +++++++++----------------------
->>  1 file changed, 9 insertions(+), 22 deletions(-)
->
-> I forgot to add, I ran ping -f both ways all afternoon (6.5 hours), and
-> it seems solid.
->
+Am Mittwoch, 22. Mai 2013, 21:48:41 schrieb Marc Dietrich:
+> ARM has a maximum of 2000 usec delay. Use mdelay for larger delays.
+> This affects distro kernels mostly.
+> 
+> Cc: GOTO Masanori <gotom@debian.or.jp>
+> Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Marc Dietrich <marvin24@gmx.de>
+> ---
+>  drivers/scsi/nsp32.c |    2 +-
+>  drivers/scsi/nsp32.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
+> index 1e3879d..e2f796f 100644
+> --- a/drivers/scsi/nsp32.c
+> +++ b/drivers/scsi/nsp32.c
+> @@ -2899,7 +2899,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
+>  	 * reset SCSI bus
+>  	 */
+>  	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
+> -	udelay(RESET_HOLD_TIME);
+> +	mdelay(RESET_HOLD_TIME);
+>  	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
+>  	for(i = 0; i < 5; i++) {
+>  		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+> diff --git a/drivers/scsi/nsp32.h b/drivers/scsi/nsp32.h
+> index c022182..b2b3dc6 100644
+> --- a/drivers/scsi/nsp32.h
+> +++ b/drivers/scsi/nsp32.h
+> @@ -605,7 +605,7 @@ typedef struct _nsp32_hw_data {
+>  /*
+>   * TIME definition
+>   */
+> -#define RESET_HOLD_TIME		10000	/* reset time in us (SCSI-2 says the
+> +#define RESET_HOLD_TIME		10	/* reset time in ms (SCSI-2 says the
+>  					   minimum is 25us) */
+>  #define SEL_TIMEOUT_TIME	10000	/* 250ms defined in SCSI specification
+>  					   (25.6us/1unit) */
