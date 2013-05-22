@@ -1,166 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab3EVXCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 19:02:30 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59253 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab3EVXC3 (ORCPT
+	id S1755340Ab3EVXRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 19:17:35 -0400
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:39260 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab3EVXRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 19:02:29 -0400
-Date: Wed, 22 May 2013 17:34:07 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>,
-        Steve Hodgson <steve@purestorage.com>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH 02/14] add blockconsole version 1.1
-Message-ID: <20130522213406.GG7399@logfs.org>
-References: <1368132193-25817-1-git-send-email-joern@logfs.org>
- <1368132193-25817-5-git-send-email-joern@logfs.org>
- <20130522134822.f2f5d17beb6196bc4c4deb7e@linux-foundation.org>
- <20130522210416.GF7399@logfs.org>
- <20130522154322.36d2c230bbdabb7a18979f55@linux-foundation.org>
+	Wed, 22 May 2013 19:17:34 -0400
+Message-ID: <519D5206.8080701@gmail.com>
+Date: Wed, 22 May 2013 19:17:26 -0400
+From: "Matthew O'Connor" <liquidhorse@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130522154322.36d2c230bbdabb7a18979f55@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: f.wiessner@smart-weblications.de
+CC: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        andy@greyhouse.net, fubar@us.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com,
+        andy@greyhouse.net
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de>
+In-Reply-To: <519D37F4.2030202@smart-weblications.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013 15:43:22 -0700, Andrew Morton wrote:
-> On Wed, 22 May 2013 17:04:16 -0400 J__rn Engel <joern@logfs.org> wrote:
-> 
-> > > >  Documentation/block/blockconsole.txt            |   94 ++++
-> > > >  Documentation/block/blockconsole/bcon_tail      |   62 +++
-> > > >  Documentation/block/blockconsole/mkblockconsole |   29 ++
-> > > 
-> > > We really need somewhere better to put userspace tools.
-> > 
-> > Agreed.  It started as "use this horrible code as a bad example" and
-> > turned into a repository for userspace code, which it should have
-> > been.
-> > 
-> > Do you have an opinion on tools/ vs. a standalong git tree for the
-> > tools?
-> 
-> ./tools/blockconsole/ sounds nice.  I like maintaining simple userspace
-> utils in the main kernel tree - it's very easy and efficient for us.
+This is the backported patch I submitted previously.  Hopefully this
+time around it won't be too messed up, I'm using Thunderbird instead of
+the web interface.  I have applied it successfully and without warnings
+against 3.4.46.  It builds, but is otherwise untested beyond what I did
+when I originally submitted back in Feb.  This patch applies only to the
+3.4 series kernel, although with minor changes it will work for 3.0,
+3.2, and 3.7.  If you're interested, I can submit the other patches
+shortly.  If this submission still does not conform to standards, please
+let me know where I went wrong.  For what it's worth I dropped the patch
+contents directly into the email, but I can attach it instead if that
+would work better.
 
-tools/blockconsole/ is shall be!
 
-> > > > +#define BCON_MAX_ERRORS	10
-> > > > +static void bcon_end_io(struct bio *bio, int err)
-> > > > +{
-> > > > +	struct bcon_bio *bcon_bio = container_of(bio, struct bcon_bio, bio);
-> > > > +	struct blockconsole *bc = bio->bi_private;
-> > > > +	unsigned long flags;
-> > > > +
-> > > > +	/*
-> > > > +	 * We want to assume the device broken and free this console if
-> > > > +	 * we accumulate too many errors.  But if errors are transient,
-> > > > +	 * we also want to forget about them once writes succeed again.
-> > > > +	 * Oh, and we only want to reset the counter if it hasn't reached
-> > > > +	 * the limit yet, so we don't bcon_put() twice from here.
-> > > > +	 */
-> > > > +	spin_lock_irqsave(&bc->end_io_lock, flags);
-> > > > +	if (err) {
-> > > > +		if (bc->error_count++ == BCON_MAX_ERRORS) {
-> > > > +			pr_info("no longer logging to %s\n", bc->devname);
-> > > 
-> > > pr_info() may be too low a severity level?
-> > 
-> > There is no distinction between "someone pulled the usb device" and
-> > "broken cable".  Blockconsole will continue writing and retire the
-> > device if errors accumulate.  The code is deliberately stupid, because
-> > stupid code tends to be more robust and devoid of strange
-> > corner-cases.
-> 
-> I meant should we use pr_err() or pr_emerg() rather than pr_info(). 
-> Chances are that pr_info() is being hidden.
+[ Upstream commit 567b871e503316b0927e54a3d7c86d50b722d955 ]
 
-Agreed.  Trouble is that pr_info() is about right for "someone pulled
-the usb device", which pr_err() or pr_emerg() is about right for
-"broken hardware".  So either choice will be wrong some of the time.
+bonding: rlb mode of bond should not alter ARP originating via bridge
 
-I guess in the end very few people care about debugging blockconsole
-failures.  Those that run blockconsole tend to care about debugging
-something else already.  So if you lean one way or the other, you have
-a stronger opinion than me.
+Do not modify or load balance ARP packets passing through balance-alb
+mode (wherein the ARP did not originate locally, and arrived via a bridge).
 
-> > > How does the code handle the obvious recursion concern here?
-> > 
-> > I think your next comment answers that.
-> 
-> hm, that was clever of me.  I meant more generally, if we do a printk()
-> from within this code how do we prevent arbitrarily deep recursion?
+Modifying pass-through ARP replies causes an incorrect MAC address
+to be placed into the ARP packet, rendering peers unable to communicate
+with the actual destination from which the ARP reply originated.
 
-I think in general you have to be careful and think twice before
-adding a printk.  Which is why there are only two instances so far.
-The more interesting case is in functions called from blockconsole (or
-netconsole or serial console or...).  And here the small set of
-functions when writing to the buffer should be safe and the much
-larger and complex set of functions for writeback is in the context of
-a different thread.
+Load balancing pass-through ARP requests causes an entry to be
+created for the peer in the rlb table, and bond_alb_monitor will
+occasionally issue ARP updates to all peers in the table instrucing them
+as to which MAC address they should communicate with; this occurs when
+some event sets rx_ntt.  In the bridged case, however, the MAC address
+used for the update would be the MAC of the slave, not the actual source
+MAC of the originating destination.  This would render peers unable to
+communicate with the destinations beyond the bridge.
 
-I have some fuzzy memory of this coming up in the past for netconsole.
-Wasn't hard to fix, which explains the lack of detailed memory.
+Signed-off-by: Matthew O'Connor <liquidhorse@gmail.com>
+CC: Zheng Li <zheng.x.li@oracle.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Andy Gospodarek <andy@greyhouse.net>
+Cc: "David S. Miller" <davem@davemloft.net>
 
-> > > > +		memcpy(bc->bio_array[i].sector +
-> > > > +				__bcon_console_ofs(console_bytes), msg, n);
-> > > > +		len -= n;
-> > > > +		msg += n;
-> > > > +		bcon_advance_console_bytes(bc, n);
-> > > > +	}
-> > > > +	wake_up_process(bc->writeback_thread);
-> > > > +	mod_timer(&bc->pad_timer, jiffies + HZ);
-> > > > +}
-> > > > +
-> > > > +static void bcon_init_bios(struct blockconsole *bc)
-> > > 
-> > > This code really needs some comments :(
-> > > 
-> > > Oh I see.  It's BIOs, not BIOS.  Had me fooled there.
-> > 
-> > But, but, but isn't this obvious to someone who has just written said
-> > function?  It has been a year now, so my own definition of obvious may
-> > have changed as well.
-> 
-> heh.  I blame Jens for calling it a "bio".
 
-I wonder what his response is when a recruiter asks him for a recent
-bio.
+diff -uprN linux-3.4.28/drivers/net/bonding/bond_alb.c
+linux-3.4.28-patched/drivers/net/bonding/bond_alb.c
+--- linux-3.4.28/drivers/net/bonding/bond_alb.c    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/drivers/net/bonding/bond_alb.c    2013-01-30
+15:37:25.121708311 -0500
+@@ -704,6 +704,12 @@ static struct slave *rlb_arp_xmit(struct
+     struct arp_pkt *arp = arp_pkt(skb);
+     struct slave *tx_slave = NULL;
+ 
++    /* Don't modify or load balance ARPs that do not originate locally
++     * (e.g.,arrive via a bridge).
++     */
++    if (!bond_slave_has_mac(bond, arp->mac_src))
++        return NULL;
++
+     if (arp->op_code == htons(ARPOP_REPLY)) {
+         /* the arp must be sent on the selected
+         * rx channel
+diff -uprN linux-3.4.28/drivers/net/bonding/bonding.h
+linux-3.4.28-patched/drivers/net/bonding/bonding.h
+--- linux-3.4.28/drivers/net/bonding/bonding.h    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/drivers/net/bonding/bonding.h    2013-01-30
+15:37:25.121708311 -0500
+@@ -18,6 +18,7 @@
+ #include <linux/timer.h>
+ #include <linux/proc_fs.h>
+ #include <linux/if_bonding.h>
++#include <linux/etherdevice.h>
+ #include <linux/cpumask.h>
+ #include <linux/in6.h>
+ #include <linux/netpoll.h>
+@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
+ }
+ #endif
+ 
++static inline struct slave *bond_slave_has_mac(struct bonding *bond,
++                           const u8 *mac)
++{
++    int i = 0;
++    struct slave *tmp;
++
++    bond_for_each_slave(bond, tmp, i)
++        if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
++            return tmp;
++
++    return NULL;
++}
+ 
+ /* exported from bond_main.c */
+ extern int bond_net_id;
+diff -uprN linux-3.4.28/include/linux/etherdevice.h
+linux-3.4.28-patched/include/linux/etherdevice.h
+--- linux-3.4.28/include/linux/etherdevice.h    2013-01-27
+23:51:45.000000000 -0500
++++ linux-3.4.28-patched/include/linux/etherdevice.h    2013-01-30
+15:37:25.121708311 -0500
+@@ -277,4 +277,37 @@ static inline unsigned long compare_ethe
+ #endif
+ }
+ 
++/**
++ * ether_addr_equal_64bits - Compare two Ethernet addresses
++ * @addr1: Pointer to an array of 8 bytes
++ * @addr2: Pointer to an other array of 8 bytes
++ *
++ * Compare two Ethernet addresses, returns true if equal, false otherwise.
++ *
++ * The function doesn't need any conditional branches and possibly uses
++ * word memory accesses on CPU allowing cheap unaligned memory reads.
++ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
++ *
++ * Please note that alignment of addr1 & addr2 are only guaranteed to
+be 16 bits.
++ */
++
++static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
++                                           const u8 addr2[6+2])
++{
++#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
++        unsigned long fold = ((*(unsigned long *)addr1) ^
++                              (*(unsigned long *)addr2));
++
++        if (sizeof(fold) == 8)
++                return zap_last_2bytes(fold) == 0;
++
++        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
++                                (*(unsigned long *)(addr2 + 4)));
++        return fold == 0;
++#else
++        return ether_addr_equal(addr1, addr2);
++#endif
++}
++
++
+ #endif    /* _LINUX_ETHERDEVICE_H */
 
-> > > > +void bcon_add(const char *name)
-> > > > +{
-> > > > +	/*
-> > > > +	 * We add each name to a small static buffer and ask for a workqueue
-> > > > +	 * to go pick it up asap.  Once it is picked up, the buffer is empty
-> > > > +	 * again, so hopefully it will suffice for all sane users.
-> > > > +	 */
-> > > > +	spin_lock(&device_lock);
-> > > > +	if (scanned_devices[0])
-> > > > +		strncat(scanned_devices, ",", sizeof(scanned_devices));
-> > > > +	strncat(scanned_devices, name, sizeof(scanned_devices));
-> > > > +	spin_unlock(&device_lock);
-> > > > +	schedule_work(&bcon_add_work);
-> > > > +}
-> > > 
-> > > What's all this do?
-> > 
-> > Work around init ordering problems.  Quite likely there is a much
-> > nicer way to this that I should know about and don't.
-> 
-> Well, without adequate description of the problem, nobody can help
-> solve it!
 
-Will dig through the dark corners of my memory or reproduce it,
-whichever is easier.
 
-Jörn
 
---
-When in doubt, use brute force.
--- Ken Thompson
+On 05/22/2013 05:26 PM, Smart Weblications GmbH - Florian Wiessner wrote:
+> Hi Greg,
+>
+>
+> Am 22.05.2013 22:04, schrieb Greg KH:
+>
+>
+>>> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
+>> Ok, that's what we need.
+>>
+>> Now, please cc: the developers / maintainers of that patch and ask them
+>> to have it included in the 3.4-stable kernel series.
+>>
+>> Then, if they agree, the network maintainer will pick it up and send it
+>> to me for inclusion.
+>>
+> i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
+> know the network maintainer...
+>
+> this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
+> netdev on 2013-02-01:
+>
+> http://lists.openwall.net/netdev/2013/02/01/86
+>
+> but i couldn't find a trace of the patch in 3.4.36?!
+>
+> Instead, i read another try to get it backported fail:
+>
+> http://permalink.gmane.org/gmane.linux.network/264198
+>
+>
+>
+>
+>
+>
+
