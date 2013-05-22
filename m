@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab3EVGIc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:08:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36775 "EHLO gate.crashing.org"
+	id S1755319Ab3EVGON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:14:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752385Ab3EVGI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:08:29 -0400
-Message-ID: <1369202788.3870.3.camel@pasglop>
-Subject: Re: [PATCH] bestcomm: no need to free when kzalloc fail
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Libo Chen <clbchenlibo.chen@huawei.com>
-Cc: vinod.koul@intel.com, grant.likely@linaro.org, rob.herring@calxeda.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Libo Chen <libo.chen@huawei.com>, agust@denx.de, phdm@macqel.be,
-        Li Zefan <lizefan@huawei.com>
-Date: Wed, 22 May 2013 16:06:28 +1000
-In-Reply-To: <519C4E4D.1060101@huawei.com>
-References: <1367743104-3448-1-git-send-email-libo.chen@huawei.com>
-	 <519C4E4D.1060101@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752449Ab3EVGOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 02:14:10 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH V2] virtio_net: enable napi for all possible queues during open
+Date: Wed, 22 May 2013 14:03:58 +0800
+Message-Id: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-05-22 at 12:49 +0800, Libo Chen wrote:
-> ping...
+Commit 55257d72bd1c51f25106350f4983ec19f62ed1fa (virtio-net: fill only rx
+queues which are being used) only does the napi enabling during open for
+curr_queue_pairs. This will break multiqueue receiving since napi of new queues
+were still disabled after changing the number of queues.
 
-This is pointless. We routinely avoid adding such crap by having
-the various free(...) routines cope with NULL. You just need to make
-sure you are indeed NULL in the error case.
+This patch fixes this by enabling napi for all possible queues during open.
 
-Ben.
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes from V1:
+- enable napi in open instead of virtnet_set_queues() to avoid kernel BUG() when
+trying to do napi_enable() for a already enabled queue
+---
+ drivers/net/virtio_net.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-> On 2013/5/5 16:38, chenlibo.3@gmail.com wrote:
-> > From: Libo Chen <libo.chen@huawei.com>
-> > 
-> > There is no need to free bcom_eng if kzalloc fail
-> > 
-> > Signed-off-by: Libo Chen <libo.chen@huawei.com>
-> > ---
-> >  drivers/dma/bestcomm/bestcomm.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/dma/bestcomm/bestcomm.c b/drivers/dma/bestcomm/bestcomm.c
-> > index a8c2e29..300ee2d 100644
-> > --- a/drivers/dma/bestcomm/bestcomm.c
-> > +++ b/drivers/dma/bestcomm/bestcomm.c
-> > @@ -400,7 +400,7 @@ static int mpc52xx_bcom_probe(struct platform_device *op)
-> >  		printk(KERN_ERR DRIVER_NAME ": "
-> >  			"Can't allocate state structure\n");
-> >  		rv = -ENOMEM;
-> > -		goto error_sramclean;
-> > +		goto error_kzalloc;
-> >  	}
-> >  
-> >  	/* Save the node */
-> > @@ -449,6 +449,7 @@ error_release:
-> >  	release_mem_region(res_bcom.start, sizeof(struct mpc52xx_sdma));
-> >  error_sramclean:
-> >  	kfree(bcom_eng);
-> > +error_kzalloc:
-> >  	bcom_sram_cleanup();
-> >  error_ofput:
-> >  	of_node_put(op->dev.of_node);
-> > 
-> 
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 2d6abac..241527d 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -636,10 +636,11 @@ static int virtnet_open(struct net_device *dev)
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 	int i;
+ 
+-	for (i = 0; i < vi->curr_queue_pairs; i++) {
+-		/* Make sure we have some buffers: if oom use wq. */
+-		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+-			schedule_delayed_work(&vi->refill, 0);
++	for (i = 0; i < vi->max_queue_pairs; i++) {
++		if (i < vi->curr_queue_pairs)
++			/* Make sure we have some buffers: if oom use wq. */
++			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
++				schedule_delayed_work(&vi->refill, 0);
+ 		virtnet_napi_enable(&vi->rq[i]);
+ 	}
+ 
+-- 
+1.7.1
 
