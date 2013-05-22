@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab3EVNGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 09:06:50 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:54776 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876Ab3EVNGm (ORCPT
+	id S1754625Ab3EVNHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 09:07:14 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56250 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3EVNHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 09:06:42 -0400
+	Wed, 22 May 2013 09:07:13 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: regulators: Remove misleading comment
-Date: Wed, 22 May 2013 14:06:35 +0100
-Message-Id: <1369227995-17142-1-git-send-email-lee.jones@linaro.org>
+        srinidhi.kasagar@stericsson.com, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH] regulator: ab8500: Remove external regulator init() clauses
+Date: Wed, 22 May 2013 14:07:05 +0100
+Message-Id: <1369228025-17192-1-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a comment which explains that the ab8505 platform
-uses the same initialisation settings as the ab8500. Well when this
-changed and the ab8505 started using its own set of initialisation
-values, someone forgot to remove it.
+The driver no longer needs to worry about which platform can and can't
+use external regulators successfully. Instead platform code will hold
+back external regulator initialisation data in the use-cases where the
+driver isn't applicable.
 
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-regulators.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/regulator/ab8500.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-index 33c353b..b34441b 100644
---- a/arch/arm/mach-ux500/board-mop500-regulators.c
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -996,7 +996,6 @@ struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
- 	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
- };
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index f6656b8..b6270f5 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -3156,12 +3156,10 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+ 			return err;
+ 	}
  
--/* Use the AB8500 init settings for AB8505 as they are the same right now */
- struct ab8500_regulator_platform_data ab8505_regulator_plat_data = {
- 	.reg_init               = ab8505_reg_init,
- 	.num_reg_init           = ARRAY_SIZE(ab8505_reg_init),
+-	if (!is_ab8505(ab8500)) {
+-		/* register external regulators (before Vaux1, 2 and 3) */
+-		err = ab8500_ext_regulator_init(pdev);
+-		if (err)
+-			return err;
+-	}
++	/* register external regulators (before Vaux1, 2 and 3) */
++	err = ab8500_ext_regulator_init(pdev);
++	if (err)
++		return err;
+ 
+ 	/* register all regulators */
+ 	for (i = 0; i < abx500_regulator.info_size; i++) {
 -- 
 1.7.10.4
 
