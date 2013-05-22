@@ -1,149 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab3EVFt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 01:49:29 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57214 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab3EVFt1 (ORCPT
+	id S1755278Ab3EVFuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 01:50:46 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:42034 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab3EVFuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 01:49:27 -0400
-Message-ID: <1369201765.3301.299.camel@edumazet-glaptop>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: paulmck@linux.vnet.ibm.com, Dipankar Sarma <dipankar@in.ibm.com>,
-        zhmurov@yandex-team.ru, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Date: Tue, 21 May 2013 22:49:25 -0700
-In-Reply-To: <1369188080.3301.268.camel@edumazet-glaptop>
-References: <519B38EC.90401@yandex-team.ru>
-	 <20130521120906.GD3578@linux.vnet.ibm.com>
-	 <1369143885.3301.221.camel@edumazet-glaptop>
-	 <519B8908.9080007@yandex-team.ru>
-	 <1369150693.3301.233.camel@edumazet-glaptop>
-	 <519BB90B.6080706@yandex-team.ru>
-	 <1369188080.3301.268.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 22 May 2013 01:50:37 -0400
+From: Simon Horman <horms@verge.net.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>, Julian Anastasov <ja@ssi.bg>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH ipvs-next v3 2/2] ipvs: use cond_resched_rcu() helper when walking connections
+Date: Wed, 22 May 2013 14:50:32 +0900
+Message-Id: <1369201832-17163-3-git-send-email-horms@verge.net.au>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1369201832-17163-1-git-send-email-horms@verge.net.au>
+References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 19:01 -0700, Eric Dumazet wrote:
+This avoids the situation where walking of a large number of connections
+may prevent scheduling for a long time while also avoiding excessive
+calls to rcu_read_unlock() and rcu_read_lock().
 
-> Please use ACCESS_ONCE(), which is the standard way to deal with this,
-> and remove the rcu_dereference_raw() in 
-> hlist_nulls_for_each_entry_rcu()
-> 
-> something like : (for the nulls part only)
+Note that in the case of !CONFIG_PREEMPT_RCU this will
+add a call to cond_resched().
 
-Thinking a bit more about this, I am a bit worried by other uses of
-ACCESS_ONCE(ptr->field)
+[ja@ssi.bg: add cond_resched_rcu to more places]
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+---
+ net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
-rcu_dereference(ptr->field) intent is to reload ptr->field every time
-from memory.
-
-Do we really need a
-
-#define ACCESS_FIELD_ONCE(PTR, FIELD) (((volatile typeof(*PTR) *)PTR)->FIELD)
-
-#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x)) 
-
-and change all rcu_dererence(ptr->field) occurrences ?
-
-I probably miss something obvious.
-
-Anyway, following patch seems to also solve the problem, I need a sleep to understand why.
-
-
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 0bf5d39..10b5c54 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -410,7 +410,7 @@ static inline int compute_score2(struct sock *sk, struct net *net,
- static struct sock *udp4_lib_lookup2(struct net *net,
- 		__be32 saddr, __be16 sport,
- 		__be32 daddr, unsigned int hnum, int dif,
--		struct udp_hslot *hslot2, unsigned int slot2)
-+		struct hlist_nulls_head *head, unsigned int slot2)
- {
- 	struct sock *sk, *result;
- 	struct hlist_nulls_node *node;
-@@ -420,7 +420,7 @@ static struct sock *udp4_lib_lookup2(struct net *net,
- begin:
- 	result = NULL;
- 	badness = 0;
--	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
-+	udp_portaddr_for_each_entry_rcu(sk, node, head) {
- 		score = compute_score2(sk, net, saddr, sport,
- 				      daddr, hnum, dif);
- 		if (score > badness) {
-@@ -483,7 +483,7 @@ struct sock *__udp4_lib_lookup(struct net *net, __be32 saddr,
- 
- 		result = udp4_lib_lookup2(net, saddr, sport,
- 					  daddr, hnum, dif,
--					  hslot2, slot2);
-+					  &hslot2->head, slot2);
- 		if (!result) {
- 			hash2 = udp4_portaddr_hash(net, htonl(INADDR_ANY), hnum);
- 			slot2 = hash2 & udptable->mask;
-@@ -493,7 +493,7 @@ struct sock *__udp4_lib_lookup(struct net *net, __be32 saddr,
- 
- 			result = udp4_lib_lookup2(net, saddr, sport,
- 						  htonl(INADDR_ANY), hnum, dif,
--						  hslot2, slot2);
-+						  &hslot2->head, slot2);
+diff --git a/net/netfilter/ipvs/ip_vs_conn.c b/net/netfilter/ipvs/ip_vs_conn.c
+index a083bda..c8c52a9 100644
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -975,8 +975,7 @@ static void *ip_vs_conn_array(struct seq_file *seq, loff_t pos)
+ 				return cp;
+ 			}
  		}
- 		rcu_read_unlock();
- 		return result;
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 42923b1..b5bc667 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -200,7 +200,7 @@ static inline int compute_score2(struct sock *sk, struct net *net,
- static struct sock *udp6_lib_lookup2(struct net *net,
- 		const struct in6_addr *saddr, __be16 sport,
- 		const struct in6_addr *daddr, unsigned int hnum, int dif,
--		struct udp_hslot *hslot2, unsigned int slot2)
-+		struct hlist_nulls_head *head, unsigned int slot2)
- {
- 	struct sock *sk, *result;
- 	struct hlist_nulls_node *node;
-@@ -210,7 +210,7 @@ static struct sock *udp6_lib_lookup2(struct net *net,
- begin:
- 	result = NULL;
- 	badness = -1;
--	udp_portaddr_for_each_entry_rcu(sk, node, &hslot2->head) {
-+	udp_portaddr_for_each_entry_rcu(sk, node, head) {
- 		score = compute_score2(sk, net, saddr, sport,
- 				      daddr, hnum, dif);
- 		if (score > badness) {
-@@ -274,7 +274,7 @@ struct sock *__udp6_lib_lookup(struct net *net,
+-		rcu_read_unlock();
+-		rcu_read_lock();
++		cond_resched_rcu();
+ 	}
  
- 		result = udp6_lib_lookup2(net, saddr, sport,
- 					  daddr, hnum, dif,
--					  hslot2, slot2);
-+					  &hslot2->head, slot2);
- 		if (!result) {
- 			hash2 = udp6_portaddr_hash(net, &in6addr_any, hnum);
- 			slot2 = hash2 & udptable->mask;
-@@ -284,7 +284,7 @@ struct sock *__udp6_lib_lookup(struct net *net,
- 
- 			result = udp6_lib_lookup2(net, saddr, sport,
- 						  &in6addr_any, hnum, dif,
--						  hslot2, slot2);
-+						  &hslot2->head, slot2);
+ 	return NULL;
+@@ -1015,8 +1014,7 @@ static void *ip_vs_conn_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+ 			iter->l = &ip_vs_conn_tab[idx];
+ 			return cp;
  		}
- 		rcu_read_unlock();
- 		return result;
-
-
-
+-		rcu_read_unlock();
+-		rcu_read_lock();
++		cond_resched_rcu();
+ 	}
+ 	iter->l = NULL;
+ 	return NULL;
+@@ -1206,17 +1204,13 @@ void ip_vs_random_dropentry(struct net *net)
+ 	int idx;
+ 	struct ip_vs_conn *cp, *cp_c;
+ 
++	rcu_read_lock();
+ 	/*
+ 	 * Randomly scan 1/32 of the whole table every second
+ 	 */
+ 	for (idx = 0; idx < (ip_vs_conn_tab_size>>5); idx++) {
+ 		unsigned int hash = net_random() & ip_vs_conn_tab_mask;
+ 
+-		/*
+-		 *  Lock is actually needed in this loop.
+-		 */
+-		rcu_read_lock();
+-
+ 		hlist_for_each_entry_rcu(cp, &ip_vs_conn_tab[hash], c_list) {
+ 			if (cp->flags & IP_VS_CONN_F_TEMPLATE)
+ 				/* connection template */
+@@ -1252,8 +1246,9 @@ void ip_vs_random_dropentry(struct net *net)
+ 				__ip_vs_conn_put(cp);
+ 			}
+ 		}
+-		rcu_read_unlock();
++		cond_resched_rcu();
+ 	}
++	rcu_read_unlock();
+ }
+ 
+ 
+@@ -1267,11 +1262,8 @@ static void ip_vs_conn_flush(struct net *net)
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+ flush_again:
++	rcu_read_lock();
+ 	for (idx = 0; idx < ip_vs_conn_tab_size; idx++) {
+-		/*
+-		 *  Lock is actually needed in this loop.
+-		 */
+-		rcu_read_lock();
+ 
+ 		hlist_for_each_entry_rcu(cp, &ip_vs_conn_tab[idx], c_list) {
+ 			if (!ip_vs_conn_net_eq(cp, net))
+@@ -1286,8 +1278,9 @@ flush_again:
+ 				__ip_vs_conn_put(cp);
+ 			}
+ 		}
+-		rcu_read_unlock();
++		cond_resched_rcu();
+ 	}
++	rcu_read_unlock();
+ 
+ 	/* the counter may be not NULL, because maybe some conn entries
+ 	   are run by slow timer handler or unhashed but still referred */
+-- 
+1.8.2.1
 
