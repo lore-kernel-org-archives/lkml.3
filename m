@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab3EVMkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:40:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41760 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab3EVMki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:40:38 -0400
-Subject: RapidIO subsystem and modularity
-From: Jean Delvare <jdelvare@suse.de>
-To: Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 22 May 2013 14:40:30 +0200
-Message-ID: <1369226430.4718.123.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1753769Ab3EVMly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:41:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38900 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751214Ab3EVMlx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:41:53 -0400
+Date: Wed, 22 May 2013 13:41:12 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, "djbw @ fb . com" <djbw@fb.com>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel @ lists . infradead . org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] dmatest: abort transfers immediately when asked for
+Message-ID: <20130522124112.GA16361@mudshark.cambridge.arm.com>
+References: <20130516153553.GI11706@mudshark.cambridge.arm.com>
+ <1369139597-24446-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130521151143.GH10453@mudshark.cambridge.arm.com>
+ <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt, Alexandre, Andrew,
+On Tue, May 21, 2013 at 06:24:15PM +0100, Andy Shevchenko wrote:
+> On Tue, May 21, 2013 at 6:11 PM, Will Deacon <will.deacon@arm.com> wrote:
+> > Hi Andy,
+> >
+> > On Tue, May 21, 2013 at 01:33:17PM +0100, Andy Shevchenko wrote:
+> >> When thread is going to be stopped we have to unconditionally terminate all
+> >> ongoing transfers. Otherwise it would be possible that callback function will
+> >> be called on the next interrupt and will try to access to already freed
+> >> structures.
+> >>
+> >> The patch introduces specific error message for this, though it doesn't
+> >> increase the counter of the failed tests.
+> >>
+> >> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> >> Reported-by: Will Deacon <will.deacon@arm.com>
+> >
+> > Thanks for persevering with this! Although this patch definitely fixes the
+> > panic I was seeing, I now observe buffer verification failures in subsequent
+> > test runs after an aborted run:
+> 
+> I think the description to the commit adfa543e "dmatest: don't use
+> set_freezable_with_signal()" may shed light on this.
+> 
+> The background (if  I got it correctly) is in race with done flag. So,
+> we got a callback call from the DMA engine, but we don't know which
+> transfer triggers it.
+> I might be wrong. This is just an assumption.
 
-At the moment all pieces of the RapidIO subsystem are defined as bool
-and thus cannot be built as modules. This is a problem for distribution
-kernels, which are left with only two choices: disable RapidIO
-altogether (too bad if any user actually needed it), or enable it all
-(and waste memory and initialization time for every user without the
-hardware - most users as I understand it.)
+I've not managed to work out exactly what's going on, but it's certainly
+something like that. In fact, I just managed to trigger a case where all but
+one of the transfers is aborted, whilst the remaining one fails. Looking at
+the code, I can't see how that situation comes about, since the threads are
+protected with the info mutex and kthread_stop is synchronous.
 
-I don't even know what RapidIO is good for. I read about it on the web
-but I have to admit I still have no clear idea, what systems use this
-technology.
+> Have you ever see such behaviour on pre v3.10-rc1 kernels? (I mean
+> with old dmatest module)
 
-This leads me to two questions:
+No, dmatest from 3.9 is completely reliable in my experience.
 
-1* Is there a fundamental reason why (at least the device-specific parts
-of) RapidIO can't be modularized?
-
-FWIW I tried making the device drivers (tsi721) modular and it builds
-and links OK, but I suppose one would have implement a proper remove
-function, otherwise module unloading will break.
-
-I also tried making the switch drivers (tsi57x etc.) modular, all build
-just fine without any change, but there seems to be some initialization
-magic which may not work when the code is built as modules.
-
-2* What systems are expected to use RapidIO? It is enabled in the i386,
-x86_64, ppc and ppc64 generic openSUSE kernel configurations. If someone
-tells me that some or all of these generic kernels would never be used
-on systems which need RapidIO support, I would be happy to disable
-RapidIO support from these kernels, to make them smaller and decrease
-boot times.
-
-Thanks for any insight,
--- 
-Jean Delvare
-Suse L3
-
+Will
