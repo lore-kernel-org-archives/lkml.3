@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab3EVSEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 14:04:46 -0400
-Received: from www.meduna.org ([92.240.244.38]:50003 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181Ab3EVSEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 14:04:44 -0400
-Message-ID: <519D08B0.8050707@meduna.org>
-Date: Wed, 22 May 2013 20:04:32 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1756708Ab3EVSEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 14:04:51 -0400
+Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:12704 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab3EVSEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 14:04:49 -0400
+Message-ID: <519D08BD.9080103@emulex.com>
+Date: Wed, 22 May 2013 14:04:45 -0400
+From: James Smart <James.Smart@emulex.com>
+Reply-To: <James.Smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org> <1369183168.6828.168.camel@gandalf.local.home> <519CBB30.3060200@redhat.com> <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com> <20130522134111.33a695c5@cuia.bos.redhat.com>
-In-Reply-To: <20130522134111.33a695c5@cuia.bos.redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ren Mingxin <renmx@cn.fujitsu.com>
+CC: <James.Bottomley@HansenPartnership.com>, <Nagalakshmi.Nandigama@lsi.com>,
+        <Sreekanth.Reddy@lsi.com>, <michaelc@cs.wisc.edu>,
+        <robert.w.love@intel.com>, <dgilbert@interlog.com>, <hare@suse.de>,
+        <bprakash@broadcom.com>, <agk@redhat.com>, <neilb@suse.de>,
+        <gregkh@linuxfoundation.org>, <axboe@kernel.dk>, <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 0/5] scsi: Allow fast io fail without waiting through
+ timeout
+References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com> <519A4716.7000001@emulex.com> <519C6FD6.4090607@cn.fujitsu.com>
+In-Reply-To: <519C6FD6.4090607@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2013-05-22 20:04:38
-X-Connected-IP: 95.105.165.4:4440
-X-Message-Linecount: 40
-X-Body-Linecount: 20
-X-Message-Size: 1552
-X-Body-Size: 409
-X-Received-Count: 1
-X-Recipient-Count: 10
-X-Local-Recipient-Count: 10
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2013 19:41, Rik van Riel wrote:
+yes - that was the session. Granted the posted notes were rather terse.
 
->> I think you should also remove the
+More of the ideas were presented in this recent email thread: 
+http://marc.info/?l=linux-scsi&m=136819142000596&w=2
+
+In general - we're going to create a LLD library for error handling, 
+using paradigms in libsas, that:
+- no longer stops the whole host on the 1st error and doesn't start 
+error handling till all outstanding io is finished/timedout
+- sends per-io aborts immediately, and in parallel. LLD handlers will be 
+asynchronous.
+- no lun/target will be stopped until i/o aborts start to fail.
+- do smart handling of lun resets, target resets, bus resets, etc and 
+don't potentially do it for every i/o.
+
+Several of these topics were touched on in the email thread.
+
+the patches are being worked on now - hopefully to be posted as an RFC 
+within the next couple of weeks.
+
+-- james s
+
+
+
+On 5/22/2013 3:12 AM, Ren Mingxin wrote:
+> Hi, James,
+>
+> On 05/20/2013 11:53 PM, James Smart wrote:
+>> Based on the discussion recently held at LSF 2013, we are
+>> reworking the error recovery path to address all the issues
+>> you are mentioning. That work contradicts these patches.
+>> So for now, these should be held off.
+>
+> Interesting. Can I have your general goal/idea briefly even
+> though via a reference? Will the URL below be one you will
+> refer to?
+>   http://lwn.net/Articles/548500
+>
+> And, could I know your current progress/schedule? Especially
+> when can we see your patches?
+>
+> Much appreciated!
+>
+> Thanks,
+> Ren
+>
 >>
->>         if (flags & FAULT_FLAG_WRITE)
-
-Done
-
->>> Can you test the attached patch?
-
-Nope. Fails with the same symptoms, min_flt skyrockets,
-the throttler activates and after 2 seconds all is well
-again.
-
-This is on Geode LX, I don't have the Celeron M at the hand now.
-
-Thank
--- 
-                                     Stano
+>> On 5/20/2013 3:14 AM, Ren Mingxin wrote:
+>>> When there is a scsi command timed-out or failed, the scsi eh
+>>> tries a thorugh recovery, which is necessary for non-redundant
+>>> systems. However, the thorugh recovery usually takes much time,
+>>> which is not acceptable for misson critical systems. To improve
+>>> this latency, if we are working on a redundant system, we should
+>>> avoid the scsi eh for its long time failing recovery, and quick
+>>> failover to another path.
+>>>
+>>> This set of patches is trying to implement above.
+>>>
+>>> NOTE: the userland tools need to eusure the environment
+>>> restriction, which will be implemented later.
+>>>
+>>> Thanks,
+>>> Ren
+>>>
+>>> Ren Mingxin (5):
+>>>    scsi: rename return code FAST_IO_FAIL to FAST_IO
+>>>    FC transport: Add interface to specify fast io level for 
+>>> timed-out cmds
+>>>    SAS transport: Add interface to specify fast io level for 
+>>> timed-out cmds
+>>>    lpfc: Allow fast timed-out io recovery
+>>>    mptfusion: Allow fast timed-out io recovery
+>>>
+>>>   drivers/message/fusion/mptscsih.c   |   29 ++++++++-
+>>>   drivers/scsi/lpfc/lpfc_scsi.c       |   34 ++++++++++
+>>>   drivers/scsi/scsi_error.c           |   18 ++---
+>>>   drivers/scsi/scsi_sas_internal.h    |    4 -
+>>>   drivers/scsi/scsi_transport_fc.c    |  112 
+>>> ++++++++++++++++++++++++++++++++++--
+>>>   drivers/scsi/scsi_transport_iscsi.c |    6 -
+>>>   drivers/scsi/scsi_transport_sas.c   |  103 
+>>> ++++++++++++++++++++++++++++++++-
+>>>   include/scsi/scsi.h                 |    2
+>>>   include/scsi/scsi_transport_fc.h    |   11 +++
+>>>   include/scsi/scsi_transport_sas.h   |    8 ++
+>>>   10 files changed, 303 insertions(+), 24 deletions(-)
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
