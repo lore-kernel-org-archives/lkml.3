@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab3EVGYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 02:24:37 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50814 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064Ab3EVGXO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 02:23:14 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org, peterz@infradead.org,
-        eranian@google.com, ak@linux.intel.com, mingo@kernel.org
-Subject: [PATCH 0/5] perf: Introducing new conditional branch filter
-Date: Wed, 22 May 2013 11:52:36 +0530
-Message-Id: <1369203761-12649-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052206-8878-0000-0000-000007357B87
+	id S1755469Ab3EVGeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 02:34:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755221Ab3EVGeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 02:34:18 -0400
+Date: Wed, 22 May 2013 09:34:13 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, avi.kivity@gmail.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v6 3/7] KVM: MMU: fast invalidate all pages
+Message-ID: <20130522063413.GL14287@redhat.com>
+References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1368738782-18649-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130520194624.GA21392@amt.cnet>
+ <20130520201545.GC14287@redhat.com>
+ <20130520204047.GA23364@amt.cnet>
+ <20130521083902.GW4725@redhat.com>
+ <20130522013330.GA8583@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522013330.GA8583@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset introduces conditional branch filter in perf branch stack
-sampling framework incorporating review comments from Michael Neuling,
-Peter Zijlstra and Stephane Eranian.
+On Tue, May 21, 2013 at 10:33:30PM -0300, Marcelo Tosatti wrote:
+> On Tue, May 21, 2013 at 11:39:03AM +0300, Gleb Natapov wrote:
+> > > Any pages with stale information will be zapped by kvm_mmu_zap_all().
+> > > When that happens, page faults will take place which will automatically 
+> > > use the new generation number.
+> > > 
+> > > So still not clear why is this necessary.
+> > > 
+> > This is not, strictly speaking, necessary, but it is the sane thing to do.
+> > You cannot update page's generation number to prevent it from been
+> > destroyed since after kvm_mmu_zap_all() completes stale ptes in the
+> > shadow page may point to now deleted memslot. So why build shadow page
+> > table with a page that is in a process of been destroyed?
+> 
+> OK, can this be introduced separately, in a later patch, with separate
+> justification, then?
+> 
+> Xiao please have the first patches of the patchset focus on the problem
+> at hand: fix long mmu_lock hold times.
+> 
+> > Not sure what you mean again. We flush TLB once before entering this function.
+> > kvm_reload_remote_mmus() does this for us, no?
+> 
+> kvm_reload_remote_mmus() is used as an optimization, its separate from the
+> problem solution.
+> 
+> > > 
+> > > What was suggested was... go to phrase which starts with "The only purpose
+> > > of the generation number should be to".
+> > > 
+> > > The comment quoted here does not match that description.
+> > > 
+> > The comment describes what code does and in this it is correct.
+> > 
+> > You propose to not reload roots right away and do it only when root sp
+> > is encountered, right? So my question is what's the point? There are,
+> > obviously, root sps with invalid generation number at this point, so
+> > reload will happen regardless in kvm_mmu_prepare_zap_page(). So why not
+> > do it here right away and avoid it in kvm_mmu_prepare_zap_page() for
+> > invalid and obsolete sps as I proposed in one of my email?
+> 
+> Sure. But Xiao please introduce that TLB collapsing optimization as a
+> later patch, so we can reason about it in a more organized fashion.
 
-Anshuman Khandual (5):
-  perf: New conditional branch filter criteria in branch stack sampling
-  powerpc, perf: Enable conditional branch filter for POWER8
-  perf, tool: Conditional branch filter 'cond' added to perf record
-  x86, perf: Add conditional branch filtering support
-  perf, documentation: Description for conditional branch filter
+So, if I understand correctly, you are asking to move is_obsolete_sp()
+check from kvm_mmu_get_page() and kvm_reload_remote_mmus() from
+kvm_mmu_invalidate_all_pages() to a separate patch. Fine by me, but if
+we drop kvm_reload_remote_mmus() from kvm_mmu_invalidate_all_pages() the
+call to kvm_mmu_invalidate_all_pages() in emulator_fix_hypercall() will
+become nop. But I question the need to zap all shadow pages tables there
+in the first place, why kvm_flush_remote_tlbs() is not enough?
 
- arch/powerpc/perf/power8-pmu.c             | 10 ++++++++++
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  6 ++++++
- include/uapi/linux/perf_event.h            |  3 ++-
- tools/perf/Documentation/perf-record.txt   |  3 ++-
- tools/perf/builtin-record.c                |  1 +
- 5 files changed, 21 insertions(+), 2 deletions(-)
-
--- 
-1.7.11.7
-
+--
+			Gleb.
