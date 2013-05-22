@@ -1,123 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab3EVQ1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:27:52 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:44342 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751543Ab3EVQ1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:27:50 -0400
-Date: Wed, 22 May 2013 11:27:47 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Russ Anderson <rja@sgi.com>
-Subject: [regression, bisected] x86: efi: Pass boot services variable info to
- runtime code
-Message-ID: <20130522162747.GA20816@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756642Ab3EVQ2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:28:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50589 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176Ab3EVQ2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 12:28:16 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/2] firmware: Avoid deadlock of usermodehelper lock at shutdown
+Date: Wed, 22 May 2013 18:28:38 +0200
+Message-Id: <1369240118-5459-2-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1369240118-5459-1-git-send-email-tiwai@suse.de>
+References: <1369240118-5459-1-git-send-email-tiwai@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux crashes on boot on SGI UV systems.  git bisect tracked it
-down to commit cc5a080c5d40c36089bb08a8a16fa3fc7047fe0f.  Undoing 
-that patch fixes the problem.
+When a system goes to reboot/shutdown, it tries to disable the
+usermode helper via usermodehelper_disable().  This might be blocked
+when a driver tries to load a firmware beforehand and it's stuck by
+some reason.  For example, dell_rbu driver loads the firmware in
+non-hotplug mode and waits for user-space clearing the loading sysfs
+flag.  If user-space doesn't clear the flag, it waits forever, thus
+blocks the reboot, too.
 
+As a workaround, in this patch, the firmware class driver registers a
+reboot notifier so that it can abort all pending f/w bufs before
+issuing usermodehelper_disable().
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cc5a080c5d40c36089bb08a8a16fa3fc7047fe0f
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+v1->v2:
+ - get rid of enable flag check
+ - use an individual list for avoid link corruption
 
------------------------------------------------------------
-linux$ git bisect bad
-cc5a080c5d40c36089bb08a8a16fa3fc7047fe0f is first bad commit
-commit cc5a080c5d40c36089bb08a8a16fa3fc7047fe0f
-Author: Matthew Garrett <matthew.garrett@nebula.com>
-Date:   Mon Apr 15 13:09:46 2013 -0700
+ drivers/base/firmware_class.c | 44 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 37 insertions(+), 7 deletions(-)
 
-    efi: Pass boot services variable info to runtime code
-
-    EFI variables can be flagged as being accessible only within boot services.
-    This makes it awkward for us to figure out how much space they use at
-    runtime. In theory we could figure this out by simply comparing the results
-    from QueryVariableInfo() to the space used by all of our variables, but
-    that fails if the platform doesn't garbage collect on every boot. Thankfully,
-    calling QueryVariableInfo() while still inside boot services gives a more
-    reliable answer. This patch passes that information from the EFI boot stub
-    up to the efi platform code.
-
-    Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-    Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-
-:040000 040000 eaaca954c158017931b383d8a7799f0372118fa4 5a2816a34b5393ca1ad49a9ce240e2e5caee3aca M      arch 
------------------------------------------------------------
-
-
-
-The failing output:
------------------------------------------------------------
-[    6.038007] Intel P-state driver initializing.
-[    6.043006] Intel pstate controlling: cpu 0
-[    6.047700] Intel pstate controlling: cpu 1
-[    6.052456] cpuidle: using governor ladder
-[    6.057085] cpuidle: using governor menu
-[    6.062157] EFI Variables Facility v0.08 2004-May-17
-[    6.067731] BUG: unable to handle kernel paging request at 000000007ca95b10
-[    6.075519] IP: [<ffff88007dbf2140>] 0xffff88007dbf213f
-[    6.081363] PGD 0
-[    6.083616] Oops: 0000 [#1] SMP
-[    6.087240] Modules linked in:
-[    6.090656] CPU 1
-[    6.092706] Pid: 1, comm: swapper/0 Not tainted 3.9.0-0.55.el7.x86_64 #1 SGI UV2000/ROMLEY
-[    6.102129] RIP: 0010:[<ffff88007dbf2140>]  [<ffff88007dbf2140>] 0xffff88007dbf213f
-[    6.110681] RSP: 0000:ffff880815913990  EFLAGS: 00010202
-[    6.116603] RAX: 000000007ca95ad0 RBX: 000000000000006a RCX: 0000000090000002
-[    6.124562] RDX: 0000000003050007 RSI: 0000000000000000 RDI: ffff88007dbf6ea8
-[    6.132520] RBP: 0000000000000000 R08: 0000000000000000 R09: 0000000000000000
-[    6.140478] R10: 0000000000003638 R11: ffff880815913b8e R12: 0000000003050007
-[    6.148436] R13: 0000000090000002 R14: ffff880815913e00 R15: 0000000000000000
-[    6.156394] FS:  0000000000000000(0000) GS:ffff8817bec00000(0000) knlGS:0000000000000000
-[    6.165418] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[    6.171826] CR2: 000000007ca95b10 CR3: 00000000018e6000 CR4: 00000000000407e0
-[    6.179785] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[    6.187743] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[    6.195702] Process swapper/0 (pid: 1, threadinfo ffff880815912000, task ffff880815928000)
-[    6.204919] Stack:
-[    6.207160]  00000000ffffffff 0000000000000010 0000000000000041 0000000000000040
-[    6.215456]  ffffea005e447dc0 0000000000000001 002212d000000000 0000000000000246
-[    6.223752]  ffff8817befd4d80 0000000000000002 0000000000000000 00000000002012d0
-[    6.232048] Call Trace:
-[    6.234799]  [<ffffffff8113c647>] ? __alloc_pages_nodemask+0x157/0xa00
-[    6.242096]  [<ffffffff812f02df>] ? idr_get_empty_slot+0x16f/0x3c0
-[    6.248997]  [<ffffffff812f7972>] ? put_dec+0x72/0x90
-[    6.254633]  [<ffffffff812f076c>] ? ida_get_new_above+0x6c/0x290
-[    6.261340]  [<ffffffff8120d0b5>] ? sysfs_link_sibling+0xb5/0xe0
-[    6.268040]  [<ffffffff8120d7b1>] ? __sysfs_add_one+0x71/0x110
-[    6.274545]  [<ffffffff8120d9d3>] ? sysfs_addrm_finish+0x33/0xc0
-[    6.281245]  [<ffffffff8120dadd>] ? create_dir+0x7d/0xd0
-[    6.287171]  [<ffffffff8120de72>] ? sysfs_create_dir+0x92/0xf0
-[    6.293690]  [<ffffffff81058a23>] ? efi_call3+0x43/0x80
-[    6.299517]  [<ffffffff8105832a>] ? virt_efi_get_next_variable+0x3a/0x1a0
-[    6.307095]  [<ffffffff814b27e3>] ? register_efivars+0xd3/0x530
-[    6.313710]  [<ffffffff81a4d042>] ? dmi_sysfs_register_handle+0x1c7/0x1c7
-[    6.321280]  [<ffffffff81a4d0f5>] ? efivars_init+0xb3/0xff
-[    6.327405]  [<ffffffff8100210a>] ? do_one_initcall+0x10a/0x160
-[    6.334026]  [<ffffffff81a0e064>] ? kernel_init_freeable+0x181/0x207
-[    6.341115]  [<ffffffff81a0d887>] ? do_early_param+0x88/0x88
-[    6.347445]  [<ffffffff815e0340>] ? rest_init+0x80/0x80
-[    6.353274]  [<ffffffff815e034e>] ? kernel_init+0xe/0x180
-[    6.359307]  [<ffffffff8160acac>] ? ret_from_fork+0x7c/0xb0
-[    6.365522]  [<ffffffff815e0340>] ? rest_init+0x80/0x80
-[    6.371347] Code: 8b d8 e8 e4 fa ff ff 84 c0 75 0f 48 8b 15 61 58 00 00 48 8b 4c 24 30 ff 52 48 48 8b c3 eb 58 48 8b 05 4d 58 00 00 48 85 c0 74 42 <48> 83 78 40 00 74 3b 48 83 78 48 00 74 34 48 8d 53 14 4c 8d 44
-[    6.393044] RIP  [<ffff88007dbf2140>] 0xffff88007dbf213f
-[    6.398978]  RSP <ffff880815913990>
-[    6.406605] ---[ end trace 18f487bf56d8bf90 ]---
-[    6.411785] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
------------------------------------------------------------
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 4b1f926..e650c25 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -27,6 +27,7 @@
+ #include <linux/pm.h>
+ #include <linux/suspend.h>
+ #include <linux/syscore_ops.h>
++#include <linux/reboot.h>
+ 
+ #include <generated/utsrelease.h>
+ 
+@@ -130,6 +131,7 @@ struct firmware_buf {
+ 	struct page **pages;
+ 	int nr_pages;
+ 	int page_array_size;
++	struct list_head pending_list;
+ #endif
+ 	char fw_id[];
+ };
+@@ -171,6 +173,9 @@ static struct firmware_buf *__allocate_fw_buf(const char *fw_name,
+ 	strcpy(buf->fw_id, fw_name);
+ 	buf->fwc = fwc;
+ 	init_completion(&buf->completion);
++#ifdef CONFIG_FW_LOADER_USER_HELPER
++	INIT_LIST_HEAD(&buf->pending_list);
++#endif
+ 
+ 	pr_debug("%s: fw-%s buf=%p\n", __func__, fw_name, buf);
+ 
+@@ -446,10 +451,9 @@ static struct firmware_priv *to_firmware_priv(struct device *dev)
+ 	return container_of(dev, struct firmware_priv, dev);
+ }
+ 
+-static void fw_load_abort(struct firmware_priv *fw_priv)
++static void fw_load_abort(struct firmware_buf *buf)
+ {
+-	struct firmware_buf *buf = fw_priv->buf;
+-
++	list_del_init(&buf->pending_list);
+ 	set_bit(FW_STATUS_ABORT, &buf->status);
+ 	complete_all(&buf->completion);
+ }
+@@ -457,6 +461,25 @@ static void fw_load_abort(struct firmware_priv *fw_priv)
+ #define is_fw_load_aborted(buf)	\
+ 	test_bit(FW_STATUS_ABORT, &(buf)->status)
+ 
++static LIST_HEAD(pending_fw_head);
++
++/* reboot notifier for avoid deadlock with usermode_lock */
++static int fw_shutdown_notify(struct notifier_block *unused1,
++			      unsigned long unused2, void *unused3)
++{
++	mutex_lock(&fw_lock);
++	while (!list_empty(&pending_fw_head))
++		fw_load_abort(list_first_entry(&pending_fw_head,
++					       struct firmware_buf,
++					       pending_list));
++	mutex_unlock(&fw_lock);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block fw_shutdown_nb = {
++	.notifier_call = fw_shutdown_notify,
++};
++
+ static ssize_t firmware_timeout_show(struct class *class,
+ 				     struct class_attribute *attr,
+ 				     char *buf)
+@@ -604,6 +627,7 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 			 * is completed.
+ 			 * */
+ 			fw_map_pages_buf(fw_buf);
++			list_del_init(&fw_buf->pending_list);
+ 			complete_all(&fw_buf->completion);
+ 			break;
+ 		}
+@@ -612,7 +636,7 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		dev_err(dev, "%s: unexpected value (%d)\n", __func__, loading);
+ 		/* fallthrough */
+ 	case -1:
+-		fw_load_abort(fw_priv);
++		fw_load_abort(fw_buf);
+ 		break;
+ 	}
+ out:
+@@ -680,7 +704,7 @@ static int fw_realloc_buffer(struct firmware_priv *fw_priv, int min_size)
+ 		new_pages = kmalloc(new_array_size * sizeof(void *),
+ 				    GFP_KERNEL);
+ 		if (!new_pages) {
+-			fw_load_abort(fw_priv);
++			fw_load_abort(buf);
+ 			return -ENOMEM;
+ 		}
+ 		memcpy(new_pages, buf->pages,
+@@ -697,7 +721,7 @@ static int fw_realloc_buffer(struct firmware_priv *fw_priv, int min_size)
+ 			alloc_page(GFP_KERNEL | __GFP_HIGHMEM);
+ 
+ 		if (!buf->pages[buf->nr_pages]) {
+-			fw_load_abort(fw_priv);
++			fw_load_abort(buf);
+ 			return -ENOMEM;
+ 		}
+ 		buf->nr_pages++;
+@@ -781,7 +805,7 @@ static void firmware_class_timeout_work(struct work_struct *work)
+ 		mutex_unlock(&fw_lock);
+ 		return;
+ 	}
+-	fw_load_abort(fw_priv);
++	fw_load_abort(fw_priv->buf);
+ 	mutex_unlock(&fw_lock);
+ }
+ 
+@@ -857,6 +881,10 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+ 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
+ 	}
+ 
++	mutex_lock(&fw_lock);
++	list_add(&buf->pending_list, &pending_fw_head);
++	mutex_unlock(&fw_lock);
++
+ 	wait_for_completion(&buf->completion);
+ 
+ 	cancel_delayed_work_sync(&fw_priv->timeout_work);
+@@ -1517,6 +1545,7 @@ static int __init firmware_class_init(void)
+ {
+ 	fw_cache_init();
+ #ifdef CONFIG_FW_LOADER_USER_HELPER
++	register_reboot_notifier(&fw_shutdown_nb);
+ 	return class_register(&firmware_class);
+ #else
+ 	return 0;
+@@ -1530,6 +1559,7 @@ static void __exit firmware_class_exit(void)
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
+ #endif
+ #ifdef CONFIG_FW_LOADER_USER_HELPER
++	unregister_reboot_notifier(&fw_shutdown_nb);
+ 	class_unregister(&firmware_class);
+ #endif
+ }
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+1.8.2.3
+
