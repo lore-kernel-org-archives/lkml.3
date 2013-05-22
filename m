@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab3EVIyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:54:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15810 "EHLO mx1.redhat.com"
+	id S1754056Ab3EVI7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:59:22 -0400
+Received: from gatzka.org ([85.214.228.118]:39468 "EHLO mail.gatzka.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab3EVIyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:54:14 -0400
-Date: Wed, 22 May 2013 11:54:10 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, avi.kivity@gmail.com,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v6 3/7] KVM: MMU: fast invalidate all pages
-Message-ID: <20130522085410.GM14287@redhat.com>
-References: <1368738782-18649-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1368738782-18649-4-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130520194624.GA21392@amt.cnet>
- <20130520201545.GC14287@redhat.com>
- <20130520204047.GA23364@amt.cnet>
- <20130521083902.GW4725@redhat.com>
- <20130522013330.GA8583@amt.cnet>
- <20130522063413.GL14287@redhat.com>
- <519C85CC.6040103@linux.vnet.ibm.com>
+	id S1752407Ab3EVI7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 04:59:21 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 04:59:20 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519C85CC.6040103@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Wed, 22 May 2013 10:59:19 +0200
+From: Stephan Gatzka <stephan.gatzka@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Tejun Heo <tj@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: function call =?UTF-8?Q?fw=5Fiso=5Fresource=5Fmange=28=2E=2E?=
+ =?UTF-8?Q?=29=20=28core-iso=2Ec=29=20does=20not=20return?=
+Reply-To: stephan.gatzka@gmail.com
+Mail-Reply-To: stephan.gatzka@gmail.com
+In-Reply-To: <20130522094840.472b263e@stein>
+References: <8ac7ca3200325ddf85ba57aa6d000f70@gatzka.org>
+ <519BA6AC.1080600@hurleysoftware.com> <20130521231847.GA6985@mtj.dyndns.org>
+ <20130522094840.472b263e@stein>
+Message-ID: <51145028d1c880d68e0a88d863faa71c@gatzka.org>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 04:46:04PM +0800, Xiao Guangrong wrote:
-> On 05/22/2013 02:34 PM, Gleb Natapov wrote:
-> > On Tue, May 21, 2013 at 10:33:30PM -0300, Marcelo Tosatti wrote:
-> >> On Tue, May 21, 2013 at 11:39:03AM +0300, Gleb Natapov wrote:
-> >>>> Any pages with stale information will be zapped by kvm_mmu_zap_all().
-> >>>> When that happens, page faults will take place which will automatically 
-> >>>> use the new generation number.
-> >>>>
-> >>>> So still not clear why is this necessary.
-> >>>>
-> >>> This is not, strictly speaking, necessary, but it is the sane thing to do.
-> >>> You cannot update page's generation number to prevent it from been
-> >>> destroyed since after kvm_mmu_zap_all() completes stale ptes in the
-> >>> shadow page may point to now deleted memslot. So why build shadow page
-> >>> table with a page that is in a process of been destroyed?
-> >>
-> >> OK, can this be introduced separately, in a later patch, with separate
-> >> justification, then?
-> >>
-> >> Xiao please have the first patches of the patchset focus on the problem
-> >> at hand: fix long mmu_lock hold times.
-> >>
-> >>> Not sure what you mean again. We flush TLB once before entering this function.
-> >>> kvm_reload_remote_mmus() does this for us, no?
-> >>
-> >> kvm_reload_remote_mmus() is used as an optimization, its separate from the
-> >> problem solution.
-> >>
-> >>>>
-> >>>> What was suggested was... go to phrase which starts with "The only purpose
-> >>>> of the generation number should be to".
-> >>>>
-> >>>> The comment quoted here does not match that description.
-> >>>>
-> >>> The comment describes what code does and in this it is correct.
-> >>>
-> >>> You propose to not reload roots right away and do it only when root sp
-> >>> is encountered, right? So my question is what's the point? There are,
-> >>> obviously, root sps with invalid generation number at this point, so
-> >>> reload will happen regardless in kvm_mmu_prepare_zap_page(). So why not
-> >>> do it here right away and avoid it in kvm_mmu_prepare_zap_page() for
-> >>> invalid and obsolete sps as I proposed in one of my email?
-> >>
-> >> Sure. But Xiao please introduce that TLB collapsing optimization as a
-> >> later patch, so we can reason about it in a more organized fashion.
-> > 
-> > So, if I understand correctly, you are asking to move is_obsolete_sp()
-> > check from kvm_mmu_get_page() and kvm_reload_remote_mmus() from
-> > kvm_mmu_invalidate_all_pages() to a separate patch. Fine by me, but if
-> > we drop kvm_reload_remote_mmus() from kvm_mmu_invalidate_all_pages() the
-> > call to kvm_mmu_invalidate_all_pages() in emulator_fix_hypercall() will
-> > become nop. But I question the need to zap all shadow pages tables there
-> > in the first place, why kvm_flush_remote_tlbs() is not enough?
-> 
-> I do not know too... I even do no know why kvm_flush_remote_tlbs
-> is needed. :(
-We changed the content of an executable page, we need to flush instruction
-cache of all vcpus to not use stale data, so my suggestion to call
-kvm_flush_remote_tlbs() is obviously incorrect since this flushes tlb,
-not instruction cache, but why kvm_reload_remote_mmus() would flush
-instruction cache?
 
---
-			Gleb.
+> A third (fourth?) way to fix it --- feasible or not --- would be to 
+> break
+> the dependency between the worklets.  In this case, use a timer to 
+> cancel
+> outbound transactions if the request-transmit IRQ event was not 
+> received
+> before a timeout.  We had such a timeout in the older ieee1394 drivers 
+> and
+> we also had it in earlier versions of the firewire drivers, at a risk 
+> of a
+> race between CPU and OHCI.
+
+Why do we need a timer? If we guarantee that bus_reset_work() always 
+make progress (if we put it into its own queue), it should always be 
+able to complete the corresponding completion object the other works are 
+waiting for.
+
+Regards,
+
+Stephan
