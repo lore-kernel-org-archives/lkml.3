@@ -1,167 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab3EVKZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:25:45 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:45728 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3EVKZn (ORCPT
+	id S1755847Ab3EVK11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:27:27 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18064 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab3EVK1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:25:43 -0400
-Date: Wed, 22 May 2013 02:58:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Roman Gushchin <klamm@yandex-team.ru>,
-        Dipankar Sarma <dipankar@in.ibm.com>, zhmurov@yandex-team.ru,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH v2] rcu: fix a race in hlist_nulls_for_each_entry_rcu
- macro
-Message-ID: <20130522095839.GC3578@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <519B38EC.90401@yandex-team.ru>
- <20130521120906.GD3578@linux.vnet.ibm.com>
- <1369143885.3301.221.camel@edumazet-glaptop>
- <519B8908.9080007@yandex-team.ru>
- <1369150693.3301.233.camel@edumazet-glaptop>
- <519BB90B.6080706@yandex-team.ru>
- <1369188080.3301.268.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369188080.3301.268.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052210-7606-0000-0000-00000BA91B0A
+	Wed, 22 May 2013 06:27:23 -0400
+X-AuditID: cbfee61a-b7efb6d000003eed-29-519c9d8ade15
+Date: Wed, 22 May 2013 12:27:00 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocky" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, Vicent Guittot <vincent.guittot@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3] LAB: Support for Legacy Application Booster governor
+Message-id: <20130522122700.104ca5cd@amdc308.digital.local>
+In-reply-to: <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9jAd2uuXMCDVomClk8bfrBbjHvs6xF
+	59knzBZvHnFbXN41h83ic+8RRovbjSvYLPoX9jJZdBz5xmyx8auHA5fHnWt72DzWTXvL7NG3
+	ZRWjx6PFLYwenzfJBbBGcdmkpOZklqUW6dslcGWc2HyUveCiYMW/u3fYGxi7+LoYOTgkBEwk
+	Gv9ndTFyApliEhfurWcDsYUEFjFKnNmQ1MXIBWS3M0nMmnWaFSTBIqAqceZkEyOIzSagJ/H5
+	7lMmkDkiAloSL2+mgtQzC1xgkjh1aRZYXFjAT+LIckcQk1fAWqJ7mTBIJ6dAsMSf3hXsEKv6
+	GSXeXOYGsfkFJCXa//1ghjjHTuLcpw1gNbwCghI/Jt9jAbGZgTZt3tbECmHLS2xe85Z5AqPg
+	LCRls5CUzUJStoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcDw8k9rBuLLB4hCjAAej
+	Eg/vg9rZgUKsiWXFlbmHGCU4mJVEeBWC5gQK8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0o
+	JJCeWJKanZpakFoEk2Xi4JRqYAy7zHB560upHU0zD/50UdwboXJw+ZHGLZxTzwhdOaZqxr4/
+	+V3xVAbN3lKXmE7j2c9WspxZoxnb7eVR1xvDzHZwbnT99QtnA7b9VvratUnuhk2arp3A2jMe
+	p+aKqNYb+Kpe9Xn+U+auy3vNrIUH70hM2xWY7M7X5fB3f/GyyqagK04Re69eYldiKc5INNRi
+	LipOBAA9BvDmgwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 07:01:20PM -0700, Eric Dumazet wrote:
-> On Tue, 2013-05-21 at 22:12 +0400, Roman Gushchin wrote:
-> > > If other rcu accessors have the same problem, a more complete patch is
-> > > needed.
-> > 
-> > [PATCH] rcu: fix a race in rcu lists traverse macros
-> > 
-> > Some network functions (udp4_lib_lookup2(), for instance) use the
-> > rcu lists traverse macros (hlist_nulls_for_each_entry_rcu, for instance)
-> > in a way that assumes restarting of a loop. In this case, it is strictly
-> > necessary to reread the head->first value from the memory before each scan.
-> > Without additional hints, gcc caches this value in a register. In this case,
-> > if a cached node is moved to another chain during the scan, we can loop
-> > forever getting wrong nulls values and restarting the loop uninterruptedly.
-> > 
-> > Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> > Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
-> > ---
-> >   include/linux/compiler.h      | 6 ++++++
-> >   include/linux/rculist.h       | 6 ++++--
-> >   include/linux/rculist_nulls.h | 3 ++-
-> >   3 files changed, 12 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> > index 92669cd..0e05d7c 100644
-> > --- a/include/linux/compiler.h
-> > +++ b/include/linux/compiler.h
-> > @@ -351,6 +351,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
-> >    */
-> >   #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-> > 
-> > +/*
-> > + * Prevent the compiler from optimizing accesses to structure member.
-> > + */
-> > +#define GET_STRUCT_FIELD_VOLATILE(struct_ptr, field)		\
-> > +	(((volatile typeof(*struct_ptr) *)struct_ptr)->field)
-> > +
-> >   /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
-> >   #ifdef CONFIG_KPROBES
-> >   # define __kprobes	__attribute__((__section__(".kprobes.text")))
-> > diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-> > index 8089e35..6c3eea7 100644
-> > --- a/include/linux/rculist.h
-> > +++ b/include/linux/rculist.h
-> > @@ -282,7 +282,8 @@ static inline void list_splice_init_rcu(struct list_head *list,
-> >    * as long as the traversal is guarded by rcu_read_lock().
-> >    */
-> >   #define list_for_each_entry_rcu(pos, head, member) \
-> > -	for (pos = list_entry_rcu((head)->next, typeof(*pos), member); \
-> > +	for (pos = list_entry_rcu(GET_STRUCT_FIELD_VOLATILE(head, next), \
-> > +				  typeof(*pos), member); \
-> >   		&pos->member != (head); \
-> >   		pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
-> > 
-> > @@ -348,7 +349,8 @@ static inline void hlist_replace_rcu(struct hlist_node *old,
-> >   /*
-> >    * return the first or the next element in an RCU protected hlist
-> >    */
-> > -#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)(&(head)->first)))
-> > +#define hlist_first_rcu(head)	(*((struct hlist_node __rcu **)		\
-> > +				   (&GET_STRUCT_FIELD_VOLATILE(head, first))))
-> >   #define hlist_next_rcu(node)	(*((struct hlist_node __rcu **)(&(node)->next)))
-> >   #define hlist_pprev_rcu(node)	(*((struct hlist_node __rcu **)((node)->pprev)))
-> > 
-> > diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> > index 2ae1371..b04fd0a 100644
-> > --- a/include/linux/rculist_nulls.h
-> > +++ b/include/linux/rculist_nulls.h
-> > @@ -38,7 +38,8 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
-> >   }
-> > 
-> >   #define hlist_nulls_first_rcu(head) \
-> > -	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> > +	(*((struct hlist_nulls_node __rcu __force **)	\
-> > +	   &(GET_STRUCT_FIELD_VOLATILE(head, first))))
-> > 
-> >   #define hlist_nulls_next_rcu(node) \
-> >   	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
+Hi Viresh,
 
-Now that I am more awake...
+Thanks for reply.
 
-The RCU list macros assume that the list header is either statically
-allocated (in which case no ACCESS_ONCE() or whatever is needed) or
-that the caller did whatever was necessary to protect the list header,
-whether that be holding the right lock, using rcu_dereference() when
-traversing the pointer to the list header, or whatever.
+> On 3 May 2013 19:37, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
+> > From: Lukasz Majewski <l.majewski@samsung.com>
+> 
+> > 2. New LAB governor.
+> > It calculates number of idle CPUs (based on scheduler data). On
+> > this basis it chose proper first level polynomial function for
+> > approximation. Moreover it enables overclocking when single, heavy
+> > loaded CPU is running.
+> 
+> Hi Lukasz,
+> 
+> I am still not sure about this governor. Do you have some results
+> with which you can tell how is it better than ondemand/conservative?
 
-Maybe I need to document this assumption...
+I will provide proper test results. As a test platform I've used
+Exynos4 CPU (4 cores) with TIZEN OS on it.
 
-						Thanx, Paul
+> 
+> With or without overclocking. i.e. Apply only overclocking support to
+> ondemand/conservative..
 
-> Please use ACCESS_ONCE(), which is the standard way to deal with this,
-> and remove the rcu_dereference_raw() in 
-> hlist_nulls_for_each_entry_rcu()
-> 
-> something like : (for the nulls part only)
-> 
-> diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-> index 2ae1371..1d485d3 100644
-> --- a/include/linux/rculist_nulls.h
-> +++ b/include/linux/rculist_nulls.h
-> @@ -40,6 +40,9 @@ static inline void hlist_nulls_del_init_rcu(struct hlist_nulls_node *n)
->  #define hlist_nulls_first_rcu(head) \
->  	(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> 
-> +#define hlist_nulls_first_rcu_once(head) \
-> +	ACCESS_ONCE(*((struct hlist_nulls_node __rcu __force **)&(head)->first))
-> +
->  #define hlist_nulls_next_rcu(node) \
->  	(*((struct hlist_nulls_node __rcu __force **)&(node)->next))
-> 
-> @@ -107,7 +110,7 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
->   *
->   */
->  #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)                        \
-> -	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));            \
-> +	for (pos = hlist_nulls_first_rcu_once(head);                            \
->  		(!is_a_nulls(pos)) &&                                           \
->  		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
->                 pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
-> 
-> 
-> 
+I think, that overclocking support is crucial here. As you pointed out
+- ondemand and conservative benefit from it. Therefore, I would urge
+  for its mainline acceptance.
 
+(code for reference)
+http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+
+In this RFC (patch 1/3), I've decided to put the burden of overclocking
+support to platform code (cpufreq/exynos-cpufreq.c and
+cpufreq/exynos4x12-cpufreq.c). 
+
+Those changes aren't intrusive for other boards/archs. Moreover
+overclocking is closely related to processor clocking/power dissipation
+capabilities, so SoC specific code is a good place for it.
+
+
+What DO need a broad acceptance is the overclocking API proposed at:
+include/linux/cpufreq.h 
+
+This introduces interface to which others will be bind. It shouldn't be
+difficult to implement overclocking at other SoCs (as it was proposed
+for Exynos).
+
+Feedback is welcome, since I might have overlooked oddities present at
+other SoCs.
+
+
+
+> 
+> If you are using Android, maybe check Interactive too (Though it
+> itsn't mainlined yet).
+
+I will also delve into "Interactive" governor.
+
+
+
+
+As a side note:
+
+The "core" cpufreq code modification (patch 3/3) counts only 22 lines,
+so this patch series definitely is not intrusive.
+
+> 
+> @Rafael: What do you think about this patchset?
+> 
+> --
+> viresh
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Poland (SRPOL) | Linux Platform Group
