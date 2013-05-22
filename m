@@ -1,143 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab3EVIeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:34:22 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:43861 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab3EVIeR (ORCPT
+	id S1754152Ab3EVIgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:36:20 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:58013 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab3EVIgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:34:17 -0400
+	Wed, 22 May 2013 04:36:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1305131223470.2863@ionos>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
-	<1354024039.6276.72.camel@gandalf.local.home>
-	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
-	<CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
-	<CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
-	<alpine.LFD.2.02.1305131223470.2863@ionos>
-Date: Wed, 22 May 2013 14:04:16 +0530
-Message-ID: <CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, pjt@google.com,
-        paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, john stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130522080529.GW11878@intel.com>
+References: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1369208859-16514-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130522080529.GW11878@intel.com>
+Date: Wed, 22 May 2013 11:36:15 +0300
+Message-ID: <CAHp75Vdyb4ynf-XQrcaCrKSPkbzN9_PP6txpvsYnYWXdZpWrEQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] gpio-langwell: use managed functions pcim_* and devm_*
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        David Cohen <david.a.cohen@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for being late in replying to your queries.
-
-On 13 May 2013 16:05, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Which mechanism is migrating the timer away?
-
-It will be the same: get_nohz_timer_target() which will decide target
-cpu for migration.
-
-> I have no objections to the functionality per se, but the proposed
-> solution is not going to fly.
+On Wed, May 22, 2013 at 11:05 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Wed, May 22, 2013 at 10:47:38AM +0300, Andy Shevchenko wrote:
+>> This makes the error handling much more simpler than open-coding everything and
+>> in addition makes the probe function smaller an tidier.
+>>
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 >
-> Aside of bloating the data structure you're changing the semantics of
-> __mod_timer(). No __mod_timer() caller can deal with -EBUSY. So you'd
-> break the world and some more.
-
-Ahh.. That idea was dropped already.
-
-> Here is a list of questions:
+> In general this change looks good. Getting rid of 61 lines is certainly an
+> improvement!
 >
->       - Which mechanism migrates timers?
+> David, are you able to check that this still works on your hardware? (I'm
+> pretty sure that Andy has tested this already on Medfield)
+
+I also wonder if it still okay on other platforms where this IP block
+is embedded.
+
+> I have few minor comments, though. See below.
+
+Thank you for the review. See my answers below.
+
+>> ---
+>>  drivers/gpio/gpio-langwell.c | 82 ++++++++++++--------------------------------
+>>  1 file changed, 21 insertions(+), 61 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
+>> index 8203084..8672282 100644
+>> --- a/drivers/gpio/gpio-langwell.c
+>> +++ b/drivers/gpio/gpio-langwell.c
+>> @@ -320,56 +320,35 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
+>>  static int lnw_gpio_probe(struct pci_dev *pdev,
+>>                         const struct pci_device_id *id)
+>>  {
+>> -     void __iomem *base;
+>> -     resource_size_t start, len;
+>>       struct lnw_gpio *lnw;
+>>       u32 gpio_base;
+>>       u32 irq_base;
+>>       int retval;
+>>       int ngpio = id->driver_data;
+>>
+>> -     retval = pci_enable_device(pdev);
+>> +     retval = pcim_enable_device(pdev);
+>>       if (retval)
+>>               return retval;
+>>
+>> -     retval = pci_request_regions(pdev, "langwell_gpio");
+>> +     retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
 >
->       - How is that mechanism triggered?
+> I wonder if "langwell_gpio" is still a better name compared to
+> pci_name(pdev)?
 
-The mechanism remains the same as is for non-rearmed timers.
-i.e. get_nohz_timer_target()..
+This is used as an internal name for certain resource.
 
-We are just trying to give a approach with which we can migrate
-running timers. i.e. those which re-arm themselves from their
-handlers.
+It could be seen in case of using printk("%pR") for example. But even
+in that case I prefer to see the actual device as well to which
+the resource belongs to.
 
->       - How does that deal with CPU bound timers?
+My general opinion is better to use pci_name(pdev) in the pci drivers instead
+of hardcoded pseudo-unique strings.
 
-We will still check 'Pinned' for this timer as is done for any other
-normal timer. So, we don't migrate them.
+>>       if (retval) {
+>> -             dev_err(&pdev->dev, "error requesting resources\n");
+>> -             goto err_pci_req_region;
+>> -     }
+>> -     /* get the gpio_base from bar1 */
+>> -     start = pci_resource_start(pdev, 1);
+>> -     len = pci_resource_len(pdev, 1);
+>> -     base = ioremap_nocache(start, len);
+>> -     if (!base) {
+>> -             dev_err(&pdev->dev, "error mapping bar1\n");
+>> -             retval = -EFAULT;
+>> -             goto err_ioremap;
+>> +             dev_err(&pdev->dev, "I/O memory mapping error\n");
+>> +             return retval;
+>>       }
+>>
+>> -     irq_base = readl(base);
+>> -     gpio_base = readl(sizeof(u32) + base);
+>> +     irq_base = readl(pcim_iomap_table(pdev)[1]);
+>> +     gpio_base = readl(sizeof(u32) + pcim_iomap_table(pdev)[1]);
+>
+> Using pcim_iomap_table(pdev)[] is a bit confusing, at least for me. Can you
+> add a variable where you store that pointer and use that instead?
 
-So, this is the clean draft for the idea I had.. (Naming is poor for
-now):
+[Hmm... It returns pointer to an array of pointers.
+Okay,  I will relive base variable for this as we discussed privately.
 
-diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 8c5a197..ad00ebe 100644
---- a/include/linux/timer.h
-+++ b/include/linux/timer.h
-@@ -20,6 +20,7 @@ struct timer_list {
-
-        void (*function)(unsigned long);
-        unsigned long data;
-+       int wait_for_migration_to_complete;
-
-        int slack;
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index a860bba..7791f28 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -746,21 +746,15 @@ __mod_timer(struct timer_list *timer, unsigned
-long expires,
-        new_base = per_cpu(tvec_bases, cpu);
-
-        if (base != new_base) {
--               /*
--                * We are trying to schedule the timer on the local CPU.
--                * However we can't change timer's base while it is running,
--                * otherwise del_timer_sync() can't detect that the timer's
--                * handler yet has not finished. This also guarantees that
--                * the timer is serialized wrt itself.
--                */
--               if (likely(base->running_timer != timer)) {
--                       /* See the comment in lock_timer_base() */
--                       timer_set_base(timer, NULL);
--                       spin_unlock(&base->lock);
--                       base = new_base;
--                       spin_lock(&base->lock);
--                       timer_set_base(timer, base);
--               }
-+               if (base->running_timer == timer)
-+                       timer->wait_for_migration_to_complete = 1;
-+
-+               /* See the comment in lock_timer_base() */
-+               timer_set_base(timer, NULL);
-+               spin_unlock(&base->lock);
-+               base = new_base;
-+               spin_lock(&base->lock);
-+               timer_set_base(timer, base);
-        }
-
-        timer->expires = expires;
-@@ -990,7 +984,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
-
-        base = lock_timer_base(timer, &flags);
-
--       if (base->running_timer != timer) {
-+       if ((base->running_timer != timer) &&
-+                       !timer->wait_for_migration_to_complete) {
-                timer_stats_timer_clear_start_info(timer);
-                ret = detach_if_pending(timer, base, true);
-        }
-@@ -1183,6 +1178,8 @@ static inline void __run_timers(struct tvec_base *base)
-                                call_timer_fn(timer, fn, data);
-                                spin_lock_irq(&base->lock);
-                        }
-+                       if (timer->wait_for_migration_to_complete)
-+                               timer->wait_for_migration_to_complete = 0;
-                }
-        }
-        base->running_timer = NULL;
-
-
-Please see if it a junk idea or has some light of hope :)
+--
+With Best Regards,
+Andy Shevchenko
