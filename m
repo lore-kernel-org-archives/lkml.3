@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3EVKUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:20:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:52101 "EHLO mga11.intel.com"
+	id S1756012Ab3EVKVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:21:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29389 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755546Ab3EVKUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:20:49 -0400
+	id S1755877Ab3EVKUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:20:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="341609011"
+   d="scan'208";a="317669552"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         David Cohen <david.a.cohen@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 4/5] gpio-langwell: amend error messages
-Date: Wed, 22 May 2013 13:20:13 +0300
-Message-Id: <1369218014-28990-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 3/5] gpio-langwell: use managed functions pcim_* and devm_*
+Date: Wed, 22 May 2013 13:20:12 +0300
+Message-Id: <1369218014-28990-4-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 In-Reply-To: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1369218014-28990-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -25,57 +25,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to use hardcoded device name in the error messages, because
-dev_err() prefixes the message with the device name anyway.
+This makes the error handling much more simpler than open-coding everything and
+in addition makes the probe function smaller an tidier.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/gpio/gpio-langwell.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/gpio/gpio-langwell.c | 79 ++++++++++++--------------------------------
+ 1 file changed, 21 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
-index 54b6caf..313d190 100644
+index 8203084..54b6caf 100644
 --- a/drivers/gpio/gpio-langwell.c
 +++ b/drivers/gpio/gpio-langwell.c
-@@ -347,7 +347,7 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+@@ -321,55 +321,37 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+ 			  const struct pci_device_id *id)
+ {
+ 	void __iomem *base;
+-	resource_size_t start, len;
+ 	struct lnw_gpio *lnw;
+ 	u32 gpio_base;
+ 	u32 irq_base;
+ 	int retval;
+ 	int ngpio = id->driver_data;
+ 
+-	retval = pci_enable_device(pdev);
++	retval = pcim_enable_device(pdev);
+ 	if (retval)
+ 		return retval;
+ 
+-	retval = pci_request_regions(pdev, "langwell_gpio");
++	retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
+ 	if (retval) {
+-		dev_err(&pdev->dev, "error requesting resources\n");
+-		goto err_pci_req_region;
+-	}
+-	/* get the gpio_base from bar1 */
+-	start = pci_resource_start(pdev, 1);
+-	len = pci_resource_len(pdev, 1);
+-	base = ioremap_nocache(start, len);
+-	if (!base) {
+-		dev_err(&pdev->dev, "error mapping bar1\n");
+-		retval = -EFAULT;
+-		goto err_ioremap;
++		dev_err(&pdev->dev, "I/O memory mapping error\n");
++		return retval;
+ 	}
+ 
++	base = pcim_iomap_table(pdev)[1];
++
+ 	irq_base = readl(base);
+ 	gpio_base = readl(sizeof(u32) + base);
+ 
+ 	/* release the IO mapping, since we already get the info from bar1 */
+-	iounmap(base);
+-	/* get the register base from bar0 */
+-	start = pci_resource_start(pdev, 0);
+-	len = pci_resource_len(pdev, 0);
+-	base = devm_ioremap_nocache(&pdev->dev, start, len);
+-	if (!base) {
+-		dev_err(&pdev->dev, "error mapping bar0\n");
+-		retval = -EFAULT;
+-		goto err_ioremap;
+-	}
++	pcim_iounmap_regions(pdev, 1 << 1);
  
  	lnw = devm_kzalloc(&pdev->dev, sizeof(*lnw), GFP_KERNEL);
  	if (!lnw) {
--		dev_err(&pdev->dev, "can't allocate langwell_gpio chip data\n");
-+		dev_err(&pdev->dev, "can't allocate chip data\n");
- 		return -ENOMEM;
+ 		dev_err(&pdev->dev, "can't allocate langwell_gpio chip data\n");
+-		retval = -ENOMEM;
+-		goto err_ioremap;
++		return -ENOMEM;
  	}
  
-@@ -374,7 +374,7 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+-	lnw->reg_base = base;
++	lnw->reg_base = pcim_iomap_table(pdev)[0];
+ 	lnw->chip.label = dev_name(&pdev->dev);
+ 	lnw->chip.request = lnw_gpio_request;
+ 	lnw->chip.direction_input = lnw_gpio_direction_input;
+@@ -386,16 +368,14 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+ 
+ 	lnw->domain = irq_domain_add_simple(pdev->dev.of_node, ngpio, irq_base,
+ 					    &lnw_gpio_irq_ops, lnw);
+-	if (!lnw->domain) {
+-		retval = -ENOMEM;
+-		goto err_ioremap;
+-	}
++	if (!lnw->domain)
++		return -ENOMEM;
+ 
  	pci_set_drvdata(pdev, lnw);
  	retval = gpiochip_add(&lnw->chip);
  	if (retval) {
--		dev_err(&pdev->dev, "langwell gpiochip_add error %d\n", retval);
-+		dev_err(&pdev->dev, "gpiochip_add error %d\n", retval);
- 		return retval;
+ 		dev_err(&pdev->dev, "langwell gpiochip_add error %d\n", retval);
+-		goto err_ioremap;
++		return retval;
  	}
  
-@@ -408,8 +408,7 @@ static int wp_gpio_probe(struct platform_device *pdev)
+ 	lnw_irq_init_hw(lnw);
+@@ -407,12 +387,6 @@ static int lnw_gpio_probe(struct pci_dev *pdev,
+ 	pm_runtime_allow(&pdev->dev);
  
- 	lnw = devm_kzalloc(&pdev->dev, sizeof(struct lnw_gpio), GFP_KERNEL);
+ 	return 0;
+-
+-err_ioremap:
+-	pci_release_regions(pdev);
+-err_pci_req_region:
+-	pci_disable_device(pdev);
+-	return retval;
+ }
+ 
+ static struct pci_driver lnw_gpio_driver = {
+@@ -430,23 +404,20 @@ static int wp_gpio_probe(struct platform_device *pdev)
+ 	struct lnw_gpio *lnw;
+ 	struct gpio_chip *gc;
+ 	struct resource *rc;
+-	int retval = 0;
+-
+-	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!rc)
+-		return -EINVAL;
++	int retval;
+ 
+-	lnw = kzalloc(sizeof(struct lnw_gpio), GFP_KERNEL);
++	lnw = devm_kzalloc(&pdev->dev, sizeof(struct lnw_gpio), GFP_KERNEL);
  	if (!lnw) {
--		dev_err(&pdev->dev,
--			"can't allocate whitneypoint_gpio chip data\n");
-+		dev_err(&pdev->dev, "can't allocate chip data\n");
+ 		dev_err(&pdev->dev,
+ 			"can't allocate whitneypoint_gpio chip data\n");
  		return -ENOMEM;
  	}
- 
-@@ -432,8 +431,7 @@ static int wp_gpio_probe(struct platform_device *pdev)
- 	gc->can_sleep = 0;
- 	retval = gpiochip_add(gc);
+-	lnw->reg_base = ioremap_nocache(rc->start, resource_size(rc));
+-	if (lnw->reg_base == NULL) {
+-		retval = -EINVAL;
+-		goto err_kmalloc;
+-	}
++
++	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	lnw->reg_base = devm_ioremap_resource(&pdev->dev, rc);
++	if (IS_ERR(lnw->reg_base))
++		return PTR_ERR(lnw->reg_base);
++
+ 	spin_lock_init(&lnw->lock);
+ 	gc = &lnw->chip;
+ 	gc->label = dev_name(&pdev->dev);
+@@ -463,15 +434,10 @@ static int wp_gpio_probe(struct platform_device *pdev)
  	if (retval) {
--		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n",
--								retval);
-+		dev_err(&pdev->dev, "gpiochip_add error %d\n", retval);
- 		return retval;
+ 		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n",
+ 								retval);
+-		goto err_ioremap;
++		return retval;
  	}
  	platform_set_drvdata(pdev, lnw);
+ 	return 0;
+-err_ioremap:
+-	iounmap(lnw->reg_base);
+-err_kmalloc:
+-	kfree(lnw);
+-	return retval;
+ }
+ 
+ static int wp_gpio_remove(struct platform_device *pdev)
+@@ -481,9 +447,6 @@ static int wp_gpio_remove(struct platform_device *pdev)
+ 	err = gpiochip_remove(&lnw->chip);
+ 	if (err)
+ 		dev_err(&pdev->dev, "failed to remove gpio_chip.\n");
+-	iounmap(lnw->reg_base);
+-	kfree(lnw);
+-	platform_set_drvdata(pdev, NULL);
+ 	return 0;
+ }
+ 
 -- 
 1.8.2.rc0.22.gb3600c3
 
