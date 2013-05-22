@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757759Ab3EVWSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 18:18:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42219 "EHLO
+	id S1757775Ab3EVWS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 18:18:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288Ab3EVWSW (ORCPT
+	with ESMTP id S1757681Ab3EVWSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 18:18:22 -0400
+	Wed, 22 May 2013 18:18:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 2/5] hwmon: fix error return code in abituguru_probe()
-Date: Wed, 22 May 2013 15:18:08 -0700
-Message-Id: <20130522221331.248613536@linuxfoundation.org>
+        Niels Ole Salscheider <niels_ole@salscheider-online.de>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 4/5] drm/radeon: Fix VRAM size calculation for VRAM >= 4GB
+Date: Wed, 22 May 2013 15:18:10 -0700
+Message-Id: <20130522221331.704470226@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130522221330.720801923@linuxfoundation.org>
 References: <20130522221330.720801923@linuxfoundation.org>
@@ -27,47 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Niels Ole Salscheider <niels_ole@salscheider-online.de>
 
-commit ecacb0b17c08fae89f65468727f0e4b8e91da4e1 upstream.
+commit fc986034540102cd090237bf3f70262e1ae80d9c upstream.
 
-Fix to return a negative error code from the error handling
-case instead of 0, as done elsewhere in this function.
+Add ULL prefix to avoid overflow.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Niels Ole Salscheider <niels_ole@salscheider-online.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/abituguru.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c  |    4 ++--
+ drivers/gpu/drm/radeon/radeon_ttm.c |    2 +-
+ drivers/gpu/drm/radeon/si.c         |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/hwmon/abituguru.c
-+++ b/drivers/hwmon/abituguru.c
-@@ -1410,14 +1410,18 @@ static int __devinit abituguru_probe(str
- 	pr_info("found Abit uGuru\n");
- 
- 	/* Register sysfs hooks */
--	for (i = 0; i < sysfs_attr_i; i++)
--		if (device_create_file(&pdev->dev,
--				&data->sysfs_attr[i].dev_attr))
-+	for (i = 0; i < sysfs_attr_i; i++) {
-+		res = device_create_file(&pdev->dev,
-+					 &data->sysfs_attr[i].dev_attr);
-+		if (res)
- 			goto abituguru_probe_error;
--	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++)
--		if (device_create_file(&pdev->dev,
--				&abituguru_sysfs_attr[i].dev_attr))
-+	}
-+	for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
-+		res = device_create_file(&pdev->dev,
-+					 &abituguru_sysfs_attr[i].dev_attr);
-+		if (res)
- 			goto abituguru_probe_error;
-+	}
- 
- 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
- 	if (!IS_ERR(data->hwmon_dev))
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -2443,8 +2443,8 @@ int evergreen_mc_init(struct radeon_devi
+ 		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE);
+ 	} else {
+ 		/* size in MB on evergreen/cayman/tn */
+-		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++		rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++		rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	}
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	r700_vram_gtt_location(rdev, &rdev->mc);
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -744,7 +744,7 @@ int radeon_ttm_init(struct radeon_device
+ 		return r;
+ 	}
+ 	DRM_INFO("radeon: %uM of VRAM memory ready\n",
+-		 (unsigned)rdev->mc.real_vram_size / (1024 * 1024));
++		 (unsigned) (rdev->mc.real_vram_size / (1024 * 1024)));
+ 	r = ttm_bo_init_mm(&rdev->mman.bdev, TTM_PL_TT,
+ 				rdev->mc.gtt_size >> PAGE_SHIFT);
+ 	if (r) {
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -2464,8 +2464,8 @@ static int si_mc_init(struct radeon_devi
+ 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
+ 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
+ 	/* size in MB on si */
+-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
++	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
++	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+ 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
+ 	si_vram_gtt_location(rdev, &rdev->mc);
+ 	radeon_update_bandwidth_info(rdev);
 
 
