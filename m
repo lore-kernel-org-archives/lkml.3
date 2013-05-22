@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab3EVUEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:04:15 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:48229 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab3EVUEO (ORCPT
+	id S1756762Ab3EVUEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:04:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41490 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637Ab3EVUEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:04:14 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] net: mv643xx_eth: proper initialization for Kirkwood SoCs
-Date: Wed, 22 May 2013 22:04:02 +0200
-Message-Id: <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 22 May 2013 16:04:40 -0400
+Date: Wed, 22 May 2013 13:04:39 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Cc: davem@davemloft.net, liquidhorse@gmail.com, andy@greyhouse.net,
+        fubar@us.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com
+Subject: Re: https://lkml.org/lkml/2013/2/1/531
+Message-ID: <20130522200439.GA21367@kroah.com>
+References: <519CADA9.9060909@smart-weblications.de>
+ <20130522135745.GA14640@kroah.com>
+ <519CEF4B.5090108@smart-weblications.de>
+ <20130522162336.GA5761@kroah.com>
+ <519D0B79.6010307@smart-weblications.de>
+ <20130522190640.GA20276@kroah.com>
+ <519D1DEF.8090206@smart-weblications.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519D1DEF.8090206@smart-weblications.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ethernet controllers found on Kirkwood SoCs not only suffer from loosing
-MAC address register contents on clock gating but also some important
-registers are reset to values that would break ethernet. This patch
-clears the CLK125_BYPASS_EN bit for DT enabled Kirkwood only by using
-of_machine_is_compatible() instead of #ifdefs. Non-DT Kirkwood is not
-affected as it installs a clock gating workaround because of the MAC
-address issue above. Other Orion SoCs do not suffer from register reset,
-do not have the bit in question, or do not have the register at all.
-Moreover, system controllers on PPC using this driver should also be
-protected from clearing that bit.
+On Wed, May 22, 2013 at 09:35:11PM +0200, Smart Weblications GmbH - Florian Wiessner wrote:
+> Hi Greg,
+> 
+> Am 22.05.2013 21:06, schrieb Greg KH:> On Wed, May 22, 2013 at 08:16:25PM +0200,
+> Smart Weblications GmbH - Florian Wiessner wrote:
+> >> Hi,
+> >>
+> >>
+> >> Am 22.05.2013 18:23, schrieb Greg KH:
+> >>> On Wed, May 22, 2013 at 06:16:11PM +0200, Smart Weblications GmbH - Florian
+> Wiessner wrote:
+> >>>> Am 22.05.2013 15:57, schrieb Greg KH:
+> >>>>> On Wed, May 22, 2013 at 01:36:09PM +0200, Smart Weblications GmbH -
+> Florian Wiessner wrote:
+> >>>>>> Hi,
+> >>>>>>
+> >>>>>> why is this patch still not backported to 3.4?
+> >>>>>>
+> >>>>>> I today tried 3.4.46 from kernel.org, but the patch STILL seems _NOT_
+> included?
+> >>>>>>
+> >>>>>> WHY IS THAT?
+> >>>>>
+> >>>>> <formletter>
+> >>>>>
+> >>>>> This is not the correct way to submit patches for inclusion in the
+> >>>>> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> >>>>> for how to do this properly.
+> >>>>>
+> >>>>> </formletter>
+> >>>>>
+> >>>>
+> >>>>
+> >>>> I don't want to submit a patch - i wanted to know why this patch still is
+> not in
+> >>>> the kernel (it is afaics at least 6 months old!)
+> >>>
+> >>> Perhaps because it was not submitted properly as documented above?
+> >>>
+> >>
+> >> Well, i don't know. I have not written that patch, but tested and applied it
+> >> against 3.4.36 where it worked fine.
+> >>
+> >> But i am unable to apply it to 3.4.46 (there are rejects if i try to apply it,
+> >> obviously because there were changes in the meanwhile) - It would be cool if
+> >> someone could tell if that patch is really needed anymore with 3.4.46.
+> >>
+> >> I am no C coder and only have little C experience, but i'd like to use this
+> >> patch with current 3.4 stable Kernel or at least make sure that this patch is
+> >> not needed anymore with current stable kernels...
+> >
+> > Why do you think that it is needed?  And does it match up to a specific
+> > change that is already in Linus's tree?  That is a requirement here.
+> >
+> 
+> It is needed, because without it (at least in 3.4.36) virtualized guests
+> (kvm/qemu) are unable to use br0 (bridge) if the bridge uses a bond with mode 6
+> (balance-alb).
+> 
+> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Note: In contrast to the reset value of 0 for CLK125_BYPASS_EN bit as
-stated in Kirkwood datasheet, we confirmed that reset value is 1 instead.
-Either datasheet is wrong about it, there is some post-boot self-check or
-BootROM flips that bit.
+Ok, that's what we need.
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/marvell/mv643xx_eth.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+Now, please cc: the developers / maintainers of that patch and ask them
+to have it included in the 3.4-stable kernel series.
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index f2c229c..d9ad8c7 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -119,6 +119,8 @@ static char mv643xx_eth_driver_version[] = "1.4";
- #define  LINK_UP			0x00000002
- #define TXQ_COMMAND			0x0048
- #define TXQ_FIX_PRIO_CONF		0x004c
-+#define PORT_SERIAL_CONTROL1		0x004c
-+#define  CLK125_BYPASS_EN		0x00000010
- #define TX_BW_RATE			0x0050
- #define TX_BW_MTU			0x0058
- #define TX_BW_BURST			0x005c
-@@ -2843,6 +2845,14 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 
- 	mp->dev = dev;
- 
-+	/* Kirkwood resets some registers on gated clocks. Especially
-+	 * CLK125_BYPASS_EN must be cleared but is not available on
-+	 * all other SoCs/System Controllers using this driver.
-+	 */
-+	if (of_machine_is_compatible("marvell,kirkwood"))
-+		wrlp(mp, PORT_SERIAL_CONTROL1,
-+		     rdlp(mp, PORT_SERIAL_CONTROL1) & ~CLK125_BYPASS_EN);
-+
- 	/*
- 	 * Start with a default rate, and if there is a clock, allow
- 	 * it to override the default.
--- 
-1.7.10.4
+Then, if they agree, the network maintainer will pick it up and send it
+to me for inclusion.
 
+thanks,
+
+greg k-h
