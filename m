@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab3EVTiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:38:06 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:60260 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab3EVTiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:38:04 -0400
-Message-ID: <519D1E92.7030505@redhat.com>
-Date: Wed, 22 May 2013 21:37:54 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org> <519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net> <519CF99E.6010804@redhat.com> <20130522181135.GC20848@thunk.org>
-In-Reply-To: <20130522181135.GC20848@thunk.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756964Ab3EVTmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:42:18 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50539 "EHLO
+	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752839Ab3EVTmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 15:42:17 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
+        Patrick Koppen <isdn4linux@koppen.de>, Jiri Slaby <jslaby@suse.cz>,
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Subject: [PATCH v2 -resend 1/6] mISDN: Add support for group membership check
+Date: Wed, 22 May 2013 21:42:50 +0200
+Message-Id: <1369251770-22316-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <519D16B4.7080905@cogentembedded.com>
+References: <519D16B4.7080905@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/05/2013 20:11, Theodore Ts'o ha scritto:
-> On Wed, May 22, 2013 at 07:00:14PM +0200, Paolo Bonzini wrote:
->> You have hardware providers selling cloud services that want to run
->> their own custom backup services from within a VM, which entails having
->> vendor-specific commands run from within a VM.  Or you have people that
->> run clusters that are half-physical and half-virtual and want to use the
->> same /dev/disk/by-id paths in both cases; perhaps, with NPIV, they want
->> to use one zoning approach for both physical and virtual machines.
->> Someone else they want to backup to tapes from a VM (for example s390
->> people who just put everything in a VM, so the distinction of physical
->> and virtual makes no sense for them).  Some people use virtual machines
->> as sandboxes, and want to burn the ISOs from the same VMs where they
->> download the ISOs.  Some people have vendor utilities that only run
->> under Windows, and want to run them in a VM.
-> 
-> So is this hypothetical or do you have a real customer in mind?
+From: Jeff Mahoney <jeffm@suse.com>
 
-All of these come from real customers.
+This patch adds a module parameter to allow a group access to the
+mISDN devices. Otherwise, unpriviledged users on systems with ISDN
+hardware have the ability to dial out, potentially causing expensive
+bills.
 
-> If it's not theoretical, how does the cloud service control who has
-> access to the CD burner, and how are the disks loaded into the CD
-> burner?
+Based on a different implementation by Patrick Koppen <isdn4linux@koppen.de>.
 
-CD burning would be used in a VM that runs on your local workstation, so
-the VM gets access to the CD burner under your desk.  There was also a
-developer of a CD burning tool that wanted to test it inside BSD,
-Solaris and Windows VMs; the idea is the same.
+[v2]
+ - convert to the new UID/GID API
+ - fix whitespace issues (per Sergei)
 
-Paolo
+Acked-by: Jeff Mahoney <jeffm@suse.com>
+Cc: Patrick Koppen <isdn4linux@koppen.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+---
+ drivers/isdn/mISDN/core.c   | 6 ++++++
+ drivers/isdn/mISDN/core.h   | 1 +
+ drivers/isdn/mISDN/socket.c | 9 +++++++++
+ 3 files changed, 16 insertions(+)
+
+diff --git a/drivers/isdn/mISDN/core.c b/drivers/isdn/mISDN/core.c
+index da30c5c..174aa3f 100644
+--- a/drivers/isdn/mISDN/core.c
++++ b/drivers/isdn/mISDN/core.c
+@@ -21,10 +21,14 @@
+ #include "core.h"
+ 
+ static u_int debug;
++static u_int gid;
++kgid_t misdn_permitted_gid;
+ 
+ MODULE_AUTHOR("Karsten Keil");
+ MODULE_LICENSE("GPL");
+ module_param(debug, uint, S_IRUGO | S_IWUSR);
++module_param(gid, uint, 0);
++MODULE_PARM_DESC(gid, "Unix group for accessing misdn socket (default 0)");
+ 
+ static u64		device_ids;
+ #define MAX_DEVICE_ID	63
+@@ -372,6 +376,8 @@ mISDNInit(void)
+ {
+ 	int	err;
+ 
++	misdn_permitted_gid = make_kgid(current_user_ns(), gid);
++
+ 	printk(KERN_INFO "Modular ISDN core version %d.%d.%d\n",
+ 	       MISDN_MAJOR_VERSION, MISDN_MINOR_VERSION, MISDN_RELEASE);
+ 	mISDN_init_clock(&debug);
+diff --git a/drivers/isdn/mISDN/core.h b/drivers/isdn/mISDN/core.h
+index 52695bb..5f509bf 100644
+--- a/drivers/isdn/mISDN/core.h
++++ b/drivers/isdn/mISDN/core.h
+@@ -17,6 +17,7 @@
+ 
+ extern struct mISDNdevice	*get_mdevice(u_int);
+ extern int			get_mdevice_count(void);
++extern kgid_t misdn_permitted_gid;
+ 
+ /* stack status flag */
+ #define mISDN_STACK_ACTION_MASK		0x0000ffff
+diff --git a/drivers/isdn/mISDN/socket.c b/drivers/isdn/mISDN/socket.c
+index e47dcb9..8dcef36 100644
+--- a/drivers/isdn/mISDN/socket.c
++++ b/drivers/isdn/mISDN/socket.c
+@@ -612,6 +612,11 @@ data_sock_create(struct net *net, struct socket *sock, int protocol)
+ {
+ 	struct sock *sk;
+ 
++	if (!capable(CAP_SYS_ADMIN) &&
++			!gid_eq(misdn_permitted_gid, current_gid()) &&
++			!in_group_p(misdn_permitted_gid))
++		return -EPERM;
++
+ 	if (sock->type != SOCK_DGRAM)
+ 		return -ESOCKTNOSUPPORT;
+ 
+@@ -694,6 +699,10 @@ base_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
+ 	case IMSETDEVNAME:
+ 	{
+ 		struct mISDN_devrename dn;
++		if (!capable(CAP_SYS_ADMIN) &&
++				!gid_eq(misdn_permitted_gid, current_gid()) &&
++				!in_group_p(misdn_permitted_gid))
++			return -EPERM;
+ 		if (copy_from_user(&dn, (void __user *)arg,
+ 				   sizeof(dn))) {
+ 			err = -EFAULT;
+-- 
+1.8.2.3
+
