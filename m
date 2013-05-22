@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3EVHzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:55:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55885 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab3EVHzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:55:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="317607844"
-Date: Wed, 22 May 2013 10:58:54 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        David Cohen <david.a.cohen@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] gpio-langwell: do not use direct access to
- iomapped memory
-Message-ID: <20130522075854.GV11878@intel.com>
-References: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1369208859-16514-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1754470Ab3EVH6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:58:39 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40856 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab3EVH6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 03:58:37 -0400
+Date: Wed, 22 May 2013 11:56:38 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Li Zefan <lizefan@huawei.com>
+CC: Michal Hocko <mhocko@suse.cz>, Andrey Vagin <avagin@openvz.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
+ root caches
+Message-ID: <20130522075638.GB16934@paralelels.com>
+References: <1368535118-27369-1-git-send-email-avagin@openvz.org>
+ <20130514160859.GC5055@dhcp22.suse.cz>
+ <20130522074055.GA16207@paralelels.com>
+ <519C78C0.3050204@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-In-Reply-To: <1369208859-16514-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <519C78C0.3050204@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.24.21.118]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 10:47:37AM +0300, Andy Shevchenko wrote:
-> We better to use readl() function instead of bad looking direct access.
+On Wed, May 22, 2013 at 03:50:24PM +0800, Li Zefan wrote:
+> On 2013/5/22 15:40, Andrew Vagin wrote:
+> > On Tue, May 14, 2013 at 06:08:59PM +0200, Michal Hocko wrote:
+> >>
+> >> Forgot to add
+> >> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> >> +
+> >> Cc: stable # 3.9
+> >>
+> >> Thanks
+> > 
+> > Who usually picks up such patches?
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> The famous AKPM.
+>
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Thanks.
+
+get_maintainer.pl doesn't show Andrew in the list of recipients.
+
+$ perl scripts/get_maintainer.pl 0001-memcg-don-t-initialize-kmem-cache-destroying-work-fo.patch
+Johannes Weiner <hannes@cmpxchg.org> (maintainer:MEMORY RESOURCE C...)
+Michal Hocko <mhocko@suse.cz> (maintainer:MEMORY RESOURCE C...)
+Balbir Singh <bsingharora@gmail.com> (maintainer:MEMORY RESOURCE C...)
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> (maintainer:MEMORY RESOURCE C...)
+cgroups@vger.kernel.org (open list:MEMORY RESOURCE C...)
+linux-mm@kvack.org (open list:MEMORY RESOURCE C...)
+linux-kernel@vger.kernel.org (open list) 
