@@ -1,119 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab3EVIgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 04:36:20 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:58013 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab3EVIgR (ORCPT
+	id S1754695Ab3EVIhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 04:37:32 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58689 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab3EVIh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 04:36:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130522080529.GW11878@intel.com>
-References: <1369208859-16514-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1369208859-16514-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130522080529.GW11878@intel.com>
-Date: Wed, 22 May 2013 11:36:15 +0300
-Message-ID: <CAHp75Vdyb4ynf-XQrcaCrKSPkbzN9_PP6txpvsYnYWXdZpWrEQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] gpio-langwell: use managed functions pcim_* and devm_*
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        David Cohen <david.a.cohen@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 May 2013 04:37:29 -0400
+X-AuditID: 9c930179-b7c07ae000000e33-2e-519c83c66483
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH v2 5/5] perf gtk/hists: Make column headers resizable
+Date: Wed, 22 May 2013 17:37:12 +0900
+Message-Id: <1369211832-3642-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1369211258-3163-6-git-send-email-namhyung@kernel.org>
+References: <1369211258-3163-6-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:05 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Wed, May 22, 2013 at 10:47:38AM +0300, Andy Shevchenko wrote:
->> This makes the error handling much more simpler than open-coding everything and
->> in addition makes the probe function smaller an tidier.
->>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->
-> In general this change looks good. Getting rid of 61 lines is certainly an
-> improvement!
->
-> David, are you able to check that this still works on your hardware? (I'm
-> pretty sure that Andy has tested this already on Medfield)
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-I also wonder if it still okay on other platforms where this IP block
-is embedded.
+Sometimes it's annoying to see when some symbols have very wierd long
+names.  So it might be a good idea to make column size changable.
 
-> I have few minor comments, though. See below.
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+There was a warning when callchains were not used.
 
-Thank you for the review. See my answers below.
+ tools/perf/ui/gtk/hists.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
->> ---
->>  drivers/gpio/gpio-langwell.c | 82 ++++++++++++--------------------------------
->>  1 file changed, 21 insertions(+), 61 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-langwell.c b/drivers/gpio/gpio-langwell.c
->> index 8203084..8672282 100644
->> --- a/drivers/gpio/gpio-langwell.c
->> +++ b/drivers/gpio/gpio-langwell.c
->> @@ -320,56 +320,35 @@ static const struct dev_pm_ops lnw_gpio_pm_ops = {
->>  static int lnw_gpio_probe(struct pci_dev *pdev,
->>                         const struct pci_device_id *id)
->>  {
->> -     void __iomem *base;
->> -     resource_size_t start, len;
->>       struct lnw_gpio *lnw;
->>       u32 gpio_base;
->>       u32 irq_base;
->>       int retval;
->>       int ngpio = id->driver_data;
->>
->> -     retval = pci_enable_device(pdev);
->> +     retval = pcim_enable_device(pdev);
->>       if (retval)
->>               return retval;
->>
->> -     retval = pci_request_regions(pdev, "langwell_gpio");
->> +     retval = pcim_iomap_regions(pdev, 1 << 0 | 1 << 1, pci_name(pdev));
->
-> I wonder if "langwell_gpio" is still a better name compared to
-> pci_name(pdev)?
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 4e96f7a9f6d1..00f718094978 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -327,6 +327,13 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		}
+ 	}
+ 
++	for (col_idx = 0; col_idx < nr_cols; col_idx++) {
++		GtkTreeViewColumn *column;
++
++		column = gtk_tree_view_get_column(GTK_TREE_VIEW(view), col_idx);
++		gtk_tree_view_column_set_resizable(column, TRUE);
++	}
++
+ 	g_signal_connect(view, "row-activated",
+ 			 G_CALLBACK(on_row_activated), NULL);
+ 	gtk_container_add(GTK_CONTAINER(window), view);
+-- 
+1.7.11.7
 
-This is used as an internal name for certain resource.
-
-It could be seen in case of using printk("%pR") for example. But even
-in that case I prefer to see the actual device as well to which
-the resource belongs to.
-
-My general opinion is better to use pci_name(pdev) in the pci drivers instead
-of hardcoded pseudo-unique strings.
-
->>       if (retval) {
->> -             dev_err(&pdev->dev, "error requesting resources\n");
->> -             goto err_pci_req_region;
->> -     }
->> -     /* get the gpio_base from bar1 */
->> -     start = pci_resource_start(pdev, 1);
->> -     len = pci_resource_len(pdev, 1);
->> -     base = ioremap_nocache(start, len);
->> -     if (!base) {
->> -             dev_err(&pdev->dev, "error mapping bar1\n");
->> -             retval = -EFAULT;
->> -             goto err_ioremap;
->> +             dev_err(&pdev->dev, "I/O memory mapping error\n");
->> +             return retval;
->>       }
->>
->> -     irq_base = readl(base);
->> -     gpio_base = readl(sizeof(u32) + base);
->> +     irq_base = readl(pcim_iomap_table(pdev)[1]);
->> +     gpio_base = readl(sizeof(u32) + pcim_iomap_table(pdev)[1]);
->
-> Using pcim_iomap_table(pdev)[] is a bit confusing, at least for me. Can you
-> add a variable where you store that pointer and use that instead?
-
-[Hmm... It returns pointer to an array of pointers.
-Okay,  I will relive base variable for this as we discussed privately.
-
---
-With Best Regards,
-Andy Shevchenko
