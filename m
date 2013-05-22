@@ -1,121 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab3EVTmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:42:18 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50539 "EHLO
-	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752839Ab3EVTmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:42:17 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Jeff Mahoney <jeffm@suse.com>,
-        Patrick Koppen <isdn4linux@koppen.de>, Jiri Slaby <jslaby@suse.cz>,
-        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: [PATCH v2 -resend 1/6] mISDN: Add support for group membership check
-Date: Wed, 22 May 2013 21:42:50 +0200
-Message-Id: <1369251770-22316-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <519D16B4.7080905@cogentembedded.com>
-References: <519D16B4.7080905@cogentembedded.com>
+	id S1756982Ab3EVTre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:47:34 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:32834 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab3EVTrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 15:47:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130522191551.GB10617@phenom.dumpdata.com>
+References: <1365692161-13735-1-git-send-email-dgdegra@tycho.nsa.gov> <20130522191551.GB10617@phenom.dumpdata.com>
+From: Kent Yoder <shpedoikal@gmail.com>
+Date: Wed, 22 May 2013 14:47:01 -0500
+Message-ID: <CAM0nabGSo9b7q1pGOsTGjFzJBi7cK=2s5mGmOgNjeAf-2+ZvDQ@mail.gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH v2] drivers/tpm: add xen tpmfront interface
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com
+Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
+        Ian.Campbell@citrix.com, Jan Beulich <JBeulich@suse.com>,
+        xen-devel@lists.xen.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+>> +     notify_remote_via_evtchn(priv->evtchn);
+>> +
+>> +     ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
+>
+> Um, + 6? Why? Is there an #define for that magic constant?
+> Should this value be read before you do the wait_for_tpm_stat stuff?
 
-This patch adds a module parameter to allow a group access to the
-mISDN devices. Otherwise, unpriviledged users on systems with ISDN
-hardware have the ability to dial out, potentially causing expensive
-bills.
+  This is hardcoded to 6 even in tpm.c.  Time for a #define...
 
-Based on a different implementation by Patrick Koppen <isdn4linux@koppen.de>.
+> Otherwise it looks OK to me. Should this go through me or Kent?
+> And if so, is Kent waiting for my feedback?
 
-[v2]
- - convert to the new UID/GID API
- - fix whitespace issues (per Sergei)
+  My comments were minor -- I was expecting feedback on your earlier
+comments before merging.  I think this should go through the tpmdd
+maintainer if its going to live in drivers/char/tpm though.
 
-Acked-by: Jeff Mahoney <jeffm@suse.com>
-Cc: Patrick Koppen <isdn4linux@koppen.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
----
- drivers/isdn/mISDN/core.c   | 6 ++++++
- drivers/isdn/mISDN/core.h   | 1 +
- drivers/isdn/mISDN/socket.c | 9 +++++++++
- 3 files changed, 16 insertions(+)
+Kent
 
-diff --git a/drivers/isdn/mISDN/core.c b/drivers/isdn/mISDN/core.c
-index da30c5c..174aa3f 100644
---- a/drivers/isdn/mISDN/core.c
-+++ b/drivers/isdn/mISDN/core.c
-@@ -21,10 +21,14 @@
- #include "core.h"
- 
- static u_int debug;
-+static u_int gid;
-+kgid_t misdn_permitted_gid;
- 
- MODULE_AUTHOR("Karsten Keil");
- MODULE_LICENSE("GPL");
- module_param(debug, uint, S_IRUGO | S_IWUSR);
-+module_param(gid, uint, 0);
-+MODULE_PARM_DESC(gid, "Unix group for accessing misdn socket (default 0)");
- 
- static u64		device_ids;
- #define MAX_DEVICE_ID	63
-@@ -372,6 +376,8 @@ mISDNInit(void)
- {
- 	int	err;
- 
-+	misdn_permitted_gid = make_kgid(current_user_ns(), gid);
-+
- 	printk(KERN_INFO "Modular ISDN core version %d.%d.%d\n",
- 	       MISDN_MAJOR_VERSION, MISDN_MINOR_VERSION, MISDN_RELEASE);
- 	mISDN_init_clock(&debug);
-diff --git a/drivers/isdn/mISDN/core.h b/drivers/isdn/mISDN/core.h
-index 52695bb..5f509bf 100644
---- a/drivers/isdn/mISDN/core.h
-+++ b/drivers/isdn/mISDN/core.h
-@@ -17,6 +17,7 @@
- 
- extern struct mISDNdevice	*get_mdevice(u_int);
- extern int			get_mdevice_count(void);
-+extern kgid_t misdn_permitted_gid;
- 
- /* stack status flag */
- #define mISDN_STACK_ACTION_MASK		0x0000ffff
-diff --git a/drivers/isdn/mISDN/socket.c b/drivers/isdn/mISDN/socket.c
-index e47dcb9..8dcef36 100644
---- a/drivers/isdn/mISDN/socket.c
-+++ b/drivers/isdn/mISDN/socket.c
-@@ -612,6 +612,11 @@ data_sock_create(struct net *net, struct socket *sock, int protocol)
- {
- 	struct sock *sk;
- 
-+	if (!capable(CAP_SYS_ADMIN) &&
-+			!gid_eq(misdn_permitted_gid, current_gid()) &&
-+			!in_group_p(misdn_permitted_gid))
-+		return -EPERM;
-+
- 	if (sock->type != SOCK_DGRAM)
- 		return -ESOCKTNOSUPPORT;
- 
-@@ -694,6 +699,10 @@ base_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
- 	case IMSETDEVNAME:
- 	{
- 		struct mISDN_devrename dn;
-+		if (!capable(CAP_SYS_ADMIN) &&
-+				!gid_eq(misdn_permitted_gid, current_gid()) &&
-+				!in_group_p(misdn_permitted_gid))
-+			return -EPERM;
- 		if (copy_from_user(&dn, (void __user *)arg,
- 				   sizeof(dn))) {
- 			err = -EFAULT;
--- 
-1.8.2.3
-
+> ------------------------------------------------------------------------------
+> Try New Relic Now & We'll Send You this Cool Shirt
+> New Relic is the only SaaS-based application performance monitoring service
+> that delivers powerful full stack analytics. Optimize and monitor your
+> browser, app, & servers with just a few lines of code. Try New Relic
+> and get this awesome Nerd Life shirt! http://p.sf.net/sfu/newrelic_d2d_may
+> _______________________________________________
+> tpmdd-devel mailing list
+> tpmdd-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
