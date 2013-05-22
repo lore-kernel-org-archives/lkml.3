@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab3EVQc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 12:32:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47811 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab3EVQcZ (ORCPT
+	id S1756628Ab3EVQdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 12:33:19 -0400
+Received: from kymasys.com ([64.62.140.43]:55042 "HELO kymasys.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751543Ab3EVQdS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 12:32:25 -0400
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command whitelist (CVE-2012-4542))
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
-	<519C674A.50700@redhat.com> <20130522093249.GC3466@mtj.dyndns.org>
-	<519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org>
-	<519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org>
-	<519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org>
-	<519CE9FE.2030007@redhat.com>
-Date: Wed, 22 May 2013 12:32:33 -0400
-In-Reply-To: <519CE9FE.2030007@redhat.com> (Paolo Bonzini's message of "Wed,
-	22 May 2013 17:53:34 +0200")
-Message-ID: <yq1vc6b561q.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 22 May 2013 12:33:18 -0400
+Subject: Re: [PATCH v4 0/6] mips/kvm: Fix ABI for compatibility with 64-bit guests.
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Sanjay Lal <sanjayl@kymasys.com>
+In-Reply-To: <20130522125453.GN14287@redhat.com>
+Date: Wed, 22 May 2013 09:33:17 -0700
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <88128283-D1AD-4D69-B5B5-0579F346087C@kymasys.com>
+References: <1369169695-10444-1-git-send-email-ddaney.cavm@gmail.com> <20130522125453.GN14287@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Paolo" == Paolo Bonzini <pbonzini@redhat.com> writes:
 
-Paolo> First of all, I'll note that SG_IO and block-device-specific
-Paolo> ioctls both have their place.  My usecase for SG_IO is
-Paolo> virtualization, where I need to pass information from the LUN to
-Paolo> the virtual machine with as much fidelity as possible if I choose
-Paolo> to virtualize at the SCSI level.  
+On May 22, 2013, at 5:54 AM, Gleb Natapov wrote:
 
-Now there's your problem! Several people told you way back that the SCSI
-virt approach was a really poor choice. The SG_IO permissions problem is
-a classic "Doctor, it hurts when I do this".
+> On Tue, May 21, 2013 at 01:54:49PM -0700, David Daney wrote:
+>> From: David Daney <david.daney@cavium.com>
+>> 
+>> The initial patch set implementing MIPS KVM does not handle 64-bit
+>> guests or use of the FPU.  This patch set corrects these ABI issues,
+>> and does some very minor clean up.
+>> 
+> Sanjay, is this looks good to you. 
+> 
+> What userspace MIPS is using for machine emulation? Is there corresponding
+> patches to the userspace?
 
-The kernel's fundamental task is to provide abstraction between
-applications and intricacies of hardware. The right way to solve the
-problem would have been to provide a better device abstraction built on
-top of the block/SCSI infrastructure we already have in place. If you
-need more fidelity, add fidelity to the block layer instead of punching
-a giant hole through it.
+Gleb, I'll post some comments on the patches later in the day.  We use QEMu for the machine emulation. I am in the process of integrating with the new ABI, and will post the QEMU patches shortly.
 
-I seem to recall that reservations were part of your motivation for
-going the SCSI route in the first place. A better approach would have
-been to create a generic reservations mechanism that could be exposed to
-the guest. And then let the baremetal kernel worry about the appropriate
-way to communicate with the physical hardware. Just like we've done with
-reads and writes, discard, write same, etc.
+Regards
+Sanjay
 
-The fact that burning CDs requires SG_IO in the first place is just a
-symptom that we got that interface totally wrong. cat iso.img > /dev/sr0
-would have been much more in line with how Unix works...
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
