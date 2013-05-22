@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab3EVKAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:00:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6211 "EHLO mga14.intel.com"
+	id S1755832Ab3EVKBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:01:07 -0400
+Received: from mx10.gouders.net ([89.244.147.155]:46073 "EHLO mx10.gouders.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab3EVKAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:00:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="306162491"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Jean Delvare <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH] i2c: designware: prevent signals from aborting I2C transfers
-Date: Wed, 22 May 2013 13:03:11 +0300
-Message-Id: <1369216991-13334-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753314Ab3EVKBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:01:03 -0400
+Authentication-Results: mx10.gouders.net; dkim=none reason="no signature";
+	dkim-adsp=discard
+From: Dirk Gouders <dirk@gouders.net>
+To: Borislav Petkov <bp@suse.de>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: tools/lib/lk: redefinition of _FORTIFY_SOURCE (gcc-4.7.2)
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Wed, 22 May 2013 12:00:21 +0200
+Message-ID: <giy5b7uyfe.fsf@karga.hank.lab>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a process receives signal while it is waiting for I2C transfer to
-complete, an error is returned to the caller and the transfer is aborted.
-This can cause the driver to fail subsequent transfers. Also according to
-commit d295a86eab2 (i2c: mv64xxx: work around signals causing I2C
-transactions to be aborted) I2C drivers aren't supposed to abort
-transactions on signals.
+Hello Borislav,
 
-To prevent this switch to use wait_for_completion_timeout() instead of
-wait_for_completion_interruptible_timeout() in the designware I2C driver.
+I am having problems with building liblk, but opposed to the recent
+problem that Jiri noticed (commit b28b130719af6 Fix _FORTIFY_SOURCE
+builds) I am getting errors because _FORTIFY_SOURCE is redefined:
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/i2c/busses/i2c-designware-core.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+<command-line>:0:0: error: "_FORTIFY_SOURCE" redefined [-Werror]
+debugfs.c:1:0: note: this is the location of the previous definition
+cc1: all warnings being treated as errors
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index c41ca63..db20a28 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -580,14 +580,13 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	i2c_dw_xfer_init(dev);
- 
- 	/* wait for tx to complete */
--	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete, HZ);
-+	ret = wait_for_completion_timeout(&dev->cmd_complete, HZ);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		i2c_dw_init(dev);
- 		ret = -ETIMEDOUT;
- 		goto done;
--	} else if (ret < 0)
--		goto done;
-+	}
- 
- 	if (dev->msg_err) {
- 		ret = dev->msg_err;
--- 
-1.7.10.4
+I guess this is because of different gcc versions being in use.
+With gcc-4.7.2 _FORTIFY_SOURCE is defined as
 
+$ gcc -E -dM - < /dev/null | grep -i fortify
+#define _FORTIFY_SOURCE ((defined __OPTIMIZE__ && __OPTIMIZE__ > 0) ? 2 : 0)
+
+gcc-4.6.4 uses
+
+#define _FORTIFY_SOURCE 2
+
+and would complain if we set _FORTIFY_SOURCE to something other than 2.
+
+gcc-4.2.2 seems to use no definition of _FORTIFY_SOURCE, by default.
+
+What probably might help in any case is undefining _FORTIFY_SOURCE before
+defining it, because as far as I know, there is no problem with
+undefining something that is not yet defined, but I could imagine,
+others might have more elegant suggestions:
+
+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
+
+Dirk
