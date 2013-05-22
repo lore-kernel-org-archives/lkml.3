@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3EVVzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:55:36 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51643 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab3EVVze (ORCPT
+	id S1757278Ab3EVV4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:56:47 -0400
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:55177 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab3EVV4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:55:34 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: f.wiessner@smart-weblications.de
-cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        liquidhorse@gmail.com, andy@greyhouse.net,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-In-reply-to: <519D37F4.2030202@smart-weblications.de>
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de>
-Comments: In-reply-to Smart Weblications GmbH - Florian Wiessner <f.wiessner@smart-weblications.de>
-   message dated "Wed, 22 May 2013 23:26:12 +0200."
-X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.2.1
-Date: Wed, 22 May 2013 14:54:57 -0700
-Message-ID: <2972.1369259697@death.nxdomain>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052221-3620-0000-0000-000002A2D66B
+	Wed, 22 May 2013 17:56:45 -0400
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 17:56:45 EDT
+Date: Wed, 22 May 2013 23:49:07 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
+        gregkh@linuxfoundation.org, ben@decadent.org.uk,
+        speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] staging: speakup: fix warnings by adding __user
+ annotations
+Message-ID: <20130522214907.GY6142@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Emil Goode <emilgoode@gmail.com>, w.d.hubbs@gmail.com,
+	chris@the-brannons.com, kirk@reisers.ca, gregkh@linuxfoundation.org,
+	ben@decadent.org.uk, speakup@braille.uwo.ca,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <1369248789-25957-1-git-send-email-emilgoode@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1369248789-25957-1-git-send-email-emilgoode@gmail.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smart Weblications GmbH - Florian Wiessner wrote:
+Emil Goode, le Wed 22 May 2013 20:53:09 +0200, a écrit :
+> This patch fixes the following sparse warnings by adding
+> __user annotations.
+> 
+> drivers/staging/speakup/speakup_soft.c:248:34: warning:
+>         incorrect type in argument 1 (different address spaces)
+>         drivers/staging/speakup/speakup_soft.c:248:34:
+>         expected void [noderef] <asn:1>*dst
+>         drivers/staging/speakup/speakup_soft.c:248:34:
+>         got char *[assigned] cp
+> drivers/staging/speakup/speakup_soft.c:272:40: warning:
+>         incorrect type in argument 1 (different address spaces)
+>         drivers/staging/speakup/speakup_soft.c:272:40:
+>         expected char const [noderef] <asn:1>*s
+>         drivers/staging/speakup/speakup_soft.c:272:40:
+>         got char const *buf
+> drivers/staging/speakup/speakup_soft.c:306:17: warning:
+>         incorrect type in initializer (incompatible argument 2
+>         (different address spaces))
+>         drivers/staging/speakup/speakup_soft.c:306:17:
+>         expected long ( *read )( ... )
+>         drivers/staging/speakup/speakup_soft.c:306:17:
+>         got long ( static [toplevel] *<noident> )( ... )
+> drivers/staging/speakup/speakup_soft.c:307:18: warning:
+>         incorrect type in initializer (incompatible argument 2
+>         (different address spaces))
+>         drivers/staging/speakup/speakup_soft.c:307:18:
+>         expected long ( *write )( ... )
+>         drivers/staging/speakup/speakup_soft.c:307:18:
+>         got long ( static [toplevel] *<nfile_operationsoident> )( ... )
+> 
+> drivers/staging/speakup/devsynth.c:29:41: warning:
+>         incorrect type in argument 2 (different address spaces)
+>         drivers/staging/speakup/devsynth.c:29:41:
+>         expected void const [noderef] <asn:1>*from
+>         drivers/staging/speakup/devsynth.c:29:41:    got char const *ptr
+> drivers/staging/speakup/devsynth.c:62:17: warning:
+>         incorrect type in initializer (incompatible argument 2
+>         (different address spaces))
+>         drivers/staging/speakup/devsynth.c:62:17:
+>         expected long ( *read )( ... )
+>         drivers/staging/speakup/devsynth.c:62:17:
+>         got long ( static [toplevel] *<noident> )( ... )
+> drivers/staging/speakup/devsynth.c:63:18: warning:
+>         incorrect type in initializer (incompatible argument 2
+>         (different address spaces))
+>         drivers/staging/speakup/devsynth.c:63:18:
+>         expected long ( *write )( ... )
+>         drivers/staging/speakup/devsynth.c:63:18:
+>         got long ( static [toplevel] *<noident> )( ... )
+> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 
->Am 22.05.2013 22:04, schrieb Greg KH:
->
->
->>>
->>> https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
->> 
->> Ok, that's what we need.
->> 
->> Now, please cc: the developers / maintainers of that patch and ask them
->> to have it included in the 3.4-stable kernel series.
->> 
->> Then, if they agree, the network maintainer will pick it up and send it
->> to me for inclusion.
->> 
->
->i set committer	David S. Miller <davem@davemloft.net> in cc already, but do not
->know the network maintainer...
->
->this seems to me that "Matthew O'Connor" <liquidhorse@gmail.com> sent this to
->netdev on 2013-02-01:
->
->http://lists.openwall.net/netdev/2013/02/01/86
->
->but i couldn't find a trace of the patch in 3.4.36?!
-
-	The patch in question here is in net-next; the commit is:
-
-commit 567b871e503316b0927e54a3d7c86d50b722d955
-Author: zheng.li <zheng.x.li@oracle.com>
-Date:   Tue Nov 27 23:57:04 2012 +0000
-
-    bonding: rlb mode of bond should not alter ARP originating via bridge
-
-
-	The additional change in the backport from Matthew O'Connor (to
-add ether_addr_equal_64bits) appears to still be necessary for 3.4.46.
-Alternatively, the patch could utilize ether_addr_equal instead, to
-minimize the change set.  Greg, do you have a preference there?
-
-	Submissions for stable from networking normally go through
-Davem; I can check the patch and repost it to netdev against 3.4.46 if
-everybody is ok with that.
-
-	-J
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+Acked-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
