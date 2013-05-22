@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab3EVJdG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 05:33:06 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:33271 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab3EVJdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 05:33:04 -0400
-Date: Wed, 22 May 2013 18:32:49 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522093249.GC3466@mtj.dyndns.org>
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
- <519C674A.50700@redhat.com>
+	id S1754686Ab3EVJf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 05:35:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53915 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab3EVJf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 05:35:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
+   d="scan'208";a="341289439"
+Message-ID: <519C9159.7050807@linux.intel.com>
+Date: Wed, 22 May 2013 12:35:21 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519C674A.50700@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: Alex Rosenbaum <alexr@mellanox.com>, Dave Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v3 net-next 0/4] net: low latency Ethernet device polling
+References: <20130520101552.14133.45953.stgit@ladj378.jer.intel.com>  <519B632F.7040202@mellanox.com> <519B68A4.3010406@linux.intel.com> <1369160115.2615.51.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1369160115.2615.51.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 08:35:54AM +0200, Paolo Bonzini wrote:
-> I'm not sure what is more ridiculous, whether the seven pings or the
-> lack of review...
 
-So, ummm, I don't know what Jens is thinking but at this point I'm
-basically waiting for someone else to pick it up as review to return
-ratio is too low to continue.  It doesn't seem like I can get the
-series into a shape I can ack with reasonable amount of effort.
 
-My memory is kinda hazy now but here are two review points that came
-to my mind before giving up.
+On 21/05/2013 21:15, Ben Hutchings wrote:
+> On Tue, 2013-05-21 at 15:29 +0300, Eliezer Tamir wrote:
+>> Many of the questions you asked are covered in our RFC cover letter, but
+>> I will touch them briefly
+>>
+>> On 21/05/2013 15:06, Alex Rosenbaum wrote:
+>>> 1. It seem this patch does not cover epoll/select and such IO muxing APIs?
+>>
+>> We are thinking about how to implement epoll support as one of the next
+>> steps.
+>>
+>> What benchmarks are you using to test poll/select/epoll?
+> [...]
+>
+> I raised this issue back at Plumbers and I thought Jesse said poll() was
+> covered.  It's likely to be a bit of a toy without that.  Also, UDP?
 
-* The response that I got after asking for justification basically
-  boiled down to "it has to".  Whatever that means.
+The current patchset covers poll/select for UDP.
+Adding poll/select for TCP should be simple, I will try to include it in 
+the next version.
 
-* In the patch series, fixes and feature changes are still mixed in
-  order.  I gave up after this.
+Epoll should see a gain from the above in the case where all the polled 
+file descriptors are associated to the same device queue.
+A fuller implementation, in the epoll itself would be needed to cover 
+multiple queues/devices.
 
-Thanks and good luck.
-
--- 
-tejun
