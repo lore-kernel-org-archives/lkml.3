@@ -1,41 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3EVHHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 03:07:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33709 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab3EVHHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 03:07:49 -0400
-Date: Wed, 22 May 2013 00:07:48 -0700 (PDT)
-Message-Id: <20130522.000748.454683591881350280.davem@davemloft.net>
-To: akpm@linux-foundation.org
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dborkman@redhat.com,
-        netdev@vger.kernel.org, nschichan@freebox.fr
-Subject: Re: linux-next: manual merge of the akpm tree with the net-next
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org>
-References: <20130521142948.444f09820c5406f9adc4b7f1@canb.auug.org.au>
-	<20130521130438.1ecdf535ab2461888abbe0c3@linux-foundation.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752878Ab3EVHJg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 03:09:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36855 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065Ab3EVHJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 03:09:32 -0400
+X-IronPort-AV: E=Sophos;i="4.87,719,1363104000"; 
+   d="scan'208";a="7331820"
+Message-ID: <519C6FD6.4090607@cn.fujitsu.com>
+Date: Wed, 22 May 2013 15:12:22 +0800
+From: Ren Mingxin <renmx@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: James.Smart@emulex.com
+CC: James.Bottomley@HansenPartnership.com, Nagalakshmi.Nandigama@lsi.com,
+        Sreekanth.Reddy@lsi.com, michaelc@cs.wisc.edu, robert.w.love@intel.com,
+        dgilbert@interlog.com, hare@suse.de, bprakash@broadcom.com,
+        agk@redhat.com, neilb@suse.de, gregkh@linuxfoundation.org,
+        axboe@kernel.dk, tj@kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/5] scsi: Allow fast io fail without waiting through
+ timeout
+References: <1369034103-31644-1-git-send-email-renmx@cn.fujitsu.com> <519A4716.7000001@emulex.com>
+In-Reply-To: <519A4716.7000001@emulex.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 15:08:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/22 15:08:10,
+	Serialize complete at 2013/05/22 15:08:10
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 21 May 2013 13:04:38 -0700
+Hi, James,
 
-> Nicolas, I think the patches need a re-check so I'll drop the versions
-> which I presently have.  Please refresh, retest and resend when
-> convenient?  It'll need to be against linux-next, which is where the
-> conflicting (vfree/module_free) changes have occurred.
+On 05/20/2013 11:53 PM, James Smart wrote:
+> Based on the discussion recently held at LSF 2013, we are
+> reworking the error recovery path to address all the issues
+> you are mentioning. That work contradicts these patches.
+> So for now, these should be held off.
 
-How about working against net-next and submitting your patches to netdev
-just like the rest of the world?
+Interesting. Can I have your general goal/idea briefly even
+though via a reference? Will the URL below be one you will
+refer to?
+   http://lwn.net/Articles/548500
 
-There is zero reason for these changes to go through Andrew's tree.
+And, could I know your current progress/schedule? Especially
+when can we see your patches?
+
+Much appreciated!
+
+Thanks,
+Ren
+
+>
+> On 5/20/2013 3:14 AM, Ren Mingxin wrote:
+>> When there is a scsi command timed-out or failed, the scsi eh
+>> tries a thorugh recovery, which is necessary for non-redundant
+>> systems. However, the thorugh recovery usually takes much time,
+>> which is not acceptable for misson critical systems. To improve
+>> this latency, if we are working on a redundant system, we should
+>> avoid the scsi eh for its long time failing recovery, and quick
+>> failover to another path.
+>>
+>> This set of patches is trying to implement above.
+>>
+>> NOTE: the userland tools need to eusure the environment
+>> restriction, which will be implemented later.
+>>
+>> Thanks,
+>> Ren
+>>
+>> Ren Mingxin (5):
+>>    scsi: rename return code FAST_IO_FAIL to FAST_IO
+>>    FC transport: Add interface to specify fast io level for timed-out 
+>> cmds
+>>    SAS transport: Add interface to specify fast io level for 
+>> timed-out cmds
+>>    lpfc: Allow fast timed-out io recovery
+>>    mptfusion: Allow fast timed-out io recovery
+>>
+>>   drivers/message/fusion/mptscsih.c   |   29 ++++++++-
+>>   drivers/scsi/lpfc/lpfc_scsi.c       |   34 ++++++++++
+>>   drivers/scsi/scsi_error.c           |   18 ++---
+>>   drivers/scsi/scsi_sas_internal.h    |    4 -
+>>   drivers/scsi/scsi_transport_fc.c    |  112 
+>> ++++++++++++++++++++++++++++++++++--
+>>   drivers/scsi/scsi_transport_iscsi.c |    6 -
+>>   drivers/scsi/scsi_transport_sas.c   |  103 
+>> ++++++++++++++++++++++++++++++++-
+>>   include/scsi/scsi.h                 |    2
+>>   include/scsi/scsi_transport_fc.h    |   11 +++
+>>   include/scsi/scsi_transport_sas.h   |    8 ++
+>>   10 files changed, 303 insertions(+), 24 deletions(-)
