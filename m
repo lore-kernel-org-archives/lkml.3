@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3EVM6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 08:58:44 -0400
-Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50076 "EHLO
+	id S1755065Ab3EVM6n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 08:58:43 -0400
+Received: from ip4-83-240-18-99.cust.nbox.cz ([83.240.18.99]:50077 "EHLO
 	anemoi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754021Ab3EVM6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 08:58:39 -0400
-X-Greylist: delayed 13212 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 08:58:38 EDT
+	id S1754052Ab3EVM6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 08:58:38 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         Jeff Mahoney <jeffm@suse.com>, Jiri Slaby <jslaby@suse.cz>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org
-Subject: [PATCH -resend 4/6] netfilter: Implement RFC 1123 for FTP conntrack
-Date: Wed, 22 May 2013 14:59:10 +0200
-Message-Id: <1369227552-11743-4-git-send-email-jslaby@suse.cz>
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH -resend 6/6] nouveau: Make vga_switcheroo code depend on VGA_SWITCHEROO
+Date: Wed, 22 May 2013 14:59:12 +0200
+Message-Id: <1369227552-11743-6-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.8.2.3
 In-Reply-To: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
 References: <1369227552-11743-1-git-send-email-jslaby@suse.cz>
@@ -28,201 +23,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Mahoney <jeffm@suse.com>
 
- The FTP conntrack code currently only accepts the following format for
- the 227 response for PASV:
- 227 Entering Passive Mode (148,100,81,40,31,161).
+Commit 8116188fdef5946bcbb2d73e41d7412a57ffb034 (nouveau/acpi: hook up
+to the MXM method for mux switching.) broke the build on non-x86
+architectures due to the new dependency on MXM and MXM being an x86
+platform driver.
 
- It doesn't accept the following format from an obscure server:
- 227 Data transfer will passively listen to 67,218,99,134,50,144
+It built previously since the vga switcheroo registration routines
+were zereod out on !X86. The code was built in but unused.
 
- From RFC 1123:
- The format of the 227 reply to a PASV command is not
- well standardized.  In particular, an FTP client cannot
- assume that the parentheses shown on page 40 of RFC-959
- will be present (and in fact, Figure 3 on page 43 omits
- them).  Therefore, a User-FTP program that interprets
- the PASV reply must scan the reply for the first digit
- of the host and port numbers.
+This patch makes all of the DSM code depend on CONFIG_VGA_SWITCHEROO,
+allowing it to build on non-x86 and shrinking the module size as well.
 
- This patch adds support for the RFC 1123 clarification by:
- - Allowing a search filter to specify NUL as the terminator so that
-   try_number will return successfully if the array of numbers has been
-   filled when an unexpected character is encountered.
- - Using space as the separator for the 227 reply and then scanning for
-   the first digit of the number sequence. The number sequence is parsed
-   out using the existing try_rfc959 but with a NUL terminator.
-
-References: https://bugzilla.novell.com/show_bug.cgi?id=466279
-References: http://bugzilla.netfilter.org/show_bug.cgi?id=574
-Reported-by: Mark Post <mpost@novell.com>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netfilter-devel@vger.kernel.org
-Cc: netfilter@vger.kernel.org
-Cc: coreteam@netfilter.org
-Cc: netdev@vger.kernel.org
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
 ---
- net/netfilter/nf_conntrack_ftp.c | 73 +++++++++++++++++++++++++++++-----------
- 1 file changed, 54 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_acpi.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/netfilter/nf_conntrack_ftp.c b/net/netfilter/nf_conntrack_ftp.c
-index 6b21707..b8a0924 100644
---- a/net/netfilter/nf_conntrack_ftp.c
-+++ b/net/netfilter/nf_conntrack_ftp.c
-@@ -55,10 +55,14 @@ unsigned int (*nf_nat_ftp_hook)(struct sk_buff *skb,
- 				struct nf_conntrack_expect *exp);
- EXPORT_SYMBOL_GPL(nf_nat_ftp_hook);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+index d97f200..4d70fb7 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
++++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
+@@ -46,6 +46,7 @@ bool nouveau_is_v1_dsm(void) {
+ #define NOUVEAU_DSM_HAS_MUX 0x1
+ #define NOUVEAU_DSM_HAS_OPT 0x2
  
--static int try_rfc959(const char *, size_t, struct nf_conntrack_man *, char);
--static int try_eprt(const char *, size_t, struct nf_conntrack_man *, char);
-+static int try_rfc959(const char *, size_t, struct nf_conntrack_man *,
-+		      char, unsigned int *);
-+static int try_rfc1123(const char *, size_t, struct nf_conntrack_man *,
-+		       char, unsigned int *);
-+static int try_eprt(const char *, size_t, struct nf_conntrack_man *,
-+		    char, unsigned int *);
- static int try_epsv_response(const char *, size_t, struct nf_conntrack_man *,
--			     char);
-+			     char, unsigned int *);
- 
- static struct ftp_search {
- 	const char *pattern;
-@@ -66,7 +70,7 @@ static struct ftp_search {
- 	char skip;
- 	char term;
- 	enum nf_ct_ftp_type ftptype;
--	int (*getnum)(const char *, size_t, struct nf_conntrack_man *, char);
-+	int (*getnum)(const char *, size_t, struct nf_conntrack_man *, char, unsigned int *);
- } search[IP_CT_DIR_MAX][2] = {
- 	[IP_CT_DIR_ORIGINAL] = {
- 		{
-@@ -90,10 +94,8 @@ static struct ftp_search {
- 		{
- 			.pattern	= "227 ",
- 			.plen		= sizeof("227 ") - 1,
--			.skip		= '(',
--			.term		= ')',
- 			.ftptype	= NF_CT_FTP_PASV,
--			.getnum		= try_rfc959,
-+			.getnum		= try_rfc1123,
- 		},
- 		{
- 			.pattern	= "229 ",
-@@ -132,8 +134,9 @@ static int try_number(const char *data, size_t dlen, u_int32_t array[],
- 			i++;
- 		else {
- 			/* Unexpected character; true if it's the
--			   terminator and we're finished. */
--			if (*data == term && i == array_size - 1)
-+			   terminator (or we don't care about one)
-+			   and we're finished. */
-+			if ((*data == term || !term) && i == array_size - 1)
- 				return len;
- 
- 			pr_debug("Char %u (got %u nums) `%u' unexpected\n",
-@@ -148,7 +151,8 @@ static int try_number(const char *data, size_t dlen, u_int32_t array[],
- 
- /* Returns 0, or length of numbers: 192,168,1,1,5,6 */
- static int try_rfc959(const char *data, size_t dlen,
--		      struct nf_conntrack_man *cmd, char term)
-+		      struct nf_conntrack_man *cmd, char term,
-+		      unsigned int *offset)
- {
- 	int length;
- 	u_int32_t array[6];
-@@ -163,6 +167,33 @@ static int try_rfc959(const char *data, size_t dlen,
- 	return length;
++#ifdef CONFIG_VGA_SWITCHEROO
+ static const char nouveau_dsm_muid[] = {
+ 	0xA0, 0xA0, 0x95, 0x9D, 0x60, 0x00, 0x48, 0x4D,
+ 	0xB3, 0x4D, 0x7E, 0x5F, 0xEA, 0x12, 0x9F, 0xD4,
+@@ -337,6 +338,10 @@ void nouveau_unregister_dsm_handler(void)
+ 	if (nouveau_dsm_priv.optimus_detected || nouveau_dsm_priv.dsm_detected)
+ 		vga_switcheroo_unregister_handler();
  }
++#else
++void nouveau_register_dsm_handler(void) {}
++void nouveau_unregister_dsm_handler(void) {}
++#endif
  
-+/*
-+ * From RFC 1123:
-+ * The format of the 227 reply to a PASV command is not
-+ * well standardized.  In particular, an FTP client cannot
-+ * assume that the parentheses shown on page 40 of RFC-959
-+ * will be present (and in fact, Figure 3 on page 43 omits
-+ * them).  Therefore, a User-FTP program that interprets
-+ * the PASV reply must scan the reply for the first digit
-+ * of the host and port numbers.
-+ */
-+static int try_rfc1123(const char *data, size_t dlen,
-+		       struct nf_conntrack_man *cmd, char term,
-+		       unsigned int *offset)
-+{
-+	int i;
-+	for (i = 0; i < dlen; i++)
-+		if (isdigit(data[i]))
-+			break;
-+
-+	if (i == dlen)
-+		return 0;
-+
-+	*offset += i;
-+
-+	return try_rfc959(data + i, dlen - i, cmd, 0, offset);
-+}
-+
- /* Grab port: number up to delimiter */
- static int get_port(const char *data, int start, size_t dlen, char delim,
- 		    __be16 *port)
-@@ -191,7 +222,7 @@ static int get_port(const char *data, int start, size_t dlen, char delim,
- 
- /* Returns 0, or length of numbers: |1|132.235.1.2|6275| or |2|3ffe::1|6275| */
- static int try_eprt(const char *data, size_t dlen, struct nf_conntrack_man *cmd,
--		    char term)
-+		    char term, unsigned int *offset)
- {
- 	char delim;
- 	int length;
-@@ -239,7 +270,8 @@ static int try_eprt(const char *data, size_t dlen, struct nf_conntrack_man *cmd,
- 
- /* Returns 0, or length of numbers: |||6446| */
- static int try_epsv_response(const char *data, size_t dlen,
--			     struct nf_conntrack_man *cmd, char term)
-+			     struct nf_conntrack_man *cmd, char term,
-+			     unsigned int *offset)
- {
- 	char delim;
- 
-@@ -261,9 +293,10 @@ static int find_pattern(const char *data, size_t dlen,
- 			unsigned int *numlen,
- 			struct nf_conntrack_man *cmd,
- 			int (*getnum)(const char *, size_t,
--				      struct nf_conntrack_man *, char))
-+				      struct nf_conntrack_man *, char,
-+				      unsigned int *))
- {
--	size_t i;
-+	size_t i = plen;
- 
- 	pr_debug("find_pattern `%s': dlen = %Zu\n", pattern, dlen);
- 	if (dlen == 0)
-@@ -293,16 +326,18 @@ static int find_pattern(const char *data, size_t dlen,
- 	pr_debug("Pattern matches!\n");
- 	/* Now we've found the constant string, try to skip
- 	   to the 'skip' character */
--	for (i = plen; data[i] != skip; i++)
--		if (i == dlen - 1) return -1;
-+	if (skip) {
-+		for (i = plen; data[i] != skip; i++)
-+			if (i == dlen - 1) return -1;
- 
--	/* Skip over the last character */
--	i++;
-+		/* Skip over the last character */
-+		i++;
-+	}
- 
- 	pr_debug("Skipped up to `%c'!\n", skip);
- 
- 	*numoff = i;
--	*numlen = getnum(data + i, dlen - i, cmd, term);
-+	*numlen = getnum(data + i, dlen - i, cmd, term, numoff);
- 	if (!*numlen)
- 		return -1;
- 
+ /* retrieve the ROM in 4k blocks */
+ static int nouveau_rom_call(acpi_handle rom_handle, uint8_t *bios,
 -- 
 1.8.2.3
 
