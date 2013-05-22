@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3EVKav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 06:30:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16838 "EHLO mga09.intel.com"
+	id S1755978Ab3EVKcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 06:32:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37563 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab3EVKau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 06:30:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,718,1363158000"; 
-   d="scan'208";a="341311145"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] gpio-lynxpoint: remove unnecessary platform_set_drvdata()
-Date: Wed, 22 May 2013 13:30:46 +0300
-Message-Id: <1369218646-29556-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+	id S1753603Ab3EVKch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 06:32:37 -0400
+Date: Wed, 22 May 2013 12:32:33 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, Andrey Vagin <avagin@openvz.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: don't initialize kmem-cache destroying work for
+ root caches
+Message-ID: <20130522103233.GB19989@dhcp22.suse.cz>
+References: <1368535118-27369-1-git-send-email-avagin@openvz.org>
+ <20130514160859.GC5055@dhcp22.suse.cz>
+ <20130522074055.GA16207@paralelels.com>
+ <519C78C0.3050204@huawei.com>
+ <20130522075638.GB16934@paralelels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522075638.GB16934@paralelels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 0998d06310 "device-core: Ensure drvdata = NULL when no driver is bound",
-this is done by driver core after device_release or on probe failure. Thus we
-can remove all platform_set_drvdata(pdev, NULL) in drivers.
+On Wed 22-05-13 11:56:38, Andrew Vagin wrote:
+> On Wed, May 22, 2013 at 03:50:24PM +0800, Li Zefan wrote:
+> > On 2013/5/22 15:40, Andrew Vagin wrote:
+> > > On Tue, May 14, 2013 at 06:08:59PM +0200, Michal Hocko wrote:
+> > >>
+> > >> Forgot to add
+> > >> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> > >> +
+> > >> Cc: stable # 3.9
+> > >>
+> > >> Thanks
+> > > 
+> > > Who usually picks up such patches?
+> > 
+> > The famous AKPM.
+> >
+> 
+> Thanks.
+> 
+> get_maintainer.pl doesn't show Andrew in the list of recipients.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/gpio/gpio-lynxpoint.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, but most of the mm patches fly via Andrew.
 
-diff --git a/drivers/gpio/gpio-lynxpoint.c b/drivers/gpio/gpio-lynxpoint.c
-index 86c17de..588991d 100644
---- a/drivers/gpio/gpio-lynxpoint.c
-+++ b/drivers/gpio/gpio-lynxpoint.c
-@@ -444,10 +444,10 @@ static int lp_gpio_remove(struct platform_device *pdev)
- {
- 	struct lp_gpio *lg = platform_get_drvdata(pdev);
- 	int err;
-+
- 	err = gpiochip_remove(&lg->chip);
- 	if (err)
- 		dev_warn(&pdev->dev, "failed to remove gpio_chip.\n");
--	platform_set_drvdata(pdev, NULL);
- 	return 0;
- }
- 
+> $ perl scripts/get_maintainer.pl 0001-memcg-don-t-initialize-kmem-cache-destroying-work-fo.patch
+> Johannes Weiner <hannes@cmpxchg.org> (maintainer:MEMORY RESOURCE C...)
+> Michal Hocko <mhocko@suse.cz> (maintainer:MEMORY RESOURCE C...)
+> Balbir Singh <bsingharora@gmail.com> (maintainer:MEMORY RESOURCE C...)
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> (maintainer:MEMORY RESOURCE C...)
+> cgroups@vger.kernel.org (open list:MEMORY RESOURCE C...)
+> linux-mm@kvack.org (open list:MEMORY RESOURCE C...)
+> linux-kernel@vger.kernel.org (open list) 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.8.2.rc0.22.gb3600c3
-
+Michal Hocko
+SUSE Labs
