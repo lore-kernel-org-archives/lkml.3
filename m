@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3EVBKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 21:10:20 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:36964 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab3EVBKS (ORCPT
+	id S1754393Ab3EVBV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 21:21:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41922 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab3EVBV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 21:10:18 -0400
+	Tue, 21 May 2013 21:21:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130520165559.GA19645@redhat.com>
-References: <20130520165559.GA19645@redhat.com>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Tue, 21 May 2013 22:09:57 -0300
-Message-ID: <CAKi4VAJfYJ1SJzBj7QwOOu9ZoKqvQUWefGyN8jKzDCTQ7AaqyA@mail.gmail.com>
-Subject: Re: [PATCH] usermodehelper: kill the sub_info->path[0] check
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130521170229.GB20464@kroah.com>
+References: <1367996197-32748-1-git-send-email-tiwai@suse.de>
+	<20130521170229.GB20464@kroah.com>
+Date: Wed, 22 May 2013 09:21:24 +0800
+Message-ID: <CACVXFVNWVx4Qaiy+A4ONqwwbB2-A00f5r5Xuv0OaABw=s0zZVA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] firmware: Fix usermodehelper deadlock at shutdown
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
-
-On Mon, May 20, 2013 at 1:55 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> call_usermodehelper_exec() does nothing but returns success if
-> path[0] == 0. The only user which needs this strange feature is
-> request_module(), it can check modprobe_path[0] itself like other
-> users do if they want to detect the "disabled by admin" case.
+On Wed, May 22, 2013 at 1:02 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, May 08, 2013 at 08:56:34AM +0200, Takashi Iwai wrote:
+>> Hi,
+>>
+>> this is a series of patches for the issue we faced in the firmware
+>> loader code during debugging the problem with dell_rbu driver with
+>> 3.9 kernel.
+>>
+>> The original problem was that the shutdown gets stuck when DELL BIOS
+>> update is performed.  This turned out to be a problem in the firmware
+>> loader.  Although the reason of dell_rbu driver breakage is still
+>> unclear, we should fix the firmware loader side, at least, not to
+>> stall during shutdown.
 >
-> Kill it. Not only it looks strange, it can confuse other callers.
-> And this allows us to revert 264b83c0 "usermodehelper: check
-> subprocess_info->path != NULL", do_execve(NULL) is safe.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> What's the status of these?  Ming, still have objections?
 
-Acked-By: Lucas De Marchi <lucas.demarchi@intel.com>
+I have no objections now, but Takashi need to submit v2 to fix one
+mistake which may break current firmware cache.
 
-But... see below.
-
-> ---
->  kernel/kmod.c |   11 +++--------
->  1 files changed, 3 insertions(+), 8 deletions(-)
->
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 8241906..fb32636 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -147,6 +147,9 @@ int __request_module(bool wait, const char *fmt, ...)
->          */
->         WARN_ON_ONCE(wait && current_is_async());
->
-> +       if (!modprobe_path[0])
-> +               return 0;
-> +
-
-Any reason to not return -EINVAL here except for maintaining the
-previous behavior? Checking the callers reveals just a few of them
-actually check the return value and IMO this is no different than the
-binary not existing and failing later on exec.
-
->         va_start(args, fmt);
->         ret = vsnprintf(module_name, MODULE_NAME_LEN, fmt, args);
->         va_end(args);
-> @@ -569,14 +572,6 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
->         int retval = 0;
->
->         helper_lock();
-> -       if (!sub_info->path) {
-> -               retval = -EINVAL;
-> -               goto out;
-> -       }
-> -
-> -       if (sub_info->path[0] == '\0')
-> -               goto out;
-> -
->         if (!khelper_wq || usermodehelper_disabled) {
->                 retval = -EBUSY;
->                 goto out;
-> --
-
-Lucas De Marchi
+Thanks,
+--
+Ming Lei
