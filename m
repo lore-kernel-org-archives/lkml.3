@@ -1,116 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3EVTfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 15:35:24 -0400
-Received: from mx03.smart-weblications.de ([188.65.144.38]:49649 "EHLO
-	mx03.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755049Ab3EVTfW (ORCPT
+	id S1756968Ab3EVTiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 15:38:06 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:60260 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab3EVTiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 15:35:22 -0400
-Message-ID: <519D1DEF.8090206@smart-weblications.de>
-Date: Wed, 22 May 2013 21:35:11 +0200
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 22 May 2013 15:38:04 -0400
+Message-ID: <519D1E92.7030505@redhat.com>
+Date: Wed, 22 May 2013 21:37:54 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: davem@davemloft.net, liquidhorse@gmail.com, andy@greyhouse.net,
-        fubar@us.ibm.com, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, nikolay@redhat.com, vfalico@redhat.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com>
-In-Reply-To: <20130522190640.GA20276@kroah.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522150335.GC2777@thunk.org> <519CE9FE.2030007@redhat.com> <yq1vc6b561q.fsf@sermon.lab.mkp.net> <519CF99E.6010804@redhat.com> <20130522181135.GC20848@thunk.org>
+In-Reply-To: <20130522181135.GC20848@thunk.org>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Il 22/05/2013 20:11, Theodore Ts'o ha scritto:
+> On Wed, May 22, 2013 at 07:00:14PM +0200, Paolo Bonzini wrote:
+>> You have hardware providers selling cloud services that want to run
+>> their own custom backup services from within a VM, which entails having
+>> vendor-specific commands run from within a VM.  Or you have people that
+>> run clusters that are half-physical and half-virtual and want to use the
+>> same /dev/disk/by-id paths in both cases; perhaps, with NPIV, they want
+>> to use one zoning approach for both physical and virtual machines.
+>> Someone else they want to backup to tapes from a VM (for example s390
+>> people who just put everything in a VM, so the distinction of physical
+>> and virtual makes no sense for them).  Some people use virtual machines
+>> as sandboxes, and want to burn the ISOs from the same VMs where they
+>> download the ISOs.  Some people have vendor utilities that only run
+>> under Windows, and want to run them in a VM.
+> 
+> So is this hypothetical or do you have a real customer in mind?
 
-Am 22.05.2013 21:06, schrieb Greg KH:> On Wed, May 22, 2013 at 08:16:25PM +0200,
-Smart Weblications GmbH - Florian Wiessner wrote:
->> Hi,
->>
->>
->> Am 22.05.2013 18:23, schrieb Greg KH:
->>> On Wed, May 22, 2013 at 06:16:11PM +0200, Smart Weblications GmbH - Florian
-Wiessner wrote:
->>>> Am 22.05.2013 15:57, schrieb Greg KH:
->>>>> On Wed, May 22, 2013 at 01:36:09PM +0200, Smart Weblications GmbH -
-Florian Wiessner wrote:
->>>>>> Hi,
->>>>>>
->>>>>> why is this patch still not backported to 3.4?
->>>>>>
->>>>>> I today tried 3.4.46 from kernel.org, but the patch STILL seems _NOT_
-included?
->>>>>>
->>>>>> WHY IS THAT?
->>>>>
->>>>> <formletter>
->>>>>
->>>>> This is not the correct way to submit patches for inclusion in the
->>>>> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
->>>>> for how to do this properly.
->>>>>
->>>>> </formletter>
->>>>>
->>>>
->>>>
->>>> I don't want to submit a patch - i wanted to know why this patch still is
-not in
->>>> the kernel (it is afaics at least 6 months old!)
->>>
->>> Perhaps because it was not submitted properly as documented above?
->>>
->>
->> Well, i don't know. I have not written that patch, but tested and applied it
->> against 3.4.36 where it worked fine.
->>
->> But i am unable to apply it to 3.4.46 (there are rejects if i try to apply it,
->> obviously because there were changes in the meanwhile) - It would be cool if
->> someone could tell if that patch is really needed anymore with 3.4.46.
->>
->> I am no C coder and only have little C experience, but i'd like to use this
->> patch with current 3.4 stable Kernel or at least make sure that this patch is
->> not needed anymore with current stable kernels...
->
-> Why do you think that it is needed?  And does it match up to a specific
-> change that is already in Linus's tree?  That is a requirement here.
->
+All of these come from real customers.
 
-It is needed, because without it (at least in 3.4.36) virtualized guests
-(kvm/qemu) are unable to use br0 (bridge) if the bridge uses a bond with mode 6
-(balance-alb).
+> If it's not theoretical, how does the cloud service control who has
+> access to the CD burner, and how are the disks loaded into the CD
+> burner?
 
-https://kernel.googlesource.com/pub/scm/linux/kernel/git/jkirsher/net-next/+/567b871e503316b0927e54a3d7c86d50b722d955%5E!/
+CD burning would be used in a VM that runs on your local workstation, so
+the VM gets access to the CD burner under your desk.  There was also a
+developer of a CD burning tool that wanted to test it inside BSD,
+Solaris and Windows VMs; the idea is the same.
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1302.0/00539.html
-
-
-Thanks,
-
--- 
-
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
+Paolo
