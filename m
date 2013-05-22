@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab3EVVSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:18:16 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:35997 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab3EVVSO (ORCPT
+	id S1757381Ab3EVVTb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:19:31 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59225 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755732Ab3EVVTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:18:14 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: linux-usb@vger.kernel.org, linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Olof Johansson <olofj@chromium.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH] HID: usbhid: ignore Jabra speakerphones HID interface
-Date: Wed, 22 May 2013 14:17:54 -0700
-Message-Id: <1369257474-26389-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 22 May 2013 17:19:30 -0400
+Date: Wed, 22 May 2013 15:51:09 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 09/14] bcon: remove version 1.0 support
+Message-ID: <20130522195108.GB7399@logfs.org>
+References: <1368132193-25817-1-git-send-email-joern@logfs.org>
+ <1368132193-25817-12-git-send-email-joern@logfs.org>
+ <20130522134837.f182d16882468e9e968f2647@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130522134837.f182d16882468e9e968f2647@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a quirk to ignore Jabra speakerphone 410 and 510 devices HID
-interface.
-On those devices, the USB audio interface is working nicely,
-but the HID interface is not working with the kernel usbhid driver,
-and it requires a specific userspace program.
-We could unbind it from userspace but just attaching the usbhid driver has
-sometimes nasty effects:
-either confusing the device state machine or triggering a storm of volume key
-events making eventual sound UI blinking like crazy.
+On Wed, 22 May 2013 13:48:37 -0700, Andrew Morton wrote:
+> On Thu,  9 May 2013 16:43:07 -0400 Joern Engel <joern@logfs.org> wrote:
+> 
+> > Very few machines ever ran with 1.0 format and by now I doubt whether a
+> > single one still does.  No need to carry that code along.
+> 
+> aw geeze.  Can we please clean up the patch series?
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
----
- drivers/hid/hid-ids.h           | 4 ++++
- drivers/hid/usbhid/hid-quirks.c | 3 +++
- 2 files changed, 7 insertions(+)
+People started using my git tree, so I decided to keep it stable and
+not fold fixes into the main patch.  That admittedly sucks for review.
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 38535c9..533815b 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -447,6 +447,10 @@
- #define USB_VENDOR_ID_IRTOUCHSYSTEMS	0x6615
- #define USB_DEVICE_ID_IRTOUCH_INFRARED_USB	0x0070
- 
-+#define USB_VENDOR_ID_JABRA		0x0b0e
-+#define USB_DEVICE_ID_JABRA_SPEAK_410	0x0412
-+#define USB_DEVICE_ID_JABRA_SPEAK_510	0x0420
-+
- #define USB_VENDOR_ID_JESS		0x0c45
- #define USB_DEVICE_ID_JESS_YUREX	0x1010
- 
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 19b8360..d8c9aaf 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -109,6 +109,9 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_M610X, HID_QUIRK_MULTI_INPUT },
-+
-+	{ USB_VENDOR_ID_JABRA, USB_DEVICE_ID_JABRA_SPEAK_410, HID_QUIRK_IGNORE },
-+	{ USB_VENDOR_ID_JABRA, USB_DEVICE_ID_JABRA_SPEAK_510, HID_QUIRK_IGNORE },
- 	{ 0, 0 }
- };
- 
--- 
-1.8.2.1
+Would you like me to create a single patch for review?  And after
+that, do you want to carry a single patch in your series or should I
+keep my tree and try to get that merged?  Either way works for me.
 
+Jörn
+
+--
+Ninety percent of everything is crap.
+-- Sturgeon's Law
