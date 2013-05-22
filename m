@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3EVRsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 13:48:50 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49506 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752699Ab3EVRss (ORCPT
+	id S1755906Ab3EVRyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 13:54:39 -0400
+Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:54607 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751181Ab3EVRyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 13:48:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/naf8nVyy0dIbXXCPjNz/lN6CK52cnIcg=
-Date: Wed, 22 May 2013 13:48:15 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "tiejun.chen" <tiejun.chen@windriver.com>,
-        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH v4 06/12] ARM: dove: add gigabit ethernet and mvmdio
- device tree nodes
-Message-ID: <20130522174815.GI31290@titan.lakedaemon.net>
-References: <1369154510-4927-7-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130521174849.GL26249@lunn.ch>
- <519C9333.20609@gmail.com>
- <519C9822.9040909@windriver.com>
- <519C9A66.3050807@gmail.com>
- <20130522131010.GB31290@titan.lakedaemon.net>
- <20130522165908.GB12320@obsidianresearch.com>
- <519D0143.1000203@gmail.com>
- <20130522173505.GH31290@titan.lakedaemon.net>
- <519D038C.9000605@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D038C.9000605@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 22 May 2013 13:54:38 -0400
+X-Greylist: delayed 6887 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 13:54:38 EDT
+Date: Wed, 22 May 2013 17:59:08 +0200
+From: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
+To: Eric Appleman <erappleman@gmail.com>
+Cc: legal@lists.gpl-violations.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: Would like to form a pool of Linux copyright holders for faster
+ GPL enforcement against Anthrax Kernels
+Message-ID: <20130522175908.0551ae88@m4a785t-m.lan>
+In-Reply-To: <51972CAF.3060802@gmail.com>
+References: <51972CAF.3060802@gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16967030121556573821
+X-Ovh-Remote: 87.5.240.193 (host193-240-dynamic.5-87-r.retail.telecomitalia.it)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeigedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 07:42:36PM +0200, Sebastian Hesselbarth wrote:
-> On 05/22/2013 07:35 PM, Jason Cooper wrote:
-> >On Wed, May 22, 2013 at 07:32:51PM +0200, Sebastian Hesselbarth wrote:
-> >>On 05/22/2013 06:59 PM, Jason Gunthorpe wrote:
-> >>>On Wed, May 22, 2013 at 09:10:10AM -0400, Jason Cooper wrote:
-> >>>>iirc, our solution to this was to parse the ATAGs for the mac addr and
-> >>>>update the appended dtb.  This way, module load and unload would work
-> >>>>without loosing the mac address.  I believe Jason Gunthorpe has a patch
-> >>>>to atags_to_fdt() for this...  This should allow us to get rid of the
-> >>>>clocks hack.
-> >>>
-> >>>Sorry, no, we don't use ATAGs here, our platforms start the kernel
-> >>>with a correct DTB that has the correct mac address to use. My patch
-> >>>was to have the driver accept it, and I think Sebastian has already
-> >>>got that functionality...
-> >>
-> >>Not neccessary anyway, after talking Jason C in a Kirkwood-only
-> >>workaround I prepared a patch that reads mac address registers early
-> >>and stores it in the local-mac-address property.
-> >
-> >Sweet!
-> >
-> >>Just tested on Dockstar with gated clocks and modular DT mv643xx_eth.
-> >>
-> >>Will append to the DT mv643xx_eth patch set if a v5 will be required
-> >>or as single patch prior Jason C taking in the ARM part of it
-> >>otherwise.
-> >
-> >Please post, in-reply-to v4 is fine.
+On Sat, 18 May 2013 03:24:31 -0400
+Eric Appleman <erappleman@gmail.com> wrote:
+
+> Would anyone be interested in forming such a pool? I am willing to
+> wait years for this to be resolved through certain organizations, but
+> I believe we can do better.
+yes, unfortunately I've only non-crucial code in mainline:
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?qt=author&q=Denis+%27GNUtoo%27+Carikli
+The drivers and hardware touched by my code are obsolete and will
+probably not be used in newer products.
+
+I've also some code not mentioned in the link above that made it into
+mainline that I did for work. Since I don't own the copyright of it (my
+employer does), it's not covered by this agreement.
+
 > 
-> Hmm, maybe a little bit too early. While restoring the MAC address now
-> works, another bug arises which I guess is related with phy setup
-> and aneg.
+> Last I checked, I have 1 long-time poster of this list on board.
+> Would anyone else like to join?
+yes, as long as it doesn't require spending too much time on it.
+
+> Ideally I'd like to get the LKML
+> (which I have CC'd) involved so that authors of critical Linux
+> components be a part of this. I'm not sure if my defconfig commits to
+> Android kernel branches count as contributions, so I'm not going to
+> consider myself a Linux contributor unless told otherwise.
 > 
-> Will investigate and update patch set accordingly.
+> This pool would be used in the following manner:
+> 
+> * Formally requesting source for binaries (means to request source
+ok
+> * Formally requesting removal of critical copyrighted code that Linux 
+> cannot function without
+I've no crucial code in mainline unfortunately.
+> * Informing interested parties with respect to refusals of the above
+ok
+> The CTO of Anthrax's hosting server is very interested in terminating 
+> Chad Goodman's account. Bullet point #3 might come into effect here.
+> 
+> If this is a bad idea, uses incorrect logic, or does not follow the 
+> conventions of GPL enforcement, feel free to shoot this idea down
+> with utmost prejudice.
+Seem good.
 
-Cool, chances are, we should be able to take that patch in by itself for
-this merge window...
-
-thx,
-
-Jason.
+Denis.
