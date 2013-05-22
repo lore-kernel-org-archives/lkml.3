@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab3EVVVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 17:21:10 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59230 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab3EVVVI (ORCPT
+	id S1757437Ab3EVVVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 17:21:23 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39037 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757330Ab3EVVVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 17:21:08 -0400
-Date: Wed, 22 May 2013 15:52:47 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Borislav Petkov <bp@alien8.de>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH] mpt2sas/mpt3sas: prevent double free on error path
-Message-ID: <20130522195247.GC7399@logfs.org>
-References: <1368132193-25817-1-git-send-email-joern@logfs.org>
- <1368132193-25817-3-git-send-email-joern@logfs.org>
- <20130522134817.7870812723bb720633c2b0b2@linux-foundation.org>
+	Wed, 22 May 2013 17:21:09 -0400
+Message-ID: <519D36C2.5000009@kernel.org>
+Date: Wed, 22 May 2013 22:21:06 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130522134817.7870812723bb720633c2b0b2@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+CC: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: iio: adc: convert to devm_ioremap_resource()
+References: <1368270391-15267-1-git-send-email-silviupopescu1990@gmail.com>
+In-Reply-To: <1368270391-15267-1-git-send-email-silviupopescu1990@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013 13:48:17 -0700, Andrew Morton wrote:
+On 05/11/2013 12:06 PM, Silviu-Mihai Popescu wrote:
+> Convert all uses of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
 > 
-> It's regrettable that this bugfix is joined at the hip with a new
-> kernel feature.
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Patch number 3 doing the same thing.  I was somewhat tardy applying
+the first one so sorry for wasting your time on this.
 
-Not merged at the hip, I merely ended up reusing an old temp directory
-for the new patch series (hips for brains?).  Ignore this patch.
-
-Jörn
-
---
-No art, however minor, demands less than total dedication if you want
-to excel in it.
--- Leon Battista Alberti
+Jonathan
+> ---
+>  drivers/iio/adc/exynos_adc.c |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index 9f3a8ef..22d034a 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -270,16 +270,16 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  	info = iio_priv(indio_dev);
+>  
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
+> -	if (!info->regs) {
+> -		ret = -ENOMEM;
+> +	info->regs = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(info->regs)) {
+> +		ret = PTR_ERR(info->regs);
+>  		goto err_iio;
+>  	}
+>  
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> -	info->enable_reg = devm_request_and_ioremap(&pdev->dev, mem);
+> -	if (!info->enable_reg) {
+> -		ret = -ENOMEM;
+> +	info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(info->enable_reg)) {
+> +		ret = PTR_ERR(info->enable_reg);
+>  		goto err_iio;
+>  	}
+>  
+> 
