@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3EVC6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 May 2013 22:58:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32920 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3EVC6q (ORCPT
+	id S1754861Ab3EVDa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 May 2013 23:30:27 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:37753 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915Ab3EVDa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 May 2013 22:58:46 -0400
-Date: Tue, 21 May 2013 19:59:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Severin Gsponer <svgsponer@gmail.com>
-Cc: Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: bcm: Change comment style to C89 in
- vendorspecificextn.c
-Message-ID: <20130522025904.GB32284@kroah.com>
-References: <1369181638-6309-1-git-send-email-svgsponer@gmail.com>
+	Tue, 21 May 2013 23:30:26 -0400
+Message-ID: <519C3BA5.1070109@huawei.com>
+Date: Wed, 22 May 2013 11:29:41 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369181638-6309-1-git-send-email-svgsponer@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jonathan Corbet <corbet@lwn.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] ktap 0.1 released
+References: <519AF05E.1050808@huawei.com> <20130521161903.333d7e74@lwn.net>
+In-Reply-To: <20130521161903.333d7e74@lwn.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 02:13:58AM +0200, Severin Gsponer wrote:
-> Changed the comment style to C89 in vendorspecificextn.c. Found with checkpatch.pl
+On 2013/5/22 6:19, Jonathan Corbet wrote:
+> On Tue, 21 May 2013 11:56:14 +0800
+> "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> wrote:
 > 
-> Signed-off-by: Severin Gsponer <svgsponer@gmail.com>
+>> we welcome bug reports and fixes for the issues.
+> 
+> I'm messing with it...first impression:
+> 
+> 	unable create tracepoint event sys_enter_mmap on cpu 4, err: -19
+> 	unable create tracepoint event sys_enter_mmap on cpu 5, err: -19
+> 	unable create tracepoint event sys_enter_mmap on cpu 6, err: -19
+> 	unable create tracepoint event sys_enter_mmap on cpu 7, err: -19
+> 	[...]
+> 
+> Unsurprising, this is a four-core system.  The code reads:
+> 
+>> 	for_each_possible_cpu(cpu)
+>> 		enable_tracepoint_on_cpu(cpu, &attr, call, arg, type);
+> 
+> Maybe that needs to be for_each_online_cpu() instead?
+> 
+Jon, Really thank you for this bug report, fixed it as your suggestion.
 
-Where is patch 1/2?  I see another patch you sent me, but that didn't
-have a number on it.
+.jovi
 
-confused,
 
-greg k-h
+
+
+
