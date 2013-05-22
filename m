@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab3EVUUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 16:20:10 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:50906 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843Ab3EVUUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 16:20:07 -0400
-Date: Wed, 22 May 2013 16:19:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130522201957.GD20848@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Paolo Bonzini <pbonzini@redhat.com>,
-	"Martin K. Petersen" <martin.petersen@oracle.com>,
-	Tejun Heo <tj@kernel.org>,
-	"James E.J. Bottomley" <JBottomley@parallels.com>,
-	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-	linux-scsi@vger.kernel.org
-References: <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522150335.GC2777@thunk.org>
- <519CE9FE.2030007@redhat.com>
- <yq1vc6b561q.fsf@sermon.lab.mkp.net>
- <519CF99E.6010804@redhat.com>
- <20130522181135.GC20848@thunk.org>
- <519D1E92.7030505@redhat.com>
+	id S1756323Ab3EVUay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 16:30:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63621 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab3EVUaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 16:30:52 -0400
+Date: Wed, 22 May 2013 22:30:40 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Felipe F. Tonello" <eu@felipetonello.com>
+cc: linux-mmc@vger.kernel.org, ben-linux@fluff.org, cjb@laptop.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mmc: sdhci: Added set_power sdhci_ops handler.
+In-Reply-To: <1369244832-23868-2-git-send-email-eu@felipetonello.com>
+Message-ID: <Pine.LNX.4.64.1305222230050.19558@axis700.grange>
+References: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
+ <1369244832-23868-2-git-send-email-eu@felipetonello.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D1E92.7030505@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:SzGX9OEkaIsWr6/kw9Fn8nj4qe0503AjOJb3YzDIU/b
+ lsIVmqQGC/kgogXL2apGu7GnWQPNIvN9vWnCmQlgla9GlZI705
+ DNZpCOxgTNcrydr6Ybm0zYlJ7e+pvQxa8NS3XcW88tM2xZBq4R
+ 1KwwjofbNs3/WApmHZKbqtVgiIlZ+WHZDly/v5DXMhqK0QPANl
+ KNb45lShiEkCu2+atZdS9IqaGzaAFG0tihaPUONIFVjXOvYzeu
+ S5B9xmQmU3DE4o+LTYwt9ZuSScfaiPWA0AT48KFHe1n5o10mS4
+ ONmwWSWm7WDoCTDS/lg+91B1ZZPKQ0xbRYePcDZlYlmUmyH8jE
+ FmZIZziXKvJxzIZNnCNJ/mz2mjP3gnjzluQNrkdicDnawn2J7a
+ y25V2MQhxSY2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 09:37:54PM +0200, Paolo Bonzini wrote:
-> > If it's not theoretical, how does the cloud service control who has
-> > access to the CD burner, and how are the disks loaded into the CD
-> > burner?
+On Wed, 22 May 2013, Felipe F. Tonello wrote:
+
+> From: "Felipe F. Tonello" <eu@felipetonello.com>
 > 
-> CD burning would be used in a VM that runs on your local workstation, so
-> the VM gets access to the CD burner under your desk.  There was also a
-> developer of a CD burning tool that wanted to test it inside BSD,
-> Solaris and Windows VMs; the idea is the same.
+> This is useful for power managment purposes if a sdhci child host wants to
+> turn off some other peripheral also.
 
-So in both cases all of the VM's and the host OS are within the same
-trust boundary.  This simplifies the security requirements than in the
-more generic cloud server caser where the VM's are mutually
-suspicious.  This simplifies the requirements of what we need to push
-into the kernel, yes?
+Sorry, could you elaborate a bit? In what situations is it exactly useful? 
+And why cannot the regulator API be used there?
 
-						- Ted
+Thanks
+Guennadi
+
+> 
+> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
+> ---
+>  drivers/mmc/host/sdhci.c | 8 ++++++++
+>  drivers/mmc/host/sdhci.h | 1 +
+>  2 files changed, 9 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 2ea429c..0a026c6 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -1244,6 +1244,10 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
+>  	u8 pwr = 0;
+>  
+>  	if (power != (unsigned short)-1) {
+> +
+> +		if (host->ops->set_power)
+> +			host->ops->set_power(host, true);
+> +
+>  		switch (1 << power) {
+>  		case MMC_VDD_165_195:
+>  			pwr = SDHCI_POWER_180;
+> @@ -1259,6 +1263,10 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
+>  		default:
+>  			BUG();
+>  		}
+> +	} else {
+> +
+> +		if (host->ops->set_power)
+> +			host->ops->set_power(host, false);
+>  	}
+>  
+>  	if (host->pwr == pwr)
+> diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+> index 379e09d..293d56d 100644
+> --- a/drivers/mmc/host/sdhci.h
+> +++ b/drivers/mmc/host/sdhci.h
+> @@ -294,6 +294,7 @@ struct sdhci_ops {
+>  	void	(*platform_resume)(struct sdhci_host *host);
+>  	void    (*adma_workaround)(struct sdhci_host *host, u32 intmask);
+>  	void	(*platform_init)(struct sdhci_host *host);
+> +	void	(*set_power)(struct sdhci_host *host, bool power);
+>  };
+>  
+>  #ifdef CONFIG_MMC_SDHCI_IO_ACCESSORS
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
