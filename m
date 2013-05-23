@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab3EWDjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 23:39:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756217Ab3EWDjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 23:39:20 -0400
-Date: Wed, 22 May 2013 23:39:11 -0400
-From: Dave Jones <davej@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        fenghua.yu@intel.com, Takashi Iwai <tiwai@suse.de>
-Subject: Re: microcode loading got really slow.
-Message-ID: <20130523033911.GA9411@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-	fenghua.yu@intel.com, Takashi Iwai <tiwai@suse.de>
-References: <20130521230332.GC12713@redhat.com>
- <519D1668.6000601@zytor.com>
- <20130522200012.GA15456@redhat.com>
- <ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
+	id S1757264Ab3EWDo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 23:44:28 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:33331 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab3EWDo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 23:44:26 -0400
+Date: Wed, 22 May 2013 23:48:51 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > On 05/21/2013 04:03 PM, Dave Jones wrote:
- > 
- > [   72.318133] microcode: CPU1 sig=0x306c3, pf=0x2, revision=0x6
- > [  132.446449] microcode: CPU2 sig=0x306c3, pf=0x2, revision=0x6
- > [  192.573101] microcode: CPU3 sig=0x306c3, pf=0x2, revision=0x6
- > [  252.702055] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
- > 
- > For some reason the events for udev seem to be getting delayed 60s
- > for each core.
 
-Screwed up my .config, and had CONFIG_FW_LOADER_USER_HELPER inadvertantly set
-Odd though that it causes that 60 second delay, given that it's supposedly a
-'fallback' when the direct loading fails.
+In case anyone cares, the Oops is happening here:
 
-It seems I don't actually need to set that option, so I'm not bothered
-if there's an actual bug here or not, but the behaviour seems odd.
+    1a56:       48 c1 e8 0c             shr    $0xc,%rax
+    1a5a:       48 ff c0                inc    %rax
+>   1a5d:       f0 48 29 45 60          lock sub %rax,0x60(%rbp)
+    1a62:       49 8b 46 40             mov    0x40(%r14),%rax
 
-	Dave
+Which maps to this in perf_mmap_close() in kernel/events/core.c:
 
+                atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
+
+And "user" (%rbp) is RBP: 0000000000000000, hence the problem.
+
+I'm having trouble tracking the problem back any further as the code is a 
+bit covoluted and is not commented at all.
+
+Vince
