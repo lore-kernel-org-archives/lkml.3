@@ -1,215 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab3EWMkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:40:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757821Ab3EWMkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:40:15 -0400
-Date: Thu, 23 May 2013 15:39:47 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce
- kvm_mmu_prepare_zap_obsolete_page
-Message-ID: <20130523123947.GO4725@redhat.com>
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130523055725.GA26157@redhat.com>
- <519DB372.3080803@linux.vnet.ibm.com>
- <20130523061818.GC26157@redhat.com>
- <519DB7D3.7030101@linux.vnet.ibm.com>
- <20130523073708.GE26157@redhat.com>
- <519DCA38.30200@linux.vnet.ibm.com>
- <20130523080922.GG26157@redhat.com>
- <519DF9F6.1060902@linux.vnet.ibm.com>
+	id S1758456Ab3EWMoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:44:09 -0400
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:59354 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756862Ab3EWMoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:44:07 -0400
+X-Greylist: delayed 7159 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 08:44:07 EDT
+Message-ID: <519E0F13.4080208@overkiz.com>
+Date: Thu, 23 May 2013 14:44:03 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519DF9F6.1060902@linux.vnet.ibm.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH 1/3] ARM: at91: move at91 aic driver to drivers/irqchip
+References: <1369299909-10078-1-git-send-email-b.brezillon@overkiz.com> <1369299909-10078-2-git-send-email-b.brezillon@overkiz.com> <20130523101825.GL18614@n2100.arm.linux.org.uk> <20130523141344.7a01ce88@skate>
+In-Reply-To: <20130523141344.7a01ce88@skate>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 1134062683090417770
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 07:13:58PM +0800, Xiao Guangrong wrote:
-> On 05/23/2013 04:09 PM, Gleb Natapov wrote:
-> > On Thu, May 23, 2013 at 03:50:16PM +0800, Xiao Guangrong wrote:
-> >> On 05/23/2013 03:37 PM, Gleb Natapov wrote:
-> >>> On Thu, May 23, 2013 at 02:31:47PM +0800, Xiao Guangrong wrote:
-> >>>> On 05/23/2013 02:18 PM, Gleb Natapov wrote:
-> >>>>> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
-> >>>>>> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
-> >>>>>>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
-> >>>>>>>> It is only used to zap the obsolete page. Since the obsolete page
-> >>>>>>>> will not be used, we need not spend time to find its unsync children
-> >>>>>>>> out. Also, we delete the page from shadow page cache so that the page
-> >>>>>>>> is completely isolated after call this function.
-> >>>>>>>>
-> >>>>>>>> The later patch will use it to collapse tlb flushes
-> >>>>>>>>
-> >>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> >>>>>>>> ---
-> >>>>>>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
-> >>>>>>>>  1 files changed, 41 insertions(+), 5 deletions(-)
-> >>>>>>>>
-> >>>>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >>>>>>>> index 9b57faa..e676356 100644
-> >>>>>>>> --- a/arch/x86/kvm/mmu.c
-> >>>>>>>> +++ b/arch/x86/kvm/mmu.c
-> >>>>>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
-> >>>>>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
-> >>>>>>>>  {
-> >>>>>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
-> >>>>>>>> -	hlist_del(&sp->hash_link);
-> >>>>>>>> +	hlist_del_init(&sp->hash_link);
-> >>>>>>> Why do you need hlist_del_init() here? Why not move it into
-> >>>>>>
-> >>>>>> Since the hlist will be double freed. We will it like this:
-> >>>>>>
-> >>>>>> kvm_mmu_prepare_zap_obsolete_page(page, list);
-> >>>>>> kvm_mmu_commit_zap_page(list);
-> >>>>>>    kvm_mmu_free_page(page);
-> >>>>>>
-> >>>>>> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
-> >>>>>> deleted the hash list.
-> >>>>>>
-> >>>>>>> kvm_mmu_prepare_zap_page() like we discussed it here:
-> >>>>>>> https://patchwork.kernel.org/patch/2580351/ instead of doing
-> >>>>>>> it differently for obsolete and non obsolete pages?
-> >>>>>>
-> >>>>>> It is can break the hash-list walking: we should rescan the
-> >>>>>> hash list once the page is prepared-ly zapped.
-> >>>>>>
-> >>>>>> I mentioned it in the changelog:
-> >>>>>>
-> >>>>>>   4): drop the patch which deleted page from hash list at the "prepare"
-> >>>>>>       time since it can break the walk based on hash list.
-> >>>>> Can you elaborate on how this can happen?
-> >>>>
-> >>>> There is a example:
-> >>>>
-> >>>> int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
-> >>>> {
-> >>>> 	struct kvm_mmu_page *sp;
-> >>>> 	LIST_HEAD(invalid_list);
-> >>>> 	int r;
-> >>>>
-> >>>> 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
-> >>>> 	r = 0;
-> >>>> 	spin_lock(&kvm->mmu_lock);
-> >>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
-> >>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
-> >>>> 			 sp->role.word);
-> >>>> 		r = 1;
-> >>>> 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
-> >>>> 	}
-> >>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-> >>>> 	spin_unlock(&kvm->mmu_lock);
-> >>>>
-> >>>> 	return r;
-> >>>> }
-> >>>>
-> >>>> It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
-> >>>> If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
-> >>>> be changed to:
-> >>>>
-> >>>> restart:
-> >>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
-> >>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
-> >>>> 			 sp->role.word);
-> >>>> 		r = 1;
-> >>>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
-> >>>> 			goto restart;
-> >>>> 	}
-> >>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-> >>>>
-> >>> Hmm, yes. So lets leave it as is and always commit invalid_list before
-> >>
-> >> So, you mean drop this patch and the patch of
-> >> KVM: MMU: collapse TLB flushes when zap all pages?
-> >>
-> > We still want to add kvm_reload_remote_mmus() to
-> > kvm_mmu_invalidate_zap_all_pages(). But yes, we disable a nice
-> > optimization here. So may be skipping obsolete pages while walking
-> > hashtable is better solution.
-> 
-> I am willing to use this way instead, but it looks worse than this
-> patch:
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 9b57faa..810410c 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
->  {
->  	ASSERT(is_empty_shadow_page(sp->spt));
-> -	hlist_del(&sp->hash_link);
-> +	hlist_del_init(&sp->hash_link);
-Why not drop this
+On 23/05/2013 14:13, Thomas Petazzoni wrote:
+> Dear Russell King - ARM Linux,
+>
+> On Thu, 23 May 2013 11:18:25 +0100, Russell King - ARM Linux wrote:
+>
+>> I notice arch/arm/mach-at91/pm.c makes use of some of the register
+>> definitions:
+>>
+>>          at91_irq_suspend();
+>>
+>>          pr_debug("AT91: PM - wake mask %08x, pm state %d\n",
+>>                          /* remember all the always-wake irqs */
+>>                          (at91_pmc_read(AT91_PMC_PCSR)
+>>                                          | (1 << AT91_ID_FIQ)
+>>                                          | (1 << AT91_ID_SYS)
+>>                                          | (at91_extern_irq))
+>>                                  & at91_aic_read(AT91_AIC_IMR),
+>>                          state);
+>>
+>> at91_irq_suspend() is in arch/arm/mach-at91/irq.c already, so there's no
+>> reason that fragment can't be moved there.
+> The problem is that the goal of the patch set is to move
+> arch/arm/mach-at91/irq.c into drivers/irqchip/.
+>
+> However, if you move that chunk of code to drivers/irqchip/irq-at91.c,
+> you are using at91_pmc_read() which is defined in
+> arch/arm/mach-at91/include/mach/at91_pmc.h. So,
+> drivers/irqchip/irq-at91.c would have to include such an header file,
+> which is something we want to avoid since drivers/ code should not
+> include something in <mach/...>, as it breaks multiplatform kernels.
+>
+> So, I'm afraid, simply moving this chunk of code in at91_irq_suspend()
+> doesn't make the thing any better.
+What about keeping the former at91_aic.h in arch/arm/match-at91 and copy 
+the definitions we need in drivers/irqchip/irq-at91.c ?
 
->  	list_del(&sp->link);
->  	free_page((unsigned long)sp->spt);
->  	if (!sp->role.direct)
-> @@ -1648,14 +1648,20 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->  				    struct list_head *invalid_list);
-> 
-> +static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
-> +{
-> +	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
-> +}
-> +
->  #define for_each_gfn_sp(_kvm, _sp, _gfn)				\
->  	hlist_for_each_entry(_sp,					\
->  	  &(_kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(_gfn)], hash_link) \
-> -		if ((_sp)->gfn != (_gfn)) {} else
-> +		if ((_sp)->gfn != (_gfn) || is_obsolete_sp(_kvm, _sp)) {} else
-> 
->  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
->  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
-> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
-> +		if ((_sp)->role.direct ||				\
-> +		      (_sp)->role.invalid || is_obsolete_sp(_kvm, _sp)) {} else
-> 
->  /* @sp->gfn should be write-protected at the call site */
->  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-> @@ -1838,11 +1844,6 @@ static void clear_sp_write_flooding_count(u64 *spte)
->  	__clear_sp_write_flooding_count(sp);
->  }
-> 
-> -static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
-> -{
-> -	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
-> -}
-> -
->  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
->  					     gfn_t gfn,
->  					     gva_t gaddr,
-> @@ -2085,11 +2086,15 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> 
->  	if (sp->unsync)
->  		kvm_unlink_unsync_page(kvm, sp);
-> +
->  	if (!sp->root_count) {
->  		/* Count self */
->  		ret++;
->  		list_move(&sp->link, invalid_list);
->  		kvm_mod_used_mmu_pages(kvm, -1);
-> +
-> +		if (unlikely(is_obsolete_sp(kvm, sp)))
-> +			hlist_del_init(&sp->hash_link);
-and this.
+This way we get an aic irqchip driver independant of any specific 
+machine headers and keep the non dt boards and pm drivers without any 
+change.
+>
+> Best regards,
+>
+> Thomas
 
-Since we check for obsolete while searching hashtable why delete it
-here?
-
->  	} else {
->  		list_move(&sp->link, &kvm->arch.active_mmu_pages);
->  		kvm_reload_remote_mmus(kvm);
-> 
-> isn't it?
-
---
-			Gleb.
