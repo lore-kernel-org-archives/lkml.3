@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390Ab3EWOrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:47:03 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45353 "EHLO comal.ext.ti.com"
+	id S1759354Ab3EWOsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:48:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51443 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758360Ab3EWOrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:47:01 -0400
-Message-ID: <519E2BD4.9020906@ti.com>
-Date: Thu, 23 May 2013 17:46:44 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757589Ab3EWOsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:48:13 -0400
+Date: Thu, 23 May 2013 10:48:00 -0400
+From: Dave Jones <davej@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Ming Lei <tom.leiming@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        fenghua.yu@intel.com
+Subject: Re: microcode loading got really slow.
+Message-ID: <20130523144800.GB16419@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Takashi Iwai <tiwai@suse.de>, Ming Lei <tom.leiming@gmail.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+	fenghua.yu@intel.com
+References: <s5h7giq86hr.wl%tiwai@suse.de>
+ <s5hwqqqvw59.wl%tiwai@suse.de>
+ <CACVXFVMsTjSqvyVkZEPfWgHDUJ_mqwqWy=vydCsTvv7TS-EKiQ@mail.gmail.com>
+ <s5hr4gyvv7r.wl%tiwai@suse.de>
+ <CACVXFVNO9FeCaJ_YFbvPMUHOBjneLqqW+ucYprZb7884Eth-DA@mail.gmail.com>
+ <s5hmwrlx5np.wl%tiwai@suse.de>
+ <CACVXFVMm=dKz9mwt=moU4Dw9-K=offHb10S3sV2-cxiQ5vH_cA@mail.gmail.com>
+ <s5h38tdx24r.wl%tiwai@suse.de>
+ <CACVXFVOy95SzeL2_wHMShZwG7eE7evrZhaEvJAsd1LLDcSD1Vw@mail.gmail.com>
+ <s5hhahtvk4b.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
-References: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hhahtvk4b.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 05:11 PM, Alan Stern wrote:
-> On Thu, 23 May 2013, Roger Quadros wrote:
-> 
->> Device tree probed devices don't get dma_mask set. Previously
->> we were setting the dma_mask pointer only if it was NULL.
->> However, the address of 'omap_ehci_dma_mask' would change
->> each time the module is unloaded and loaded back thus causing
->> the devices dma_mask pointer to be invalid on the next load.
->>
->> This will cause page faults if any driver tries to access the
->> old dma_mask pointer.
->>
->> Unconditionally re-setting the dma_mask pointer fixes this problem.
-> 
->> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
->> index 3d1491b..b33e306 100644
->> --- a/drivers/usb/host/ehci-omap.c
->> +++ b/drivers/usb/host/ehci-omap.c
->> @@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
->>  	 * Since shared usb code relies on it, set it here for now.
->>  	 * Once we have dma capability bindings this can go away.
->>  	 */
->> -	if (!pdev->dev.dma_mask)
->> -		pdev->dev.dma_mask = &omap_ehci_dma_mask;
->> +	pdev->dev.dma_mask = &omap_ehci_dma_mask;
-> 
-> Is this the solution that people have agreed on?  There has been a lot 
-> of discussion on this topic.  In particular, there has been talk about 
-> fixing it in the DT core.
+On Thu, May 23, 2013 at 04:36:20PM +0200, Takashi Iwai wrote:
+ 
+ > > >> Also udev supports user-defined rules to load firmware, which
+ > > >> means some drivers may not put their firmware in the default
+ > > >> path of distribution's firmware.
+ > > >
+ > > > It's why I suggested to put a warning in that path as the first step.
+ > > > So we can see whether there is any actual user.
+ > > 
+ > > If you plan to do it, it'd better to add default firmware path of some
+ > > distributions into firmware_class.c first, otherwise it may cause
+ > > unnecessary noise for this distribution.
+ > >
+ > > But if more default search paths are added, it might cause mistaken
+ > > firmwares found under incorrect path, for example, android's
+ > > default path is "/etc/firmware" and "/vendor/firmware"(maybe different
+ > > for different versions).
+ > > 
+ > > Also, putting default search paths into kernel isn't good, which was
+ > > introduced unwillingly for well-known reason.
+ > 
+ > Maybe we can create a new Kconfig to specify non-standard firmware
+ > path?
 
-Fixing it in DT core would be best.
-> 
-> This particular approach doesn't seem very robust.  What if 
-> pdev->dev.dma_mask is already set to a different value for some good 
-> reason?
-> 
+You keep mentioning non-standard paths for firmware, but in this case,
+I don't think Fedora is doing anything unusual.  We have microcode firmware
+in /lib/firmware/intel-ucode/ just like (afaik) everyone else.
 
-Then it breaks. But for OMAP, that situation seems unlikely.
+What *is* happening, I think is that the CPU is new enough that there's no
+newer firmware file available for it. 
 
-cheers,
--roger
+thoughts?
+
+	Dave
+
