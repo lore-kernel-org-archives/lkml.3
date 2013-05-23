@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab3EWHqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:46:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:51474 "EHLO ozlabs.org"
+	id S1757524Ab3EWHsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:48:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33341 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757173Ab3EWHqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:46:33 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH mainline] lib: make iovec obj instead of lib
-In-Reply-To: <519DAD21.2050608@infradead.org>
-References: <20130522234213.254ED31C6DC@corp2gmr1-1.hot.corp.google.com> <519DAD21.2050608@infradead.org>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 23 May 2013 16:44:35 +0930
-Message-ID: <87r4gyqias.fsf@rustcorp.com.au>
+	id S1757306Ab3EWHsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 03:48:15 -0400
+Message-ID: <519DC971.80406@ti.com>
+Date: Thu, 23 May 2013 10:46:57 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jiri Slaby <jslaby@suse.cz>
+CC: <jirislaby@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <linux-geode@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>, <netdev@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>
+Subject: Re: [PATCH] build some drivers only when compile-testing
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="----enig2FCLOGUJKJTLPIAPAOUPR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap <rdunlap@infradead.org> writes:
-> when CONFIG_VMWARE_VMCI=m:
->
-> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
->
-> Changing iovec.o from lib-y to obj-y fixes the build errors.
+------enig2FCLOGUJKJTLPIAPAOUPR
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Hi,
 
-Thanks!
-Rusty.
+On 22/05/13 12:18, Jiri Slaby wrote:
+> Some drivers can be built on more platforms than they run on. This
+> causes users and distributors packaging burden when they have to
+> manually deselect some drivers from their allmodconfigs. Or sometimes
+> it is even impossible to disable the drivers without patching the
+> kernel.
+>=20
+> Introduce a new config option COMPILE_TEST and make all those drivers
+> to depend on the platform they run on, or on the COMPILE_TEST option.
+> Now, when users/distributors choose COMPILE_TEST=3Dn they will not have=
 
-> ---
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Fix build error io vmw_vmci.ko by chaning iovec.o from lib-y to
-> obj-y.
->
-> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> ---
->  lib/Makefile |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> --- mmotm-2013-0522-1640.orig/lib/Makefile
-> +++ mmotm-2013-0522-1640/lib/Makefile
-> @@ -9,7 +9,7 @@ endif
->  
->  lib-y := ctype.o string.o vsprintf.o cmdline.o \
->  	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
-> -	 idr.o int_sqrt.o extable.o iovec.o \
-> +	 idr.o int_sqrt.o extable.o \
->  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
->  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-> @@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
->  
->  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
->  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
-> -	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o\
-> +	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o iovec.o \
->  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
->  obj-y += string_helpers.o
->  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
+> the drivers in their allmodconfig setups, but developers still can
+> compile-test them with COMPILE_TEST=3Dy.
+>=20
+> Now the drivers where we use this new option:
+> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
+>   processors so it should depend on x86.
+> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
+> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
+>   systems -- which do not actually support the hardware via that
+>   method.
+
+I had this exact same idea some time ago. The mail below contains some
+of my reasoning for this:
+
+http://comments.gmane.org/gmane.linux.kbuild.devel/9829
+
+I proposed a new Kconfig keyword, but Sam was quite against it as the
+Kconfig language already does what is required.
+
+ Tomi
+
+
+
+------enig2FCLOGUJKJTLPIAPAOUPR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJRncl1AAoJEPo9qoy8lh71qFoP/3PjrIvuoEgFhp4JW4uj0+zO
+9OWNwwh3EWsolDOiaexaDrJvgdNwK2PMlXbihBUEfYHx3rIh7hR8GZPUwnCXIsur
+edYF+octUiWGWh5UykQzX5tVM0Z+OyvSPJ/mBDsacDnUQFfNdJFAjbxaQmzHzwmZ
+jAlhcGW1yT4qDahNi3aRtk4QTjWF5uBRMBFpRSjp3IT5mh5wEtvQxNRKcLxCt98E
+m4T5UQE16j73lMhyGfaYCGP6EqGZ9ymCK2ewuOt9ziDpCAqhWPeImrKZOC97vQZ2
+z5hYmlkAvV41FP8xpPO5bPqVUeFvNBvS+YVY+Hx8W3DZokPBU2QDs5w/9h9xqm7m
+Rhf3ce1VVVx+UjWOMQFKZMOiZJA6LQ+hSIjJ16Nr41QQvqBMKwZDQVJHcynzCSFH
+Id5g8/Ut9VIVTflkWFuaBEBp1QMzMnyzjwvu17NSjSCLtfWjfCtA2Ccy7zhV00XH
+8MpmkHL1tmCD3CHM0ckJqYiYd2U9MsgT91Egk/w+AS0c0q45qClkrAY26896O1CT
+zGKNIcmbc1Z35Rtvbk3g3H1CKn3rtWzC8Qb+EVAE2gJ61DYNTm7OaDRRqEn2xbAa
+PZhaM841bJnaFkPt+fRF9ZD4FZVnKgL1/MkuTA4XWmMqPe01oQYE9tjUWidnw+CO
+qNQkXF3hX8gYoy7IaDwa
+=ggmg
+-----END PGP SIGNATURE-----
+
+------enig2FCLOGUJKJTLPIAPAOUPR--
