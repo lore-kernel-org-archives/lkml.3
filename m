@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759772Ab3EWQRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:17:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48721 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668Ab3EWQRE (ORCPT
+	id S1759814Ab3EWQRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:17:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44824 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759499Ab3EWQRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:17:04 -0400
-Date: Thu, 23 May 2013 09:17:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/Serial fixes for 3.10-rc3
-Message-ID: <20130523161703.GA14601@kroah.com>
+	Thu, 23 May 2013 12:17:15 -0400
+Date: Thu, 23 May 2013 09:17:11 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.10-rc2
+Message-ID: <20130523161711.GA8745@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+--3V7upXqbjpZ4EhLz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-are available in the git repository at:
+Hi Linus,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.10-rc2
+Please pull from:
 
-for you to fetch changes up to e037f95ffb5355ffe295e1d106d02fefd284d882:
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-  tty: mxser: Fix build warning introduced by dfc7b837c7f9 (Re: linux-next: build warning after merge of the tty.current tree) (2013-05-22 10:26:02 -0700)
+to receive updates for the input subsystem. You will get a few fixups to
+Wacom and eGalax touchscreen driver.
 
-----------------------------------------------------------------
-tty/serial fixes for 3.10-rc2
+Changelog:
+---------
 
-Here are some tty / serial driver fixes for 3.10-rc2.
+Heiko Abraham (1):
+      Input: egalax_ts - ABS_MT_POSITION_Y not reported well
 
-Nothing huge, although the rocket driver fix looks large, it's just
-moving the code around to fix the reported build issues in it.  Other
-than that, this has the fix for the of-reported lockdep warning from the
-vt layer, as well as some other needed bugfixes.
+Ping Cheng (3):
+      Input: wacom - add three new display tablets
+      Input: wacom - add a few new styli for Cintiq series
+      Input: wacom - add an eraser to DTH2242/DTK2241
 
-All of these have been in linux-next for a while.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Diffstat:
+--------
 
-----------------------------------------------------------------
-Ezequiel Garcia (1):
-      serial: 8250_dw: Add valid clk pointer check
+ drivers/input/tablet/wacom_wac.c      | 89 ++++++++++++++++++++++++++-----=
+----
+ drivers/input/tablet/wacom_wac.h      |  1 +
+ drivers/input/touchscreen/egalax_ts.c |  2 +-
+ 3 files changed, 69 insertions(+), 23 deletions(-)
 
-Heikki Krogerus (1):
-      serial: 8250_dw: add ACPI ID for Intel BayTrail
+--=20
+Dmitry
 
-Jiri Slaby (1):
-      TTY: rocket, fix more no-PCI warnings
 
-Lars-Peter Clausen (1):
-      tty: nwpserial: Pass correct pointer to free_irq()
+--3V7upXqbjpZ4EhLz
+Content-Type: application/pgp-signature
 
-Lee Jones (1):
-      serial: pl011: protect attribute read from NULL platform data struct
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-Matwey V. Kornilov (2):
-      tty: mxser: fix usage of opmode_ioaddr
-      tty: mxser: Fix build warning introduced by dfc7b837c7f9 (Re: linux-next: build warning after merge of the tty.current tree)
+iQIcBAEBAgAGBQJRnkEHAAoJEH70+W8r6ZYqOqoQAJ+9Aq+FLG4h9jveKL9JFdH3
+Ln0vWOmYsp0+ENOB73bvgtx31PzHCXtB6kiS3oatabbIaomCZF4Fa6SYzGBBMJt6
+duZLIdqxAzpFeF/MgI+InilEipD0Ev8tqC/e6PB4tPxcxX+x3JyL64eTJCxsH4VO
+7VYFalok+nUn2LzVPNTGB2SZ5Onpk9jJ+aVggBHIDfnBTAcvSZ//UhOlfqCYxeKx
+aNqc38wL5KVwIuzGNJDVQ7ot170GzeMLvwlHRaWGuh7RA9AcqvfuEiyZDYifYzgU
+9rgNg6ZKIFg2tZYKtGevwjdLpIwKgPR3kspLDUSGSwcS/eNO6Vu3qhqsHtM3y+Ry
+kvC0lb9a/U9LQMC26OWS3xQto+SU3ReC712hvbJFK1lPMkWH+yYXCBtog+g9zkhI
+eZGm+MImciYH28H36gu90GV1YiV19bpwk71tzawtznnCINqyQPGZoyavzZSVHk20
+EV8WwvmCXv1K0H0ccDDnOL3dQU6FjbNqRIzoj4Dlyf6jCkLgucDKzT5mX7ai1bwZ
+etnKYPHiiIEwbeibMTMd1Ve4Fv5xQmez25Dby1TtnzlnN8C436P4lGizgOmZ38dG
+IfFLvzUjMY7S9xkMskDkcOMU9957VFhvIYnDwhLvXGfbYLGJtB/52//fXxNUe2aU
+yj4MspYOVf3zFP4c0Roo
+=G0B5
+-----END PGP SIGNATURE-----
 
-Peter Hurley (1):
-      tty/vt: Fix vc_deallocate() lock order
-
-Wang YanQing (1):
-      TTY: Fix tty miss restart after we turn off flow-control
-
-Wei Yongjun (4):
-      serial: samsung: add missing platform_driver_unregister() when module exit
-      tty: serial: mpc5xxx: fix error handing in mpc52xx_uart_init()
-      serial: mcf: missing uart_unregister_driver() on error in mcf_init()
-      TTY: ehv_bytechan: add missing platform_driver_unregister() when module exit
-
- drivers/tty/ehv_bytechan.c        |   1 +
- drivers/tty/mxser.c               |  11 +-
- drivers/tty/n_tty.c               |   8 ++
- drivers/tty/rocket.c              | 288 +++++++++++++++++++-------------------
- drivers/tty/serial/8250/8250_dw.c |   7 +-
- drivers/tty/serial/amba-pl011.c   |   2 +-
- drivers/tty/serial/mcf.c          |   4 +-
- drivers/tty/serial/mpc52xx_uart.c |  11 +-
- drivers/tty/serial/nwpserial.c    |   2 +-
- drivers/tty/serial/samsung.c      |   1 +
- drivers/tty/vt/vt.c               |  14 +-
- drivers/tty/vt/vt_ioctl.c         |  67 ++++++---
- include/linux/vt_kern.h           |   2 +-
- 13 files changed, 234 insertions(+), 184 deletions(-)
+--3V7upXqbjpZ4EhLz--
