@@ -1,169 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805Ab3EWNM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:12:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57124 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757139Ab3EWNM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:12:56 -0400
-Date: Thu, 23 May 2013 14:12:49 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: vmscan: Take page buffers dirty and locked state
- into account
-Message-ID: <20130523131248.GW11497@suse.de>
-References: <1369301187-24934-1-git-send-email-mgorman@suse.de>
- <1369301187-24934-3-git-send-email-mgorman@suse.de>
- <20130523095315.GC22466@quack.suse.cz>
+	id S1758971Ab3EWNPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:15:04 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:57282 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757998Ab3EWNPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 09:15:00 -0400
+Message-ID: <00D0FAD3528A443BAEA3E39861B3CFAD@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Richard Genoud" <richard.genoud@gmail.com>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        "Patrick J. Volkerding" <volkerdi@slackware.com>,
+        "KY Srinivasan" <kys@microsoft.com>,
+        "Mike Sterling" <Mike.Sterling@microsoft.com>,
+        "Olaf Hering" <ohering@suse.de>
+Cc: <davem@davemloft.net>, <netdev@vger.kernel.org>, <olaf@aepfle.de>,
+        <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <devel@linuxdriverproject.org>, <stable@vger.kernel.org>
+References: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com> <CACQ1gAi0JfJFAc822YT5xVfW8HkB8r_4rf0dXTNsi-1oChsPsQ@mail.gmail.com>
+Subject: Kernel v3.2 used in SlackWare 14.00 please, backport all needed patches Re: [PATCH net, 1/2] hyperv: Fix a kernel warning from netvsc_linkstatus_callback()
+Date: Thu, 23 May 2013 16:14:55 +0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130523095315.GC22466@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	format=flowed;
+	charset="utf-8";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:53:15AM +0200, Jan Kara wrote:
-> On Thu 23-05-13 10:26:27, Mel Gorman wrote:
-> > Page reclaim keeps track of dirty and under writeback pages and uses it to
-> > determine if wait_iff_congested() should stall or if kswapd should begin
-> > writing back pages. This fails to account for buffer pages that can be
-> > under writeback but not PageWriteback which is the case for filesystems
-> > like ext3. Furthermore, PageDirty buffer pages can have all the buffers
-> > clean and writepage does no IO so it should not be accounted as congested.
-> > 
-> > This patch adds an address_space operation that filesystems may
-> > optionally use to check if a page is really dirty or really under
-> > writeback. An implementation is provided for filesystems that use
-> > buffer_heads. By default, the page flags are obeyed.
-> > 
-> > Credit goes to Jan Kara for identifying that the page flags alone are
-> > not sufficient for ext3 and sanity checking a number of ideas on how
-> > the problem could be addressed.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  fs/buffer.c                 | 34 ++++++++++++++++++++++++++++++++++
-> >  fs/ext2/inode.c             |  1 +
-> >  fs/ext3/inode.c             |  3 +++
-> >  fs/ext4/inode.c             |  2 ++
-> >  fs/gfs2/aops.c              |  2 ++
-> >  fs/ntfs/aops.c              |  1 +
-> >  fs/ocfs2/aops.c             |  1 +
-> >  fs/xfs/xfs_aops.c           |  1 +
-> >  include/linux/buffer_head.h |  3 +++
-> >  include/linux/fs.h          |  1 +
-> >  mm/vmscan.c                 | 33 +++++++++++++++++++++++++++++++--
-> >  11 files changed, 80 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/buffer.c b/fs/buffer.c
-> > index 1aa0836..4247aa9 100644
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -91,6 +91,40 @@ void unlock_buffer(struct buffer_head *bh)
-> >  EXPORT_SYMBOL(unlock_buffer);
-> >  
-> >  /*
-> > + * Returns if the page has dirty or writeback buffers. If all the buffers
-> > + * are unlocked and clean then the PageDirty information is stale. If
-> > + * any of the pages are locked, it is assumed they are locked for IO.
-> > + */
-> > +void buffer_check_dirty_writeback(struct page *page,
-> > +				     bool *dirty, bool *writeback)
-> > +{
-> > +	struct buffer_head *head, *bh;
-> > +	*dirty = false;
-> > +	*writeback = false;
-> > +
-> > +	BUG_ON(!PageLocked(page));
-> > +
-> > +	if (!page_has_buffers(page))
-> > +		return;
-> > +
-> > +	if (PageWriteback(page))
-> > +		*writeback = true;
-> > +
-> > +	head = page_buffers(page);
-> > +	bh = head;
-> > +	do {
-> > +		if (buffer_locked(bh))
-> > +			*writeback = true;
-> > +
-> > +		if (buffer_dirty(bh))
-> > +			*dirty = true;
-> > +
-> > +		bh = bh->b_this_page;
-> > +	} while (bh != head);
-> > +}
-> > +EXPORT_SYMBOL(buffer_check_dirty_writeback);
-> > +
-> > +/*
-> >   * Block until a buffer comes unlocked.  This doesn't stop it
-> >   * from becoming locked again - you have to lock it yourself
-> >   * if you want to preserve its state.
-> > diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-> > index 0a87bb1..2fc3593 100644
-> > --- a/fs/ext2/inode.c
-> > +++ b/fs/ext2/inode.c
-> > @@ -880,6 +880,7 @@ const struct address_space_operations ext2_aops = {
-> >  	.writepages		= ext2_writepages,
-> >  	.migratepage		= buffer_migrate_page,
-> >  	.is_partially_uptodate	= block_is_partially_uptodate,
-> > +	.is_dirty_writeback	= buffer_check_dirty_writeback,
-> >  	.error_remove_page	= generic_error_remove_page,
-> >  };
->
->   Hum, actually from what I know, it should be enough to set
-> .is_dirty_writeback to buffer_check_dirty_writeback() only for
-> ext3_ordered_aops and maybe def_blk_aops (fs/block_dev.c).
+Hi!
 
-Hmm, ok. I had thought that even where the generic write pages were used
-that set PageWriteback that it should still benefit from checking if the
-buffers were clean. I'll back it out.
+> (the 3.2 version is different,
+> and it's instaging. (at not used by distros anyway))
 
-I'll add it to def_blk_aops, thanks for pointing that out.
+ No: used
 
-> I also realized
-> that data=journal mode of ext3 & ext4 also needs a special treatment but
-> there we have to have a special function (likely provided by jbd/jbd2). But
-> this mode isn't used very much so it's not pressing to fix that.
-> 
+Linux Kernel v3.2 used in:
+-- SlackWare 14.00
 
-And thanks for catching that
+This is actual stable version SlackWare
 
-> Also I was thinking about how does this work NFS? It's page state logic is
-> more complex with page going from PageDirty -> PageWriteback -> Unstable ->
-> Clean. Unstable is a state where the page appears as clean to MM but it
-> still cannot be reclaimed (we are waiting for the server to write the
-> page). You need an inode wide commit operation to transform pages from
-> Unstable to Clean state.
->   
+Please, backport all(!) needed patches
 
-I expect they'll be skipped and not accounted for because try_to_release_page
-will fail. The pages will move to the active list and do another cycle
-through the LRU. If there a lot of these pages then kswapd usage may get
-high as it'll not stall. It'll need additional help.
+ I'm download https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.45.tar.xz
 
-That said, I also notice now that the PageWriteback check in the wrong
-place. Pages have their dirty flag cleared under the lock before queueing
-for IO until they are either redirtied or under writeback but the accounting
-is within a PageDirty check. That needs fixing.
+File ata_piix.c ( SHA1 ceaf441142ad3f6768ff71f023e73d0695458e2c ) from
+./linux-3.2.45/drivers/ata/
+not contain:
+( even not contain sub-string "Hyper-V")
+== ( VVM: symbol TAB replaced by Space+Space -- special for users of MS IE, MS OutLook [Express] )
+static int prefer_ms_hyperv = 1;
+module_param(prefer_ms_hyperv, int, 0);
+MODULE_PARM_DESC(prefer_ms_hyperv,
+  "Prefer Hyper-V paravirtualization drivers instead of ATA, "
+  "0 - Use ATA drivers, "
+  "1 (Default) - Use the paravirtualization drivers.");
 
-> I guess it would be worth testing this - something like your largedd test
-> but over NFS.
-> 
+static void piix_ignore_devices_quirk(struct ata_host *host)
+{
+#if IS_ENABLED(CONFIG_HYPERV_STORAGE)
+  static const struct dmi_system_id ignore_hyperv[] = {
+    {
+      /* On Hyper-V hypervisors the disks are exposed on
+       * both the emulated SATA controller and on the
+       * paravirtualised drivers.  The CD/DVD devices
+       * are only exposed on the emulated controller.
+       * Request we ignore ATA devices on this host.
+       */
+      .ident = "Hyper-V Virtual Machine",
+      .matches = {
+        DMI_MATCH(DMI_SYS_VENDOR,
+            "Microsoft Corporation"),
+        DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+      },
+    },
+    { }  /* terminate list */
+  };
+  static const struct dmi_system_id allow_virtual_pc[] = {
+    {
+      /* In MS Virtual PC guests the DMI ident is nearly
+       * identical to a Hyper-V guest. One difference is the
+       * product version which is used here to identify
+       * a Virtual PC guest. This entry allows ata_piix to
+       * drive the emulated hardware.
+       */
+      .ident = "MS Virtual PC 2007",
+      .matches = {
+        DMI_MATCH(DMI_SYS_VENDOR,
+            "Microsoft Corporation"),
+        DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+        DMI_MATCH(DMI_PRODUCT_VERSION, "VS2005R2"),
+      },
+    },
+    { }  /* terminate list */
+  };
+  const struct dmi_system_id *ignore = dmi_first_match(ignore_hyperv);
+  const struct dmi_system_id *allow = dmi_first_match(allow_virtual_pc);
 
-I will add it.
+  if (ignore && !allow && prefer_ms_hyperv) {
+    host->flags |= ATA_HOST_IGNORE_ATA;
+    dev_info(host->dev, "%s detected, ATA device ignore set\n",
+      ignore->ident);
+  }
+#endif
+==
 
--- 
-Mel Gorman
-SUSE Labs
+
+_Absolutly_ ( as _minimum_ for SlackWare 14.00 ) need backport requested at 2012-06-08(!) :
+( look on sub-string "3.2")
+==
+----- Original Message ----- 
+From: "Victor Miasnikov"
+To: "Greg KH" ; "Jonathan Nieder" ; "Andy Whitcroft"
+Cc: <stable@vger.kernel.org>; <linux-kernel@vger.kernel.org>; "KY Srinivasan"; "Mike Sterling"
+Sent: Friday, June 08, 2012 1:36 PM
+Subject: Re: Re: ToDo: backport to v3.4 , v3.3 , v3.2 patches 1b) db63a4c8115a libata 1) cd006086fa5d ata_piix: defer
+disks to the Hyper-V drivers by default Fw: use hv_storvsc instead of ata_piix for IDE disks ( but not for the CD-ROM)
+
+ . . .
+
+{
+> > > Hyper-V admins need _worked_ Linux v3.4.X / v3.3.X / v3.2.X
+> > > Please, _fix_ errors related "use hv_storvsc instead of ata_piix to
+> > > handle the IDE disks devices ( but not for the CD-ROM)"
+
+  i.e. need backport to all actual version after 3.1
+
+  cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default
+
+and its prerequisite
+
+  db63a4c8115a libata: add a host flag to ignore detected ATA devices
+}
+==
+
+and not forget patch related Bug 52821 :
+
+{{
+== ==
+----- Original Message ----- 
+From: vvm
+To: Andreas
+Sent: Wednesday, January 30, 2013 4:20 PM
+Subject: FIXed: ef773e1..bec35f4 Re: ata_piix.prefer_ms_hyperv=0 works Fw: Bug 52821 - ata_piix ATA_HOST_IGNORE_ATA for
+Hyper-V also affects Virtual PC 7 https://bugzilla.novell.com/show_bug.cgi?id=737532 Or
+https://bugzilla.kernel.org/show_bug.cgi?id=52821
+
+
+Hi!
+
+ Short:
+
+> Still, if there is a way to cleanly identify Hyper-V but not Virtual PC 7, this would be great!
+
+FIXed: ef773e1..bec35f4
+
+ Write in
+https://bugzilla.kernel.org/show_bug.cgi?id=52821
+
+"please, backport to 3.4 . . . 3.6 . . . 3.7"
+
+   . . .
+
+ Full:
+
+
+
+(
+ . . .
+
+> Still, if there is a way to cleanly identify Hyper-V but not Virtual PC 7, this would be great!
+
+FIXed: ef773e1..bec35f4
+
+
+----- Original Message ----- 
+From: "Jeff Garzik"
+To: "Olaf Hering"
+Cc:  . . . ; "KY Srinivasan"
+Sent: Wednesday, November 28, 2012 8:44 PM
+Subject: Re: [PATCH] ata_piix: reenable MS Virtual PC guests
+
+On 09/18/2012 11:48 AM, Olaf Hering wrote:
+An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
+defer disks to the Hyper-V drivers by default") broke MS Virtual PC
+guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
+info. As a result the driver does currently ignore the emulated hardware
+in Virtual PC guests and defers the handling to hv_blkvsc [ VVM: in current ver kernel -- hv_storvsc ]  . Since Virtual
+PC does not offer paravirtualized drivers no disks will be found in the
+guest.
+
+One difference in the DMI info is the product version. This patch adds a
+match for MS Virtual PC 2007 and "unignores" the emulated hardware.
+
+This was reported for openSuSE 12.1 in bugzilla:
+https://bugzilla.novell.com/show_bug.cgi?id=737532
+.  .  .
+
+Signed-off-by: Olaf Hering
+
+applied.  Apologies for missing this one.  It was accidentally shifting
+into the low-priority pile.
+==
+
+
+== ==
+
+
+==
+Andreas 2013-01-30 22:19:21
+  First appearance:
+https://bugzilla.novell.com/show_bug.cgi?id=737532
+Patch:
+https://lkml.org/lkml/2012/9/18/306
+
+==
+
+}}
+
+
+
+
+> This should also go to the stable tree, shouldn't it ?
+> At least 3.8, 3.7 and 3.4
+
+ In kernel 3.2 used in
+
+-- Ubuntu 12.4.0 LTS (  after 12.4.2 -- 3.5.X)
+and
+-- Debian 7.0
+
+source code related Hyper-V backported from "vanila" Kernel v3.5 ( and someone from hi versions)
+
+Please, ask Support Teams of Debian and Ubuntu for backport
+
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
+
+P.S.
+
+to To Microsoft Hyper-V for Linux Team:
+
+what are mint phrase:
+"LIS (Linux Integration Services) 4.0"
+?
+
+If need details -- ask me by e-mail . . .
+
+
+
+P.P.S.
+
+Again to To Microsoft Hyper-V for Linux Team:
+
+ See on MS Forum topic
+"Linux VM literally crashes Hyper-V host server with STOP 0x00020001"
+ and (or)
+please, remember, CVE number
+
+
+
+P.P.P.S.
+
+To SUSE Hyper-V for Linux Team:
+
+Olaf, I'm received Yours e-mail msg ( answer on my earler msg)
+
+ Thanks for answer
+
+Unfortunately Yours ( SUSE/Novel) Bug-Tracker not opened by IE from Win Srv Edtions
+I'm try do it from OpenSUSE v12.3 LiveCD but can not boot from it in Hyper-V VM when "Dynamic memory" turn on
+
+ See details on
+http://vvm.blog.tut.by/2013/05/18/opensuse-on-hyper-v/
+
+ Or ask SUSE Support Team write me by e-mail for detail
+
+
+P.P.P.P.S.
+
+ In
+./linux-3.10-rc2/drivers/scsi/storvsc_drv.c
+
+I am not found sub-string "Fiber Channel"
+
+  As I  undestand Linux Kernel roadmap/timeline traditions
+need ask by backport needed patches to v3.10
+
+To Microsoft Hyper-V for Linux Team:
+
+ Who must do it?
+
+Again Hypev-V sysadmin[s] ?
+
+
+P.P.P.P.P.S.
+
+Sorry, if my msg not full "political correct"
+
+I preffered solve problem as possibily earler, what wait big problems
+
+Sorry, again . . .
+
+
+
+
+
