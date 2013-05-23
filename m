@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab3EWOhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:37:12 -0400
-Received: from smtp-out-100.synserver.de ([212.40.185.100]:1034 "EHLO
-	smtp-out-100.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758360Ab3EWOhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:37:11 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10224
-Message-ID: <519E2985.8000704@metafoo.de>
-Date: Thu, 23 May 2013 16:36:53 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1759425Ab3EWOjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:39:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758967Ab3EWOjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:39:03 -0400
+Date: Thu, 23 May 2013 10:35:55 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: hbabu@us.ibm.com, rob@landley.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation/kdump: Remove TODO in this document
+Message-ID: <20130523143555.GI2779@redhat.com>
+References: <519DD397.6060301@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Davide Ciminaghi <ciminaghi@gnudd.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] regmap: Make regmap-mmio usable from different contexts
-References: <1369314377-22873-1-git-send-email-lars@metafoo.de> <1369314377-22873-2-git-send-email-lars@metafoo.de> <20130523140503.GD2412@sirena.org.uk> <519E25AB.4060406@metafoo.de> <20130523143137.GH2412@sirena.org.uk>
-In-Reply-To: <20130523143137.GH2412@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519DD397.6060301@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 04:31 PM, Mark Brown wrote:
-> On Thu, May 23, 2013 at 04:20:27PM +0200, Lars-Peter Clausen wrote:
->> On 05/23/2013 04:05 PM, Mark Brown wrote:
+On Thu, May 23, 2013 at 04:30:15PM +0800, Zhang Yanfei wrote:
+> We have already had the relocatable kernel, so just remove
+> the TODO in the kdump document.
 > 
->>> This seems really invasive, why not just have the lock that gets passed
->>> in point to a struct which has both the lock and the flags?  As far as
->>> the core is concerned the lock is just whatever data is required to do
->>> the locking, the fact that it's actually two values is an implementation
->>> detail of this locking implementation.
-> 
->> I think that won't work. spin_lock_irqsave() will write to the flags
->> parameter before it has successfully taken the look. So if a process running
->> on another CPU tries to acquire the the lock while it is already held we'll
->> end up overwriting the flags. E.g:
-> 
-> So you'd have to allocate a struct on the stack with a pointer and the
-> flags in it and initialise the pointer.  Not awesome but not the end of
-> the world.
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-I'm not sure I understand what you mean. This needs to be done for each
-caller of a lock()/unlock() pair. We can't allocate the flags on the stack
-inside the lock() function since the stack will be gone once the function exits.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-- Lars
+Vivek
+
+> ---
+>  Documentation/kdump/kdump.txt |    8 --------
+>  1 files changed, 0 insertions(+), 8 deletions(-)
+> 
+> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+> index 9c7fd98..a8b291d 100644
+> --- a/Documentation/kdump/kdump.txt
+> +++ b/Documentation/kdump/kdump.txt
+> @@ -461,14 +461,6 @@ format. Crash is available on Dave Anderson's site at the following URL:
+>     http://people.redhat.com/~anderson/
+>  
+>  
+> -To Do
+> -=====
+> -
+> -1) Provide relocatable kernels for all architectures to help in maintaining
+> -   multiple kernels for crash_dump, and the same kernel as the system kernel
+> -   can be used to capture the dump.
+> -
+> -
+>  Contact
+>  =======
+>  
+> -- 
+> 1.7.1
