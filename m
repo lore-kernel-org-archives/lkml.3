@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab3EWMGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:06:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10988 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756862Ab3EWMGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:06:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="341974767"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
-Subject: Re: [PATCHv4 37/39] thp: handle write-protect exception to
- file-backed huge pages
+	id S1758497Ab3EWMJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:09:25 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44405 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab3EWMJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:09:24 -0400
+Date: Thu, 23 May 2013 14:09:19 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: boris brezillon <b.brezillon@overkiz.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: at91: move at91 aic driver to drivers/irqchip
+Message-ID: <20130523140919.1b5800f2@skate>
+In-Reply-To: <20130523115845.GA24476@game.jcrosoft.org>
+References: <1369299909-10078-1-git-send-email-b.brezillon@overkiz.com>
+	<1369299909-10078-2-git-send-email-b.brezillon@overkiz.com>
+	<20130523090611.GG9937@game.jcrosoft.org>
+	<519DE6A8.6040502@overkiz.com>
+	<20130523120920.1df8e23a@skate>
+	<20130523100951.GH9937@game.jcrosoft.org>
+	<20130523122000.22a9a4d0@skate>
+	<20130523102601.GI9937@game.jcrosoft.org>
+	<20130523132255.3acf4431@skate>
+	<20130523115845.GA24476@game.jcrosoft.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130523120856.DD752E0090@blue.fi.intel.com>
-Date: Thu, 23 May 2013 15:08:56 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > @@ -1120,7 +1119,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >
-> >         page = pmd_page(orig_pmd);
-> >         VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> > -       if (page_mapcount(page) == 1) {
-> > +       if (PageAnon(page) && page_mapcount(page) == 1) {
+Dear Jean-Christophe PLAGNIOL-VILLARD,
+
+On Thu, 23 May 2013 13:58:45 +0200, Jean-Christophe PLAGNIOL-VILLARD
+wrote:
+
+> > Or, alternatively, we can make the irqchip driver show using
+> > pr_debug() the value of IMR in its ->suspend() hook, the value of IMR &
+> > IPR in its ->resume() hook, and the pm.c code can show the PMC_PCSR on
+> > suspend. This way, you have all the informations you need for debugging.
 > 
-> Could we avoid copying huge page if
-> no-one else is using it, no matter anon?
+> if you read the code as you said both of them are link PMC & AIC so you can
+> not hope to split it as both of the IP contain part of the information
+> 
+> so no I want the information right where it's
 
-No. The page is still in page cache and can be later accessed later.
-We could isolate the page from page cache, but I'm not sure whether it's
-good idea.
+Sorry, but that seems like a completely unreasonable requirement,
+provided that it makes the PM code poke into a completely unrelated IP,
+just for the sake of one debug message.
 
-do_wp_page() does exectly the same for small pages, so let's keep it
-consistent.
+> > Having the PM driver and the irqchip driver step on each other register
+> > areas is anyway a bad idea, especially when the only reason to do so is
+> > for two debugging messages that can be implemented differently.
+> 
+> > 
+> > Notice that this solution can always be improved later on if needed,
+> > with further cleanups from you.
+> > 
+> > But please stop rejecting valid patches from contributors, just because
+> > the code is not coming from you. What Boris is proposing is perfectly
+> so If I read you non clean code can come mainline, wow this not the way to
+> work. If for you do half clean is enough to go mainline. You really need to
+> change your way of working.
 
+Boris patches are far from being half-clean. To me, they look perfectly
+sane, and are going in the right direction. Again, please stop
+rejecting contributions from third-parties just because you're not the
+author of such contributions.
+
+It's you who said that they are not clean, but you still haven't given
+the slightest explanation to justify that. Until a proper justification
+is given, that points to specific, identifiable, and reasonable
+problems in the patches, there is absolutely no reason not to consider
+Boris patches as acceptable (once the header problem is fixed, of
+course).
+
+Best regards,
+
+Thomas
 -- 
- Kirill A. Shutemov
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
