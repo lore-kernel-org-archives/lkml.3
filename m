@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab3EWDo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 23:44:28 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:33331 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab3EWDo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 23:44:26 -0400
-Date: Wed, 22 May 2013 23:48:51 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-In-Reply-To: <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1757498Ab3EWDos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 23:44:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:59560 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756151Ab3EWDog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 23:44:36 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jason Wang <jasowang@redhat.com>, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH V2] virtio_net: enable napi for all possible queues during open
+In-Reply-To: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
+References: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 23 May 2013 12:52:46 +0930
+Message-ID: <87obc2s7ll.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jason Wang <jasowang@redhat.com> writes:
+> Commit 55257d72bd1c51f25106350f4983ec19f62ed1fa (virtio-net: fill only rx
+> queues which are being used) only does the napi enabling during open for
+> curr_queue_pairs. This will break multiqueue receiving since napi of new queues
+> were still disabled after changing the number of queues.
+>
+> This patch fixes this by enabling napi for all possible queues during open.
+>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-In case anyone cares, the Oops is happening here:
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-    1a56:       48 c1 e8 0c             shr    $0xc,%rax
-    1a5a:       48 ff c0                inc    %rax
->   1a5d:       f0 48 29 45 60          lock sub %rax,0x60(%rbp)
-    1a62:       49 8b 46 40             mov    0x40(%r14),%rax
+Dave, please send to Linus (fixes master).
 
-Which maps to this in perf_mmap_close() in kernel/events/core.c:
+Cheers,
+Rusty.
 
-                atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
-
-And "user" (%rbp) is RBP: 0000000000000000, hence the problem.
-
-I'm having trouble tracking the problem back any further as the code is a 
-bit covoluted and is not commented at all.
-
-Vince
+> ---
+> Changes from V1:
+> - enable napi in open instead of virtnet_set_queues() to avoid kernel BUG() when
+> trying to do napi_enable() for a already enabled queue
+> ---
+>  drivers/net/virtio_net.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 2d6abac..241527d 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -636,10 +636,11 @@ static int virtnet_open(struct net_device *dev)
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  	int i;
+>  
+> -	for (i = 0; i < vi->curr_queue_pairs; i++) {
+> -		/* Make sure we have some buffers: if oom use wq. */
+> -		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> -			schedule_delayed_work(&vi->refill, 0);
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> +		if (i < vi->curr_queue_pairs)
+> +			/* Make sure we have some buffers: if oom use wq. */
+> +			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> +				schedule_delayed_work(&vi->refill, 0);
+>  		virtnet_napi_enable(&vi->rq[i]);
+>  	}
+>  
+> -- 
+> 1.7.1
