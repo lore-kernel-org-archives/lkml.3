@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab3EWMbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:31:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27224 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758099Ab3EWMbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:31:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="318352160"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAJd=RBAcsAk5qN1dy2OhHYqB3fuwd0RfjPK_4=E1G_k=CUwycw@mail.gmail.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
- <CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
- <20130523120856.DD752E0090@blue.fi.intel.com>
- <CAJd=RBAcsAk5qN1dy2OhHYqB3fuwd0RfjPK_4=E1G_k=CUwycw@mail.gmail.com>
-Subject: Re: [PATCHv4 37/39] thp: handle write-protect exception to
- file-backed huge pages
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130523123318.A5285E0090@blue.fi.intel.com>
-Date: Thu, 23 May 2013 15:33:18 +0300 (EEST)
+	id S1758752Ab3EWMcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:32:12 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:44204 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758253Ab3EWMcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:32:11 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Graeme Smecher <gsmecher@threespeedlogic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 1/2] xilinx systemace: Fix device name assignment for SystemACE (from "xs`" to "xsa").
+Date: Thu, 23 May 2013 14:31:55 +0200
+Message-Id: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-1140-1369312316-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton wrote:
-> On Thu, May 23, 2013 at 8:08 PM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Hillf Danton wrote:
-> >> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-> >> <kirill.shutemov@linux.intel.com> wrote:
-> >> > @@ -1120,7 +1119,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> >> >
-> >> >         page = pmd_page(orig_pmd);
-> >> >         VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> >> > -       if (page_mapcount(page) == 1) {
-> >> > +       if (PageAnon(page) && page_mapcount(page) == 1) {
-> >>
-> >> Could we avoid copying huge page if
-> >> no-one else is using it, no matter anon?
-> >
-> > No. The page is still in page cache and can be later accessed later.
-> > We could isolate the page from page cache, but I'm not sure whether it's
-> > good idea.
-> >
-> Hugetlb tries to avoid copying pahe.
-> 
-> 	/* If no-one else is actually using this page, avoid the copy
-> 	 * and just make the page writable */
-> 	avoidcopy = (page_mapcount(old_page) == 1);
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-It makes sense for hugetlb, since it RAM-backed only.
+--=_mimegpg-monstr-desktop-1140-1369312316-0001
 
-Currently, the project supports only ramfs, but I hope we will bring
-storage-backed filesystems later. For them it would be much cheaper to
-copy the page then bring it back later from storage.
+From: Graeme Smecher <gsmecher@threespeedlogic.com>
 
-And one more point: we must not ever reuse dirty pages, since it will lead
-to data lost. And ramfs pages are always dirty.
+This fixes a bug introduced in 5d10302f46d, where device trees that don't
+provide the "port-number" attribute are mistakenly assigned the device "xs`".
+The error check that's supposed to assign a default letter can't succeed,
+since it tests an unsigned type against a negative return code.
 
--- 
- Kirill A. Shutemov
+Signed-off-by: Graeme Smecher <gsmecher@threespeedlogic.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/block/xsysace.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+index f8ef15f..3fd130f 100644
+--- a/drivers/block/xsysace.c
++++ b/drivers/block/xsysace.c
+@@ -1160,8 +1160,7 @@ static int ace_probe(struct platform_device *dev)
+ 	dev_dbg(&dev->dev, "ace_probe(%p)\n", dev);
+
+ 	/* device id and bus width */
+-	of_property_read_u32(dev->dev.of_node, "port-number", &id);
+-	if (id < 0)
++	if (of_property_read_u32(dev->dev.of_node, "port-number", &id))
+ 		id = 0;
+ 	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
+ 		bus_width = ACE_BUS_WIDTH_8;
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-1140-1369312316-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlGeDDwACgkQykllyylKDCEY3wCffT5m5T9N0NiJEsycOrqcYsAP
+DzkAn3+2PO588a+Lrv8W4xHXODcmS48x
+=UbY6
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-1140-1369312316-0001--
