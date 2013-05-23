@@ -1,368 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab3EWOLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:11:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24361 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758503Ab3EWOL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:11:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="306834335"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: linux-usb@vger.kernel.org
-Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v3 3/4] usb: xhci: add USB2 Link power management BESL support
-Date: Thu, 23 May 2013 17:14:30 +0300
-Message-Id: <1369318471-10353-4-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1758909Ab3EWOMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:12:06 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60562 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758530Ab3EWOLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:11:30 -0400
+Date: Thu, 23 May 2013 10:11:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
+In-Reply-To: <1369304387-29610-2-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb 2.0 devices with link power managment (LPM) can describe their idle link
-timeouts either in BESL or HIRD format, so far xHCI has only supported HIRD but
-later xHCI errata add BESL support as well
+On Thu, 23 May 2013, Roger Quadros wrote:
 
-BESL timeouts need to inform exit latency changes with an evaluate
-context command the same way USB 3.0 link PM code does.
-The same xhci_change_max_exit_latency() function is used as with USB3
-but code is pulled out from #ifdef CONFIG_PM as USB2.0 BESL LPM
-funcionality does not depend on CONFIG_PM.
+> Device tree probed devices don't get dma_mask set. Previously
+> we were setting the dma_mask pointer only if it was NULL.
+> However, the address of 'omap_ehci_dma_mask' would change
+> each time the module is unloaded and loaded back thus causing
+> the devices dma_mask pointer to be invalid on the next load.
+> 
+> This will cause page faults if any driver tries to access the
+> old dma_mask pointer.
+> 
+> Unconditionally re-setting the dma_mask pointer fixes this problem.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-ext-caps.h |    1 +
- drivers/usb/host/xhci.c          |  204 ++++++++++++++++++++++++++------------
- drivers/usb/host/xhci.h          |   21 ++++
- include/linux/usb.h              |    2 +
- 4 files changed, 164 insertions(+), 64 deletions(-)
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 3d1491b..b33e306 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>  	 * Since shared usb code relies on it, set it here for now.
+>  	 * Once we have dma capability bindings this can go away.
+>  	 */
+> -	if (!pdev->dev.dma_mask)
+> -		pdev->dev.dma_mask = &omap_ehci_dma_mask;
+> +	pdev->dev.dma_mask = &omap_ehci_dma_mask;
 
-diff --git a/drivers/usb/host/xhci-ext-caps.h b/drivers/usb/host/xhci-ext-caps.h
-index 377f424..8d7a132 100644
---- a/drivers/usb/host/xhci-ext-caps.h
-+++ b/drivers/usb/host/xhci-ext-caps.h
-@@ -71,6 +71,7 @@
- 
- /* USB 2.0 xHCI 1.0 hardware LMP capability - section 7.2.2.1.3.2 */
- #define XHCI_HLC               (1 << 19)
-+#define XHCI_BLC               (1 << 19)
- 
- /* command register values to disable interrupts and halt the HC */
- /* start/stop HC execution - do not write unless HC is halted*/
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 317bf08..d1eb393 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3805,6 +3805,56 @@ int xhci_find_raw_port_number(struct usb_hcd *hcd, int port1)
- 	return raw_port;
- }
- 
-+/*
-+ * Issue an Evaluate Context command to change the Maximum Exit Latency in the
-+ * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
-+ */
-+static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
-+			struct usb_device *udev, u16 max_exit_latency)
-+{
-+	struct xhci_virt_device *virt_dev;
-+	struct xhci_command *command;
-+	struct xhci_input_control_ctx *ctrl_ctx;
-+	struct xhci_slot_ctx *slot_ctx;
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&xhci->lock, flags);
-+	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
-+		spin_unlock_irqrestore(&xhci->lock, flags);
-+		return 0;
-+	}
-+
-+	/* Attempt to issue an Evaluate Context command to change the MEL. */
-+	virt_dev = xhci->devs[udev->slot_id];
-+	command = xhci->lpm_command;
-+	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
-+	spin_unlock_irqrestore(&xhci->lock, flags);
-+
-+	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
-+	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
-+	slot_ctx = xhci_get_slot_ctx(xhci, command->in_ctx);
-+	slot_ctx->dev_info2 &= cpu_to_le32(~((u32) MAX_EXIT));
-+	slot_ctx->dev_info2 |= cpu_to_le32(max_exit_latency);
-+
-+	xhci_dbg(xhci, "Set up evaluate context for LPM MEL change.\n");
-+	xhci_dbg(xhci, "Slot %u Input Context:\n", udev->slot_id);
-+	xhci_dbg_ctx(xhci, command->in_ctx, 0);
-+
-+	/* Issue and wait for the evaluate context command. */
-+	ret = xhci_configure_endpoint(xhci, udev, command,
-+			true, true);
-+	xhci_dbg(xhci, "Slot %u Output Context:\n", udev->slot_id);
-+	xhci_dbg_ctx(xhci, virt_dev->out_ctx, 0);
-+
-+	if (!ret) {
-+		spin_lock_irqsave(&xhci->lock, flags);
-+		virt_dev->current_mel = max_exit_latency;
-+		spin_unlock_irqrestore(&xhci->lock, flags);
-+	}
-+	return ret;
-+}
-+
- #ifdef CONFIG_PM_RUNTIME
- 
- /* BESL to HIRD Encoding array for USB2 LPM */
-@@ -3846,6 +3896,28 @@ static int xhci_calculate_hird_besl(struct xhci_hcd *xhci,
- 	return besl;
- }
- 
-+/* Calculate BESLD, L1 timeout and HIRDM for USB2 PORTHLPMC */
-+static int xhci_calculate_usb2_hw_lpm_params(struct usb_device *udev)
-+{
-+	u32 field;
-+	int l1;
-+	int besld = 0;
-+	int hirdm = 0;
-+
-+	field = le32_to_cpu(udev->bos->ext_cap->bmAttributes);
-+
-+	/* xHCI l1 is set in steps of 256us, xHCI 1.0 section 5.4.11.2 */
-+	l1 = XHCI_L1_TIMEOUT / 256;
-+
-+	/* device has preferred BESLD */
-+	if (field & USB_BESL_DEEP_VALID) {
-+		besld = USB_GET_BESL_DEEP(field);
-+		hirdm = 1;
-+	}
-+
-+	return PORT_BESLD(besld) | PORT_L1_TIMEOUT(l1) | PORT_HIRDM(hirdm);
-+}
-+
- static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
- 					struct usb_device *udev)
- {
-@@ -3978,11 +4050,12 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- {
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
- 	__le32 __iomem	**port_array;
--	__le32 __iomem	*pm_addr;
--	u32		temp;
-+	__le32 __iomem	*pm_addr, *hlpm_addr;
-+	u32		pm_val, hlpm_val, field;
- 	unsigned int	port_num;
- 	unsigned long	flags;
--	int		hird;
-+	int		hird, exit_latency;
-+	int		ret;
- 
- 	if (hcd->speed == HCD_USB3 || !xhci->hw_lpm_support ||
- 			!udev->lpm_capable)
-@@ -4000,23 +4073,73 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- 	port_array = xhci->usb2_ports;
- 	port_num = udev->portnum - 1;
- 	pm_addr = port_array[port_num] + PORTPMSC;
--	temp = xhci_readl(xhci, pm_addr);
-+	pm_val = xhci_readl(xhci, pm_addr);
-+	hlpm_addr = port_array[port_num] + PORTHLPMC;
-+	field = le32_to_cpu(udev->bos->ext_cap->bmAttributes);
- 
- 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
- 			enable ? "enable" : "disable", port_num);
- 
--	hird = xhci_calculate_hird_besl(xhci, udev);
--
- 	if (enable) {
--		temp &= ~PORT_HIRD_MASK;
--		temp |= PORT_HIRD(hird) | PORT_RWE;
--		xhci_writel(xhci, temp, pm_addr);
--		temp = xhci_readl(xhci, pm_addr);
--		temp |= PORT_HLE;
--		xhci_writel(xhci, temp, pm_addr);
-+		/* Host supports BESL timeout instead of HIRD */
-+		if (udev->usb2_hw_lpm_besl_capable) {
-+			/* if device doesn't have a preferred BESL value use a
-+			 * default one which works with mixed HIRD and BESL
-+			 * systems. See XHCI_DEFAULT_BESL definition in xhci.h
-+			 */
-+			if ((field & USB_BESL_SUPPORT) &&
-+			    (field & USB_BESL_BASELINE_VALID))
-+				hird = USB_GET_BESL_BASELINE(field);
-+			else
-+				hird = XHCI_DEFAULT_BESL;
-+
-+			exit_latency = xhci_besl_encoding[hird];
-+			spin_unlock_irqrestore(&xhci->lock, flags);
-+
-+			/* USB 3.0 code dedicate one xhci->lpm_command->in_ctx
-+			 * input context for link powermanagement evaluate
-+			 * context commands. It is protected by hcd->bandwidth
-+			 * mutex and is shared by all devices. We need to set
-+			 * the max ext latency in USB 2 BESL LPM as well, so
-+			 * use the same mutex and xhci_change_max_exit_latency()
-+			 */
-+			mutex_lock(hcd->bandwidth_mutex);
-+			ret = xhci_change_max_exit_latency(xhci, udev,
-+							   exit_latency);
-+			mutex_unlock(hcd->bandwidth_mutex);
-+
-+			if (ret < 0)
-+				return ret;
-+			spin_lock_irqsave(&xhci->lock, flags);
-+
-+			hlpm_val = xhci_calculate_usb2_hw_lpm_params(udev);
-+			xhci_writel(xhci, hlpm_val, hlpm_addr);
-+			/* flush write */
-+			xhci_readl(xhci, hlpm_addr);
-+		} else {
-+			hird = xhci_calculate_hird_besl(xhci, udev);
-+		}
-+
-+		pm_val &= ~PORT_HIRD_MASK;
-+		pm_val |= PORT_HIRD(hird) | PORT_RWE;
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		pm_val = xhci_readl(xhci, pm_addr);
-+		pm_val |= PORT_HLE;
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		/* flush write */
-+		xhci_readl(xhci, pm_addr);
- 	} else {
--		temp &= ~(PORT_HLE | PORT_RWE | PORT_HIRD_MASK);
--		xhci_writel(xhci, temp, pm_addr);
-+		pm_val &= ~(PORT_HLE | PORT_RWE | PORT_HIRD_MASK);
-+		xhci_writel(xhci, pm_val, pm_addr);
-+		/* flush write */
-+		xhci_readl(xhci, pm_addr);
-+		if (udev->usb2_hw_lpm_besl_capable) {
-+			spin_unlock_irqrestore(&xhci->lock, flags);
-+			mutex_lock(hcd->bandwidth_mutex);
-+			xhci_change_max_exit_latency(xhci, udev, 0);
-+			mutex_unlock(hcd->bandwidth_mutex);
-+			return 0;
-+		}
- 	}
- 
- 	spin_unlock_irqrestore(&xhci->lock, flags);
-@@ -4058,6 +4181,9 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
- 		if (xhci->hw_lpm_support == 1 &&
- 		    xhci_check_usb2_port_capability(xhci, portnum, XHCI_HLC)) {
- 			udev->usb2_hw_lpm_capable = 1;
-+			if (xhci_check_usb2_port_capability(xhci, portnum,
-+							    XHCI_BLC))
-+				udev->usb2_hw_lpm_besl_capable = 1;
- 			ret = xhci_set_usb2_hardware_lpm(hcd, udev, 1);
- 			if (!ret)
- 				udev->usb2_hw_lpm_enabled = 1;
-@@ -4388,56 +4514,6 @@ static u16 xhci_calculate_lpm_timeout(struct usb_hcd *hcd,
- 	return timeout;
- }
- 
--/*
-- * Issue an Evaluate Context command to change the Maximum Exit Latency in the
-- * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
-- */
--static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
--			struct usb_device *udev, u16 max_exit_latency)
--{
--	struct xhci_virt_device *virt_dev;
--	struct xhci_command *command;
--	struct xhci_input_control_ctx *ctrl_ctx;
--	struct xhci_slot_ctx *slot_ctx;
--	unsigned long flags;
--	int ret;
--
--	spin_lock_irqsave(&xhci->lock, flags);
--	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
--		spin_unlock_irqrestore(&xhci->lock, flags);
--		return 0;
--	}
--
--	/* Attempt to issue an Evaluate Context command to change the MEL. */
--	virt_dev = xhci->devs[udev->slot_id];
--	command = xhci->lpm_command;
--	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
--	spin_unlock_irqrestore(&xhci->lock, flags);
--
--	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
--	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
--	slot_ctx = xhci_get_slot_ctx(xhci, command->in_ctx);
--	slot_ctx->dev_info2 &= cpu_to_le32(~((u32) MAX_EXIT));
--	slot_ctx->dev_info2 |= cpu_to_le32(max_exit_latency);
--
--	xhci_dbg(xhci, "Set up evaluate context for LPM MEL change.\n");
--	xhci_dbg(xhci, "Slot %u Input Context:\n", udev->slot_id);
--	xhci_dbg_ctx(xhci, command->in_ctx, 0);
--
--	/* Issue and wait for the evaluate context command. */
--	ret = xhci_configure_endpoint(xhci, udev, command,
--			true, true);
--	xhci_dbg(xhci, "Slot %u Output Context:\n", udev->slot_id);
--	xhci_dbg_ctx(xhci, virt_dev->out_ctx, 0);
--
--	if (!ret) {
--		spin_lock_irqsave(&xhci->lock, flags);
--		virt_dev->current_mel = max_exit_latency;
--		spin_unlock_irqrestore(&xhci->lock, flags);
--	}
--	return ret;
--}
--
- static int calculate_max_exit_latency(struct usb_device *udev,
- 		enum usb3_link_state state_changed,
- 		u16 hub_encoded_timeout)
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index b6cd55e..b971801 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -386,6 +386,27 @@ struct xhci_op_regs {
- #define	PORT_L1DS(p)		(((p) & 0xff) << 8)
- #define	PORT_HLE		(1 << 16)
- 
-+
-+/* USB2 Protocol PORTHLPMC */
-+#define PORT_HIRDM(p)((p) & 3)
-+#define PORT_L1_TIMEOUT(p)(((p) & 0xff) << 2)
-+#define PORT_BESLD(p)(((p) & 0xf) << 10)
-+
-+/* use 512 microseconds as USB2 LPM L1 default timeout. */
-+#define XHCI_L1_TIMEOUT		512
-+
-+/* Set default HIRD/BESL value to 4 (350/400us) for USB2 L1 LPM resume latency.
-+ * Safe to use with mixed HIRD and BESL systems (host and device) and is used
-+ * by other operating systems.
-+ *
-+ * XHCI 1.0 errata 8/14/12 Table 13 notes:
-+ * "Software should choose xHC BESL/BESLD field values that do not violate a
-+ * device's resume latency requirements,
-+ * e.g. not program values > '4' if BLC = '1' and a HIRD device is attached,
-+ * or not program values < '4' if BLC = '0' and a BESL device is attached.
-+ */
-+#define XHCI_DEFAULT_BESL	4
-+
- /**
-  * struct xhci_intr_reg - Interrupt Register Set
-  * @irq_pending:	IMAN - Interrupt Management Register.  Used to enable
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index a0bee5a..3a1b864 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -468,6 +468,7 @@ struct usb3_lpm_parameters {
-  * @wusb: device is Wireless USB
-  * @lpm_capable: device supports LPM
-  * @usb2_hw_lpm_capable: device can perform USB2 hardware LPM
-+ * @usb2_hw_lpm_besl_capable: device can perform USB2 hardware BESL LPM
-  * @usb2_hw_lpm_enabled: USB2 hardware LPM enabled
-  * @usb3_lpm_enabled: USB3 hardware LPM enabled
-  * @string_langid: language ID for strings
-@@ -538,6 +539,7 @@ struct usb_device {
- 	unsigned wusb:1;
- 	unsigned lpm_capable:1;
- 	unsigned usb2_hw_lpm_capable:1;
-+	unsigned usb2_hw_lpm_besl_capable:1;
- 	unsigned usb2_hw_lpm_enabled:1;
- 	unsigned usb3_lpm_enabled:1;
- 	int string_langid;
--- 
-1.7.4.1
+Is this the solution that people have agreed on?  There has been a lot 
+of discussion on this topic.  In particular, there has been talk about 
+fixing it in the DT core.
+
+This particular approach doesn't seem very robust.  What if 
+pdev->dev.dma_mask is already set to a different value for some good 
+reason?
+
+Alan Stern
 
