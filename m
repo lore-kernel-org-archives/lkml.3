@@ -1,38 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab3EWPX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:23:57 -0400
-Received: from ip-27-50-25-119.cepat.net.id ([27.50.25.119]:6669 "EHLO
-	zmtap2.banksinarmas.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab3EWPX4 (ORCPT
+	id S1759464Ab3EWPYL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:24:11 -0400
+Received: from smtp-out-100.synserver.de ([212.40.185.100]:1090 "EHLO
+	smtp-out-100.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab3EWPYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:23:56 -0400
-X-Greylist: delayed 978 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 11:23:56 EDT
-Date: Thu, 23 May 2013 22:07:14 +0700 (WIT)
-From: KELVIN WILLIAMS <yessi.anggrainy@banksinarmas.com>
-Reply-To: KELVIN WILLIAMS <kelvin.ikobowilliams@yahoo.com.hk>
-Message-ID: <1380121211.29415995.1369321634609.JavaMail.root@banksinarmas.com>
-Subject: Re-Notification
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.67.51]
-X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
-To: undisclosed-recipients:;
-X-Copyrighted-Material: INDORAMA EPCL
+	Thu, 23 May 2013 11:24:08 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3223
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Davide Ciminaghi <ciminaghi@gnudd.com>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH for 3.10-rc2] regmap: regcache: Fixup locking for custom lock callbacks
+Date: Thu, 23 May 2013 17:23:49 +0200
+Message-Id: <1369322629-25157-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The parameter passed to the regmap lock/unlock callbacks needs to be
+map->lock_arg, regcache passes just map. This works fine in the case that no
+custom locking callbacks are used since in this case map->lock_arg equals map,
+but will break when custom locking callbacks are used. The issue was introduced
+in commit 0d4529c5("regmap: make lock/unlock functions customizable") and is
+fixed by this patch.
 
-ATM CARD worth $6.8 Million Dollars has been accredited in your favor,Please Contact
-KELVIN WILLIAMS(kelvin.ikobowilliams@yahoo.com.hk) With the following,Full Name: Delivery
-Address: Age: Occupation: Phone Number: Country: Regards,Mrs Margret Miller Telephone : + 2348105754752
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/base/regmap/regcache-rbtree.c |  4 ++--
+ drivers/base/regmap/regcache.c        | 20 ++++++++++----------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index aa0875f..b4e343b 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -143,7 +143,7 @@ static int rbtree_show(struct seq_file *s, void *ignored)
+ 	int registers = 0;
+ 	int this_registers, average;
+ 
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 
+ 	mem_size = sizeof(*rbtree_ctx);
+ 	mem_size += BITS_TO_LONGS(map->cache_present_nbits) * sizeof(long);
+@@ -170,7 +170,7 @@ static int rbtree_show(struct seq_file *s, void *ignored)
+ 	seq_printf(s, "%d nodes, %d registers, average %d registers, used %zu bytes\n",
+ 		   nodes, registers, average, mem_size);
+ 
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 75923f2..507ee2d 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -270,7 +270,7 @@ int regcache_sync(struct regmap *map)
+ 
+ 	BUG_ON(!map->cache_ops || !map->cache_ops->sync);
+ 
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 	/* Remember the initial bypass state */
+ 	bypass = map->cache_bypass;
+ 	dev_dbg(map->dev, "Syncing %s cache\n",
+@@ -306,7 +306,7 @@ out:
+ 	trace_regcache_sync(map->dev, name, "stop");
+ 	/* Restore the bypass state */
+ 	map->cache_bypass = bypass;
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ 
+ 	return ret;
+ }
+@@ -333,7 +333,7 @@ int regcache_sync_region(struct regmap *map, unsigned int min,
+ 
+ 	BUG_ON(!map->cache_ops || !map->cache_ops->sync);
+ 
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 
+ 	/* Remember the initial bypass state */
+ 	bypass = map->cache_bypass;
+@@ -352,7 +352,7 @@ out:
+ 	trace_regcache_sync(map->dev, name, "stop region");
+ 	/* Restore the bypass state */
+ 	map->cache_bypass = bypass;
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ 
+ 	return ret;
+ }
+@@ -372,11 +372,11 @@ EXPORT_SYMBOL_GPL(regcache_sync_region);
+  */
+ void regcache_cache_only(struct regmap *map, bool enable)
+ {
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 	WARN_ON(map->cache_bypass && enable);
+ 	map->cache_only = enable;
+ 	trace_regmap_cache_only(map->dev, enable);
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ }
+ EXPORT_SYMBOL_GPL(regcache_cache_only);
+ 
+@@ -391,9 +391,9 @@ EXPORT_SYMBOL_GPL(regcache_cache_only);
+  */
+ void regcache_mark_dirty(struct regmap *map)
+ {
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 	map->cache_dirty = true;
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ }
+ EXPORT_SYMBOL_GPL(regcache_mark_dirty);
+ 
+@@ -410,11 +410,11 @@ EXPORT_SYMBOL_GPL(regcache_mark_dirty);
+  */
+ void regcache_cache_bypass(struct regmap *map, bool enable)
+ {
+-	map->lock(map);
++	map->lock(map->lock_arg);
+ 	WARN_ON(map->cache_only && enable);
+ 	map->cache_bypass = enable;
+ 	trace_regmap_cache_bypass(map->dev, enable);
+-	map->unlock(map);
++	map->unlock(map->lock_arg);
+ }
+ EXPORT_SYMBOL_GPL(regcache_cache_bypass);
+ 
+-- 
+1.8.0
 
-
-
-
-
-_____________________________________________________________________
-DISCLAIMER: 'The information contained in this email is confidential and may contain proprietary information. It is meant solely for the intended recipient. Access to this email by anyone else is unauthorised. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted in reliance on this, is prohibited and may be unlawful. No liability or reponsibility is accepted if information or data is, for whatever reason corrupted or does not reach its intended recipient. No warranty is given that this email is free of viruses. The views expressed in this email are, unless otherwise stated, those of the author and not those of Bank Sinarmas or its management. Bank Sinarmas reserves the right to monitor, intercept and block emails addressed to its users or take any other any other action in accordance with its email use policy.'
