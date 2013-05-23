@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556Ab3EWPZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:25:40 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:57687 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759509Ab3EWPZf (ORCPT
+	id S1759598Ab3EWPZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:25:49 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60696 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759509Ab3EWPZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:25:35 -0400
+	Thu, 23 May 2013 11:25:46 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, sameo@linux.intel.com
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 04/16] mfd: ab8500-debug: Convert to managed resources for allocating memory
-Date: Thu, 23 May 2013 16:25:05 +0100
-Message-Id: <1369322717-30429-4-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 10/16] mfd: davinci_voicecodec: Convert to managed resources for allocating memory
+Date: Thu, 23 May 2013 16:25:11 +0100
+Message-Id: <1369322717-30429-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
 References: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
@@ -22,98 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/ab8500-debugfs.c |   34 ++++++++++++----------------------
- 1 file changed, 12 insertions(+), 22 deletions(-)
+ drivers/mfd/davinci_voicecodec.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index 37b7ce4..7e80a0e 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -2937,7 +2937,6 @@ static struct dentry *ab8500_gpadc_dir;
- static int ab8500_debug_probe(struct platform_device *plf)
- {
- 	struct dentry *file;
--	int ret = -ENOMEM;
- 	struct ab8500 *ab8500;
- 	struct resource *res;
- 	debug_bank = AB8500_MISC;
-@@ -2946,24 +2945,26 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	ab8500 = dev_get_drvdata(plf->dev.parent);
- 	num_irqs = ab8500->mask_size;
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index c60ab0c..b6e2973 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -50,7 +50,8 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	struct mfd_cell *cell = NULL;
+ 	int ret;
  
--	irq_count = kzalloc(sizeof(*irq_count)*num_irqs, GFP_KERNEL);
-+	irq_count = devm_kzalloc(&plf->dev,
-+				 sizeof(*irq_count)*num_irqs, GFP_KERNEL);
- 	if (!irq_count)
- 		return -ENOMEM;
- 
--	dev_attr = kzalloc(sizeof(*dev_attr)*num_irqs,GFP_KERNEL);
-+	dev_attr = devm_kzalloc(&plf->dev,
-+				sizeof(*dev_attr)*num_irqs,GFP_KERNEL);
- 	if (!dev_attr)
--		goto out_freeirq_count;
-+		return -ENOMEM;
- 
--	event_name = kzalloc(sizeof(*event_name)*num_irqs, GFP_KERNEL);
-+	event_name = devm_kzalloc(&plf->dev,
-+				  sizeof(*event_name)*num_irqs, GFP_KERNEL);
- 	if (!event_name)
--		goto out_freedev_attr;
-+		return -ENOMEM;
- 
- 	res = platform_get_resource_byname(plf, 0, "IRQ_AB8500");
- 	if (!res) {
- 		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
- 			irq_first);
--		ret = -ENXIO;
--		goto out_freeevent_name;
-+		return ENXIO;
+-	davinci_vc = kzalloc(sizeof(struct davinci_vc), GFP_KERNEL);
++	davinci_vc = devm_kzalloc(&pdev->dev,
++				  sizeof(struct davinci_vc), GFP_KERNEL);
+ 	if (!davinci_vc) {
+ 		dev_dbg(&pdev->dev,
+ 			    "could not allocate memory for private data\n");
+@@ -61,8 +62,7 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	if (IS_ERR(davinci_vc->clk)) {
+ 		dev_dbg(&pdev->dev,
+ 			    "could not get the clock for voice codec\n");
+-		ret = -ENODEV;
+-		goto fail1;
++		return -ENODEV;
  	}
- 	irq_ab8500 = res->start;
+ 	clk_enable(davinci_vc->clk);
  
-@@ -2971,16 +2972,14 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	if (irq_first < 0) {
- 		dev_err(&plf->dev, "First irq not found, err %d\n",
- 			irq_first);
--		ret = irq_first;
--		goto out_freeevent_name;
-+		return irq_first;
- 	}
+@@ -145,8 +145,6 @@ fail2:
+ 	clk_disable(davinci_vc->clk);
+ 	clk_put(davinci_vc->clk);
+ 	davinci_vc->clk = NULL;
+-fail1:
+-	kfree(davinci_vc);
  
- 	irq_last = platform_get_irq_byname(plf, "IRQ_LAST");
- 	if (irq_last < 0) {
- 		dev_err(&plf->dev, "Last irq not found, err %d\n",
- 			irq_last);
--		ret = irq_last;
--		goto out_freeevent_name;
-+		return irq_last;
- 	}
- 
- 	ab8500_dir = debugfs_create_dir(AB8500_NAME_STRING, NULL);
-@@ -3189,22 +3188,13 @@ err:
- 	if (ab8500_dir)
- 		debugfs_remove_recursive(ab8500_dir);
- 	dev_err(&plf->dev, "failed to create debugfs entries.\n");
--out_freeevent_name:
--	kfree(event_name);
--out_freedev_attr:
--	kfree(dev_attr);
--out_freeirq_count:
--	kfree(irq_count);
- 
--	return ret;
-+	return -ENOMEM;
+ 	return ret;
  }
+@@ -164,8 +162,6 @@ static int davinci_vc_remove(struct platform_device *pdev)
+ 	clk_put(davinci_vc->clk);
+ 	davinci_vc->clk = NULL;
  
- static int ab8500_debug_remove(struct platform_device *plf)
- {
- 	debugfs_remove_recursive(ab8500_dir);
--	kfree(event_name);
--	kfree(dev_attr);
--	kfree(irq_count);
- 
+-	kfree(davinci_vc);
+-
  	return 0;
  }
+ 
 -- 
 1.7.10.4
 
