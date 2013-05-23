@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759935Ab3EWXPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 19:15:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56446 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759888Ab3EWXPl (ORCPT
+	id S1759941Ab3EWXSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 19:18:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50884 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759895Ab3EWXSH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 19:15:41 -0400
-Date: Fri, 24 May 2013 00:15:31 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
-	decompressor
-Message-ID: <20130523231531.GT18614@n2100.arm.linux.org.uk>
-References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org> <5193E424.9090605@codeaurora.org> <519E57D2.3050000@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519E57D2.3050000@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 23 May 2013 19:18:07 -0400
+Date: Thu, 23 May 2013 16:18:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [Suggestion] fs/namespace.c: the direct cause of the warning
+ for: "ida_remove called for id=0 which is not allocated" with
+ mnt_release_group_id()
+Message-Id: <20130523161805.1faa0f8c59bfc8ee728d8c7f@linux-foundation.org>
+In-Reply-To: <5191FE96.6050607@asianux.com>
+References: <5191FE96.6050607@asianux.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 10:54:26AM -0700, Stephen Boyd wrote:
-> On 05/15/13 12:38, Stephen Boyd wrote:
-> > On 05/08/13 14:47, Stephen Boyd wrote:
-> >> From: Brian Swetland <swetland@google.com>
-> >>
-> >> Currently v7 CPUs with an MIDR that has no bits set in the range
-> >> [16:12] will be detected as old ARM CPUs with no caches and so
-> >> the cache will never be turned on during decompression. ARM's
-> >> Cortex chips have an 0xC in the range [16:12] so they never match
-> >> this entry, but Qualcomm's Scorpion and Krait processors never
-> >> set these bits to anything besides 0 so they always match.
-> >>
-> >> Skip this entry if we've compiled in support for v7 CPUs. This
-> >> allows kernel decompression to happen nearly instantly instead of
-> >> taking over 20 seconds.
-> >>
-> >> Signed-off-by: Brian Swetland <swetland@google.com>
-> >> [sboyd: Clarified and extended commit text]
-> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> >> ---
-> > Ping?
-> 
-> Russell, shall I add this to the patch tracker?
+On Tue, 14 May 2013 17:06:30 +0800 Chen Gang <gang.chen@asianux.com> wrote:
 
-Yes please.
+> After call collect_mounts(), then call drop_collected_mounts(), it will
+> report an warning: "ida_remove called for id=0 which is not allocated"
+> (one sample is audit_add_tree_rule() in kernel/audit_tree.c).
+> 
+> The direct cause (maybe also be the root cause):
+>   collect_mounts() passs 'CL_PRIVATE' to copy_tree() -> clone_mnt().
+>   it will set "mnt->mnt_group_id = 0" in clone_mnt().
+>   when drop_collected_mounts() -> mnt_release_group_id(), 'mnt->mnt_group_id == 0'.
+
+I expect this patch also addresses the bug.  Can you please review and test it?
+
+
+From: Takashi Iwai <tiwai@suse.de>
+Subject: vfs: fix invalid ida_remove() call
+
+When the group id of a shared mount is not allocated, the umount still
+tries to call mnt_release_group_id(), which eventually hits a kernel
+warning at ida_remove() spewing a message like:
+
+  ida_remove called for id=0 which is not allocated.
+
+This patch fixes the bug simply checking the group id in the caller.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/pnode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff -puN fs/pnode.c~vfs-fix-invalid-ida_remove-call fs/pnode.c
+--- a/fs/pnode.c~vfs-fix-invalid-ida_remove-call
++++ a/fs/pnode.c
+@@ -83,7 +83,8 @@ static int do_make_slave(struct mount *m
+ 		if (peer_mnt == mnt)
+ 			peer_mnt = NULL;
+ 	}
+-	if (IS_MNT_SHARED(mnt) && list_empty(&mnt->mnt_share))
++	if (mnt->mnt_group_id && IS_MNT_SHARED(mnt) &&
++	    list_empty(&mnt->mnt_share))
+ 		mnt_release_group_id(mnt);
+ 
+ 	list_del_init(&mnt->mnt_share);
+_
 
