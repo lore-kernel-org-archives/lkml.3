@@ -1,88 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab3EWL4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:56:13 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.1]:51160 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758526Ab3EWL4L (ORCPT
+	id S1758718Ab3EWL4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:56:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28573 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758100Ab3EWL4a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:56:11 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-9.tower-28.messagelabs.com!1369310168!25826832!1
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.6; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <519E03B0.1080006@digi.com>
-Date: Thu, 23 May 2013 13:55:28 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        <s.hauer@pengutronix.de>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        <brian@crystalfontz.com>
-Subject: mxsfb: DATA_FORMAT_24_BIT flag outputs invalid colours
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 23 May 2013 07:56:30 -0400
+Date: Thu, 23 May 2013 07:56:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
+        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
+        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <devel@openvz.org>
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+Message-ID: <20130523075620.21abf79a@tlielax.poochiereds.net>
+In-Reply-To: <519DFFA9.3010606@parallels.com>
+References: <20130522072840.27720.85023.stgit@localhost.localdomain>
+	<878v36ex6n.fsf@xmission.com>
+	<519DCE5D.6070204@parallels.com>
+	<87k3mq9fsu.fsf@xmission.com>
+	<519DF109.9010309@parallels.com>
+	<20130523073108.13afafa6@tlielax.poochiereds.net>
+	<519DFFA9.3010606@parallels.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 23 May 2013 15:38:17 +0400
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-I'm using an i.MX28 based board with lcd connected with 18bits data bus.
-My platform uses 32 bits per pixel:
+> 23.05.2013 15:31, Jeff Layton пишет:
+> > On Thu, 23 May 2013 14:35:53 +0400
+> > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> >
+> >> 23.05.2013 14:00, Eric W. Biederman пишет:
+> >>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+> >>>
+> >>>> 22.05.2013 21:33, Eric W. Biederman пишет:
+> >>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+> >>>>>
+> >>>>>> Usermode helper executes all binaries in global "init" root context. This
+> >>>>>> doesn't allow to call a binary from other root context (for example in a
+> >>>>>> container).
+> >>>>>> Currently, both containerized NFS client and NFS server requires an ability to
+> >>>>>> execute a binary in a container's root context. Root swap can be done in
+> >>>>>> "init" callback, passed by UMH caller.
+> >>>>>> But since we have 2 callers already (and more of them are expected to appear
+> >>>>>> in future) and because set_fs_root() in not exported, it looks reasonable to
+> >>>>>> add one more generic UMH helper to generic fs code.
+> >>>>>> Root path reference must be hold by the caller, since it will be put on UMH
+> >>>>>> thread exit.
+> >>>>>
+> >>>>> Awesome.  With this patch as an uprivilieged user I get to pick which
+> >>>>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
+> >>>>> user namespace (something that looks like only matter of time).
+> >>>>>
+> >>>>
+> >>>> Not really. Only by using a kernel module to call the UMH.
+> >>>> And an unprivileged can't load a module as far a I know.
+> >>>> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
+> >>>
+> >>> To help me understand the context which instances of call user mode
+> >>> helper are you expecting to use this facility?
+> >>>
+> >>
+> >> Ok. Here is how the NFSd uses UMH:
+> >> UMH is used on NFSd service to start user-space client tracker daemon
+> >> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
+> >> persistent storage.
+> >>
+> >>>>> I think this is a seriously bad idea.
+> >>>>>
+> >>>>> Why can't we do this in userspace with setns as we do with the core dump
+> >>>>> helper?
+> >>>>>
+> >>>>
+> >>>> Could you, please, clarify, how setns can help here?
+> >>>
+> >>> setns can change the mount namespace, and chroot can change to root
+> >>> directory in the specified mount namespace.  Essentially you can enter
+> >>> into a containers complete context (pid, mnt, root, etc) comming from
+> >>> the outside.
+> >>>
+> >>
+> >> So, you are actually suggesting to move the binary start from the kernel to user-space.
+> >> IOW, you are suggesting to do not using UMH at all.
+> >> Am I right?
+> >> I don't know the reasons, why it was done by using UMH and not in userspace.
+> >> Could you clarify this, Jeff?
+> >>
+> >
+> > nfsdcltrack is a "one-shot" program for managing and querying the nfsd
+> > client tracking database. When knfsd needs to query or modify the
+> > db, it uses the UMH infrastructure to call this program that does
+> > what's requested and then exits.
+> >
+> > So, I'm not sure I really understand your question. It wasn't done in
+> > userspace since the whole purpose of this program is to handle upcalls
+> > from the kernel.
+> >
+> 
+> The question is what was the reason to start this binary from kernel by UMH?
 
-	mxsfb_pdata.default_bpp = 32;
-	mxsfb_pdata.ld_intf_width = STMLCDIF_18BIT;
+Manipulating and querying the client tracking database is an infrequent
+event, so having a continuously running daemon is wasteful and means
+that the admin has to ensure that it's running. A UMH upcall is much
+simpler and generally "just works" if the program is present.
 
-With these settings the mxsfb.c driver sets flag DATA_FORMAT_24_BIT at HW_LCDIF_CTRL 
-register in function mxsfb_set_par():
+> I.e. why it can't be started by some user-space process before or after NFSd start?
+> I don't familiar with this client tracking facility and that's the only reason why I'm asking.
+> 
 
-	case 32:
-		dev_dbg(&host->pdev->dev, "Setting up RGB888/666 mode\n");
-		ctrl |= CTRL_SET_WORD_LENGTH(3);
-		switch (host->ld_intf_width) {
-		case STMLCDIF_8BIT:
-			dev_dbg(&host->pdev->dev,
-					"Unsupported LCD bus width mapping\n");
-			return -EINVAL;
-		case STMLCDIF_16BIT:
-		case STMLCDIF_18BIT:
-			/* 24 bit to 18 bit mapping */
-			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
-					    *  each colour component
-					    */
-			break;
-		case STMLCDIF_24BIT:
-			/* real 24 bit */
-			break;
-		}
+This program is not a daemon that runs continuously. It's only called
+when the kernel needs to manipulate the database. Are you asking
+whether we could turn this into a continuously running daemon? If so
+then the answer is "yes", but that's not really a good idea either.
 
-According to the manual, this flag does:
-	0x0: ALL_24_BITS_VALID: Data input to the block is in 24 bpp format, such that all 
-RGB 888 data is contained in 24 bits.
-	0x1: DROP_UPPER_2_BITS_PER_BYTE � Data input to the block is actually RGB 18 bpp, but 
-there is 1 colour per byte, hence the upper 2 bits in each byte do not contain any 
-useful data, and should be dropped.
+In fact, we had that with the nfsdcld program, but no one liked it
+(including me) for the reasons I detailed above.
 
-The setting of this flag is producing bad colours with true colour images (i.e. the 
-Linux penguin is displayed ok, but QT applications or images displayed with fbv are not).
-I believe the setting of this flag is not correct (after all, if my bpp is 32, then 
-all 24bit colours are useful and dropping the upper 2 bits is a bad idea).
-If I don't set it, then true colour images are displayed correctly. The only problem 
-is that the Linux penguin is displayed much darker than usual (correct colours, but 
-darker). Perhaps the 224 colour format of this image justifies it?
-
-I noticed the cfa10049 platform also uses the same configuration (18 bits data bus and 
-32bpp) and was wondering if true colour images are correctly displayed in this 
-platform with this flag set (for example with fbv application [1]).
-
-Regards,
 -- 
-H�ctor Palacios
-
-[1] http://freecode.com/projects/fbv
+Jeff Layton <jlayton@redhat.com>
