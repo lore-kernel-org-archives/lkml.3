@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322Ab3EWKom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:44:42 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:38786 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758260Ab3EWKok (ORCPT
+	id S1758349Ab3EWKo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:44:57 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:54410 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758305Ab3EWKoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:44:40 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-a7-519df317ed85
+	Thu, 23 May 2013 06:44:55 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-0c-519df326bf9a
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
         linux-watchdog@vger.kernel.org, "'Guenter Roeck'" <linux@roeck-us.net>,
         Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 4/5] watchdog: riowd: use platform_{get,set}_drvdata()
-Date: Thu, 23 May 2013 19:44:38 +0900
-Message-id: <003701ce57a2$864a0740$92de15c0$@samsung.com>
+Subject: [PATCH 5/5] watchdog: wm831x: use platform_{get,set}_drvdata()
+Date: Thu, 23 May 2013 19:44:53 +0900
+Message-id: <003801ce57a2$8f0dae40$ad290ac0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5XooWSkua/jT7cShaBet5FH8kkxw==
+Thread-index: Ac5Xoo5FKFWlT1+HQj+9Xzwmcm/ahw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t8zI13xz3MDDd5N57KYs34Nm8XlhZdY
-	LS7vmsNmcWPdPnaLJwvPMFncmvGC1YHN49pmMY8TM36zeOz83sDu0bdlFaPH501yAaxRXDYp
-	qTmZZalF+nYJXBn73zSwFMzmqJjwR6KB8RVbFyMnh4SAicS7u40sELaYxIV764HiXBxCAssY
-	JS7veMHaxcgBVnRyjQtIjZDAIkaJ1j0eEDW/GCWWT3gMNohNQE3iy5fD7CD1IgL6Em0tGiA1
-	zAIbGCVO/v/LDlIjLOAmseLrd2YQm0VAVWLrpxYmEJtXwFLiacd5dghbUOLH5HtgBzELaEms
-	33mcCcKWl9i85i0zxKEKEjvOvmYEsUUE9CQOTpgIVS8ise/FO0aImnPsEi+2cUPsEpD4NvkQ
-	C8QvshKbDkCNkZQ4uOIGywRGsVlINs9CsnkWks2zkGxYwMiyilE0tSC5oDgpvchUrzgxt7g0
-	L10vOT93EyMk+ibuYLx/wPoQYzLQ+onMUqLJ+cDozSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73F
-	OlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QD446mAwqu+zWfcky2jlzJccBafMM+nd/35V4o
-	Jrq2rj+uUlM7/6knO8NqWcnmpjn8xiYKVcrrXwZKbtTySN0bVPdUtr6oZ7v1CePlYvltCzld
-	t1ZPYG45nK/NWn5TTNsheNmhWXs7X/yaVHX359WEZlFO3viaqOfa/6M64/NTz9vXyX161p+q
-	xFKckWioxVxUnAgAGVMv4tQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jAV3xz3MDDWbMZbOYs34Nm8XlhZdY
-	LS7vmsNmcWPdPnaLJwvPMFncmvGC1YHN49pmMY8TM36zeOz83sDu0bdlFaPH501yAaxRDYw2
-	GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAXKCmUJeaU
-	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz9r9pYCmYzVEx4Y9EA+Mrti5GDg4J
-	AROJk2tcuhg5gUwxiQv31rOB2EICixglWvd4dDFyAdm/GCWWT3gMlmATUJP48uUwO0iviIC+
-	RFuLBkgNs8AGRomT//+yg9QIC7hJrPj6nRnEZhFQldj6qYUJxOYVsJR42nGeHcIWlPgx+R4L
-	iM0soCWxfudxJghbXmLzmrfMEAcpSOw4+5oRxBYR0JM4OGEiVL2IxL4X7xgnMArMQjJqFpJR
-	s5CMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Oh+JrWDcWWDxSFGAQ5GJR5e
-	idtzAoVYE8uKK3MPMUpwMCuJ8G7umRsoxJuSWFmVWpQfX1Sak1p8iDEZ6NOJzFKiyfnAxJNX
-	Em9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYxdk9ZqqSl315Qb
-	Lb55Wmi5a7qg/IrQKq/uqwuuPFWs/qycd01PZmlMSVuQQqvTepfjk+1Sm01f8sbtbIiyu31Y
-	fW/VWr30TaxHb89M4S0Xjq94oTHzQufTCYefGDhbvy4W8K95wmO+LfTRO7lFazT/SUxrPlQd
-	OWXD1GqB2cH7ehaa379ima/EUpyRaKjFXFScCACqAC2NMgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zfV21z3MDDTq6RCzmrF/DZnF54SVW
+	i8u75rBZ3Fi3j93iycIzTBa3ZrxgdWDzuLZZzOPEjN8sHju/N7B79G1ZxejxeZNcAGsUl01K
+	ak5mWWqRvl0CV0bvlinMBUs4Ko5vWcPawPiHrYuRk0NCwERiz6yXLBC2mMSFe+uB4lwcQgLL
+	GCUmXD/PDFO0/t4MJojEdEaJ1jVHmCGcXyDOC3aQKjYBNYkvXw4D2RwcIgL6Em0tGiA1zAIb
+	GCVO/v8LViMs4C5x68wXRhCbRUBV4kPveiYQm1fAUmLD5ndsELagxI/J98BOYhbQkli/8zgT
+	hC0vsXnNW6iLFCR2nH0NNkdEQE/iztl5bBA1IhL7XrxjBFksIXCKXWLSwv/sEMsEJL5NPsQC
+	cpyEgKzEpgNQcyQlDq64wTKBUWwWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0StOzC0u
+	zUvXS87P3cQIicIJOxjvHbA+xJgMtH4is5Rocj4wivNK4g2NzYwsTE1MjY3MLc1IE1YS51Vv
+	sQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwFgZ2po/8wx7q2SNxYrMvxtv9MxovZlvXOq4
+	1a+EwU0s2W9OY8len4zKWptaBbnwogthTz42mKVZCXCFpJQpJXfVX9ln8kNaT8BRQfTEr69R
+	wSvXqkkKRBx5rX2Bm2mTU5xs++yNha5XxZY7WdQ86Vk24ZD7fn7vpjbTOaqP7pq+4JBb/vCc
+	EktxRqKhFnNRcSIA+ZYF+dgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jQV21z3MDDQ63CFjMWb+GzeLywkus
+	Fpd3zWGzuLFuH7vFk4VnmCxuzXjB6sDmcW2zmMeJGb9ZPHZ+b2D36NuyitHj8ya5ANaoBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZvVumMBcs4ag4vmUNawPjH7YuRk4O
+	CQETifX3ZjBB2GISF+6tB4pzcQgJTGeUaF1zhBnC+QXivGAHqWITUJP48uUwkM3BISKgL9HW
+	ogFSwyywgVHi5P+/YDXCAu4St858YQSxWQRUJT70rgfbwCtgKbFh8zs2CFtQ4sfkeywgNrOA
+	lsT6nceZIGx5ic1r3jJDXKQgsePsa7A5IgJ6EnfOzmODqBGR2PfiHeMERoFZSEbNQjJqFpJR
+	s5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHOPPpHcwrmqwOMQowMGoxMMrcXtO
+	oBBrYllxZe4hRgkOZiUR3s09cwOFeFMSK6tSi/Lji0pzUosPMSYDfTqRWUo0OR+YfvJK4g2N
+	TcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgXHu1rasi7XX9Tecu9Wd
+	cfftj3U7a07yKUslR2i7rd/7IJr3893oLTqfNhxdeHX/pjXzrl5SLr385/zL46yW11+/2ek7
+	hXFK4zJmhRzrLx+N5B2mLtieGX7317PsDunL0inTF4Qqa+dnzpunn//UOk725INbN4tFpHmX
+	CybrHDdIvnqo98mUx3f6lViKMxINtZiLihMBEAi0azUDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,31 +60,31 @@ so we can directly pass a struct platform_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/watchdog/riowd.c |    4 ++--
+ drivers/watchdog/wm831x_wdt.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/riowd.c b/drivers/watchdog/riowd.c
-index 0040451..4f99f12 100644
---- a/drivers/watchdog/riowd.c
-+++ b/drivers/watchdog/riowd.c
-@@ -206,7 +206,7 @@ static int riowd_probe(struct platform_device *op)
- 	pr_info("Hardware watchdog [%i minutes], regs at %p\n",
- 		riowd_timeout, p->regs);
+diff --git a/drivers/watchdog/wm831x_wdt.c b/drivers/watchdog/wm831x_wdt.c
+index 9dcb6d0..6c302fd 100644
+--- a/drivers/watchdog/wm831x_wdt.c
++++ b/drivers/watchdog/wm831x_wdt.c
+@@ -281,7 +281,7 @@ static int wm831x_wdt_probe(struct platform_device *pdev)
+ 		goto err_gpio;
+ 	}
  
--	dev_set_drvdata(&op->dev, p);
-+	platform_set_drvdata(op, p);
+-	dev_set_drvdata(&pdev->dev, driver_data);
++	platform_set_drvdata(pdev, driver_data);
+ 
  	return 0;
  
- out_iounmap:
-@@ -222,7 +222,7 @@ out:
+@@ -294,7 +294,7 @@ err:
  
- static int riowd_remove(struct platform_device *op)
+ static int wm831x_wdt_remove(struct platform_device *pdev)
  {
--	struct riowd *p = dev_get_drvdata(&op->dev);
-+	struct riowd *p = platform_get_drvdata(op);
+-	struct wm831x_wdt_drvdata *driver_data = dev_get_drvdata(&pdev->dev);
++	struct wm831x_wdt_drvdata *driver_data = platform_get_drvdata(pdev);
  
- 	misc_deregister(&riowd_miscdev);
- 	of_iounmap(&op->resource[0], p->regs, 2);
+ 	watchdog_unregister_device(&driver_data->wdt);
+ 
 -- 
 1.7.10.4
 
