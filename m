@@ -1,125 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759335Ab3EWODJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:03:09 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:64490 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759000Ab3EWN6g (ORCPT
+	id S1758994Ab3EWN6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:58:34 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:56850 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758632Ab3EWN6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:58:36 -0400
+	Thu, 23 May 2013 09:58:33 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, stable@gnu.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v3 part1 1/4] sg_io: pass request_queue to blk_verify_command
-Date: Thu, 23 May 2013 15:58:20 +0200
-Message-Id: <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
+Cc: tj@kernel.org
+Subject: [PATCH v3 part1 0/4] Fix SG_IO ambiguity between READ SUBCHANNEL and UNMAP (and other similar cases)
+Date: Thu, 23 May 2013 15:58:19 +0200
+Message-Id: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the blk_verify_command function to let it look at per-queue
-data.  This will be done in the next patch.
+The SG_IO ioctl's command whitelist is designed for MMC devices (roughly,
+"play/burn CDs without requiring root") but some opcodes overlap across SCSI
+device classes and have different meanings for different classes.
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: stable@gnu.org
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Doug Gilbert <dgilbert@interlog.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/bsg.c            | 2 +-
- block/scsi_ioctl.c     | 7 ++++---
- drivers/scsi/sg.c      | 3 ++-
- include/linux/blkdev.h | 3 ++-
- 4 files changed, 9 insertions(+), 6 deletions(-)
+To fix this, use different bitmaps for the various device classes.
+This is CVE-2012-4542.
 
-diff --git a/block/bsg.c b/block/bsg.c
-index 420a5a9..dedd83c 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -187,7 +187,7 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
- 		return -EFAULT;
- 
- 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
--		if (blk_verify_command(rq->cmd, has_write_perm))
-+		if (blk_verify_command(q, rq->cmd, has_write_perm))
- 			return -EPERM;
- 	} else if (!capable(CAP_SYS_RAWIO))
- 		return -EPERM;
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a5ffcc9..96cab50 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -197,7 +197,8 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- 	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
- }
- 
--int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
-+int blk_verify_command(struct request_queue *q,
-+		       unsigned char *cmd, fmode_t has_write_perm)
- {
- 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
- 
-@@ -226,7 +227,7 @@ static int blk_fill_sghdr_rq(struct request_queue *q, struct request *rq,
- {
- 	if (copy_from_user(rq->cmd, hdr->cmdp, hdr->cmd_len))
- 		return -EFAULT;
--	if (blk_verify_command(rq->cmd, mode & FMODE_WRITE))
-+	if (blk_verify_command(q, rq->cmd, mode & FMODE_WRITE))
- 		return -EPERM;
- 
- 	/*
-@@ -473,7 +474,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	if (in_len && copy_from_user(buffer, sic->data + cmdlen, in_len))
- 		goto error;
- 
--	err = blk_verify_command(rq->cmd, mode & FMODE_WRITE);
-+	err = blk_verify_command(q, rq->cmd, mode & FMODE_WRITE);
- 	if (err)
- 		goto error;
- 
-diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-index df5e961..533e789 100644
---- a/drivers/scsi/sg.c
-+++ b/drivers/scsi/sg.c
-@@ -218,11 +218,12 @@ static void sg_put_dev(Sg_device *sdp);
- static int sg_allow_access(struct file *filp, unsigned char *cmd)
- {
- 	struct sg_fd *sfp = filp->private_data;
-+	struct request_queue *q = sfp->parentdp->device->request_queue;
- 
- 	if (sfp->parentdp->device->type == TYPE_SCANNER)
- 		return 0;
- 
--	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
-+	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
- }
- 
- static int get_exclude(Sg_device *sdp)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2fdb4a4..4fca347 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1089,7 +1089,8 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
- 				    gfp_mask);
- }
- 
--extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
-+extern int blk_verify_command(struct request_queue *q,
-+			      unsigned char *cmd, fmode_t has_write_perm);
- 
- enum blk_default_limits {
- 	BLK_MAX_SEGMENTS	= 128,
+v2->v3: patches are now split differently, according to Tejun's indications;
+	added conflict on operation code A4h.
+
+Paolo Bonzini (4):
+  sg_io: pass request_queue to blk_verify_command
+  sg_io: prepare to introduce per-class command filters
+  sg_io: use different default filters for each device class
+  sg_io: resolve conflicts between commands assigned to multiple classes
+    (CVE-2012-4542)
+
+ block/bsg.c              |   2 +-
+ block/scsi_ioctl.c       | 193 +++++++++++++++++++++++++++--------------------
+ drivers/scsi/scsi_scan.c |   2 +
+ drivers/scsi/sg.c        |   3 +-
+ include/linux/blkdev.h   |   5 +-
+ 5 files changed, 118 insertions(+), 87 deletions(-)
+
 -- 
 1.8.1.4
-
 
