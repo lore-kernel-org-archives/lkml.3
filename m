@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab3EWIXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:23:46 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:43836 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab3EWIXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:23:44 -0400
+	id S1757170Ab3EWIcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:32:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:43051 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756862Ab3EWIct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 04:32:49 -0400
+X-IronPort-AV: E=Sophos;i="4.87,726,1363104000"; 
+   d="scan'208";a="7343536"
+Message-ID: <519DD397.6060301@cn.fujitsu.com>
+Date: Thu, 23 May 2013 16:30:15 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-In-Reply-To: <201305221608.10759.arnd@arndb.de>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
-	<1369226853-16978-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkdYHiwbGonH80aJfHxP6F+hLb+_KdCr_g5ae1Yr-v=WcxA@mail.gmail.com>
-	<201305221608.10759.arnd@arndb.de>
-Date: Thu, 23 May 2013 10:23:43 +0200
-Message-ID: <CACRpkdacteTbFkOQ9w3LQCwN+RDviK04j77itz7uyTiY56+nCg@mail.gmail.com>
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: vgoyal@redhat.com, hbabu@us.ibm.com, rob@landley.net,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Documentation/kdump: Remove TODO in this document
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 16:31:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 16:31:28,
+	Serialize complete at 2013/05/23 16:31:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 4:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 22 May 2013, Linus Walleij wrote:
->> > diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
->> > index b4d4547..8421537 100644
->> > --- a/drivers/regulator/ab8500-ext.c
->> > +++ b/drivers/regulator/ab8500-ext.c
->> > @@ -334,6 +334,12 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
->> >                 return -EINVAL;
->> >         }
->> >
->> > +       /* have any external regulators been specified? */
->> > +       if (pdata->num_ext_regulator == 0) {
->> > +               dev_warn(&pdev->dev, "Not using external regulators\n");
->> > +               return 0;
->> > +       }
->>
->> dev_warn() is really when we warn about something really nasty, worse
->> than dev_err(). It seems dev_info() is more apropriate.
->
-> Are you confusing it with dev_crit()?
->
-> This is how the levels are defined, and "warning" is less urgent than "error":
+We have already had the relocatable kernel, so just remove
+the TODO in the kdump document.
 
-Yeah :-/
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/kdump/kdump.txt |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-But I still think this should be just dev_info().
-
-No big deal though.
-
-Yours,
-Linus Walleij
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 9c7fd98..a8b291d 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -461,14 +461,6 @@ format. Crash is available on Dave Anderson's site at the following URL:
+    http://people.redhat.com/~anderson/
+ 
+ 
+-To Do
+-=====
+-
+-1) Provide relocatable kernels for all architectures to help in maintaining
+-   multiple kernels for crash_dump, and the same kernel as the system kernel
+-   can be used to capture the dump.
+-
+-
+ Contact
+ =======
+ 
+-- 
+1.7.1
