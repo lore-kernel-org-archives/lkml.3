@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab3EWP2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:28:50 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43935 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759582Ab3EWPZr (ORCPT
+	id S1759924Ab3EWP3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:29:13 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:43974 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759561Ab3EWPZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:25:47 -0400
+	Thu, 23 May 2013 11:25:42 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, sameo@linux.intel.com
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/16] mfd: htc-egpio: Convert to managed resources for allocating memory
-Date: Thu, 23 May 2013 16:25:12 +0100
-Message-Id: <1369322717-30429-11-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 08/16] mfd: asic3: Convert to managed resources for allocating memory
+Date: Thu, 23 May 2013 16:25:09 +0100
+Message-Id: <1369322717-30429-8-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
 References: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
@@ -22,50 +22,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/htc-egpio.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/mfd/asic3.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mfd/htc-egpio.c b/drivers/mfd/htc-egpio.c
-index bbaec0c..f2e0ad4 100644
---- a/drivers/mfd/htc-egpio.c
-+++ b/drivers/mfd/htc-egpio.c
-@@ -270,7 +270,7 @@ static int __init egpio_probe(struct platform_device *pdev)
- 	int               ret;
+diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
+index 1b15986..9532f74 100644
+--- a/drivers/mfd/asic3.c
++++ b/drivers/mfd/asic3.c
+@@ -958,7 +958,8 @@ static int __init asic3_probe(struct platform_device *pdev)
+ 	unsigned long clksel;
+ 	int ret = 0;
  
- 	/* Initialize ei data structure. */
--	ei = kzalloc(sizeof(*ei), GFP_KERNEL);
-+	ei = devm_kzalloc(&pdev->dev, sizeof(*ei), GFP_KERNEL);
- 	if (!ei)
+-	asic = kzalloc(sizeof(struct asic3), GFP_KERNEL);
++	asic = devm_kzalloc(&pdev->dev,
++			    sizeof(struct asic3), GFP_KERNEL);
+ 	if (asic == NULL) {
+ 		printk(KERN_ERR "kzalloc failed\n");
  		return -ENOMEM;
+@@ -970,16 +971,14 @@ static int __init asic3_probe(struct platform_device *pdev)
  
-@@ -306,7 +306,9 @@ static int __init egpio_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, ei);
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!mem) {
+-		ret = -ENOMEM;
+ 		dev_err(asic->dev, "no MEM resource\n");
+-		goto out_free;
++		return -ENOMEM;
+ 	}
  
- 	ei->nchips = pdata->num_chips;
--	ei->chip = kzalloc(sizeof(struct egpio_chip) * ei->nchips, GFP_KERNEL);
-+	ei->chip = devm_kzalloc(&pdev->dev,
-+				sizeof(struct egpio_chip) * ei->nchips,
-+				GFP_KERNEL);
- 	if (!ei->chip) {
- 		ret = -ENOMEM;
- 		goto fail;
-@@ -361,7 +363,6 @@ static int __init egpio_probe(struct platform_device *pdev)
+ 	asic->mapping = ioremap(mem->start, resource_size(mem));
+ 	if (!asic->mapping) {
+-		ret = -ENOMEM;
+ 		dev_err(asic->dev, "Couldn't ioremap\n");
+-		goto out_free;
++		return -ENOMEM;
+ 	}
  
- fail:
- 	printk(KERN_ERR "EGPIO failed to setup\n");
--	kfree(ei);
+ 	asic->irq_base = pdata->irq_base;
+@@ -1033,9 +1032,6 @@ static int __init asic3_probe(struct platform_device *pdev)
+  out_unmap:
+ 	iounmap(asic->mapping);
+ 
+- out_free:
+-	kfree(asic);
+-
  	return ret;
  }
  
-@@ -380,8 +381,6 @@ static int __exit egpio_remove(struct platform_device *pdev)
- 		device_init_wakeup(&pdev->dev, 0);
- 	}
- 	iounmap(ei->base_addr);
--	kfree(ei->chip);
--	kfree(ei);
+@@ -1058,8 +1054,6 @@ static int asic3_remove(struct platform_device *pdev)
  
+ 	iounmap(asic->mapping);
+ 
+-	kfree(asic);
+-
  	return 0;
  }
+ 
 -- 
 1.7.10.4
 
