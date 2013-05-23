@@ -1,57 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab3EWRic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:38:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55982 "EHLO mail.zytor.com"
+	id S1758812Ab3EWRmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:42:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758225Ab3EWRib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:38:31 -0400
-Message-ID: <519E53FB.7060307@zytor.com>
-Date: Thu, 23 May 2013 10:38:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758362Ab3EWRmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 13:42:53 -0400
+Date: Thu, 23 May 2013 13:41:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] kdump: Introduce ELF header in new memory feature
+Message-ID: <20130523174127.GA12290@redhat.com>
+References: <1369245517-16204-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1369245517-16204-2-git-send-email-holzheu@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Rik van Riel <riel@redhat.com>, Stanislav Meduna <stano@meduna.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>     <1369183168.6828.168.camel@gandalf.local.home>     <519CBB30.3060200@redhat.com>     <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>     <20130522134111.33a695c5@cuia.bos.redhat.com>    <519D08B0.8050707@meduna.org>    <1369246316.6828.176.camel@gandalf.local.home>    <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com>    <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com>    <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com>   <1369315769.6828.198.camel@gandalf.local.home>  <519E3089.8040701@zytor.com> <1369322836.6828.199.camel@gandalf.local.home>  <519E50B6.6070101@zytor.com> <1369330573.6828.200.camel@gandalf.local.home>
-In-Reply-To: <1369330573.6828.200.camel@gandalf.local.home>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369245517-16204-2-git-send-email-holzheu@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 10:36 AM, Steven Rostedt wrote:
-> On Thu, 2013-05-23 at 10:24 -0700, H. Peter Anvin wrote:
->> On 05/23/2013 08:27 AM, Steven Rostedt wrote:
->>> On Thu, 2013-05-23 at 08:06 -0700, H. Peter Anvin wrote:
->>>
->>>> We don't even need the jump_label infrastructure -- we have
->>>> static_cpu_has*() which actually predates jump_label although it uses
->>>> the same underlying ideas.
->>>
->>> Ah right. I wonder if it would be worth consolidating a lot of these
->>> "modifying of code" infrastructures. Which reminds me, I need to update
->>> text_poke() to do things similar to what ftrace does, and get rid of the
->>> stop machine code.
->>>
->>
->> Well, static_cpu_has*() just uses the alternatives infrastructure.
+On Wed, May 22, 2013 at 07:58:35PM +0200, Michael Holzheu wrote:
+> or s390 we create the ELF core header in the 2nd kernel
+> with a small trick. We relocate the addresses in the ELF header in
+> a way that for the /proc/vmcore code it seems to be in the 1st kernel
+> (old) memory and the read_from_oldmem() returns the correct data.
+> This allows the /proc/vmcore code to use the ELF header in the
+> 2nd kernel.
 > 
-> And as it's a boot time change only, it's not quite in the category of
-> jump_labels and function tracing.
+> This patch now exchanges the old mechanism with the new and much
+> cleaner function call override feature that now offcially allows to
+> create the ELF core header in the 2nd kernel.
 > 
+> To use the new feature the following has to be done by the architecture
+> backend code:
+> 
+>  * Set elfcorehdr_addr to ELFCORE_ADDR_NEWMEM
+>    -> is_kdump_kernel() will return true
 
-Right.
+setting elfcorehdr_addr to ELFCORE_ADDR_NEWMEM looks really odd to me.
+There is no need for arch independent code to know whether crash headers
+are in new memory or not. Our old assumption was that everything is in
+old memory. Now that is broken because of s390. So arch should be
+able to override read_from_crash_header() call and read headers from
+new memory. If need be s390 can maintain another variable for this
+state to figure out where headers are.
 
-	-hpa
+Also arch should be able to  set elfcorehdr_addr to virtual address
+of ELF header. is_kdump_kernel() does not care whether address stored
+in elfcorehdr_addr is physical or virtual.
+
+IOW, generic code would not care whether headers are in new memory
+or old memory. All the operations on header will be abstracted with
+the help of helper functions.
+
+Can we please get rid of this NEWMEM stuff.
 
 
+>  * Override arch_get_crash_header() to return the address of the ELF
+>    header in new memory.
+>  * Override arch_free_crash_header() to free the memory of the ELF
+>    header in new memory.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  fs/proc/vmcore.c           | 80 +++++++++++++++++++++++++++++++++++-----------
+>  include/linux/crash_dump.h |  3 ++
+>  2 files changed, 65 insertions(+), 18 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 6ba32f8..d97ed31 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -123,6 +123,47 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
+>  	return read;
+>  }
+>  
+> +/*
+> + * Read from the current (new) kernel memory
+> + */
+> +static ssize_t read_from_newmem(char *buf, size_t count, u64 *ppos, int userbuf)
+> +{
+> +	if (userbuf) {
+> +		if (copy_to_user(buf, (void *)*ppos, count))
+> +			return -EFAULT;
+> +	} else {
+> +		memcpy(buf, (void *)*ppos, count);
+> +	}
+> +	*ppos += count;
+> +	return count;
+> +}
+> +
+
+Why do we need read_from_newmem? I thought arch code will override
+read_from_crash_header() and write a variant of read_from_newmem()
+internally. I think could still be an helper function in vmcore.c if
+there are many arch keeping headers in new memory so that we don't
+have same code across multiple arches. But s390 seems to be the only
+expcetion at this point of time.
+
+> +/*
+> + * Provide access to the header
+> + */
+> +static ssize_t read_from_crash_header(char *buf, size_t count, u64 *ppos,
+> +				      int userbuf)
+> +{
+> +	if (elfcorehdr_addr == ELFCORE_ADDR_NEWMEM)
+> +		return read_from_newmem(buf, count, ppos, userbuf);
+> +	else
+> +		return read_from_oldmem(buf, count, ppos, userbuf);
+> +}
+> +
+
+I thought read_from_crash_header() will simply be
+
+read_from_crash_header() {
+	return read_from_oldmem()
+}
+
+And arch code will override it to read the headers from new memory. That
+way generic code does not have to know whether headers are in old memory
+or in new memory or somewhere else.
+
+Also current usage of read_from_crash_header() seems to be that we are
+not copying header data to user space buffer directly. Generic code will
+process headers and copy them in kernel memory and it will be copied to
+user space from there if need be.
+
+So for time being I think it should be just fine to assume that
+read_from_crash_header() is copying data to kernel memory only.
+
+Thanks
+Vivek
