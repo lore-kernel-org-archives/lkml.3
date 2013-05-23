@@ -1,125 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab3EWKUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:20:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41839 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757999Ab3EWKT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:19:57 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <stern@rowland.harvard.edu>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
-Date: Thu, 23 May 2013 13:19:47 +0300
-Message-ID: <1369304387-29610-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369304387-29610-1-git-send-email-rogerq@ti.com>
-References: <1369304387-29610-1-git-send-email-rogerq@ti.com>
+	id S1758183Ab3EWKXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:23:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35515 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757918Ab3EWKXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 06:23:22 -0400
+X-IronPort-AV: E=Sophos;i="4.87,727,1363104000"; 
+   d="scan'208";a="7344738"
+Message-ID: <519DED89.9000409@cn.fujitsu.com>
+Date: Thu, 23 May 2013 18:20:57 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Mell <sub.atomic.fusion@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: move proc mount options out of pid_namespace
+References: <3342521.NtikuogILA@pegasus>
+In-Reply-To: <3342521.NtikuogILA@pegasus>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 18:21:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 18:21:56,
+	Serialize complete at 2013/05/23 18:21:56
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device tree probed devices don't get dma_mask set. Previously
-we were setting the dma_mask pointer only if it was NULL.
-However, the address of 'omap_ehci_dma_mask' would change
-each time the module is unloaded and loaded back thus causing
-the devices dma_mask pointer to be invalid on the next load.
+Hi Stephen,
+	Refer to following inline comments.
+Thanks,
+Gu 
 
-This will cause page faults if any driver tries to access the
-old dma_mask pointer.
+On 05/23/2013 04:05 PM, Stephen Mell wrote:
 
-Unconditionally re-setting the dma_mask pointer fixes this problem.
+> From: Stephen Mell <sub.atomic.fusion@gmail.com>
+> 
+> hide_pid and pid_gid are proc mount options whose values are stored in the pid_namespace struct. As a result, if one mounts proc again for the same PID namespace with different mount options, all mounts for that PID namespace will be affected. This seems undesirable. This patch creates a proc_sb_info struct that points to the applicable PID namespace, and it moves hide_pid, pid_gid, and proc_self from pid_namespace to proc_sb_info.
+> 
+> Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
 
-e.g. of backtrace when mass storage device is plugged in after
-ehci-omap module is unloaded and loaded back when booted with device tree.
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-[  646.398223] Unable to handle kernel paging request at virtual address bf08f678
-[  646.406005] pgd = c0004000
-[  646.408966] [bf08f678] *pgd=8c9ec811, *pte=00000000, *ppte=00000000
-[  646.415649] Internal error: Oops: 7 [#1] SMP ARM
-[  646.420532] Modules linked in: ehci_omap ehci_hcd snd_soc_omap snd_soc_omap_mcbsp snd_soc_core regmap_spi snd_compress snd_pcm snd_timer snd soundcore snd_page_alloc [last unloaded: ehci_hcd]
-[  646.438629] CPU: 0 PID: 691 Comm: kworker/u2:2 Not tainted 3.10.0-rc2-00047-g519fe2e #490
-[  646.447265] Workqueue: events_unbound async_run_entry_fn
-[  646.452880] task: ce12cb80 ti: ce194000 task.ti: ce194000
-[  646.458618] PC is at scsi_calculate_bounce_limit+0x34/0x48
-[  646.464385] LR is at __scsi_alloc_queue+0x80/0x108
-[  646.469451] pc : [<c032a680>]    lr : [<c032a714>]    psr: a0000013
-[  646.469451] sp : ce195c88  ip : 0000000c  fp : 00000001
-[  646.481536] r10: cca4d018  r9 : cca42808  r8 : 00000000
-[  646.487060] r7 : 0000012a  r6 : ce527420  r5 : ce3561b0  r4 : ce415000
-[  646.493927] r3 : bf08f678  r2 : ce424cd0  r1 : 000000f0  r0 : ce415000
-[  646.500823] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[  646.508544] Control: 10c5387d  Table: 8c9bc019  DAC: 00000015
-[  646.514587] Process kworker/u2:2 (pid: 691, stack limit = 0xce194240)
-[  646.521392] Stack: (0xce195c88 to 0xce196000)
-[  646.526000] 5c80:                   ffffffff cca42800 cca4d000 ce415000 ffffffe0 c032b978
-[  646.534606] 5ca0: cca42800 c032c114 ce12cb80 cca4d000 00000000 ce195d64 00000000 ce415000
-[  646.543243] 5cc0: ce194000 00000000 c07b5574 c032c654 00000000 c008c2bc 60000093 ce194000
-[  646.551879] 5ce0: ce12cb80 c04cc890 00000001 ce415000 ce194000 00000000 c07b5574 c008c2bc
-[  646.560485] 5d00: 60000013 cca4d0a8 00000004 60000013 ffffffff c04cc890 c07b5880 cca4d000
-[  646.569122] 5d20: 00000000 00000000 ce415180 ffffffff ce194000 00000000 c07b5574 c032cf40
-[  646.577758] 5d40: 00000000 00000000 ce195d8c 00000000 c08a8208 00000000 00000002 00000000
-[  646.586364] 5d60: ce415220 00000000 00000000 00000000 00000002 ce12d010 ce12cb80 00000006
-[  646.595001] 5d80: 00000004 c07b932c 00000006 c008c0fc 00000000 ce12cb80 ce415180 ce194000
-[  646.603637] 5da0: ce12cb80 c04cc890 00000001 ffffffff ce194000 ce415068 c07b5574 c008c2bc
-[  646.612243] 5dc0: 60000013 00000001 ce415000 00000000 ffffffff 00000000 ce194000 ce415180
-[  646.620880] 5de0: c07b5574 c032d400 00000000 ce415000 ce415180 ce415000 ffffffff ffffffff
-[  646.629516] 5e00: 00000000 ce415180 ce415068 c032d708 cc9759c0 c00690bc 0000005d ce415000
-[  646.638122] 5e20: ce329940 ccae4300 ce195ec0 ccb26dd0 ccb26dc0 c032d824 00000000 00000000
-[  646.646759] 5e40: c07b6f1c ce329940 ccae4300 c032d9c4 00000000 c07b6f1c ce329940 ce03f000
-[  646.655395] 5e60: ce195ec0 c0065384 00000000 00000000 60000013 ce047f00 ce03f000 ccb26dd0
-[  646.664001] 5e80: ce329940 ccb26dd0 ce329940 ce03f000 ce195ec0 00000000 ce047f00 c005842c
-[  646.672637] 5ea0: 00000002 00000000 c00583a0 c04ca4d4 ce12cb80 00000002 00000000 00000000
-[  646.681274] 5ec0: c07cb97c c08a8128 00000000 c06187b0 ce03f000 ce329940 ce03f030 ce329958
-[  646.689910] 5ee0: ce194000 ce194000 c07b5208 00000001 ce03f000 c0058b10 00000000 00000000
-[  646.698516] 5f00: 00000000 ce194000 60000113 ce0a1e34 00000000 ce329940 c00589d8 00000000
-[  646.707153] 5f20: 00000000 00000000 00000000 c005ebec ce12cb80 00000000 00000001 ce329940
-[  646.715789] 5f40: 00000000 00000000 dead4ead ffffffff ffffffff c07cb8f4 00000000 00000000
-[  646.724395] 5f60: c0615efc ce195f64 ce195f64 00000000 00000000 dead4ead ffffffff ffffffff
-[  646.733032] 5f80: c07cb8f4 00000000 00000000 c0615efc ce195f90 ce195f90 ce195fac ce0a1e34
-[  646.741668] 5fa0: c005eb48 00000000 00000000 c0013688 00000000 00000000 00000000 00000000
-[  646.750274] 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[  646.758911] 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 2a7fef02 00b3ff00
-[  646.767547] [<c032a680>] (scsi_calculate_bounce_limit+0x34/0x48) from [<c032a714>] (__scsi_alloc_queue+0x80/0x108)
-[  646.778472] [<c032a714>] (__scsi_alloc_queue+0x80/0x108) from [<c032b978>] (scsi_alloc_queue+0x10/0x60)
-[  646.788391] [<c032b978>] (scsi_alloc_queue+0x10/0x60) from [<c032c114>] (scsi_alloc_sdev+0x170/0x270)
-[  646.798126] [<c032c114>] (scsi_alloc_sdev+0x170/0x270) from [<c032c654>] (scsi_probe_and_add_lun+0x39c/0x948)
-[  646.808593] [<c032c654>] (scsi_probe_and_add_lun+0x39c/0x948) from [<c032cf40>] (__scsi_scan_target+0xd4/0x53c)
-[  646.819244] [<c032cf40>] (__scsi_scan_target+0xd4/0x53c) from [<c032d400>] (scsi_scan_channel.part.2+0x58/0x6c)
-[  646.829895] [<c032d400>] (scsi_scan_channel.part.2+0x58/0x6c) from [<c032d708>] (scsi_scan_host_selected+0xd0/0x168)
-[  646.840972] [<c032d708>] (scsi_scan_host_selected+0xd0/0x168) from [<c032d824>] (do_scsi_scan_host+0x84/0x8c)
-[  646.851440] [<c032d824>] (do_scsi_scan_host+0x84/0x8c) from [<c032d9c4>] (do_scan_async+0x10/0x164)
-[  646.860992] [<c032d9c4>] (do_scan_async+0x10/0x164) from [<c0065384>] (async_run_entry_fn+0x40/0x180)
-[  646.870727] [<c0065384>] (async_run_entry_fn+0x40/0x180) from [<c005842c>] (process_one_work+0x1b4/0x49c)
-[  646.880828] [<c005842c>] (process_one_work+0x1b4/0x49c) from [<c0058b10>] (worker_thread+0x138/0x37c)
-[  646.890563] [<c0058b10>] (worker_thread+0x138/0x37c) from [<c005ebec>] (kthread+0xa4/0xb0)
-[  646.899291] [<c005ebec>] (kthread+0xa4/0xb0) from [<c0013688>] (ret_from_fork+0x14/0x2c)
-[  646.907836] Code: e3530000 0a000003 e59331b8 e3530000 (11c320d0)
-[  646.914367] ---[ end trace 157a5b85fcd31f7f ]---
+> ---
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index dd51e50..853eb68 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -584,13 +584,13 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
+>   * May current process learn task's sched/cmdline info (for hide_pid_min=1)
+>   * or euid/egid (for hide_pid_min=2)?
+>   */
+> -static bool has_pid_permissions(struct pid_namespace *pid,
+> +static bool has_pid_permissions(struct proc_sb_info *fsi,
+>  				 struct task_struct *task,
+>  				 int hide_pid_min)
+>  {
+> -	if (pid->hide_pid < hide_pid_min)
+> +	if (fsi->hide_pid < hide_pid_min)
+>  		return true;
+> -	if (in_group_p(pid->pid_gid))
+> +	if (in_group_p(fsi->pid_gid))
+>  		return true;
+>  	return ptrace_may_access(task, PTRACE_MODE_READ);
+>  }
+> @@ -598,18 +598,18 @@ static bool has_pid_permissions(struct pid_namespace *pid,
+>  
+>  static int proc_pid_permission(struct inode *inode, int mask)
+>  {
+> -	struct pid_namespace *pid = inode->i_sb->s_fs_info;
+> +	struct proc_sb_info *fsi = inode->i_sb->s_fs_info;
+>  	struct task_struct *task;
+>  	bool has_perms;
+>  
+>  	task = get_proc_task(inode);
+>  	if (!task)
+>  		return -ESRCH;
+> -	has_perms = has_pid_permissions(pid, task, 1);
+> +	has_perms = has_pid_permissions(fsi, task, 1);
+>  	put_task_struct(task);
+>  
+>  	if (!has_perms) {
+> -		if (pid->hide_pid == 2) {
+> +		if (fsi->hide_pid == 2) {
+>  			/*
+>  			 * Let's make getdents(), stat(), and open()
+>  			 * consistent with each other.  If a process
+> @@ -670,12 +670,14 @@ static const struct file_operations proc_info_file_operations = {
+>  static int proc_single_show(struct seq_file *m, void *v)
+>  {
+>  	struct inode *inode = m->private;
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  	struct pid *pid;
+>  	struct task_struct *task;
+>  	int ret;
+>  
+> -	ns = inode->i_sb->s_fs_info;
+> +	fsi = inode->i_sb->s_fs_info;
+> +	ns = fsi->ns;
+>  	pid = proc_pid(inode);
+>  	task = get_pid_task(pid, PIDTYPE_PID);
+>  	if (!task)
+> @@ -1574,7 +1576,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+>  	struct inode *inode = dentry->d_inode;
+>  	struct task_struct *task;
+>  	const struct cred *cred;
+> -	struct pid_namespace *pid = dentry->d_sb->s_fs_info;
+> +	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
+>  
+>  	generic_fillattr(inode, stat);
+>  
+> @@ -1583,7 +1585,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+>  	stat->gid = GLOBAL_ROOT_GID;
+>  	task = pid_task(proc_pid(inode), PIDTYPE_PID);
+>  	if (task) {
+> -		if (!has_pid_permissions(pid, task, 2)) {
+> +		if (!has_pid_permissions(fsi, task, 2)) {
+>  			rcu_read_unlock();
+>  			/*
+>  			 * This doesn't prevent learning whether PID exists,
+> @@ -2869,13 +2871,15 @@ struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsign
+>  	struct dentry *result = NULL;
+>  	struct task_struct *task;
+>  	unsigned tgid;
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  
+>  	tgid = name_to_int(dentry);
+>  	if (tgid == ~0U)
+>  		goto out;
+>  
+> -	ns = dentry->d_sb->s_fs_info;
+> +	fsi = dentry->d_sb->s_fs_info;
+> +	ns = fsi->ns;
+>  	rcu_read_lock();
+>  	task = find_task_by_pid_ns(tgid, ns);
+>  	if (task)
+> @@ -2954,6 +2958,7 @@ static int fake_filldir(void *buf, const char *name, int namelen,
+>  int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+>  {
+>  	struct tgid_iter iter;
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  	filldir_t __filldir;
+>  	loff_t pos = filp->f_pos;
+> @@ -2970,11 +2975,12 @@ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+>  		iter.tgid = pos - TGID_OFFSET;
+>  	}
+>  	iter.task = NULL;
+> -	ns = filp->f_dentry->d_sb->s_fs_info;
+> +	fsi = filp->f_dentry->d_sb->s_fs_info;
+> +	ns = fsi->ns;
+>  	for (iter = next_tgid(ns, iter);
+>  	     iter.task;
+>  	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
+> -		if (has_pid_permissions(ns, iter.task, 2))
+> +		if (has_pid_permissions(fsi, iter.task, 2))
+>  			__filldir = filldir;
+>  		else
+>  			__filldir = fake_filldir;
+> @@ -3132,6 +3138,7 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
+>  	struct task_struct *task;
+>  	struct task_struct *leader = get_proc_task(dir);
+>  	unsigned tid;
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  
+>  	if (!leader)
+> @@ -3141,7 +3148,8 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
+>  	if (tid == ~0U)
+>  		goto out;
+>  
+> -	ns = dentry->d_sb->s_fs_info;
+> +	fsi = dentry->d_sb->s_fs_info;
+> +	ns = fsi->ns;
+>  	rcu_read_lock();
+>  	task = find_task_by_pid_ns(tid, ns);
+>  	if (task)
+> @@ -3249,6 +3257,7 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
+>  	int retval = -ENOENT;
+>  	ino_t ino;
+>  	int tid;
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  
+>  	task = get_proc_task(inode);
+> @@ -3283,7 +3292,8 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
+>  	/* f_version caches the tgid value that the last readdir call couldn't
+>  	 * return. lseek aka telldir automagically resets f_version to 0.
+>  	 */
+> -	ns = filp->f_dentry->d_sb->s_fs_info;
+> +	fsi = filp->f_dentry->d_sb->s_fs_info;
+> +	ns = fsi->ns;
+>  	tid = (int)filp->f_version;
+>  	filp->f_version = 0;
+>  	for (task = first_tid(leader, tid, filp->f_pos - 2, ns);
+> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+> index 073aea6..148737d 100644
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@ -110,12 +110,12 @@ void __init proc_init_inodecache(void)
+>  static int proc_show_options(struct seq_file *seq, struct dentry *root)
+>  {
+>  	struct super_block *sb = root->d_sb;
+> -	struct pid_namespace *pid = sb->s_fs_info;
+> +	struct proc_sb_info *fsi = sb->s_fs_info;
+>  
+> -	if (!gid_eq(pid->pid_gid, GLOBAL_ROOT_GID))
+> -		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, pid->pid_gid));
+> -	if (pid->hide_pid != 0)
+> -		seq_printf(seq, ",hidepid=%u", pid->hide_pid);
+> +	if (!gid_eq(fsi->pid_gid, GLOBAL_ROOT_GID))
+> +		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, fsi->pid_gid));
+> +	if (fsi->hide_pid != 0)
+> +		seq_printf(seq, ",hidepid=%u", fsi->hide_pid);
+>  
+>  	return 0;
+>  }
+> diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+> index d600fb0..ff970e4 100644
+> --- a/fs/proc/internal.h
+> +++ b/fs/proc/internal.h
+> @@ -29,6 +29,14 @@ struct mempolicy;
+>   * /proc file has a parent, but "subdir" is NULL for all
+>   * non-directory entries).
+>   */
+> +
+> +struct proc_sb_info {
+> +	struct pid_namespace *ns;
+> +	struct dentry *proc_self;
+> +	kgid_t pid_gid;
+> +	int hide_pid;
+> +};
+> +
+>  struct proc_dir_entry {
+>  	unsigned int low_ino;
+>  	umode_t mode;
+> diff --git a/fs/proc/root.c b/fs/proc/root.c
+> index 41a6ea9..526aec6 100644
+> --- a/fs/proc/root.c
+> +++ b/fs/proc/root.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/mount.h>
+>  #include <linux/pid_namespace.h>
+>  #include <linux/parser.h>
+> +#include <linux/slab.h>
+>  
+>  #include "internal.h"
+>  
+> @@ -31,10 +32,9 @@ static int proc_test_super(struct super_block *sb, void *data)
+>  static int proc_set_super(struct super_block *sb, void *data)
+>  {
+>  	int err = set_anon_super(sb, NULL);
+> -	if (!err) {
+> -		struct pid_namespace *ns = (struct pid_namespace *)data;
+> -		sb->s_fs_info = get_pid_ns(ns);
+> -	}
+> +	if (!err)
+> +		sb->s_fs_info = (struct proc_sb_info *)data;
+> +
+>  	return err;
+>  }
+>  
+> @@ -48,7 +48,7 @@ static const match_table_t tokens = {
+>  	{Opt_err, NULL},
+>  };
+>  
+> -static int proc_parse_options(char *options, struct pid_namespace *pid)
+> +static int proc_parse_options(char *options, struct proc_sb_info *fsi)
+>  {
+>  	char *p;
+>  	substring_t args[MAX_OPT_ARGS];
+> @@ -68,7 +68,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
+>  		case Opt_gid:
+>  			if (match_int(&args[0], &option))
+>  				return 0;
+> -			pid->pid_gid = make_kgid(current_user_ns(), option);
+> +			fsi->pid_gid = make_kgid(current_user_ns(), option);
+>  			break;
+>  		case Opt_hidepid:
+>  			if (match_int(&args[0], &option))
+> @@ -77,7 +77,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
+>  				pr_err("proc: hidepid value must be between 0 and 2.\n");
+>  				return 0;
+>  			}
+> -			pid->hide_pid = option;
+> +			fsi->hide_pid = option;
+>  			break;
+>  		default:
+>  			pr_err("proc: unrecognized mount option \"%s\" "
+> @@ -91,36 +91,44 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
+>  
+>  int proc_remount(struct super_block *sb, int *flags, char *data)
+>  {
+> -	struct pid_namespace *pid = sb->s_fs_info;
+> -	return !proc_parse_options(data, pid);
+> +	struct proc_sb_info *fsi = sb->s_fs_info;
+> +	return !proc_parse_options(data, fsi);
+>  }
+>  
+>  static struct dentry *proc_mount(struct file_system_type *fs_type,
+>  	int flags, const char *dev_name, void *data)
+>  {
+>  	int err;
+> +	struct proc_sb_info *fsi;
+>  	struct super_block *sb;
+> -	struct pid_namespace *ns;
+>  	char *options;
+> +	
+> +	fsi = kzalloc(sizeof(struct proc_sb_info), GFP_KERNEL);
+> +	if (!fsi)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	sb = sget(fs_type, proc_test_super, proc_set_super, flags, fsi);
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/usb/host/ehci-omap.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-index 3d1491b..b33e306 100644
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
- 	 * Since shared usb code relies on it, set it here for now.
- 	 * Once we have dma capability bindings this can go away.
- 	 */
--	if (!pdev->dev.dma_mask)
--		pdev->dev.dma_mask = &omap_ehci_dma_mask;
-+	pdev->dev.dma_mask = &omap_ehci_dma_mask;
- 
- 	hcd = usb_create_hcd(&ehci_omap_hc_driver, dev,
- 			dev_name(dev));
--- 
-1.7.4.1
+Here it'll create a new proc sb instance which holds the same context as the old ones
+each time we mount proc though in the same PID namespace, won't it?
+
+> +	if (IS_ERR(sb))
+> +		return ERR_CAST(sb);
+>  
+>  	if (flags & MS_KERNMOUNT) {
+> -		ns = (struct pid_namespace *)data;
+> +		fsi->ns = (struct pid_namespace *)data;
+> +		get_pid_ns(fsi->ns);
+>  		options = NULL;
+>  	} else {
+> -		ns = task_active_pid_ns(current);
+> -		options = data;
+> -
+>  		if (!current_user_ns()->may_mount_proc)
+>  			return ERR_PTR(-EPERM);
+> -	}
+> -
+> -	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
+> -	if (IS_ERR(sb))
+> -		return ERR_CAST(sb);
+> +		
+> +		options = data;
+> +		if (!proc_parse_options(options, fsi)) {
+> +			deactivate_locked_super(sb);
+> +			return ERR_PTR(-EINVAL);
+> +		}
+>  
+> -	if (!proc_parse_options(options, ns)) {
+> -		deactivate_locked_super(sb);
+> -		return ERR_PTR(-EINVAL);
+> +		if (!fsi->ns) {
+> +			fsi->ns = task_active_pid_ns(current);
+> +			get_pid_ns(fsi->ns);
+> +		}
+>  	}
+>  
+>  	if (!sb->s_root) {
+> @@ -138,13 +146,16 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
+>  
+>  static void proc_kill_sb(struct super_block *sb)
+>  {
+> +	struct proc_sb_info *fsi;
+>  	struct pid_namespace *ns;
+>  
+> -	ns = (struct pid_namespace *)sb->s_fs_info;
+> -	if (ns->proc_self)
+> -		dput(ns->proc_self);
+> +	fsi = (struct proc_sb_info *)sb->s_fs_info;
+> +	ns = (struct pid_namespace *)fsi->ns;
+> +	if (fsi->proc_self)
+
+
+Here the pre-check seems needless.
+
+> +		dput(fsi->proc_self);
+>  	kill_anon_super(sb);
+>  	put_pid_ns(ns);
+> +	kfree(fsi);
+>  }
+>  
+>  static struct file_system_type proc_fs_type = {
+> diff --git a/fs/proc/self.c b/fs/proc/self.c
+> index 6b6a993..ff4a2e2 100644
+> --- a/fs/proc/self.c
+> +++ b/fs/proc/self.c
+> @@ -10,7 +10,8 @@
+>  static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
+>  			      int buflen)
+>  {
+> -	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
+> +	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
+> +	struct pid_namespace *ns = fsi->ns;
+>  	pid_t tgid = task_tgid_nr_ns(current, ns);
+>  	char tmp[PROC_NUMBUF];
+>  	if (!tgid)
+> @@ -21,7 +22,8 @@ static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
+>  
+>  static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
+>  {
+> -	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
+> +	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
+> +	struct pid_namespace *ns = fsi->ns;
+>  	pid_t tgid = task_tgid_nr_ns(current, ns);
+>  	char *name = ERR_PTR(-ENOENT);
+>  	if (tgid) {
+> @@ -55,7 +57,7 @@ static unsigned self_inum;
+>  int proc_setup_self(struct super_block *s)
+>  {
+>  	struct inode *root_inode = s->s_root->d_inode;
+> -	struct pid_namespace *ns = s->s_fs_info;
+> +	struct proc_sb_info *fsi = s->s_fs_info;
+>  	struct dentry *self;
+>  	
+>  	mutex_lock(&root_inode->i_mutex);
+> @@ -82,7 +84,7 @@ int proc_setup_self(struct super_block *s)
+>  		pr_err("proc_fill_super: can't allocate /proc/self\n");
+>  		return PTR_ERR(self);
+>  	}
+> -	ns->proc_self = self;
+> +	fsi->proc_self = self;
+>  	return 0;
+>  }
+>  
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index e277266..6185386 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -31,15 +31,12 @@ struct pid_namespace {
+>  	struct pid_namespace *parent;
+>  #ifdef CONFIG_PROC_FS
+>  	struct vfsmount *proc_mnt;
+> -	struct dentry *proc_self;
+>  #endif
+>  #ifdef CONFIG_BSD_PROCESS_ACCT
+>  	struct bsd_acct_struct *bacct;
+>  #endif
+>  	struct user_namespace *user_ns;
+>  	struct work_struct proc_work;
+> -	kgid_t pid_gid;
+> -	int hide_pid;
+>  	int reboot;	/* group exit code if this pidns was rebooted */
+>  	unsigned int proc_inum;
+>  };
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
