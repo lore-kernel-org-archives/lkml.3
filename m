@@ -1,73 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab3EWHZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:25:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60657 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab3EWHZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:25:39 -0400
-Date: Thu, 23 May 2013 09:25:16 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Felipe Ferreri Tonello <eu@felipetonello.com>
-cc: linux-mmc@vger.kernel.org, ben-linux@fluff.org, cjb@laptop.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mmc: sdhci: Added set_power sdhci_ops handler.
-In-Reply-To: <2537252.KzShHU8h54@localhost.localdomain>
-Message-ID: <Pine.LNX.4.64.1305230920430.23354@axis700.grange>
-References: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
- <1369244832-23868-2-git-send-email-eu@felipetonello.com>
- <Pine.LNX.4.64.1305222230050.19558@axis700.grange> <2537252.KzShHU8h54@localhost.localdomain>
+	id S1757057Ab3EWHbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:31:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946Ab3EWHbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 03:31:01 -0400
+Date: Thu, 23 May 2013 10:30:38 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Joe Perches <joe@perches.com>, Asias He <asias@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        target-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-scsi: Depend on NET for memcpy_fromiovec
+Message-ID: <20130523073038.GA15378@redhat.com>
+References: <20130515095558.918f2b29ba318a477eb5dde2@canb.auug.org.au>
+ <1368579583-13097-1-git-send-email-asias@redhat.com>
+ <8761yk254u.fsf@rustcorp.com.au>
+ <20130516020848.GB23441@hj.localdomain>
+ <87d2sra97h.fsf@rustcorp.com.au>
+ <1368676505.2194.47.camel@joe-AO722>
+ <878v3ea3v4.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:n1L3PI/V2NDQ+huXJ6dxV34KjsLWc+qfM9uV/ZjAzz8
- lib7zm1yTRtIYgYgqWTXDOxQBa5JRnwXkh1U7KRDHM8OSxvWb3
- 2dTAAqIMdNEc2J/wTx7IHljHXZYfCYVAWXRyKLHcKrMYzLK4yY
- eEegFVY17XpGJkxhwEcSUqYnP8kgeaCVWxq9JATVlivzoNBn80
- 5chMQOP4qvnJ5wEOwggcgKx4X69RIKD2+77Ou58cqJjtJGNRUW
- 06szImfwWB4qdBy/4F/pDoXdqyMZZLf+Y/Ywil1GKtl39gICMD
- Apry08aJm/zoZiJMwy5SEsLao3VJhiUZDIRfJdrGWNcmPTUvdh
- FeDCUCynOVrK88MQ1N8KaCGrCwz+qomE/cRto5dOqMciy3o6xs
- wY62e+SSM9s/w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v3ea3v4.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013, Felipe Ferreri Tonello wrote:
-
-> Hi Guennadi,
+On Fri, May 17, 2013 at 09:12:39AM +0930, Rusty Russell wrote:
+> Joe Perches <joe@perches.com> writes:
+> > On Thu, 2013-05-16 at 13:04 +0930, Rusty Russell wrote:
+> >> Asias He <asias@redhat.com> writes:
+> >> > On Wed, May 15, 2013 at 02:47:53PM +0930, Rusty Russell wrote:
+> > []
+> >> > Other users are using memcpy_fromiovec and friends outside net. It seems
+> >> > a good idea to put it in a util library. e.g.  crypto/algif_skcipher.c
+> >> > which also depends on NET for it.
+> >
+> > []
+> >> Subject: Hoist memcpy_fromiovec into lib/
+> >
+> > You'll need the "friends" memcpy_toiovec too.
+> >
+> > $ git grep -E \bmemcpy\w+iovec\w*"
+> > crypto/algif_hash.c:    err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
+> > crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg)) +
+> > crypto/algif_skcipher.c:                        err = memcpy_fromiovec(page_address(sg_page(sg + i)),
+> > drivers/dma/iovlock.c:#include <net/tcp.h> /* for memcpy_toiovec */
+> > drivers/dma/iovlock.c:          return memcpy_toiovec(iov, kdata, len);
+> > drivers/dma/iovlock.c:          err = memcpy_toiovec(iov, vaddr + offset, len);
+> > drivers/isdn/mISDN/socket.c:    if (memcpy_fromiovec(skb_put(skb, len), msg->msg_iov, len)) {
+> > drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_fromiovec((u8 *)va + page_o
+> > drivers/misc/vmw_vmci/vmci_queue_pair.c:                        err = memcpy_toiovec(iov, (u8 *)va + pag
 > 
-> On Wednesday, May 22, 2013 10:30:40 PM Guennadi Liakhovetski wrote:
-> > On Wed, 22 May 2013, Felipe F. Tonello wrote:
-> > > From: "Felipe F. Tonello" <eu@felipetonello.com>
-> > > 
-> > > This is useful for power managment purposes if a sdhci child host wants to
-> > > turn off some other peripheral also.
-> > 
-> > Sorry, could you elaborate a bit? In what situations is it exactly useful?
-> > And why cannot the regulator API be used there?
+> Fascinating.  These all indirectly depend on NET, so there's no problem
+> at the moment.  But it is a bit weird...
 > 
-> Sorry about that.
+> crypto/algif_hash.c: depends on CRYPTO_USER_API_HASH -> NET
+> crypto/algif_skcipher.c: depends on CRYPTO_USER_API_SKCIPHER -> NET
+> drivers/dma/iovlock.c: depends on NET_DMA -> NET
+> drivers/isdn/mISDN/socket.c: depends on MISDN -> ISDN -> NET
+> drivers/misc/vmw_vmci/vmci_queue_pair.c: depends on VMCI -> NET
 > 
-> One example that I can think of is when you have a wifi module connected as a 
-> mmc card via sdio. So you can register a callback function in your machine 
-> source code to turn on/off the wifi module based on the mmc host power.
+> Patch welcome.
+> 
+> Meanwhile, to avoid more bikeshedding I've put the patch I posted with
+> all acks in my fixes branch.  One cycle through linux-next, then
+> straight to Linus.
 
-Ok, understand. Your second patch in this series adds such a callback in 
-your SDHCI host driver and there it just calls a platform callback. I 
-don't think this is a good idea. First, we want to go away from platform 
-callbacks, because they are incompatible with DT. Second, because the 
-proper solution IMHO would be for your platform to export a regulator, and 
-the SDHCI core driver already includes regulator support.
+Not in 3.10-rc2 yes - still plan to merge for 3.10?
 
-> I've seen this implementation in others mmc hosts, such as omap.
-
-Which, however, doesn't yet mean, it's a good idea :)
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> Subject: Hoist memcpy_fromiovec into lib/
+> 
+> ERROR: "memcpy_fromiovec" [drivers/vhost/vhost_scsi.ko] undefined!
+> 
+> That function is only present with CONFIG_NET.  Turns out that
+> crypto/algif_skcipher.c also uses that outside net, but it actually
+> needs sockets anyway.
+> 
+> socket.h already include uio.h, so no callers need updating.
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Acked-by: David S. Miller <davem@davemloft.net>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> diff --git a/include/linux/socket.h b/include/linux/socket.h
+> index 428c37a..7266775 100644
+> --- a/include/linux/socket.h
+> +++ b/include/linux/socket.h
+> @@ -305,7 +305,6 @@ struct ucred {
+>  
+>  extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
+>  
+> -extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+>  extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+>  			       int offset, int len);
+>  extern int csum_partial_copy_fromiovecend(unsigned char *kdata, 
+> diff --git a/include/linux/uio.h b/include/linux/uio.h
+> index 629aaf5..21628d3 100644
+> --- a/include/linux/uio.h
+> +++ b/include/linux/uio.h
+> @@ -35,4 +35,6 @@ static inline size_t iov_length(const struct iovec *iov, unsigned long nr_segs)
+>  }
+>  
+>  unsigned long iov_shorten(struct iovec *iov, unsigned long nr_segs, size_t to);
+> +
+> +int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+>  #endif
+> diff --git a/lib/Makefile b/lib/Makefile
+> index e9c52e1..2377211 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -9,7 +9,7 @@ endif
+>  
+>  lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>  	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+> -	 idr.o int_sqrt.o extable.o \
+> +	 idr.o int_sqrt.o extable.o iovec.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+>  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+> diff --git a/lib/iovec.c b/lib/iovec.c
+> new file mode 100644
+> index 0000000..632c5ea
+> --- /dev/null
+> +++ b/lib/iovec.c
+> @@ -0,0 +1,29 @@
+> +#include <linux/uaccess.h>
+> +#include <linux/export.h>
+> +#include <linux/uio.h>
+> +
+> +/*
+> + *	Copy iovec to kernel. Returns -EFAULT on error.
+> + *
+> + *	Note: this modifies the original iovec.
+> + */
+> +
+> +int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
+> +{
+> +	while (len > 0) {
+> +		if (iov->iov_len) {
+> +			int copy = min_t(unsigned int, len, iov->iov_len);
+> +			if (copy_from_user(kdata, iov->iov_base, copy))
+> +				return -EFAULT;
+> +			len -= copy;
+> +			kdata += copy;
+> +			iov->iov_base += copy;
+> +			iov->iov_len -= copy;
+> +		}
+> +		iov++;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(memcpy_fromiovec);
+> +
+> diff --git a/net/core/iovec.c b/net/core/iovec.c
+> index 7e7aeb0..d81257f 100644
+> --- a/net/core/iovec.c
+> +++ b/net/core/iovec.c
+> @@ -125,31 +125,6 @@ int memcpy_toiovecend(const struct iovec *iov, unsigned char *kdata,
+>  EXPORT_SYMBOL(memcpy_toiovecend);
+>  
+>  /*
+> - *	Copy iovec to kernel. Returns -EFAULT on error.
+> - *
+> - *	Note: this modifies the original iovec.
+> - */
+> -
+> -int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len)
+> -{
+> -	while (len > 0) {
+> -		if (iov->iov_len) {
+> -			int copy = min_t(unsigned int, len, iov->iov_len);
+> -			if (copy_from_user(kdata, iov->iov_base, copy))
+> -				return -EFAULT;
+> -			len -= copy;
+> -			kdata += copy;
+> -			iov->iov_base += copy;
+> -			iov->iov_len -= copy;
+> -		}
+> -		iov++;
+> -	}
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL(memcpy_fromiovec);
+> -
+> -/*
+>   *	Copy iovec from kernel. Returns -EFAULT on error.
+>   */
+>  
