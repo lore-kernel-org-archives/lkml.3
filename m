@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549Ab3EWQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:01:26 -0400
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:47844 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758360Ab3EWQBZ (ORCPT
+	id S1759576Ab3EWQB4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:01:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34151 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758360Ab3EWQBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:01:25 -0400
-X-Greylist: delayed 24192 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 12:01:25 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH] ARM: at91/dt: fix macb pinctrl_macb_rmii_mii_alt definition
-Date: Thu, 23 May 2013 18:01:21 +0200
-Message-Id: <1369324881-31428-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 4466444930740302956
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 23 May 2013 12:01:54 -0400
+Date: Thu, 23 May 2013 11:01:28 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Davide Ciminaghi <ciminaghi@gnudd.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130523160128.GA7660@sirena.org.uk>
+References: <1369314377-22873-1-git-send-email-lars@metafoo.de>
+ <1369314377-22873-2-git-send-email-lars@metafoo.de>
+ <519E38ED.7090202@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <519E38ED.7090202@wwwdotorg.org>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 144.188.69.1
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regmap: Make regmap-mmio usable from different
+ contexts
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PA24 pin is wrongly assigned to peripheral B.
-In the current config there is 2 ETX3 pins (PA11 and PA24) and
-no ETXER pin (PA22).
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/at91sam9260.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index 70b5ccb..84c4bef 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -264,7 +264,7 @@
- 						atmel,pins =
- 							<0 10 0x2 0x0	/* PA10 periph B */
- 							 0 11 0x2 0x0	/* PA11 periph B */
--							 0 24 0x2 0x0	/* PA24 periph B */
-+							 0 22 0x2 0x0	/* PA22 periph B */
- 							 0 25 0x2 0x0	/* PA25 periph B */
- 							 0 26 0x2 0x0	/* PA26 periph B */
- 							 0 27 0x2 0x0	/* PA27 periph B */
--- 
-1.7.9.5
+On Thu, May 23, 2013 at 09:42:37AM -0600, Stephen Warren wrote:
 
+> I guess the core of the issue is that you want to replace spin_lock()
+> with spin_lock_irqsave(). I'd like to see that explicitly described in
+> the commit description, if that is the core aspect of this change.
+
+Yes, I was just going to rewrite the commit log to make this a lot
+clearer - the entire first paragraph could pretty much just be replaced
+by just saying that we need spin_lock_irqsave() to allow interaction
+with interrupt context.
+
+> ... and obviously add a spinlock_flags field to struct regmap (perhaps
+> start unioning the mutex and spinlock data fields there if you want to
+> save space).
+
+This should work, yes - care to respin Lars-Peter?
+
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRnj1VAAoJELSic+t+oim9OZoP+wcXoWD89VNbim+/57WPgTbA
+Eazz7me5vKHDPdchwPvJMvBOYBY1cHOUh9D3kf1qxW9HkX49soXkObm1RcN2elBT
+gfeEP0rmJ4CkMJC8KLXUav65Mn/0rlvz3bqgiNpkE+crGl9dp2A6jMCfRlcRm4NG
+3FCxKxEExAsTwvxoy//BqtI4S+Hi7IepuJY2S/e6OQPB3aDLC97dKEfZN1xGhV6B
+3xszmBrJF1VZ70mAnvP+wooG2k5VaTdLUKH8QzKhGqRJ2H4As5AIIY/VJCN+l2VQ
+zwVMgs3Uy/3iYZzjEtajASJrcw3s3LYOuy/7uosNkb2vmmAbbpEYePrh7aUn9K00
+9Otiq3gKxjzVes91dYFMHAdnPTQNXZDTsLMQoqM6J+25ACT2xQcJC1IF75R84LwD
+2Xhl2W6Kn7GFqo6lCVzXfAlDq0uaFGq3e7ABTvqWDSqM2Az8OScqI7PW3lFoXMoa
+ahEdGEwN7VCbxqmuROv4ZPv3uwWmZyaQnnloxkiheyUbIIxMs+L9ozulYtBEuFs3
+mGEKy9RM5re4JKZ16DnNvnIHztrQ+kbtljvurwc7/5yYvYPv8pZr8VxE0KhyQwTG
+y9nrP4/FQUQE2NgFqnX8f3dgvUwaFpMBtMi9V878AFyTaUEicxH2hLgpBJjQTqYG
+uUGIyRV/j2lPRd9/8FLZ
+=ZTkD
+-----END PGP SIGNATURE-----
+
+--TB36FDmn/VVEgNH/--
