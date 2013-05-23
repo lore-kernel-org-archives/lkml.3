@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759859Ab3EWQxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:53:54 -0400
-Received: from mx1.sisa.samsung.com ([63.166.156.249]:47708 "EHLO
-	mx1.sisa.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757048Ab3EWQxw (ORCPT
+	id S1759947Ab3EWQyu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:54:50 -0400
+Received: from sisa.samsung.com ([63.166.156.250]:49388 "EHLO
+	mx2.sisa.samsung.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1759760Ab3EWQyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:53:52 -0400
-X-ASG-Debug-ID: 1369328032-05c03219f8209d0001-xx1T2L
+	Thu, 23 May 2013 12:54:49 -0400
+X-ASG-Debug-ID: 1369328082-05112928473eb60001-xx1T2L
 X-Barracuda-Envelope-From: shuah.kh@samsung.com
 X-Barracuda-Apparent-Source-IP: 105.144.21.115
 X-ASG-Whitelist: Client
@@ -18,14 +18,14 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 0/5] 3.4.47-stable review
-Thread-Topic: [ 0/5] 3.4.47-stable review
-X-ASG-Orig-Subj: Re: [ 0/5] 3.4.47-stable review
-Thread-Index: AQHOV0+WSI9gRDHbNUOJHvt462m+npkTcu2A
-Date: Thu, 23 May 2013 16:53:51 +0000
-Message-ID: <1369328031.5427.2.camel@lorien>
-References: <20130522221330.720801923@linuxfoundation.org>
-In-Reply-To: <20130522221330.720801923@linuxfoundation.org>
+Subject: Re: [ 0/3] 3.0.80-stable review
+Thread-Topic: [ 0/3] 3.0.80-stable review
+X-ASG-Orig-Subj: Re: [ 0/3] 3.0.80-stable review
+Thread-Index: AQHOV0+kl0TUT2TRFEq32U9I9BZxdJkTcyiA
+Date: Thu, 23 May 2013 16:54:41 +0000
+Message-ID: <1369328081.5427.3.camel@lorien>
+References: <20130522221334.510217272@linuxfoundation.org>
+In-Reply-To: <20130522221334.510217272@linuxfoundation.org>
 Reply-To: Shuah Khan <shuah.kh@samsung.com>
 Accept-Language: en-US
 Content-Language: en-US
@@ -33,29 +33,29 @@ X-MS-Has-Attach:
 X-MS-TNEF-Correlator: 
 x-originating-ip: [105.144.34.6]
 Content-Type: text/plain; charset="utf-8"
-Content-ID: <4263F35672F0C145A99D01929964AA56@sisa.samsung.com>
+Content-ID: <458CFC965F0FFF49A85BC29FF613DB67@sisa.samsung.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: webmail.sisa.samsung.com[105.144.21.115]
-X-Barracuda-Start-Time: 1369328032
-X-Barracuda-URL: http://192.168.0.101:8000/cgi-mod/mark.cgi
+X-Barracuda-Connect: UNKNOWN[105.144.21.115]
+X-Barracuda-Start-Time: 1369328082
+X-Barracuda-URL: http://192.168.0.102:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4NGs0QT006310
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4NGsvsL006324
 
-On Wed, 2013-05-22 at 15:18 -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.47 release.
-> There are 5 patches in this series, all will be posted as a response
+On Wed, 2013-05-22 at 15:19 -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.80 release.
+> There are 3 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 > 
-> Responses should be made by Fri May 24 22:10:47 UTC 2013.
+> Responses should be made by Fri May 24 22:11:00 UTC 2013.
 > Anything received after that time might be too late.
 > 
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.47-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.80-rc1.gz
 > and the diffstat can be found below.
 > 
 > thanks,
