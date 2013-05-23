@@ -1,59 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759822Ab3EWP1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:27:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12773 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759801Ab3EWP1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:27:19 -0400
-X-Authority-Analysis: v=2.0 cv=IZAFqBWa c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rKI68ldaRsEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=54K5z7jWVYMA:10 a=JaTbTE50uwbIEMqLdRUA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369322836.6828.199.camel@gandalf.local.home>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Rik van Riel <riel@redhat.com>, Stanislav Meduna <stano@meduna.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Date: Thu, 23 May 2013 11:27:16 -0400
-In-Reply-To: <519E3089.8040701@zytor.com>
-References: <5195ED8B.7060002@meduna.org>
-	   <1369183168.6828.168.camel@gandalf.local.home>
-	   <519CBB30.3060200@redhat.com>
-	   <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
-	   <20130522134111.33a695c5@cuia.bos.redhat.com>
-	  <519D08B0.8050707@meduna.org>
-	  <1369246316.6828.176.camel@gandalf.local.home>
-	  <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com>
-	  <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com>
-	  <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com>
-	 <1369315769.6828.198.camel@gandalf.local.home> <519E3089.8040701@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759862Ab3EWP1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:27:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759346Ab3EWP1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 11:27:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, Jiri Jaburek <jjaburek@redhat.com>
+Subject: [PATCH v2] audit: fix mq_open and mq_unlink to add the MQ root as a hidden parent audit_names record
+Date: Thu, 23 May 2013 10:50:12 -0400
+Message-Id: <1369320612-7495-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1368034236-10773-1-git-send-email-jlayton@redhat.com>
+References: <1368034236-10773-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-23 at 08:06 -0700, H. Peter Anvin wrote:
+The old audit PATH records for mq_open looked like this:
 
-> We don't even need the jump_label infrastructure -- we have
-> static_cpu_has*() which actually predates jump_label although it uses
-> the same underlying ideas.
+type=PATH msg=audit(1366282323.982:869): item=1 name=(null) inode=6777
+dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
+obj=system_u:object_r:tmpfs_t:s15:c0.c1023
+type=PATH msg=audit(1366282323.982:869): item=0 name="test_mq" inode=26732
+dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
+obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
 
-Ah right. I wonder if it would be worth consolidating a lot of these
-"modifying of code" infrastructures. Which reminds me, I need to update
-text_poke() to do things similar to what ftrace does, and get rid of the
-stop machine code.
+...with the audit related changes that went into 3.7, they now look like this:
 
--- Steve
+type=PATH msg=audit(1366282236.776:3606): item=2 name=(null) inode=66655
+dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
+obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
+type=PATH msg=audit(1366282236.776:3606): item=1 name=(null) inode=6926
+dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
+obj=system_u:object_r:tmpfs_t:s15:c0.c1023
+type=PATH msg=audit(1366282236.776:3606): item=0 name="test_mq"
 
+Both of these look wrong to me. As Steve Grubb pointed out:
+
+"What we need is 1 PATH record that identifies the MQ. The other PATH
+ records probably should not be there."
+
+Fix it to record the mq root as a parent, and flag it such that it
+should be hidden from view when the names are logged, since the root of
+the mq filesystem isn't terribly interesting. With this change, we get a
+single PATH record that looks more like this:
+
+type=PATH msg=audit(1368021604.836:484): item=0 name="test_mq" inode=16914
+dev=00:0c mode=0100644 ouid=0 ogid=0 rdev=00:00
+obj=unconfined_u:object_r:user_tmpfs_t:s0
+
+In order to do this, a new audit_inode_parent_hidden() function is
+added. If we do it this way, then we avoid having the existing callers
+of audit_inode needing to do any sort of flag conversion if auditing is
+inactive.
+
+Cc: Steve Grubb <sgrubb@redhat.com>
+Reported-by: Jiri Jaburek <jjaburek@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ include/linux/audit.h |   26 ++++++++++++++++++++++----
+ ipc/mqueue.c          |    2 ++
+ kernel/audit.h        |    1 +
+ kernel/auditsc.c      |   12 +++++++++---
+ 4 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index b20b038..729a4d1 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -103,8 +103,11 @@ extern void __audit_syscall_exit(int ret_success, long ret_value);
+ extern struct filename *__audit_reusename(const __user char *uptr);
+ extern void __audit_getname(struct filename *name);
+ extern void audit_putname(struct filename *name);
++
++#define AUDIT_INODE_PARENT	1	/* dentry represents the parent */
++#define AUDIT_INODE_HIDDEN	2	/* audit record should be hidden */
+ extern void __audit_inode(struct filename *name, const struct dentry *dentry,
+-				unsigned int parent);
++				unsigned int flags);
+ extern void __audit_inode_child(const struct inode *parent,
+ 				const struct dentry *dentry,
+ 				const unsigned char type);
+@@ -148,10 +151,22 @@ static inline void audit_getname(struct filename *name)
+ 	if (unlikely(!audit_dummy_context()))
+ 		__audit_getname(name);
+ }
+-static inline void audit_inode(struct filename *name, const struct dentry *dentry,
++static inline void audit_inode(struct filename *name,
++				const struct dentry *dentry,
+ 				unsigned int parent) {
++	if (unlikely(!audit_dummy_context())) {
++		unsigned int flags = 0;
++		if (parent)
++			flags |= AUDIT_INODE_PARENT;
++		__audit_inode(name, dentry, flags);
++	}
++}
++static inline void audit_inode_parent_hidden(struct filename *name,
++						const struct dentry *dentry)
++{
+ 	if (unlikely(!audit_dummy_context()))
+-		__audit_inode(name, dentry, parent);
++		__audit_inode(name, dentry,
++				AUDIT_INODE_PARENT | AUDIT_INODE_HIDDEN);
+ }
+ static inline void audit_inode_child(const struct inode *parent,
+ 				     const struct dentry *dentry,
+@@ -311,7 +326,7 @@ static inline void audit_putname(struct filename *name)
+ { }
+ static inline void __audit_inode(struct filename *name,
+ 					const struct dentry *dentry,
+-					unsigned int parent)
++					unsigned int flags)
+ { }
+ static inline void __audit_inode_child(const struct inode *parent,
+ 					const struct dentry *dentry,
+@@ -321,6 +336,9 @@ static inline void audit_inode(struct filename *name,
+ 				const struct dentry *dentry,
+ 				unsigned int parent)
+ { }
++static inline void audit_inode_parent_hidden(struct filename *name,
++				const struct dentry *dentry)
++{ }
+ static inline void audit_inode_child(const struct inode *parent,
+ 				     const struct dentry *dentry,
+ 				     const unsigned char type)
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index e4e47f6..ae1996d 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -823,6 +823,7 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
+ 				error = ro;
+ 				goto out;
+ 			}
++			audit_inode_parent_hidden(name, root);
+ 			filp = do_create(ipc_ns, root->d_inode,
+ 						&path, oflag, mode,
+ 						u_attr ? &attr : NULL);
+@@ -868,6 +869,7 @@ SYSCALL_DEFINE1(mq_unlink, const char __user *, u_name)
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
+ 
++	audit_inode_parent_hidden(name, mnt->mnt_root);
+ 	err = mnt_want_write(mnt);
+ 	if (err)
+ 		goto out_name;
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 1c95131..52dfbfc 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -97,6 +97,7 @@ struct audit_names {
+ 	struct audit_cap_data	fcap;
+ 	unsigned int		fcap_ver;
+ 	unsigned char		type;		/* record type */
++	bool			hidden;		/* don't log this record */
+ 	/*
+ 	 * This was an allocated audit_names and not from the array of
+ 	 * names allocated in the task audit context.  Thus this name
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 3c8a601..9845cb3 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1399,8 +1399,11 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 	}
+ 
+ 	i = 0;
+-	list_for_each_entry(n, &context->names_list, list)
++	list_for_each_entry(n, &context->names_list, list) {
++		if (n->hidden)
++			continue;
+ 		audit_log_name(context, n, NULL, i++, &call_panic);
++	}
+ 
+ 	/* Send end of event record to help user space know we are finished */
+ 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
+@@ -1769,14 +1772,15 @@ void audit_putname(struct filename *name)
+  * __audit_inode - store the inode and device from a lookup
+  * @name: name being audited
+  * @dentry: dentry being audited
+- * @parent: does this dentry represent the parent?
++ * @flags: attributes for this particular entry
+  */
+ void __audit_inode(struct filename *name, const struct dentry *dentry,
+-		   unsigned int parent)
++		   unsigned int flags)
+ {
+ 	struct audit_context *context = current->audit_context;
+ 	const struct inode *inode = dentry->d_inode;
+ 	struct audit_names *n;
++	bool parent = flags & AUDIT_INODE_PARENT;
+ 
+ 	if (!context->in_syscall)
+ 		return;
+@@ -1831,6 +1835,8 @@ out:
+ 	if (parent) {
+ 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
+ 		n->type = AUDIT_TYPE_PARENT;
++		if (flags & AUDIT_INODE_HIDDEN)
++			n->hidden = true;
+ 	} else {
+ 		n->name_len = AUDIT_NAME_FULL;
+ 		n->type = AUDIT_TYPE_NORMAL;
+-- 
+1.7.1
 
