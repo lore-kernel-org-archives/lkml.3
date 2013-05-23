@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab3EWS6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 14:58:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758592Ab3EWS63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 14:58:29 -0400
-Date: Thu, 23 May 2013 14:57:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] kdump: Introduce ELF header in new memory feature
-Message-ID: <20130523185738.GM2779@redhat.com>
-References: <1369245517-16204-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1369245517-16204-2-git-send-email-holzheu@linux.vnet.ibm.com>
- <20130523174127.GA12290@redhat.com>
- <20130523205241.4b9e4fde@holzheu>
+	id S1758765Ab3EWTAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 15:00:53 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:35886 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757828Ab3EWTAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 15:00:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523205241.4b9e4fde@holzheu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130424155547.GA4623@gmail.com>
+References: <1366801122-13302-1-git-send-email-lee.jones@linaro.org>
+	<20130424155547.GA4623@gmail.com>
+Date: Thu, 23 May 2013 21:00:51 +0200
+Message-ID: <CACRpkdbr4Lm4NGHzX4TTq4fYwFahwC82fQSBg_V=SGVKkqFdUg@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: mmci: Allow MMCI to request channels with
+ information acquired from DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 08:52:41PM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> Thanks for your reply. I will integrate your feedback into the v3 patch
-> set and will make the following changes:
-> 
-> - Get rid of ELFCORE_ADDR_NEWMEM (sorry for that:)
-> - Make read_from_crash_header() only read from kernel
-> - Move read_from_crash_header() to weak function
->   arch_read_from_crash_header()
-> - Implement read_from_crash_header() strong function for s390
-> - Set elfcorehdr_addr to address of new ELF header
+On Wed, Apr 24, 2013 at 5:55 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Thanks Michael. Also note, that hatayama has posted a  new version (V8)
-of his mmap() patches. So you can rebase your changes on top of V8.
+> Currently, if DMA information isn't passed from platform data, then DMA
+> will not be used. This patch allows DMA information obtained though Device
+> Tree to be used as well.
+>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: linux-mmc@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Thanks
-Vivek
+I've now tested this v2 version with device tree on Nomadik and
+U300 and it works like a charm.
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
