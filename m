@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759605Ab3EWQGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:06:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51367 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759266Ab3EWQGI (ORCPT
+	id S1759304Ab3EWQGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:06:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47095 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab3EWQGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:06:08 -0400
-Date: Thu, 23 May 2013 11:05:58 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Davide Ciminaghi <ciminaghi@gnudd.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130523160558.GB7660@sirena.org.uk>
-References: <1369322629-25157-1-git-send-email-lars@metafoo.de>
+	Thu, 23 May 2013 12:06:37 -0400
+Message-ID: <519E3E8A.2010704@wwwdotorg.org>
+Date: Thu, 23 May 2013 10:06:34 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oC1+HKm2/end4ao3"
-Content-Disposition: inline
-In-Reply-To: <1369322629-25157-1-git-send-email-lars@metafoo.de>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH for 3.10-rc2] regmap: regcache: Fixup locking for custom
- lock callbacks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@kernel.org>, Davide Ciminaghi <ciminaghi@gnudd.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regmap: Make regmap-mmio usable from different contexts
+References: <1369314377-22873-1-git-send-email-lars@metafoo.de> <1369314377-22873-2-git-send-email-lars@metafoo.de> <519E38ED.7090202@wwwdotorg.org> <519E3AB7.8020103@metafoo.de>
+In-Reply-To: <519E3AB7.8020103@metafoo.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/23/2013 09:50 AM, Lars-Peter Clausen wrote:
+> On 05/23/2013 05:42 PM, Stephen Warren wrote:
+>> On 05/23/2013 07:06 AM, Lars-Peter Clausen wrote:
+>>> regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for locking.
+>>> Which means in order to avoid race conditions the lock always needs to be taken
+>>> from the same context.
+>>
+>> I'm not really sure what this means. I assume contexts are
+>> atomic-vs-nonatomic?
+> 
+> Yes.
+> 
+>> If so, spinlocks should work fine for this, right?
+> 
+> No, you have to take special care if you want to take the same spinlock from
+> different contexts. And you have to take even more care if the code that
+> takes the lock can run in different contexts.
 
---oC1+HKm2/end4ao3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+OK, but what is that "special care" that must be taken? I assume from
+this patch, you mean using spin_lock_irqsave() rather than spin_lock().
+So the issue isn't so much that spin locks are used, but rather how
+they're used. The code still has a spin_lock_t before and after...
 
-On Thu, May 23, 2013 at 05:23:49PM +0200, Lars-Peter Clausen wrote:
-> The parameter passed to the regmap lock/unlock callbacks needs to be
-> map->lock_arg, regcache passes just map. This works fine in the case that no
-> custom locking callbacks are used since in this case map->lock_arg equals map,
-> but will break when custom locking callbacks are used. The issue was introduced
-> in commit 0d4529c5("regmap: make lock/unlock functions customizable") and is
-> fixed by this patch.
+>> I guess the core of the issue is that you want to replace spin_lock()
+>> with spin_lock_irqsave(). I'd like to see that explicitly described in
+>> the commit description, if that is the core aspect of this change.
+> 
+> Hm, it does.
+> 
+> 	regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for
+> 	locking.
+> 	...
+> 	This patch updates the adds a flags parameter to the regmap lock
+> 	and unlock callbacks and uses spin_lock_irqsave() and
+> 	spin_unlock_restore() ...
 
-Applied this one as well.
+To me, that doesn't make me realize that the core part of this change is
+to switch between the two different APIs that operate on the spin lock.
+I'd expect the commit description to say something more like:
 
---oC1+HKm2/end4ao3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRnj5jAAoJELSic+t+oim9D+MP/j1GBBj1uUiECVYpuVoOaS/2
-er4vzJFqZeKtmTY16b43zKx2ApUHvIqT3c9dbiBdx9Xc+xn1HSu7TJQ2t5/9xrim
-9eEXdRmC1SgGfsyHUbCthhacZzr0+SjjPpOsS3FtCuf10t5gV7bJkP7vK0BWvT1v
-TJoBzfedgUpO9bA2uiSF5ZbugnxnupJpeIoJMeMIEcMfwJhQkZMgHtOFwzvly0Gf
-dyxbCsk66Y/Kv7DFDPWUBGU0r+SqMrVlztjOc47Jpth1AWtR5gYCwLJlD57u6Hh8
-tAIMYZ+C+8hd41Fgl8hzBNOQLBkchF8VJt9LkAPJ2L59VTN4JrfahWk+Bdidhv9I
-2aGTl3clVLDZRHEZaIC6wTsfYVtGQbveFAJISs1VPofw6NHzbizmj8uATgBrUz1Y
-tTF7MNTC+Q+3A6cO3moITm0R+SOVNp9EN9M+NbvZCPRLu2v+koDTYiQdQ9qu2NI9
-NfPMoXYvD+xyZhz5lKIyuWvQoAQQ6adgX0QSXfok5L9xoW64P3jSEHREI2kxs/jR
-2SsiQs19NAQSUwLiW+1kuYtmxxv5QbgkaKNoAggXCz42PHAu7UXFqa9On8Ue0ngL
-5HhWLna/Y0zUyLEq9v1mRFJ8SB/07BaJFU9XNUAvVtRBgvYaGscP8uYIbdwO74yy
-Lh9VMrIjFsHeYP6iFj6z
-=lqPr
------END PGP SIGNATURE-----
-
---oC1+HKm2/end4ao3--
+regmap-mmio uses a spinlock for locking. In order for this to work
+correctly from different contexts (atomic vs non-atomic), this spinlock
+must be locked using spin_lock_irqsave() rather than spin_lock(). To
+support this, a spinlock_flags field is added to struct regmap to store
+the flags between regmap_{,un}lock_spinlock().
