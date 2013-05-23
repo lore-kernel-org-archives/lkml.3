@@ -1,180 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab3EWPVV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:21:21 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:44829 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758873Ab3EWPVU (ORCPT
+	id S1759372Ab3EWPX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:23:57 -0400
+Received: from ip-27-50-25-119.cepat.net.id ([27.50.25.119]:6669 "EHLO
+	zmtap2.banksinarmas.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab3EWPX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:21:20 -0400
+	Thu, 23 May 2013 11:23:56 -0400
+X-Greylist: delayed 978 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 11:23:56 EDT
+Date: Thu, 23 May 2013 22:07:14 +0700 (WIT)
+From: KELVIN WILLIAMS <yessi.anggrainy@banksinarmas.com>
+Reply-To: KELVIN WILLIAMS <kelvin.ikobowilliams@yahoo.com.hk>
+Message-ID: <1380121211.29415995.1369321634609.JavaMail.root@banksinarmas.com>
+Subject: Re-Notification
 MIME-Version: 1.0
-In-Reply-To: <s5hhahtvk4b.wl%tiwai@suse.de>
-References: <20130521230332.GC12713@redhat.com>
-	<519D1668.6000601@zytor.com>
-	<20130522200012.GA15456@redhat.com>
-	<ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
-	<20130523033911.GA9411@redhat.com>
-	<CACVXFVP3stgc2JKc31_yjPuokTbqcSrW_FWDvHrHK+NA-xu-yg@mail.gmail.com>
-	<s5h7giq86hr.wl%tiwai@suse.de>
-	<s5hwqqqvw59.wl%tiwai@suse.de>
-	<CACVXFVMsTjSqvyVkZEPfWgHDUJ_mqwqWy=vydCsTvv7TS-EKiQ@mail.gmail.com>
-	<s5hr4gyvv7r.wl%tiwai@suse.de>
-	<CACVXFVNO9FeCaJ_YFbvPMUHOBjneLqqW+ucYprZb7884Eth-DA@mail.gmail.com>
-	<s5hmwrlx5np.wl%tiwai@suse.de>
-	<CACVXFVMm=dKz9mwt=moU4Dw9-K=offHb10S3sV2-cxiQ5vH_cA@mail.gmail.com>
-	<s5h38tdx24r.wl%tiwai@suse.de>
-	<CACVXFVOy95SzeL2_wHMShZwG7eE7evrZhaEvJAsd1LLDcSD1Vw@mail.gmail.com>
-	<s5hhahtvk4b.wl%tiwai@suse.de>
-Date: Thu, 23 May 2013 23:21:19 +0800
-Message-ID: <CACVXFVO9JUnBQU+pUh1PmbPenQj+WQ+f4LAzJVpr5B8sjWaZZg@mail.gmail.com>
-Subject: Re: microcode loading got really slow.
-From: Ming Lei <tom.leiming@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Jones <davej@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        fenghua.yu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.67.51]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
+X-Copyrighted-Material: INDORAMA EPCL
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 10:36 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 23 May 2013 22:28:51 +0800,
-> Ming Lei wrote:
->>
->> On Thu, May 23, 2013 at 9:21 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Thu, 23 May 2013 21:04:53 +0800,
->> > Ming Lei wrote:
->> >>
->> >> On Thu, May 23, 2013 at 8:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> >> > At Thu, 23 May 2013 18:45:29 +0800,
->> >> > Ming Lei wrote:
->> >> >>
->> >> >> On Thu, May 23, 2013 at 6:36 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> >> >> >
->> >> >> > No, f/w loader always fall back to user mode helper, as long as its
->> >> >> > support is built in.  And doing that for microcode driver in that code
->> >> >> > path isn't only superfluous but also broken due to request_firmware
->> >> >> > call in module init.
->> >> >>
->> >> >> Firstly, it is not good to do this since some distributions doesn't support
->> >> >> direct loading and doesn't have udevd(such as, android).
->> >> >>
->> >> >> Secondly, returning failure from request_firmware_direct() doesn't mean
->> >> >> the firmware doesn't exist since distribution may put the firmware other where.
->> >> >
->> >> > Right, the non-standard path is the problem, and basically the only
->> >> > problem.  The distribution that doesn't support the direct loading
->> >> > means nothing but that.
->> >>
->> >> Suppose it is, it is the fact, and it isn't OK to break this distribution.
->> >>
->> >> Also udev supports user-defined rules to load firmware, which
->> >> means some drivers may not put their firmware in the default
->> >> path of distribution's firmware.
->> >
->> > It's why I suggested to put a warning in that path as the first step.
->> > So we can see whether there is any actual user.
->>
->> If you plan to do it, it'd better to add default firmware path of some
->> distributions into firmware_class.c first, otherwise it may cause
->> unnecessary noise for this distribution.
->>
->> But if more default search paths are added, it might cause mistaken
->> firmwares found under incorrect path, for example, android's
->> default path is "/etc/firmware" and "/vendor/firmware"(maybe different
->> for different versions).
->>
->> Also, putting default search paths into kernel isn't good, which was
->> introduced unwillingly for well-known reason.
->
-> Maybe we can create a new Kconfig to specify non-standard firmware
-> path?
 
-Yes.
-
->
->
->> >> >> Anyway, this example is very specific(no firmware can be accepted), and
->> >> >> request_firmware_nowait() should be OK for the situation.
->> >> >
->> >> > Oh no, rewriting with request_firmware_nowait() should be really the
->> >> > last choice.  It would change the code flow awfully bad in most
->> >> > cases.
->> >> >
->> >> > The new kernel driver has a better firmware mechanism.  If it's only
->> >> > the question of paths, we should move on toward that direction and
->> >> > drop the too complex old way.  I'd vote for a warning shown when a
->> >>
->> >> Simply dropping the old way may cause user space regression.
->> >
->> > It's already broken :)
->>
->> It is different, the current issue is caused by udev, not by kernel, :-)
->
-> Yeah :)
->
->
->> >> > firmware file is loaded via user mode helper (except for explicit
->> >> > cases like FW_ACTION_NOHOTPLUG), for example.
->> >>
->> >> As it is a very driver specific problem, it is better to solve it inside driver.
->> >
->> > Yes, this proposal is basically not meant as a fix for this particular
->> > issue but rather for future movement in general.
->> >
->> >> >> >> wrt. this problem, I think we
->> >> >> >> need to know why the direct loading is failed.
->> >> >> >
->> >> >> > The reason is obvious: the requested f/w file doesn't exist.
->> >> >> > And it's fine, because the microcode update is an optional operation.
->> >> >> > If no f/w file is found, it's not handled as an error.  It just means
->> >> >> > that no need to update, continuing to work.
->> >> >>
->> >> >> OK, as said above, the example is very specific, and might be
->> >> >> workarounded by request_firmware_nowait().
->> >> >
->> >> > It's not that easy in this case.  The microcode loader driver core
->> >> > module doesn't invoke request_firmware() directly but it's via cpu
->> >> > driver.  And the same callback is called in different code paths, not
->> >> > only at init but also via sysfs write.  Thus the request_firmware()
->> >> > call must be synchronous there.
->> >>
->> >> I don't think the way is too difficult to implement. In the path which
->> >> requires synchronization, it can be waited on one completion after
->> >> calling request_firmware_nowait().
->> >
->> > This sounds already like unnecessary complexity.  Also, what if
->> > concurrent accesses?
->>
->> The request_firmware_no_wait() supports concurrent accesses on
->> either same firmware or not.
->
-> Yes, but I meant about the synchronization part.  Then you'll need
-> multiple waiters.
-
-If request_firmware_no_wait() is called on one same firmware image,
-one waiter should be OK since the returned data is same for all requests.
-
->
->> > Also, I wonder why the kernel needs to be "fixed" for this, if the
->> > problem is really the stuck in udev.  In this regard, we didn't change
->> > anything from the beginning.  There was an implicit "wish", that the
->> > f/w loading shouldn't be done in the module init, but this has been
->> > never treated as a golden rule.
->>
->> No, there isn't the golden rule, and it is reasonable or inevitable
->> sometimes to load firmware in module init, for example, I remember some
->> wireless dongles in which people can't read its mac address without
->> downloading firmware, that means some devices may not be initialized
->> successfully without firmware.
->
-> Right.
->
->
-> Takashi
+ATM CARD worth $6.8 Million Dollars has been accredited in your favor,Please Contact
+KELVIN WILLIAMS(kelvin.ikobowilliams@yahoo.com.hk) With the following,Full Name: Delivery
+Address: Age: Occupation: Phone Number: Country: Regards,Mrs Margret Miller Telephone : + 2348105754752
 
 
-Thanks,
--- 
-Ming Lei
+
+
+
+
+_____________________________________________________________________
+DISCLAIMER: 'The information contained in this email is confidential and may contain proprietary information. It is meant solely for the intended recipient. Access to this email by anyone else is unauthorised. If you are not the intended recipient, any disclosure, copying, distribution or any action taken or omitted in reliance on this, is prohibited and may be unlawful. No liability or reponsibility is accepted if information or data is, for whatever reason corrupted or does not reach its intended recipient. No warranty is given that this email is free of viruses. The views expressed in this email are, unless otherwise stated, those of the author and not those of Bank Sinarmas or its management. Bank Sinarmas reserves the right to monitor, intercept and block emails addressed to its users or take any other any other action in accordance with its email use policy.'
