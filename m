@@ -1,127 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759764Ab3EWQpj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:45:39 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:40246 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759693Ab3EWQpg (ORCPT
+	id S1759801Ab3EWQtS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:49:18 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50205 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759063Ab3EWQtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:45:36 -0400
-Message-ID: <1369327533.5673.75.camel@misato.fc.hp.com>
-Subject: Re: [PATCH *5/5] Memory hotplug / ACPI: Simplify memory removal
- (was: Re: [PATCH 5/5] ACPI / memhotplug: Drop unnecessary code)
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-mm@kvack.org
-Date: Thu, 23 May 2013 10:45:33 -0600
-In-Reply-To: <13857057.cWE1koxP0r@vostro.rjw.lan>
-References: <2250271.rGYN6WlBxf@vostro.rjw.lan>
-	 <1726699.Z30ifEcQDQ@vostro.rjw.lan>
-	 <1369079733.5673.58.camel@misato.fc.hp.com>
-	 <13857057.cWE1koxP0r@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 23 May 2013 12:49:17 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org, kvm@vger.kernel.org,
+        Sanjay Lal <sanjayl@kymasys.com>, Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v6 0/6] mips/kvm: Fix ABI for compatibility with 64-bit guests.
+Date: Thu, 23 May 2013 09:49:04 -0700
+Message-Id: <1369327750-28580-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-05-23 at 00:09 +0200, Rafael J. Wysocki wrote:
-> On Monday, May 20, 2013 01:55:33 PM Toshi Kani wrote:
-> > On Mon, 2013-05-20 at 21:47 +0200, Rafael J. Wysocki wrote:
-> > > On Monday, May 20, 2013 11:27:56 AM Toshi Kani wrote:
-> > > > On Sun, 2013-05-19 at 01:34 +0200, Rafael J. Wysocki wrote:
-> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> >  :
-> > 
-> > > > > -	lock_memory_hotplug();
-> > > > > -
-> > > > > -	/*
-> > > > > -	 * we have offlined all memory blocks like this:
-> > > > > -	 *   1. lock memory hotplug
-> > > > > -	 *   2. offline a memory block
-> > > > > -	 *   3. unlock memory hotplug
-> > > > > -	 *
-> > > > > -	 * repeat step1-3 to offline the memory block. All memory blocks
-> > > > > -	 * must be offlined before removing memory. But we don't hold the
-> > > > > -	 * lock in the whole operation. So we should check whether all
-> > > > > -	 * memory blocks are offlined.
-> > > > > -	 */
-> > > > > -
-> > > > > -	ret = walk_memory_range(start_pfn, end_pfn, NULL,
-> > > > > -				is_memblock_offlined_cb);
-> > > > > -	if (ret) {
-> > > > > -		unlock_memory_hotplug();
-> > > > > -		return ret;
-> > > > > -	}
-> > > > > -
-> > > > 
-> > > > I think the above procedure is still useful for safe guard.
-> > > 
-> > > But then it shoud to BUG_ON() instead of returning an error (which isn't very
-> > > useful for anything now).
-> > 
-> > Right since we cannot fail at that state.
-> > 
-> > > > > -	/* remove memmap entry */
-> > > > > -	firmware_map_remove(start, start + size, "System RAM");
-> > > > > -
-> > > > > -	arch_remove_memory(start, size);
-> > > > > -
-> > > > > -	try_offline_node(nid);
-> > > > 
-> > > > The above procedure performs memory hot-delete specific operations and
-> > > > is necessary.
-> > > 
-> > > OK, I see.  I'll replace this patch with something simpler, then.
-> > 
-> > Thanks.
-> 
-> The replacement patch is appended.
+From: David Daney <david.daney@cavium.com>
 
-The updated patch looks good.
+The initial patch set implementing MIPS KVM does not handle 64-bit
+guests or use of the FPU.  This patch set corrects these ABI issues,
+and does some very minor clean up.
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Changes from v5: Adjust for kvm.h moving to uapi/asm.  Code formatting
+                 to achieve line lengths <= 80.
 
-Thanks,
--Toshi
+Changes from v4: No code change, just keep more of the code in
+                 kvm_mips.c rather than kvm_trap_emul.c
 
+Changes from v3: Use KVM_SET_ONE_REG instead of KVM_SET_MSRS.  Added
+                 ENOIOCTLCMD patch.
 
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: Memory hotplug / ACPI: Simplify memory removal
-> 
-> Now that the memory offlining should be taken care of by the
-> companion device offlining code in acpi_scan_hot_remove(), the
-> ACPI memory hotplug driver doesn't need to offline it in
-> remove_memory() any more.  Moreover, since the return value of
-> remove_memory() is not used, it's better to make it be a void
-> function and trigger a BUG() if the memory scheduled for removal is
-> not offline.
-> 
-> Change the code in accordance with the above observations.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/acpi_memhotplug.c |   13 +------
->  include/linux/memory_hotplug.h |    2 -
->  mm/memory_hotplug.c            |   71 ++++-------------------------------------
->  3 files changed, 12 insertions(+), 74 deletions(-)
+Changes from v2: Split into five parts, no code change.
 
+David Daney (6):
+  mips/kvm: Fix ABI for use of FPU.
+  mips/kvm: Fix ABI for use of 64-bit registers.
+  mips/kvm: Fix name of gpr field in struct kvm_regs.
+  mips/kvm: Use ARRAY_SIZE() instead of hardcoded constants in
+    kvm_arch_vcpu_ioctl_{s,g}et_regs
+  mips/kvm: Fix ABI by moving manipulation of CP0 registers to
+    KVM_{G,S}ET_ONE_REG
+  mips/kvm: Use ENOIOCTLCMD to indicate unimplemented ioctls.
 
+ arch/mips/include/asm/kvm_host.h |   4 -
+ arch/mips/include/uapi/asm/kvm.h | 137 +++++++++++++++----
+ arch/mips/kvm/kvm_mips.c         | 280 ++++++++++++++++++++++++++++++++++++---
+ arch/mips/kvm/kvm_trap_emul.c    |  50 -------
+ 4 files changed, 369 insertions(+), 102 deletions(-)
+
+-- 
+1.7.11.7
 
