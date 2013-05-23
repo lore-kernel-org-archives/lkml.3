@@ -1,143 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab3EWVQh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 17:16:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758494Ab3EWVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 17:16:36 -0400
-From: David Milburn <dmilburn@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, asamymuthupa@micron.com
-Subject: =?UTF-8?q?=5BPATCH=5D=20mtip32xx=3A=20dynamically=20allocate=20buffer=20in=20debugfs=20functions?=
-Date: Thu, 23 May 2013 16:23:45 -0500
-Message-Id: <1369344225-4110-1-git-send-email-dmilburn@redhat.com>
+	id S1759346Ab3EWVYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 17:24:41 -0400
+Received: from [213.199.154.188] ([213.199.154.188]:18566 "EHLO
+	db8outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1759165Ab3EWVYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 17:24:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+X-WSS-ID: 0MN9SQE-01-1S4-02
+X-M-MSG: 
+Date: Thu, 23 May 2013 16:23:01 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 0/3] x86/microcode: early microcode patch loading
+ support on AMD
+Message-ID: <20130523212301.GA13275@jshin-Toonie>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C712205633D6C3@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712205633D6C3@ORSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamically allocate buf to prevent warnings:
+On Thu, May 23, 2013 at 09:01:21PM +0000, Yu, Fenghua wrote:
+> > From: Jacob Shin [mailto:jacob.shin@amd.com]
+> > The following patchset adds early microcode patch loading support on
+> > AMD systems, on top of the framework introduced by:
+> >   https://lkml.org/lkml/2012/12/21/193
+> > 
+> 
+> Could you please change Documentation/x86/early-microcode.txt for AMD? At least please add AMD microcode file in cpio name space: kernel/x86/microcode/AuthenticAMD.bin. Users can generate the cpio file with AMD microcode based on your document.
 
-drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_device_status’:
-drivers/block/mtip32xx/mtip32xx.c:2823: warning: the frame size of 1056 bytes is larger than 1024 bytes
-drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_registers’:
-drivers/block/mtip32xx/mtip32xx.c:2894: warning: the frame size of 1056 bytes is larger than 1024 bytes
-drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_flags’:
-drivers/block/mtip32xx/mtip32xx.c:2917: warning: the frame size of 1056 bytes is larger than 1024 bytes
+Ah, yes will do. I'll send out another revision tomorrow.
 
-Signed-off-by: David Milburn <dmilburn@redhat.com>
----
- drivers/block/mtip32xx/mtip32xx.c |   47 +++++++++++++++++++++++++++++--------
- 1 files changed, 37 insertions(+), 10 deletions(-)
+Thanks!
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 847107e..baa0996 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -2806,34 +2806,51 @@ static ssize_t show_device_status(struct device_driver *drv, char *buf)
- static ssize_t mtip_hw_read_device_status(struct file *f, char __user *ubuf,
- 						size_t len, loff_t *offset)
- {
-+	struct driver_data *dd =  (struct driver_data *)f->private_data;
- 	int size = *offset;
--	char buf[MTIP_DFS_MAX_BUF_SIZE];
-+	char *buf;
-+	int rv = 0;
- 
- 	if (!len || *offset)
- 		return 0;
- 
-+	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-+	if (!buf) {
-+		dev_err(&dd->pdev->dev,
-+			"Memory allocation: status buffer\n");
-+		return -ENOMEM;
-+	}
-+
- 	size += show_device_status(NULL, buf);
- 
- 	*offset = size <= len ? size : len;
- 	size = copy_to_user(ubuf, buf, *offset);
- 	if (size)
--		return -EFAULT;
-+		rv = -EFAULT;
- 
--	return *offset;
-+	kfree(buf);
-+	return rv ? rv : *offset;
- }
- 
- static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
- 				  size_t len, loff_t *offset)
- {
- 	struct driver_data *dd =  (struct driver_data *)f->private_data;
--	char buf[MTIP_DFS_MAX_BUF_SIZE];
-+	char *buf;
- 	u32 group_allocated;
- 	int size = *offset;
--	int n;
-+	int n, rv = 0;
- 
- 	if (!len || size)
- 		return 0;
- 
-+	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-+	if (!buf) {
-+		dev_err(&dd->pdev->dev,
-+			"Memory allocation: register buffer\n");
-+		return -ENOMEM;
-+	}
-+
- 	size += sprintf(&buf[size], "H/ S ACTive      : [ 0x");
- 
- 	for (n = dd->slot_groups-1; n >= 0; n--)
-@@ -2888,21 +2905,30 @@ static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
- 	*offset = size <= len ? size : len;
- 	size = copy_to_user(ubuf, buf, *offset);
- 	if (size)
--		return -EFAULT;
-+		rv = -EFAULT;
- 
--	return *offset;
-+	kfree(buf);
-+	return rv ? rv : *offset;
- }
- 
- static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
- 				  size_t len, loff_t *offset)
- {
- 	struct driver_data *dd =  (struct driver_data *)f->private_data;
--	char buf[MTIP_DFS_MAX_BUF_SIZE];
-+	char *buf;
- 	int size = *offset;
-+	int rv = 0;
- 
- 	if (!len || size)
- 		return 0;
- 
-+	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-+	if (!buf) {
-+		dev_err(&dd->pdev->dev,
-+			"Memory allocation: flag buffer\n");
-+		return -ENOMEM;
-+	}
-+
- 	size += sprintf(&buf[size], "Flag-port : [ %08lX ]\n",
- 							dd->port->flags);
- 	size += sprintf(&buf[size], "Flag-dd   : [ %08lX ]\n",
-@@ -2911,9 +2937,10 @@ static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
- 	*offset = size <= len ? size : len;
- 	size = copy_to_user(ubuf, buf, *offset);
- 	if (size)
--		return -EFAULT;
-+		rv = -EFAULT;
- 
--	return *offset;
-+	kfree(buf);
-+	return rv ? rv : *offset;
- }
- 
- static const struct file_operations mtip_device_status_fops = {
