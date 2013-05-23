@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab3EWHpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:45:34 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45046 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab3EWHpd (ORCPT
+	id S1757465Ab3EWHpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:45:54 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:36690 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab3EWHpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:45:33 -0400
+	Thu, 23 May 2013 03:45:53 -0400
+Message-ID: <519DC926.4000106@redhat.com>
+Date: Thu, 23 May 2013 09:45:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130523033911.GA9411@redhat.com>
-References: <20130521230332.GC12713@redhat.com>
-	<519D1668.6000601@zytor.com>
-	<20130522200012.GA15456@redhat.com>
-	<ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
-	<20130523033911.GA9411@redhat.com>
-Date: Thu, 23 May 2013 15:45:32 +0800
-Message-ID: <CACVXFVP3stgc2JKc31_yjPuokTbqcSrW_FWDvHrHK+NA-xu-yg@mail.gmail.com>
-Subject: Re: microcode loading got really slow.
-From: Ming Lei <tom.leiming@gmail.com>
-To: Dave Jones <davej@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        fenghua.yu@intel.com, Takashi Iwai <tiwai@suse.de>
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org>
+In-Reply-To: <20130522221737.GA12339@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:39 AM, Dave Jones <davej@redhat.com> wrote:
->  > On 05/21/2013 04:03 PM, Dave Jones wrote:
->  >
->  > [   72.318133] microcode: CPU1 sig=0x306c3, pf=0x2, revision=0x6
->  > [  132.446449] microcode: CPU2 sig=0x306c3, pf=0x2, revision=0x6
->  > [  192.573101] microcode: CPU3 sig=0x306c3, pf=0x2, revision=0x6
->  > [  252.702055] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
->  >
->  > For some reason the events for udev seem to be getting delayed 60s
->  > for each core.
->
-> Screwed up my .config, and had CONFIG_FW_LOADER_USER_HELPER inadvertantly set
-> Odd though that it causes that 60 second delay, given that it's supposedly a
-> 'fallback' when the direct loading fails.
+Il 23/05/2013 00:17, Tejun Heo ha scritto:
+> Then let's make it fit the use case better.  I really can't see much
+> point in crafting the cdb filter when you basically have to entrust
+> the device to the user anyway.  Let's either trust the user with the
+> device or not.  I'm very doubtful that the filtered access via SG_IO
+> can be reliable or secure enough.  Let's please avoid extending a
+> broken thing.
 
-udevd has the ugly problem previously at some situations(for example,
-request_firmware called in probe(), and that is why direct loading is
-introduced),
-but not sure why the direct loading is failed first.
+Sorry to say that, but "I'm very doubtful that..." is just conspiracy
+theory.
 
-Could you enable 'CONFIG_DEBUG_DRIVER' and post 'dmesg' out?
-And better to check where the affected firmware(microcode) is in your
-distribution.
+It is not broken.  I'm not _that_ clueless, if it were broken I wouldn't
+have had users use it in production.
 
->
-> It seems I don't actually need to set that option, so I'm not bothered
-> if there's an actual bug here or not, but the behaviour seems odd.
+> One more thing, is it really necessary to have finer granularity than
+> provided by file permissions?  What would be the use case?  Do you
+> expect to have multiple - two - differing levels of access with and
+> without SG_IO?
 
-If the option isn't set, the firmware will be lost for the requested CPU, :-)
+No, I don't.  I want four levels:
 
-Thanks,
--- 
-Ming Lei
+1) no access;
+
+2) read-only access;
+
+3) read-write whitelisted access;
+
+4) generic access;
+
+but it's indeed fine to assume that 3 and 4 will never be given together
+to the same disk.  The important point is that 2 and 3 should not
+require any privileges except for opening the file.
+
+With the opt-out knob, you still need a long-lived privileged process in
+order to set the knob back to "no access", and that's undesirable.
+Long-lived privileged processes can be SIGKILLed and leave things open
+for misuse; instead, if I need something privileged I want to confine it
+to a helper that opens the file and passes back the file descriptor.
+
+> for the same user, it's pointless to give out SG_IO access to
+> processes while denying for other processes.  As long as ptrace can
+> be attached, hijacking such fd is easy. Making it per-device should
+> be suitable enough, no?
+
+Yes, and that's what I did.  Such hijacking is why a kernel whitelist is
+necessary in untrusted cases (i.e. you cannot just implement it in
+userspace).
+
+>> There are many use cases, I listed some in my reply to Martin.
+>> Sometimes you have trust over the guest and can use count-me-out.  But
+>> in some cases you don't, and yet the current whitelist is not enough
+>> (e.g. tapes).
+> 
+> Can you elaborate?  Why can't a tape device be entrusted to the user?
+
+In general, any device may or may not be entrusted to the user.  In this
+respect, tapes or disks have no difference.
+
+But while the current whitelist is almost okay for disks, it is not
+usable for tapes.  Too many essential commands are missing; this is why
+extending the whitelist to cover other device types is important for me.
+ And since you don't want to open new commands to all classes with no
+distinction (which I understand), the only choice is per-class whitelists.
+
+Paolo
