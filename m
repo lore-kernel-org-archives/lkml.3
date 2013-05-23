@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab3EWLgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:36:45 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:54330 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758105Ab3EWLgn (ORCPT
+	id S1758628Ab3EWLio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:38:44 -0400
+Received: from relay.parallels.com ([195.214.232.42]:57261 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758414Ab3EWLin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:36:43 -0400
+	Thu, 23 May 2013 07:38:43 -0400
+Message-ID: <519DFFA9.3010606@parallels.com>
+Date: Thu, 23 May 2013 15:38:17 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-40-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-40-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Thu, 23 May 2013 19:36:43 +0800
-Message-ID: <CAJd=RBCP+YvA46j8K7pXDGBLdLgh2+Db9RDrHU4DP7JHsv_Qcw@mail.gmail.com>
-Subject: Re: [PATCHv4 39/39] thp: map file-backed huge pages on fault
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Layton <jlayton@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
+        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
+        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <devel@openvz.org>
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+References: <20130522072840.27720.85023.stgit@localhost.localdomain> <878v36ex6n.fsf@xmission.com> <519DCE5D.6070204@parallels.com> <87k3mq9fsu.fsf@xmission.com> <519DF109.9010309@parallels.com> <20130523073108.13afafa6@tlielax.poochiereds.net>
+In-Reply-To: <20130523073108.13afafa6@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+23.05.2013 15:31, Jeff Layton пишет:
+> On Thu, 23 May 2013 14:35:53 +0400
+> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 >
-> Look like all pieces are in place, we can map file-backed huge-pages
-> now.
+>> 23.05.2013 14:00, Eric W. Biederman пишет:
+>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+>>>
+>>>> 22.05.2013 21:33, Eric W. Biederman пишет:
+>>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+>>>>>
+>>>>>> Usermode helper executes all binaries in global "init" root context. This
+>>>>>> doesn't allow to call a binary from other root context (for example in a
+>>>>>> container).
+>>>>>> Currently, both containerized NFS client and NFS server requires an ability to
+>>>>>> execute a binary in a container's root context. Root swap can be done in
+>>>>>> "init" callback, passed by UMH caller.
+>>>>>> But since we have 2 callers already (and more of them are expected to appear
+>>>>>> in future) and because set_fs_root() in not exported, it looks reasonable to
+>>>>>> add one more generic UMH helper to generic fs code.
+>>>>>> Root path reference must be hold by the caller, since it will be put on UMH
+>>>>>> thread exit.
+>>>>>
+>>>>> Awesome.  With this patch as an uprivilieged user I get to pick which
+>>>>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
+>>>>> user namespace (something that looks like only matter of time).
+>>>>>
+>>>>
+>>>> Not really. Only by using a kernel module to call the UMH.
+>>>> And an unprivileged can't load a module as far a I know.
+>>>> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
+>>>
+>>> To help me understand the context which instances of call user mode
+>>> helper are you expecting to use this facility?
+>>>
+>>
+>> Ok. Here is how the NFSd uses UMH:
+>> UMH is used on NFSd service to start user-space client tracker daemon
+>> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
+>> persistent storage.
+>>
+>>>>> I think this is a seriously bad idea.
+>>>>>
+>>>>> Why can't we do this in userspace with setns as we do with the core dump
+>>>>> helper?
+>>>>>
+>>>>
+>>>> Could you, please, clarify, how setns can help here?
+>>>
+>>> setns can change the mount namespace, and chroot can change to root
+>>> directory in the specified mount namespace.  Essentially you can enter
+>>> into a containers complete context (pid, mnt, root, etc) comming from
+>>> the outside.
+>>>
+>>
+>> So, you are actually suggesting to move the binary start from the kernel to user-space.
+>> IOW, you are suggesting to do not using UMH at all.
+>> Am I right?
+>> I don't know the reasons, why it was done by using UMH and not in userspace.
+>> Could you clarify this, Jeff?
+>>
 >
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  include/linux/huge_mm.h |    4 +++-
->  mm/memory.c             |    5 ++++-
->  2 files changed, 7 insertions(+), 2 deletions(-)
+> nfsdcltrack is a "one-shot" program for managing and querying the nfsd
+> client tracking database. When knfsd needs to query or modify the
+> db, it uses the UMH infrastructure to call this program that does
+> what's requested and then exits.
 >
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index f4d6626..903f097 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -78,7 +78,9 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
->            (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG) &&                   \
->            ((__vma)->vm_flags & VM_HUGEPAGE))) &&                       \
->          !((__vma)->vm_flags & VM_NOHUGEPAGE) &&                        \
-> -        !is_vma_temporary_stack(__vma))
-> +        !is_vma_temporary_stack(__vma) &&                              \
-> +        (!(__vma)->vm_ops ||                                           \
-> +                 mapping_can_have_hugepages((__vma)->vm_file->f_mapping)))
-
-Redefine, why?
-
->  #define transparent_hugepage_defrag(__vma)                             \
->         ((transparent_hugepage_flags &                                  \
->           (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)) ||                     \
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ebff552..7fe9752 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3939,10 +3939,13 @@ retry:
->         if (!pmd)
->                 return VM_FAULT_OOM;
->         if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
-> -               int ret = 0;
-> +               int ret;
->                 if (!vma->vm_ops)
->                         ret = do_huge_pmd_anonymous_page(mm, vma, address,
->                                         pmd, flags);
-
-Ah vma->vm_ops is checked here, so
-		else if (mapping_can_have_hugepages())
-
-> +               else
-> +                       ret = do_huge_linear_fault(mm, vma, address,
-> +                                       pmd, flags);
->                 if ((ret & VM_FAULT_FALLBACK) == 0)
->                         return ret;
->         } else {
-> --
-> 1.7.10.4
+> So, I'm not sure I really understand your question. It wasn't done in
+> userspace since the whole purpose of this program is to handle upcalls
+> from the kernel.
 >
+
+The question is what was the reason to start this binary from kernel by UMH?
+I.e. why it can't be started by some user-space process before or after NFSd start?
+I don't familiar with this client tracking facility and that's the only reason why I'm asking.
+
+-- 
+Best regards,
+Stanislav Kinsbursky
