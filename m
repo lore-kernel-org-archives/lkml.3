@@ -1,145 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759192Ab3EWN6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:58:51 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61010 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759131Ab3EWN6s (ORCPT
+	id S1759163Ab3EWN6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:58:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48021 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759131Ab3EWN6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:58:48 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 4/4] f2fs: optimize several routines in node.h
-Date: Thu, 23 May 2013 22:58:40 +0900
-Message-Id: <1369317520-14414-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 23 May 2013 09:58:44 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tj@kernel.org, stable@gnu.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH v3 part1 4/4] sg_io: resolve conflicts between commands assigned to multiple classes (CVE-2012-4542)
+Date: Thu, 23 May 2013 15:58:23 +0200
+Message-Id: <1369317503-4095-5-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
+References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Some SCSI commands can be sent to disks via SG_IO even by unprivileged
+users.  Unfortunately, some opcodes overlap across SCSI device classes
+and have different meanings for different classes.  Four of them can
+be used for read-only file descriptors on MMC, but should be limited to
+descriptors opened for read-write on SBC:
 
-There are various functions with common code which could be separated
-out to make common routines. So, made new routines and in order to
-retain the same call path and no major changes, written some macros
-to access those routines.
+- READ SUBCHANNEL <-> UNMAP (destructive, but no control on written
+  data)
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+- GET PERFORMANCE <-> ERASE (not really a problem, no one supports
+  ERASE anyway)
+
+- READ DISC INFORMATION <-> XPWRITE (not commonly implemented but
+  most dangerous)
+
+- PLAY AUDIO TI <-> SANITIZE (a very new command)
+
+In addition, REPORT KEY's opcode A4h is used in SPC for SET TARGET PORT
+GROUPS and various other management commands, and should be blocked
+for everything except CD-ROMs and the like.
+
+To fix this, the series modifies the bitmap entries for these five
+commands.  This is the smallest change that fixes this bug.
+
+Cc: stable@gnu.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- fs/f2fs/node.h |   68 ++++++++++++++++----------------------------------------
- 1 file changed, 19 insertions(+), 49 deletions(-)
+ block/scsi_ioctl.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
-index 0a2d72f..37e1b90 100644
---- a/fs/f2fs/node.h
-+++ b/fs/f2fs/node.h
-@@ -275,25 +275,20 @@ static inline nid_t get_nid(struct page *p, int off, bool i)
-  *  - Mark cold node blocks in their node footer
-  *  - Mark cold data pages in page cache
-  */
--static inline int is_cold_file(struct inode *inode)
--{
--	return F2FS_I(inode)->i_advise & FADVISE_COLD_BIT;
--}
--
--static inline void set_cold_file(struct inode *inode)
--{
--	F2FS_I(inode)->i_advise |= FADVISE_COLD_BIT;
--}
- 
--static inline int is_cp_file(struct inode *inode)
-+static inline int is_file(struct inode *inode, int type)
- {
--	return F2FS_I(inode)->i_advise & FADVISE_CP_BIT;
-+	return F2FS_I(inode)->i_advise & type;
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 6e18156..7a1d9f6 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -199,6 +199,32 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(GPCMD_SET_STREAMING, write);
+ 	sgio_bitmap_set(GPCMD_SET_READ_AHEAD, write);
+ #undef sgio_bitmap_set
++
++	/*
++	 * Treat specially those commands that have a different meaning
++	 * for disks: READ SUBCHANNEL conflicts with UNMAP.
++	 */
++	filter->read_ok[GPCMD_READ_SUBCHANNEL] &= ~(1 << TYPE_DISK);
++	filter->write_ok[GPCMD_READ_SUBCHANNEL] |= (1 << TYPE_DISK);
++
++	/* PLAY AUDIO TI conflicts with SANITIZE.  */
++	filter->read_ok[GPCMD_PLAY_AUDIO_TI] &= ~((1 << TYPE_DISK) | (1 << TYPE_RBC));
++	filter->write_ok[GPCMD_PLAY_AUDIO_TI] |= (1 << TYPE_DISK) | (1 << TYPE_RBC);
++
++	/* READ DISC INFORMATION conflicts with XPWRITE.  */
++	filter->read_ok[GPCMD_READ_DISC_INFO] &= ~(1 << TYPE_DISK);
++	filter->write_ok[GPCMD_READ_DISC_INFO] |= (1 << TYPE_DISK);
++
++	/* GET PERFORMANCE conflicts with ERASE.  */
++	filter->read_ok[GPCMD_GET_PERFORMANCE] &= ~(1 << TYPE_MOD);
++	filter->write_ok[GPCMD_GET_PERFORMANCE] |= (1 << TYPE_MOD);
++
++	/*
++	 * REPORT KEY conflicts with many management commands under operation
++	 * code 0xA4, enable it only for MMC devices.
++	 */
++	filter->read_ok[GPCMD_REPORT_KEY] = (1 << TYPE_ROM);
++	filter->write_ok[GPCMD_REPORT_KEY] = (1 << TYPE_ROM);
  }
  
--static inline void set_cp_file(struct inode *inode)
-+static inline void set_file(struct inode *inode, int type)
- {
--	F2FS_I(inode)->i_advise |= FADVISE_CP_BIT;
-+	F2FS_I(inode)->i_advise |= type;
- }
-+#define is_cold_file(inode)	is_file(inode, FADVISE_COLD_BIT)
-+#define is_cp_file(inode)	is_file(inode, FADVISE_CP_BIT)
-+#define set_cold_file(inode)	set_file(inode, FADVISE_COLD_BIT)
-+#define set_cp_file(inode)	set_file(inode, FADVISE_CP_BIT)
- 
- static inline int is_cold_data(struct page *page)
- {
-@@ -310,29 +305,15 @@ static inline void clear_cold_data(struct page *page)
- 	ClearPageChecked(page);
- }
- 
--static inline int is_cold_node(struct page *page)
--{
--	void *kaddr = page_address(page);
--	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
--	unsigned int flag = le32_to_cpu(rn->footer.flag);
--	return flag & (0x1 << COLD_BIT_SHIFT);
--}
--
--static inline unsigned char is_fsync_dnode(struct page *page)
--{
--	void *kaddr = page_address(page);
--	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
--	unsigned int flag = le32_to_cpu(rn->footer.flag);
--	return flag & (0x1 << FSYNC_BIT_SHIFT);
--}
--
--static inline unsigned char is_dent_dnode(struct page *page)
-+static inline int is_node(struct page *page, int type)
- {
- 	void *kaddr = page_address(page);
- 	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
--	unsigned int flag = le32_to_cpu(rn->footer.flag);
--	return flag & (0x1 << DENT_BIT_SHIFT);
-+	return le32_to_cpu(rn->footer.flag) & (1 << type);
- }
-+#define is_cold_node(page)    is_node(page, COLD_BIT_SHIFT)
-+#define is_fsync_dnode(page)  is_node(page, FSYNC_BIT_SHIFT)
-+#define is_dent_dnode(page)   is_node(page, DENT_BIT_SHIFT)
- 
- static inline void set_cold_node(struct inode *inode, struct page *page)
- {
-@@ -346,26 +327,15 @@ static inline void set_cold_node(struct inode *inode, struct page *page)
- 	rn->footer.flag = cpu_to_le32(flag);
- }
- 
--static inline void set_fsync_mark(struct page *page, int mark)
-+static inline void set_mark(struct page *page, int mark, int type)
- {
--	void *kaddr = page_address(page);
--	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
--	unsigned int flag = le32_to_cpu(rn->footer.flag);
--	if (mark)
--		flag |= (0x1 << FSYNC_BIT_SHIFT);
--	else
--		flag &= ~(0x1 << FSYNC_BIT_SHIFT);
--	rn->footer.flag = cpu_to_le32(flag);
--}
--
--static inline void set_dentry_mark(struct page *page, int mark)
--{
--	void *kaddr = page_address(page);
--	struct f2fs_node *rn = (struct f2fs_node *)kaddr;
-+	struct f2fs_node *rn = (struct f2fs_node *)page_address(page);
- 	unsigned int flag = le32_to_cpu(rn->footer.flag);
- 	if (mark)
--		flag |= (0x1 << DENT_BIT_SHIFT);
-+		flag |= (0x1 << type);
- 	else
--		flag &= ~(0x1 << DENT_BIT_SHIFT);
-+		flag &= ~(0x1 << type);
- 	rn->footer.flag = cpu_to_le32(flag);
- }
-+#define set_dentry_mark(page, mark)	set_mark(page, mark, DENT_BIT_SHIFT)
-+#define set_fsync_mark(page, mark)	set_mark(page, mark, FSYNC_BIT_SHIFT)
+ int blk_verify_command(struct request_queue *q,
 -- 
-1.7.9.5
+1.8.1.4
 
