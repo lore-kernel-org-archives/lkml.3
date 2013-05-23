@@ -1,100 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab3EWJrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:47:14 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:61993 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757714Ab3EWJrM (ORCPT
+	id S1758107Ab3EWJrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:47:39 -0400
+Received: from mail-gh0-f178.google.com ([209.85.160.178]:51254 "EHLO
+	mail-gh0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758088Ab3EWJri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:47:12 -0400
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 05:47:11 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYNAM/jnVF5LBBG/2dsb2JhbABagwi9MoUkBAGBCRd0giMBAQUnExwjEAgDGAklDwUlAyETG4dxulsWjWqBHQeCc2EDlzeRQYMhKg
-Date: Thu, 23 May 2013 19:42:01 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ian Kent <raven@themaw.net>,
-        Sage Weil <sage@inktank.com>, Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-nfs@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-Message-ID: <20130523094201.GA24543@dastard>
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
+	Thu, 23 May 2013 05:47:38 -0400
+Message-ID: <519DE5AD.7080303@redhat.com>
+Date: Thu, 23 May 2013 11:47:25 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org>
+In-Reply-To: <20130523090222.GA26592@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 09:37:25PM -0400, Waiman Long wrote:
-> Change log:
+Il 23/05/2013 11:02, Tejun Heo ha scritto:
+> On Thu, May 23, 2013 at 09:45:42AM +0200, Paolo Bonzini wrote:
+>> Il 23/05/2013 00:17, Tejun Heo ha scritto:
+>>> Then let's make it fit the use case better.  I really can't see much
+>>> point in crafting the cdb filter when you basically have to entrust
+>>> the device to the user anyway.  Let's either trust the user with the
+>>> device or not.  I'm very doubtful that the filtered access via SG_IO
+>>> can be reliable or secure enough.  Let's please avoid extending a
+>>> broken thing.
+>>
+>> Sorry to say that, but "I'm very doubtful that..." is just conspiracy
+>> theory.
+>>
+>> It is not broken.  I'm not _that_ clueless, if it were broken I wouldn't
+>> have had users use it in production.
 > 
-> v2->v3
->  - Fix the RCU lock problem found by Al Viro.
->  - Rebase the code to the latest v3.10-rc1 linux mainline.
->  - Remove patch 4 which may be problematic if the dentry is deleted.
->  - Rerun performance measurement using 3.10-rc1 kernel.
+> No no, I'm not talking about it not working for the users - it's just
+> passing the commands, it of course works.  I'm doubting about it being
+> a worthy security isolation layer.  cdb filtering (of any form really)
+> has always been something on the border.  It always was something we
+> got stuck with due to lack of other immediate options.
+
+I understood correctly then. :)  I agree it's not the best, but it's not
+completely broken either.  It has bugs, and that's what these patches
+try to fix.
+
+>>> One more thing, is it really necessary to have finer granularity than
+>>> provided by file permissions?  What would be the use case?  Do you
+>>> expect to have multiple - two - differing levels of access with and
+>>> without SG_IO?
+>>
+>> No, I don't.  I want four levels:
+>>
+>> 1) no access;
+>> 2) read-only access;
+>> 3) read-write whitelisted access;
+>> 4) generic access;
+>>
+>> but it's indeed fine to assume that 3 and 4 will never be given together
+>> to the same disk.  The important point is that 2 and 3 should not
+>> require any privileges except for opening the file.
 > 
-> v1->v2
->  - Include performance improvement in the AIM7 benchmark results because
->    of this patch.
->  - Modify dget_parent() to avoid taking the lock, if possible, to further
->    improve AIM7 benchmark results.
+> I'm wondering whether combining 3 into 4 would be good enough.
+
+No, it wouldn't.  I learnt it the hard way (by having a patch nacked :))
+at http://thread.gmane.org/gmane.linux.kernel/1311887.
+
+>> With the opt-out knob, you still need a long-lived privileged process in
+>> order to set the knob back to "no access", and that's undesirable.
+>> Long-lived privileged processes can be SIGKILLed and leave things open
+>> for misuse; instead, if I need something privileged I want to confine it
+>> to a helper that opens the file and passes back the file descriptor.
 > 
-> During some perf-record sessions of the kernel running the high_systime
-> workload of the AIM7 benchmark, it was found that quite a large portion
-> of the spinlock contention was due to the perf_event_mmap_event()
-> function itself. This perf kernel function calls d_path() which,
-> in turn, call path_get() and dput() indirectly. These 3 functions
-> were the hottest functions shown in the perf-report output of
-> the _raw_spin_lock() function in an 8-socket system with 80 cores
-> (hyperthreading off) with a 3.10-rc1 kernel:
+> Hmmm?  Somebody has to give out the access rights anyway, be it a udev
+> rule or polkit.  While not having to depend on them could be nice, I
+> don't think involving userland is a big deal.  It's already involved
+> in closely related capacities anyway.
 
-<sigh>
+Polkit need not do anything to give out the access rights, it only has
+to just confirm the credentials.  A helper setgid-disk can consult
+polkit, open the file, pass the file descriptor back, and exit.  We
+already do something similar for tap devices.
 
-What was it I said about this patchset when you posted it to speed
-up an Oracle benchmark back in february? I'll repeat:
+>>>> There are many use cases, I listed some in my reply to Martin.
+>>>> Sometimes you have trust over the guest and can use count-me-out.  But
+>>>> in some cases you don't, and yet the current whitelist is not enough
+>>>> (e.g. tapes).
+>>>
+>>> Can you elaborate?  Why can't a tape device be entrusted to the user?
+>
+> I was curious why they wouldn't be able to use count-me-out knob.  The
+> white list was nasty but we did it anyway because there were some
+> horrible commands which, ISTR, could even affect other devices sharing
+> the bus and at least at the beginning the list of commands which
+> should be allowed were pretty compact.
 
-"Nobody should be doing reverse dentry-to-name lookups in a quantity
-sufficient for it to become a performance limiting factor."
+Exactly.  Though these commands do not really affect other devices
+sharing the bus, they affect other initiators trying to use the device.
+ And these commands are generic, so they apply to disks as well as tapes.
 
-And that makes whatever that tracepoint is doing utterly stupid.
-Dumping out full paths in a tracepoint is hardly "low overhead", and
-that tracepoint should be stomped on from a great height. Sure,
-print the filename straight out of the dentry into a tracepoint,
-but repeated calculating the full path (probably for the same set of
-dentries) is just a dumb thing to do.
+Unfortunately, a purely userspace whitelist would be too easy to circumvent.
 
-Anyway, your numbers show that a single AIM7 microbenchmark goes
-better under tracing the specific mmap event that uses d_path(), but
-the others are on average a little bit slower. That doesn't convince
-me that this is worth doing. Indeed, what happens to performance
-when you aren't tracing?
+> Whitelisting those commands is likely to be mostly harmless most of
+> the time but I would be surprised if there aren't devices out in the
+> wild which can be bricked / affected adversely with carefully crafted
+> commands within the allowed cdbs.  The level of security isolation
+> which can be provided by command code filtering is somewhat flimsy,
+> which is why cdb filtering was always seen as a kludge, which in turn
+> is why there's reluctance against extending it to more use cases.
 
-Indeed, have you analysed what makes that
-microbenchmark contend so much on the dentry lock while reverse
-lookups are occuring? Dentry lock contention does not necessarily
-indicate a problem with the dentry locks, and without knowing why
-there is contention occuring (esp. compared to the other benchmarks)
-we can't really determine if this is a good solution or not...
+Yes, I understand that.  But I don't believe it is a serious concern.
+In the case of tapes, for example, you're not talking about 10 dollar
+USB pendrives whose firmware was written in fire-and-forget mode.
+Firmware bugs would be updated by the manufacturers.
 
-IOWs, you need more than one microbenchmark that interacts with
-some naive monitoring code to justify the complexity these locking
-changes introduce....
+I cannot exclude there will _never_ be a bug like this, of course.  But
+even if there will be one, IMHO it would be exceptional enough that we
+can afford fixing it with a per-device quirk.
 
-Cheers,
+Scanners have never had any CDB filtering done on them; I searched for
+this kind of bug, and I couldn't find any report.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+What I am trying to do is to reach a compromise.  The one I'm proposing
+is to forbid reserved or vendor-specific commands, while at the same
+time opening the doors on more standardized commands.
+
+Paolo
+
