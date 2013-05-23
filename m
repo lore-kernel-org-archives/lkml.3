@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab3EWIom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:44:42 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:37613 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab3EWIok (ORCPT
+	id S1757741Ab3EWIvs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:51:48 -0400
+Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:42962 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757520Ab3EWIvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:44:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
-References: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Thu, 23 May 2013 10:44:18 +0200
-Message-ID: <CACQ1gAi0JfJFAc822YT5xVfW8HkB8r_4rf0dXTNsi-1oChsPsQ@mail.gmail.com>
-Subject: Re: [PATCH net, 1/2] hyperv: Fix a kernel warning from netvsc_linkstatus_callback()
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 May 2013 04:51:43 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: [PATCH 0/3] ARM: at91: move aic driver to drivers/irqchip
+Date: Thu, 23 May 2013 10:49:47 +0200
+Message-Id: <1369298990-9826-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 15577388163004609612
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/5 Haiyang Zhang <haiyangz@microsoft.com>:
-> The warning about local_bh_enable inside IRQ happens when disconnecting a
-> virtual NIC.
->
-> The reason for the warning is -- netif_tx_disable() is called when the NIC
-> is disconnected. And it's called within irq context. netif_tx_disable() calls
-> local_bh_enable() which displays warning if in irq.
->
-> The fix is to remove the unnecessary netif_tx_disable & wake_queue() in the
-> netvsc_linkstatus_callback().
->
-> Reported-by: Richard Genoud <richard.genoud@gmail.com>
-> Tested-by: Long Li <longli@microsoft.com>
-> Tested-by: Richard Genoud <richard.genoud@gmail.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
->
-> ---
->  drivers/net/hyperv/netvsc_drv.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-> index 5f85205..8341b62 100644
-> --- a/drivers/net/hyperv/netvsc_drv.c
-> +++ b/drivers/net/hyperv/netvsc_drv.c
-> @@ -241,13 +241,11 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
->
->         if (status == 1) {
->                 netif_carrier_on(net);
-> -               netif_wake_queue(net);
->                 ndev_ctx = netdev_priv(net);
->                 schedule_delayed_work(&ndev_ctx->dwork, 0);
->                 schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
->         } else {
->                 netif_carrier_off(net);
-> -               netif_tx_disable(net);
->         }
->  }
->
-> --
-> 1.7.4.1
+Hello,
 
-This should also go to the stable tree, shouldn't it ?
-At least 3.8, 3.7 and 3.4 (the 3.2 version is different, and it's in
-staging. (at not used by distros anyway))
+This patch series move the at91 AIC (Advance Interrupt Controller)
+driver to the irqchip subsystem directory (drivers/irqchip).
+
+It also make use of IRQCHIP_DECLARE to register irqchip for dt boards
+instead of using the machine specific "init_irq" function.
+
+Finally it register the arch specific irq handler inside the the init
+functions using set_handle_irq. This way we can remove all the machine
+specific "handle_irq".
+
+This patch series was tested on kizbox board (sam9g20 SoC) using
+device tree. Could someone test it on other boards (both dt and non dt)?
+
+Best Regards,
+Boris
 
 
-Richard.
+Boris BREZILLON (3):
+  ARM: at91: move at91 aic driver to drivers/irqchip
+  ARM: at91: use IRQCHIP_DECLARE instead of machine specific init_irq
+  ARM: at91: use set_handle_irq instead of machine specific handle_irq
+
+ arch/arm/mach-at91/Makefile                |    2 +-
+ arch/arm/mach-at91/at91_aic.h              |   99 -----
+ arch/arm/mach-at91/at91rm9200.c            |    2 +-
+ arch/arm/mach-at91/at91sam9260.c           |    2 +-
+ arch/arm/mach-at91/at91sam9261.c           |    2 +-
+ arch/arm/mach-at91/at91sam9263.c           |    2 +-
+ arch/arm/mach-at91/at91sam9g45.c           |    2 +-
+ arch/arm/mach-at91/at91sam9rl.c            |    2 +-
+ arch/arm/mach-at91/at91x40.c               |    2 +-
+ arch/arm/mach-at91/board-1arm.c            |    3 +-
+ arch/arm/mach-at91/board-afeb-9260v1.c     |    3 +-
+ arch/arm/mach-at91/board-cam60.c           |    3 +-
+ arch/arm/mach-at91/board-carmeva.c         |    3 +-
+ arch/arm/mach-at91/board-cpu9krea.c        |    3 +-
+ arch/arm/mach-at91/board-cpuat91.c         |    3 +-
+ arch/arm/mach-at91/board-csb337.c          |    3 +-
+ arch/arm/mach-at91/board-csb637.c          |    3 +-
+ arch/arm/mach-at91/board-dt-rm9200.c       |   15 +-
+ arch/arm/mach-at91/board-dt-sam9.c         |   16 +-
+ arch/arm/mach-at91/board-dt-sama5.c        |   16 +-
+ arch/arm/mach-at91/board-eb01.c            |    4 +-
+ arch/arm/mach-at91/board-eb9200.c          |    4 +-
+ arch/arm/mach-at91/board-ecbat91.c         |    3 +-
+ arch/arm/mach-at91/board-eco920.c          |    3 +-
+ arch/arm/mach-at91/board-flexibity.c       |    3 +-
+ arch/arm/mach-at91/board-foxg20.c          |    3 +-
+ arch/arm/mach-at91/board-gsia18s.c         |    3 +-
+ arch/arm/mach-at91/board-kafa.c            |    3 +-
+ arch/arm/mach-at91/board-kb9202.c          |    3 +-
+ arch/arm/mach-at91/board-pcontrol-g20.c    |    3 +-
+ arch/arm/mach-at91/board-picotux200.c      |    3 +-
+ arch/arm/mach-at91/board-qil-a9260.c       |    3 +-
+ arch/arm/mach-at91/board-rm9200dk.c        |    3 +-
+ arch/arm/mach-at91/board-rm9200ek.c        |    3 +-
+ arch/arm/mach-at91/board-rsi-ews.c         |    4 +-
+ arch/arm/mach-at91/board-sam9-l9260.c      |    3 +-
+ arch/arm/mach-at91/board-sam9260ek.c       |    3 +-
+ arch/arm/mach-at91/board-sam9261ek.c       |    3 +-
+ arch/arm/mach-at91/board-sam9263ek.c       |    3 +-
+ arch/arm/mach-at91/board-sam9g20ek.c       |    4 +-
+ arch/arm/mach-at91/board-sam9m10g45ek.c    |    3 +-
+ arch/arm/mach-at91/board-sam9rlek.c        |    3 +-
+ arch/arm/mach-at91/board-snapper9260.c     |    3 +-
+ arch/arm/mach-at91/board-stamp9g20.c       |    4 +-
+ arch/arm/mach-at91/board-usb-a926x.c       |    5 +-
+ arch/arm/mach-at91/board-yl-9200.c         |    3 +-
+ arch/arm/mach-at91/generic.h               |    5 -
+ arch/arm/mach-at91/include/mach/at91_aic.h |   96 +++++
+ arch/arm/mach-at91/irq.c                   |  547 ---------------------------
+ arch/arm/mach-at91/pm.c                    |    2 +-
+ drivers/irqchip/Makefile                   |    1 +
+ drivers/irqchip/irq-at91.c                 |  557 ++++++++++++++++++++++++++++
+ 52 files changed, 706 insertions(+), 773 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/at91_aic.h
+ create mode 100644 arch/arm/mach-at91/include/mach/at91_aic.h
+ delete mode 100644 arch/arm/mach-at91/irq.c
+ create mode 100644 drivers/irqchip/irq-at91.c
+
+-- 
+1.7.9.5
+
