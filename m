@@ -1,281 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab3EWOCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:02:22 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62949 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759255Ab3EWOCS (ORCPT
+	id S1759335Ab3EWODJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:03:09 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:64490 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759000Ab3EWN6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:02:18 -0400
-From: Michal Simek <michal.simek@xilinx.com>
+	Thu, 23 May 2013 09:58:36 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RFC PATCH 2/2] uio: Add two platform uio drivers to one
-Date: Thu, 23 May 2013 16:01:59 +0200
-Message-Id: <71c482e15ee32fa304db73b984f6d5a63441cd92.1369317710.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
-References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
-In-Reply-To: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
-References: <086bdaf83fe546bd3c7fe163e565a0887770770f.1369317710.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-8059-1369317734-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+Cc: tj@kernel.org, stable@gnu.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH v3 part1 1/4] sg_io: pass request_queue to blk_verify_command
+Date: Thu, 23 May 2013 15:58:20 +0200
+Message-Id: <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
+References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Adjust the blk_verify_command function to let it look at per-queue
+data.  This will be done in the next patch.
 
---=_mimegpg-monstr-desktop-8059-1369317734-0001
-
-- Remove Userspace I/O platform driver without IRQ support
-  but add this functionality to genirq driver
-- Remove code duplication from OF binding
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: stable@gnu.org
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Doug Gilbert <dgilbert@interlog.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
-The main reason for this change is to have one
-compatibility string for UIO with and without IRQ.
+ block/bsg.c            | 2 +-
+ block/scsi_ioctl.c     | 7 ++++---
+ drivers/scsi/sg.c      | 3 ++-
+ include/linux/blkdev.h | 3 ++-
+ 4 files changed, 9 insertions(+), 6 deletions(-)
 
----
- drivers/uio/Kconfig           |   7 ---
- drivers/uio/Makefile          |   1 -
- drivers/uio/uio_pdrv.c        | 113 ------------------------------------------
- drivers/uio/uio_pdrv_genirq.c |  30 ++++-------
- 4 files changed, 9 insertions(+), 142 deletions(-)
- delete mode 100644 drivers/uio/uio_pdrv.c
-
-diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
-index e92eeaf..2ff4c90 100644
---- a/drivers/uio/Kconfig
-+++ b/drivers/uio/Kconfig
-@@ -23,13 +23,6 @@ config UIO_CIF
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called uio_cif.
-
--config UIO_PDRV
--	tristate "Userspace I/O platform driver"
--	help
--	  Generic platform driver for Userspace I/O devices.
--
--	  If you don't know what to do here, say N.
--
- config UIO_PDRV_GENIRQ
- 	tristate "Userspace I/O platform driver with generic IRQ handling"
- 	help
-diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
-index b354c53..ea015a2 100644
---- a/drivers/uio/Makefile
-+++ b/drivers/uio/Makefile
-@@ -1,6 +1,5 @@
- obj-$(CONFIG_UIO)	+= uio.o
- obj-$(CONFIG_UIO_CIF)	+= uio_cif.o
--obj-$(CONFIG_UIO_PDRV)	+= uio_pdrv.o
- obj-$(CONFIG_UIO_PDRV_GENIRQ)	+= uio_pdrv_genirq.o
- obj-$(CONFIG_UIO_DMEM_GENIRQ)	+= uio_dmem_genirq.o
- obj-$(CONFIG_UIO_AEC)	+= uio_aec.o
-diff --git a/drivers/uio/uio_pdrv.c b/drivers/uio/uio_pdrv.c
-deleted file mode 100644
-index 39be9e0..0000000
---- a/drivers/uio/uio_pdrv.c
-+++ /dev/null
-@@ -1,113 +0,0 @@
--/*
-- * drivers/uio/uio_pdrv.c
-- *
-- * Copyright (C) 2008 by Digi International Inc.
-- * All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License version 2 as published by
-- * the Free Software Foundation.
-- */
--#include <linux/platform_device.h>
--#include <linux/uio_driver.h>
--#include <linux/stringify.h>
--#include <linux/module.h>
--#include <linux/slab.h>
--
--#define DRIVER_NAME "uio_pdrv"
--
--struct uio_platdata {
--	struct uio_info *uioinfo;
--};
--
--static int uio_pdrv_probe(struct platform_device *pdev)
--{
--	struct uio_info *uioinfo = pdev->dev.platform_data;
--	struct uio_platdata *pdata;
--	struct uio_mem *uiomem;
--	int ret = -ENODEV;
--	int i;
--
--	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
--		dev_dbg(&pdev->dev, "%s: err_uioinfo\n", __func__);
--		goto err_uioinfo;
--	}
--
--	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
--	if (!pdata) {
--		ret = -ENOMEM;
--		dev_dbg(&pdev->dev, "%s: err_alloc_pdata\n", __func__);
--		goto err_alloc_pdata;
--	}
--
--	pdata->uioinfo = uioinfo;
--
--	uiomem = &uioinfo->mem[0];
--
--	for (i = 0; i < pdev->num_resources; ++i) {
--		struct resource *r = &pdev->resource[i];
--
--		if (r->flags != IORESOURCE_MEM)
--			continue;
--
--		if (uiomem >= &uioinfo->mem[MAX_UIO_MAPS]) {
--			dev_warn(&pdev->dev, "device has more than "
--					__stringify(MAX_UIO_MAPS)
--					" I/O memory resources.\n");
--			break;
--		}
--
--		uiomem->memtype = UIO_MEM_PHYS;
--		uiomem->addr = r->start;
--		uiomem->size = resource_size(r);
--		uiomem->name = r->name;
--		++uiomem;
--	}
--
--	while (uiomem < &uioinfo->mem[MAX_UIO_MAPS]) {
--		uiomem->size = 0;
--		++uiomem;
--	}
--
--	pdata->uioinfo->priv = pdata;
--
--	ret = uio_register_device(&pdev->dev, pdata->uioinfo);
--
--	if (ret) {
--		kfree(pdata);
--err_alloc_pdata:
--err_uioinfo:
--		return ret;
--	}
--
--	platform_set_drvdata(pdev, pdata);
--
--	return 0;
--}
--
--static int uio_pdrv_remove(struct platform_device *pdev)
--{
--	struct uio_platdata *pdata = platform_get_drvdata(pdev);
--
--	uio_unregister_device(pdata->uioinfo);
--
--	kfree(pdata);
--
--	return 0;
--}
--
--static struct platform_driver uio_pdrv = {
--	.probe = uio_pdrv_probe,
--	.remove = uio_pdrv_remove,
--	.driver = {
--		.name = DRIVER_NAME,
--		.owner = THIS_MODULE,
--	},
--};
--
--module_platform_driver(uio_pdrv);
--
--MODULE_AUTHOR("Uwe Kleine-Koenig");
--MODULE_DESCRIPTION("Userspace I/O platform driver");
--MODULE_LICENSE("GPL v2");
--MODULE_ALIAS("platform:" DRIVER_NAME);
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index d7ba355..ccd2750 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -103,8 +103,6 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	int i;
-
- 	if (pdev->dev.of_node) {
--		int irq;
--
- 		/* alloc uioinfo for one device */
- 		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
- 		if (!uioinfo) {
-@@ -114,13 +112,6 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 		}
- 		uioinfo->name = pdev->dev.of_node->name;
- 		uioinfo->version = "devicetree";
--
--		/* Multiple IRQs are not supported */
--		irq = platform_get_irq(pdev, 0);
--		if (irq == -ENXIO)
--			uioinfo->irq = UIO_IRQ_NONE;
--		else
--			uioinfo->irq = irq;
- 	}
-
- 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
-@@ -146,14 +137,6 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	priv->flags = 0; /* interrupt is enabled to begin with */
- 	priv->pdev = pdev;
-
--	if (!uioinfo->irq) {
--		ret = platform_get_irq(pdev, 0);
--		if (ret < 0) {
--			dev_err(&pdev->dev, "failed to get IRQ\n");
--			goto bad0;
--		}
--		uioinfo->irq = ret;
--	}
- 	uiomem = &uioinfo->mem[0];
-
- 	for (i = 0; i < pdev->num_resources; ++i) {
-@@ -190,10 +173,15 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	 * Interrupt sharing is not supported.
- 	 */
-
--	uioinfo->handler = uio_pdrv_genirq_handler;
--	uioinfo->irqcontrol = uio_pdrv_genirq_irqcontrol;
--	uioinfo->open = uio_pdrv_genirq_open;
--	uioinfo->release = uio_pdrv_genirq_release;
-+	ret = platform_get_irq(pdev, 0);
-+	if (ret >= 0) {
-+		uioinfo->irq = ret;
-+		uioinfo->handler = uio_pdrv_genirq_handler;
-+		uioinfo->irqcontrol = uio_pdrv_genirq_irqcontrol;
-+		uioinfo->open = uio_pdrv_genirq_open;
-+		uioinfo->release = uio_pdrv_genirq_release;
-+	}
-+
- 	uioinfo->priv = priv;
-
- 	/* Enable Runtime PM for this device:
---
-1.8.2.3
+diff --git a/block/bsg.c b/block/bsg.c
+index 420a5a9..dedd83c 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -187,7 +187,7 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
+ 		return -EFAULT;
+ 
+ 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
+-		if (blk_verify_command(rq->cmd, has_write_perm))
++		if (blk_verify_command(q, rq->cmd, has_write_perm))
+ 			return -EPERM;
+ 	} else if (!capable(CAP_SYS_RAWIO))
+ 		return -EPERM;
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index a5ffcc9..96cab50 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -197,7 +197,8 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
+ }
+ 
+-int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
++int blk_verify_command(struct request_queue *q,
++		       unsigned char *cmd, fmode_t has_write_perm)
+ {
+ 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
+ 
+@@ -226,7 +227,7 @@ static int blk_fill_sghdr_rq(struct request_queue *q, struct request *rq,
+ {
+ 	if (copy_from_user(rq->cmd, hdr->cmdp, hdr->cmd_len))
+ 		return -EFAULT;
+-	if (blk_verify_command(rq->cmd, mode & FMODE_WRITE))
++	if (blk_verify_command(q, rq->cmd, mode & FMODE_WRITE))
+ 		return -EPERM;
+ 
+ 	/*
+@@ -473,7 +474,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
+ 	if (in_len && copy_from_user(buffer, sic->data + cmdlen, in_len))
+ 		goto error;
+ 
+-	err = blk_verify_command(rq->cmd, mode & FMODE_WRITE);
++	err = blk_verify_command(q, rq->cmd, mode & FMODE_WRITE);
+ 	if (err)
+ 		goto error;
+ 
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index df5e961..533e789 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -218,11 +218,12 @@ static void sg_put_dev(Sg_device *sdp);
+ static int sg_allow_access(struct file *filp, unsigned char *cmd)
+ {
+ 	struct sg_fd *sfp = filp->private_data;
++	struct request_queue *q = sfp->parentdp->device->request_queue;
+ 
+ 	if (sfp->parentdp->device->type == TYPE_SCANNER)
+ 		return 0;
+ 
+-	return blk_verify_command(cmd, filp->f_mode & FMODE_WRITE);
++	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
+ }
+ 
+ static int get_exclude(Sg_device *sdp)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2fdb4a4..4fca347 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1089,7 +1089,8 @@ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
+ 				    gfp_mask);
+ }
+ 
+-extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
++extern int blk_verify_command(struct request_queue *q,
++			      unsigned char *cmd, fmode_t has_write_perm);
+ 
+ enum blk_default_limits {
+ 	BLK_MAX_SEGMENTS	= 128,
+-- 
+1.8.1.4
 
 
---=_mimegpg-monstr-desktop-8059-1369317734-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGeIWYACgkQykllyylKDCFbmACfX9ZW4lcRRMkVynr9E7kqu7hw
-60AAnAp9jAn0jy7XktF+oJP2v6FxYafe
-=KrEb
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-8059-1369317734-0001--
