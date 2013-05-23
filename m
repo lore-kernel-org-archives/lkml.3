@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3EWGhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 02:37:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63135 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751402Ab3EWGhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 02:37:21 -0400
-Date: Thu, 23 May 2013 09:37:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC 4/8] macvlan: reduce the max number of taps to 8
-Message-ID: <20130523063740.GA14703@redhat.com>
-References: <1369278753-2533-1-git-send-email-jasowang@redhat.com>
- <1369278753-2533-5-git-send-email-jasowang@redhat.com>
+	id S1751880Ab3EWGkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:40:46 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:36033 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab3EWGkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 02:40:45 -0400
+Date: Thu, 23 May 2013 08:40:39 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: airlied@linux.ie, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Cocci spatch "memdup.spatch"
+Message-ID: <20130523064039.GE1082@phenom.ffwll.local>
+Mail-Followup-To: Thomas Meyer <thomas@m3y3r.de>, airlied@linux.ie,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <1369256829.3865.435.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369278753-2533-5-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1369256829.3865.435.camel@localhost.localdomain>
+X-Operating-System: Linux phenom 3.9.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:12:29AM +0800, Jason Wang wrote:
-> To be same with tap.
+On Wed, May 22, 2013 at 11:07:09PM +0200, Thomas Meyer wrote:
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-Well for tap the very specific reason was that
-there's an array of big queue structures,
-so we need to limit it to make it fit in a page.
-No such reason here right?
-
-We need at least as much as tap to be compatible, so
-let's just make it 16 unconditionally?
-
-> ---
->  include/linux/if_macvlan.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/if_macvlan.h b/include/linux/if_macvlan.h
-> index e47ad46..32e943a 100644
-> --- a/include/linux/if_macvlan.h
-> +++ b/include/linux/if_macvlan.h
-> @@ -50,7 +50,7 @@ struct macvlan_pcpu_stats {
->   * Maximum times a macvtap device can be opened. This can be used to
->   * configure the number of receive queue, e.g. for multiqueue virtio.
->   */
-> -#define MAX_MACVTAP_QUEUES	(NR_CPUS < 16 ? NR_CPUS : 16)
-> +#define MAX_MACVTAP_QUEUES	8
->  
->  #define MACVLAN_MC_FILTER_BITS	8
->  #define MACVLAN_MC_FILTER_SZ	(1 << MACVLAN_MC_FILTER_BITS)
-> -- 
-> 1.7.1
+Queued for -next, thanks for the patch.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
