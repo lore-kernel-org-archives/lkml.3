@@ -1,142 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab3EWELf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 00:11:35 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:34493 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3EWELd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 00:11:33 -0400
-Date: Thu, 23 May 2013 00:11:30 -0400 (EDT)
-From: CAI Qian <caiqian@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        xfs@oss.sgi.com
-Message-ID: <915421596.5010452.1369282290151.JavaMail.root@redhat.com>
-In-Reply-To: <20130523034611.GX24543@dastard>
-References: <40971621.4497871.1369211701112.JavaMail.root@redhat.com> <1805266998.4499261.1369211998387.JavaMail.root@redhat.com> <20130522095300.GK29466@dastard> <1483868349.4996990.1369279016162.JavaMail.root@redhat.com> <20130523034611.GX24543@dastard>
-Subject: Re: 3.9.2: xfstests triggered panic
+	id S1751225Ab3EWEet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 00:34:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13072 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916Ab3EWEer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 00:34:47 -0400
+X-IronPort-AV: E=Sophos;i="4.87,725,1363104000"; 
+   d="scan'208";a="7341235"
+Message-ID: <519D9D04.9090403@cn.fujitsu.com>
+Date: Thu, 23 May 2013 12:37:24 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: 3.9.2: xfstests triggered panic
-Thread-Index: nw1i+XDAeRDiEuz7zqXGB08vIYjsQw==
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] Driver core / memory: Simplify __memory_block_change_state()
+References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1824290.fKsAJTo9gA@vostro.rjw.lan> <519C4D6E.6080902@cn.fujitsu.com> <1594596.DcsjzgnrZI@vostro.rjw.lan>
+In-Reply-To: <1594596.DcsjzgnrZI@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 12:33:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/05/23 12:33:22,
+	Serialize complete at 2013/05/23 12:33:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 
+Thanks. :)
 
------ Original Message -----
-> From: "Dave Chinner" <david@fromorbit.com>
-> To: "CAI Qian" <caiqian@redhat.com>
-> Cc: "LKML" <linux-kernel@vger.kernel.org>, stable@vger.kernel.org, xfs@oss.sgi.com
-> Sent: Thursday, May 23, 2013 11:46:11 AM
-> Subject: Re: 3.9.2: xfstests triggered panic
-> 
-> On Wed, May 22, 2013 at 11:16:56PM -0400, CAI Qian wrote:
-> > ----- Original Message -----
-> > > From: "Dave Chinner" <david@fromorbit.com>
-> > > To: "CAI Qian" <caiqian@redhat.com>
-> > > Cc: "LKML" <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-> > > xfs@oss.sgi.com
-> > > Sent: Wednesday, May 22, 2013 5:53:00 PM
-> > > Subject: Re: 3.9.2: xfstests triggered panic
-> > > 
-> > > On Wed, May 22, 2013 at 04:39:58AM -0400, CAI Qian wrote:
-> > > > Reproduced on almost all s390x guests by running xfstests.
-> > > > 
-> > > > 14634.396658¨ XFS (dm-1): Mounting Filesystem
-> > > > 14634.525522¨ XFS (dm-1): Ending clean mount
-> > > > 14640.413007¨  <000000000017c6d4>¨ idle_balance+0x1a0/0x340
-> > > > 14640.413010¨  <000000000063303e>¨ __schedule+0xa22/0xaf0
-> > > > 14640.428279¨  <0000000000630da6>¨ schedule_timeout+0x186/0x2c0
-> > > > 14640.428289¨  <00000000001cf864>¨ rcu_gp_kthread+0x1bc/0x298
-> > > > 14640.428300¨  <0000000000158c5a>¨ kthread+0xe6/0xec
-> > > > 14640.428304¨  <0000000000634de6>¨ kernel_thread_starter+0x6/0xc
-> > > > 14640.428308¨  <0000000000634de0>¨ kernel_thread_starter+0x0/0xc
-> > > > 14640.428311¨ Last Breaking-Event-Address:
-> > > > 14640.428314¨  <000000000016bd76>¨ walk_tg_tree_from+0x3a/0xf4
-> > > > 14640.428319¨  list_add corruption. next->prev should be prev
-> > > > (0000000000000918
-> > > > ), but was           (null). (next=          (null)).
-> > > 
-> > > Where's XFS in this? walk_tg_tree_from() is part of the scheduler
-> > > code. This kind of implies a stack corruption....
-> > > 
-> > > > Sometimes, this pops up,
-> > > > [16907.275002] WARNING: at kernel/rcutree.c:1960
-> > > > 
-> > > > or this,
-> > > > 15316.154171¨ XFS (dm-1): Mounting Filesystem
-> > > > 15316.255796¨ XFS (dm-1): Ending clean mount
-> > > > 15320.364246¨            00000000006367a2: e310b0080004        lg
-> > > > %r1,8(%r
-> > > > 11)
-> > > > 15320.364249¨            00000000006367a8: 41101010            la
-> > > > %r1,16(%
-> > > > r1)
-> > > > 15320.364251¨            00000000006367ac: e33010000004        lg
-> > > > %r3,0(%r
-> > > > 1)
-> > > > 15320.364252¨ Call Trace:
-> > > > 15320.364252¨ Last Breaking-Event-Address:
-> > > > 15320.364253¨  � <0000000000000000>¨ Kernel stack overflow.
-> > > > 15320.364308¨ CPU: 0 Tainted: GF       W    3.9.2 #1
-> > > > 15320.364309¨ Process rhts-test-runne (pid: 625, task:
-> > > > 000000003dccc890,
-> > > > ksp: 0
-> > > 
-> > > .... and there you go - a stack overflow. Your kernel stack size is
-> > > too small.
-> > > 
-> > > I'd suggest that you need 16k stacks on s390 - IIRC every function
-> > > call has 128 byte stack frame, and there are call chains 70-80
-> > > functions deep in the storage stack...
-> > Hmm, I am unsure how to set to 16k stack there
-> 
-> Are you build a 64 bit s390 kernel or a 32 bit kernel? 32 bit
-> kernels only have an 8k stack size, 64 bit kernels are 16k (see
-> arch/s390/Makefile).
-It is 64-bit.
-> 
-> $ git grep STACK_SIZE arch/s390 |head -2
-> arch/s390/Makefile:STACK_SIZE   := 8192
-> arch/s390/Makefile:STACK_SIZE   := 16384
-> 
-> As it is, the stack frame usage is worse than I thought:
-> 
-> $ git grep STACK_FRAME_OVERHEAD arch/s390 |head -2
-> arch/s390/include/uapi/asm/ptrace.h:#define STACK_FRAME_OVERHEAD 96      /*
-> size of minimum stack frame */
-> arch/s390/include/uapi/asm/ptrace.h:#define STACK_FRAME_OVERHEAD 160      /*
-> size of minimum stack frame */
-> 
-> Overhead is 96 bytes for 32 bit and 160 bytes for 64 bit. So 16k
-> stack size is going to have big troubles with a 70-80 function deep
-> call chain.
-> 
-> As for powerpc:
-> 
-> arch/powerpc/include/asm/ppc_asm.h:#define STACKFRAMESIZE 256
-> 
-> Yeah, same issue.
-> 
-> But, seriously, these stack traces are meaningless to anyone not
-> familiar with s390 or power7 - they indicate a problem detected
-> in the idle loop, not where ever the stack overran.
-> 
-> Can you please work with the s390/power7 people to obtain whatever
-> stack it was that overflowed, and we can go from there.
-OK, I'll do.
-CAI Qian
-> 
-> Cheers,
-> 
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> 
+On 05/23/2013 06:06 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+>
+> As noted by Tang Chen, the last_online field in struct memory_block
+> introduced by commit 4960e05 (Driver core: Introduce offline/online
+> callbacks for memory blocks) is not really necessary, because
+> online_pages() restores the previous state if passed ONLINE_KEEP as
+> the last argument.  Therefore, remove that field along with the code
+> referring to it.
+>
+> References: http://marc.info/?l=linux-kernel&m=136919777305599&w=2
+> Signed-off-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+> ---
+>
+> Hi,
+>
+> The patch is on top (and the commit mentioned in the changelog is present in)
+> the acpi-hotplug branch of the linux-pm.git tree.
+>
+> Thanks,
+> Rafael
+>
+> ---
+>   drivers/base/memory.c  |   11 ++---------
+>   include/linux/memory.h |    1 -
+>   2 files changed, 2 insertions(+), 10 deletions(-)
+>
+> Index: linux-pm/drivers/base/memory.c
+> ===================================================================
+> --- linux-pm.orig/drivers/base/memory.c
+> +++ linux-pm/drivers/base/memory.c
+> @@ -291,13 +291,7 @@ static int __memory_block_change_state(s
+>   		mem->state = MEM_GOING_OFFLINE;
+>
+>   	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
+> -	if (ret) {
+> -		mem->state = from_state_req;
+> -	} else {
+> -		mem->state = to_state;
+> -		if (to_state == MEM_ONLINE)
+> -			mem->last_online = online_type;
+> -	}
+> +	mem->state = ret ? from_state_req : to_state;
+>   	return ret;
+>   }
+>
+> @@ -310,7 +304,7 @@ static int memory_subsys_online(struct d
+>
+>   	ret = mem->state == MEM_ONLINE ? 0 :
+>   		__memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE,
+> -					    mem->last_online);
+> +					    ONLINE_KEEP);
+>
+>   	mutex_unlock(&mem->state_mutex);
+>   	return ret;
+> @@ -618,7 +612,6 @@ static int init_memory_block(struct memo
+>   			base_memory_block_id(scn_nr) * sections_per_block;
+>   	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
+>   	mem->state = state;
+> -	mem->last_online = ONLINE_KEEP;
+>   	mem->section_count++;
+>   	mutex_init(&mem->state_mutex);
+>   	start_pfn = section_nr_to_pfn(mem->start_section_nr);
+> Index: linux-pm/include/linux/memory.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/memory.h
+> +++ linux-pm/include/linux/memory.h
+> @@ -26,7 +26,6 @@ struct memory_block {
+>   	unsigned long start_section_nr;
+>   	unsigned long end_section_nr;
+>   	unsigned long state;
+> -	int last_online;
+>   	int section_count;
+>
+>   	/*
+>
+>
