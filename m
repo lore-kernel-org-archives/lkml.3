@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759963Ab3EWXkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 19:40:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51017 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759898Ab3EWXkU (ORCPT
+	id S1758046Ab3EWX7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 19:59:08 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:24270 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab3EWX7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 19:40:20 -0400
-Date: Thu, 23 May 2013 16:40:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, aarcange@redhat.com,
-        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
-        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
-        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
-Subject: Re: [PATCH v3] mm/pagewalk.c: walk_page_range should avoid
- VM_PFNMAP areas
-Message-Id: <20130523164018.bed0409e29b46901bcc67960@linux-foundation.org>
-In-Reply-To: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
-References: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 23 May 2013 19:59:06 -0400
+Message-ID: <1369353543.1770.0.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] mutex: do not unnecessarily deal with waiters
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Date: Thu, 23 May 2013 16:59:03 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 May 2013 07:46:36 -0500 Cliff Wickman <cpw@sgi.com> wrote:
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-> Certain tests in walk_page_range() (specifically split_huge_page_pmd())
-> assume that all the mapped PFN's are backed with page structures. And this is
-> not usually true for VM_PFNMAP areas. This can result in panics on kernel
-> page faults when attempting to address those page structures.
-> 
-> There are a half dozen callers of walk_page_range() that walk through
-> a task's entire page table (as N. Horiguchi pointed out). So rather than
-> change all of them, this patch changes just walk_page_range() to ignore 
-> VM_PFNMAP areas.
-> 
-> The logic of hugetlb_vma() is moved back into walk_page_range(), as we
-> want to test any vma in the range.
-> 
-> VM_PFNMAP areas are used by:
-> - graphics memory manager   gpu/drm/drm_gem.c
-> - global reference unit     sgi-gru/grufile.c
-> - sgi special memory        char/mspec.c
-> - and probably several out-of-tree modules
+Upon entering the slowpath, we immediately attempt to acquire the lock
+by checking if it is already unlocked. If we are lucky enough that this
+is the case, then we don't need to deal with any waiter related logic.
 
-What are your thoughts on the urgency/scheduling of this fix?
+Furthermore any checks for an empty wait_list are unnecessary as we
+already know that count is non-negative and hence no one is waiting for
+the lock.
+
+Move the count check and xchg calls to be done before any waiters are
+setup - including waiter debugging. Upon failure to acquire the lock,
+the xchg sets the counter to 0, instead of -1 as it was originally.
+This can be done here since we set it back to -1 right at the beginning
+of the loop so other waiters are woken up when the lock is released.
+
+When tested on a 8-socket (80 core) system against a vanilla 3.10-rc1
+kernel, this patch provides some small performance benefits (+2-6%).
+While it could be considered in the noise level, the average percentages
+were stable across multiple runs and no performance regressions were seen.
+Two big winners, for small amounts of users (10-100), were the short and
+compute workloads had a +19.36% and +%15.76% in jobs per minute.
+  
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ kernel/mutex.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index ad53a66..a8cd741 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -306,7 +306,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		owner = ACCESS_ONCE(lock->owner);
+ 		if (owner && !mutex_spin_on_owner(lock, owner)) {
+ 			mspin_unlock(MLOCK(lock), &node);
+-			break;
++			goto slowpath;
+ 		}
+ 
+ 		if ((atomic_read(&lock->count) == 1) &&
+@@ -314,8 +314,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 			lock_acquired(&lock->dep_map, ip);
+ 			mutex_set_owner(lock);
+ 			mspin_unlock(MLOCK(lock), &node);
+-			preempt_enable();
+-			return 0;
++			goto done;
+ 		}
+ 		mspin_unlock(MLOCK(lock), &node);
+ 
+@@ -326,7 +325,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * the owner complete.
+ 		 */
+ 		if (!owner && (need_resched() || rt_task(task)))
+-			break;
++			goto slowpath;
+ 
+ 		/*
+ 		 * The cpu_relax() call is a compiler barrier which forces
+@@ -340,6 +339,14 @@ slowpath:
+ #endif
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 
++	/* once more, can we acquire the lock? */
++	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, 0) == 1)) {
++		lock_acquired(&lock->dep_map, ip);
++		mutex_set_owner(lock);
++		spin_unlock_mutex(&lock->wait_lock, flags);
++		goto done;
++	}
++
+ 	debug_mutex_lock_common(lock, &waiter);
+ 	debug_mutex_add_waiter(lock, &waiter, task_thread_info(task));
+ 
+@@ -347,9 +354,6 @@ slowpath:
+ 	list_add_tail(&waiter.list, &lock->wait_list);
+ 	waiter.task = task;
+ 
+-	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
+-		goto done;
+-
+ 	lock_contended(&lock->dep_map, ip);
+ 
+ 	for (;;) {
+@@ -363,7 +367,7 @@ slowpath:
+ 		 * other waiters:
+ 		 */
+ 		if (MUTEX_SHOW_NO_WAITER(lock) &&
+-		   (atomic_xchg(&lock->count, -1) == 1))
++		    (atomic_xchg(&lock->count, -1) == 1))
+ 			break;
+ 
+ 		/*
+@@ -388,9 +392,8 @@ slowpath:
+ 		spin_lock_mutex(&lock->wait_lock, flags);
+ 	}
+ 
+-done:
++	/* got the lock - cleanup and rejoice! */
+ 	lock_acquired(&lock->dep_map, ip);
+-	/* got the lock - rejoice! */
+ 	mutex_remove_waiter(lock, &waiter, current_thread_info());
+ 	mutex_set_owner(lock);
+ 
+@@ -399,10 +402,9 @@ done:
+ 		atomic_set(&lock->count, 0);
+ 
+ 	spin_unlock_mutex(&lock->wait_lock, flags);
+-
+ 	debug_mutex_free_waiter(&waiter);
++done:
+ 	preempt_enable();
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.11.7
 
 
-(Just to be irritating: "When writing a changelog, please describe the
-end-user-visible effects of the bug, so that others can more easily
-decide which kernel version(s) should be fixed, and so that downstream
-kernel maintainers can more easily work out whether this patch will fix
-a problem which they or their customers are observing.")
+
+
