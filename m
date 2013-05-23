@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759414Ab3EWPSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:18:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50003 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758844Ab3EWPSU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:18:20 -0400
-Date: Thu, 23 May 2013 10:18:16 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Message-ID: <20130523151816.GB6406@sirena.org.uk>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
- <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
- <20130522155347.GJ1627@sirena.org.uk>
- <20130522165353.GB18714@gmail.com>
- <20130522174516.GT1627@sirena.org.uk>
- <20130523070905.GD18714@gmail.com>
- <20130523142419.GG2412@sirena.org.uk>
- <20130523144453.GL22683@gmail.com>
+	id S1759457Ab3EWPUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:20:55 -0400
+Received: from smtp16.protectedservice.net ([217.154.106.151]:41346 "EHLO
+	smtp16.protectedservice.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758652Ab3EWPUy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 11:20:54 -0400
+X-Greylist: delayed 1160 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 May 2013 11:20:54 EDT
+Date: Thu, 23 May 2013 16:01:24 +0100 (BST)
+From: =?utf-8?Q?J=C3=A9r=C3=B4me_Arzel?= <jerome.arzel@gnuside.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <1161491426.132128.1369321284187.JavaMail.root@gnuside.com>
+In-Reply-To: <731282360.131628.1369320249704.JavaMail.root@gnuside.com>
+Subject: [PATCH] powerpc: wrong error message for e500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
-Content-Disposition: inline
-In-Reply-To: <20130523144453.GL22683@gmail.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Zimbra 7.2.3_GA_2872 (ZimbraWebClient - GC26 (Linux)/7.2.3_GA_2872)
+X-Authenticated-Sender: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If there is a bus error while machine check for e500,
+the MCSR_BUS_WBERR error type prints a read error message
+instead of a write error.
 
---7iMSBzlTiPOCCT2k
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Jérôme Arzel <jerome.arzel@gnuside.com>
+---
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -589,7 +589,7 @@ int machine_check_e500(struct pt_regs *r
+ 	if (reason & MCSR_BUS_RBERR)
+ 		printk("Bus - Read Data Bus Error\n");
+ 	if (reason & MCSR_BUS_WBERR)
+-		printk("Bus - Read Data Bus Error\n");
++		printk("Bus - Write Bus Error\n");
+ 	if (reason & MCSR_BUS_IPERR)
+ 		printk("Bus - Instruction Parity Error\n");
+ 	if (reason & MCSR_BUS_RPERR)
 
-On Thu, May 23, 2013 at 03:44:53PM +0100, Lee Jones wrote:
-
-> Well, whatever happens I'm going to be able to refactor the driver in
-> the -rc:s, so we still need this fix, or the world will end.
-
-Why is it so invasive to have the driver cope with absent constraints?
-
---7iMSBzlTiPOCCT2k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRnjM0AAoJELSic+t+oim9F8EP/1QR2124X4VqHaWbxkP+m4vG
-W0byQ+cIrgfFTPjKsBXCE9BiWptMpfcrnFzUEquGkFpSEQVPibn6KAvBiE4ncUTk
-9hBQhnzhJW8cLtEzdZzwd6/GoJu4oto7KU4iJh6EZw9RpYpBPSEMTWoXZMbizcwy
-M/BGJGvMuKEr/78zECgZSMnosARnBgqeogYfOWQdw0XTYrGSbEv/1LuRf7EhPEjZ
-3v45YNNsTlYgw9f5wJZ2Pcql4qQ/7NahIfLY+9YQ5T9+BGqpY6V2LlSq3TObiunx
-4yl4ZZq5eEVqYLR/7FtxD+o6Rtr5d1RzvCU+vWzRIBxxj1ybGODhXDeTpjrWsbhp
-XdAr1c0RODXDz29vnX0KCed5lH0aodbBrG2FOyKxA1OppkpYlv06ebUBZUCB4KeR
-HJ4Rha6onaea/9qJdMsszYaSqyDILi0YLn0NS1/ZzgXx1+gBiGhAiMQ+/VOb4WzX
-D2QAKR5RGdinu1Ts8rsOzTSbIkM7/HOgaKNss3g6I1/iSSEiJjZtdqMqtWugYw54
-qVSB6YN0eayPj3ocdwa7ed0E9qRlLlKlySVSbeh9Yz2IIX1pNyzyDfVXAcTREJZJ
-ZGVA/VRNHybpCphjkBW0J73Cm74guj84r9NEP+7Y/7tP6Hre2lT74pmXauBatFyd
-R8piKuRREZTHX8SUIssS
-=Hp/g
------END PGP SIGNATURE-----
-
---7iMSBzlTiPOCCT2k--
