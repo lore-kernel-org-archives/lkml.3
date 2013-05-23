@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397Ab3EWVZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 17:25:22 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:50797 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab3EWVZV (ORCPT
+	id S1759424Ab3EWVcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 17:32:48 -0400
+Received: from mail-vb0-f74.google.com ([209.85.212.74]:61046 "EHLO
+	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759190Ab3EWVcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 17:25:21 -0400
-MIME-Version: 1.0
-Date: Thu, 23 May 2013 23:25:20 +0200
-Message-ID: <CACRpkdaqGa0kF6A0=NxtwX7WM3JdLjy_L1Wo-EL59LiLPUrPKA@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for v3.10
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Axel Lin <axel.lin@ingics.com>, David Cohen <david.a.cohen@intel.com>,
-        Jon Hunter <jon-hunter@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 May 2013 17:32:47 -0400
+From: Paul Taysom <taysom@chromium.org>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>, ecryptfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org, taysom@chromium.org
+Subject: [PATCH] fs: ecryptfs: fixed msync to flush data
+Date: Thu, 23 May 2013 14:31:43 -0700
+Message-Id: <1369344703-22245-1-git-send-email-taysom@chromium.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+When msync is called on a memory mapped file, that
+data is not flushed to the disk.
 
-here are some GPIO fixes I've collected for the v3.10 series.
-Detailed info in the signed tag.
+In Linux, msync calls fsync for the file. For ecryptfs,
+fsync just calls the lower level file system's fsync.
+Changed the ecryptfs fsync code to call filemap_write_and_wait
+before calling the lower level fsync.
 
-It's all been in -next and it's all been build tested, yes.
+Addresses the problem described in http://crbug.com/239536
 
-Yours,
-Linus Walleij
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+---
+ fs/ecryptfs/file.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 201f0a0..16f509d 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -295,6 +295,7 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+ {
++	filemap_write_and_wait(file->f_mapping);
+ 	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
+ }
+ 
+-- 
+1.8.2.1
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
-
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-fixes-v3.10-1
-
-for you to fetch changes up to cfb10898efe1bc1f3eb8d8f37f164d9e2ac8b43a:
-
-  gpio: Don't override the error code in probe error handling
-(2013-05-20 20:27:30 +0200)
-
-----------------------------------------------------------------
-GPIO fixes for the v3.10 series:
-- An OMAP fix that makes ethernet work again.
-- Fix for build problem when building the MCP23S08 driver
-  as module.
-- IRQ conflicts in the Langwell driver.
-- Fix IRQ coherency issues in the MXS driver.
-- Return correct errorcode on errorpath when removing
-  GPIO chips.
-
-----------------------------------------------------------------
-Axel Lin (2):
-      gpio: mcp23s08: Fix build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m
-      gpio: Don't override the error code in probe error handling
-
-David Cohen (1):
-      gpio-langwell: fix irq conflicts when DT is not used
-
-Jon Hunter (1):
-      gpio/omap: ensure gpio context is initialised
-
-Maxime Ripard (1):
-      gpio: mxs: Use set and clear capabilities of the gpio controller
-
- drivers/gpio/Kconfig           |  2 +-
- drivers/gpio/gpio-langwell.c   | 17 +++++++++------
- drivers/gpio/gpio-ml-ioh.c     |  3 +--
- drivers/gpio/gpio-mxs.c        |  3 ++-
- drivers/gpio/gpio-omap.c       | 48 +++++++++++++++++++++++++++++++++++++++---
- drivers/gpio/gpio-pch.c        |  3 +--
- drivers/gpio/gpio-sch.c        |  6 ++----
- drivers/gpio/gpio-viperboard.c |  3 ++-
- 8 files changed, 64 insertions(+), 21 deletions(-)
