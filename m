@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab3EWPHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:07:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54606 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759226Ab3EWPHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:07:34 -0400
-Message-ID: <519E3089.8040701@zytor.com>
-Date: Thu, 23 May 2013 08:06:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758968Ab3EWPLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:11:06 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:60315 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757597Ab3EWPLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 11:11:04 -0400
+Message-ID: <519E318B.2010804@cogentembedded.com>
+Date: Thu, 23 May 2013 19:11:07 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Rik van Riel <riel@redhat.com>, Stanislav Meduna <stano@meduna.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>   <1369183168.6828.168.camel@gandalf.local.home>   <519CBB30.3060200@redhat.com>   <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>   <20130522134111.33a695c5@cuia.bos.redhat.com>  <519D08B0.8050707@meduna.org>  <1369246316.6828.176.camel@gandalf.local.home>  <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com>  <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com>  <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <1369315769.6828.198.camel@gandalf.local.home>
-In-Reply-To: <1369315769.6828.198.camel@gandalf.local.home>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Jason Wang <jasowang@redhat.com>
+CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [net-next RFC 3/8] macvtap: introduce macvtap_get_vlan()
+References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1369278753-2533-4-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 06:29 AM, Steven Rostedt wrote:
-> On Thu, 2013-05-23 at 08:19 -0400, Rik van Riel wrote:
-> 
->> We can add a bit in the architecture bits that
->> we use to check against other CPU and system
->> errata, and conditionally flush the whole TLB
->> from __native_flush_tlb_single().
-> 
-> If we find that some CPUs have issues and others do not, and we can
-> determine this by checking the CPU type at run time, I would strongly
-> suggest using the jump_label infrastructure to do the branches. I know
-> this is early to suggest something like this, but I just wanted to put
-> it in your head ;-)
-> 
+Hello.
 
-We don't even need the jump_label infrastructure -- we have
-static_cpu_has*() which actually predates jump_label although it uses
-the same underlying ideas.
+On 23-05-2013 7:12, Jason Wang wrote:
 
-	-hpa
+> Factor out the device holding logic to a macvtap_get_vlan(), this will be also
+> used by multiqueue API.
 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>   drivers/net/macvtap.c |   26 +++++++++++++++++++-------
+>   1 files changed, 19 insertions(+), 7 deletions(-)
+
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index ce1c72a..a36e49e 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -890,6 +890,23 @@ out:
+>   	return ret;
+>   }
+>
+> +static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
+> +{
+> +	struct macvlan_dev *vlan;
+
+    Empty line wouldn't hurt here, after declaration.
+
+> +	rcu_read_lock_bh();
+> +	vlan = rcu_dereference_bh(q->vlan);
+> +	if (vlan)
+> +		dev_hold(vlan->dev);
+> +	rcu_read_unlock_bh();
+> +
+> +	return vlan;
+> +}
+[...]
+
+WBR, Sergei
 
