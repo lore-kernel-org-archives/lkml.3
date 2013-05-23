@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285Ab3EWEsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 00:48:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43604 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab3EWEsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 00:48:10 -0400
-Date: Thu, 23 May 2013 05:48:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130523044803.GA25399@ZenIV.linux.org.uk>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
+	id S1751298Ab3EWE4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 00:56:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:43930 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124Ab3EWE4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 00:56:49 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] kernel/module.c: need return the first error code to upper caller when error occurs
+In-Reply-To: <519CAB4F.1000501@asianux.com>
+References: <51889EE4.4070504@asianux.com> <87ip2unwkt.fsf@rustcorp.com.au> <5189C1D6.1040209@asianux.com> <87li7j3cgw.fsf@rustcorp.com.au> <51905EEF.2050901@asianux.com> <5190DB74.6050100@asianux.com> <51919E64.8020409@asianux.com> <5195B317.9030905@asianux.com> <519CAB4F.1000501@asianux.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 23 May 2013 13:24:08 +0930
+Message-ID: <87fvxes65b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:48:51PM -0400, Vince Weaver wrote:
-> 
-> In case anyone cares, the Oops is happening here:
-> 
->     1a56:       48 c1 e8 0c             shr    $0xc,%rax
->     1a5a:       48 ff c0                inc    %rax
-> >   1a5d:       f0 48 29 45 60          lock sub %rax,0x60(%rbp)
->     1a62:       49 8b 46 40             mov    0x40(%r14),%rax
-> 
-> Which maps to this in perf_mmap_close() in kernel/events/core.c:
-> 
->                 atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
-> 
-> And "user" (%rbp) is RBP: 0000000000000000, hence the problem.
-> 
-> I'm having trouble tracking the problem back any further as the code is a 
-> bit covoluted and is not commented at all.
+Chen Gang <gang.chen@asianux.com> writes:
+> Hello Maintainers:
+>
+> Please help check the patch whether OK or not, when you have time.
 
-FWIW, at least part of perf_mmap_close() is obvious garbage - increment of
-->pinned_vm happens in mmap(), decrement - on the ->close() of the last
-VMA clonal to one we'd created in that mmap(), regardless of the address
-space it's in.  Not that handling of ->pinned_vm made any sense wrt fork()...
+Hi Chen,
 
-Actually...  What happens if you mmap() the same opened file of that
-kind several times, each time with the same size?  AFAICS, on all
-subsequent calls we'll get
-        mutex_lock(&event->mmap_mutex);
-        if (event->rb) {
-                if (event->rb->nr_pages == nr_pages)
-                        atomic_inc(&event->rb->refcount);
-		else
-			...
-		goto unlock;
-unlock:
-        if (!ret)
-                atomic_inc(&event->mmap_count);
-        mutex_unlock(&event->mmap_mutex);
+        There's nothing *wrong* with the patch, but I don't think it's
+worthwhile.  If this were your very first kernel patch, I'd probably
+apply it just to encourage you, but you're not a newbie any more!
 
-i.e. we bump event->mmap_count *and* event->rb->refcount.  munmap()
-all of them and each will generate a call of perf_mmap_close(); ->mmap_count
-will go down to zero and on all but the last call we'll have nothing else
-done.  On the last call we'll hit ring_buffer_put(), which will decrement
-event->rb->refcount once.  Note that by that point we simply don't know
-how many times we'd incremented it in those mmap() calls - it's too late
-to clean up.  IOW, unless I'm misreading that code, we've got a leak in
-there.  Not the same bug, but...
+Cheers,
+Rusty.
 
+> On 05/17/2013 12:33 PM, Chen Gang wrote:
+>> 
+>> When multiple errors occur, simplify_symbols() will return the last
+>> error code to the upper caller.
+>> 
+>> In this case, better to return the first error code to the upper caller.
+>> 
+>> Just like "using compiler": it will print all errors and warnings as
+>> much as it can, but the user usually mainly focus on the first error or
+>> warning. Since 'user' only can get one error return code, 'he/she'
+>> usually assume the error code will match the first error print line.
+>> 
+>> 
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> ---
+>>  kernel/module.c |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index e4ee1bf..9e6c96d 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -1976,7 +1976,8 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+>>  			pr_debug("Common symbol: %s\n", name);
+>>  			printk("%s: please compile with -fno-common\n",
+>>  			       mod->name);
+>> -			ret = -ENOEXEC;
+>> +			if (!ret)
+>> +				ret = -ENOEXEC;
+>>  			break;
+>>  
+>>  		case SHN_ABS:
+>> @@ -1999,7 +2000,8 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+>>  
+>>  			printk(KERN_WARNING "%s: Unknown symbol %s (err %li)\n",
+>>  			       mod->name, name, PTR_ERR(ksym));
+>> -			ret = PTR_ERR(ksym) ?: -ENOENT;
+>> +			if (!ret)
+>> +				ret = PTR_ERR(ksym) ?: -ENOENT;
+>>  			break;
+>>  
+>>  		default:
+>> 
+>
+>
+> -- 
+> Chen Gang
+>
+> Asianux Corporation
