@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab3EWCPF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 22:15:05 -0400
-Received: from [216.32.181.181] ([216.32.181.181]:3546 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1756474Ab3EWCPD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 22:15:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Ic89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <519D7C2C.9080506@freescale.com>
-Date: Thu, 23 May 2013 10:17:16 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/6] drivers: bus: add a new driver for WEIM
-References: <1369039742-10893-1-git-send-email-b32955@freescale.com> <20130521054323.GE3080@S2101-09.ap.freescale.net> <519C7ED3.3030004@freescale.com> <201305221459.34859.arnd@arndb.de>
-In-Reply-To: <201305221459.34859.arnd@arndb.de>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1757419Ab3EWCQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 22:16:19 -0400
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:43098 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756474Ab3EWCQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 22:16:17 -0400
+X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 22:16:17 EDT
+Date: Thu, 23 May 2013 11:10:11 +0900 (JST)
+Message-Id: <20130523.111011.203250975.satoshi.uchino@toshiba.co.jp>
+To: balbi@ti.com, linux-usb@vger.kernel.org
+Cc: mina86@mina86.com, stern@rowland.harvard.edu, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH v2] usb: gadget: f_mass_storage: add missing memory
+ barrier for thread_wakeup_needed
+From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+X-Mailer: Mew version 6.4 on Emacs 22.3 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年05月22日 20:59, Arnd Bergmann 写道:
-> On Wednesday 22 May 2013, Huang Shijie wrote:
->> 于 2013年05月21日 13:43, Shawn Guo 写道:
->>> It seems we can find it out from "reg" property, so that we can save
->>> this property?
->>>
->> we may have several devices attaching to the weim, each device has its 
->> own CS index.
->> it's better to keep this property, make it more clear.
-> I agree with Shawn, we should not have this property when it is the
-> same as the upper half of the "reg" property.
-okay. I will remove this property.
+Without this memory barrier, the file-storage thread may fail to
+escape from the following while loop, because it may observe new
+common->thread_wakeup_needed and old bh->state which are updated by
+the callback functions.
 
-thanks
-Huang Shijie
+	/* Wait for the CBW to arrive */
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
 
+Cc: stable@vger.kernel.org
+Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+---
+Resending with revised to and cc list and Acked-by line.
+Cf. http://marc.info/?l=linux-usb&m=136361467905630&w=2
+
+ drivers/usb/gadget/f_mass_storage.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 97666e8..c35a9ec 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -413,6 +413,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
+ /* Caller must hold fsg->lock */
+ static void wakeup_thread(struct fsg_common *common)
+ {
++	smp_wmb();	/* ensure the write of bh->state is complete */
+ 	/* Tell the main thread that something has happened */
+ 	common->thread_wakeup_needed = 1;
+ 	if (common->thread_task)
+@@ -632,6 +633,7 @@ static int sleep_thread(struct fsg_common *common)
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	common->thread_wakeup_needed = 0;
++	smp_rmb();	/* ensure the latest bh->state is visible */
+ 	return rc;
+ }
+ 
+-- 
+1.7.4.1
 
