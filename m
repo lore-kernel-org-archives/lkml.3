@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab3EWL4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:56:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758100Ab3EWL4a convert rfc822-to-8bit (ORCPT
+	id S1758192Ab3EWL50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:57:26 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:45058 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab3EWL5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:56:30 -0400
-Date: Thu, 23 May 2013 07:56:20 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
-        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
-        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <devel@openvz.org>
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-Message-ID: <20130523075620.21abf79a@tlielax.poochiereds.net>
-In-Reply-To: <519DFFA9.3010606@parallels.com>
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
-	<878v36ex6n.fsf@xmission.com>
-	<519DCE5D.6070204@parallels.com>
-	<87k3mq9fsu.fsf@xmission.com>
-	<519DF109.9010309@parallels.com>
-	<20130523073108.13afafa6@tlielax.poochiereds.net>
-	<519DFFA9.3010606@parallels.com>
-Mime-Version: 1.0
+	Thu, 23 May 2013 07:57:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Thu, 23 May 2013 19:57:24 +0800
+Message-ID: <CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
+Subject: Re: [PATCHv4 37/39] thp: handle write-protect exception to
+ file-backed huge pages
+From: Hillf Danton <dhillf@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013 15:38:17 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> @@ -1120,7 +1119,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>
+>         page = pmd_page(orig_pmd);
+>         VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+> -       if (page_mapcount(page) == 1) {
+> +       if (PageAnon(page) && page_mapcount(page) == 1) {
 
-> 23.05.2013 15:31, Jeff Layton пишет:
-> > On Thu, 23 May 2013 14:35:53 +0400
-> > Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-> >
-> >> 23.05.2013 14:00, Eric W. Biederman пишет:
-> >>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> >>>
-> >>>> 22.05.2013 21:33, Eric W. Biederman пишет:
-> >>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> >>>>>
-> >>>>>> Usermode helper executes all binaries in global "init" root context. This
-> >>>>>> doesn't allow to call a binary from other root context (for example in a
-> >>>>>> container).
-> >>>>>> Currently, both containerized NFS client and NFS server requires an ability to
-> >>>>>> execute a binary in a container's root context. Root swap can be done in
-> >>>>>> "init" callback, passed by UMH caller.
-> >>>>>> But since we have 2 callers already (and more of them are expected to appear
-> >>>>>> in future) and because set_fs_root() in not exported, it looks reasonable to
-> >>>>>> add one more generic UMH helper to generic fs code.
-> >>>>>> Root path reference must be hold by the caller, since it will be put on UMH
-> >>>>>> thread exit.
-> >>>>>
-> >>>>> Awesome.  With this patch as an uprivilieged user I get to pick which
-> >>>>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
-> >>>>> user namespace (something that looks like only matter of time).
-> >>>>>
-> >>>>
-> >>>> Not really. Only by using a kernel module to call the UMH.
-> >>>> And an unprivileged can't load a module as far a I know.
-> >>>> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
-> >>>
-> >>> To help me understand the context which instances of call user mode
-> >>> helper are you expecting to use this facility?
-> >>>
-> >>
-> >> Ok. Here is how the NFSd uses UMH:
-> >> UMH is used on NFSd service to start user-space client tracker daemon
-> >> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
-> >> persistent storage.
-> >>
-> >>>>> I think this is a seriously bad idea.
-> >>>>>
-> >>>>> Why can't we do this in userspace with setns as we do with the core dump
-> >>>>> helper?
-> >>>>>
-> >>>>
-> >>>> Could you, please, clarify, how setns can help here?
-> >>>
-> >>> setns can change the mount namespace, and chroot can change to root
-> >>> directory in the specified mount namespace.  Essentially you can enter
-> >>> into a containers complete context (pid, mnt, root, etc) comming from
-> >>> the outside.
-> >>>
-> >>
-> >> So, you are actually suggesting to move the binary start from the kernel to user-space.
-> >> IOW, you are suggesting to do not using UMH at all.
-> >> Am I right?
-> >> I don't know the reasons, why it was done by using UMH and not in userspace.
-> >> Could you clarify this, Jeff?
-> >>
-> >
-> > nfsdcltrack is a "one-shot" program for managing and querying the nfsd
-> > client tracking database. When knfsd needs to query or modify the
-> > db, it uses the UMH infrastructure to call this program that does
-> > what's requested and then exits.
-> >
-> > So, I'm not sure I really understand your question. It wasn't done in
-> > userspace since the whole purpose of this program is to handle upcalls
-> > from the kernel.
-> >
-> 
-> The question is what was the reason to start this binary from kernel by UMH?
+Could we avoid copying huge page if
+no-one else is using it, no matter anon?
 
-Manipulating and querying the client tracking database is an infrequent
-event, so having a continuously running daemon is wasteful and means
-that the admin has to ensure that it's running. A UMH upcall is much
-simpler and generally "just works" if the program is present.
-
-> I.e. why it can't be started by some user-space process before or after NFSd start?
-> I don't familiar with this client tracking facility and that's the only reason why I'm asking.
-> 
-
-This program is not a daemon that runs continuously. It's only called
-when the kernel needs to manipulate the database. Are you asking
-whether we could turn this into a continuously running daemon? If so
-then the answer is "yes", but that's not really a good idea either.
-
-In fact, we had that with the nfsdcld program, but no one liked it
-(including me) for the reasons I detailed above.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+>                 pmd_t entry;
+>                 entry = pmd_mkyoung(orig_pmd);
+>                 entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
