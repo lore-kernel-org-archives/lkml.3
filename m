@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab3EWOVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:21:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15205 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757502Ab3EWOVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:21:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="306839361"
-Message-ID: <519E25F8.8020905@intel.com>
-Date: Thu, 23 May 2013 07:21:44 -0700
-From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S1759018Ab3EWOWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:22:10 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:51078 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757494Ab3EWOWH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:22:07 -0400
+Message-ID: <519E2612.5000904@cogentembedded.com>
+Date: Thu, 23 May 2013 18:22:10 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: forest@alittletooquiet.net, gregkh@linuxfoundation.org, joe@perches.com,
-        hemaklnce@gmail.com, marcos.souza.org@gmail.com,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] Staging: vt6655: add missing free_netdev() on error
- in hostap_enable_hostapd()
-References: <CAPgLHd_qqOWWnWFXYbAks3LmhCcH3hGaqCw9KT+bkLwZazSCbA@mail.gmail.com>
-In-Reply-To: <CAPgLHd_qqOWWnWFXYbAks3LmhCcH3hGaqCw9KT+bkLwZazSCbA@mail.gmail.com>
+To: Ravi Babu <ravibabu@ti.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register
+ APIs from glue
+References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-3-git-send-email-ravibabu@ti.com>
+In-Reply-To: <1369288888-8614-3-git-send-email-ravibabu@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 02:28 AM, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Add the missing free_netdev() before return from function
-> hostap_enable_hostapd() in the error handling case.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->   drivers/staging/vt6655/hostap.c | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/staging/vt6655/hostap.c b/drivers/staging/vt6655/hostap.c
-> index 46f097d..57a08c5 100644
-> --- a/drivers/staging/vt6655/hostap.c
-> +++ b/drivers/staging/vt6655/hostap.c
-> @@ -104,6 +104,8 @@ static int hostap_enable_hostapd(PSDevice pDevice, int rtnl_locked)
->   	if (ret) {
->   		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "%s: register_netdevice(AP) failed!\n",
->   			dev->name);
-> +		free_netdev(pDevice->apdev);
-> +		pDevice->apdev = NULL;
->   		return -1;
->   	}
->   
->
-This looks good to me.
+Hello.
 
--PJ
+On 23-05-2013 10:01, Ravi Babu wrote:
+
+> removed unused nop xceiv (un_)register API's from all musb
+> platform drivers
+
+    Since when are they unused?
+
+> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+
+WBR, Sergei
+
