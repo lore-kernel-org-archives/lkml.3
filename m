@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab3EWIvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:51:48 -0400
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:42962 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757520Ab3EWIvn (ORCPT
+	id S1757801Ab3EWIwD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:52:03 -0400
+Received: from ams-iport-4.cisco.com ([144.254.224.147]:61018 "EHLO
+	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757755Ab3EWIv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:51:43 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: [PATCH 0/3] ARM: at91: move aic driver to drivers/irqchip
-Date: Thu, 23 May 2013 10:49:47 +0200
-Message-Id: <1369298990-9826-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 15577388163004609612
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 23 May 2013 04:51:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhIFAD/XnVGQ/khR/2dsb2JhbABbgwiDJEe+boEKFnSCIwEBBSNWEAsVAwICJgICITYGE4d7Aw+pAIhpDYh0gSaLIIJXB4JBgRMDk2eBa4FmjB2FI4MROg
+X-IronPort-AV: E=Sophos;i="4.87,726,1363132800"; 
+   d="scan'208";a="14126343"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Lad Prabhakar <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH 0/6] media: i2c: ths7303 feature enhancement and cleanup
+Date: Thu, 23 May 2013 10:51:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9-2.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>
+References: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1368619042-28252-1-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201305231051.40961.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed 15 May 2013 13:57:16 Lad Prabhakar wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> This patch series enables the ths7303 driver for asynchronous probing, OF
+> support with some cleanup patches.
+> 
+> Lad, Prabhakar (6):
+>   media: i2c: ths7303: remove init_enable option from pdata
+>   ARM: davinci: dm365 evm: remove init_enable from ths7303 pdata
+>   media: i2c: ths7303: remove unnecessary function ths7303_setup()
+>   media: i2c: ths7303: make the pdata as a constant pointer
+>   media: i2c: ths7303: add support for asynchronous probing
+>   media: i2c: ths7303: add OF support
 
-This patch series move the at91 AIC (Advance Interrupt Controller)
-driver to the irqchip subsystem directory (drivers/irqchip).
+Can you post this again in the right order (swapping the first two patches)
+and preferably with an ack from the mach-davinci maintainer?
 
-It also make use of IRQCHIP_DECLARE to register irqchip for dt boards
-instead of using the machine specific "init_irq" function.
+Once I have that I can take in the first four patches and I can take the
+final two patches once the async support is merged.
 
-Finally it register the arch specific irq handler inside the the init
-functions using set_handle_irq. This way we can remove all the machine
-specific "handle_irq".
+Regards,
 
-This patch series was tested on kizbox board (sam9g20 SoC) using
-device tree. Could someone test it on other boards (both dt and non dt)?
-
-Best Regards,
-Boris
-
-
-Boris BREZILLON (3):
-  ARM: at91: move at91 aic driver to drivers/irqchip
-  ARM: at91: use IRQCHIP_DECLARE instead of machine specific init_irq
-  ARM: at91: use set_handle_irq instead of machine specific handle_irq
-
- arch/arm/mach-at91/Makefile                |    2 +-
- arch/arm/mach-at91/at91_aic.h              |   99 -----
- arch/arm/mach-at91/at91rm9200.c            |    2 +-
- arch/arm/mach-at91/at91sam9260.c           |    2 +-
- arch/arm/mach-at91/at91sam9261.c           |    2 +-
- arch/arm/mach-at91/at91sam9263.c           |    2 +-
- arch/arm/mach-at91/at91sam9g45.c           |    2 +-
- arch/arm/mach-at91/at91sam9rl.c            |    2 +-
- arch/arm/mach-at91/at91x40.c               |    2 +-
- arch/arm/mach-at91/board-1arm.c            |    3 +-
- arch/arm/mach-at91/board-afeb-9260v1.c     |    3 +-
- arch/arm/mach-at91/board-cam60.c           |    3 +-
- arch/arm/mach-at91/board-carmeva.c         |    3 +-
- arch/arm/mach-at91/board-cpu9krea.c        |    3 +-
- arch/arm/mach-at91/board-cpuat91.c         |    3 +-
- arch/arm/mach-at91/board-csb337.c          |    3 +-
- arch/arm/mach-at91/board-csb637.c          |    3 +-
- arch/arm/mach-at91/board-dt-rm9200.c       |   15 +-
- arch/arm/mach-at91/board-dt-sam9.c         |   16 +-
- arch/arm/mach-at91/board-dt-sama5.c        |   16 +-
- arch/arm/mach-at91/board-eb01.c            |    4 +-
- arch/arm/mach-at91/board-eb9200.c          |    4 +-
- arch/arm/mach-at91/board-ecbat91.c         |    3 +-
- arch/arm/mach-at91/board-eco920.c          |    3 +-
- arch/arm/mach-at91/board-flexibity.c       |    3 +-
- arch/arm/mach-at91/board-foxg20.c          |    3 +-
- arch/arm/mach-at91/board-gsia18s.c         |    3 +-
- arch/arm/mach-at91/board-kafa.c            |    3 +-
- arch/arm/mach-at91/board-kb9202.c          |    3 +-
- arch/arm/mach-at91/board-pcontrol-g20.c    |    3 +-
- arch/arm/mach-at91/board-picotux200.c      |    3 +-
- arch/arm/mach-at91/board-qil-a9260.c       |    3 +-
- arch/arm/mach-at91/board-rm9200dk.c        |    3 +-
- arch/arm/mach-at91/board-rm9200ek.c        |    3 +-
- arch/arm/mach-at91/board-rsi-ews.c         |    4 +-
- arch/arm/mach-at91/board-sam9-l9260.c      |    3 +-
- arch/arm/mach-at91/board-sam9260ek.c       |    3 +-
- arch/arm/mach-at91/board-sam9261ek.c       |    3 +-
- arch/arm/mach-at91/board-sam9263ek.c       |    3 +-
- arch/arm/mach-at91/board-sam9g20ek.c       |    4 +-
- arch/arm/mach-at91/board-sam9m10g45ek.c    |    3 +-
- arch/arm/mach-at91/board-sam9rlek.c        |    3 +-
- arch/arm/mach-at91/board-snapper9260.c     |    3 +-
- arch/arm/mach-at91/board-stamp9g20.c       |    4 +-
- arch/arm/mach-at91/board-usb-a926x.c       |    5 +-
- arch/arm/mach-at91/board-yl-9200.c         |    3 +-
- arch/arm/mach-at91/generic.h               |    5 -
- arch/arm/mach-at91/include/mach/at91_aic.h |   96 +++++
- arch/arm/mach-at91/irq.c                   |  547 ---------------------------
- arch/arm/mach-at91/pm.c                    |    2 +-
- drivers/irqchip/Makefile                   |    1 +
- drivers/irqchip/irq-at91.c                 |  557 ++++++++++++++++++++++++++++
- 52 files changed, 706 insertions(+), 773 deletions(-)
- delete mode 100644 arch/arm/mach-at91/at91_aic.h
- create mode 100644 arch/arm/mach-at91/include/mach/at91_aic.h
- delete mode 100644 arch/arm/mach-at91/irq.c
- create mode 100644 drivers/irqchip/irq-at91.c
-
--- 
-1.7.9.5
-
+	Hans
