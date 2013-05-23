@@ -1,309 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab3EWH6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:58:35 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:10246 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab3EWH6b (ORCPT
+	id S1751535Ab3EWIEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:04:16 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35263 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab3EWIEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:58:31 -0400
-X-Spam-Score: -100.8
-Message-ID: <519DCBEF.3090208@asianux.com>
-Date: Thu, 23 May 2013 15:57:35 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 23 May 2013 04:04:10 -0400
+From: Stephen Mell <sub.atomic.fusion@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] proc: move proc mount options out of pid_namespace
+Date: Thu, 23 May 2013 08:05:48 +0000
+Message-ID: <3342521.NtikuogILA@pegasus>
+User-Agent: KMail/4.9.5 (Linux/3.9.3; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>, hskinnemoen@gmail.com,
-        egtvedt@samfundet.no, Mike Frysinger <vapier@gentoo.org>,
-        ysato@users.sourceforge.jp, rkuo@codeaurora.org, jejb@parisc-linux.org,
-        deller@gmx.de, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com, lethal@linux-sh.org,
-        jdike@addtoit.com, richard@nod.at,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, paulmck@linux.vnet.ibm.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, akinobu.mita@gmail.com,
-        Catalin Marinas <Catalin.Marinas@arm.com>, walken@google.com,
-        Will Deacon <will.deacon@arm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-hexagon@vger.kernel.org,
-        linux-parisc@vger.kernel.org,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net, linux-arch@vger.kernel.org
-Subject: [PATCH] arch: configuration, deleting 'CONFIG_BUG' since always need
- it.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Mell <sub.atomic.fusion@gmail.com>
 
-The crazy user can unset 'CONFIG_BUG' in menuconfig: "> General setup >
-Configure standard kernel features (expert users) > BUG() Support".
+hide_pid and pid_gid are proc mount options whose values are stored in the pid_namespace struct. As a result, if one mounts proc again for the same PID namespace with different mount options, all mounts for that PID namespace will be affected. This seems undesirable. This patch creates a proc_sb_info struct that points to the applicable PID namespace, and it moves hide_pid, pid_gid, and proc_self from pid_namespace to proc_sb_info.
 
-But in fact, we always need it, and quite a few of architectures have
-already implemented it (e.g. alpha, arc, arm, avr32, blackfin, cris,
-frv, ia64, m68k, mips, mn10300, parisc, powerpc, s390, sh, sparc, x86).
-
-And kernel also already has prepared a default effective implementation
-for the architectures which is unwilling to implement it by themselves
-(e.g. arm64, c6x, h8300, hexagon, m32r, metag, microblaze, openrisc,
-score, tile, um, unicore32, xtensa).
-
-So need get rid of 'CONFIG_BUG', and let it always enabled everywhere.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
 ---
- arch/arm/Kconfig          |    1 -
- arch/avr32/Kconfig        |    1 -
- arch/blackfin/Kconfig     |    1 -
- arch/h8300/Kconfig        |    1 -
- arch/hexagon/Kconfig      |    1 -
- arch/parisc/Kconfig       |    2 --
- arch/powerpc/Kconfig      |    1 -
- arch/s390/Kconfig         |    2 +-
- arch/sh/Kconfig           |    2 +-
- arch/um/Kconfig.common    |    1 -
- arch/x86/Kconfig          |    1 -
- include/asm-generic/bug.h |   29 -----------------------------
- init/Kconfig              |   10 ----------
- lib/Kconfig.debug         |    2 +-
- 14 files changed, 3 insertions(+), 52 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a7fc5ea..ea4a146 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -265,7 +265,6 @@ config PHYS_OFFSET
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index dd51e50..853eb68 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -584,13 +584,13 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
+  * May current process learn task's sched/cmdline info (for hide_pid_min=1)
+  * or euid/egid (for hide_pid_min=2)?
+  */
+-static bool has_pid_permissions(struct pid_namespace *pid,
++static bool has_pid_permissions(struct proc_sb_info *fsi,
+ 				 struct task_struct *task,
+ 				 int hide_pid_min)
+ {
+-	if (pid->hide_pid < hide_pid_min)
++	if (fsi->hide_pid < hide_pid_min)
+ 		return true;
+-	if (in_group_p(pid->pid_gid))
++	if (in_group_p(fsi->pid_gid))
+ 		return true;
+ 	return ptrace_may_access(task, PTRACE_MODE_READ);
+ }
+@@ -598,18 +598,18 @@ static bool has_pid_permissions(struct pid_namespace *pid,
  
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG
+ static int proc_pid_permission(struct inode *inode, int mask)
+ {
+-	struct pid_namespace *pid = inode->i_sb->s_fs_info;
++	struct proc_sb_info *fsi = inode->i_sb->s_fs_info;
+ 	struct task_struct *task;
+ 	bool has_perms;
  
- source "init/Kconfig"
+ 	task = get_proc_task(inode);
+ 	if (!task)
+ 		return -ESRCH;
+-	has_perms = has_pid_permissions(pid, task, 1);
++	has_perms = has_pid_permissions(fsi, task, 1);
+ 	put_task_struct(task);
  
-diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
-index bdc3558..7c9005a 100644
---- a/arch/avr32/Kconfig
-+++ b/arch/avr32/Kconfig
-@@ -55,7 +55,6 @@ config GENERIC_CALIBRATE_DELAY
+ 	if (!has_perms) {
+-		if (pid->hide_pid == 2) {
++		if (fsi->hide_pid == 2) {
+ 			/*
+ 			 * Let's make getdents(), stat(), and open()
+ 			 * consistent with each other.  If a process
+@@ -670,12 +670,14 @@ static const struct file_operations proc_info_file_operations = {
+ static int proc_single_show(struct seq_file *m, void *v)
+ {
+ 	struct inode *inode = m->private;
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
+ 	struct pid *pid;
+ 	struct task_struct *task;
+ 	int ret;
  
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG
+-	ns = inode->i_sb->s_fs_info;
++	fsi = inode->i_sb->s_fs_info;
++	ns = fsi->ns;
+ 	pid = proc_pid(inode);
+ 	task = get_pid_task(pid, PIDTYPE_PID);
+ 	if (!task)
+@@ -1574,7 +1576,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 	struct inode *inode = dentry->d_inode;
+ 	struct task_struct *task;
+ 	const struct cred *cred;
+-	struct pid_namespace *pid = dentry->d_sb->s_fs_info;
++	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
  
- source "init/Kconfig"
+ 	generic_fillattr(inode, stat);
  
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index a117652..637dc42 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -47,7 +47,6 @@ config GENERIC_CSUM
+@@ -1583,7 +1585,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 	stat->gid = GLOBAL_ROOT_GID;
+ 	task = pid_task(proc_pid(inode), PIDTYPE_PID);
+ 	if (task) {
+-		if (!has_pid_permissions(pid, task, 2)) {
++		if (!has_pid_permissions(fsi, task, 2)) {
+ 			rcu_read_unlock();
+ 			/*
+ 			 * This doesn't prevent learning whether PID exists,
+@@ -2869,13 +2871,15 @@ struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsign
+ 	struct dentry *result = NULL;
+ 	struct task_struct *task;
+ 	unsigned tgid;
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
  
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG
+ 	tgid = name_to_int(dentry);
+ 	if (tgid == ~0U)
+ 		goto out;
  
- config ZONE_DMA
- 	def_bool y
-diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
-index 303e4f9..88848da 100644
---- a/arch/h8300/Kconfig
-+++ b/arch/h8300/Kconfig
-@@ -56,7 +56,6 @@ config GENERIC_CALIBRATE_DELAY
+-	ns = dentry->d_sb->s_fs_info;
++	fsi = dentry->d_sb->s_fs_info;
++	ns = fsi->ns;
+ 	rcu_read_lock();
+ 	task = find_task_by_pid_ns(tgid, ns);
+ 	if (task)
+@@ -2954,6 +2958,7 @@ static int fake_filldir(void *buf, const char *name, int namelen,
+ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ {
+ 	struct tgid_iter iter;
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
+ 	filldir_t __filldir;
+ 	loff_t pos = filp->f_pos;
+@@ -2970,11 +2975,12 @@ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 		iter.tgid = pos - TGID_OFFSET;
+ 	}
+ 	iter.task = NULL;
+-	ns = filp->f_dentry->d_sb->s_fs_info;
++	fsi = filp->f_dentry->d_sb->s_fs_info;
++	ns = fsi->ns;
+ 	for (iter = next_tgid(ns, iter);
+ 	     iter.task;
+ 	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
+-		if (has_pid_permissions(ns, iter.task, 2))
++		if (has_pid_permissions(fsi, iter.task, 2))
+ 			__filldir = filldir;
+ 		else
+ 			__filldir = fake_filldir;
+@@ -3132,6 +3138,7 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
+ 	struct task_struct *task;
+ 	struct task_struct *leader = get_proc_task(dir);
+ 	unsigned tid;
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
  
- config GENERIC_BUG
-         bool
--        depends on BUG
+ 	if (!leader)
+@@ -3141,7 +3148,8 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
+ 	if (tid == ~0U)
+ 		goto out;
  
- config TIME_LOW_RES
- 	bool
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index 33a9792..f50cc8f 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -84,7 +84,6 @@ config STACKTRACE_SUPPORT
+-	ns = dentry->d_sb->s_fs_info;
++	fsi = dentry->d_sb->s_fs_info;
++	ns = fsi->ns;
+ 	rcu_read_lock();
+ 	task = find_task_by_pid_ns(tid, ns);
+ 	if (task)
+@@ -3249,6 +3257,7 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
+ 	int retval = -ENOENT;
+ 	ino_t ino;
+ 	int tid;
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
  
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG
+ 	task = get_proc_task(inode);
+@@ -3283,7 +3292,8 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
+ 	/* f_version caches the tgid value that the last readdir call couldn't
+ 	 * return. lseek aka telldir automagically resets f_version to 0.
+ 	 */
+-	ns = filp->f_dentry->d_sb->s_fs_info;
++	fsi = filp->f_dentry->d_sb->s_fs_info;
++	ns = fsi->ns;
+ 	tid = (int)filp->f_version;
+ 	filp->f_version = 0;
+ 	for (task = first_tid(leader, tid, filp->f_pos - 2, ns);
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 073aea6..148737d 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -110,12 +110,12 @@ void __init proc_init_inodecache(void)
+ static int proc_show_options(struct seq_file *seq, struct dentry *root)
+ {
+ 	struct super_block *sb = root->d_sb;
+-	struct pid_namespace *pid = sb->s_fs_info;
++	struct proc_sb_info *fsi = sb->s_fs_info;
  
- menu "Machine selection"
+-	if (!gid_eq(pid->pid_gid, GLOBAL_ROOT_GID))
+-		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, pid->pid_gid));
+-	if (pid->hide_pid != 0)
+-		seq_printf(seq, ",hidepid=%u", pid->hide_pid);
++	if (!gid_eq(fsi->pid_gid, GLOBAL_ROOT_GID))
++		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, fsi->pid_gid));
++	if (fsi->hide_pid != 0)
++		seq_printf(seq, ",hidepid=%u", fsi->hide_pid);
  
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index 6507dab..5de1f8c 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -10,7 +10,6 @@ config PARISC
- 	select RTC_CLASS
- 	select RTC_DRV_GENERIC
- 	select INIT_ALL_POSSIBLE
--	select BUG
- 	select HAVE_PERF_EVENTS
- 	select GENERIC_ATOMIC64 if !64BIT
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-@@ -62,7 +61,6 @@ config ARCH_HAS_ILOG2_U64
- config GENERIC_BUG
- 	bool
- 	default y
--	depends on BUG
+ 	return 0;
+ }
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index d600fb0..ff970e4 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -29,6 +29,14 @@ struct mempolicy;
+  * /proc file has a parent, but "subdir" is NULL for all
+  * non-directory entries).
+  */
++
++struct proc_sb_info {
++	struct pid_namespace *ns;
++	struct dentry *proc_self;
++	kgid_t pid_gid;
++	int hide_pid;
++};
++
+ struct proc_dir_entry {
+ 	unsigned int low_ino;
+ 	umode_t mode;
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index 41a6ea9..526aec6 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -20,6 +20,7 @@
+ #include <linux/mount.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/parser.h>
++#include <linux/slab.h>
  
- config GENERIC_HWEIGHT
- 	bool
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index c33e3ad..34f4ca9 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -187,7 +187,6 @@ config AUDIT_ARCH
- config GENERIC_BUG
- 	bool
- 	default y
--	depends on BUG
+ #include "internal.h"
  
- config SYS_SUPPORTS_APM_EMULATION
- 	default y if PMAC_APM_EMU
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index da183c5..5d7b3db 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -29,7 +29,7 @@ config GENERIC_HWEIGHT
- 	def_bool y
+@@ -31,10 +32,9 @@ static int proc_test_super(struct super_block *sb, void *data)
+ static int proc_set_super(struct super_block *sb, void *data)
+ {
+ 	int err = set_anon_super(sb, NULL);
+-	if (!err) {
+-		struct pid_namespace *ns = (struct pid_namespace *)data;
+-		sb->s_fs_info = get_pid_ns(ns);
+-	}
++	if (!err)
++		sb->s_fs_info = (struct proc_sb_info *)data;
++
+ 	return err;
+ }
  
- config GENERIC_BUG
--	def_bool y if BUG
-+	def_bool y
+@@ -48,7 +48,7 @@ static const match_table_t tokens = {
+ 	{Opt_err, NULL},
+ };
  
- config GENERIC_BUG_RELATIVE_POINTERS
- 	def_bool y
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 8c868cf..d555e7f 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -84,7 +84,7 @@ config RWSEM_XCHGADD_ALGORITHM
+-static int proc_parse_options(char *options, struct pid_namespace *pid)
++static int proc_parse_options(char *options, struct proc_sb_info *fsi)
+ {
+ 	char *p;
+ 	substring_t args[MAX_OPT_ARGS];
+@@ -68,7 +68,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
+ 		case Opt_gid:
+ 			if (match_int(&args[0], &option))
+ 				return 0;
+-			pid->pid_gid = make_kgid(current_user_ns(), option);
++			fsi->pid_gid = make_kgid(current_user_ns(), option);
+ 			break;
+ 		case Opt_hidepid:
+ 			if (match_int(&args[0], &option))
+@@ -77,7 +77,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
+ 				pr_err("proc: hidepid value must be between 0 and 2.\n");
+ 				return 0;
+ 			}
+-			pid->hide_pid = option;
++			fsi->hide_pid = option;
+ 			break;
+ 		default:
+ 			pr_err("proc: unrecognized mount option \"%s\" "
+@@ -91,36 +91,44 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
  
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG && SUPERH32
-+	depends on SUPERH32
+ int proc_remount(struct super_block *sb, int *flags, char *data)
+ {
+-	struct pid_namespace *pid = sb->s_fs_info;
+-	return !proc_parse_options(data, pid);
++	struct proc_sb_info *fsi = sb->s_fs_info;
++	return !proc_parse_options(data, fsi);
+ }
  
- config GENERIC_CSUM
- 	def_bool y
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index bceee66..7aae42a 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -53,7 +53,6 @@ config GENERIC_CALIBRATE_DELAY
- config GENERIC_BUG
- 	bool
- 	default y
--	depends on BUG
+ static struct dentry *proc_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+ 	int err;
++	struct proc_sb_info *fsi;
+ 	struct super_block *sb;
+-	struct pid_namespace *ns;
+ 	char *options;
++	
++	fsi = kzalloc(sizeof(struct proc_sb_info), GFP_KERNEL);
++	if (!fsi)
++		return ERR_PTR(-ENOMEM);
++
++	sb = sget(fs_type, proc_test_super, proc_set_super, flags, fsi);
++	if (IS_ERR(sb))
++		return ERR_CAST(sb);
  
- config HZ
- 	int
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 723e42e..a36e1b4 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -166,7 +166,6 @@ config GENERIC_ISA_DMA
- 
- config GENERIC_BUG
- 	def_bool y
--	depends on BUG
- 	select GENERIC_BUG_RELATIVE_POINTERS if X86_64
- 
- config GENERIC_BUG_RELATIVE_POINTERS
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 7d10f96..5d50903 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -12,8 +12,6 @@
- #ifndef __ASSEMBLY__
- #include <linux/kernel.h>
- 
--#ifdef CONFIG_BUG
+ 	if (flags & MS_KERNMOUNT) {
+-		ns = (struct pid_namespace *)data;
++		fsi->ns = (struct pid_namespace *)data;
++		get_pid_ns(fsi->ns);
+ 		options = NULL;
+ 	} else {
+-		ns = task_active_pid_ns(current);
+-		options = data;
 -
- #ifdef CONFIG_GENERIC_BUG
- struct bug_entry {
- #ifndef CONFIG_GENERIC_BUG_RELATIVE_POINTERS
-@@ -106,33 +104,6 @@ extern void warn_slowpath_null(const char *file, const int line);
- 	unlikely(__ret_warn_on);					\
- })
+ 		if (!current_user_ns()->may_mount_proc)
+ 			return ERR_PTR(-EPERM);
+-	}
+-
+-	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
+-	if (IS_ERR(sb))
+-		return ERR_CAST(sb);
++		
++		options = data;
++		if (!proc_parse_options(options, fsi)) {
++			deactivate_locked_super(sb);
++			return ERR_PTR(-EINVAL);
++		}
  
--#else /* !CONFIG_BUG */
--#ifndef HAVE_ARCH_BUG
--#define BUG() do {} while(0)
--#endif
--
--#ifndef HAVE_ARCH_BUG_ON
--#define BUG_ON(condition) do { if (condition) ; } while(0)
--#endif
--
--#ifndef HAVE_ARCH_WARN_ON
--#define WARN_ON(condition) ({						\
--	int __ret_warn_on = !!(condition);				\
--	unlikely(__ret_warn_on);					\
--})
--#endif
--
--#ifndef WARN
--#define WARN(condition, format...) ({					\
--	int __ret_warn_on = !!(condition);				\
--	unlikely(__ret_warn_on);					\
--})
--#endif
--
--#define WARN_TAINT(condition, taint, format...) WARN_ON(condition)
--
--#endif
--
- #define WARN_ON_ONCE(condition)	({				\
- 	static bool __section(.data.unlikely) __warned;		\
- 	int __ret_warn_once = !!(condition);			\
-diff --git a/init/Kconfig b/init/Kconfig
-index 7fb26a6..bc1dd49 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1360,16 +1360,6 @@ config PRINTK
- 	  very difficult to diagnose system problems, saying N here is
- 	  strongly discouraged.
+-	if (!proc_parse_options(options, ns)) {
+-		deactivate_locked_super(sb);
+-		return ERR_PTR(-EINVAL);
++		if (!fsi->ns) {
++			fsi->ns = task_active_pid_ns(current);
++			get_pid_ns(fsi->ns);
++		}
+ 	}
  
--config BUG
--	bool "BUG() support" if EXPERT
--	default y
--	help
--          Disabling this option eliminates support for BUG and WARN, reducing
--          the size of your kernel image and potentially quietly ignoring
--          numerous fatal conditions. You should only consider disabling this
--          option for embedded systems with no facilities for reporting errors.
--          Just say Y.
--
- config ELF_CORE
- 	depends on COREDUMP
- 	default y
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 566cf2b..54b3251 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -700,7 +700,7 @@ config HAVE_DEBUG_BUGVERBOSE
+ 	if (!sb->s_root) {
+@@ -138,13 +146,16 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
  
- config DEBUG_BUGVERBOSE
- 	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
--	depends on BUG && (GENERIC_BUG || HAVE_DEBUG_BUGVERBOSE)
-+	depends on GENERIC_BUG || HAVE_DEBUG_BUGVERBOSE
- 	default y
- 	help
- 	  Say Y here to make BUG() panics output the file name and line number
--- 
-1.7.7.6
+ static void proc_kill_sb(struct super_block *sb)
+ {
++	struct proc_sb_info *fsi;
+ 	struct pid_namespace *ns;
+ 
+-	ns = (struct pid_namespace *)sb->s_fs_info;
+-	if (ns->proc_self)
+-		dput(ns->proc_self);
++	fsi = (struct proc_sb_info *)sb->s_fs_info;
++	ns = (struct pid_namespace *)fsi->ns;
++	if (fsi->proc_self)
++		dput(fsi->proc_self);
+ 	kill_anon_super(sb);
+ 	put_pid_ns(ns);
++	kfree(fsi);
+ }
+ 
+ static struct file_system_type proc_fs_type = {
+diff --git a/fs/proc/self.c b/fs/proc/self.c
+index 6b6a993..ff4a2e2 100644
+--- a/fs/proc/self.c
++++ b/fs/proc/self.c
+@@ -10,7 +10,8 @@
+ static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
+ 			      int buflen)
+ {
+-	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
++	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
++	struct pid_namespace *ns = fsi->ns;
+ 	pid_t tgid = task_tgid_nr_ns(current, ns);
+ 	char tmp[PROC_NUMBUF];
+ 	if (!tgid)
+@@ -21,7 +22,8 @@ static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
+ 
+ static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
+ {
+-	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
++	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
++	struct pid_namespace *ns = fsi->ns;
+ 	pid_t tgid = task_tgid_nr_ns(current, ns);
+ 	char *name = ERR_PTR(-ENOENT);
+ 	if (tgid) {
+@@ -55,7 +57,7 @@ static unsigned self_inum;
+ int proc_setup_self(struct super_block *s)
+ {
+ 	struct inode *root_inode = s->s_root->d_inode;
+-	struct pid_namespace *ns = s->s_fs_info;
++	struct proc_sb_info *fsi = s->s_fs_info;
+ 	struct dentry *self;
+ 	
+ 	mutex_lock(&root_inode->i_mutex);
+@@ -82,7 +84,7 @@ int proc_setup_self(struct super_block *s)
+ 		pr_err("proc_fill_super: can't allocate /proc/self\n");
+ 		return PTR_ERR(self);
+ 	}
+-	ns->proc_self = self;
++	fsi->proc_self = self;
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index e277266..6185386 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -31,15 +31,12 @@ struct pid_namespace {
+ 	struct pid_namespace *parent;
+ #ifdef CONFIG_PROC_FS
+ 	struct vfsmount *proc_mnt;
+-	struct dentry *proc_self;
+ #endif
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+ #endif
+ 	struct user_namespace *user_ns;
+ 	struct work_struct proc_work;
+-	kgid_t pid_gid;
+-	int hide_pid;
+ 	int reboot;	/* group exit code if this pidns was rebooted */
+ 	unsigned int proc_inum;
+ };
