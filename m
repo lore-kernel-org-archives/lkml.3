@@ -1,209 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759862Ab3EWP1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:27:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759346Ab3EWP1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:27:45 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, Jiri Jaburek <jjaburek@redhat.com>
-Subject: [PATCH v2] audit: fix mq_open and mq_unlink to add the MQ root as a hidden parent audit_names record
-Date: Thu, 23 May 2013 10:50:12 -0400
-Message-Id: <1369320612-7495-1-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1368034236-10773-1-git-send-email-jlayton@redhat.com>
-References: <1368034236-10773-1-git-send-email-jlayton@redhat.com>
+	id S1759884Ab3EWP14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:27:56 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:45591 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759850Ab3EWP1r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 11:27:47 -0400
+Date: Thu, 23 May 2013 17:27:32 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@ardb.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Oliver Schinagl <oliver@schinagl.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130523152732.GL8595@lukather>
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
+ <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+ <CACRpkdaWADjy1YZXTcRaXU+ZsS6_pG0hojQdnz=qeTgyVY7_Ww@mail.gmail.com>
+ <519DCEE9.6070208@schinagl.nl>
+ <20130523145835.GI8595@lukather>
+ <519E3031.8080604@schinagl.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519E3031.8080604@schinagl.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old audit PATH records for mq_open looked like this:
+On Thu, May 23, 2013 at 05:05:21PM +0200, Oliver Schinagl wrote:
+> On 05/23/13 16:58, Maxime Ripard wrote:
+> >On Thu, May 23, 2013 at 10:10:17AM +0200, Oliver Schinagl wrote:
+> >>Then, i'm not sure if the driver is the best for this to be loaded?
+> >>Maxime, what do you think? Personally I would feel more in having
+> >>this in the mach-sunxi/core.c bit, but then again, this is currently
+> >>a module and wouldn't be useful to have there. Maxime is far more
+> >>knowledgeable to answer that.
+> >
+> >Hmmm, I don't understand what you mean here. Could you explain what you
+> >have in mind?
+> I've thought about it a little, and don't think core.c is a good
+> spot, since the module will have to be loaded, or available there.
+> And that's really early.
+> 
+> So I guess, during probe, controlled by a parameter perhaps, load
+> all 16 bytes into the random pool as Linus suggested?
 
-type=PATH msg=audit(1366282323.982:869): item=1 name=(null) inode=6777
-dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
-obj=system_u:object_r:tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282323.982:869): item=0 name="test_mq" inode=26732
-dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
-obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
+Yeah, though I don't really know what the parameter would be useful for,
+but yes, do it in the driver's probe.
 
-...with the audit related changes that went into 3.7, they now look like this:
-
-type=PATH msg=audit(1366282236.776:3606): item=2 name=(null) inode=66655
-dev=00:0c mode=0100700 ouid=0 ogid=0 rdev=00:00
-obj=staff_u:object_r:user_tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282236.776:3606): item=1 name=(null) inode=6926
-dev=00:0c mode=041777 ouid=0 ogid=0 rdev=00:00
-obj=system_u:object_r:tmpfs_t:s15:c0.c1023
-type=PATH msg=audit(1366282236.776:3606): item=0 name="test_mq"
-
-Both of these look wrong to me. As Steve Grubb pointed out:
-
-"What we need is 1 PATH record that identifies the MQ. The other PATH
- records probably should not be there."
-
-Fix it to record the mq root as a parent, and flag it such that it
-should be hidden from view when the names are logged, since the root of
-the mq filesystem isn't terribly interesting. With this change, we get a
-single PATH record that looks more like this:
-
-type=PATH msg=audit(1368021604.836:484): item=0 name="test_mq" inode=16914
-dev=00:0c mode=0100644 ouid=0 ogid=0 rdev=00:00
-obj=unconfined_u:object_r:user_tmpfs_t:s0
-
-In order to do this, a new audit_inode_parent_hidden() function is
-added. If we do it this way, then we avoid having the existing callers
-of audit_inode needing to do any sort of flag conversion if auditing is
-inactive.
-
-Cc: Steve Grubb <sgrubb@redhat.com>
-Reported-by: Jiri Jaburek <jjaburek@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- include/linux/audit.h |   26 ++++++++++++++++++++++----
- ipc/mqueue.c          |    2 ++
- kernel/audit.h        |    1 +
- kernel/auditsc.c      |   12 +++++++++---
- 4 files changed, 34 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index b20b038..729a4d1 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -103,8 +103,11 @@ extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern struct filename *__audit_reusename(const __user char *uptr);
- extern void __audit_getname(struct filename *name);
- extern void audit_putname(struct filename *name);
-+
-+#define AUDIT_INODE_PARENT	1	/* dentry represents the parent */
-+#define AUDIT_INODE_HIDDEN	2	/* audit record should be hidden */
- extern void __audit_inode(struct filename *name, const struct dentry *dentry,
--				unsigned int parent);
-+				unsigned int flags);
- extern void __audit_inode_child(const struct inode *parent,
- 				const struct dentry *dentry,
- 				const unsigned char type);
-@@ -148,10 +151,22 @@ static inline void audit_getname(struct filename *name)
- 	if (unlikely(!audit_dummy_context()))
- 		__audit_getname(name);
- }
--static inline void audit_inode(struct filename *name, const struct dentry *dentry,
-+static inline void audit_inode(struct filename *name,
-+				const struct dentry *dentry,
- 				unsigned int parent) {
-+	if (unlikely(!audit_dummy_context())) {
-+		unsigned int flags = 0;
-+		if (parent)
-+			flags |= AUDIT_INODE_PARENT;
-+		__audit_inode(name, dentry, flags);
-+	}
-+}
-+static inline void audit_inode_parent_hidden(struct filename *name,
-+						const struct dentry *dentry)
-+{
- 	if (unlikely(!audit_dummy_context()))
--		__audit_inode(name, dentry, parent);
-+		__audit_inode(name, dentry,
-+				AUDIT_INODE_PARENT | AUDIT_INODE_HIDDEN);
- }
- static inline void audit_inode_child(const struct inode *parent,
- 				     const struct dentry *dentry,
-@@ -311,7 +326,7 @@ static inline void audit_putname(struct filename *name)
- { }
- static inline void __audit_inode(struct filename *name,
- 					const struct dentry *dentry,
--					unsigned int parent)
-+					unsigned int flags)
- { }
- static inline void __audit_inode_child(const struct inode *parent,
- 					const struct dentry *dentry,
-@@ -321,6 +336,9 @@ static inline void audit_inode(struct filename *name,
- 				const struct dentry *dentry,
- 				unsigned int parent)
- { }
-+static inline void audit_inode_parent_hidden(struct filename *name,
-+				const struct dentry *dentry)
-+{ }
- static inline void audit_inode_child(const struct inode *parent,
- 				     const struct dentry *dentry,
- 				     const unsigned char type)
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index e4e47f6..ae1996d 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -823,6 +823,7 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
- 				error = ro;
- 				goto out;
- 			}
-+			audit_inode_parent_hidden(name, root);
- 			filp = do_create(ipc_ns, root->d_inode,
- 						&path, oflag, mode,
- 						u_attr ? &attr : NULL);
-@@ -868,6 +869,7 @@ SYSCALL_DEFINE1(mq_unlink, const char __user *, u_name)
- 	if (IS_ERR(name))
- 		return PTR_ERR(name);
- 
-+	audit_inode_parent_hidden(name, mnt->mnt_root);
- 	err = mnt_want_write(mnt);
- 	if (err)
- 		goto out_name;
-diff --git a/kernel/audit.h b/kernel/audit.h
-index 1c95131..52dfbfc 100644
---- a/kernel/audit.h
-+++ b/kernel/audit.h
-@@ -97,6 +97,7 @@ struct audit_names {
- 	struct audit_cap_data	fcap;
- 	unsigned int		fcap_ver;
- 	unsigned char		type;		/* record type */
-+	bool			hidden;		/* don't log this record */
- 	/*
- 	 * This was an allocated audit_names and not from the array of
- 	 * names allocated in the task audit context.  Thus this name
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 3c8a601..9845cb3 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1399,8 +1399,11 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
- 	}
- 
- 	i = 0;
--	list_for_each_entry(n, &context->names_list, list)
-+	list_for_each_entry(n, &context->names_list, list) {
-+		if (n->hidden)
-+			continue;
- 		audit_log_name(context, n, NULL, i++, &call_panic);
-+	}
- 
- 	/* Send end of event record to help user space know we are finished */
- 	ab = audit_log_start(context, GFP_KERNEL, AUDIT_EOE);
-@@ -1769,14 +1772,15 @@ void audit_putname(struct filename *name)
-  * __audit_inode - store the inode and device from a lookup
-  * @name: name being audited
-  * @dentry: dentry being audited
-- * @parent: does this dentry represent the parent?
-+ * @flags: attributes for this particular entry
-  */
- void __audit_inode(struct filename *name, const struct dentry *dentry,
--		   unsigned int parent)
-+		   unsigned int flags)
- {
- 	struct audit_context *context = current->audit_context;
- 	const struct inode *inode = dentry->d_inode;
- 	struct audit_names *n;
-+	bool parent = flags & AUDIT_INODE_PARENT;
- 
- 	if (!context->in_syscall)
- 		return;
-@@ -1831,6 +1835,8 @@ out:
- 	if (parent) {
- 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
- 		n->type = AUDIT_TYPE_PARENT;
-+		if (flags & AUDIT_INODE_HIDDEN)
-+			n->hidden = true;
- 	} else {
- 		n->name_len = AUDIT_NAME_FULL;
- 		n->type = AUDIT_TYPE_NORMAL;
 -- 
-1.7.1
-
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
