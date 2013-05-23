@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab3EWTBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 15:01:47 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:42401 "EHLO quartz.orcorp.ca"
+	id S1758890Ab3EWTGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 15:06:38 -0400
+Received: from fieldses.org ([174.143.236.118]:53619 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757828Ab3EWTBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 15:01:45 -0400
-Date: Thu, 23 May 2013 13:01:40 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for Kirkwood
- SoCs
-Message-ID: <20130523190140.GA4010@obsidianresearch.com>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130522201607.GA18823@obsidianresearch.com>
- <20130523160111.GP31290@titan.lakedaemon.net>
- <20130523171112.GB31281@obsidianresearch.com>
- <20130523172339.GQ31290@titan.lakedaemon.net>
- <20130523175357.GB2821@obsidianresearch.com>
- <20130523184028.GU31290@titan.lakedaemon.net>
+	id S1758071Ab3EWTGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 15:06:37 -0400
+Date: Thu, 23 May 2013 15:06:02 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, viro@zeniv.linux.org.uk,
+        serge.hallyn@canonical.com, jlayton@redhat.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, oleg@redhat.com, bharrosh@panasas.com,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        devel@openvz.org
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+Message-ID: <20130523190602.GB10246@fieldses.org>
+References: <20130522072840.27720.85023.stgit@localhost.localdomain>
+ <878v36ex6n.fsf@xmission.com>
+ <87wqqqdfqr.fsf@xmission.com>
+ <20130522192339.GB31069@fieldses.org>
+ <87vc6abc3w.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130523184028.GU31290@titan.lakedaemon.net>
+In-Reply-To: <87vc6abc3w.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 02:40:28PM -0400, Jason Cooper wrote:
-
-> > But there is a larger problem here then just this one bit.
-> > 
-> > The PSC1 register must be set properly for the board layout, and today
-> > we rely on the bootloader to set it. In fact, even with Sebastian's
-> > change the ethernet port won't work without bootloader
-> > intervention. The PortReset bit should also be cleared by the driver
-> > (and it is only present on some variants of this IP block,
-> > apparently).
-> > 
-> > We know that some Marvell SOC's wack the ethernet registers when they
-> > clock gate, and the flip of Clk125Bypass is another symptom of this
-> > general problem.
-> > 
-> > So, long term, the PSC1 must be fully set by the driver, based on DT
-> > information describing the board (eg RGMII/MII/1000Base-X [SFP] Phy
-> > type), and the layout of this register seems to vary on a SOC by SOC
-> > basis.
-> > 
-> > Thus, I think it is appropriate to call this variant of the eth IP
-> > 'marvell,kirkwood-eth' which indicates that the register block follows
-> > the kirkwood manual and the PSC1 register specifically has the
-> > kirkwood layout.
+On Wed, May 22, 2013 at 08:37:23PM -0700, Eric W. Biederman wrote:
+> "J. Bruce Fields" <bfields@fieldses.org> writes:
 > 
-> Ok, so mv643xx_eth would match both "marvell,orion-eth" and
-> "marvell,kirkwood-eth", then write to PSC1 iff it sees a node matching
-> "marvell,kirkwood-eth".  I'm not too keen on that, however, the matching
-> of the machine doesn't look to good, either.
-
-Why are you not keen on this? It seems like normal device driver
-practice, that is what the data field of of_device_id is typically
-used for..
-
-There are more compatible strings than just kirkwood and orion in this
-driver, the whole TX_BW_CONTROL_OLD_LAYOUT/TX_BW_CONTROL_NEW_LAYOUT
-buisness (affecting PPC/MIPS) should also someday be captured with
-compatible strings rather than auto-detection too..
-
-> > The question is what other Marvell SOCs have the same PSC1 layout as
-> > kirkwood?
+> > On Wed, May 22, 2013 at 11:35:56AM -0700, Eric W. Biederman wrote:
+> >> ebiederm@xmission.com (Eric W. Biederman) writes:
+> >> 
+> >> > I am missing a lot of context here and capturing the context of a
+> >> > process at time time we mount the filesystem and reconstituing it in
+> >> > call user mode helper seems like something we could do.
+> >
+> > So it's not enough just to ensure that the user namespace is set
+> > correctly?  (To the namespace of the mount process in the nfs case, or
+> > of the process that starts nfsd in the nfsd case.)
 > 
-> I think marvell,psc1_reset = <>; gives us the most flexibility in
-> accurately describing the hardware.
+> No.  By just setting the user namespace, you gain the ability to create
+> processes outside of your curremt rlimits, and cgroups, and pid
+> namespace, etc.
+> 
+> With the wrong set of namespaces you will talk to the wrong processes,
+> or utilize the wrong resources.
+> 
+> Outside of your current cgroup you gain the ability to use more
+> resources than you were limited to.
+> 
+> Having thought about it what I would propose is to fork a process from
+> the context of the mounting process (or possibly from the context of the
+> process that writes to the sysctl that sets the program to spawn) and
+> have that process be a daemon that becomes responsible for spawning user
+> mode helpers with context.  Either that or whe need the user mode helper
+> userspace infrastructure to become namespace aware and call setns.
+> 
+> >> If we want to do something like this the only sane thing I can see is to
+> >> have a per container version of kthread call it uthread.  That the user
+> >> mode helper code would use to launch a new process.
+> >> 
+> >> Anything else and I expect we will be tearing our hair out for the rest
+> >> of our lives with weird corner cases or unexpected semantics.
+> >
+> > Could you give examples of weird corner cases or unexpected semantics?
+> 
+> I gave a couple and it is the classic problem with suid executables
+> where a lot of unexpected things are inherited from the environment, and
+> so things become a never ending race.  We replaced daemonize in the
+> kernel with just forking processes from kthreadd for this very reason.
+> There was always something else that needed to be reset to make a
+> process a proper kernel thread.
 
-Agree, providing psc1_reset value is a good idea to setup the phy
-modes. If all 'orion' SOCs have the PSC1 value then we don't need the
-kirkwood differentiators, especially if things like the reset bit are
-in the same place.
+Got it, thanks for the explanation.
 
-The same trick Sebastian used to capture the mac address could be used
-to capture the PSC1 value from the bootloader.
-
-Basically, I think any IP variants that have idential register layouts
-can share a compatible string, otherwise different layouts need
-different compatible strings, so the general format:
-
- compatible = "marvell,SOCNAME-eth", "marvell,<something>-eth";
-
-Seems very sane to me. At least this way if we discover more changes
-then the driver can match on the SOCNAME compatible string to find
-them.
-
-<someting> = orion for TX_BW_CONTROL_NEW_LAYOUT variants also seems
-reasonable..
-
-No idea what to call TX_BW_CONTROL_OLD_LAYOUT variants, or the PPC
-variants, not important right now it seems.
-
-(BTW, I wonder if the driver should ideally toggle PSC1 reset at some
-point????)
-
-Jason
+--b.
