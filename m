@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab3EWTKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 15:10:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50251 "EHLO
+	id S1758685Ab3EWTMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 15:12:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53677 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758996Ab3EWTKt (ORCPT
+	with ESMTP id S1757918Ab3EWTMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 15:10:49 -0400
-Date: Thu, 23 May 2013 21:10:46 +0200
+	Thu, 23 May 2013 15:12:24 -0400
+Date: Thu, 23 May 2013 21:12:17 +0200
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Chao Xie <xiechao.mail@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Chao Xie <chao.xie@marvell.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V4 3/3] pwm: pxa: add device tree support
-Message-ID: <20130523191046.GA17462@avionic-0098.adnet.avionic-design.de>
-References: <1367803801-17111-1-git-send-email-chao.xie@marvell.com>
- <1367803801-17111-4-git-send-email-chao.xie@marvell.com>
- <CAMPhdO9EFj1YZt3zCD6evrH+t77=hiFj46_LPSM7dGX0rku6Kw@mail.gmail.com>
- <CADApbehSgR7h2iHhW_QmvO0sTb3zsw6cPh0Dgcbge16PzObFvg@mail.gmail.com>
- <CAMPhdO8apwiG22puibsyGLdnmomFHyQcBEp9OO0_iqYwZycdQA@mail.gmail.com>
- <CADApbegt4qprfioKj9aHiX0s7wOGvbtTLtBKzeecxoR+aBo++w@mail.gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Axel Lin <axel.lin@ingics.com>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH v2] pwm: renesas-tpu: Add missing pwmchip_remove() call
+ in tpu_remove()
+Message-ID: <20130523191217.GB17462@avionic-0098.adnet.avionic-design.de>
+References: <1369057541.11578.1.camel@phoenix>
+ <1454213.B1kNpQ6JtX@avalon>
+ <20130523013933.GI22608@verge.net.au>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+	protocol="application/pgp-signature"; boundary="z6Eq5LdranGa6ru8"
 Content-Disposition: inline
-In-Reply-To: <CADApbegt4qprfioKj9aHiX0s7wOGvbtTLtBKzeecxoR+aBo++w@mail.gmail.com>
+In-Reply-To: <20130523013933.GI22608@verge.net.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:mMy0jtEBGNo8UuGZxRo/TCeuai5PhtqpVjq5AL73CuA
- Cr9Ykr5kCwdS2QPy+IqnalyrruFDBNETXyDMBJvhrEHL0XUtrQ
- JcdJocBA0rg9SQYoEoZpzPxP4IOxX/JM64aLDceelj8Jksi0ca
- ggZfgUWCyt5yMMZd43e7KNMusRioT30P3K2C+3PwQPJ+5NtnAP
- rMtzv9WwwJV5LcdzLRwQTWTZSB11UiEhhrvr2eg/g+hEKamBM1
- LtC8Aoruelrbo5kfUFwioSG/1GDVCX4exSbbTkaZT0i6EiTFrj
- d3/8A6LEkaLJ3AEVBdDlGtsHjoFZa6CofVfz6DUIvH/ZjDSff9
- zeUWRTStduRBepYfg5bLnCbJJ2qqqKKy/TKtPrbST1tWqMkQNd
- MAIeJZTyWPUImpg8PkOWZhcOweH6TJtg0923YnPlNpNOGPBa3I
- 5vB36
+X-Provags-ID: V02:K0:+C3HpA9Ogz0dfAUUP6Md/bKm8XrH7UZ14GazaSiGJvL
+ Ff2hZ66ex6fLAfgYrozVGbr9fja1evFWk8umuoBPh/hPGM81i3
+ rTTLFHbUKxBhAi3atPAOVTtLisDBX3S2GvU9uE1YwjTsD8upEn
+ 9aFSNt6AGxhuThUPXu6HUyo88XI+9/24FMEz6ezv2aiZ239Uk8
+ riKkxwa6e5NUqAnbWDMDBTEYurGuAr0slks6xmq5aYAyEZ+PxM
+ dMEb2nSToWDOS5HIgcP3ritjM+v6KDxylDvOVAagesNY5V1QWc
+ ECLBE+7B4yqneOYOLpKpYoIZLYEkQEiSwyyzz5hzxCvMIUrU0b
+ n86IjBt80VLoCRwTGE4FgI51GuPbz+pah224nMdvqjS1Sq1Z4b
+ 1QQT5qYMnk0SPrIoO5DiNIS5950jcRgNY8Ey3t3Id/rOmNj42z
+ ACnsz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9amGYk9869ThD9tj
+--z6Eq5LdranGa6ru8
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, May 21, 2013 at 01:21:29PM +0800, Chao Xie wrote:
-> hi, Thierry
-> Eric has acked all the patches. So can you help to merge them?
-> Thanks.
+On Thu, May 23, 2013 at 10:39:34AM +0900, Simon Horman wrote:
+> On Mon, May 20, 2013 at 03:46:59PM +0200, Laurent Pinchart wrote:
+> > Hi Axel,
+> >=20
+> > Thank you for the patch.
+> >=20
+> > On Monday 20 May 2013 21:45:41 Axel Lin wrote:
+> > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> >=20
+> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>=20
+> Thanks. I have queued this up for v3.11 in the pinmux branch
+> of my renesas tree on kernel.org.
 
-I'm currently in the process of migrating everything to my private email
-address so things are a bit bumpy and I'm lagging behind. I have them in
-my queue, though, and should be able to apply and push them sometime
-soon.
+I'd rather take this through the PWM tree along with the original driver
+patch.
 
 Thierry
 
---9amGYk9869ThD9tj
+--z6Eq5LdranGa6ru8
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRnmm2AAoJEN0jrNd/PrOhJTkP/0isTz/1bVfG5eIiEaNS8x/P
-s2+z4eIpwJ1BCdQPX6Tg5b9ynqTaouFhCmAzBLJjFDNmeod0eNVk2QWfWnbW/TIf
-ork2OxJQdjSwsk2wYE0TiUn6FaGIwzy5j4XBCHLG5b+oASK6EINajNJIFKNRa3E6
-fW+1kVbD+qHhohL7svo/KLmlPI8Rxjfy03o8CesoCP4/EFnSK23mxmwipAXwtduS
-2CyOGUKc73Z2xVaFA3I0TOZiJWiodkLc5UZY67g2ULyDTXcdDyJf4Bw3TEi8NDhf
-5UTZ5fn1bZmG4ZNMZRZEsjJgVfhOUxNfkVbDcMWuLXIFeDufnlmn5JGqXJ9G+5az
-LIGRuqa25ulwGK/PcfEjqkV08I4ir/Wjaa5G3v6zc1koUo1TOIsYbw4a4z8PFnnz
-WctVhm0iLXns+BGccgfUdLGhgOZ3i48AjsrbgRYs+xcFQyI9l6wSuhQAOgfw8BaZ
-uy/7/cJSbB1d84Qyg/Gn6JOp7UuljvVXWA0Hp+9zbYKGUmd7EnX7RZ7fCv88zjpq
-PtZUe4N14PrkAGbik0+yWXswy/wieEfALl9vc3oHsofOxfwfHYPeTeEfSWa0/gsI
-dr/rQpjVChTqIpqPzewOYYaeUmhVYSvRJLDe6gRXNSMrCmnJzbQKw0BYeb0uRox0
-ErgqlZSeWrJWcgXS1T4t
-=7BPg
+iQIcBAEBAgAGBQJRnmoRAAoJEN0jrNd/PrOhxN0P/07aOzDVB//xE4rRYt2bIUlC
+N3rRVCMYaarbHkUz4arEnIWx2jIBEBuE9Ds2p2i61wTKlV4bAGxh6cZzyncDc4u3
+s+yBHDqG8sqhpet4amOjiBR0umwwKvwNxwvrV9ELkGk1qcYRsY40MBuhZkixpL0F
+o0QKeRDyxahuTsY4xqyTCsAxxnq689EP9jdeSEylQUvUgVSNdGtLKo8zryLoPZhy
+5d89AD2QiNsE/5y+uYxPNhbYpOMSKDVa2i5IclLNzqZ2tJP4/aNGA6ElgRok6CJO
++ORm4Mpv7NNeIyVZ24UG4xaaUWfr4wJj0ESI6O4WRXPnDgVLz45a21R8DY0oMNqw
+hw+0q4vskAVdnzUlQ2NPPhVAYOKZUOfcm2tzBMiF6hVbRVNNdGJjBLWjzsXWHSM3
+d7ogTbpVVeFgSMngAfr+7lXkD0DRybZ+FA/Yf+x5VjX9pyncJV4hA0dYEZ8pyxyW
+/2ca23QaaRaOpcL/WoVSsVRCtXqPkBbtviitgYVVWtXorehF8DcLwMwXcZnNUaME
+Q9eCaEGMbZ/TZLDtmOWVRnh0RUe/x2je2NmqGtf3nxXN35ATUh6IFZP7hyJIfXzE
+WxPVt6In9kDio7kCNZsXU74AlYp/kS2Wc8svD45NLpyPXpPC825yqopfgG4cOzyl
+rfOErZoBzlEmSJViRUWi
+=91qk
 -----END PGP SIGNATURE-----
 
---9amGYk9869ThD9tj--
+--z6Eq5LdranGa6ru8--
