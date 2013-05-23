@@ -1,60 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758358Ab3EWO1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:27:36 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:35286 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757558Ab3EWO1e (ORCPT
+	id S1758942Ab3EWO2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:28:54 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:58643 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab3EWO2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:27:34 -0400
-Message-ID: <519E275A.5020200@cogentembedded.com>
-Date: Thu, 23 May 2013 18:27:38 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 23 May 2013 10:28:52 -0400
 MIME-Version: 1.0
-To: Ravi Babu <ravibabu@ti.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for am33xx
-References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-9-git-send-email-ravibabu@ti.com>
-In-Reply-To: <1369288888-8614-9-git-send-email-ravibabu@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5h38tdx24r.wl%tiwai@suse.de>
+References: <20130521230332.GC12713@redhat.com>
+	<519D1668.6000601@zytor.com>
+	<20130522200012.GA15456@redhat.com>
+	<ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
+	<20130523033911.GA9411@redhat.com>
+	<CACVXFVP3stgc2JKc31_yjPuokTbqcSrW_FWDvHrHK+NA-xu-yg@mail.gmail.com>
+	<s5h7giq86hr.wl%tiwai@suse.de>
+	<s5hwqqqvw59.wl%tiwai@suse.de>
+	<CACVXFVMsTjSqvyVkZEPfWgHDUJ_mqwqWy=vydCsTvv7TS-EKiQ@mail.gmail.com>
+	<s5hr4gyvv7r.wl%tiwai@suse.de>
+	<CACVXFVNO9FeCaJ_YFbvPMUHOBjneLqqW+ucYprZb7884Eth-DA@mail.gmail.com>
+	<s5hmwrlx5np.wl%tiwai@suse.de>
+	<CACVXFVMm=dKz9mwt=moU4Dw9-K=offHb10S3sV2-cxiQ5vH_cA@mail.gmail.com>
+	<s5h38tdx24r.wl%tiwai@suse.de>
+Date: Thu, 23 May 2013 22:28:51 +0800
+Message-ID: <CACVXFVOy95SzeL2_wHMShZwG7eE7evrZhaEvJAsd1LLDcSD1Vw@mail.gmail.com>
+Subject: Re: microcode loading got really slow.
+From: Ming Lei <tom.leiming@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Dave Jones <davej@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        fenghua.yu@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23-05-2013 10:01, Ravi Babu wrote:
-
-> The am33xx platforms suppors dual musb instance which need two instances
-> of usb-phy. Add dual instance usb-phy DT bindings for am333x platform.
-
-> Signed-off-by: Ravi Babu <ravibabu@ti.com>
-> ---
->   arch/arm/boot/dts/am33xx.dtsi |   17 +++++++++++++++++
->   1 files changed, 17 insertions(+), 0 deletions(-)
-
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 0957645..b0b4deb 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -322,6 +322,22 @@
->   			status = "disabled";
->   		};
+On Thu, May 23, 2013 at 9:21 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu, 23 May 2013 21:04:53 +0800,
+> Ming Lei wrote:
+>>
+>> On Thu, May 23, 2013 at 8:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Thu, 23 May 2013 18:45:29 +0800,
+>> > Ming Lei wrote:
+>> >>
+>> >> On Thu, May 23, 2013 at 6:36 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> >
+>> >> > No, f/w loader always fall back to user mode helper, as long as its
+>> >> > support is built in.  And doing that for microcode driver in that code
+>> >> > path isn't only superfluous but also broken due to request_firmware
+>> >> > call in module init.
+>> >>
+>> >> Firstly, it is not good to do this since some distributions doesn't support
+>> >> direct loading and doesn't have udevd(such as, android).
+>> >>
+>> >> Secondly, returning failure from request_firmware_direct() doesn't mean
+>> >> the firmware doesn't exist since distribution may put the firmware other where.
+>> >
+>> > Right, the non-standard path is the problem, and basically the only
+>> > problem.  The distribution that doesn't support the direct loading
+>> > means nothing but that.
+>>
+>> Suppose it is, it is the fact, and it isn't OK to break this distribution.
+>>
+>> Also udev supports user-defined rules to load firmware, which
+>> means some drivers may not put their firmware in the default
+>> path of distribution's firmware.
 >
-> +		phy1: usbphy-gs70@44e10620 {
-> +			compatible = "ti,dsps-usbphy";
-> +			reg = <0x44e10620 0x8
-> +			       0x44e10648 0x4>;
-> +			reg-names = "phy_ctrl","phy_wkup";
-> +			id = <0>;
-> +		};
-> +
-> +		phy2: usbphy-gs70@44e10628 {
-> +			compatible = "ti,dsps-usbphy";
-> +			reg = <0x44e10628 0x8
-> +			       0x44e10648 0x4>;
+> It's why I suggested to put a warning in that path as the first step.
+> So we can see whether there is any actual user.
 
-    The second register conflicts with phy1.
+If you plan to do it, it'd better to add default firmware path of some
+distributions into firmware_class.c first, otherwise it may cause
+unnecessary noise for this distribution.
 
-WBR, Sergei
+But if more default search paths are added, it might cause mistaken
+firmwares found under incorrect path, for example, android's
+default path is "/etc/firmware" and "/vendor/firmware"(maybe different
+for different versions).
 
+Also, putting default search paths into kernel isn't good, which was
+introduced unwillingly for well-known reason.
+
+>
+>> >> Anyway, this example is very specific(no firmware can be accepted), and
+>> >> request_firmware_nowait() should be OK for the situation.
+>> >
+>> > Oh no, rewriting with request_firmware_nowait() should be really the
+>> > last choice.  It would change the code flow awfully bad in most
+>> > cases.
+>> >
+>> > The new kernel driver has a better firmware mechanism.  If it's only
+>> > the question of paths, we should move on toward that direction and
+>> > drop the too complex old way.  I'd vote for a warning shown when a
+>>
+>> Simply dropping the old way may cause user space regression.
+>
+> It's already broken :)
+
+It is different, the current issue is caused by udev, not by kernel, :-)
+
+>
+>> > firmware file is loaded via user mode helper (except for explicit
+>> > cases like FW_ACTION_NOHOTPLUG), for example.
+>>
+>> As it is a very driver specific problem, it is better to solve it inside driver.
+>
+> Yes, this proposal is basically not meant as a fix for this particular
+> issue but rather for future movement in general.
+>
+>> >> >> wrt. this problem, I think we
+>> >> >> need to know why the direct loading is failed.
+>> >> >
+>> >> > The reason is obvious: the requested f/w file doesn't exist.
+>> >> > And it's fine, because the microcode update is an optional operation.
+>> >> > If no f/w file is found, it's not handled as an error.  It just means
+>> >> > that no need to update, continuing to work.
+>> >>
+>> >> OK, as said above, the example is very specific, and might be
+>> >> workarounded by request_firmware_nowait().
+>> >
+>> > It's not that easy in this case.  The microcode loader driver core
+>> > module doesn't invoke request_firmware() directly but it's via cpu
+>> > driver.  And the same callback is called in different code paths, not
+>> > only at init but also via sysfs write.  Thus the request_firmware()
+>> > call must be synchronous there.
+>>
+>> I don't think the way is too difficult to implement. In the path which
+>> requires synchronization, it can be waited on one completion after
+>> calling request_firmware_nowait().
+>
+> This sounds already like unnecessary complexity.  Also, what if
+> concurrent accesses?
+
+The request_firmware_no_wait() supports concurrent accesses on
+either same firmware or not.
+
+>
+> Also, I wonder why the kernel needs to be "fixed" for this, if the
+> problem is really the stuck in udev.  In this regard, we didn't change
+> anything from the beginning.  There was an implicit "wish", that the
+> f/w loading shouldn't be done in the module init, but this has been
+> never treated as a golden rule.
+
+No, there isn't the golden rule, and it is reasonable or inevitable
+sometimes to load firmware in module init, for example, I remember some
+wireless dongles in which people can't read its mac address without
+downloading firmware, that means some devices may not be initialized
+successfully without firmware.
+
+
+Thanks,
+-- 
+Ming Lei
