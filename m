@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759755Ab3EWQQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:16:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48718 "EHLO
+	id S1759772Ab3EWQRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:17:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48721 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758788Ab3EWQQn (ORCPT
+	with ESMTP id S1759668Ab3EWQRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:16:43 -0400
-Date: Thu, 23 May 2013 09:16:42 -0700
+	Thu, 23 May 2013 12:17:04 -0400
+Date: Thu, 23 May 2013 09:17:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] Staging driver fixes for 3.10-rc3
-Message-ID: <20130523161642.GA14573@kroah.com>
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PATCH] TTY/Serial fixes for 3.10-rc3
+Message-ID: <20130523161703.GA14601@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,132 +29,69 @@ The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.10-rc2
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.10-rc2
 
-for you to fetch changes up to 0797c3a3e9660682b5df80911f35b523995a40bd:
+for you to fetch changes up to e037f95ffb5355ffe295e1d106d02fefd284d882:
 
-  staging: dwc2: remove compile warning for USB_DWC2_TRACK_MISSED_SOFS (2013-05-22 15:19:18 -0700)
+  tty: mxser: Fix build warning introduced by dfc7b837c7f9 (Re: linux-next: build warning after merge of the tty.current tree) (2013-05-22 10:26:02 -0700)
 
 ----------------------------------------------------------------
-Staging driver fixes for 3.10-rc2
+tty/serial fixes for 3.10-rc2
 
-Here are some staging tree driver fixes for 3.10-rc2
+Here are some tty / serial driver fixes for 3.10-rc2.
 
-The drivers/iio/ changes are here as they are still tied into
-drivers/staging/iio/.
+Nothing huge, although the rocket driver fix looks large, it's just
+moving the code around to fix the reported build issues in it.  Other
+than that, this has the fix for the of-reported lockdep warning from the
+vt layer, as well as some other needed bugfixes.
 
-Nothing major, just a number of small bugfixes, and a larger documentation
-update for the ramster code.
+All of these have been in linux-next for a while.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Arnd Bergmann (2):
-      staging/drm: imx: add missing dependencies
-      staging/solo6x10: depend on CONFIG_FONTS
+Ezequiel Garcia (1):
+      serial: 8250_dw: Add valid clk pointer check
 
-Axel Lin (1):
-      iio: dac: Fix build error when CONFIG_SPI_MASTER=y && CONFIG_I2C=m
+Heikki Krogerus (1):
+      serial: 8250_dw: add ACPI ID for Intel BayTrail
 
-Dan Magenheimer (1):
-      staging: ramster: add how-to document
+Jiri Slaby (1):
+      TTY: rocket, fix more no-PCI warnings
 
-Denis CIOCCA (1):
-      iio:common:st: added disable function after read info raw data
-
-Denis Efremov (1):
-      staging: nvec: remove inline marking of EXPORT_SYMBOL functions
-
-Fabio Estevam (1):
-      staging: imx-drm: imx-tve: Check the return value of 'regulator_enable()'
-
-Geert Uytterhoeven (1):
-      staging: zcache: Fix incorrect module_param_array types
-
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.10a' of git://git.kernel.org/.../jic23/iio into staging-linus
-
-H Hartley Sweeten (1):
-      staging: comedi: ni_labpc: fix build when VIRT_TO_BUS is not defined
-
-Hema Prathaban (1):
-      staging: vt6656: use free_netdev instead of kfree
-
-Ian Abbott (4):
-      staging: comedi: allow buffer resize if previous resize failed
-      staging: comedi: work without HAS_DMA
-      staging: comedi: ni_mio_common: only do counter commands for ni_pcimio
-      staging: comedi: complain if dma buffer allocation not supported
-
-Jean Delvare (1):
-      staging: Swap zram and zsmalloc in Kconfig
+Lars-Peter Clausen (1):
+      tty: nwpserial: Pass correct pointer to free_irq()
 
 Lee Jones (1):
-      staging: ste_rmi4: Suppress 'ignoring return value of ‘regulator_enable()' warning
+      serial: pl011: protect attribute read from NULL platform data struct
 
-Malcolm Priestley (1):
-      staging: vt6656: [bug] Fix missing spin lock in iwctl_siwpower.
+Matwey V. Kornilov (2):
+      tty: mxser: fix usage of opmode_ioaddr
+      tty: mxser: Fix build warning introduced by dfc7b837c7f9 (Re: linux-next: build warning after merge of the tty.current tree)
 
-Marc Dietrich (3):
-      staging: nvec: add missing module aliases
-      staging: nvec: implement unregistering of notifiers
-      staging: nvec: cleanup childs on remove
+Peter Hurley (1):
+      tty/vt: Fix vc_deallocate() lock order
 
-Marek Vasut (1):
-      staging: video: imx: Select VIDEOMODE_HELPERS for parallel display
+Wang YanQing (1):
+      TTY: Fix tty miss restart after we turn off flow-control
 
-Matthijs Kooijman (1):
-      staging: dwc2: Fix dma-enabled platform devices using a default dma_mask
+Wei Yongjun (4):
+      serial: samsung: add missing platform_driver_unregister() when module exit
+      tty: serial: mpc5xxx: fix error handing in mpc52xx_uart_init()
+      serial: mcf: missing uart_unregister_driver() on error in mcf_init()
+      TTY: ehv_bytechan: add missing platform_driver_unregister() when module exit
 
-Michał Mirosław (1):
-      staging/iio/mxs-lradc: fix preenable for multiple buffers
-
-Naveen Krishna Chatradhi (1):
-      iio: exynos_adc: fix wrong structure extration in suspend and resume
-
-Paul Zimmerman (1):
-      staging: dwc2: remove compile warning for USB_DWC2_TRACK_MISSED_SOFS
-
-Randy Dunlap (1):
-      staging: sep: fix driver build and kconfig
-
-Wei Yongjun (1):
-      staging:iio:light:tsl2x7x: fix the error handling in tsl2x7x_probe()
-
-Xiong Zhou (1):
-      staging: android: logger: use kuid_t instead of uid_t
-
- drivers/iio/adc/exynos_adc.c                     |   8 +-
- drivers/iio/common/st_sensors/st_sensors_core.c  |   2 +
- drivers/iio/dac/Kconfig                          |   6 +-
- drivers/staging/Kconfig                          |   4 +-
- drivers/staging/android/logger.c                 |   4 +-
- drivers/staging/android/logger.h                 |   2 +-
- drivers/staging/comedi/Kconfig                   |   9 +
- drivers/staging/comedi/comedi_buf.c              |  12 +
- drivers/staging/comedi/comedi_fops.c             |   3 -
- drivers/staging/comedi/drivers/ni_labpc.c        |   8 +-
- drivers/staging/comedi/drivers/ni_labpc.h        |   1 +
- drivers/staging/comedi/drivers/ni_mio_common.c   |  20 +-
- drivers/staging/dwc2/Kconfig                     |   1 +
- drivers/staging/dwc2/hcd_intr.c                  |   2 -
- drivers/staging/dwc2/platform.c                  |   8 +
- drivers/staging/iio/adc/mxs-lradc.c              |   5 +-
- drivers/staging/iio/light/tsl2x7x_core.c         |   9 +-
- drivers/staging/imx-drm/Kconfig                  |   5 +
- drivers/staging/imx-drm/imx-tve.c                |   4 +-
- drivers/staging/media/solo6x10/Kconfig           |   1 +
- drivers/staging/nvec/nvec.c                      |  21 +-
- drivers/staging/nvec/nvec.h                      |   5 +-
- drivers/staging/nvec/nvec_kbd.c                  |  10 +-
- drivers/staging/nvec/nvec_power.c                |   1 +
- drivers/staging/nvec/nvec_ps2.c                  |   8 +-
- drivers/staging/sep/Kconfig                      |   2 +-
- drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c    |   6 +-
- drivers/staging/vt6656/hostap.c                  |   2 +-
- drivers/staging/vt6656/iwctl.c                   |   6 +
- drivers/staging/zcache/ramster/ramster-howto.txt | 366 +++++++++++++++++++++++
- drivers/staging/zcache/zcache-main.c             |   8 +-
- drivers/video/console/Makefile                   |   2 +
- 32 files changed, 499 insertions(+), 52 deletions(-)
- create mode 100644 drivers/staging/zcache/ramster/ramster-howto.txt
+ drivers/tty/ehv_bytechan.c        |   1 +
+ drivers/tty/mxser.c               |  11 +-
+ drivers/tty/n_tty.c               |   8 ++
+ drivers/tty/rocket.c              | 288 +++++++++++++++++++-------------------
+ drivers/tty/serial/8250/8250_dw.c |   7 +-
+ drivers/tty/serial/amba-pl011.c   |   2 +-
+ drivers/tty/serial/mcf.c          |   4 +-
+ drivers/tty/serial/mpc52xx_uart.c |  11 +-
+ drivers/tty/serial/nwpserial.c    |   2 +-
+ drivers/tty/serial/samsung.c      |   1 +
+ drivers/tty/vt/vt.c               |  14 +-
+ drivers/tty/vt/vt_ioctl.c         |  67 ++++++---
+ include/linux/vt_kern.h           |   2 +-
+ 13 files changed, 234 insertions(+), 184 deletions(-)
