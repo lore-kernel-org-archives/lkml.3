@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab3EWS5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 14:57:09 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:45288 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758494Ab3EWS5G (ORCPT
+	id S1759024Ab3EWS5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 14:57:44 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:36170 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758706Ab3EWS5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 14:57:06 -0400
+	Thu, 23 May 2013 14:57:08 -0400
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: Jan Willeke <willeke@de.ibm.com>,
@@ -14,89 +14,144 @@ Cc: Jan Willeke <willeke@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
         Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] kdump: Allow ELF header creation in new kernel
-Date: Thu, 23 May 2013 20:56:58 +0200
-Message-Id: <1369335421-43058-1-git-send-email-holzheu@linux.vnet.ibm.com>
+Subject: [PATCH v3 2/3] s390/kdump: Use ELF header in new memory feature
+Date: Thu, 23 May 2013 20:57:00 +0200
+Message-Id: <1369335421-43058-3-git-send-email-holzheu@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.6
+In-Reply-To: <1369335421-43058-1-git-send-email-holzheu@linux.vnet.ibm.com>
+References: <1369335421-43058-1-git-send-email-holzheu@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052318-0342-0000-0000-0000051E6CCE
+x-cbid: 13052318-2966-0000-0000-000007B06946
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+This patch now exchanges the old relocate mechanism with the new
+arch function call override mechanism that allows to create the ELF
+core header in the 2nd kernel.
 
-Here, as discussed, the 3nd version of the patch set.
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ arch/s390/kernel/crash_dump.c | 64 ++++++++++++++++++++++++++++++-------------
+ 1 file changed, 45 insertions(+), 19 deletions(-)
 
-ChangeLog
-=========
-v2 => v3)
-- Get rid of ELFCORE_ADDR_NEWMEM
-- Make read_from_crash_header() only read from kernel
-- Move read_from_crash_header() to weak function arch_read_from_crash_header()
-- Implement read_from_crash_header() strong function for s390
-- Set elfcorehdr_addr to address of new ELF header
-
-v1 => v2)
-
-- Rebase 3.10-rc2 + vmcore mmap patches
-- Introduced arch_get/free_crash_header() and ELFCORE_ADDR_NEWMEM
-
-Feature Description
-===================
-For s390 we want to use /proc/vmcore for our SCSI stand-alone
-dump (zfcpdump). We have support where the first HSA_SIZE bytes are
-saved into a hypervisor owned memory area (HSA) before the kdump
-kernel is booted. When the kdump kernel starts, it is restricted
-to use only HSA_SIZE bytes.
-
-The advantages of this mechanism are:
-
-* No crashkernel memory has to be defined in the old kernel.
-* Early boot problems (before kexec_load has been done) can be dumped 
-* Non-Linux systems can be dumped.
-
-We modify the s390 copy_oldmem_page() function to read from the HSA memory
-if memory below HSA_SIZE bytes is requested.
-
-Since we cannot use the kexec tool to load the kernel in this scenario,
-we have to build the ELF header in the 2nd (kdump/new) kernel.
-
-So with the following patch set we would like to introduce the new
-function that the ELF header for /proc/vmcore can be created in the 2nd
-kernel memory.
-
-The following steps are done during zfcpdump execution:
-
-1.  Production system crashes
-2.  User boots a SCSI disk that has been prepared with the zfcpdump tool
-3.  Hypervisor saves CPU state of boot CPU and HSA_SIZE bytes of memory into HSA
-4.  Boot loader loads kernel into low memory area
-5.  Kernel boots and uses only HSA_SIZE bytes of memory
-6.  Kernel saves registers of non-boot CPUs
-7.  Kernel does memory detection for dump memory map
-8.  Kernel creates ELF header for /proc/vmcore
-9.  /proc/vmcore uses this header for initialization
-10. The zfcpdump user space reads /proc/vmcore to write dump to SCSI disk
-    - copy_oldmem_page() copies from HSA for memory below HSA_SIZE
-    - copy_oldmem_page() copies from real memory for memory above HSA_SIZE
-
-Jan Willeke (1):
-  s390/kdump: Use vmcore for zfcpdump
-
-Michael Holzheu (2):
-  kdump: Introduce ELF header in new memory feature
-  s390/kdump: Use ELF header in new memory feature
-
- arch/s390/Kconfig             |   3 +-
- arch/s390/include/asm/sclp.h  |   1 +
- arch/s390/kernel/crash_dump.c | 138 +++++++++++++++++++++++++++++++-----------
- drivers/s390/char/zcore.c     |   6 +-
- fs/proc/vmcore.c              |  65 ++++++++++++++------
- include/linux/crash_dump.h    |   4 ++
- 6 files changed, 161 insertions(+), 56 deletions(-)
-
+diff --git a/arch/s390/kernel/crash_dump.c b/arch/s390/kernel/crash_dump.c
+index f703d91..aeb1207 100644
+--- a/arch/s390/kernel/crash_dump.c
++++ b/arch/s390/kernel/crash_dump.c
+@@ -21,6 +21,9 @@
+ #define PTR_SUB(x, y) (((char *) (x)) - ((unsigned long) (y)))
+ #define PTR_DIFF(x, y) ((unsigned long)(((char *) (x)) - ((unsigned long) (y))))
+ 
++static size_t elfcorebuf_sz;
++static char *elfcorebuf;
++
+ /*
+  * Copy one page from "oldmem"
+  *
+@@ -325,14 +328,6 @@ static int get_mem_chunk_cnt(void)
+ }
+ 
+ /*
+- * Relocate pointer in order to allow vmcore code access the data
+- */
+-static inline unsigned long relocate(unsigned long addr)
+-{
+-	return OLDMEM_BASE + addr;
+-}
+-
+-/*
+  * Initialize ELF loads (new kernel)
+  */
+ static int loads_init(Elf64_Phdr *phdr, u64 loads_offset)
+@@ -383,7 +378,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
+ 	ptr = nt_vmcoreinfo(ptr);
+ 	memset(phdr, 0, sizeof(*phdr));
+ 	phdr->p_type = PT_NOTE;
+-	phdr->p_offset = relocate(notes_offset);
++	phdr->p_offset = notes_offset;
+ 	phdr->p_filesz = (unsigned long) PTR_SUB(ptr, ptr_start);
+ 	phdr->p_memsz = phdr->p_filesz;
+ 	return ptr;
+@@ -392,7 +387,7 @@ static void *notes_init(Elf64_Phdr *phdr, void *ptr, u64 notes_offset)
+ /*
+  * Create ELF core header (new kernel)
+  */
+-static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
++static int s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
+ {
+ 	Elf64_Phdr *phdr_notes, *phdr_loads;
+ 	int mem_chunk_cnt;
+@@ -414,28 +409,59 @@ static void s390_elf_corehdr_create(char **elfcorebuf, size_t *elfcorebuf_sz)
+ 	ptr = PTR_ADD(ptr, sizeof(Elf64_Phdr) * mem_chunk_cnt);
+ 	/* Init notes */
+ 	hdr_off = PTR_DIFF(ptr, hdr);
+-	ptr = notes_init(phdr_notes, ptr, ((unsigned long) hdr) + hdr_off);
++	ptr = notes_init(phdr_notes, ptr, (unsigned long) hdr + hdr_off);
+ 	/* Init loads */
+ 	hdr_off = PTR_DIFF(ptr, hdr);
+-	loads_init(phdr_loads, ((unsigned long) hdr) + hdr_off);
++	loads_init(phdr_loads, hdr_off);
+ 	*elfcorebuf_sz = hdr_off;
+-	*elfcorebuf = (void *) relocate((unsigned long) hdr);
++	*elfcorebuf = hdr;
+ 	BUG_ON(*elfcorebuf_sz > alloc_size);
++	return 0;
+ }
+ 
+ /*
+- * Create kdump ELF core header in new kernel, if it has not been passed via
+- * the "elfcorehdr" kernel parameter
++ * Return address of ELF core header (new or old memory)
+  */
+-static int setup_kdump_elfcorehdr(void)
++unsigned long long arch_get_crash_header(void)
+ {
+-	size_t elfcorebuf_sz;
+-	char *elfcorebuf;
++	if (elfcorebuf)
++		return elfcorehdr_addr;
++	else
++		return __pa(elfcorebuf);
++}
+ 
++/*
++ * Free crash header
++ */
++void arch_free_crash_header(void)
++{
++	kfree(elfcorebuf);
++	elfcorebuf = 0;
++}
++
++/*
++ * Read from crash header (new or old memory)
++ */
++ssize_t arch_read_from_crash_header(char *buf, size_t count, u64 *ppos)
++{
++	if (elfcorebuf)
++		memcpy(buf, (void *)*ppos, count);
++	else
++		copy_from_oldmem(buf, (void *)*ppos, count);
++	*ppos += count;
++	return count;
++}
++
++/*
++ * Create kdump ELF core header in new kernel if it has not been passed via
++ * the "elfcorehdr=" kernel parameter
++ */
++static int setup_kdump_elfcorehdr(void)
++{
+ 	if (!OLDMEM_BASE || is_kdump_kernel())
+ 		return -EINVAL;
+ 	s390_elf_corehdr_create(&elfcorebuf, &elfcorebuf_sz);
+-	elfcorehdr_addr = (unsigned long long) elfcorebuf;
++	elfcorehdr_addr = __pa(elfcorebuf);
+ 	elfcorehdr_size = elfcorebuf_sz;
+ 	return 0;
+ }
 -- 
 1.8.1.6
 
