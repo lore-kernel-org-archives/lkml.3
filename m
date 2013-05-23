@@ -1,60 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab3EWOMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:12:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:60562 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758530Ab3EWOLa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:11:30 -0400
-Date: Thu, 23 May 2013 10:11:29 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 1/1] USB: ehci-omap: Reset dma_mask pointer on probe
-In-Reply-To: <1369304387-29610-2-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1305231009230.1459-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759048Ab3EWOMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:12:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24361 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758277Ab3EWOLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:11:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
+   d="scan'208";a="306834311"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linux-usb@vger.kernel.org
+Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v3 2/4] usb: xhci: define port register names and use them instead of magic numbers
+Date: Thu, 23 May 2013 17:14:29 +0300
+Message-Id: <1369318471-10353-3-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Roger Quadros wrote:
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c |   16 +++++++---------
+ drivers/usb/host/xhci.c     |    4 ++--
+ drivers/usb/host/xhci.h     |    5 +++++
+ 3 files changed, 14 insertions(+), 11 deletions(-)
 
-> Device tree probed devices don't get dma_mask set. Previously
-> we were setting the dma_mask pointer only if it was NULL.
-> However, the address of 'omap_ehci_dma_mask' would change
-> each time the module is unloaded and loaded back thus causing
-> the devices dma_mask pointer to be invalid on the next load.
-> 
-> This will cause page faults if any driver tries to access the
-> old dma_mask pointer.
-> 
-> Unconditionally re-setting the dma_mask pointer fixes this problem.
-
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 3d1491b..b33e306 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -146,8 +146,7 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
->  	 * Since shared usb code relies on it, set it here for now.
->  	 * Once we have dma capability bindings this can go away.
->  	 */
-> -	if (!pdev->dev.dma_mask)
-> -		pdev->dev.dma_mask = &omap_ehci_dma_mask;
-> +	pdev->dev.dma_mask = &omap_ehci_dma_mask;
-
-Is this the solution that people have agreed on?  There has been a lot 
-of discussion on this topic.  In particular, there has been talk about 
-fixing it in the DT core.
-
-This particular approach doesn't seem very robust.  What if 
-pdev->dev.dma_mask is already set to a different value for some good 
-reason?
-
-Alan Stern
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 187a3ec..1d35459 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -867,18 +867,18 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+ 		case USB_PORT_FEAT_U1_TIMEOUT:
+ 			if (hcd->speed != HCD_USB3)
+ 				goto error;
+-			temp = xhci_readl(xhci, port_array[wIndex] + 1);
++			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
+ 			temp &= ~PORT_U1_TIMEOUT_MASK;
+ 			temp |= PORT_U1_TIMEOUT(timeout);
+-			xhci_writel(xhci, temp, port_array[wIndex] + 1);
++			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
+ 			break;
+ 		case USB_PORT_FEAT_U2_TIMEOUT:
+ 			if (hcd->speed != HCD_USB3)
+ 				goto error;
+-			temp = xhci_readl(xhci, port_array[wIndex] + 1);
++			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
+ 			temp &= ~PORT_U2_TIMEOUT_MASK;
+ 			temp |= PORT_U2_TIMEOUT(timeout);
+-			xhci_writel(xhci, temp, port_array[wIndex] + 1);
++			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
+ 			break;
+ 		default:
+ 			goto error;
+@@ -1098,10 +1098,8 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 			__le32 __iomem *addr;
+ 			u32 tmp;
+ 
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
++			/* Get the port power control register address. */
++			addr = port_array[port_index] + PORTPMSC;
+ 			tmp = xhci_readl(xhci, addr);
+ 			tmp |= PORT_RWE;
+ 			xhci_writel(xhci, tmp, addr);
+@@ -1193,7 +1191,7 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 			/* Add one to the port status register address to get
+ 			 * the port power control register address.
+ 			 */
+-			addr = port_array[port_index] + 1;
++			addr = port_array[port_index] + PORTPMSC;
+ 			tmp = xhci_readl(xhci, addr);
+ 			tmp &= ~PORT_RWE;
+ 			xhci_writel(xhci, tmp, addr);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index e540a36..317bf08 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3901,7 +3901,7 @@ static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
+ 	 * Check device's USB 2.0 extension descriptor to determine whether
+ 	 * HIRD or BESL shoule be used. See USB2.0 LPM errata.
+ 	 */
+-	pm_addr = port_array[port_num] + 1;
++	pm_addr = port_array[port_num] + PORTPMSC;
+ 	hird = xhci_calculate_hird_besl(xhci, udev);
+ 	temp = PORT_L1DS(udev->slot_id) | PORT_HIRD(hird);
+ 	xhci_writel(xhci, temp, pm_addr);
+@@ -3999,7 +3999,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
+ 
+ 	port_array = xhci->usb2_ports;
+ 	port_num = udev->portnum - 1;
+-	pm_addr = port_array[port_num] + 1;
++	pm_addr = port_array[port_num] + PORTPMSC;
+ 	temp = xhci_readl(xhci, pm_addr);
+ 
+ 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 1dbc63f..b6cd55e 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -132,6 +132,11 @@ struct xhci_cap_regs {
+ /* Number of registers per port */
+ #define	NUM_PORT_REGS	4
+ 
++#define PORTSC		0
++#define PORTPMSC	1
++#define PORTLI		2
++#define PORTHLPMC	3
++
+ /**
+  * struct xhci_op_regs - xHCI Host Controller Operational Registers.
+  * @command:		USBCMD - xHC command register
+-- 
+1.7.4.1
 
