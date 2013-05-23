@@ -1,116 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab3EWVed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 17:34:33 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:20185 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759262Ab3EWVea (ORCPT
+	id S1759554Ab3EWVot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 17:44:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62790 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759313Ab3EWVor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 17:34:30 -0400
-Message-ID: <519E8B5F.3080905@hp.com>
-Date: Thu, 23 May 2013 17:34:23 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 23 May 2013 17:44:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: srinivas.kandagatla@st.com
+Subject: Re: [RFC 3/8] mfd:syscon: Introduce claim/read/write/release APIs
+Date: Thu, 23 May 2013 23:44:11 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: dong.aisheng@linaro.org, sameo@linux.intel.com,
+        Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Stuart Menefy <stuart.menefy@st.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org
+References: <1368022187-1633-1-git-send-email-srinivas.kandagatla@st.com> <201305171636.49627.arnd@arndb.de> <519A1BBB.2070903@st.com>
+In-Reply-To: <519A1BBB.2070903@st.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ian Kent <raven@themaw.net>,
-        Sage Weil <sage@inktank.com>, Steve French <sfrench@samba.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3 v3] dcache: make it more scalable on large system
-References: <1369273048-60256-1-git-send-email-Waiman.Long@hp.com> <20130523094201.GA24543@dastard>
-In-Reply-To: <20130523094201.GA24543@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201305232344.11974.arnd@arndb.de>
+X-Provags-ID: V02:K0:yXofvZew4wJhPiwiF/rEiR3JkVFKdjqOZbolHrfHsDT
+ 4ayHhWNMczSBTwtOXeunMN30n/AIQGgKmLN8BZrFwc2K5fgeYE
+ 6RAthYJ1hnpUWzwtW9RR0RazA0G2SBvttdYb3u3kcrYB/L/eRl
+ WfO/bWxse/QbCSsgL2pvJuGWIIuv3+N7Tqks/KwPoBDJWw/c2i
+ VlyJ1zv4Vnr/NopHebiial9IeQVpaehlxqyjTa4yLOrVlDUAH3
+ KX+i+wtqclY88UVqwcMhzUWoq3xldKsXN2V1bZXNgFZOzx7gaL
+ yedxLLEDhip2zPMBR2UzXHJefrz+RVbSy15oFi5gaaUzrGQpw3
+ yp/KnwB37F53UL6Kl9ao=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 05:42 AM, Dave Chinner wrote:
-> On Wed, May 22, 2013 at 09:37:25PM -0400, Waiman Long wrote:
->> Change log:
->>
->> v2->v3
->>   - Fix the RCU lock problem found by Al Viro.
->>   - Rebase the code to the latest v3.10-rc1 linux mainline.
->>   - Remove patch 4 which may be problematic if the dentry is deleted.
->>   - Rerun performance measurement using 3.10-rc1 kernel.
->>
->> v1->v2
->>   - Include performance improvement in the AIM7 benchmark results because
->>     of this patch.
->>   - Modify dget_parent() to avoid taking the lock, if possible, to further
->>     improve AIM7 benchmark results.
->>
->> During some perf-record sessions of the kernel running the high_systime
->> workload of the AIM7 benchmark, it was found that quite a large portion
->> of the spinlock contention was due to the perf_event_mmap_event()
->> function itself. This perf kernel function calls d_path() which,
->> in turn, call path_get() and dput() indirectly. These 3 functions
->> were the hottest functions shown in the perf-report output of
->> the _raw_spin_lock() function in an 8-socket system with 80 cores
->> (hyperthreading off) with a 3.10-rc1 kernel:
-> What was it I said about this patchset when you posted it to speed
-> up an Oracle benchmark back in february? I'll repeat:
+On Monday 20 May 2013, Srinivas KANDAGATLA wrote:
+> On 17/05/13 15:36, Arnd Bergmann wrote:
 >
-> "Nobody should be doing reverse dentry-to-name lookups in a quantity
-> sufficient for it to become a performance limiting factor."
+> Some of the drivers like Ethernet already provide higher level
+> interfaces via callbacks. We did implement such a callbacks per each SOC
+> in non-DT case, and ended up having code duplicated for each SOC.
+> 
+> On the other hand using device trees to describe the HW
+> configuration(sysconfs) made more sense and got rid of SOC specific
+> callbacks.
 
-Thank for the comment, but my point is that it is the d_lock contention 
-is skewing the data about how much spin lock contention had actually 
-happened in the workload and it makes it harder to pinpoint problem 
-areas to look at. This is not about performance, it is about accurate 
-representation of performance data. Ideally, we want the overhead of 
-turning on perf instrumentation to be as low as possible.
+I'm sure it's possible to reduce the duplication without going all
+the way to describing every bit in DT.
 
-
+> > For drivers that are essentially just wrappers around sysconf,
+> > I would make them one driver per SoC and use a low-level interface
+> > but still hardcode the offsets in the driver instead of using DT
+> > to find the registers.
+> > 
+> > The pinctrl and reset drivers are examples of this.
+> 
+> In pinctrl bindings case, I think we could do better job by replacing
+> the existing bindings of sysconfs for a group of banks with just two
+> integer offsets. This would mean that, we can still use the a common
+> driver across the SOCs.
 >
-> And that makes whatever that tracepoint is doing utterly stupid.
-> Dumping out full paths in a tracepoint is hardly "low overhead", and
-> that tracepoint should be stomped on from a great height. Sure,
-> print the filename straight out of the dentry into a tracepoint,
-> but repeated calculating the full path (probably for the same set of
-> dentries) is just a dumb thing to do.
->
-> Anyway, your numbers show that a single AIM7 microbenchmark goes
-> better under tracing the specific mmap event that uses d_path(), but
-> the others are on average a little bit slower. That doesn't convince
-> me that this is worth doing. Indeed, what happens to performance
-> when you aren't tracing?
->
-> Indeed, have you analysed what makes that
-> microbenchmark contend so much on the dentry lock while reverse
-> lookups are occuring? Dentry lock contention does not necessarily
-> indicate a problem with the dentry locks, and without knowing why
-> there is contention occuring (esp. compared to the other benchmarks)
-> we can't really determine if this is a good solution or not...
+> And w.r.t to reset, we are planning on using sysconf based
+> reset-controller API sitting underneath the reset-controller subsystem.
+> Passing the information from device trees would be much clear and
+> flexible than adding new driver per/SOC.
 
-What made it contend so much was the large number of CPUs available in 
-my test system which is a 8-socket Westmere EX machines with 80 cores. 
-As perf was collecting data from every core, the threads will 
-unavoidably bump into each other to translate dentries back to the full 
-paths. The current code only allows one CPU in the d_path() critical 
-path. My patch will allow all of them to be in the critical path 
-concurrently.
+Ok
 
-The upcoming Ivy-Bridge EX can have up to 15 cores per socket. So even a 
-4-socket machine will have up to 60 cores or 120 virtual CPUs if 
-hyperthreading is turned on.
-> IOWs, you need more than one microbenchmark that interacts with
-> some naive monitoring code to justify the complexity these locking
-> changes introduce....
-The first patch can also independently improve the performance of a 
-number of AIM7 workloads including almost 7X improvement in the short 
-workload. More detailed information of these types of performance 
-benefit was discussed in the patch description of the first patch. I 
-will try to collect more performance improvement data on other workloads 
-too.
+> >> 2> The infrastructure should protect the claimed registers from
+> >> over-writing by other drivers. We do this by claim-read/write-release
+> >> style API.
+> > 
+> > I don't understand this part. Is it about atomicity of accesses to
+> > 32-bit registers when you only want to change a bit? That is something
+> > the regmap interface handles already.
+> 
+> I forget to mention a important point here, the protection is at bit
+> level for the sysconfs. Some of sysconfs have bits shared across IPs, so
+> protecting them while the IP is still using it is what we are trying to
+> achieve with sysconf-claim/release apis.
+> While it may be overkill, but In past it has found bugs and been helpful
+> with a meaning full debug output.
 
-Thank for the review.
-Longman
+Can you give an example of something that is shared across multiple IPs?
+
+Are those always done in the way that you have e.g. the ethernet pinctrl
+in the same register as the usb pinctrl, or could you have an ethernet
+pinctrl setting mixed together with the usb clock setting for instance?
+
+If the hardware has been designed in a sensible way rather than just
+grown by randomly adding bits in open spaces, I would assume that it's
+possible to have high-level interfaces built around ranges of registers
+rather than arbitrary subsets of registers.
+
+	Arnd
