@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab3EWUyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 16:54:50 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41721 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758979Ab3EWUyt (ORCPT
+	id S1758996Ab3EWVBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 17:01:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47576 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758301Ab3EWVBY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 16:54:49 -0400
-Date: Thu, 23 May 2013 13:54:47 -0700
-From: Lisa Nguyen <lisa@xenapiadmin.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] staging/silicom/bypasslib: Move opening brace to
- previous line
-Message-ID: <98c2d61a81490325c5e990e5836a457a68a98862.1369342182.git.lisa@xenapiadmin.com>
-References: <8f0a1b9dd2524047034345709cb11102ca44eded.1369342182.git.lisa@xenapiadmin.com>
+	Thu, 23 May 2013 17:01:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,730,1363158000"; 
+   d="scan'208";a="318605195"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Ingo Molnar" <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>
+CC: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V2 0/3] x86/microcode: early microcode patch loading
+ support on AMD
+Thread-Topic: [PATCH V2 0/3] x86/microcode: early microcode patch loading
+ support on AMD
+Thread-Index: AQHOV8vhQP241rPP7kqAkZJ623rTbZkTQGTQ
+Date: Thu, 23 May 2013 21:01:21 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205633D6C3@ORSMSX106.amr.corp.intel.com>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+In-Reply-To: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8f0a1b9dd2524047034345709cb11102ca44eded.1369342182.git.lisa@xenapiadmin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved opening brace to previous line to resolve checkpatch errors and
-meet kernel coding standards in bplibk.h
+> From: Jacob Shin [mailto:jacob.shin@amd.com]
+> The following patchset adds early microcode patch loading support on
+> AMD systems, on top of the framework introduced by:
+>   https://lkml.org/lkml/2012/12/21/193
+> 
 
-Signed-off-by: Lisa Nguyen <lisa@xenapiadmin.com>
----
- drivers/staging/silicom/bypasslib/bplibk.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Could you please change Documentation/x86/early-microcode.txt for AMD? At least please add AMD microcode file in cpio name space: kernel/x86/microcode/AuthenticAMD.bin. Users can generate the cpio file with AMD microcode based on your document.
 
-diff --git a/drivers/staging/silicom/bypasslib/bplibk.h b/drivers/staging/silicom/bypasslib/bplibk.h
-index f88db4a..b31694f 100644
---- a/drivers/staging/silicom/bypasslib/bplibk.h
-+++ b/drivers/staging/silicom/bypasslib/bplibk.h
-@@ -31,8 +31,8 @@
- #define EXPORT_SYMBOL_NOVERS EXPORT_SYMBOL
+Thanks.
+
+-Fenghua
+
  
- #ifdef BP_VENDOR_SUPPORT
--char *bp_desc_array[] =
--{ "e1000bp", "e1000bpe", "slcm5700", "bnx2xbp", "ixgbp", "ixgbpe", NULL };
-+char *bp_desc_array[] = { "e1000bp", "e1000bpe", "slcm5700",
-+			"bnx2xbp", "ixgbp", "ixgbpe", NULL };
- #endif
- 
- #endif
--- 
-1.8.1.2
-
