@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271Ab3EWURQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 16:17:16 -0400
-Received: from svenfoo.org ([82.94.215.22]:38512 "EHLO mail.zonque.de"
+	id S1759310Ab3EWUVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 16:21:06 -0400
+Received: from plane.gmane.org ([80.91.229.3]:39552 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758731Ab3EWURP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 16:17:15 -0400
-From: Daniel Mack <zonque@gmail.com>
+	id S1758293Ab3EWUVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 16:21:04 -0400
+X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
-Cc: ming.lei@canonical.com, gregkh@linuxfoundation.org, tiwai@suse.de,
-        Daniel Mack <zonque@gmail.com>
-Subject: [PATCH] firmware: move EXPORT_SYMBOL annotations
-Date: Thu, 23 May 2013 22:17:18 +0200
-Message-Id: <1369340238-8631-1-git-send-email-zonque@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
+From: Michael =?UTF-8?B?R3Jvw59ow6R1c2Vy?= 
+	<michael.grosshaeuser@t-online.de>
+Subject: Re: Fans at full speed after resume
+Date: Thu, 23 May 2013 22:22:04 +0200
+Message-ID: <knltmt$76t$1@ger.gmane.org>
+References: <CAPz6YkWr_D504UdeqXB0FXxgqOt3GYnF09ctoMaZ8P-znbVMGQ@mail.gmail.com> <1368591999.5890.9.camel@rzhang1-mobl4> <1368592193.5890.10.camel@rzhang1-mobl4> <knj3oe$h88$1@ger.gmane.org> <1369275908.2036.11.camel@rzhang1-mobl4>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8Bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p54a0c983.dip0.t-ipconnect.de
+User-Agent: KNode/4.10.3
+Cc: linux-pm@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move EXPORT_SYMBOL annotations so they follow immediately after the
-closing function brace line.
+Zhang Rui wrote:
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
----
- drivers/base/firmware_class.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+> On Wed, 2013-05-22 at 20:46 +0200, Michael Großhäuser wrote:
+>> Zhang Rui wrote:
+>> 
+>> > On Wed, 2013-05-15 at 12:26 +0800, Zhang Rui wrote:
+>> >> please
+>> >> 
+>> >> On Tue, 2013-05-14 at 21:18 -0700, Sonny Rao wrote:
+>> >> > Hi, I've seen a regression in kernels since 3.7 on x86 devices where
+>> >> > the kernel turns the system fans on to max speed after resuming from
+>> >> > ram.  Other people have noticed it as well, for example see
+>> >> > https://bugzilla.redhat.com/show_bug.cgi?id=895276
+>> >> > 
+>> >> please check if this is a duplicate of bug
+>> >> https://bugzilla.kernel.org/show_bug.cgi?id=56591
+>> > or you can try 3.10-rc1 to see if the problem still exists or not.
+>> > 
+>> > thanks,
+>> > rui
+>> 
+>> 
+>> Hi,
+>> 
+>> I can confirm the same problem on a HP/Compaq 2510p with 3.10-rc2.
+>> 
+> please check if this is a duplicate of bug
+> https://bugzilla.kernel.org/show_bug.cgi?id=58301
+> 
+> please try the patch at comment #7 and see if it helps or not.
+> 
+> thanks,
+> rui
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 4b1f926..4d9643f 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1079,6 +1079,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- {
- 	return _request_firmware(firmware_p, name, device, true, false);
- }
-+EXPORT_SYMBOL(request_firmware);
- 
- /**
-  * release_firmware: - release the resource associated with a firmware image
-@@ -1092,6 +1093,7 @@ void release_firmware(const struct firmware *fw)
- 		kfree(fw);
- 	}
- }
-+EXPORT_SYMBOL(release_firmware);
- 
- /* Async support */
- struct firmware_work {
-@@ -1172,6 +1174,7 @@ request_firmware_nowait(
- 	schedule_work(&fw_work->work);
- 	return 0;
- }
-+EXPORT_SYMBOL(request_firmware_nowait);
- 
- /**
-  * cache_firmware - cache one firmware image in kernel memory space
-@@ -1202,6 +1205,7 @@ int cache_firmware(const char *fw_name)
- 
- 	return ret;
- }
-+EXPORT_SYMBOL_GPL(cache_firmware);
- 
- /**
-  * uncache_firmware - remove one cached firmware image
-@@ -1232,6 +1236,7 @@ int uncache_firmware(const char *fw_name)
- 
- 	return -EINVAL;
- }
-+EXPORT_SYMBOL_GPL(uncache_firmware);
- 
- #ifdef CONFIG_PM_SLEEP
- static ASYNC_DOMAIN_EXCLUSIVE(fw_cache_domain);
-@@ -1536,9 +1541,3 @@ static void __exit firmware_class_exit(void)
- 
- fs_initcall(firmware_class_init);
- module_exit(firmware_class_exit);
--
--EXPORT_SYMBOL(release_firmware);
--EXPORT_SYMBOL(request_firmware);
--EXPORT_SYMBOL(request_firmware_nowait);
--EXPORT_SYMBOL_GPL(cache_firmware);
--EXPORT_SYMBOL_GPL(uncache_firmware);
--- 
-1.8.1.4
+Hi,
+
+the patch fixes the problem for me.
+
+Thanks,
+Michael 
+
+
+>> Best Regards,
+>> Michael
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
