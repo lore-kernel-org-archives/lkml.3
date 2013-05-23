@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab3EWTy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 15:54:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15701 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758071Ab3EWTyy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 15:54:54 -0400
-X-Authority-Analysis: v=2.0 cv=UO1f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=-G-aGZAAbeUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=PU5ldj0W8K0A:10 a=x30EXVXcAAAA:8 a=t3WOL901IaKVnUsT674A:9 a=QEXdDO2ut3YA:10 a=2F0HLYTCHDIA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1369338892.6828.214.camel@gandalf.local.home>
-Subject: Re: [PATCH v12 3/3] trace,x86: code-sharing between non-trace and
- trace irq handlers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Date: Thu, 23 May 2013 15:54:52 -0400
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF86286@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF86286@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759064Ab3EWT4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 15:56:24 -0400
+Received: from fieldses.org ([174.143.236.118]:35860 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758521Ab3EWT4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 15:56:22 -0400
+Date: Thu, 23 May 2013 15:55:47 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, viro@zeniv.linux.org.uk,
+        serge.hallyn@canonical.com, lucas.demarchi@profusion.mobi,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, oleg@redhat.com,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        devel@openvz.org
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+Message-ID: <20130523195547.GA13640@fieldses.org>
+References: <878v36ex6n.fsf@xmission.com>
+ <519DCE5D.6070204@parallels.com>
+ <87k3mq9fsu.fsf@xmission.com>
+ <519DF109.9010309@parallels.com>
+ <20130523073108.13afafa6@tlielax.poochiereds.net>
+ <519DFFA9.3010606@parallels.com>
+ <20130523075620.21abf79a@tlielax.poochiereds.net>
+ <519E0474.5000606@parallels.com>
+ <519E0AB0.7040704@panasas.com>
+ <20130523090526.63fc153e@corrin.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130523090526.63fc153e@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-05 at 19:21 +0000, Seiji Aguchi wrote:
-> [Issue]
+On Thu, May 23, 2013 at 09:05:26AM -0400, Jeff Layton wrote:
+> On Thu, 23 May 2013 15:25:20 +0300
+> > I'm not familiar with nfsdcltrack but I would imagine it receives it's information from
+> > Kernel as a command line parameters.
+> > 
+> > Would it not be the simplest approach to add a --chroot=/path/to/root optional
+> > parameter to nfsdcltrack so it should access an alternate DB relative to 
+> > --chroot.
+> > 
+> > This would address Eric's concern of not executing user-privileged executable
+> > from Kernel. I think
+> > 
+> > Just my $0.017
+> > Boaz
+> > 
 > 
-> Currently, irq vector handlers for tracing are just
-> copied non-trace handlers by simply inserting tracepoints.
-> 
-> It is difficult to manage the codes.
-> 
-> [Solution]
+> I think that sounds reasonable. Is it always the case
+> that /path/to/root is reachable from the "primary" namespace?
 
+I don't think we can assume that.
 
-This as a separate patch actually makes things more confusing to review.
-It should be merged into the previous patch. If you want to break up the
-changes, I would first add the entering_irq(), and exiting_irq() as
-patch 1, and then do the rest of the changes in patch 2.
+> If not, you may need to do something more exotic there.
 
--- Steve
+We should be able to pass a file descriptor and then work relative to
+that.
 
-> This patch shares common codes between non-trace and trace handlers
-> as follows to make them manageable and readable.
-> 
-> Non-trace irq handler:
-> smp_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
-> Trace irq_handler:
-> smp_trace_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	trace_irq_entry(); /* tracepoint for irq entry */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	trace_irq_exit(); /* tracepoint for irq exit */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
-> If tracepoints can place outside entering_irq()/exiting_irq() as follows, it looks \
-> cleaner.
-> 
-> smp_trace_irq_handler()
-> {
-> 	trace_irq_entry();
-> 	smp_irq_handler();
-> 	trace_irq_exit();
-> }
-> 
-> But it doesn't work.
-> The problem is with irq_enter/exit() being called. They must be called before \
-> trace_irq_enter/exit(),  because of the rcu_irq_enter() must be called before any \
-> tracepoints are used, as tracepoints use  rcu to synchronize.
-> 
-> As a possible alternative, we may be able to call irq_enter() first as follows if \
-> irq_enter() can nest.
-> 
-> smp_trace_irq_hander()
-> {
-> 	irq_entry();
-> 	trace_irq_entry();
-> 	smp_irq_handler();
-> 	trace_irq_exit();
-> 	irq_exit();
-> }
-> 
-> But it doesn't work, either.
-> If irq_enter() is nested, it may have a time penalty because it has to check if it \
-> was already called or not. The time penalty is not desired in performance sensitive \
-> paths even if it is tiny.
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> Also, do you have to do anything like change the uid/gid to a different
+> user who is root within the container?
 
+Yeah, you may need to create files, for example, right?
 
+> What might help most here is to lay out a particular scenario for how
+> you envision setting up knfsd in a container so we can ensure that it's
+> addressed properly by whatever solution you settle on.
+
+It would seem cleaner to me the less userspace has to understand about
+containers--ideally someone could run a general-purpose distro with its
+nfs-utils in a container and have nfs and nfsd just work.
+
+So I'd like to understand whether it is feasible to spawn helpers from a
+thread that's descended from whoever started nfsd (or whatever the
+proper ancestor is).
+
+(And, what about the nfsd threads themselves?  If we're going to allow
+unprivileged users to start nfsd, then we probably want the nfsd threads
+to inherit from the user somehow, don't we?)
+
+As I understand it recent clients use request_key to do idmapping.  I
+don't understand that (or keyrings) well.  How should they work?  I
+would have expected that you'd want a separate request-key for each
+container rather than a single request-key working on behalf of all
+containers.
+
+--b.
