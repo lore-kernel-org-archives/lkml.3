@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab3EWIQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:16:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46882 "EHLO mx2.suse.de"
+	id S1757077Ab3EWIT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:19:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22753 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757451Ab3EWIP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:15:58 -0400
-Message-ID: <519DD039.4030107@suse.cz>
-Date: Thu, 23 May 2013 10:15:53 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755024Ab3EWITz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 04:19:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,726,1363158000"; 
+   d="scan'208";a="306692992"
+Message-ID: <519DD110.3070002@intel.com>
+Date: Thu, 23 May 2013 16:19:28 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] kbuild: Don't assume dts files live in arch/*/boot/dts
-References: <1368010744-11281-1-git-send-email-matthijs@stdin.nl> <518A6649.1020501@wwwdotorg.org> <20130518184101.GS25742@login.drsnuggles.stderr.nl>
-In-Reply-To: <20130518184101.GS25742@login.drsnuggles.stderr.nl>
+To: Changlong Xie <xiechanglong87@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        mgorman@suse.de, riel@redhat.com, wangyun@linux.vnet.ibm.com,
+        Changlong Xie <changlongx.xie@intel.com>
+Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
+References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <1368199049-2798-9-git-send-email-alex.shi@intel.com> <20130514083148.GD15942@dyad.programming.kicks-ass.net> <5192217D.5030706@intel.com> <20130516092308.GH19669@dyad.programming.kicks-ass.net> <CAJWCg7PKpGgHKqhm6Xq8DfVEWGoDsgS8s99r3JS7Wce7WS=B_Q@mail.gmail.com>
+In-Reply-To: <CAJWCg7PKpGgHKqhm6Xq8DfVEWGoDsgS8s99r3JS7Wce7WS=B_Q@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.5.2013 20:41, Matthijs Kooijman wrote:
-> Hi Michal,
-> 
-> On Wed, May 08, 2013 at 08:50:49AM -0600, Stephen Warren wrote:
->> On 05/08/2013 04:59 AM, Matthijs Kooijman wrote:
->>> In commit b40b25ff (kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp),
->>> dts building was changed to always use the C preprocessor. This meant
->>> that the .dts file passed to dtc is not the original, but the
->>> preprocessed one.
->>>
->>> When compiling with a separate build directory (i.e., with O=), this
->>> preprocessed file will not live in the same directory as the original.
->>> When the .dts file includes .dtsi files, dtc will look for them in the
->>> build directory, not in the source directory and compilation will fail.
->>>
->>> The commit referenced above tried to fix this by passing arch/*/boot/dts
->>> as an include path to dtc. However, for mips, the .dts files are not in
->>> this directory, so dts compilation on mips breaks for some targets.
->>>
->>> Instead of hardcoding this particular include path, this commit just
->>> uses the directory of the .dts file that is being compiled, which
->>> effectively restores the previous behaviour wrt includes. For most .dts
->>> files, this path is just the same as the previous hardcoded
->>> arch/*/boot/dts path.
->>>
->>> This was tested on a mips (rt3052) and an arm (bcm2835) target.
+On 05/23/2013 03:32 PM, Changlong Xie wrote:
+> 2013/5/16 Peter Zijlstra <peterz@infradead.org>:
+>> On Tue, May 14, 2013 at 07:35:25PM +0800, Alex Shi wrote:
 >>
->> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>>> I tested all benchmarks on cover letter maintained, aim7, kbuild etc.
+>>> with autogroup enabled. There is no clear performance change.
+>>> But since the machine just run benchmark without anyother load, that
+>>> doesn't enough.
+>>
+>> Back when we started with smp-fair cgroup muck someone wrote a test for it. I
+>> _think_ it ended up in the LTP test-suite.
+>>
 > 
-> Did this patch look ok to you? If so, could you pick it up and send it
-> over to Linus for 3.10 (or should I send it directly)?
+> Hi Peter
+> 
 
-I applied the patch to kbuild.git#rc-fixes now.
+> my test results:
+> 3.10-rc1          patch1-7         patch1-8
+> duration=764   duration=754   duration=750
+> duration=764   duration=754   duration=751
+> duration=763   duration=755   duration=751
+> 
+> duration means the seconds of testing cost.
+> 
+> Tested-by: Changlong Xie <changlongx.xie@intel.com>
 
-Michal
+Seems the 8th patch is helpful on cgroup. Thanks Changlong!
+
+-- 
+Thanks
+    Alex
