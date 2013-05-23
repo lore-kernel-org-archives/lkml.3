@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758815Ab3EWMRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:17:37 -0400
+	id S1758801Ab3EWMRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:17:35 -0400
 Received: from mail1.ams.com ([212.166.112.31]:48049 "EHLO mail1.ams.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758776Ab3EWMR0 convert rfc822-to-8bit (ORCPT
+	id S1758213Ab3EWMRd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:17:26 -0400
+	Thu, 23 May 2013 08:17:33 -0400
 X-IronPort-AV: E=Sophos;i="4.87,728,1363129200"; 
-   d="scan'208";a="2797471"
+   d="scan'208";a="2797474"
 From: Florian Lobmaier <Florian.Lobmaier@ams.com>
 To: "sameo@linux.intel.com" <sameo@linux.intel.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 23 May 2013 14:07:45 +0200
-Subject: [PATCH 05/07] gpio patch of ams AS3722 PMIC against linux_3.8.8
-Thread-Topic: [PATCH 05/07] gpio patch of ams AS3722 PMIC against linux_3.8.8
-Thread-Index: Ac5XrTXDjVknu+yGRFuTJS22kp1UGg==
-Message-ID: <EB31996D403C2C48A47628A08DCCFD29018405708E@SUX2182.office.amsiag.com>
+Date: Thu, 23 May 2013 14:07:53 +0200
+Subject: [PATCH 07/07] watchdog patch of ams AS3722 PMIC against linux_3.8.8
+Thread-Topic: [PATCH 07/07] watchdog patch of ams AS3722 PMIC against
+ linux_3.8.8
+Thread-Index: Ac5XrY266laC/5OaSuW9FEs7R/aBhQ==
+Message-ID: <EB31996D403C2C48A47628A08DCCFD290184057090@SUX2182.office.amsiag.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,12 +38,12 @@ Includes modules gpio, regulator, rtc, and watchdog
 Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
 
 ---
-diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/gpio/gpio-as3722.c ./drivers/gpio/gpio-as3722.c
---- ../kernel_3.8.8/linux-kernel/drivers/gpio/gpio-as3722.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./drivers/gpio/gpio-as3722.c	2013-05-23 13:12:36.000000000 +0200
-@@ -0,0 +1,320 @@
+diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/watchdog/as3722_wdt.c ./drivers/watchdog/as3722_wdt.c
+--- ../kernel_3.8.8/linux-kernel/drivers/watchdog/as3722_wdt.c	1970-01-01 01:00:00.000000000 +0100
++++ ./drivers/watchdog/as3722_wdt.c	2013-05-23 13:12:37.000000000 +0200
+@@ -0,0 +1,161 @@
 +/*
-+ * as3722-gpio.c - gpiolib support for ams AS3722 PMICs
++ * as3722_wdt.c - Watchdog driver for ams AS3722 PMICs
 + *
 + * Copyright (C) 2013 ams AG
 + *
@@ -64,330 +65,169 @@ diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/gpio/g
 + *
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/gpio.h>
-+#include <linux/mfd/core.h>
++#include <linux/moduleparam.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
 +#include <linux/platform_device.h>
-+#include <linux/seq_file.h>
-+
++#include <linux/watchdog.h>
++#include <linux/uaccess.h>
 +#include <linux/mfd/as3722-reg.h>
 +#include <linux/mfd/as3722-plat.h>
 +
-+struct as3722_gpio {
-+	struct as3722 *as3722;
-+	struct gpio_chip gpio_chip;
-+};
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout,
++		 "Watchdog cannot be stopped once started (default="
++		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
 +
-+static inline struct as3722_gpio *to_as3722_gpio(struct gpio_chip *chip)
++static DEFINE_MUTEX(wdt_mutex);
++
++static int as3722_wdt_set_timeout(struct watchdog_device *wdt_dev,
++				  unsigned int timeout)
 +{
-+	return container_of(chip, struct as3722_gpio, gpio_chip);
-+}
-+
-+static int as3722_gpio_direction_in(struct gpio_chip *chip, unsigned
-+		offset)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+
-+	return as3722_set_bits(as3722, AS3722_GPIO0_CONTROL_REG + offset,
-+			AS3722_GPIO_MODE_MASK,
-+			AS3722_GPIO_MODE_INPUT);
-+}
-+
-+static int as3722_gpio_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
++	struct as3722 *as3722 = watchdog_get_drvdata(wdt_dev);
 +	int ret;
-+	u32 val;
 +
-+	ret = as3722_reg_read(as3722, AS3722_GPIO_SIGNAL_IN_REG, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (val & (AS3722_GPIO1_SIGNAL_MASK << offset))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static int as3722_gpio_direction_out(struct gpio_chip *chip,
-+		unsigned offset, int value)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+
-+	return as3722_set_bits(as3722, AS3722_GPIO0_CONTROL_REG + offset,
-+			AS3722_GPIO_MODE_MASK,
-+			AS3722_GPIO_MODE_OUTPUT_VDDH);
-+}
-+
-+static void as3722_gpio_set(struct gpio_chip *chip, unsigned offset,
-+		int value)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+
-+	as3722_set_bits(as3722, AS3722_GPIO_SIGNAL_OUT_REG, 1 << offset,
-+			value << offset);
-+}
-+
-+static int as3722_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+
-+	return regmap_irq_get_virq(as3722->irq_data, AS3722_IRQ_GPIO1 + offset);
-+}
-+
-+static int as3722_gpio_set_config(struct as3722_gpio *as3722_gpio,
-+		struct as3722_gpio_config *gpio_cfg)
-+{
-+	int ret = 0;
-+	u8 val = 0;
-+	int gpio = gpio_cfg->gpio;
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+	if ((gpio < AS3722_GPIO0) || (gpio > AS3722_GPIO7))
++	if ((timeout-1 > AS3722_WATCHDOG_TIMER_MAX)
++		|| (timeout < 1))
 +		return -EINVAL;
 +
-+	/* .invert + .iosf + .mode */
-+	/* set up write of the GPIOX control register */
-+	val = (gpio_cfg->iosf & AS3722_GPIO_IOSF_MASK) +
-+		(gpio_cfg->mode & AS3722_GPIO_MODE_MASK);
-+	if (gpio_cfg->invert)
-+		val += (AS3722_GPIO_INV & AS3722_GPIO_INV_MASK);
++	mutex_lock(&wdt_mutex);
 +
-+	ret = as3722_reg_write(as3722, AS3722_GPIO0_CONTROL_REG + gpio, val);
-+	if (ret != 0) {
-+		dev_err(as3722->dev, "AS3722_GPIO%d_CTRL_REG write err,
-+				ret: %d\n",
-+				gpio, ret);
-+		return ret;
-+	}
++	ret = as3722_reg_write(as3722, AS3722_WATCHDOG_TIMER_REG, timeout-1);
 +
-+	/* if GPIO is configured as an output, set initial output state */
-+	if ((gpio_cfg->mode == AS3722_GPIO_MODE_OUTPUT_VDDH) ||
-+			(gpio_cfg->mode == AS3722_GPIO_MODE_OUTPUT_VDDL)) {
-+		/*GPIO0 -> bit 0, ..., GPIO7 -> bit 7, output_state = 0 or 1*/
-+		val = (gpio_cfg->output_state ^ gpio_cfg->invert) << gpio;
-+		ret = as3722_set_bits(as3722, AS3722_GPIO_SIGNAL_OUT_REG,
-+				1 << gpio, val);
-+	}
++	mutex_unlock(&wdt_mutex);
++
++	wdt_dev->timeout = timeout;
++	return ret;
++}
++
++static int as3722_wdt_start(struct watchdog_device *wdt_dev)
++{
++	struct as3722 *as3722 = watchdog_get_drvdata(wdt_dev);
++	int ret;
++
++	mutex_lock(&wdt_mutex);
++
++	ret = as3722_set_bits(as3722,
++				AS3722_WATCHDOG_CONTROL_REG,
++				AS3722_WATCHDOG_ON_MASK,
++				AS3722_WATCHDOG_ON);
++
++	mutex_unlock(&wdt_mutex);
 +
 +	return ret;
 +}
 +
-+static int as3722_gpio_init_regs(struct as3722_gpio *as3722_gpio,
-+		struct as3722_platform_data *pdata)
++static int as3722_wdt_stop(struct watchdog_device *wdt_dev)
 +{
++	int ret = 0;
++
++	return ret;
++}
++
++static int as3722_wdt_ping(struct watchdog_device *wdt_dev)
++{
++	struct as3722 *as3722 = watchdog_get_drvdata(wdt_dev);
 +	int ret;
-+	int i;
-+	for (i = 0; i < pdata->num_gpio_cfgs; i++) {
-+		ret = as3722_gpio_set_config(as3722_gpio,
-+				&pdata->gpio_cfgs[i]);
-+		if (ret < 0) {
-+			dev_err(as3722_gpio->as3722->dev,
-+					"Failed to set gpio config\n");
-+			return ret;
-+		}
++
++	mutex_lock(&wdt_mutex);
++
++	ret = as3722_set_bits(as3722,
++				AS3722_WATCHDOG_SOFTWARE_SIGNAL_REG,
++				AS3722_WATCHDOG_SW_SIG_MASK,
++				AS3722_WATCHDOG_SW_SIG);
++
++	mutex_unlock(&wdt_mutex);
++
++	return ret;
++}
++
++static const struct watchdog_info as3722_wdt_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
++	.identity = "AS3722 Watchdog",
++};
++
++static const struct watchdog_ops as3722_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = as3722_wdt_start,
++	.stop = as3722_wdt_stop,
++	.ping = as3722_wdt_ping,
++	.set_timeout = as3722_wdt_set_timeout,
++};
++
++static struct watchdog_device as3722_wdt = {
++	.info = &as3722_wdt_info,
++	.ops = &as3722_wdt_ops,
++	.timeout = 15,
++	.min_timeout = 1,
++	.max_timeout = 128,
++};
++
++static int as3722_wdt_probe(struct platform_device *pdev)
++{
++	struct as3722 *as3722 = platform_get_drvdata(pdev);
++
++	if (!as3722) {
++		pr_err("No driver data supplied\n");
++		return -ENODEV;
 +	}
 +
++	watchdog_set_nowayout(&as3722_wdt, nowayout);
++	watchdog_set_drvdata(&as3722_wdt, as3722);
++
++	/* Default to 15s timeout */
++	as3722_wdt_set_timeout(&as3722_wdt, 15);
++
++	return watchdog_register_device(&as3722_wdt);
++}
++
++static int as3722_wdt_remove(struct platform_device *pdev)
++{
++	watchdog_unregister_device(&as3722_wdt);
 +	return 0;
 +}
 +
-+#ifdef CONFIG_DEBUG_FS
-+static void as3722_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-+{
-+	struct as3722_gpio *as3722_gpio = to_as3722_gpio(chip);
-+	struct as3722 *as3722 = as3722_gpio->as3722;
-+	int i;
-+
-+	for (i = 0; i < chip->ngpio; i++) {
-+		int gpio = i + chip->base;
-+		u32 reg;
-+		int ret;
-+		const char *label, *pull, *direction;
-+
-+		/* We report the GPIO even if it's not requested since
-+		 * we're also reporting things like alternate
-+		 * functions which apply even when the GPIO is not in
-+		 * use as a GPIO.
-+		 */
-+		label = gpiochip_is_requested(chip, i);
-+		if (!label)
-+			label = "Unrequested";
-+
-+		seq_printf(s, " gpio-%-3d (%-20.20s) ", gpio, label);
-+
-+		ret = as3722_reg_read(as3722,
-+				AS3722_GPIO0_CONTROL_REG + i, &reg);
-+		if (ret < 0) {
-+			dev_err(as3722->dev,
-+					"GPIO control %d read failed: %d\n",
-+					gpio, ret);
-+			seq_printf(s, "\n");
-+			continue;
-+		}
-+
-+		switch (reg & AS3722_GPIO_MODE_MASK) {
-+		case AS3722_GPIO_MODE_INPUT:
-+			direction = "in";
-+			pull = "nopull";
-+			break;
-+		case AS3722_GPIO_MODE_OUTPUT_VDDH:
-+			direction = "out";
-+			pull = "push and pull";
-+			break;
-+		case AS3722_GPIO_MODE_IO_OPEN_DRAIN:
-+			direction = "io";
-+			pull = "nopull";
-+			break;
-+		case AS3722_GPIO_MODE_INPUT_W_PULLUP:
-+			direction = "in";
-+			pull = "pullup";
-+			break;
-+		case AS3722_GPIO_MODE_INPUT_W_PULLDOWN:
-+			direction = "in";
-+			pull = "pulldown";
-+			break;
-+		case AS3722_GPIO_MODE_IO_OPEN_DRAIN_PULLUP:
-+			direction = "io";
-+			pull = "pullup";
-+			break;
-+		case AS3722_GPIO_MODE_OUTPUT_VDDL:
-+			direction = "out";
-+			pull = "push and pull";
-+			break;
-+		default:
-+			direction = "INVALID DIRECTION/MODE";
-+			pull = "INVALID PULL";
-+			break;
-+		}
-+
-+		seq_printf(s, " %s %s %s\n"
-+				"                                  %s (0x%4x)\n",
-+				direction,
-+				as3722_gpio_get(chip, i) ? "high" : "low",
-+				pull,
-+				reg & AS3722_GPIO_INV_MASK ? " inverted" : "",
-+				reg);
-+	}
-+}
-+#else
-+#define as3722_gpio_dbg_show NULL
-+#endif
-+
-+static struct gpio_chip as3722_gpio_chip = {
-+	.label                  = "as3722",
-+	.owner                  = THIS_MODULE,
-+	.direction_input        = as3722_gpio_direction_in,
-+	.get                    = as3722_gpio_get,
-+	.direction_output       = as3722_gpio_direction_out,
-+	.set                    = as3722_gpio_set,
-+	.to_irq                 = as3722_gpio_to_irq,
-+	.dbg_show               = as3722_gpio_dbg_show,
-+	.can_sleep              = 1,
++static struct platform_driver as3722_wdt_driver = {
++	.probe = as3722_wdt_probe,
++	.remove = as3722_wdt_remove,
++	.driver = {
++		.name = "as3722-wdt",
++	},
 +};
 +
-+static int as3722_gpio_probe(struct platform_device *pdev)
-+{
-+	struct as3722 *as3722 =  dev_get_drvdata(pdev->dev.parent);
-+	struct as3722_platform_data *pdata = dev_get_platdata(pdev->dev.parent);
-+	struct as3722_gpio *as3722_gpio;
-+	int ret;
-+
-+	as3722_gpio = devm_kzalloc(&pdev->dev,
-+			sizeof(*as3722_gpio), GFP_KERNEL);
-+	if (as3722_gpio == NULL) {
-+		dev_err(&pdev->dev, "Memory allocaiton failure\n");
-+		return -ENOMEM;
-+	}
-+
-+	as3722_gpio->as3722 = as3722;
-+	as3722_gpio->gpio_chip = as3722_gpio_chip;
-+	as3722_gpio->gpio_chip.ngpio = AS3722_NUM_GPIO;
-+	as3722_gpio->gpio_chip.dev = &pdev->dev;
-+	if (pdata && pdata->gpio_base)
-+		as3722_gpio->gpio_chip.base = pdata->gpio_base;
-+	else
-+		as3722_gpio->gpio_chip.base = -1;
-+
-+	platform_set_drvdata(pdev, as3722_gpio);
-+
-+	ret = as3722_gpio_init_regs(as3722_gpio, pdata);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "gpio_init_regs failed\n");
-+		return ret;
-+	}
-+
-+	ret = gpiochip_add(&as3722_gpio->gpio_chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register gpiochip, %d\n",
-+				ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int as3722_gpio_remove(struct platform_device *pdev)
-+{
-+	struct as3722_gpio *as3722_gpio = platform_get_drvdata(pdev);
-+
-+	return gpiochip_remove(&as3722_gpio->gpio_chip);
-+}
-+
-+static struct platform_driver as3722_gpio_driver = {
-+	.driver.name    = "as3722-gpio",
-+	.driver.owner   = THIS_MODULE,
-+	.probe          = as3722_gpio_probe,
-+	.remove         = as3722_gpio_remove,
-+};
-+
-+static int __init as3722_gpio_init(void)
-+{
-+	return platform_driver_register(&as3722_gpio_driver);
-+}
-+subsys_initcall(as3722_gpio_init);
-+
-+static void __exit as3722_gpio_exit(void)
-+{
-+	platform_driver_unregister(&as3722_gpio_driver);
-+}
-+module_exit(as3722_gpio_exit);
++module_platform_driver(as3722_wdt_driver);
 +
 +MODULE_AUTHOR("Florian Lobmaier <florian.lobmaier@ams.com>");
-+MODULE_DESCRIPTION("GPIO interface for AS3722 PMICs");
++MODULE_DESCRIPTION("AS3722 Watchdog");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:as3722-gpio");
-diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/gpio/Kconfig ./drivers/gpio/Kconfig
---- ../kernel_3.8.8/linux-kernel/drivers/gpio/Kconfig	2013-05-15 14:55:53.000000000 +0200
-+++ ./drivers/gpio/Kconfig	2013-05-23 13:12:36.000000000 +0200
-@@ -306,6 +306,15 @@ config GPIO_ARIZONA
- 	help
- 	  Support for GPIOs on Wolfson Arizona class devices.
++MODULE_ALIAS("platform:as3722-wdt");
+diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/watchdog/Kconfig ./drivers/watchdog/Kconfig
+--- ../kernel_3.8.8/linux-kernel/drivers/watchdog/Kconfig	2013-05-15 14:55:56.000000000 +0200
++++ ./drivers/watchdog/Kconfig	2013-05-23 13:12:37.000000000 +0200
+@@ -64,6 +64,13 @@ config SOFT_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called softdog.
  
-+config GPIO_AS3722
-+	tristate "ams AS3722 GPIO support"
-+	depends on MFD_AS3722
-+	help
-+	  This option enables support for on-chip GPIOs found on
-+	  AS3722 PMIC from ams.
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called as3722-gpio.
++config AS3722_WATCHDOG
++        tristate "AS3722 watchdog"
++        depends on MFD_AS3722
++        select WATCHDOG_CORE
++        help
++          Support for the watchdog in the AS3722 PMIC.
 +
- config GPIO_MAX7300
- 	tristate "Maxim MAX7300 GPIO expander"
- 	depends on I2C
-diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/gpio/Makefile ./drivers/gpio/Makefile
---- ../kernel_3.8.8/linux-kernel/drivers/gpio/Makefile	2013-05-15 14:55:53.000000000 +0200
-+++ ./drivers/gpio/Makefile	2013-05-23 13:12:36.000000000 +0200
-@@ -16,6 +16,7 @@ obj-$(CONFIG_GPIO_ADP5520)	+= gpio-adp55
- obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_AMD8111)	+= gpio-amd8111.o
- obj-$(CONFIG_GPIO_ARIZONA)	+= gpio-arizona.o
-+onj-$(CONFIG_GPIO_AS3722)	+= gpio-as3722.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
+ config DA9052_WATCHDOG
+         tristate "Dialog DA9052 Watchdog"
+         depends on PMIC_DA9052
+diff -uprN -X Documentation/dontdiff ../kernel_3.8.8/linux-kernel/drivers/watchdog/Makefile ./drivers/watchdog/Makefile
+--- ../kernel_3.8.8/linux-kernel/drivers/watchdog/Makefile	2013-05-15 14:55:56.000000000 +0200
++++ ./drivers/watchdog/Makefile	2013-05-23 13:12:37.000000000 +0200
+@@ -163,6 +163,7 @@ obj-$(CONFIG_WATCHDOG_CP1XXX)		+= cpwd.o
+ obj-$(CONFIG_XEN_WDT) += xen_wdt.o
+ 
+ # Architecture Independent
++obj-$(CONFIG_AS3722_WATCHDOG) += as3722_wdt.o
+ obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
+ obj-$(CONFIG_DA9055_WATCHDOG) += da9055_wdt.o
+ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
