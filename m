@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759860Ab3EWWao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 18:30:44 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55122 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759752Ab3EWWam (ORCPT
+	id S1759834Ab3EWWhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 18:37:51 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:51638 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759757Ab3EWWhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 18:30:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkUOANyXnlF5LBBG/2dsb2JhbABZgwi9OoUgBAGBCxd0giMBAQU6HDMIAxgJJQ8FJQMhARKIDLoSFo1qgSSCc2EDlzqRQYMhKg
-Date: Fri, 24 May 2013 08:30:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: XFS assertion from truncate. (3.10-rc2)
-Message-ID: <20130523223038.GB24543@dastard>
-References: <20130522000803.GA19891@redhat.com>
- <20130522001603.GZ29466@dastard>
- <20130522025605.GA29767@redhat.com>
- <20130522040318.GG29466@dastard>
- <20130522041521.GA1837@redhat.com>
- <20130522051243.GH29466@dastard>
- <20130522052938.GA2573@redhat.com>
- <20130522055147.GI29466@dastard>
- <20130522215454.GL29466@dastard>
- <20130523184948.GA11151@redhat.com>
+	Thu, 23 May 2013 18:37:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523184948.GA11151@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <519E287E.4010307@gmail.com>
+References: <1369317502-14380-1-git-send-email-linkinjeon@gmail.com>
+	<519E287E.4010307@gmail.com>
+Date: Fri, 24 May 2013 07:37:49 +0900
+Message-ID: <CAKYAXd_Yfu7OE9EOhCbfTHOz-KpD4dS+U_90LEnTuf34dCx29w@mail.gmail.com>
+Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: return proper error from start_gc_thread
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jason Hrycay <jhrycay@gmail.com>
+Cc: jaegeuk.kim@samsung.com, Amit Sahrawat <a.sahrawat@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        jason.hrycay@motorola.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 02:49:48PM -0400, Dave Jones wrote:
-> On Thu, May 23, 2013 at 07:54:54AM +1000, Dave Chinner wrote:
-> 
->  > Gah, I've got not idea what the hell I was smoking yesterday
->  > afternoon. 0x2000 is actually ATTR_FILE, and 0x8000 is ATTR_OPEN.
->  > 
->  > So a mask of 0xa068 is correct and valid from the open path, and
->  > 0x2068 is just file from the truncate path.
->  > 
->  > But, neither of those should trigger that assert. indeed, on a test
->  > kernel (3.10-rc2 based):
->  > 
->  > # echo I need a new drug > /mnt/scr/bah/blah/black/sheep/foo
->  > [  296.742990] XFS (vdb): xfs_setattr_size: mask 0xa068, masked # 0x0 ii 0xffff88003e6297c0, d 0xffff88003e5b9cb0 path /bah/blah/black/sheep/foo
->  > #
->  > 
->  > And there's not assert failure. Indeed, the "masked # 0x0" is what
->  > the assert is checking.
->  > 
->  > And yeah, path output works. Trick for anyone who doesn't read the
->  > code closely - the buffer is filled from the end backwards, and the
->  > start of the path is the return variable. So, the above code is:
->  > 
->  > 	{
->  > 		struct dentry *d = d_find_alias(VFS_I(ip));
->  > 		char buf[MAXPATHLEN];
->  > 		char *ptr;
->  > 
->  > 		memset(buf, 0, MAXPATHLEN);
->  > 		ptr = dentry_path(d, buf, MAXPATHLEN);
->  > 		xfs_warn(mp, "%s: mask 0x%x, masked 0x%x ii 0x%p, d 0x%p path %s",
->  > 			__func__, mask,
->  > 	(mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
->  > 			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
->  > 			ATTR_KILL_PRIV|ATTR_TIMES_SET)),
->  > 			ip, d, ptr);
->  > 		dput(d);
->  > 	}
->  > 
->  > Which I put just before the assert that is firing on your machine.
->  > 
->  > And, obviously, it isn't firing on mine and obviously shouldn't be firing on a
->  > mask of 0xa068.
-> 
-> With this, I get a spew of these when I start a kernel build..
-> 
-> [  964.378690] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a95dac0, d 0xffff880221b5d970 path /davej/tmp/ccN2RrM5.s
-> [  964.651927] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a95dac0, d 0xffff88020ff80b90 path /davej/tmp/ccB1Cdmo.s
-> [  964.867444] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a95dac0, d 0xffff8802218a5bc0 path /davej/tmp/ccCUaXbG.s
-> [  965.102661] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a95dac0, d 0xffff88020ffacde0 path /davej/tmp/cckMLf2X.s
-> [  967.743312] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a93c200, d 0xffff88022212c250 path /davej/tmp/ccFMkBbA.s
-> [  967.947154] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a93c200, d 0xffff8802226cc6f0 path /davej/tmp/cc5iX4SR.s
-> [  968.009414] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a988000, d 0xffff8802219f1970 path /davej/tmp/ccvWCHTZ.o
-> [  968.091504] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a9898c0, d 0xffff88022208de10 path /davej/tmp/cc9n6fnm.ld
-> [  968.107997] XFS (sda2): xfs_setattr_size: mask 0xa068, masked 0x0 ii 0xffff88020a98dac0, d 0xffff880221160de0 path /davej/tmp/cc5rlvHu.le
-
-Right, It's printing them out for every truncate that is done.
-Just print on the conditional that is was triggering the assert...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+2013/5/23, Jason Hrycay <jhrycay@gmail.com>:
+> On 5/23/2013 8:58 AM, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> when there is an error from kthread_run, then return proper error
+>> rather than returning -ENOMEM.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  fs/f2fs/gc.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+>> index 25b083c..03d5ba1 100644
+>> --- a/fs/f2fs/gc.c
+>> +++ b/fs/f2fs/gc.c
+>> @@ -105,7 +105,7 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
+>>  	if (IS_ERR(gc_th->f2fs_gc_task)) {
+>>  		kfree(gc_th);
+>
+> gc_th is free'd here, save off PTR_ERR result to avoid use-after-free?
+Yes, I will change this patch.
+Thanks for review :)
+>
+>>  		sbi->gc_thread = NULL;
+>> -		return -ENOMEM;
+>> +		return PTR_ERR(gc_th->f2fs_gc_task);
+>>  	}
+>>  	return 0;
+>>  }
+>>
+>
+> --
+> Jason Hrycay
+>
