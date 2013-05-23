@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab3EWKem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:34:42 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57702 "EHLO
+	id S1758024Ab3EWKf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:35:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57798 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757269Ab3EWKek (ORCPT
+	with ESMTP id S1757945Ab3EWKfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:34:40 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-d6-519df0bf5349
+	Thu, 23 May 2013 06:35:25 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-82-519df0ebb291
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Anton Vorontsov'" <anton@enomsg.org>
-Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] power: use platform_{get,set}_drvdata()
-Date: Thu, 23 May 2013 19:34:39 +0900
-Message-id: <002c01ce57a1$20ba3b30$622eb190$@samsung.com>
+To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] misc: use platform_{get,set}_drvdata()
+Date: Thu, 23 May 2013 19:35:23 +0900
+Message-id: <002d01ce57a1$3b0fb780$b12f2680$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5XoP8aOzboMTWiTGu5Wij9tTpQhA==
+Thread-index: Ac5XoS5IWE6HljCcQQKBgXIoqdY19w==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zA939H+YGGsyaymdxcKumxcSVk5kt
-	Li+8xGpxedccNgcWjwn9nxg9Nq/Q8ujbsorR4/MmuQCWKC6blNSczLLUIn27BK6Ml0efsBT8
-	461YstGygbGRp4uRk0NCwERiw7KNbBC2mMSFe+uBbC4OIYFljBKz369ghymav+kBK0RiEaNE
-	5/bPUM4vRonWu82sIFVsAmoSX74cBusQEdCQaFs9hQXEZhbIlzh86DKYLSxgIXF14RGwdSwC
-	qhL3L+4Ai/MKWErcnHOCEcIWlPgx+R5Ur5bE+p3HmSBseYnNa94yQ1ykILHj7GtGiF16Eof7
-	H7NC1IhI7HvxjhHkOAmBdewS+6d/gVomIPFt8iGgoRxACVmJTQeg5khKHFxxg2UCo9gsJKtn
-	IVk9C8nqWUhWLGBkWcUomlqQXFCclF5kqFecmFtcmpeul5yfu4kREmO9OxhvH7A+xJgMtH4i
-	s5Rocj4wRvNK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4UEkhPLEnNTk0tSC2KLyrNSS0+xMjE
-	wSnVwNj9rPtRX2gwl7Bpx8W0E3+D9pYe+trArRtd4f7t7SGhszsueb3WLuwpPLE4dIYp42IZ
-	Cc2ad4cqPpss2/7tVLLPhxcPg+UvBtW/M5Y9kH9Pep+fSoHb8ruJEq9EPTNPaFlur7ydzZ8s
-	ePpWoY2G3UFROYEdx217c2LeBbnY9rN2/mjVzxawVGIpzkg01GIuKk4EACXZdLzHAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd39H+YGGhzezmVxcKumxcSVk5kt
-	Li+8xGpxedccNgcWjwn9nxg9Nq/Q8ujbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8lMy8dFsl
-	7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygjUoKZYk5pUChgMTiYiV9O0wTQkPcdC1g
-	GiN0fUOC4HqMDNBAwjrGjJdHn7AU/OOtWLLRsoGxkaeLkZNDQsBEYv6mB6wQtpjEhXvr2boY
-	uTiEBBYxSnRu/8wK4fxilGi92wxWxSagJvHly2F2EFtEQEOibfUUFhCbWSBf4vChy2C2sICF
-	xNWFR9hAbBYBVYn7F3eAxXkFLCVuzjnBCGELSvyYfA+qV0ti/c7jTBC2vMTmNW+ZIS5SkNhx
-	9jUjxC49icP9j1khakQk9r14xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6RUn
-	5haX5qXrJefnbmIER/Az6R2MqxosDjEKcDAq8fBK3J4TKMSaWFZcmXuIUYKDWUmEd3PP3EAh
-	3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcml7ySeENjEzMjSyMzCyMTc3PShJXEeQ+2WgcK
-	CaQnlqRmp6YWpBbBbGHi4JRqYKz+cLyRmX/WvD/uL5ZKfPorzqdt4NIbxMk5+6zYwn8zqkKu
-	671lCfOcZ77n0I1XCY+eCcb4Zx3i2/XWUCzZOYX5iqrFO/ljq2pesK1JL6j72Tk3YMq7pZl6
-	zZm9rs9FVhx5c+909eynH1Z8ZnMrjw6yszPVq1PcMUvm5GRXq0OBnh8WhB86WKTEUpyRaKjF
-	XFScCADC758dJAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t8zA93XH+YGGkzdKGnRvHg9m8XlhZdY
+	LS7vmsPmwOyxf+4ado++LasYPT5vkgtgjuKySUnNySxLLdK3S+DK6Fj/j7HgiXzFn6n3mRoY
+	H0h1MXJwSAiYSCw8k9rFyAlkiklcuLeerYuRi0NIYBmjxP+GySwwNfNfaUHEpzNKtC/6wwrh
+	/GKUWP1xETNIN5uAmsSXL4fZQWwRAVOJje+nMII0Mwu4SBydJgISFhYwl3ix6T0riM0ioCqx
+	eeZTsFZeAUuJo382QdmCEj8m32MBsZkFtCTW7zzOBGHLS2xe85YZ4lAFiR1nXzNCrNKTOLru
+	FjtEjYjEvhfvGEFukxBYxS5x+e8UJohlAhLfJh+CekZWYtMBqDmSEgdX3GCZwCg2C8nqWUhW
+	z0KyehaSFQsYWVYxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525ihMRT7w7G2wesDzEmA62fyCwl
+	mpwPjMe8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBK
+	NTC287/wWZK0vL/1Tvyz01+mdNkeenDjZJ6E8ouNIQeD+G4XWcYvfNFwb43ydic3wUjDHy05
+	/45e563cJdAVlTXdfYfv53VHDx/4XptTuevWO+9CM9GmVayBHZXJWy9wfNZZvrKl3GvRhtuP
+	PuY9W/7pTzfvpB3cgqK3DvuE2ubvY+iy7/miGzRZiaU4I9FQi7moOBEAxZX6o70CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+xoO7rD3MDDZoOilo0L17PZnF54SVW
+	i8u75rA5MHvsn7uG3aNvyypGj8+b5AKYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
+	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
+	MkADCesYMzrW/2MseCJf8WfqfaYGxgdSXYwcHBICJhLzX2l1MXICmWISF+6tZ+ti5OIQEpjO
+	KNG+6A8rhPOLUWL1x0XMIFVsAmoSX74cZgexRQRMJTa+n8IIMohZwEXi6DQRkLCwgLnEi03v
+	WUFsFgFVic0zn4K18gpYShz9swnKFpT4MfkeC4jNLKAlsX7ncSYIW15i85q3zBAHKUjsOPua
+	EWKVnsTRdbfYIWpEJPa9eMc4gVFgFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YW
+	l+al6yXn525iBMfrM+kdjKsaLA4xCnAwKvHwStyeEyjEmlhWXJl7iFGCg1lJhHdzz9xAId6U
+	xMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HppK8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmk
+	J5akZqemFqQWwWxh4uCUamCc397wKU75uVWtoJfZy4QHEsseKua8vfbW2i9vf+FVLX+Wxcv3
+	3JqrcGzi1CjmGLFor/d3+0svKfFc1rrj0dh+9FzG0sAd6xfK6gml6z9N+/TVbsKe1ab8Mb+Y
+	1fhPnbJZNmltol5P9rZ6i68HHzdJBi7/9YbPrdjt0doFBivcvh78Nev8Qo1GJZbijERDLeai
+	4kQATucefxsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,45 +57,109 @@ so we can directly pass a struct platform_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/power/intel_mid_battery.c |    2 +-
- drivers/power/tps65090-charger.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/misc/carma/carma-fpga-program.c |    4 ++--
+ drivers/misc/carma/carma-fpga.c         |    4 ++--
+ drivers/misc/spear13xx_pcie_gadget.c    |    4 ++--
+ drivers/misc/ti-st/st_kim.c             |    6 +++---
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/power/intel_mid_battery.c b/drivers/power/intel_mid_battery.c
-index 18d136b..4520811 100644
---- a/drivers/power/intel_mid_battery.c
-+++ b/drivers/power/intel_mid_battery.c
-@@ -756,7 +756,7 @@ static int platform_pmic_battery_probe(struct platform_device *pdev)
+diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
+index 736c771..fa017cf 100644
+--- a/drivers/misc/carma/carma-fpga-program.c
++++ b/drivers/misc/carma/carma-fpga-program.c
+@@ -919,7 +919,7 @@ static bool dma_filter(struct dma_chan *chan, void *data)
  
- static int platform_pmic_battery_remove(struct platform_device *pdev)
+ static int fpga_of_remove(struct platform_device *op)
  {
--	struct pmic_power_module_info *pbi = dev_get_drvdata(&pdev->dev);
-+	struct pmic_power_module_info *pbi = platform_get_drvdata(pdev);
+-	struct fpga_dev *priv = dev_get_drvdata(&op->dev);
++	struct fpga_dev *priv = platform_get_drvdata(op);
+ 	struct device *this_device = priv->miscdev.this_device;
  
- 	free_irq(pbi->irq, pbi);
- 	cancel_delayed_work_sync(&pbi->monitor_battery);
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index 9fbca31..77ab856 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -218,7 +218,7 @@ static int tps65090_charger_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+ 	sysfs_remove_group(&this_device->kobj, &fpga_attr_group);
+@@ -969,7 +969,7 @@ static int fpga_of_probe(struct platform_device *op)
+ 
+ 	kref_init(&priv->ref);
+ 
+-	dev_set_drvdata(&op->dev, priv);
++	platform_set_drvdata(op, priv);
+ 	priv->dev = &op->dev;
+ 	mutex_init(&priv->lock);
+ 	init_completion(&priv->completion);
+diff --git a/drivers/misc/carma/carma-fpga.c b/drivers/misc/carma/carma-fpga.c
+index 7508caf..a2128af 100644
+--- a/drivers/misc/carma/carma-fpga.c
++++ b/drivers/misc/carma/carma-fpga.c
+@@ -1296,7 +1296,7 @@ static int data_of_probe(struct platform_device *op)
+ 		goto out_return;
  	}
  
--	dev_set_drvdata(&pdev->dev, cdata);
-+	platform_set_drvdata(pdev, cdata);
+-	dev_set_drvdata(&op->dev, priv);
++	platform_set_drvdata(op, priv);
+ 	priv->dev = &op->dev;
+ 	kref_init(&priv->ref);
+ 	mutex_init(&priv->mutex);
+@@ -1400,7 +1400,7 @@ out_return:
  
- 	cdata->dev			= &pdev->dev;
- 	cdata->pdata			= pdata;
-@@ -291,7 +291,7 @@ fail_unregister_supply:
- 
- static int tps65090_charger_remove(struct platform_device *pdev)
+ static int data_of_remove(struct platform_device *op)
  {
--	struct tps65090_charger *cdata = dev_get_drvdata(&pdev->dev);
-+	struct tps65090_charger *cdata = platform_get_drvdata(pdev);
+-	struct fpga_device *priv = dev_get_drvdata(&op->dev);
++	struct fpga_device *priv = platform_get_drvdata(op);
+ 	struct device *this_device = priv->miscdev.this_device;
  
- 	devm_free_irq(cdata->dev, cdata->irq, cdata);
- 	power_supply_unregister(&cdata->ac);
+ 	/* remove all sysfs files, now the device cannot be re-enabled */
+diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+index 7deb25d..84a8dab 100644
+--- a/drivers/misc/spear13xx_pcie_gadget.c
++++ b/drivers/misc/spear13xx_pcie_gadget.c
+@@ -776,7 +776,7 @@ static int spear_pcie_gadget_probe(struct platform_device *pdev)
+ 		goto err_iounmap_app;
+ 	}
+ 
+-	dev_set_drvdata(&pdev->dev, target);
++	platform_set_drvdata(pdev, target);
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+@@ -863,7 +863,7 @@ static int spear_pcie_gadget_remove(struct platform_device *pdev)
+ 	res0 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	res1 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 	irq = platform_get_irq(pdev, 0);
+-	target = dev_get_drvdata(&pdev->dev);
++	target = platform_get_drvdata(pdev);
+ 	config = &target->config;
+ 
+ 	free_irq(irq, NULL);
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 83269f1..83907c7 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -680,7 +680,7 @@ void st_kim_ref(struct st_data_s **core_data, int id)
+ 		*core_data = NULL;
+ 		return;
+ 	}
+-	kim_gdata = dev_get_drvdata(&pdev->dev);
++	kim_gdata = platform_get_drvdata(pdev);
+ 	*core_data = kim_gdata->core_data;
+ }
+ 
+@@ -735,7 +735,7 @@ static int kim_probe(struct platform_device *pdev)
+ 		pr_err("no mem to allocate");
+ 		return -ENOMEM;
+ 	}
+-	dev_set_drvdata(&pdev->dev, kim_gdata);
++	platform_set_drvdata(pdev, kim_gdata);
+ 
+ 	err = st_core_init(&kim_gdata->core_data);
+ 	if (err != 0) {
+@@ -810,7 +810,7 @@ static int kim_remove(struct platform_device *pdev)
+ 	struct ti_st_plat_data	*pdata = pdev->dev.platform_data;
+ 	struct kim_data_s	*kim_gdata;
+ 
+-	kim_gdata = dev_get_drvdata(&pdev->dev);
++	kim_gdata = platform_get_drvdata(pdev);
+ 
+ 	/* Free the Bluetooth/FM/GPIO
+ 	 * nShutdown gpio from the system
 -- 
 1.7.10.4
 
