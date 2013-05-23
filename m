@@ -1,247 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab3EWLLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:11:41 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:45675 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758215Ab3EWLLj (ORCPT
+	id S1758621Ab3EWLOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:14:11 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36474 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758522Ab3EWLOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:11:39 -0400
-From: <yizhang.mrvl@gmail.com>
-To: <sameo@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <yizhang.mrvl@gmail.com>
-CC: <cxie4@marvell.com>, <arnd@arndb.de>, <yizhang@marvell.com>,
-        <linux-kernel@vger.kernel.org>, <jtzhou@marvell.com>
-Subject: [PATCH 4/4] mfd: 88pm800: add regulator support
-Date: Thu, 23 May 2013 19:10:47 +0800
-Message-ID: <1369307447-17874-5-git-send-email-yizhang.mrvl@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1369307447-17874-1-git-send-email-yizhang.mrvl@gmail.com>
-References: <1369307447-17874-1-git-send-email-yizhang.mrvl@gmail.com>
+	Thu, 23 May 2013 07:14:09 -0400
+Message-ID: <519DF9F6.1060902@linux.vnet.ibm.com>
+Date: Thu, 23 May 2013 19:13:58 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com> <519DB7D3.7030101@linux.vnet.ibm.com> <20130523073708.GE26157@redhat.com> <519DCA38.30200@linux.vnet.ibm.com> <20130523080922.GG26157@redhat.com>
+In-Reply-To: <20130523080922.GG26157@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052311-9574-0000-0000-000007FE0FB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yi Zhang <yizhang@marvell.com>
+On 05/23/2013 04:09 PM, Gleb Natapov wrote:
+> On Thu, May 23, 2013 at 03:50:16PM +0800, Xiao Guangrong wrote:
+>> On 05/23/2013 03:37 PM, Gleb Natapov wrote:
+>>> On Thu, May 23, 2013 at 02:31:47PM +0800, Xiao Guangrong wrote:
+>>>> On 05/23/2013 02:18 PM, Gleb Natapov wrote:
+>>>>> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
+>>>>>> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
+>>>>>>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+>>>>>>>> It is only used to zap the obsolete page. Since the obsolete page
+>>>>>>>> will not be used, we need not spend time to find its unsync children
+>>>>>>>> out. Also, we delete the page from shadow page cache so that the page
+>>>>>>>> is completely isolated after call this function.
+>>>>>>>>
+>>>>>>>> The later patch will use it to collapse tlb flushes
+>>>>>>>>
+>>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>>>>> ---
+>>>>>>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+>>>>>>>>  1 files changed, 41 insertions(+), 5 deletions(-)
+>>>>>>>>
+>>>>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>>>>>>> index 9b57faa..e676356 100644
+>>>>>>>> --- a/arch/x86/kvm/mmu.c
+>>>>>>>> +++ b/arch/x86/kvm/mmu.c
+>>>>>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>>>>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>>>>>>>  {
+>>>>>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>>>>>>>> -	hlist_del(&sp->hash_link);
+>>>>>>>> +	hlist_del_init(&sp->hash_link);
+>>>>>>> Why do you need hlist_del_init() here? Why not move it into
+>>>>>>
+>>>>>> Since the hlist will be double freed. We will it like this:
+>>>>>>
+>>>>>> kvm_mmu_prepare_zap_obsolete_page(page, list);
+>>>>>> kvm_mmu_commit_zap_page(list);
+>>>>>>    kvm_mmu_free_page(page);
+>>>>>>
+>>>>>> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
+>>>>>> deleted the hash list.
+>>>>>>
+>>>>>>> kvm_mmu_prepare_zap_page() like we discussed it here:
+>>>>>>> https://patchwork.kernel.org/patch/2580351/ instead of doing
+>>>>>>> it differently for obsolete and non obsolete pages?
+>>>>>>
+>>>>>> It is can break the hash-list walking: we should rescan the
+>>>>>> hash list once the page is prepared-ly zapped.
+>>>>>>
+>>>>>> I mentioned it in the changelog:
+>>>>>>
+>>>>>>   4): drop the patch which deleted page from hash list at the "prepare"
+>>>>>>       time since it can break the walk based on hash list.
+>>>>> Can you elaborate on how this can happen?
+>>>>
+>>>> There is a example:
+>>>>
+>>>> int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+>>>> {
+>>>> 	struct kvm_mmu_page *sp;
+>>>> 	LIST_HEAD(invalid_list);
+>>>> 	int r;
+>>>>
+>>>> 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
+>>>> 	r = 0;
+>>>> 	spin_lock(&kvm->mmu_lock);
+>>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>>>> 			 sp->role.word);
+>>>> 		r = 1;
+>>>> 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+>>>> 	}
+>>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>>> 	spin_unlock(&kvm->mmu_lock);
+>>>>
+>>>> 	return r;
+>>>> }
+>>>>
+>>>> It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
+>>>> If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
+>>>> be changed to:
+>>>>
+>>>> restart:
+>>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>>>> 			 sp->role.word);
+>>>> 		r = 1;
+>>>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+>>>> 			goto restart;
+>>>> 	}
+>>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>>>
+>>> Hmm, yes. So lets leave it as is and always commit invalid_list before
+>>
+>> So, you mean drop this patch and the patch of
+>> KVM: MMU: collapse TLB flushes when zap all pages?
+>>
+> We still want to add kvm_reload_remote_mmus() to
+> kvm_mmu_invalidate_zap_all_pages(). But yes, we disable a nice
+> optimization here. So may be skipping obsolete pages while walking
+> hashtable is better solution.
 
-Signed-off-by: Yi Zhang <yizhang@marvell.com>
----
- drivers/mfd/88pm800.c       |  108 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/88pm80x.h |   48 +++++++++++++++++++
- 2 files changed, 156 insertions(+), 0 deletions(-)
+I am willing to use this way instead, but it looks worse than this
+patch:
 
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 475b5fa..46085e9 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -167,6 +167,62 @@ static struct mfd_cell onkey_devs[] = {
- 	 },
- };
- 
-+static struct resource regulator_resources[] = {
-+	{PM800_ID_BUCK1, PM800_ID_BUCK1, "buck-1", IORESOURCE_IO,},
-+	{PM800_ID_BUCK2, PM800_ID_BUCK2, "buck-2", IORESOURCE_IO,},
-+	{PM800_ID_BUCK3, PM800_ID_BUCK3, "buck-3", IORESOURCE_IO,},
-+	{PM800_ID_BUCK4, PM800_ID_BUCK4, "buck-4", IORESOURCE_IO,},
-+	{PM800_ID_BUCK5, PM800_ID_BUCK5, "buck-5", IORESOURCE_IO,},
-+	{PM800_ID_LDO1, PM800_ID_LDO1, "ldo-01", IORESOURCE_IO,},
-+	{PM800_ID_LDO2, PM800_ID_LDO2, "ldo-02", IORESOURCE_IO,},
-+	{PM800_ID_LDO3, PM800_ID_LDO3, "ldo-03", IORESOURCE_IO,},
-+	{PM800_ID_LDO4, PM800_ID_LDO4, "ldo-04", IORESOURCE_IO,},
-+	{PM800_ID_LDO5, PM800_ID_LDO5, "ldo-05", IORESOURCE_IO,},
-+	{PM800_ID_LDO6, PM800_ID_LDO6, "ldo-06", IORESOURCE_IO,},
-+	{PM800_ID_LDO7, PM800_ID_LDO7, "ldo-07", IORESOURCE_IO,},
-+	{PM800_ID_LDO8, PM800_ID_LDO8, "ldo-08", IORESOURCE_IO,},
-+	{PM800_ID_LDO9, PM800_ID_LDO9, "ldo-09", IORESOURCE_IO,},
-+	{PM800_ID_LDO10, PM800_ID_LDO10, "ldo-10", IORESOURCE_IO,},
-+	{PM800_ID_LDO11, PM800_ID_LDO11, "ldo-11", IORESOURCE_IO,},
-+	{PM800_ID_LDO12, PM800_ID_LDO12, "ldo-12", IORESOURCE_IO,},
-+	{PM800_ID_LDO13, PM800_ID_LDO13, "ldo-13", IORESOURCE_IO,},
-+	{PM800_ID_LDO14, PM800_ID_LDO14, "ldo-14", IORESOURCE_IO,},
-+	{PM800_ID_LDO15, PM800_ID_LDO15, "ldo-15", IORESOURCE_IO,},
-+	{PM800_ID_LDO16, PM800_ID_LDO16, "ldo-16", IORESOURCE_IO,},
-+	{PM800_ID_LDO17, PM800_ID_LDO17, "ldo-17", IORESOURCE_IO,},
-+	{PM800_ID_LDO18, PM800_ID_LDO18, "ldo-18", IORESOURCE_IO,},
-+	{PM800_ID_LDO19, PM800_ID_LDO19, "ldo-19", IORESOURCE_IO,},
-+};
-+
-+static struct mfd_cell regulator_devs[] = {
-+	{"88pm80x-regulator", 0,},
-+	{"88pm80x-regulator", 1,},
-+	{"88pm80x-regulator", 2,},
-+	{"88pm80x-regulator", 3,},
-+	{"88pm80x-regulator", 4,},
-+	{"88pm80x-regulator", 5,},
-+	{"88pm80x-regulator", 6,},
-+	{"88pm80x-regulator", 7,},
-+	{"88pm80x-regulator", 8,},
-+	{"88pm80x-regulator", 9,},
-+	{"88pm80x-regulator", 10,},
-+	{"88pm80x-regulator", 11,},
-+	{"88pm80x-regulator", 12,},
-+	{"88pm80x-regulator", 13,},
-+	{"88pm80x-regulator", 14,},
-+	{"88pm80x-regulator", 15,},
-+	{"88pm80x-regulator", 16,},
-+	{"88pm80x-regulator", 17,},
-+	{"88pm80x-regulator", 18,},
-+	{"88pm80x-regulator", 19,},
-+	{"88pm80x-regulator", 20,},
-+	{"88pm80x-regulator", 21,},
-+	{"88pm80x-regulator", 22,},
-+	{"88pm80x-regulator", 23,},
-+};
-+
-+static struct regulator_init_data regulator_pdata[ARRAY_SIZE(regulator_devs)];
-+
- static const struct regmap_irq pm800_irqs[] = {
- 	/* INT0 */
- 	[PM800_IRQ_ONKEY] = {
-@@ -315,6 +371,52 @@ out:
- 	return ret;
- }
- 
-+static int device_regulator_init(struct pm80x_chip *chip,
-+					   struct pm80x_platform_data *pdata)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 9b57faa..810410c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+ static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
+-	hlist_del(&sp->hash_link);
++	hlist_del_init(&sp->hash_link);
+ 	list_del(&sp->link);
+ 	free_page((unsigned long)sp->spt);
+ 	if (!sp->role.direct)
+@@ -1648,14 +1648,20 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+ 				    struct list_head *invalid_list);
+
++static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
 +{
-+	struct regulator_init_data *initdata;
-+	int ret = 0;
-+	int i, seq;
-+
-+	if (!pdata || !pdata->regulator) {
-+		dev_warn(chip->dev, "Regulator pdata is unavailable!\n");
-+		return 0;
-+	}
-+
-+	if (pdata->num_regulators > ARRAY_SIZE(regulator_devs))
-+		pdata->num_regulators = ARRAY_SIZE(regulator_devs);
-+
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		initdata = &pdata->regulator[i];
-+		seq = *(unsigned int *)initdata->driver_data;
-+		if ((seq < 0) || (seq > PM800_ID_RG_MAX)) {
-+			dev_err(chip->dev, "Wrong ID(%d) on regulator(%s)\n",
-+				seq, initdata->constraints.name);
-+			ret = -EINVAL;
-+			goto out_err;
-+		}
-+		memcpy(&regulator_pdata[i], &pdata->regulator[i],
-+		       sizeof(struct regulator_init_data));
-+		regulator_devs[i].platform_data = &regulator_pdata[i];
-+		regulator_devs[i].pdata_size =
-+			sizeof(struct regulator_init_data);
-+		regulator_devs[i].num_resources = 1;
-+		regulator_devs[i].resources = &regulator_resources[seq];
-+
-+		ret = mfd_add_devices(chip->dev, 0, &regulator_devs[i], 1,
-+				      &regulator_resources[seq], 0, NULL);
-+		if (ret < 0) {
-+			dev_err(chip->dev, "Failed to add regulator subdev\n");
-+			goto out_err;
-+		}
-+	}
-+
-+	return 0;
-+
-+out_err:
-+	return ret;
++	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
 +}
 +
- static int device_irq_init_800(struct pm80x_chip *chip)
- {
- 	struct regmap *map = chip->regmap;
-@@ -479,6 +581,12 @@ static int device_800_init(struct pm80x_chip *chip,
- 		goto out;
- 	}
- 
-+	ret = device_regulator_init(chip, pdata);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "[%s]Failed to init regulators\n", __func__);
-+		goto out;
-+	}
+ #define for_each_gfn_sp(_kvm, _sp, _gfn)				\
+ 	hlist_for_each_entry(_sp,					\
+ 	  &(_kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(_gfn)], hash_link) \
+-		if ((_sp)->gfn != (_gfn)) {} else
++		if ((_sp)->gfn != (_gfn) || is_obsolete_sp(_kvm, _sp)) {} else
+
+ #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
+ 	for_each_gfn_sp(_kvm, _sp, _gfn)				\
+-		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
++		if ((_sp)->role.direct ||				\
++		      (_sp)->role.invalid || is_obsolete_sp(_kvm, _sp)) {} else
+
+ /* @sp->gfn should be write-protected at the call site */
+ static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+@@ -1838,11 +1844,6 @@ static void clear_sp_write_flooding_count(u64 *spte)
+ 	__clear_sp_write_flooding_count(sp);
+ }
+
+-static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+-{
+-	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+-}
+-
+ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 					     gfn_t gfn,
+ 					     gva_t gaddr,
+@@ -2085,11 +2086,15 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+
+ 	if (sp->unsync)
+ 		kvm_unlink_unsync_page(kvm, sp);
 +
- 	ret =
- 	    mfd_add_devices(chip->dev, 0, &onkey_devs[0],
- 			    ARRAY_SIZE(onkey_devs), &onkey_resources[0], 0,
-diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
-index e94537b..2a3a959 100644
---- a/include/linux/mfd/88pm80x.h
-+++ b/include/linux/mfd/88pm80x.h
-@@ -16,6 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/regmap.h>
- #include <linux/atomic.h>
-+#include <linux/regulator/machine.h>
- 
- #define PM80X_VERSION_MASK		(0xFF)	/* 80X chip ID mask */
- enum {
-@@ -139,6 +140,51 @@ enum {
- #define PM800_BUCK1_SLP1_SHIFT	0
- #define PM800_BUCK1_SLP1_MASK	(0x3 << PM800_BUCK1_SLP1_SHIFT)
- 
-+/* page 1 POWER */
+ 	if (!sp->root_count) {
+ 		/* Count self */
+ 		ret++;
+ 		list_move(&sp->link, invalid_list);
+ 		kvm_mod_used_mmu_pages(kvm, -1);
 +
-+/* BUCK4 with DVC[0..3] */
-+#define PM800_AUDIO_MODE_CONFIG1	(0x38)
-+#define PM800_BUCK3		(0x41)
-+#define PM800_BUCK4		(0x42)
-+#define PM800_BUCK4_1		(0x43)
-+#define PM800_BUCK4_2		(0x44)
-+#define PM800_BUCK4_3		(0x45)
-+#define PM800_BUCK5		(0x46)
-+/* BUCK Sleep Mode Register 2: BUCK5 */
-+#define PM800_BUCK_SLP2		(0x5B)
-+#define PM800_BUCK5_SLP2_SHIFT	0
-+#define PM800_BUCK5_SLP2_MASK	(0x3 << PM800_BUCK5_SLP2_SHIFT)
-+
-+#define PM800_LDO1_1		(0x08)
-+#define PM800_LDO1_2		(0x09)
-+#define PM800_LDO1_3		(0x0a)
-+#define PM800_LDO2		(0x0b)
-+#define PM800_LDO3		(0x0c)
-+#define PM800_LDO4		(0x0d)
-+#define PM800_LDO5		(0x0e)
-+#define PM800_LDO6		(0x0f)
-+#define PM800_LDO7		(0x10)
-+#define PM800_LDO8		(0x11)
-+#define PM800_LDO9		(0x12)
-+#define PM800_LDO10		(0x13)
-+#define PM800_LDO11		(0x14)
-+#define PM800_LDO12		(0x15)
-+#define PM800_LDO13		(0x16)
-+#define PM800_LDO14		(0x17)
-+#define PM800_LDO15		(0x18)
-+#define PM800_LDO16		(0x19)
-+#define PM800_LDO17		(0x1a)
-+#define PM800_LDO18		(0x1b)
-+#define PM800_LDO19		(0x1c)
-+/* LDO Sleep Mode Register 5: LDO[17..19] */
-+#define PM800_LDO_SLP5		(0x60)
-+#define PM800_LDO17_SLP5_SHIFT	0
-+#define PM800_LDO17_SLP5_MASK	(0x3 << PM800_LDO17_SLP5_SHIFT)
-+#define PM800_LDO18_SLP5_SHIFT	2
-+#define PM800_LDO18_SLP5_MASK	(0x3 << PM800_LDO18_SLP5_SHIFT)
-+#define PM800_LDO19_SLP5_SHIFT	4
-+#define PM800_LDO19_SLP5_MASK	(0x3 << PM800_LDO19_SLP5_SHIFT)
-+
- /* page 2 GPADC: slave adder 0x02 */
- #define PM800_GPADC_MEAS_EN1		(0x01)
- #define PM800_MEAS_EN1_VBAT         (1 << 2)
-@@ -309,10 +355,12 @@ struct pm80x_chip {
- 
- struct pm80x_platform_data {
- 	struct pm80x_rtc_pdata *rtc;
-+	struct regulator_init_data *regulator;
- 	unsigned short power_page_addr;	/* power page I2C address */
- 	unsigned short gpadc_page_addr;	/* gpadc page I2C address */
- 	int irq_mode;		/* Clear interrupt by read/write(0/1) */
- 	int batt_det;		/* enable/disable */
-+	int num_regulators;
- 	int (*plat_config)(struct pm80x_chip *chip,
- 				struct pm80x_platform_data *pdata);
- };
--- 
-1.7.0.4
++		if (unlikely(is_obsolete_sp(kvm, sp)))
++			hlist_del_init(&sp->hash_link);
+ 	} else {
+ 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+ 		kvm_reload_remote_mmus(kvm);
+
+isn't it?
 
