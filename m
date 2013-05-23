@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab3EWXSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 19:18:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50884 "EHLO
+	id S932098Ab3EWX0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 19:26:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50924 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759895Ab3EWXSH convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932069Ab3EWX0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 19:18:07 -0400
-Date: Thu, 23 May 2013 16:18:05 -0700
+	Thu, 23 May 2013 19:26:34 -0400
+Date: Thu, 23 May 2013 16:26:32 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [Suggestion] fs/namespace.c: the direct cause of the warning
- for: "ida_remove called for id=0 which is not allocated" with
- mnt_release_group_id()
-Message-Id: <20130523161805.1faa0f8c59bfc8ee728d8c7f@linux-foundation.org>
-In-Reply-To: <5191FE96.6050607@asianux.com>
-References: <5191FE96.6050607@asianux.com>
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] msm: iommu: fix leak and invalid access
+Message-Id: <20130523162632.8a51569b776134b2db32a64e@linux-foundation.org>
+In-Reply-To: <51931347.7020600@huawei.com>
+References: <51931347.7020600@huawei.com>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 May 2013 17:06:30 +0800 Chen Gang <gang.chen@asianux.com> wrote:
+On Wed, 15 May 2013 12:47:03 +0800 Libo Chen <clbchenlibo.chen@huawei.com> wrote:
 
-> After call collect_mounts(), then call drop_collected_mounts(), it will
-> report an warning: "ida_remove called for id=0 which is not allocated"
-> (one sample is audit_add_tree_rule() in kernel/audit_tree.c).
-> 
-> The direct cause (maybe also be the root cause):
->   collect_mounts() passs 'CL_PRIVATE' to copy_tree() -> clone_mnt().
->   it will set "mnt->mnt_group_id = 0" in clone_mnt().
->   when drop_collected_mounts() -> mnt_release_group_id(), 'mnt->mnt_group_id == 0'.
+> It fixes two obvious problems:
+> 1. We have registered msm_iommu_driver first, and need unregister it when
+> registered msm_iommu_ctx_driver fail
 
-I expect this patch also addresses the bug.  Can you please review and test it?
+yup, that's a bug.
+
+> 2. We don`t need to kfree drvdata before kzalloc successful
+
+The code's OK at present - kfree(NULL) is legal.
+
+However I suppose the patch cleans things up a little bit, however it
+missed a couple of things:
 
 
-From: Takashi Iwai <tiwai@suse.de>
-Subject: vfs: fix invalid ida_remove() call
 
-When the group id of a shared mount is not allocated, the umount still
-tries to call mnt_release_group_id(), which eventually hits a kernel
-warning at ida_remove() spewing a message like:
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: drivers-iommu-msm_iommu_devc-fix-leak-and-invalid-access-fix
 
-  ida_remove called for id=0 which is not allocated.
+remove now-unneeded initialization of ctx_drvdata, remove unneeded braces
 
-This patch fixes the bug simply checking the group id in the caller.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Reported-by: Cristian Rodríguez <crrodriguez@opensuse.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: James Hogan <james.hogan@imgtec.com>
+Cc: Libo Chen <clbchenlibo.chen@huawei.com>
+Cc: Libo Chen <libo.chen@huawei.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
 
- fs/pnode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/iommu/msm_iommu_dev.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff -puN fs/pnode.c~vfs-fix-invalid-ida_remove-call fs/pnode.c
---- a/fs/pnode.c~vfs-fix-invalid-ida_remove-call
-+++ a/fs/pnode.c
-@@ -83,7 +83,8 @@ static int do_make_slave(struct mount *m
- 		if (peer_mnt == mnt)
- 			peer_mnt = NULL;
- 	}
--	if (IS_MNT_SHARED(mnt) && list_empty(&mnt->mnt_share))
-+	if (mnt->mnt_group_id && IS_MNT_SHARED(mnt) &&
-+	    list_empty(&mnt->mnt_share))
- 		mnt_release_group_id(mnt);
+diff -puN drivers/iommu/msm_iommu_dev.c~drivers-iommu-msm_iommu_devc-fix-leak-and-invalid-access-fix drivers/iommu/msm_iommu_dev.c
+--- a/drivers/iommu/msm_iommu_dev.c~drivers-iommu-msm_iommu_devc-fix-leak-and-invalid-access-fix
++++ a/drivers/iommu/msm_iommu_dev.c
+@@ -289,22 +289,19 @@ static int msm_iommu_ctx_probe(struct pl
+ {
+ 	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
+ 	struct msm_iommu_drvdata *drvdata;
+-	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
++	struct msm_iommu_ctx_drvdata *ctx_drvdata;
+ 	int i, ret;
+-	if (!c || !pdev->dev.parent) {
++
++	if (!c || !pdev->dev.parent)
+ 		return -EINVAL;
+-	}
  
- 	list_del_init(&mnt->mnt_share);
+ 	drvdata = dev_get_drvdata(pdev->dev.parent);
+-
+-	if (!drvdata) {
++	if (!drvdata)
+ 		return -ENODEV;
+-	}
+ 
+ 	ctx_drvdata = kzalloc(sizeof(*ctx_drvdata), GFP_KERNEL);
+-	if (!ctx_drvdata) {
++	if (!ctx_drvdata)
+ 		return -ENOMEM;
+-	}
+ 
+ 	ctx_drvdata->num = c->num;
+ 	ctx_drvdata->pdev = pdev;
 _
 
