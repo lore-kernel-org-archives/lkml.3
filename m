@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758334Ab3EWRNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:13:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53379 "EHLO comal.ext.ti.com"
+	id S1758487Ab3EWROD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:14:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9190 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757953Ab3EWRNu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:13:50 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: RE: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
- am33xx
-Thread-Topic: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
- am33xx
-Thread-Index: AQHOV3sDeuljQaJjrUaNxyq64bPttJkSTkcAgACzRiA=
-Date: Thu, 23 May 2013 17:13:44 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAE3EBF@DBDE04.ent.ti.com>
-References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
- <1369288888-8614-9-git-send-email-ravibabu@ti.com>
- <519E275A.5020200@cogentembedded.com>
-In-Reply-To: <519E275A.5020200@cogentembedded.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758360Ab3EWROA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 13:14:00 -0400
+Date: Thu, 23 May 2013 20:13:58 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [GIT PULL] KVM fixes for 3.10-rc2
+Message-ID: <20130523171358.GN26157@redhat.com>
+References: <20130523104105.GA6826@redhat.com>
+ <CA+55aFxA8AJLi3gvHKVuNdR+Yu2ZGRAbLnxTL4BVo6vY3fRYxA@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxA8AJLi3gvHKVuNdR+Yu2ZGRAbLnxTL4BVo6vY3fRYxA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergei
-
->>
->> +		phy1: usbphy-gs70@44e10620 {
->> +			compatible = "ti,dsps-usbphy";
->> +			reg = <0x44e10620 0x8
->> +			       0x44e10648 0x4>;
->> +			reg-names = "phy_ctrl","phy_wkup";
->> +			id = <0>;
->> +		};
->> +
->> +		phy2: usbphy-gs70@44e10628 {
->> +			compatible = "ti,dsps-usbphy";
->> +			reg = <0x44e10628 0x8
->> +			       0x44e10648 0x4>;
-
-> The second register conflicts with phy1.
-
-The two instances of phy uses common phy wakeup register.
+On Thu, May 23, 2013 at 09:20:22AM -0700, Linus Torvalds wrote:
+> On Thu, May 23, 2013 at 3:41 AM, Gleb Natapov <gleb@redhat.com> wrote:
+> >
+> >  MAINTAINERS                      |    7 ++--
+> >  arch/mips/include/asm/kvm.h      |   55 ---------------------------------------
+> >  arch/mips/include/uapi/asm/kvm.h |   55 +++++++++++++++++++++++++++++++++++++++
+> >  arch/mips/kvm/kvm_tlb.c          |   35 ++++++++++++++++++------
+> >  4 files changed, 85 insertions(+), 67 deletions(-)
+> 
+> This was wrong. Please make sure you use the "-M" flag to make git
+> diff look for file renames, and the "--summary" flag to show metadata
+> changes separately.
+> 
+> IOW, it *should* have looked like this:
+> 
+>  MAINTAINERS                            |  7 ++++---
+>  arch/mips/include/{ => uapi}/asm/kvm.h |  0
+>  arch/mips/kvm/kvm_tlb.c                | 35 ++++++++++++++++++++++++++---------
+>  3 files changed, 30 insertions(+), 12 deletions(-)
+>  rename arch/mips/include/{ => uapi}/asm/kvm.h (100%)
+> 
+Ugh, yes "-M" and "--summary" were missing. I updated the script now. Thanks!
+Should I regenerate pull request?
 
 --
-Ravi B
+			Gleb.
