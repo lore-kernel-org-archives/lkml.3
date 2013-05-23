@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759473Ab3EWOpE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:45:04 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:38720 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758002Ab3EWOpC (ORCPT
+	id S1759488Ab3EWOpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:45:16 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:50719 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758002Ab3EWOpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:45:02 -0400
-Date: Thu, 23 May 2013 15:44:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-Message-ID: <20130523144453.GL22683@gmail.com>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
- <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
- <20130522155347.GJ1627@sirena.org.uk>
- <20130522165353.GB18714@gmail.com>
- <20130522174516.GT1627@sirena.org.uk>
- <20130523070905.GD18714@gmail.com>
- <20130523142419.GG2412@sirena.org.uk>
+	Thu, 23 May 2013 10:45:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130523142419.GG2412@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <519DCE2A.4010801@meduna.org>
+References: <5195ED8B.7060002@meduna.org>
+	<1369183168.6828.168.camel@gandalf.local.home>
+	<519CBB30.3060200@redhat.com>
+	<CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>
+	<20130522134111.33a695c5@cuia.bos.redhat.com>
+	<519D08B0.8050707@meduna.org>
+	<1369246316.6828.176.camel@gandalf.local.home>
+	<519D0CAB.7020800@meduna.org>
+	<519D0FF8.5080200@redhat.com>
+	<519D118B.6010306@zytor.com>
+	<519D11BF.5000604@redhat.com>
+	<519DCE2A.4010801@meduna.org>
+Date: Thu, 23 May 2013 07:45:09 -0700
+X-Google-Sender-Auth: oGtRljN9ZpGI2bM0lALsbviAXsg
+Message-ID: <CA+55aFwzedGVew7CCSqZ-Z=2ELt+A4L--mEQGjtALbMSB3LFoQ@mail.gmail.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Mark Brown wrote:
+On Thu, May 23, 2013 at 1:07 AM, Stanislav Meduna <stano@meduna.org> wrote:
+>
+> It did not crash overnight, but it also does not show any
+> minor fault counted for the threads
 
-> On Thu, May 23, 2013 at 08:09:05AM +0100, Lee Jones wrote:
-> > On Wed, 22 May 2013, Mark Brown wrote:
-> 
-> > > OK, so the regulator driver is buggy and insisting on having constraints
-> > > passed in for every regulator then?
-> 
-> > If that's not how it's meant to work then, yes.
-> 
-> Yes, that's the intention - it should be possible to just not pass in
-> anything in and have the driver start up in read only mode (partly to
-> save having to do things like what you're doing).
+Page faults that don't cause us to map a page (ie a spurious one, or
+one that just updates dirty/accessed bits) don't show up as even minor
+faults. Thing of the major/minor as "mapping activity" not a page
+fault count.
 
-Okay, noted.
+So if this is due to some stuck TLB entry, that wouldn't show up anyway.
 
-Well, whatever happens I'm going to be able to refactor the driver in
-the -rc:s, so we still need this fix, or the world will end.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+                    Linus
