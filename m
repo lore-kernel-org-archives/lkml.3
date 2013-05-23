@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab3EWUvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 16:51:48 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54988 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758330Ab3EWUvr (ORCPT
+	id S1759462Ab3EWUv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 16:51:58 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:47023 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759397Ab3EWUvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 16:51:47 -0400
-Date: Thu, 23 May 2013 13:51:43 -0700
-From: Lisa Nguyen <lisa@xenapiadmin.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] staging/silicom/bypasslib: Reformat comments
-Message-ID: <8f0a1b9dd2524047034345709cb11102ca44eded.1369342182.git.lisa@xenapiadmin.com>
+	Thu, 23 May 2013 16:51:54 -0400
+Message-ID: <519E8163.8070402@hp.com>
+Date: Thu, 23 May 2013 16:51:47 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: remaper <yp.fangdong@gmail.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ian Kent <raven@themaw.net>,
+        Sage Weil <sage@inktank.com>, Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        autofs <autofs@vger.kernel.org>,
+        ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        linux-nfs <linux-nfs@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>
+Subject: Re: =?gb18030?Q?=BB=D8=B8=B4=A3=BA=5BPATCH_1/3_v3=5D_dcach?=
+ =?gb18030?Q?e=3A_Don=27t_take_unnecessary_lock_in_d=5Fcount_?=
+ =?gb18030?Q?update?=
+References: <tencent_6519A7723A666F8378EE1517@qq.com>
+In-Reply-To: <tencent_6519A7723A666F8378EE1517@qq.com>
+Content-Type: text/plain; charset=gb18030; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resolved the C99 comment style issue by reformatting existing comments 
-to meet kernel coding standards in bp_ioctl.h
+On 05/23/2013 05:09 AM, remaper wrote:
+> maybe you can use the atomic_dec_and_lock(&dentry->d_count,&dentry->d_lock) here, right ?
+>
+> ------------------ Origin ------------------
+>> The current code takes the dentry's d_lock lock whenever the d_count
+>> reference count is being updated. In reality, nothing big really
+>> happens until d_count goes to 0 in dput(). So it is not necessary to
+>> take the lock if the reference count won't go to 0.
+Thank for the suggestion.
 
-Signed-off-by: Lisa Nguyen <lisa@xenapiadmin.com>
----
- drivers/staging/silicom/bypasslib/bp_ioctl.h | 64 ++++++++++++++--------------
- 1 file changed, 32 insertions(+), 32 deletions(-)
+First of all, the d_count field is not an atomic type. Changing it to 
+atomic will require touching quite a large number of source files even 
+though that change won't change the size of the dentry. Secondly, the 
+function internally uses cmpxchg to do its work. There isn't any 
+performance  advantage of using it. I also need the count to go in both 
+direction, not just going down.
 
-diff --git a/drivers/staging/silicom/bypasslib/bp_ioctl.h b/drivers/staging/silicom/bypasslib/bp_ioctl.h
-index 040c6fa..2d1ef53 100644
---- a/drivers/staging/silicom/bypasslib/bp_ioctl.h
-+++ b/drivers/staging/silicom/bypasslib/bp_ioctl.h
-@@ -14,41 +14,41 @@
- #ifndef BP_IOCTL_H
- #define BP_IOCTL_H
- 
--#define BP_CAP                   0x01	//BIT_0
--#define BP_STATUS_CAP            0x02	//BIT_1
--#define BP_STATUS_CHANGE_CAP     0x04	//BIT_2
--#define SW_CTL_CAP               0x08	//BIT_3
--#define BP_DIS_CAP               0x10	//BIT_4
--#define BP_DIS_STATUS_CAP        0x20	//BIT_5
--#define STD_NIC_CAP              0x40	//BIT_6
--#define BP_PWOFF_ON_CAP          0x80	//BIT_7
--#define BP_PWOFF_OFF_CAP         0x0100	//BIT_8
--#define BP_PWOFF_CTL_CAP         0x0200	//BIT_9
--#define BP_PWUP_ON_CAP           0x0400	//BIT_10
--#define BP_PWUP_OFF_CAP          0x0800	//BIT_11
--#define BP_PWUP_CTL_CAP          0x1000	//BIT_12
--#define WD_CTL_CAP               0x2000	//BIT_13
--#define WD_STATUS_CAP            0x4000	//BIT_14
--#define WD_TIMEOUT_CAP           0x8000	//BIT_15
--#define TX_CTL_CAP               0x10000	//BIT_16
--#define TX_STATUS_CAP            0x20000	//BIT_17
--#define TAP_CAP                  0x40000	//BIT_18
--#define TAP_STATUS_CAP           0x80000	//BIT_19
--#define TAP_STATUS_CHANGE_CAP    0x100000	//BIT_20
--#define TAP_DIS_CAP              0x200000	//BIT_21
--#define TAP_DIS_STATUS_CAP       0x400000	//BIT_22
--#define TAP_PWUP_ON_CAP          0x800000	//BIT_23
--#define TAP_PWUP_OFF_CAP         0x1000000	//BIT 24
--#define TAP_PWUP_CTL_CAP         0x2000000	//BIT 25
--#define NIC_CAP_NEG              0x4000000	//BIT 26
--#define TPL_CAP                  0x8000000	//BIT 27
--#define DISC_CAP                 0x10000000	//BIT 28
--#define DISC_DIS_CAP             0x20000000	//BIT 29
--#define DISC_PWUP_CTL_CAP        0x40000000	//BIT 30
-+#define BP_CAP                   0x01	/* BIT_0 */
-+#define BP_STATUS_CAP            0x02	/* BIT_1 */
-+#define BP_STATUS_CHANGE_CAP     0x04	/* BIT_2 */
-+#define SW_CTL_CAP               0x08	/* BIT_3 */
-+#define BP_DIS_CAP               0x10	/* BIT_4 */
-+#define BP_DIS_STATUS_CAP        0x20	/* BIT_5 */
-+#define STD_NIC_CAP              0x40	/* BIT_6 */
-+#define BP_PWOFF_ON_CAP          0x80	/* BIT_7 */
-+#define BP_PWOFF_OFF_CAP         0x0100	/* BIT_8 */
-+#define BP_PWOFF_CTL_CAP         0x0200	/* BIT_9 */
-+#define BP_PWUP_ON_CAP           0x0400	/* BIT_10 */
-+#define BP_PWUP_OFF_CAP          0x0800	/* BIT_11 */
-+#define BP_PWUP_CTL_CAP          0x1000	/* BIT_12 */
-+#define WD_CTL_CAP               0x2000	/* BIT_13 */
-+#define WD_STATUS_CAP            0x4000	/* BIT_14 */
-+#define WD_TIMEOUT_CAP           0x8000	/* BIT_15 */
-+#define TX_CTL_CAP               0x10000	/* BIT_16 */
-+#define TX_STATUS_CAP            0x20000	/* BIT_17 */
-+#define TAP_CAP                  0x40000	/* BIT_18 */
-+#define TAP_STATUS_CAP           0x80000	/* BIT_19 */
-+#define TAP_STATUS_CHANGE_CAP    0x100000	/* BIT_20 */
-+#define TAP_DIS_CAP              0x200000	/* BIT_21 */
-+#define TAP_DIS_STATUS_CAP       0x400000	/* BIT_22 */
-+#define TAP_PWUP_ON_CAP          0x800000	/* BIT_23 */
-+#define TAP_PWUP_OFF_CAP         0x1000000	/* BIT 24 */
-+#define TAP_PWUP_CTL_CAP         0x2000000	/* BIT 25 */
-+#define NIC_CAP_NEG              0x4000000	/* BIT 26 */
-+#define TPL_CAP                  0x8000000	/* BIT 27 */
-+#define DISC_CAP                 0x10000000	/* BIT 28 */
-+#define DISC_DIS_CAP             0x20000000	/* BIT 29 */
-+#define DISC_PWUP_CTL_CAP        0x40000000	/* BIT 30 */
- 
- #define WD_MIN_TIME_MASK(val)      (val & 0xf)
- #define WD_STEP_COUNT_MASK(val)    ((val & 0xf) << 5)
--#define WDT_STEP_TIME              0x10	//BIT_4
-+#define WDT_STEP_TIME              0x10	/* BIT_4 */
- 
- #define WD_MIN_TIME_GET(desc)   (desc & 0xf)
- #define WD_STEP_COUNT_GET(desc) (desc>>5) & 0xf
--- 
-1.8.1.2
-
+Regards,
+Longman
