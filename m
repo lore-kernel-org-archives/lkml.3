@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757930Ab3EWJ0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:26:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49158 "EHLO mx2.suse.de"
+	id S1757952Ab3EWJ1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:27:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49180 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757661Ab3EWJ0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:26:33 -0400
+	id S1757786Ab3EWJ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 05:26:35 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -17,158 +17,34 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/2] Reduce system disruption due to kswapd followup
-Date: Thu, 23 May 2013 10:26:25 +0100
-Message-Id: <1369301187-24934-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/2] mm: vmscan: Take page buffers dirty and locked state into account
+Date: Thu, 23 May 2013 10:26:27 +0100
+Message-Id: <1369301187-24934-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369301187-24934-1-git-send-email-mgorman@suse.de>
+References: <1369301187-24934-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Further testing of the "Reduce system disruption due to kswapd" discovered
-a few problems.  First, as pages were not being swapped, the file LRU was
-being scanned faster and clean file pages were being reclaimed resulting
-in some cases in larger amounts of read IO to re-read data from disk.
-Second, more pages were being written from kswapd context which can
-adversly affect IO performance. Lastly, it was observed that PageDirty
-pages are not necessarily dirty on all filesystems (buffers can be clean
-while PageDirty is set and ->writepage generates no IO) and not all
-filesystems set PageWriteback when the page is being written (e.g. ext3).
-This disconnect confuses the reclaim stalling logic. This follow-up series
-is aimed at these problems.
+Page reclaim keeps track of dirty and under writeback pages and uses it to
+determine if wait_iff_congested() should stall or if kswapd should begin
+writing back pages. This fails to account for buffer pages that can be
+under writeback but not PageWriteback which is the case for filesystems
+like ext3. Furthermore, PageDirty buffer pages can have all the buffers
+clean and writepage does no IO so it should not be accounted as congested.
 
-The tests were based on three kernels
+This patch adds an address_space operation that filesystems may
+optionally use to check if a page is really dirty or really under
+writeback. An implementation is provided for filesystems that use
+buffer_heads. By default, the page flags are obeyed.
 
-vanilla:	kernel 3.9 as that is what the current mmotm uses as a baseline
-mmotm-20130522	is mmotm as of 22nd May with "Reduce system disruption due to
-		kswapd" applied on top as per what should be in Andrew's tree
-		right now
-lessdisrupt-v5r4 is this follow-up series on top of the mmotm kernel
+Credit goes to Jan Kara for identifying that the page flags alone are
+not sufficient for ext3 and sanity checking a number of ideas on how
+the problem could be addressed.
 
-The first test used memcached+memcachetest while some background IO
-was in progress as implemented by the parallel IO tests implement in
-MM Tests. memcachetest benchmarks how many operations/second memcached
-can service. It starts with no background IO on a freshly created ext4
-filesystem and then re-runs the test with larger amounts of IO in the
-background to roughly simulate a large copy in progress. The expectation
-is that the IO should have little or no impact on memcachetest which is
-running entirely in memory.
-
-                                             3.9.0                       3.9.0                       3.9.0
-                                           vanilla          mm1-mmotm-20130522        mm1-lessdisrupt-v5r4
-Ops memcachetest-0M             23117.00 (  0.00%)          23088.00 ( -0.13%)          22815.00 ( -1.31%)
-Ops memcachetest-715M           23774.00 (  0.00%)          23504.00 ( -1.14%)          23342.00 ( -1.82%)
-Ops memcachetest-2385M           4208.00 (  0.00%)          23740.00 (464.16%)          24138.00 (473.62%)
-Ops memcachetest-4055M           4104.00 (  0.00%)          24800.00 (504.29%)          24930.00 (507.46%)
-Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops io-duration-715M               12.00 (  0.00%)              7.00 ( 41.67%)              7.00 ( 41.67%)
-Ops io-duration-2385M             116.00 (  0.00%)             21.00 ( 81.90%)             21.00 ( 81.90%)
-Ops io-duration-4055M             160.00 (  0.00%)             37.00 ( 76.88%)             36.00 ( 77.50%)
-Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swaptotal-715M             140138.00 (  0.00%)             18.00 ( 99.99%)             18.00 ( 99.99%)
-Ops swaptotal-2385M            385682.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swaptotal-4055M            418029.00 (  0.00%)              0.00 (  0.00%)              2.00 (100.00%)
-Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-715M                   144.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-2385M               134227.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-4055M               125618.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops minorfaults-0M            1536429.00 (  0.00%)        1533759.00 (  0.17%)        1537248.00 ( -0.05%)
-Ops minorfaults-715M          1786996.00 (  0.00%)        1606613.00 ( 10.09%)        1610854.00 (  9.86%)
-Ops minorfaults-2385M         1757952.00 (  0.00%)        1608201.00 (  8.52%)        1614772.00 (  8.14%)
-Ops minorfaults-4055M         1774460.00 (  0.00%)        1620493.00 (  8.68%)        1625930.00 (  8.37%)
-Ops majorfaults-0M                  1.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-Ops majorfaults-715M              184.00 (  0.00%)            159.00 ( 13.59%)            162.00 ( 11.96%)
-Ops majorfaults-2385M           24444.00 (  0.00%)            108.00 ( 99.56%)            151.00 ( 99.38%)
-Ops majorfaults-4055M           21357.00 (  0.00%)            218.00 ( 98.98%)            189.00 ( 99.12%)
-
-
-memcachetest is the transactions/second reported by memcachetest. In
-        the vanilla kernel note that performance drops from around
-        23K/sec to just over 4K/second when there is 2385M of IO going
-        on in the background. With current mmotm, there is no collapse
-	in performance and with this follow-up series there is little
-	change.
-
-swaptotal is the total amount of swap traffic. With mmotm and the follow-up
-	series, the total amount of swapping is much reduced.
-
-                                 3.9.0       3.9.0       3.9.0
-                               vanillamm1-mmotm-20130522mm1-lessdisrupt-v5r4
-Minor Faults                  11160152    10592704    10620743
-Major Faults                     46305         771         788
-Swap Ins                        260249           0           0
-Swap Outs                       683860          18          20
-Direct pages scanned                 0           0         850
-Kswapd pages scanned           6046108    18523180     1598979
-Kswapd pages reclaimed         1081954     1182759     1093766
-Direct pages reclaimed               0           0         800
-Kswapd efficiency                  17%          6%         68%
-Kswapd velocity               5217.560   16027.810    1382.231
-Direct efficiency                 100%        100%         94%
-Direct velocity                  0.000       0.000       0.735
-Percentage direct scans             0%          0%          0%
-Zone normal velocity          5105.086   15217.472     636.579
-Zone dma32 velocity            112.473     810.338     746.387
-Zone dma velocity                0.000       0.000       0.000
-Page writes by reclaim     1929612.00016620834.000   43115.000
-Page writes file               1245752    16620816       43095
-Page writes anon                683860          18          20
-Page reclaim immediate            7484          70         147
-Sector Reads                   1130320       94964       97244
-Sector Writes                 13508052    11356812    11469072
-Page rescued immediate               0           0           0
-Slabs scanned                    33536       27648       21120
-Direct inode steals                  0           0           0
-Kswapd inode steals               8641        1495           0
-Kswapd skipped wait                  0           0           0
-THP fault alloc                      8           9          39
-THP collapse alloc                 508         476         378
-THP splits                          24           0           0
-THP fault fallback                   0           0           0
-THP collapse fail                    0           0           0
-
-There are a number of observations to make here
-
-1. Swap outs are almost eliminated. Swap ins are 0 indicating that the
-   pages swapped were really unused anonymous pages. Related to that,
-   major faults are much reduced.
-
-2. kswapd efficiency was impacted by the initial series but with these
-   follow-up patches, the efficiency is now at 66% indicating that far
-   fewer pages were skipped during scanning due to dirty or writeback
-   pages.
-
-3. kswapd velocity is reduced indicating that fewer pages are being scanned
-   with the follow-up series as kswapd now stalls when the tail of the
-   LRU queue is full of unqueued dirty pages. The stall gives flushers a
-   chance to catch-up so kswapd can reclaim clean pages when it wakes
-
-4. In light of Zlatko's recent reports about zone scanning imbalances,
-   mmtests now reports scanning velocity on a per-zone basis. With mainline,
-   you can see that the scanning activity is dominated by the Normal
-   zone with over 45 times more scanning in Normal than the DMA32 zone.
-   With the series currently in mmotm, the ratio is slightly better but it
-   is still the case that the bulk of scanning is in the highest zone. With
-   this follow-up series, the ratio of scanning between the Normal and
-   DMA32 zone is roughly equal.
-
-5. As Dave Chinner observed, the current patches in mmotm increased the
-   number of pages written from kswapd context which is expected to adversly
-   impact IO performance. With the follow-up patches, far fewer pages are
-   written from kswapd context than the mainline kernel
-
-6. With the series in mmotm, fewer inodes were reclaimed by kswapd. With
-   the follow-up series, there is less slab shrinking activity and no inodes
-   were reclaimed.
-
-7. Note that "Sectors Read" is drastically reduced implying that the source
-   data being used for the IO is not being aggressively discarded due to
-   page reclaim skipping over dirty pages and reclaiming clean pages. Note
-   that the reducion in reads could also be due to inode data not being
-   re-read from disk after a slab shrink.
-
-Overall, the system is getting less kicked in the face due to IO.
-
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
  fs/buffer.c                 | 34 ++++++++++++++++++++++++++++++++++
  fs/ext2/inode.c             |  1 +
  fs/ext3/inode.c             |  3 +++
@@ -179,9 +55,246 @@ Overall, the system is getting less kicked in the face due to IO.
  fs/xfs/xfs_aops.c           |  1 +
  include/linux/buffer_head.h |  3 +++
  include/linux/fs.h          |  1 +
- mm/vmscan.c                 | 45 ++++++++++++++++++++++++++++++++++++++-------
- 11 files changed, 87 insertions(+), 7 deletions(-)
+ mm/vmscan.c                 | 33 +++++++++++++++++++++++++++++++--
+ 11 files changed, 80 insertions(+), 2 deletions(-)
 
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 1aa0836..4247aa9 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -91,6 +91,40 @@ void unlock_buffer(struct buffer_head *bh)
+ EXPORT_SYMBOL(unlock_buffer);
+ 
+ /*
++ * Returns if the page has dirty or writeback buffers. If all the buffers
++ * are unlocked and clean then the PageDirty information is stale. If
++ * any of the pages are locked, it is assumed they are locked for IO.
++ */
++void buffer_check_dirty_writeback(struct page *page,
++				     bool *dirty, bool *writeback)
++{
++	struct buffer_head *head, *bh;
++	*dirty = false;
++	*writeback = false;
++
++	BUG_ON(!PageLocked(page));
++
++	if (!page_has_buffers(page))
++		return;
++
++	if (PageWriteback(page))
++		*writeback = true;
++
++	head = page_buffers(page);
++	bh = head;
++	do {
++		if (buffer_locked(bh))
++			*writeback = true;
++
++		if (buffer_dirty(bh))
++			*dirty = true;
++
++		bh = bh->b_this_page;
++	} while (bh != head);
++}
++EXPORT_SYMBOL(buffer_check_dirty_writeback);
++
++/*
+  * Block until a buffer comes unlocked.  This doesn't stop it
+  * from becoming locked again - you have to lock it yourself
+  * if you want to preserve its state.
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 0a87bb1..2fc3593 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -880,6 +880,7 @@ const struct address_space_operations ext2_aops = {
+ 	.writepages		= ext2_writepages,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate	= block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 23c7128..14494fc 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -1984,6 +1984,7 @@ static const struct address_space_operations ext3_ordered_aops = {
+ 	.direct_IO		= ext3_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+@@ -1999,6 +2000,7 @@ static const struct address_space_operations ext3_writeback_aops = {
+ 	.direct_IO		= ext3_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+@@ -2013,6 +2015,7 @@ static const struct address_space_operations ext3_journalled_aops = {
+ 	.invalidatepage		= ext3_invalidatepage,
+ 	.releasepage		= ext3_releasepage,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 0723774..7af746a 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3309,6 +3309,7 @@ static const struct address_space_operations ext4_aops = {
+ 	.direct_IO		= ext4_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+@@ -3340,6 +3341,7 @@ static const struct address_space_operations ext4_da_aops = {
+ 	.direct_IO		= ext4_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+ 
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index 0bad69e..027b8ea 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -1112,6 +1112,7 @@ static const struct address_space_operations gfs2_writeback_aops = {
+ 	.direct_IO = gfs2_direct_IO,
+ 	.migratepage = buffer_migrate_page,
+ 	.is_partially_uptodate = block_is_partially_uptodate,
++	.is_dirty_writeback = buffer_check_dirty_writeback,
+ 	.error_remove_page = generic_error_remove_page,
+ };
+ 
+@@ -1129,6 +1130,7 @@ static const struct address_space_operations gfs2_ordered_aops = {
+ 	.direct_IO = gfs2_direct_IO,
+ 	.migratepage = buffer_migrate_page,
+ 	.is_partially_uptodate = block_is_partially_uptodate,
++	.is_dirty_writeback = buffer_check_dirty_writeback,
+ 	.error_remove_page = generic_error_remove_page,
+ };
+ 
+diff --git a/fs/ntfs/aops.c b/fs/ntfs/aops.c
+index fa9c05f..eb85ac1 100644
+--- a/fs/ntfs/aops.c
++++ b/fs/ntfs/aops.c
+@@ -1549,6 +1549,7 @@ const struct address_space_operations ntfs_aops = {
+ 	.migratepage	= buffer_migrate_page,	/* Move a page cache page from
+ 						   one physical page to an
+ 						   other. */
++	.is_dirty_writeback = buffer_check_dirty_writeback,
+ 	.error_remove_page = generic_error_remove_page,
+ };
+ 
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 20dfec7..191af11 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -2096,5 +2096,6 @@ const struct address_space_operations ocfs2_aops = {
+ 	.releasepage		= ocfs2_releasepage,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate	= block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+index f64ee71..1aada1c 100644
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -1656,5 +1656,6 @@ const struct address_space_operations xfs_address_space_operations = {
+ 	.direct_IO		= xfs_vm_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
++	.is_dirty_writeback	= buffer_check_dirty_writeback,
+ 	.error_remove_page	= generic_error_remove_page,
+ };
+diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+index 6d9f5a2..d458880 100644
+--- a/include/linux/buffer_head.h
++++ b/include/linux/buffer_head.h
+@@ -139,6 +139,9 @@ BUFFER_FNS(Prio, prio)
+ 	})
+ #define page_has_buffers(page)	PagePrivate(page)
+ 
++void buffer_check_dirty_writeback(struct page *page,
++				     bool *dirty, bool *writeback);
++
+ /*
+  * Declarations
+  */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0a9a6766..96f857f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -380,6 +380,7 @@ struct address_space_operations {
+ 	int (*launder_page) (struct page *);
+ 	int (*is_partially_uptodate) (struct page *, read_descriptor_t *,
+ 					unsigned long);
++	void (*is_dirty_writeback) (struct page *, bool *, bool *);
+ 	int (*error_remove_page)(struct address_space *, struct page *);
+ 
+ 	/* swapfile support */
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index f3315c6..d9213d8 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -669,6 +669,25 @@ static enum page_references page_check_references(struct page *page,
+ 	return PAGEREF_RECLAIM;
+ }
+ 
++/* Check if a page is dirty or under writeback */
++static void page_check_dirty_writeback(struct page *page,
++				       bool *dirty, bool *writeback)
++{
++	struct address_space *mapping;
++
++	/* By default assume that the page flags are accurate */
++	*dirty = PageDirty(page);
++	*writeback = PageWriteback(page);
++
++	/* Verify dirty/writeback state if the filesystem supports it */
++	if (!page_has_private(page))
++		return;
++
++	mapping = page_mapping(page);
++	if (mapping && mapping->a_ops->is_dirty_writeback)
++		mapping->a_ops->is_dirty_writeback(page, dirty, writeback);
++}
++
+ /*
+  * shrink_page_list() returns the number of reclaimed pages
+  */
+@@ -839,9 +858,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		}
+ 
+ 		if (PageDirty(page)) {
+-			nr_dirty++;
++			bool dirty, writeback;
++
++			/*
++			 * The number of dirty pages determines if a zone is
++			 * marked zone_is_reclaim_congested which affects
++			 * wait_iff_congested. The number of unqueued dirty
++			 * pages affects if kswapd will start writing pages.
++			 */
++			page_check_dirty_writeback(page, &dirty, &writeback);
++			if (dirty || writeback)
++				nr_dirty++;
+ 
+-			if (!PageWriteback(page))
++			if (dirty && !writeback)
+ 				nr_unqueued_dirty++;
+ 
+ 			/*
 -- 
 1.8.1.4
 
