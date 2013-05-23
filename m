@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab3EWPmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:42:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40606 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876Ab3EWPml (ORCPT
+	id S1759452Ab3EWPmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:42:49 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:62105 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759266Ab3EWPmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:42:41 -0400
-Message-ID: <519E38ED.7090202@wwwdotorg.org>
-Date: Thu, 23 May 2013 09:42:37 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 23 May 2013 11:42:46 -0400
+Date: Thu, 23 May 2013 11:47:17 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <20130523152611.GE23650@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1305231144370.17701@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
+ <20130523125218.GB23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu> <20130523152611.GE23650@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@kernel.org>, Davide Ciminaghi <ciminaghi@gnudd.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] regmap: Make regmap-mmio usable from different contexts
-References: <1369314377-22873-1-git-send-email-lars@metafoo.de> <1369314377-22873-2-git-send-email-lars@metafoo.de>
-In-Reply-To: <1369314377-22873-2-git-send-email-lars@metafoo.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 07:06 AM, Lars-Peter Clausen wrote:
-> regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for locking.
-> Which means in order to avoid race conditions the lock always needs to be taken
-> from the same context.
+On Thu, 23 May 2013, Peter Zijlstra wrote:
 
-I'm not really sure what this means. I assume contexts are
-atomic-vs-nonatomic? If so, spinlocks should work fine for this, right?
+> On Thu, May 23, 2013 at 10:10:36AM -0400, Vince Weaver wrote:
+> > 
+> > I can confirm your patch avoids the oops on my machine.
+> > 
+> > It does lead to interesting behavior if I run the sample program
+> > multiple times (with added printfs):
+> > 
+> > vince@core2:~$ ./perf_mmap_close_bug 
+> > mmap1=0x7f06a6e90000
+> > mmap2=0x7f06a6e7f000
+> > vince@core2:~$ ./perf_mmap_close_bug 
+> > mmap1=0x7f878a138000
+> > mmap2=0x7f878a127000
+> > vince@core2:~$ ./perf_mmap_close_bug 
+> > mmap1=0xffffffffffffffff
+> > Error opening fd2 Invalid argument
+> > 
+> > and then it never successfully completes again.  Is this unexpected 
+> > behavior?  
+> 
+> Sounds weird to me, I'll see if I can reproduce/understand.
+> 
 
-I guess the core of the issue is that you want to replace spin_lock()
-with spin_lock_irqsave(). I'd like to see that explicitly described in
-the commit description, if that is the core aspect of this change.
+I don't know if it's related, but even with 3.10-rc2 with your patch 
+applied and running the fuzzer a bit the system eventually becomes 
+unstable and oopsing like mad, but in non-perf related ways.  hmmm.
 
-Re: the other comments about the API change: I think this can be done
-non-invasively:
+I've set up a serial console and maybe I can get some better messages.
 
-static void regmap_lock_spinlock(void *__map)
-{
-	struct regmap *map = __map;
-	unsigned long local_flags;
+Vince
 
-	spin_lock_irqsave(&map->spinlock, local_flags);
-	/*
-	 * Here, we have the lock locked, so we own the flags,
-	 * and can write to them.
-	 */
-	map->spinlock_flags = local_flags;
-}
+[ 1188.896010] kernel BUG at mm/slab.c:3005!                                    
+[ 1188.896010] invalid opcode: 0000 [#1] SMP                                    
+[ 1188.896010] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
+[ 1188.896010] CPU: 1 PID: 3406 Comm: sudo Not tainted 3.10.0-rc2 #3            
+[ 1188.896010] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[ 1188.896010] task: ffff880116726770 ti: ffff880117564000 task.ti: ffff88011750
+[ 1188.896010] RIP: 0010:[<ffffffff810e9c16>]  [<ffffffff810e9c16>] ____cache_a0
+[ 1188.896010] RSP: 0018:ffff880117565e88  EFLAGS: 00010096                     
+[ 1188.896010] RAX: ffff880119dbf748 RBX: ffff88011974c200 RCX: 0000000000000007
+[ 1188.896010] RDX: 000000000000001e RSI: 0000000000000000 RDI: 0000000000000000
+[ 1188.896010] RBP: ffff880119dbf740 R08: ffff880117834c00 R09: ffff880117832000
+[ 1188.896010] R10: 00007fffb1360440 R11: 0000000000000246 R12: ffff880119c92a40
+[ 1188.896010] R13: 0000000000000000 R14: ffff880117834c00 R15: 0000000000000010
+[ 1188.896010] FS:  00007f1339467800(0000) GS:ffff88011fc80000(0000) knlGS:00000
+[ 1188.896010] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033                
+[ 1188.896010] CR2: 00007f133898a040 CR3: 00000001176ab000 CR4: 00000000000407e0
+[ 1188.896010] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1188.896010] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1188.896010] Stack:                                                           
+[ 1188.896010]  0000000000000001 000080d000000000 ffff880117941c80 ffff880119c90
+[ 1188.896010]  00000000000080d0 0000000000000246 00000000000080d0 00007fffb1360
+[ 1188.896010]  ffffffff810eace7 ffff880117941c80 00000000000003e8 0000000000000
+[ 1188.896010] Call Trace:                                                      
+[ 1188.896010]  [<ffffffff810eace7>] ? kmem_cache_alloc+0x47/0xf8               
+[ 1188.896010]  [<ffffffff8103abb6>] ? alloc_uid+0x5c/0xee                      
+[ 1188.896010]  [<ffffffff8103efda>] ? set_user+0xd/0x70                        
+[ 1188.896010]  [<ffffffff81040529>] ? SyS_setresuid+0xb6/0x113                 
+[ 1188.896010]  [<ffffffff81369b92>] ? system_call_fastpath+0x16/0x1b           
+[ 1188.896010] Code: 20 48 8b 5d 28 48 8d 55 28 c7 45 60 01 00 00 00 48 39 d3 7 
+[ 1188.896010] RIP  [<ffffffff810e9c16>] ____cache_alloc+0x11c/0x290            
+[ 1188.896010]  RSP <ffff880117565e88>                                          
+[ 1188.896010] ---[ end trace a14ae9e1a2282660 ]---                             
+[ 1192.279580] ------------[ cut here ]------------                             
+[ 1192.279580] WARNING: at kernel/watchdog.c:245 watchdog_overflow_callback+0x7)
+[ 1192.279580] Watchdog detected hard LOCKUP on cpu 1                           
+[ 1192.279580] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
+[ 1192.279580] CPU: 1 PID: 24 Comm: kworker/1:1 Tainted: G      D      3.10.0-r3
+[ 1192.279580] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[ 1192.279580] Workqueue: events cache_reap                                     
+[ 1192.279580]  0000000000000000 ffffffff8102e205 ffff88011fc87d00 ffff88011a220
+[ 1192.279580]  ffff88011fc87d50 ffff88011fc87de0 ffff88011fc87ef8 ffffffff81020
+[ 1192.279580]  ffffffff814ecec5 0000000000000020 ffff88011fc87d60 ffff88011fc80
+[ 1192.279580] Call Trace:                                                      
+[ 1192.279580]  <NMI>  [<ffffffff8102e205>] ? warn_slowpath_common+0x5b/0x70    
+[ 1192.279580]  [<ffffffff8102e2b0>] ? warn_slowpath_fmt+0x47/0x49              
+[ 1192.279580]  [<ffffffff8108a920>] ? watchdog_overflow_callback+0x7e/0x9d     
+[ 1192.279580]  [<ffffffff810ad1f8>] ? __perf_event_overflow+0x12c/0x1ae        
+[ 1192.279580]  [<ffffffff810ab29b>] ? perf_event_update_userpage+0x12/0xbd     
+[ 1192.279580]  [<ffffffff81011f41>] ? intel_pmu_handle_irq+0x242/0x2aa         
+[ 1192.279580]  [<ffffffff81365a21>] ? nmi_handle.isra.0+0x3c/0x5a              
+[ 1192.279580]  [<ffffffff81365adc>] ? do_nmi+0x9d/0x2ab                        
+[ 1192.279580]  [<ffffffff813652b7>] ? end_repeat_nmi+0x1e/0x2e                 
+[ 1192.279580]  [<ffffffff810704c6>] ? do_raw_spin_lock+0x15/0x1b               
+[ 1192.279580]  [<ffffffff810704c6>] ? do_raw_spin_lock+0x15/0x1b               
+[ 1192.279580]  [<ffffffff810704c6>] ? do_raw_spin_lock+0x15/0x1b               
+[ 1192.279580]  <<EOE>>  [<ffffffff810e944e>] ? drain_array+0x46/0xc1           
+[ 1192.279580]  [<ffffffff810e967d>] ? cache_reap+0xba/0x1b5                    
+[ 1192.279580]  [<ffffffff81044e68>] ? process_one_work+0x18b/0x287             
+[ 1192.279580]  [<ffffffff8104530d>] ? worker_thread+0x121/0x1e7                
+[ 1192.279580]  [<ffffffff810451ec>] ? rescuer_thread+0x265/0x265               
+[ 1192.279580]  [<ffffffff810496be>] ? kthread+0x7d/0x85                        
+[ 1192.279580]  [<ffffffff81049641>] ? __kthread_parkme+0x59/0x59               
+[ 1192.279580]  [<ffffffff81369aec>] ? ret_from_fork+0x7c/0xb0                  
+[ 1192.279580]  [<ffffffff81049641>] ? __kthread_parkme+0x59/0x59               
+[ 1192.279580] ---[ end trace a14ae9e1a2282661 ]---                             
 
-static void regmap_unlock_spinlock(void *__map, unsigned long *flags)
-{
-	struct regmap *map = __map;
-	spin_unlock_irqrestore(&map->spinlock, map->spinlock_flags);
-}
-
-... and obviously add a spinlock_flags field to struct regmap (perhaps
-start unioning the mutex and spinlock data fields there if you want to
-save space).
