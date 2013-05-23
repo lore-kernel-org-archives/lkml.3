@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab3EWCXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 22:23:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43590 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab3EWCXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 22:23:07 -0400
-Date: Wed, 22 May 2013 19:23:27 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        linux-usb@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>
-Subject: Re: [PATCH] build some drivers only when compile-testing
-Message-ID: <20130523022327.GB6159@kroah.com>
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757506Ab3EWCZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 22:25:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9795 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757430Ab3EWCZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 22:25:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,725,1363158000"; 
+   d="scan'208";a="342042270"
+Message-ID: <1369275908.2036.11.camel@rzhang1-mobl4>
+Subject: Re: Fans at full speed after resume
+From: Zhang Rui <rui.zhang@intel.com>
+To: Michael =?ISO-8859-1?Q?Gro=DFh=E4user?= 
+	<michael.grosshaeuser@t-online.de>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 23 May 2013 10:25:08 +0800
+In-Reply-To: <knj3oe$h88$1@ger.gmane.org>
+References: <CAPz6YkWr_D504UdeqXB0FXxgqOt3GYnF09ctoMaZ8P-znbVMGQ@mail.gmail.com>
+	 <1368591999.5890.9.camel@rzhang1-mobl4>
+	 <1368592193.5890.10.camel@rzhang1-mobl4> <knj3oe$h88$1@ger.gmane.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby wrote:
-> Some drivers can be built on more platforms than they run on. This
-> causes users and distributors packaging burden when they have to
-> manually deselect some drivers from their allmodconfigs. Or sometimes
-> it is even impossible to disable the drivers without patching the
-> kernel.
+On Wed, 2013-05-22 at 20:46 +0200, Michael Großhäuser wrote:
+> Zhang Rui wrote:
 > 
-> Introduce a new config option COMPILE_TEST and make all those drivers
-> to depend on the platform they run on, or on the COMPILE_TEST option.
-> Now, when users/distributors choose COMPILE_TEST=n they will not have
-> the drivers in their allmodconfig setups, but developers still can
-> compile-test them with COMPILE_TEST=y.
+> > On Wed, 2013-05-15 at 12:26 +0800, Zhang Rui wrote:
+> >> please
+> >> 
+> >> On Tue, 2013-05-14 at 21:18 -0700, Sonny Rao wrote:
+> >> > Hi, I've seen a regression in kernels since 3.7 on x86 devices where
+> >> > the kernel turns the system fans on to max speed after resuming from
+> >> > ram.  Other people have noticed it as well, for example see
+> >> > https://bugzilla.redhat.com/show_bug.cgi?id=895276
+> >> > 
+> >> please check if this is a duplicate of bug
+> >> https://bugzilla.kernel.org/show_bug.cgi?id=56591
+> > or you can try 3.10-rc1 to see if the problem still exists or not.
+> > 
+> > thanks,
+> > rui
+> 
+> 
+> Hi,
+> 
+> I can confirm the same problem on a HP/Compaq 2510p with 3.10-rc2.
+> 
+please check if this is a duplicate of bug
+https://bugzilla.kernel.org/show_bug.cgi?id=58301
 
-I understand the urge, and it's getting hard for distros to handle these
-drivers that just don't work on other architectures, but it's really
-valuable to ensure that they build properly, for those of us that don't
-have many/any cross compilers set up.
-
-> Now the drivers where we use this new option:
-> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
->   processors so it should depend on x86.
-> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
-> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
->   systems -- which do not actually support the hardware via that
->   method.
-
-This seems ripe to start to get really messy, really quickly.  Shouldn't
-"default configs" handle if this "should" be enabled for a platform or
-not, and let the rest of us just build them with no problems?
-
-What problems is this causing you?  Are you running out of space in
-kernel packages with drivers that will never be actually used?
-
-> +config COMPILE_TEST
-> +	bool "Compile also drivers which will not load" if EXPERT
-
-EXPERT is getting to be the "let's hide it here" option, isn't it...
-
-I don't know, if no one else strongly objects, I can be convinced that
-this is needed, but so far, I don't see why it really is, or what this
-is going to help with.
+please try the patch at comment #7 and see if it helps or not.
 
 thanks,
+rui
+> Best Regards,
+> Michael
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-greg k-h
+
