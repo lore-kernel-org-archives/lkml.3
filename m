@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab3EWIXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:23:16 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53938 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab3EWIXN (ORCPT
+	id S1757198Ab3EWIXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:23:46 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:43836 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3EWIXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:23:13 -0400
-Date: Thu, 23 May 2013 09:23:08 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Leon Romanovsky <leon@leon.nu>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
-Message-ID: <20130523082308.GB22683@gmail.com>
-References: <1368609586-20905-1-git-send-email-leon@leon.nu>
- <CALq1K=KP4pADX89QJ3MJzaC+uTeEVOy7FUNikEnYddb0u-rihw@mail.gmail.com>
+	Thu, 23 May 2013 04:23:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALq1K=KP4pADX89QJ3MJzaC+uTeEVOy7FUNikEnYddb0u-rihw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201305221608.10759.arnd@arndb.de>
+References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
+	<1369226853-16978-3-git-send-email-lee.jones@linaro.org>
+	<CACRpkdYHiwbGonH80aJfHxP6F+hLb+_KdCr_g5ae1Yr-v=WcxA@mail.gmail.com>
+	<201305221608.10759.arnd@arndb.de>
+Date: Thu, 23 May 2013 10:23:43 +0200
+Message-ID: <CACRpkdacteTbFkOQ9w3LQCwN+RDviK04j77itz7uyTiY56+nCg@mail.gmail.com>
+Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
+ initialisation data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > There is no need to call kfree while using devm_kzalloc,
-> > remove it from *_device_init function.
-> >
-> > Signed-off-by: Leon Romanovsky <leon@leon.nu>
-> > ---
-> >  drivers/mfd/tps65912-core.c | 5 ++---
-> >  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> To be honest the whole tps65912 looks strange to me.
-> For example,  kfree(tps65912) calls all over the code.
-> 
-> tps65912_i2c_probe allocates tps65912 struct, but tps65912_device_exit
-> releases it.
+On Wed, May 22, 2013 at 4:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 22 May 2013, Linus Walleij wrote:
+>> > diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+>> > index b4d4547..8421537 100644
+>> > --- a/drivers/regulator/ab8500-ext.c
+>> > +++ b/drivers/regulator/ab8500-ext.c
+>> > @@ -334,6 +334,12 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+>> >                 return -EINVAL;
+>> >         }
+>> >
+>> > +       /* have any external regulators been specified? */
+>> > +       if (pdata->num_ext_regulator == 0) {
+>> > +               dev_warn(&pdev->dev, "Not using external regulators\n");
+>> > +               return 0;
+>> > +       }
+>>
+>> dev_warn() is really when we warn about something really nasty, worse
+>> than dev_err(). It seems dev_info() is more apropriate.
+>
+> Are you confusing it with dev_crit()?
+>
+> This is how the levels are defined, and "warning" is less urgent than "error":
 
-Yes, this is expected.
+Yeah :-/
 
-tps65912_[spi|i2c]_remove() both call tps65912_device_exit() which in
-turn frees tps65912. Saves duplicating code.
+But I still think this should be just dev_info().
 
-I'll clean thinks up a little, so this is less confusing.
+No big deal though.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
