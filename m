@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759238Ab3EWO4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:56:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3738 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757920Ab3EWO4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:56:36 -0400
-Message-ID: <1369320984.2646.135.camel@ul30vt.home>
-Subject: Re: [PATCH 0/5 v2] VFIO PPC64: add VFIO support on POWERPC64
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 23 May 2013 08:56:24 -0600
-In-Reply-To: <1369107191-28547-1-git-send-email-aik@ozlabs.ru>
-References: <1369107191-28547-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759341Ab3EWO6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:58:50 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:45455 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758360Ab3EWO6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:58:49 -0400
+Date: Thu, 23 May 2013 16:58:35 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@ardb.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Oliver Schinagl <oliver@schinagl.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+Message-ID: <20130523145835.GI8595@lukather>
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
+ <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+ <CACRpkdaWADjy1YZXTcRaXU+ZsS6_pG0hojQdnz=qeTgyVY7_Ww@mail.gmail.com>
+ <519DCEE9.6070208@schinagl.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519DCEE9.6070208@schinagl.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-05-21 at 13:33 +1000, Alexey Kardashevskiy wrote:
-> The series adds support for VFIO on POWERPC in user space (such as QEMU).
-> The in-kernel real mode IOMMU support is added by another series posted
-> separately.
-> 
-> As the first and main aim of this series is the POWERNV platform support,
-> the "Enable on POWERNV platform" patch goes first and introduces an API
-> to be used by the VFIO IOMMU driver. The "Enable on pSeries platform" patch
-> simply registers PHBs in the IOMMU subsystem and expects the API to be present,
-> it enables VFIO support in fully emulated QEMU guests.
-> 
-> The main change is that this series was changed and tested against v3.10-rc1.
-> It also contains some bugfixes which are mentioned (if any) in the patch messages.
-> 
-> Alexey Kardashevskiy (3):
->   powerpc/vfio: Enable on POWERNV platform
->   powerpc/vfio: Implement IOMMU driver for VFIO
->   powerpc/vfio: Enable on pSeries platform
-> 
->  Documentation/vfio.txt                      |   63 +++++
->  arch/powerpc/include/asm/iommu.h            |   26 ++
->  arch/powerpc/kernel/iommu.c                 |  323 +++++++++++++++++++++++
->  arch/powerpc/platforms/powernv/pci-ioda.c   |    1 +
->  arch/powerpc/platforms/powernv/pci-p5ioc2.c |    5 +-
->  arch/powerpc/platforms/powernv/pci.c        |    2 +
->  arch/powerpc/platforms/pseries/iommu.c      |    4 +
->  drivers/iommu/Kconfig                       |    8 +
->  drivers/vfio/Kconfig                        |    6 +
->  drivers/vfio/Makefile                       |    1 +
->  drivers/vfio/vfio.c                         |    1 +
->  drivers/vfio/vfio_iommu_spapr_tce.c         |  377 +++++++++++++++++++++++++++
->  include/uapi/linux/vfio.h                   |   34 +++
->  13 files changed, 850 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
-> 
+On Thu, May 23, 2013 at 10:10:17AM +0200, Oliver Schinagl wrote:
+> Then, i'm not sure if the driver is the best for this to be loaded?
+> Maxime, what do you think? Personally I would feel more in having
+> this in the mach-sunxi/core.c bit, but then again, this is currently
+> a module and wouldn't be useful to have there. Maxime is far more
+> knowledgeable to answer that.
 
-These look ok to me, how do you want to integrate them?  Should I
-provide Acks on patches 2 & 3 and let them get pushed through the ppc
-tree or should I wait for patch 1 then push 2 & 3 through my tree?
+Hmmm, I don't understand what you mean here. Could you explain what you
+have in mind?
+
 Thanks,
+Maxime
 
-Alex
-
+-- 
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
