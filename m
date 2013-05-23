@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759117Ab3EWTYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 15:24:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46960 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758078Ab3EWTYm (ORCPT
+	id S1759211Ab3EWTd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 15:33:58 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:38445 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758400Ab3EWTd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 15:24:42 -0400
-Date: Thu, 23 May 2013 21:24:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130523192426.GH23650@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523104154.GA23650@twins.programming.kicks-ass.net>
- <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
- <20130523152458.GD23650@twins.programming.kicks-ass.net>
- <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
- <20130523163901.GG23650@twins.programming.kicks-ass.net>
- <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
+	Thu, 23 May 2013 15:33:56 -0400
+X-Sasl-enc: AbbgNkrj0mcduaU+yJ5yA4/Kjg5JMo9brqComzpKP5HR 1369337633
+Message-ID: <519E6F1E.8000200@signal11.us>
+Date: Thu, 23 May 2013 15:33:50 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: David Hauweele <david@hauweele.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net
+Subject: Re: [PATCH beta 1] 0/3] Fix race conditions in mrf24j40 interrupts
+References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com> <1369188080-8904-1-git-send-email-alan@signal11.us> <519C278F.5030809@signal11.us> <CAO+c-UV1bZZEE=9=7VVn3f1eLWzCpYCK9eZnnvzNwcPOKKtKLA@mail.gmail.com> <519DB8E6.4020709@signal11.us> <CAO+c-UVMoctgG2qM2EzOVJwsEY_2TT79J-AuzX-xrPkSUHrQtw@mail.gmail.com>
+In-Reply-To: <CAO+c-UVMoctgG2qM2EzOVJwsEY_2TT79J-AuzX-xrPkSUHrQtw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 05:59:10PM +0000, Christoph Lameter wrote:
-> On Thu, 23 May 2013, Peter Zijlstra wrote:
+On 05/23/2013 01:54 PM, David Hauweele wrote:
+> 2013/5/23 Alan Ott <alan@signal11.us>:
+>> On 5/22/13 4:32 PM, David Hauweele wrote:
+>>>
+>>> I cannot use level-triggered interrupts with GPIO on the RPi, so I
+>>> cannot test this specific patch.
+>>
+>>
+>> Is there another interrupt line you can tie into which does support
+>> level-trigger interrupts (INT0 or something)?
 > 
-> > I know all that, and its completely irrelevant to the discussion.
+> According to the datasheet it should be possible but the bcm2708 port
+> does not support it. I've been told that we shouldn't use level-triggered
+> interrupts in the first place.
+
+
+Who is "we," and why shouldn't we use level-triggered interrupts? The
+CPU needs to detect whatever type of interrupt the attached hardware
+generates.
+
+
 > 
-> What you said in the rest of the email seems to indicate that you
-> still do not know that and I am repeating what I have said before here.
-
-I'm very much aware of the difference between locked and pinned pages;
-and I don't object to accounting them separately per se. I do however
-object to making a joke out of resource limits and silently changing
-behaviour.
-
-Your changelog (that you seem to be so proud of that you want me to read
-it yet again) completely fails to mention what happens to resource
-limits.
-
-> > You now have double the amount of memory you can loose, once to actual
-> > mlock() and once through whatever generates pinned -- if it bothers with
-> > checking limits at all.
+>>
+>>
+>>> However I agree with the idea of level-triggered interrupts, that
+>>> would fix all major problems related to missed interrupts.
+>>>
+>>> Beside this I'm running a ping -f since more than two hours now and it
+>>> seems to work well.
+>>>
+>>
+>> So that surprises me. I thought level-trigger interrupts were the thing that
+>> would fix this problem, and if you're not running with that patch, you just
+>> have the INIT_COMPLETION() fix (which you said didn't fix your issue) and
+>> the threaded interrupts patch, which I was fairly sure I had determined
+>> wasn't fixing any actual race-condition-related problems.
 > 
-> It was already doubled which was the reason for the patch. The patch
-> avoided the doubling that we saw and it allowed to distinguish between
-> mlocked and pinned pages.
-
-So it was double and now its still double, so your patch fixed what
-exactly?
-
-> > Where we had the guarantee that x < y; you did x := x1 + x2; which then
-> > should result in: x1 + x2 < y, instead you did: x1 < y && x2 < y, not
-> > the same and completely wrong.
+> I should have been more clear about this. I've tested [PATCH 1/3]
+> which fixes the race condition with tx_complete. That is the
+> INIT_COMPLETION() fix. But it is still possible to miss an interrupt,
+> perhaps it just took longer this time. I ran the test again today and
+> it failed after 30 minutes.
 > 
-> We never had that guarantee.
+> I did not test [PATCH 2/3], that is the threaded IRQ. Instead I
+> removed interrupt enable/disable from the IRQ handler and the
+> workqueue. Without this the driver would fail within seconds of a ping
+> -f.
 
-Rlimits says we have; if it was buggy we should've fixed it, not made it
-worse. What's the point of pretending we have RLIMIT_MEMLOCK if we then
-feel free to ignore it?
 
-> We were accounting many pages twice in
-> the same counter. Once for mlocking and once for pinning. Thus the problem
-> that the patch addresses. Read the changelog?
+Without what? What do you mean by "without this?" Without the
+enable/disable, or without the change that removes the enable/disable?
 
-Splitting the counter doesn't magically fix it. Who was accounting
-double and why not fix those? 
 
-Splitting things doesn't fix anything; the sum is still counting double
-and you've made resource limits more complex.
+> Have you observed this too ? Perhaps this problem is specific to
+> the bcm2708 port.
+> 
 
-We should make mlock skip over the special pinned vmas instead of
-pretending pinned pages shouldn't be part of resource limits.
+What I observe right now is that it seems to work great (ping -f for 6.5
+hours) when using the three patches in this patch set on a BeagleBone.
 
-> There are other sources that cause pages to be not evictable (like f.e.
-> dirtying). Mlock accounting is not accurate in any case. The mlocked page
-> limit is per thread
+> 
+>>
+>> I'm glad, but surprised that you're no longer seeing issues.
+>>
+>> Alan.
+>>
+>>
+>>>
+>>> 2013/5/22 Alan Ott <alan@signal11.us>:
+>>>>
+>>>> On 05/21/2013 10:01 PM, Alan Ott wrote:
+>>>>>
+>>>>> David Hauweele noticed that the mrf24j40 would hang arbitrarily after
+>>>>> some
+>>>>> period of heavy traffic.  Two race conditions were discovered, and the
+>>>>> driver was changed to use threaded interrupts, since the enable/disable
+>>>>> of
+>>>>> interrupts in the driver has recently been a lighning rod whenever
+>>>>> issues
+>>>>> arise related to interrupts (costing engineering time), and since
+>>>>> threaded
+>>>>> interrupts are the right way to do it.
+>>>>>
+>>>>> Alan Ott (3):
+>>>>>    mrf24j40: Move INIT_COMPLETION() to before packet transmission
+>>>>>    mrf24j40: Use threaded IRQ handler
+>>>>>    mrf24j40: Use level-triggered interrupts
+>>>>>
+>>>>>   drivers/net/ieee802154/mrf24j40.c | 31 +++++++++----------------------
+>>>>>   1 file changed, 9 insertions(+), 22 deletions(-)
+>>>>
+>>>>
+>>>> I forgot to add, I ran ping -f both ways all afternoon (6.5 hours), and
+>>>> it seems solid.
+>>>>
+>>
 
-Its per process; see how locked_vm and pinned_vm are part of mm_struct
-and modified under mmap_sem.
-
-> which is another issue and so is the vm_pinned
-> counter. The pages actually may be shared between many processes and the
-> ownership of those pages is not clear. The accounting for mlock and
-> pinning also is a bit problematic as a result.
-
-I maintain that you cannot simply split a resource counter without
-properly explaining what happens to resource limits.
