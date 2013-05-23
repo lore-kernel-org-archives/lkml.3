@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab3EWIT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:19:57 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22753 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755024Ab3EWITz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:19:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,726,1363158000"; 
-   d="scan'208";a="306692992"
-Message-ID: <519DD110.3070002@intel.com>
-Date: Thu, 23 May 2013 16:19:28 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1757285Ab3EWIUP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:20:15 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36443 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab3EWIUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 04:20:10 -0400
 MIME-Version: 1.0
-To: Changlong Xie <xiechanglong87@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        mgorman@suse.de, riel@redhat.com, wangyun@linux.vnet.ibm.com,
-        Changlong Xie <changlongx.xie@intel.com>
-Subject: Re: [patch v6 8/8] sched: remove blocked_load_avg in tg
-References: <1368199049-2798-1-git-send-email-alex.shi@intel.com> <1368199049-2798-9-git-send-email-alex.shi@intel.com> <20130514083148.GD15942@dyad.programming.kicks-ass.net> <5192217D.5030706@intel.com> <20130516092308.GH19669@dyad.programming.kicks-ass.net> <CAJWCg7PKpGgHKqhm6Xq8DfVEWGoDsgS8s99r3JS7Wce7WS=B_Q@mail.gmail.com>
-In-Reply-To: <CAJWCg7PKpGgHKqhm6Xq8DfVEWGoDsgS8s99r3JS7Wce7WS=B_Q@mail.gmail.com>
+In-Reply-To: <519DCEE9.6070208@schinagl.nl>
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
+	<1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+	<CACRpkdaWADjy1YZXTcRaXU+ZsS6_pG0hojQdnz=qeTgyVY7_Ww@mail.gmail.com>
+	<519DCEE9.6070208@schinagl.nl>
+Date: Thu, 23 May 2013 10:20:09 +0200
+Message-ID: <CACRpkdZveQsVpw7_FnecGNZX4nVwWMtVwme7JEcy1R7uvdEe8A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Oliver Schinagl <oliver+list@schinagl.nl>, "Theodore Ts'o" <tytso@mit.edu>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@ardb.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Oliver Schinagl <oliver@schinagl.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 03:32 PM, Changlong Xie wrote:
-> 2013/5/16 Peter Zijlstra <peterz@infradead.org>:
->> On Tue, May 14, 2013 at 07:35:25PM +0800, Alex Shi wrote:
+On Thu, May 23, 2013 at 10:10 AM, Oliver Schinagl
+<oliver+list@schinagl.nl> wrote:
+> On 05/23/13 09:56, Linus Walleij wrote:
 >>
->>> I tested all benchmarks on cover letter maintained, aim7, kbuild etc.
->>> with autogroup enabled. There is no clear performance change.
->>> But since the machine just run benchmark without anyother load, that
->>> doesn't enough.
+>> On Fri, May 17, 2013 at 3:35 PM, Oliver Schinagl
+>> <oliver+list@schinagl.nl> wrote:
 >>
->> Back when we started with smp-fair cgroup muck someone wrote a test for it. I
->> _think_ it ended up in the LTP test-suite.
+>> (...)
+>>>
+>>> While initially these fuses are used to somewhat determin the chipID,
+>>> these
+>>> appear to be writeable by the user and thus can be used for other
+>>> purpouses.
+>>> For example storing a 128 bit root key, a unique serial number, which
+>>> could
+>>> then even be used as a MAC address.
 >>
-> 
-> Hi Peter
-> 
+>> (...)
+>> Then follows some code to read out the keys from sysfs I guess..
+>>>
+>>> +static int __init sid_probe(struct platform_device *pdev)
+>>
+>>
+>> It's really simple to actually make the kernel use this to seed the
+>> entropy pool.
+>>
+>> #include <linux/random.h>
+>> add_device_randomness(u8 *, num);
+>>
+>> If you know after probe that you can read out a number of bytes
+>> of device-unique data, I think you should add those bytes to the
+>> entropy pool like this.
+>
+> While that is a great idea, we can't guarantee device uniqueness. We've
+> already seen some chips that where 'forgotten' to program and default set to
+> all 0. I guess that doesn't have to be a bad thing.
 
-> my test results:
-> 3.10-rc1          patch1-7         patch1-8
-> duration=764   duration=754   duration=750
-> duration=764   duration=754   duration=751
-> duration=763   duration=755   duration=751
-> 
-> duration means the seconds of testing cost.
-> 
-> Tested-by: Changlong Xie <changlongx.xie@intel.com>
+Ted can confirm but AFAIK that is not a problem. This device-unique
+numer is just one of the things mixed into the pool, if it's on some
+devices just an array of zeroes it does not make things worse, but
+in the cases when there is some uniqueness in it make things better.
 
-Seems the 8th patch is helpful on cgroup. Thanks Changlong!
+> It should probably be noted, that the sunxi series have a hardware crypto
+> engine, with hardware random seed generator, one for a later project.
 
--- 
-Thanks
-    Alex
+That will anyway be augmented with the contents of the entropy
+pool rather than returned to random clients right off if I know the
+recent changes to random code right.
+
+Yours,
+Linus Walleij
