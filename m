@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759334Ab3EWUJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 16:09:45 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:25979 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759310Ab3EWUJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 16:09:42 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Thu, 23 May 2013 16:09:40 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v7] arm: use built-in byte swap function
-In-reply-to: <20130523114654.1f273241725205c6703b2226@freescale.com>
-Message-id: <alpine.LFD.2.03.1305231607060.1918@syhkavp.arg>
-References: <20130129181046.GC25415@pd.tnic>
- <alpine.LFD.2.02.1302082102380.6300@xanadu.home>
- <20130219203115.114eab79e8d2099c6306d921@freescale.com>
- <alpine.LFD.2.03.1302192151280.6419@syhkavp.arg>
- <1361356696.13482.269.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302200835380.6419@syhkavp.arg>
- <1361367842.13482.279.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302200905300.6419@syhkavp.arg>
- <1361372008.13482.280.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302201040460.6419@syhkavp.arg>
- <20130220214943.9b28a5b208da9f081387c55e@freescale.com>
- <alpine.LFD.2.03.1302202327370.6419@syhkavp.arg>
- <20130221005221.15279b1372501af12c1e4f32@freescale.com>
- <alpine.LFD.2.03.1302211134160.6419@syhkavp.arg>
- <20130221203327.6558f89277468f7ffffa6506@freescale.com>
- <alpine.LFD.2.03.1302212219100.6419@syhkavp.arg>
- <20130222194032.f7b44aefa5e2723d16767a1b@freescale.com>
- <1361661654.18110.102.camel@shinybook.infradead.org>
- <20130523114654.1f273241725205c6703b2226@freescale.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S1759248Ab3EWUPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 16:15:06 -0400
+Received: from fieldses.org ([174.143.236.118]:41776 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758293Ab3EWUPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 16:15:05 -0400
+Date: Thu, 23 May 2013 16:14:31 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, viro@zeniv.linux.org.uk,
+        serge.hallyn@canonical.com, lucas.demarchi@profusion.mobi,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, oleg@redhat.com,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        devel@openvz.org
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+Message-ID: <20130523201431.GB13640@fieldses.org>
+References: <519DCE5D.6070204@parallels.com>
+ <87k3mq9fsu.fsf@xmission.com>
+ <519DF109.9010309@parallels.com>
+ <20130523073108.13afafa6@tlielax.poochiereds.net>
+ <519DFFA9.3010606@parallels.com>
+ <20130523075620.21abf79a@tlielax.poochiereds.net>
+ <519E0474.5000606@parallels.com>
+ <519E0AB0.7040704@panasas.com>
+ <20130523090526.63fc153e@corrin.poochiereds.net>
+ <20130523195547.GA13640@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130523195547.GA13640@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Kim Phillips wrote:
+On Thu, May 23, 2013 at 03:55:47PM -0400, J. Bruce Fields wrote:
+> On Thu, May 23, 2013 at 09:05:26AM -0400, Jeff Layton wrote:
+> > What might help most here is to lay out a particular scenario for how
+> > you envision setting up knfsd in a container so we can ensure that it's
+> > addressed properly by whatever solution you settle on.
 
-> Enable the compiler intrinsic for byte swapping on arch ARM.  This
-> allows the compiler to detect and be able to optimize out byte
-> swappings, and has a very modest benefit on vmlinux size (Linaro gcc
-> 4.8):
-> 
->    text	   data	    bss	    dec	    hex	filename
-> 2840310	 123932	  61960	3026202	 2e2d1a	vmlinux-lart #orig
-> 2840152	 123932	  61960	3026044	 2e2c7c	vmlinux-lart #builtin-bswap
-> 
-> 6473120	 314840	5616016	12403976 bd4508	vmlinux-mxs #orig
-> 6472586	 314848	5616016	12403450 bd42fa	vmlinux-mxs #builtin-bswap
-> 
-> 7419872	 318372	 379556	8117800	 7bde28	vmlinux-imx_v6_v7 #orig
-> 7419170	 318364	 379556	8117090	 7bdb62	vmlinux-imx_v6_v7 #builtin-bswap
-> 
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> Reviewed-by: Nicolas Pitre <nico@linaro.org>
-> Acked-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
-> resending as v6 appears to have fallen though the cracks.  Russell?
+BTW the problem I have here is that the only case I've personally had
+any interest in is using network and file namespaces to isolate nfsd's
+to make them safe to migrate across nodes of a cluster.
 
-Please send your patch to Russell's patch system:
+So while the idea of making user namespaces and unprivileged knfsd and
+the rest work is really interesting and I'm happy to think about it, I'm
+not sure how feasible or useful it is.
 
-http://www.arm.linux.org.uk/developer/patches/
+I'd therefore actually prefer just to take something like Stanislav's
+patch now and put off the problem of how to make it work correctly with
+user namespaces until we actually turn that on.  His patch fixes a real
+bug that we have now, while user-namespaced-nfsd still sounds a bit
+pie-in-the-sky to me.
 
 
-Nicolas
+But maybe I don't understand why Eric thinks nfsd in usernamespaces is
+imminent.  Or maybe I'm missing some security problem that Stanislav's
+patch would introduce now without allowing nfsd to run in a user
+namespace.
+
+--b.
