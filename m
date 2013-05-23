@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663Ab3EWInP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:43:15 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55935 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757245Ab3EWInI (ORCPT
+	id S1757639Ab3EWIom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:44:42 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37613 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab3EWIok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:43:08 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 4/4] mm/hugetlb: use already exist interface huge_page_shift
-Date: Thu, 23 May 2013 16:42:48 +0800
-Message-Id: <1369298568-20094-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052319-3568-0000-0000-000003A91C68
+	Thu, 23 May 2013 04:44:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
+References: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Thu, 23 May 2013 10:44:18 +0200
+Message-ID: <CACQ1gAi0JfJFAc822YT5xVfW8HkB8r_4rf0dXTNsi-1oChsPsQ@mail.gmail.com>
+Subject: Re: [PATCH net, 1/2] hyperv: Fix a kernel warning from netvsc_linkstatus_callback()
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- v1 -> v2:
-	* update alloc_bootmem_huge_page in powerpc 
-	* add Michal reviewed-by 
+2013/4/5 Haiyang Zhang <haiyangz@microsoft.com>:
+> The warning about local_bh_enable inside IRQ happens when disconnecting a
+> virtual NIC.
+>
+> The reason for the warning is -- netif_tx_disable() is called when the NIC
+> is disconnected. And it's called within irq context. netif_tx_disable() calls
+> local_bh_enable() which displays warning if in irq.
+>
+> The fix is to remove the unnecessary netif_tx_disable & wake_queue() in the
+> netvsc_linkstatus_callback().
+>
+> Reported-by: Richard Genoud <richard.genoud@gmail.com>
+> Tested-by: Long Li <longli@microsoft.com>
+> Tested-by: Richard Genoud <richard.genoud@gmail.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+>
+> ---
+>  drivers/net/hyperv/netvsc_drv.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 5f85205..8341b62 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -241,13 +241,11 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+>
+>         if (status == 1) {
+>                 netif_carrier_on(net);
+> -               netif_wake_queue(net);
+>                 ndev_ctx = netdev_priv(net);
+>                 schedule_delayed_work(&ndev_ctx->dwork, 0);
+>                 schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+>         } else {
+>                 netif_carrier_off(net);
+> -               netif_tx_disable(net);
+>         }
+>  }
+>
+> --
+> 1.7.4.1
 
-Use already exist interface huge_page_shift instead of h->order + PAGE_SHIFT.
+This should also go to the stable tree, shouldn't it ?
+At least 3.8, 3.7 and 3.4 (the 3.2 version is different, and it's in
+staging. (at not used by distros anyway))
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- arch/powerpc/mm/hugetlbpage.c | 2 +-
- mm/hugetlb.c                  | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 237c8e5..cafec93 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -357,7 +357,7 @@ void add_gpage(u64 addr, u64 page_size, unsigned long number_of_pages)
- int alloc_bootmem_huge_page(struct hstate *hstate)
- {
- 	struct huge_bootmem_page *m;
--	int idx = shift_to_mmu_psize(hstate->order + PAGE_SHIFT);
-+	int idx = shift_to_mmu_psize(huge_page_shift(hstate));
- 	int nr_gpages = gpage_freearray[idx].nr_gpages;
- 
- 	if (nr_gpages == 0)
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index f8feeec..b6ff0ee 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -319,7 +319,7 @@ unsigned long vma_kernel_pagesize(struct vm_area_struct *vma)
- 
- 	hstate = hstate_vma(vma);
- 
--	return 1UL << (hstate->order + PAGE_SHIFT);
-+	return 1UL << huge_page_shift(hstate);
- }
- EXPORT_SYMBOL_GPL(vma_kernel_pagesize);
- 
--- 
-1.8.1.2
-
+Richard.
