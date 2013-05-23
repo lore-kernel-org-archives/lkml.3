@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600Ab3EWVdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 17:33:17 -0400
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:15980
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759455Ab3EWVdL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759555Ab3EWVdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 17:33:15 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:39371 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759190Ab3EWVdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 May 2013 17:33:11 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dI1432Ic89bhzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh906i1155h)
-Date: Thu, 23 May 2013 14:33:01 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv6 01/11] clockevents: Prefer CPU local devices over
- global devices
-References: <1368473175-4841-1-git-send-email-sboyd@codeaurora.org>
- <1368473175-4841-2-git-send-email-sboyd@codeaurora.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeff Layton <jlayton@redhat.com>, Boaz Harrosh <bharrosh@panasas.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        viro@zeniv.linux.org.uk, serge.hallyn@canonical.com,
+        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        devel@openvz.org
+References: <519DCE5D.6070204@parallels.com> <87k3mq9fsu.fsf@xmission.com>
+	<519DF109.9010309@parallels.com>
+	<20130523073108.13afafa6@tlielax.poochiereds.net>
+	<519DFFA9.3010606@parallels.com>
+	<20130523075620.21abf79a@tlielax.poochiereds.net>
+	<519E0474.5000606@parallels.com> <519E0AB0.7040704@panasas.com>
+	<20130523090526.63fc153e@corrin.poochiereds.net>
+	<20130523195547.GA13640@fieldses.org>
+	<20130523201431.GB13640@fieldses.org>
+Date: Thu, 23 May 2013 14:32:51 -0700
+In-Reply-To: <20130523201431.GB13640@fieldses.org> (J. Bruce Fields's message
+	of "Thu, 23 May 2013 16:14:31 -0400")
+Message-ID: <87obc12xh8.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1368473175-4841-2-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <3a735301-0634-4c83-b0f6-3ecfa04675bf@DB8EHSMHS021.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/BSD+vTokLEXeUVaGuTsyPAsnzQVgJ+EU=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"J. Bruce Fields" <bfields@fieldses.org>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 13, 2013 at 12:26:05PM -0700, Stephen Boyd wrote:
-> On an SMP system with only one global clockevent and a dummy
-> clockevent per CPU we run into problems. We want the dummy
-> clockevents to be registered as the per CPU tick devices, but
-> we can only achieve that if we register the dummy clockevents
-> before the global clockevent or if we artificially inflate the
-> rating of the dummy clockevents to be higher than the rating
-> of the global clockevent. Failure to do so leads to boot
-> hangs when the dummy timers are registered on all other CPUs
-> besides the CPU that accepted the global clockevent as its tick
-> device and there is no broadcast timer to poke the dummy
-> devices.
-> 
-> If we're registering multiple clockevents and one clockevent is
-> global and the other is local to a particular CPU we should
-> choose to use the local clockevent regardless of the rating of
-> the device. This way, if the clockevent is a dummy it will take
-> the tick device duty as long as there isn't a higher rated tick
-> device and any global clockevent will be bumped out into
-> broadcast mode, fixing the problem described above.
-> 
-> Reported-by: Mark Rutland <mark.rutland@arm.com>
-> Tested-by: Mark Rutland <mark.rutland@arm.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Tested-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-I tested this on Zynq. Zynq uses the ARM twd timer as clockevent devices when
-available. When I remove the twd nodes from DT the clockevent device is
-a timer common to both CPUs. Without this patch this seems to stall the
-second CPU resulting in the system to hang sooner or later.
+> On Thu, May 23, 2013 at 03:55:47PM -0400, J. Bruce Fields wrote:
+>> On Thu, May 23, 2013 at 09:05:26AM -0400, Jeff Layton wrote:
+>> > What might help most here is to lay out a particular scenario for how
+>> > you envision setting up knfsd in a container so we can ensure that it's
+>> > addressed properly by whatever solution you settle on.
+>
+> BTW the problem I have here is that the only case I've personally had
+> any interest in is using network and file namespaces to isolate nfsd's
+> to make them safe to migrate across nodes of a cluster.
+>
+> So while the idea of making user namespaces and unprivileged knfsd and
+> the rest work is really interesting and I'm happy to think about it, I'm
+> not sure how feasible or useful it is.
+>
+> I'd therefore actually prefer just to take something like Stanislav's
+> patch now and put off the problem of how to make it work correctly with
+> user namespaces until we actually turn that on.  His patch fixes a real
+> bug that we have now, while user-namespaced-nfsd still sounds a bit
+> pie-in-the-sky to me.
+>
+>
+> But maybe I don't understand why Eric thinks nfsd in usernamespaces is
+> imminent.  Or maybe I'm missing some security problem that Stanislav's
+> patch would introduce now without allowing nfsd to run in a user
+> namespace.
 
-[   65.360000] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[   65.360000]  1: (1 GPs behind) idle=56e/0/0 softirq=0/0 
-[   65.360000]  (detected by 0, t=6502 jiffies, g=4294966997, c=4294966996, q=6844)
-[   65.360000] Task dump for CPU 1:
-[   65.360000] swapper/1       R running      0     0      1 0x00000000
+The problem I saw is less pronounced but I think actually exists without
+user namespaces as well.  In particular if we let root in the container
+start knfsd in a network and mount namespace.  Then if that container
+does not have certain capabilities like say CAP_MKNOD all of a sudden
+we have a process running in the container with CAP_MKNOD.
 
-With this patch everything looks fine.
+I haven't had time to look at everything just yet but I don't think
+solving this is particularly hard.
 
-	Sören
+There are really two very simple solutions.
+1) When we start knfsd in the container we create a kernel thread that
+   is a child of the userspace process that started knfsd.  That kernel
+   thread can then be used to launch user mode helpers.
+
+   This uses the same code as is needed today to launch user mode
+   helpers with just a different parent thread.
+
+2) We pass enough information for the user mode helper to figure out
+   what container this is all for.  File descriptors or whatever.
+   Then the user mode helper outside the container using chdir and setns
+   sets up the environment that the user mode helper typically expects
+   and runs the process inside of the container.
+
+Or we look at what the user mode helper is doing and realize we don't
+need to run the user mode binary inside of the container.  If all it
+does is query /etc/passwd for username to uid mapping for example (for
+user namespaces we will probably care but not without them).
+
+I don't think any of this is hard to implement.
+
+I think user namespaces are imminent because after my last pass through
+the code the remaining work looked pretty trivial, and as soon as the
+dust settles I expect user namespaces become the common way to run code
+in containers, which should greatly increase the demand for this feature
+in user namespaces.
+
+Eric
+
+
+
 
 
