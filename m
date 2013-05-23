@@ -1,80 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab3EWLC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:02:27 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:40081 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756862Ab3EWLC0 (ORCPT
+	id S1758476Ab3EWLEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:04:41 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:52212 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757839Ab3EWLEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:02:26 -0400
-Message-ID: <519DF6D3.40705@mellanox.com>
-Date: Thu, 23 May 2013 14:00:35 +0300
-From: Alex Rosenbaum <alexr@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Thu, 23 May 2013 07:04:40 -0400
 MIME-Version: 1.0
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: Dave Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        <e1000-devel@lists.sourceforge.net>,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Or Gerlitz <or.gerlitz@gmail.com>,
-        Eilon Greenstien <eilong@broadcom.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [PATCH v4 net-next 0/4] net: low latency Ethernet device polling
-References: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+In-Reply-To: <20130522140643.GA15069@kroah.com>
+References: <1369224429-27077-1-git-send-email-yizhang.mrvl@gmail.com>
+	<20130522140643.GA15069@kroah.com>
+Date: Thu, 23 May 2013 19:04:40 +0800
+Message-ID: <CAK=oMXds7gKJdVFnkGDnOU+7=C+YyD5+qa1DLrk0qhU02hPH2w@mail.gmail.com>
+Subject: Re: [PATCH 0/3] *** SUBJECT HERE ***
+From: yi zhang <yizhang.mrvl@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: sameo@linux.intel.com, cxie4@marvell.com, arnd@arndb.de,
+        Yi Zhang <yizhang@marvell.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliezer,
+2013/5/22 Greg KH <gregkh@linuxfoundation.org>:
+> On Wed, May 22, 2013 at 08:07:05PM +0800, yizhang.mrvl@gmail.com wrote:
+>> From: Yi Zhang <yizhang@marvell.com>
+>>
+>> These patches fix 88pm800 bugs and add regulator support
+>
+> What's with the Subject:?
+>
 
-With AmirV's help we got this working on our NIC as well and it look 
-nice. We too see the nice performance gain.
-
-I tested with epoll and as expected there is no performance improvement. 
-I don't think there is any point delaying this feature commit due to 
-this fact. Future development should handle that.
-
-I also tested LLS with different message rates.
-Using sockperf you can set a ping send rate (--msp) and measure latency 
-at different rates (I don't think netperf can do this).
-In the financial trading sector, low latencies for 100mps are just as 
-important as in 50Kmsp (or higher). The market orders go out at these 
-low rates.
-I noticed a penalty in the latency performance as I go lower in mps. I 
-don't think it is related to the LLS code but it is more obvious then 
-without it since you reach lower results.
-
-These numbers are for sockperf TCP ping-pong at different msp for a 12 
-byte payload.
-I verified LLS hit counter was at 100% for all different message rates 
-on both server and client side.
-Machine is a x86_64 Intel(R) Xeon(R) CPU E5-2620 0 @ 2.00GHz with 64GB ram.
-
-    rate   | LLS-on RTT | LLS-off RTT
-   (msp) |    (usec)      |   (usec)
-  10000 |     14.0        |     21.8
-    1000 |     15.6        |     23.0
-      100 |     16.6        |     24.4
-
-You can see that as I go lower in send message rate the latency increases.
-
-* Don't consider these number as best results, they or on a random 
-machine with some effort tuning and core isolation. I saw this hit in 
-performance as lower the msg rate on several machine elsewhere and I am 
-sure it will reproduce on your tuned machine so you can notice it as well.
-
-Again, this should not block your feature commit but is interesting for 
-me to understand and I though someone here might have a good explanation.
-
-thanks,
-Alex Rosenbaum
-Director R&D Application Acceleration
-Mellanox Technologies | Raanana, Israel | +972 (74) 712-9215
+Sorry for my mistake, I'll fix it and send patches again;
+thanks;
