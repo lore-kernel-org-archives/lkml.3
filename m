@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab3EWNiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:38:22 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:52068 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020Ab3EWNiV (ORCPT
+	id S1758804Ab3EWNjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:39:05 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:39866 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758671Ab3EWNjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:38:21 -0400
+	Thu, 23 May 2013 09:39:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <1369203761-12649-5-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1369203761-12649-6-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1369203761-12649-1-git-send-email-khandual@linux.vnet.ibm.com>
-	<1369203761-12649-5-git-send-email-khandual@linux.vnet.ibm.com>
-Date: Thu, 23 May 2013 15:38:20 +0200
-Message-ID: <CABPqkBTP+eP8hMsL=HWJHUjK-pup_Q8OGUtJ7RSFXg1=SssrFA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] x86, perf: Add conditional branch filtering support
+	<1369203761-12649-6-git-send-email-khandual@linux.vnet.ibm.com>
+Date: Thu, 23 May 2013 15:39:01 +0200
+Message-ID: <CABPqkBSiqn+xOc80wLjibJ0Y2F9hJZbj+H=_3cJr=_Q4ZkHejg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] perf, documentation: Description for conditional
+ branch filter
 From: Stephane Eranian <eranian@google.com>
 To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 Cc: Linux PPC dev <linuxppc-dev@ozlabs.org>,
@@ -30,52 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, May 22, 2013 at 8:22 AM, Anshuman Khandual
 <khandual@linux.vnet.ibm.com> wrote:
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
->
-> This patch adds conditional branch filtering support,
-> enabling it for PERF_SAMPLE_BRANCH_COND in perf branch
-> stack sampling framework by utilizing an available
-> software filter X86_BR_JCC.
+> Adding documentation support for conditional branch filter.
 >
 Reviewed-by: Stephane Eranian <eranian@google.com>
 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 > ---
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 6 ++++++
->  1 file changed, 6 insertions(+)
+>  tools/perf/Documentation/perf-record.txt | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 >
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> index d978353..a0d6387 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -337,6 +337,10 @@ static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+> index d4da111..8b5e1ed 100644
+> --- a/tools/perf/Documentation/perf-record.txt
+> +++ b/tools/perf/Documentation/perf-record.txt
+> @@ -169,12 +169,13 @@ following filters are defined:
+>          - any_call: any function call or system call
+>          - any_ret: any function return or system call return
+>          - ind_call: any indirect branch
+> +        - cond: conditional branches
+>          - u:  only when the branch target is at the user level
+>          - k: only when the branch target is in the kernel
+>          - hv: only when the target is at the hypervisor level
 >
->         if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
->                 mask |= X86_BR_IND_CALL;
-> +
-> +       if (br_type & PERF_SAMPLE_BRANCH_COND)
-> +               mask |= X86_BR_JCC;
-> +
->         /*
->          * stash actual user request into reg, it may
->          * be used by fixup code for some CPU
-> @@ -626,6 +630,7 @@ static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
->          * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
->          */
->         [PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
-> +       [PERF_SAMPLE_BRANCH_COND]     = LBR_JCC,
->  };
->
->  static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
-> @@ -637,6 +642,7 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
->         [PERF_SAMPLE_BRANCH_ANY_CALL]   = LBR_REL_CALL | LBR_IND_CALL
->                                         | LBR_FAR,
->         [PERF_SAMPLE_BRANCH_IND_CALL]   = LBR_IND_CALL,
-> +       [PERF_SAMPLE_BRANCH_COND]       = LBR_JCC,
->  };
->
->  /* core */
+>  +
+> -The option requires at least one branch type among any, any_call, any_ret, ind_call.
+> +The option requires at least one branch type among any, any_call, any_ret, ind_call, cond.
+>  The privilege levels may be omitted, in which case, the privilege levels of the associated
+>  event are applied to the branch filter. Both kernel (k) and hypervisor (hv) privilege
+>  levels are subject to permissions.  When sampling on multiple events, branch stack sampling
 > --
 > 1.7.11.7
 >
