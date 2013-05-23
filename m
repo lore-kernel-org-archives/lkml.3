@@ -1,102 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab3EWHsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:48:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33341 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757306Ab3EWHsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:48:15 -0400
-Message-ID: <519DC971.80406@ti.com>
-Date: Thu, 23 May 2013 10:46:57 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757518Ab3EWHu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:50:29 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:45796 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab3EWHu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 03:50:27 -0400
+Message-ID: <519DCA38.30200@linux.vnet.ibm.com>
+Date: Thu, 23 May 2013 15:50:16 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: <jirislaby@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Mahoney <jeffm@suse.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-geode@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>, <netdev@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "Keller, Jacob E" <jacob.e.keller@intel.com>
-Subject: Re: [PATCH] build some drivers only when compile-testing
-References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2FCLOGUJKJTLPIAPAOUPR"
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com> <519DB7D3.7030101@linux.vnet.ibm.com> <20130523073708.GE26157@redhat.com>
+In-Reply-To: <20130523073708.GE26157@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052307-8256-0000-0000-0000079E0395
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2FCLOGUJKJTLPIAPAOUPR
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 05/23/2013 03:37 PM, Gleb Natapov wrote:
+> On Thu, May 23, 2013 at 02:31:47PM +0800, Xiao Guangrong wrote:
+>> On 05/23/2013 02:18 PM, Gleb Natapov wrote:
+>>> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
+>>>> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
+>>>>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+>>>>>> It is only used to zap the obsolete page. Since the obsolete page
+>>>>>> will not be used, we need not spend time to find its unsync children
+>>>>>> out. Also, we delete the page from shadow page cache so that the page
+>>>>>> is completely isolated after call this function.
+>>>>>>
+>>>>>> The later patch will use it to collapse tlb flushes
+>>>>>>
+>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>>>>>> ---
+>>>>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+>>>>>>  1 files changed, 41 insertions(+), 5 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>>>>>> index 9b57faa..e676356 100644
+>>>>>> --- a/arch/x86/kvm/mmu.c
+>>>>>> +++ b/arch/x86/kvm/mmu.c
+>>>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>>>>>>  {
+>>>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
+>>>>>> -	hlist_del(&sp->hash_link);
+>>>>>> +	hlist_del_init(&sp->hash_link);
+>>>>> Why do you need hlist_del_init() here? Why not move it into
+>>>>
+>>>> Since the hlist will be double freed. We will it like this:
+>>>>
+>>>> kvm_mmu_prepare_zap_obsolete_page(page, list);
+>>>> kvm_mmu_commit_zap_page(list);
+>>>>    kvm_mmu_free_page(page);
+>>>>
+>>>> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
+>>>> deleted the hash list.
+>>>>
+>>>>> kvm_mmu_prepare_zap_page() like we discussed it here:
+>>>>> https://patchwork.kernel.org/patch/2580351/ instead of doing
+>>>>> it differently for obsolete and non obsolete pages?
+>>>>
+>>>> It is can break the hash-list walking: we should rescan the
+>>>> hash list once the page is prepared-ly zapped.
+>>>>
+>>>> I mentioned it in the changelog:
+>>>>
+>>>>   4): drop the patch which deleted page from hash list at the "prepare"
+>>>>       time since it can break the walk based on hash list.
+>>> Can you elaborate on how this can happen?
+>>
+>> There is a example:
+>>
+>> int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+>> {
+>> 	struct kvm_mmu_page *sp;
+>> 	LIST_HEAD(invalid_list);
+>> 	int r;
+>>
+>> 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
+>> 	r = 0;
+>> 	spin_lock(&kvm->mmu_lock);
+>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>> 			 sp->role.word);
+>> 		r = 1;
+>> 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+>> 	}
+>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>> 	spin_unlock(&kvm->mmu_lock);
+>>
+>> 	return r;
+>> }
+>>
+>> It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
+>> If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
+>> be changed to:
+>>
+>> restart:
+>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+>> 			 sp->role.word);
+>> 		r = 1;
+>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+>> 			goto restart;
+>> 	}
+>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>>
+> Hmm, yes. So lets leave it as is and always commit invalid_list before
 
-Hi,
+So, you mean drop this patch and the patch of
+KVM: MMU: collapse TLB flushes when zap all pages?
 
-On 22/05/13 12:18, Jiri Slaby wrote:
-> Some drivers can be built on more platforms than they run on. This
-> causes users and distributors packaging burden when they have to
-> manually deselect some drivers from their allmodconfigs. Or sometimes
-> it is even impossible to disable the drivers without patching the
-> kernel.
->=20
-> Introduce a new config option COMPILE_TEST and make all those drivers
-> to depend on the platform they run on, or on the COMPILE_TEST option.
-> Now, when users/distributors choose COMPILE_TEST=3Dn they will not have=
+But, we only introduced less code in this patch, most of them is reusing
+the code of __kvm_mmu_prepare_zap_page...
 
-> the drivers in their allmodconfig setups, but developers still can
-> compile-test them with COMPILE_TEST=3Dy.
->=20
-> Now the drivers where we use this new option:
-> * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
->   processors so it should depend on x86.
-> * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
-> * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
->   systems -- which do not actually support the hardware via that
->   method.
+Furthermore, maybe not related to this patch, i do not think calling
+mmu_zap_unsync_children() in kvm_mmu_prepare_zap_page() is necessary,
+but i need to test it very carefully. Why not let
+kvm_mmu_prepare_zap_obsolete_page for the first step? :(
 
-I had this exact same idea some time ago. The mail below contains some
-of my reasoning for this:
+> releasing lock in kvm_zap_obsolete_pages() or skip obsolete pages while
+> walking hash table. Former is clearer I think.
+> 
+> --
+> 			Gleb.
+> 
+> 
+> 
 
-http://comments.gmane.org/gmane.linux.kbuild.devel/9829
-
-I proposed a new Kconfig keyword, but Sam was quite against it as the
-Kconfig language already does what is required.
-
- Tomi
-
-
-
-------enig2FCLOGUJKJTLPIAPAOUPR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRncl1AAoJEPo9qoy8lh71qFoP/3PjrIvuoEgFhp4JW4uj0+zO
-9OWNwwh3EWsolDOiaexaDrJvgdNwK2PMlXbihBUEfYHx3rIh7hR8GZPUwnCXIsur
-edYF+octUiWGWh5UykQzX5tVM0Z+OyvSPJ/mBDsacDnUQFfNdJFAjbxaQmzHzwmZ
-jAlhcGW1yT4qDahNi3aRtk4QTjWF5uBRMBFpRSjp3IT5mh5wEtvQxNRKcLxCt98E
-m4T5UQE16j73lMhyGfaYCGP6EqGZ9ymCK2ewuOt9ziDpCAqhWPeImrKZOC97vQZ2
-z5hYmlkAvV41FP8xpPO5bPqVUeFvNBvS+YVY+Hx8W3DZokPBU2QDs5w/9h9xqm7m
-Rhf3ce1VVVx+UjWOMQFKZMOiZJA6LQ+hSIjJ16Nr41QQvqBMKwZDQVJHcynzCSFH
-Id5g8/Ut9VIVTflkWFuaBEBp1QMzMnyzjwvu17NSjSCLtfWjfCtA2Ccy7zhV00XH
-8MpmkHL1tmCD3CHM0ckJqYiYd2U9MsgT91Egk/w+AS0c0q45qClkrAY26896O1CT
-zGKNIcmbc1Z35Rtvbk3g3H1CKn3rtWzC8Qb+EVAE2gJ61DYNTm7OaDRRqEn2xbAa
-PZhaM841bJnaFkPt+fRF9ZD4FZVnKgL1/MkuTA4XWmMqPe01oQYE9tjUWidnw+CO
-qNQkXF3hX8gYoy7IaDwa
-=ggmg
------END PGP SIGNATURE-----
-
-------enig2FCLOGUJKJTLPIAPAOUPR--
