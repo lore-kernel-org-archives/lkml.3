@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab3EWOJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:09:15 -0400
-Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:55443 "EHLO
-	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757869Ab3EWOJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:09:12 -0400
-Date: Thu, 23 May 2013 14:09:10 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Al Viro <viro@ZenIV.linux.org.uk>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-In-Reply-To: <20130523104154.GA23650@twins.programming.kicks-ass.net>
-Message-ID: <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523104154.GA23650@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.05.23-54.240.9.66
+	id S1758158Ab3EWOLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:11:23 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24361 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757494Ab3EWOLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:11:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
+   d="scan'208";a="306834238"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linux-usb@vger.kernel.org
+Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v3 0/4] Add usb2 link powermanagement BESL support
+Date: Thu, 23 May 2013 17:14:27 +0300
+Message-Id: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Peter Zijlstra wrote:
+This series adds usb2 best effort service latency (BESL) link PM support
+to xHCI. BESL is an updated alternative to host initated resume delay
+(HIRD) method of describing idle link timeouts.
 
-> Right it doesn't. I think the easiest solution for now is to not copy the VMA
-> on fork().
+Additionally this series fixes port capability checking
+and replaces magic numbers with port register names.
 
-Right. Pinned pages are not inherited. If a page is unpinned then that is
-going to happen for all address spaces that reference the page.
+Changes since v1:
+-Use kstrto* and unsigned values in sysfs functions as Alan Stern suggested    
 
-> But I totally missed patch bc3e53f682d that introduced pinned_vm, AFAICT that
-> also wrecked some accounting. We should still account both against
-> RLIMIT_MEMLOCK.
+Changes since v2:
+- Add Documentation/ABI/testing/sysfs-bus-usb entries for new sysfs attributes
+- store l1_timeout value in microseconds instead of xHCI specific values
 
-The point of the patch was to unwreck accounting. Before the patch mlocked
-pages were counted twice which resulted in stramge VM scenarios where more
-pages were mlocked than memory available. Note that a pinned page may also
-be mlocked.
+Mathias Nyman (4):
+  usb: xhci: check usb2 port capabilities before adding hw link PM
+    support
+  usb: xhci: define port register names and use them instead of magic
+    numbers
+  usb: xhci: add USB2 Link power management BESL support
+  usb: add usb2 Link PM variables to sysfs and usb_device
 
-Simply adding the two will reintroduce the problems that were fixed by the
-patch.
+ Documentation/ABI/testing/sysfs-bus-usb |   27 ++++
+ drivers/usb/core/sysfs.c                |   54 +++++++
+ drivers/usb/host/xhci-ext-caps.h        |    1 +
+ drivers/usb/host/xhci-hub.c             |   16 +--
+ drivers/usb/host/xhci-mem.c             |   33 ++++-
+ drivers/usb/host/xhci.c                 |  237 ++++++++++++++++++++++---------
+ drivers/usb/host/xhci.h                 |   29 ++++
+ include/linux/usb.h                     |   20 +++
+ 8 files changed, 337 insertions(+), 80 deletions(-)
+
+-- 
+1.7.4.1
+
