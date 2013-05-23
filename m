@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab3EWDhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 23:37:47 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34512 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757029Ab3EWDhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 23:37:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, viro@zeniv.linux.org.uk,
-        serge.hallyn@canonical.com, jlayton@redhat.com,
-        lucas.demarchi@profusion.mobi, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, oleg@redhat.com, bharrosh@panasas.com,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        devel@openvz.org
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
-	<878v36ex6n.fsf@xmission.com> <87wqqqdfqr.fsf@xmission.com>
-	<20130522192339.GB31069@fieldses.org>
-Date: Wed, 22 May 2013 20:37:23 -0700
-In-Reply-To: <20130522192339.GB31069@fieldses.org> (J. Bruce Fields's message
-	of "Wed, 22 May 2013 15:23:39 -0400")
-Message-ID: <87vc6abc3w.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757369Ab3EWDjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 23:39:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756217Ab3EWDjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 23:39:20 -0400
+Date: Wed, 22 May 2013 23:39:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        fenghua.yu@intel.com, Takashi Iwai <tiwai@suse.de>
+Subject: Re: microcode loading got really slow.
+Message-ID: <20130523033911.GA9411@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+	fenghua.yu@intel.com, Takashi Iwai <tiwai@suse.de>
+References: <20130521230332.GC12713@redhat.com>
+ <519D1668.6000601@zytor.com>
+ <20130522200012.GA15456@redhat.com>
+ <ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19627iAWMgBW6MdVvdZErghbNPi9AeHKa0=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0063]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"J. Bruce Fields" <bfields@fieldses.org>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J. Bruce Fields" <bfields@fieldses.org> writes:
+ > On 05/21/2013 04:03 PM, Dave Jones wrote:
+ > 
+ > [   72.318133] microcode: CPU1 sig=0x306c3, pf=0x2, revision=0x6
+ > [  132.446449] microcode: CPU2 sig=0x306c3, pf=0x2, revision=0x6
+ > [  192.573101] microcode: CPU3 sig=0x306c3, pf=0x2, revision=0x6
+ > [  252.702055] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
+ > 
+ > For some reason the events for udev seem to be getting delayed 60s
+ > for each core.
 
-> On Wed, May 22, 2013 at 11:35:56AM -0700, Eric W. Biederman wrote:
->> ebiederm@xmission.com (Eric W. Biederman) writes:
->> 
->> > I am missing a lot of context here and capturing the context of a
->> > process at time time we mount the filesystem and reconstituing it in
->> > call user mode helper seems like something we could do.
->
-> So it's not enough just to ensure that the user namespace is set
-> correctly?  (To the namespace of the mount process in the nfs case, or
-> of the process that starts nfsd in the nfsd case.)
+Screwed up my .config, and had CONFIG_FW_LOADER_USER_HELPER inadvertantly set
+Odd though that it causes that 60 second delay, given that it's supposedly a
+'fallback' when the direct loading fails.
 
-No.  By just setting the user namespace, you gain the ability to create
-processes outside of your curremt rlimits, and cgroups, and pid
-namespace, etc.
+It seems I don't actually need to set that option, so I'm not bothered
+if there's an actual bug here or not, but the behaviour seems odd.
 
-With the wrong set of namespaces you will talk to the wrong processes,
-or utilize the wrong resources.
+	Dave
 
-Outside of your current cgroup you gain the ability to use more
-resources than you were limited to.
-
-Having thought about it what I would propose is to fork a process from
-the context of the mounting process (or possibly from the context of the
-process that writes to the sysctl that sets the program to spawn) and
-have that process be a daemon that becomes responsible for spawning user
-mode helpers with context.  Either that or whe need the user mode helper
-userspace infrastructure to become namespace aware and call setns.
-
->> If we want to do something like this the only sane thing I can see is to
->> have a per container version of kthread call it uthread.  That the user
->> mode helper code would use to launch a new process.
->> 
->> Anything else and I expect we will be tearing our hair out for the rest
->> of our lives with weird corner cases or unexpected semantics.
->
-> Could you give examples of weird corner cases or unexpected semantics?
-
-I gave a couple and it is the classic problem with suid executables
-where a lot of unexpected things are inherited from the environment, and
-so things become a never ending race.  We replaced daemonize in the
-kernel with just forking processes from kthreadd for this very reason.
-There was always something else that needed to be reset to make a
-process a proper kernel thread.
-
-Eric
