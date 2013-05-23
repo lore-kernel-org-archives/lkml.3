@@ -1,109 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab3EWLio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:38:44 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57261 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758414Ab3EWLin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:38:43 -0400
-Message-ID: <519DFFA9.3010606@parallels.com>
-Date: Thu, 23 May 2013 15:38:17 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1758702Ab3EWLku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:40:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758568Ab3EWLks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 07:40:48 -0400
+Date: Thu, 23 May 2013 14:41:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next RFC 5/8] macvtap: eliminate linear search
+Message-ID: <20130523114109.GB17993@redhat.com>
+References: <1369278753-2533-1-git-send-email-jasowang@redhat.com>
+ <1369278753-2533-6-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
-        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
-        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <devel@openvz.org>
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-References: <20130522072840.27720.85023.stgit@localhost.localdomain> <878v36ex6n.fsf@xmission.com> <519DCE5D.6070204@parallels.com> <87k3mq9fsu.fsf@xmission.com> <519DF109.9010309@parallels.com> <20130523073108.13afafa6@tlielax.poochiereds.net>
-In-Reply-To: <20130523073108.13afafa6@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369278753-2533-6-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-23.05.2013 15:31, Jeff Layton пишет:
-> On Thu, 23 May 2013 14:35:53 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->
->> 23.05.2013 14:00, Eric W. Biederman пишет:
->>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
->>>
->>>> 22.05.2013 21:33, Eric W. Biederman пишет:
->>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
->>>>>
->>>>>> Usermode helper executes all binaries in global "init" root context. This
->>>>>> doesn't allow to call a binary from other root context (for example in a
->>>>>> container).
->>>>>> Currently, both containerized NFS client and NFS server requires an ability to
->>>>>> execute a binary in a container's root context. Root swap can be done in
->>>>>> "init" callback, passed by UMH caller.
->>>>>> But since we have 2 callers already (and more of them are expected to appear
->>>>>> in future) and because set_fs_root() in not exported, it looks reasonable to
->>>>>> add one more generic UMH helper to generic fs code.
->>>>>> Root path reference must be hold by the caller, since it will be put on UMH
->>>>>> thread exit.
->>>>>
->>>>> Awesome.  With this patch as an uprivilieged user I get to pick which
->>>>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
->>>>> user namespace (something that looks like only matter of time).
->>>>>
->>>>
->>>> Not really. Only by using a kernel module to call the UMH.
->>>> And an unprivileged can't load a module as far a I know.
->>>> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
->>>
->>> To help me understand the context which instances of call user mode
->>> helper are you expecting to use this facility?
->>>
->>
->> Ok. Here is how the NFSd uses UMH:
->> UMH is used on NFSd service to start user-space client tracker daemon
->> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
->> persistent storage.
->>
->>>>> I think this is a seriously bad idea.
->>>>>
->>>>> Why can't we do this in userspace with setns as we do with the core dump
->>>>> helper?
->>>>>
->>>>
->>>> Could you, please, clarify, how setns can help here?
->>>
->>> setns can change the mount namespace, and chroot can change to root
->>> directory in the specified mount namespace.  Essentially you can enter
->>> into a containers complete context (pid, mnt, root, etc) comming from
->>> the outside.
->>>
->>
->> So, you are actually suggesting to move the binary start from the kernel to user-space.
->> IOW, you are suggesting to do not using UMH at all.
->> Am I right?
->> I don't know the reasons, why it was done by using UMH and not in userspace.
->> Could you clarify this, Jeff?
->>
->
-> nfsdcltrack is a "one-shot" program for managing and querying the nfsd
-> client tracking database. When knfsd needs to query or modify the
-> db, it uses the UMH infrastructure to call this program that does
-> what's requested and then exits.
->
-> So, I'm not sure I really understand your question. It wasn't done in
-> userspace since the whole purpose of this program is to handle upcalls
-> from the kernel.
->
+On Thu, May 23, 2013 at 11:12:30AM +0800, Jason Wang wrote:
+> Linear search were used in both get_slot() and macvtap_get_queue(), this is
+> because:
+> 
+> - macvtap didn't reshuffle the array of taps when create or destroy a queue, so
+>   when adding a new queue, macvtap must do linear search to find a location for
+>   the new queue. This will also complicate the TUNSETQUEUE implementation for
+>   multiqueue API.
+> - the queue itself didn't track the queue index, so the we must do a linear
+>   search in the array to find the location of a existed queue.
+> 
+> The solution is straightforward: reshuffle the array and introduce a queue_index
+> to macvtap_queue.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/macvtap.c |   63 +++++++++++++++---------------------------------
+>  1 files changed, 20 insertions(+), 43 deletions(-)
+> 
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index a36e49e..5fd341c 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -44,6 +44,7 @@ struct macvtap_queue {
+>  	struct macvlan_dev __rcu *vlan;
+>  	struct file *file;
+>  	unsigned int flags;
+> +	u16 queue_index;
+>  };
+>  
+>  static struct proto macvtap_proto = {
+> @@ -84,30 +85,10 @@ static const struct proto_ops macvtap_socket_ops;
+>   */
+>  static DEFINE_SPINLOCK(macvtap_lock);
+>  
+> -/*
+> - * get_slot: return a [unused/occupied] slot in vlan->taps[]:
+> - *	- if 'q' is NULL, return the first empty slot;
+> - *	- otherwise, return the slot this pointer occupies.
+> - */
+> -static int get_slot(struct macvlan_dev *vlan, struct macvtap_queue *q)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < MAX_MACVTAP_QUEUES; i++) {
+> -		if (rcu_dereference_protected(vlan->taps[i],
+> -					      lockdep_is_held(&macvtap_lock)) == q)
+> -			return i;
+> -	}
+> -
+> -	/* Should never happen */
+> -	BUG_ON(1);
+> -}
+> -
+>  static int macvtap_set_queue(struct net_device *dev, struct file *file,
+>  				struct macvtap_queue *q)
+>  {
+>  	struct macvlan_dev *vlan = netdev_priv(dev);
+> -	int index;
+>  	int err = -EBUSY;
+>  
+>  	spin_lock(&macvtap_lock);
+> @@ -115,12 +96,12 @@ static int macvtap_set_queue(struct net_device *dev, struct file *file,
+>  		goto out;
+>  
+>  	err = 0;
+> -	index = get_slot(vlan, NULL);
+>  	rcu_assign_pointer(q->vlan, vlan);
+> -	rcu_assign_pointer(vlan->taps[index], q);
+> +	rcu_assign_pointer(vlan->taps[vlan->numvtaps], q);
+>  	sock_hold(&q->sk);
+>  
+>  	q->file = file;
+> +	q->queue_index = vlan->numvtaps;
+>  	file->private_data = q;
+>  
+>  	vlan->numvtaps++;
+> @@ -140,16 +121,23 @@ out:
+>   */
+>  static void macvtap_put_queue(struct macvtap_queue *q)
+>  {
+> +	struct macvtap_queue *nq;
+>  	struct macvlan_dev *vlan;
+>  
+>  	spin_lock(&macvtap_lock);
+>  	vlan = rcu_dereference_protected(q->vlan,
+>  					 lockdep_is_held(&macvtap_lock));
+>  	if (vlan) {
+> -		int index = get_slot(vlan, q);
+> +		int index = q->queue_index;
+> +		BUG_ON(index >= vlan->numvtaps);
+>  
+> -		RCU_INIT_POINTER(vlan->taps[index], NULL);
+> +		rcu_assign_pointer(vlan->taps[index],
+> +				   vlan->taps[vlan->numvtaps - 1]);
+>  		RCU_INIT_POINTER(q->vlan, NULL);
+> +		nq = rcu_dereference_protected(vlan->taps[index],
+> +					       lockdep_is_held(&macvtap_lock));
+> +		nq->queue_index = index;
+> +
+>  		sock_put(&q->sk);
 
-The question is what was the reason to start this binary from kernel by UMH?
-I.e. why it can't be started by some user-space process before or after NFSd start?
-I don't familiar with this client tracking facility and that's the only reason why I'm asking.
+Hmm this looks like a bug BTW: sock_put should be after
+no one uses this tap, so must be after synchronize_rcu.
+No?
 
--- 
-Best regards,
-Stanislav Kinsbursky
+>  		--vlan->numvtaps;
+>  	}
+
+So:
+		nq = rcu_dereference_protected(vlan->taps[vlan->numvtaps - 1],
+					       lockdep_is_held(&macvtap_lock));
+		rcu_assign_pointer(vlan->taps[index], nq);
+
+same thing?
+
+
+> @@ -182,8 +170,7 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+>  	rxq = skb_get_rxhash(skb);
+>  	if (rxq) {
+>  		tap = rcu_dereference(vlan->taps[rxq % numvtaps]);
+> -		if (tap)
+> -			goto out;
+> +		goto out;
+>  	}
+>  
+>  	if (likely(skb_rx_queue_recorded(skb))) {
+> @@ -193,17 +180,10 @@ static struct macvtap_queue *macvtap_get_queue(struct net_device *dev,
+>  			rxq -= numvtaps;
+>  
+>  		tap = rcu_dereference(vlan->taps[rxq]);
+> -		if (tap)
+> -			goto out;
+> -	}
+> -
+> -	/* Everything failed - find first available queue */
+> -	for (rxq = 0; rxq < MAX_MACVTAP_QUEUES; rxq++) {
+> -		tap = rcu_dereference(vlan->taps[rxq]);
+> -		if (tap)
+> -			break;
+> +		goto out;
+>  	}
+>  
+> +	tap = rcu_dereference(vlan->taps[0]);
+>  out:
+>  	return tap;
+>  }
+> @@ -221,17 +201,14 @@ static void macvtap_del_queues(struct net_device *dev)
+>  
+>  	/* macvtap_put_queue can free some slots, so go through all slots */
+>  	spin_lock(&macvtap_lock);
+> -	for (i = 0; i < MAX_MACVTAP_QUEUES && vlan->numvtaps; i++) {
+> +	for (i = 0; i < vlan->numvtaps; i++) {
+>  		q = rcu_dereference_protected(vlan->taps[i],
+>  					      lockdep_is_held(&macvtap_lock));
+> -		if (q) {
+> -			qlist[j++] = q;
+> -			RCU_INIT_POINTER(vlan->taps[i], NULL);
+> -			RCU_INIT_POINTER(q->vlan, NULL);
+> -			vlan->numvtaps--;
+> -		}
+> +		BUG_ON(q == NULL);
+> +		qlist[j++] = q;
+> +		RCU_INIT_POINTER(vlan->taps[i], NULL);
+> +		RCU_INIT_POINTER(q->vlan, NULL);
+>  	}
+> -	BUG_ON(vlan->numvtaps != 0);
+>  	/* guarantee that any future macvtap_set_queue will fail */
+>  	vlan->numvtaps = MAX_MACVTAP_QUEUES;
+>  	spin_unlock(&macvtap_lock);
+> -- 
+> 1.7.1
