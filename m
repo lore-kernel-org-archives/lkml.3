@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab3EWJry (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:47:54 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48757 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757890Ab3EWJrw (ORCPT
+	id S1758131Ab3EWJw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:52:28 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:43684 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757890Ab3EWJw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:47:52 -0400
-Date: Thu, 23 May 2013 10:47:09 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/4] dma-mapping: Define dma_{alloc,free}_attrs()
- for all archs
-Message-ID: <20130523094709.GB16722@arm.com>
-References: <1367290899-10410-1-git-send-email-dhobsong@igel.co.jp>
- <519C2F5D.8000809@igel.co.jp>
- <20130522094741.GE14322@arm.com>
- <519D8331.3060203@igel.co.jp>
+	Thu, 23 May 2013 05:52:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519D8331.3060203@igel.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 23 May 2013 11:52:25 +0200
+X-Google-Sender-Auth: pC-pQ24bY2Xj_Si7hfokftIvjWM
+Message-ID: <CAMuHMdXAGBU97pg2SzoZteFk9fd7FOpOVtu=buZ40z+SwRpE6Q@mail.gmail.com>
+Subject: Blocking allmodconfig with missing defaults (was: Re: kbuild: Fix
+ missing '\n' for NEW symbols in yes "" | make oldconfig >conf.new)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Marek <mmarek@suse.cz>, Ben Hutchings <bhutchings@solarflare.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 03:47:13AM +0100, Damian Hobson-Garcia wrote:
-> Hi Catalin,
-> On 2013/05/22 18:47, Catalin Marinas wrote:
-> > On Wed, May 22, 2013 at 03:37:17AM +0100, Damian Hobson-Garcia wrote:
-> >> Hello,
-> >> On 2013/04/30 12:01, Damian Hobson-Garcia wrote:
-> >>> Most architectures that define CONFIG_HAVE_DMA=y, have implementations for
-> >>> both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
-> >>> not define CONFIG_HAVE_DMA also have both of these definitions provided by
-> >>> dma-mapping-broken.h.
-> > 
-> > BTW, shouldn't this be called CONFIG_HAVE_DMA_ATTRS?
-> 
-> CONFIG_HAVE_DMA_ATTRS is currently used to enable the functions to
-> set/get the DMA attribute values. Poking through the headers, it looks
-> like the struct dma_attrs is defined regardless of the
-> CONFIG_HAVE_DMA_ATTRS setting, so in that respect
-> we always seem to "have" DMA attributes (if we have DMA), but they may
-> not always be meaningful (ie. set to some value).
+On Wed, Feb 27, 2013 at 9:37 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=62dc989921df2a98d1a73aacd085abe941cb9828
+>
+>     According to Documentation/kbuild/kconfig.txt, the commands:
+>
+>         yes "" | make oldconfig >conf.new
+>         grep "(NEW)" conf.new
+>
+>     should list the new config symbols with their default values.
 
-My point was about the commit log - grep'ing the kernel for
-CONFIG_HAVE_DMA did not return anything.
+There are other cases where this is not working.
+If there are int or hex symbols without a default value, "allmodconfig",
+"allyesconfig", "allnoconfig", and "randconfig" fill in empty string values,
+causing a subsequent build (which does oldconfig) to wait for user input.
 
--- 
-Catalin
+This is easy to reproduce:
+    make ARCH=h8300 allmodconfig
+    make ARCH=h8300 oldconfig
+
+Should kconfig generate default values for these cases?
+Should all int/hex symbols provide default values? If yes, I think
+kconfig should
+complain about missing defaults.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
