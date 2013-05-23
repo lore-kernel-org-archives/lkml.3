@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab3EWOnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:43:20 -0400
-Received: from 7of9.schinagl.nl ([88.159.158.68]:39275 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759441Ab3EWOnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:43:18 -0400
-Message-ID: <519E2B05.6060206@schinagl.nl>
-Date: Thu, 23 May 2013 16:43:17 +0200
-From: Oliver Schinagl <oliver+list@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130322 Thunderbird/17.0.4
+	id S1759473Ab3EWOpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:45:04 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:38720 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758002Ab3EWOpC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:45:02 -0400
+Date: Thu, 23 May 2013 15:44:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com
+Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
+ initialisation data
+Message-ID: <20130523144453.GL22683@gmail.com>
+References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
+ <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
+ <20130522155347.GJ1627@sirena.org.uk>
+ <20130522165353.GB18714@gmail.com>
+ <20130522174516.GT1627@sirena.org.uk>
+ <20130523070905.GD18714@gmail.com>
+ <20130523142419.GG2412@sirena.org.uk>
 MIME-Version: 1.0
-To: Lars Poeschel <poeschel@lemonage.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] pwm: add sysfs interface
-References: <519DDC5B.4040403@schinagl.nl> <201305231412.15096.poeschel@lemonage.de>
-In-Reply-To: <201305231412.15096.poeschel@lemonage.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130523142419.GG2412@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/13 14:12, Lars Poeschel wrote:
-> Hi Oliver!
->
-> As you are not the first one asking for the status of the pwm sysfs
-> interface I post my answer to the linux-kernel list in hope others will
-> benefit.
->
-> On Thursday 23 May 2013 at 11:07:39, Oliver Schinagl wrote:
->> Hi lars,
->>
->> I have trouble seeing if your patch has been applied yet to the kernel
->> tree. I do see it in patchwork.
->> https://patchwork.kernel.org/patch/2163151/
->>
->> But don't see sysfs features in
->> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/dri
->> vers/pwm/core.c
->
-> It is not merged and will never be.
->
->> If you haven't had time to take Greg's comments into account, would
->> there be a possibility for you to correct those and re-submit?
->
-> I already did resubmit an updated version taking Greg's comments into
-> account. You can find the thread here:
->
-> http://marc.info/?l=linux-kernel&m=136499756101273&w=2
-> https://patchwork.kernel.org/patch/2387391/
->
-> Also this version will not get merged into mainline. I have to do a v2
-> according to Thierry's comments. I have planed to do it, but I will not
-> find the time during the next say 2 months.
-Ok, keep me updated. If in the meantime I find time, I'll take the next 
-set of comments into account and re-submit it, with a CC to you. If you 
-hear nothing, don't let that hold you back ;)
+On Thu, 23 May 2013, Mark Brown wrote:
 
->
->> If not, I'd be happy to pull your patch, fix and re-submit (giving you
->> full credit of course).
->
-> You're welcome! This is a community project. And there is nothing special
-> to pull or something. Just take the patch from patchwork and work on it.
->
->> Your sysfs driver feature is quite awesome and makes using PWM's quite
->> cool, so that's definitely a good feature to have in the kernel.
->
-> Thanks!
-> Thank you for your interest!
->
-> Regards,
-> Lars
->
+> On Thu, May 23, 2013 at 08:09:05AM +0100, Lee Jones wrote:
+> > On Wed, 22 May 2013, Mark Brown wrote:
+> 
+> > > OK, so the regulator driver is buggy and insisting on having constraints
+> > > passed in for every regulator then?
+> 
+> > If that's not how it's meant to work then, yes.
+> 
+> Yes, that's the intention - it should be possible to just not pass in
+> anything in and have the driver start up in read only mode (partly to
+> save having to do things like what you're doing).
 
+Okay, noted.
+
+Well, whatever happens I'm going to be able to refactor the driver in
+the -rc:s, so we still need this fix, or the world will end.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
