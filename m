@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab3EWRJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62967 "EHLO mx1.redhat.com"
+	id S1758253Ab3EWRLV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:11:21 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:38059 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756979Ab3EWRJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:09:38 -0400
-Date: Thu, 23 May 2013 20:09:27 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, kvm@vger.kernel.org,
-        Sanjay Lal <sanjayl@kymasys.com>, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v5 0/6] mips/kvm: Fix ABI for compatibility with 64-bit
- guests.
-Message-ID: <20130523170927.GM26157@redhat.com>
-References: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com>
- <20130523102834.GN4725@redhat.com>
- <519E4A98.7020903@caviumnetworks.com>
+	id S1757813Ab3EWRLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 13:11:20 -0400
+Date: Thu, 23 May 2013 11:11:12 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for Kirkwood
+ SoCs
+Message-ID: <20130523171112.GB31281@obsidianresearch.com>
+References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130522201607.GA18823@obsidianresearch.com>
+ <20130523160111.GP31290@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519E4A98.7020903@caviumnetworks.com>
+In-Reply-To: <20130523160111.GP31290@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 09:58:00AM -0700, David Daney wrote:
-> On 05/23/2013 03:28 AM, Gleb Natapov wrote:
-> >On Wed, May 22, 2013 at 11:43:50AM -0700, David Daney wrote:
-> >>From: David Daney <david.daney@cavium.com>
-> >>
-> >Please regenerate against master. arch/mips/include/asm/kvm.h does not
-> >exists any more.
+On Thu, May 23, 2013 at 12:01:11PM -0400, Jason Cooper wrote:
+> > > +	/* Kirkwood resets some registers on gated clocks. Especially
+> > > +	 * CLK125_BYPASS_EN must be cleared but is not available on
+> > > +	 * all other SoCs/System Controllers using this driver.
+> > > +	 */
+> > > +	if (of_machine_is_compatible("marvell,kirkwood"))
+> > > +		wrlp(mp, PORT_SERIAL_CONTROL1,
+> > > +		     rdlp(mp, PORT_SERIAL_CONTROL1) & ~CLK125_BYPASS_EN);
+> > 
+> > of_machine_is_compatible seems heavy handed, I would expect this to be
+> > based on the compatible string of the ethernet node itself, not the
+> > machine??
 > 
-> New patch sent.  I gather from this message, that you want to merge
-> this particular set via your tree instead of Ralf's MIPS tree.
-> That's fine with me.  However, we were hoping to have these ABI
-> fixing patches pushed to Linus before 3.10 releases, so that there
-> don't exist kernel versions with the defective ABI.
-> 
-I do plan to push them to 3.10 that is why I asked to generate them
-against master ("next" branch is for next merge window)
+> Is there a model number variation between IP that needs this and IP that
+> doesn't?  If not, I'm fine with of_machine_is_compatible().
 
-> Future patch sets may affect core MIPS architecture files, and
-> therefore may not be so amenable to merging via the KVM tree.  We
-> will have to figure out how to handle that.
-> 
-Are you talking about initial MIPS HW vitalization support? Lets see
-the patch series. If core changes are to big for for Ralf to ack them
-and push through kvm.git then we can push them via MPIS tree.
+Well the name 'mv643xx' is a family of system controller SOC's
+from ages ago, it seems reasonble to continue the trend and label the
+IP variations with the SOC name:
 
---
-			Gleb.
+ compatible = "marvell,kirwood,ethernet", "marvell,mv643xx_eth"
+
+Jason
