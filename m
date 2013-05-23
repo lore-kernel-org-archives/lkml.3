@@ -1,184 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab3EWP7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:59:47 -0400
-Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:56113 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757758Ab3EWP7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:59:46 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: [PATCH v2 3/3] ARM: at91: use IRQCHIP_DECLARE instead of machine specific init_irq
-Date: Thu, 23 May 2013 17:48:55 +0200
-Message-Id: <1369324135-31211-4-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369324135-31211-1-git-send-email-b.brezillon@overkiz.com>
-References: <1369324135-31211-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 4256464598644274252
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1759563Ab3EWQAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:00:07 -0400
+Received: from www.sr71.net ([198.145.64.142]:34055 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759541Ab3EWQAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 12:00:04 -0400
+Message-ID: <519E3D01.7080101@sr71.net>
+Date: Thu, 23 May 2013 09:00:01 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 12/39] thp, mm: rewrite add_to_page_cache_locked() to
+ support huge pages
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com> <1368321816-17719-13-git-send-email-kirill.shutemov@linux.intel.com> <519BD206.3040603@sr71.net> <20130523143656.B8B73E0090@blue.fi.intel.com>
+In-Reply-To: <20130523143656.B8B73E0090@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace machine specific init_irq functions with IRQCHIP_DECLARE.
+On 05/23/2013 07:36 AM, Kirill A. Shutemov wrote:
+>>> +	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE)) {
+>>> +		BUILD_BUG_ON(HPAGE_CACHE_NR > RADIX_TREE_PRELOAD_NR);
+>>> +		nr = hpage_nr_pages(page);
+>>> +	} else {
+>>> +		BUG_ON(PageTransHuge(page));
+>>> +		nr = 1;
+>>> +	}
+>>
+>> Why can't this just be
+>>
+>> 		nr = hpage_nr_pages(page);
+>>
+>> Are you trying to optimize for the THP=y, but THP-pagecache=n case?
+> 
+> Yes, I try to optimize for the case.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/board-dt-rm9200.c |   11 -----------
- arch/arm/mach-at91/board-dt-sam9.c   |   12 ------------
- arch/arm/mach-at91/board-dt-sama5.c  |   12 ------------
- arch/arm/mach-at91/generic.h         |    5 -----
- drivers/irqchip/irq-at91.c           |    4 ++++
- 5 files changed, 4 insertions(+), 40 deletions(-)
+I'd suggest either optimizing in _common_ code, or not optimizing it at
+all.  Once in production, and all the config options are on, the
+optimization goes away anyway.
 
-diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
-index 67fff54..7ee7e5f 100644
---- a/arch/arm/mach-at91/board-dt-rm9200.c
-+++ b/arch/arm/mach-at91/board-dt-rm9200.c
-@@ -26,16 +26,6 @@
- #include "generic.h"
- 
- 
--static const struct of_device_id irq_of_match[] __initconst = {
--	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91rm9200_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static void __init at91rm9200_dt_device_init(void)
- {
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-@@ -50,7 +40,6 @@ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
- 	.init_time      = at91rm9200_timer_init,
- 	.map_io		= at91_map_io,
- 	.init_early	= at91rm9200_dt_initialize,
--	.init_irq	= at91rm9200_dt_init_irq,
- 	.init_machine	= at91rm9200_dt_device_init,
- 	.dt_compat	= at91rm9200_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
-index 65edc6e..e7aa089 100644
---- a/arch/arm/mach-at91/board-dt-sam9.c
-+++ b/arch/arm/mach-at91/board-dt-sam9.c
-@@ -26,17 +26,6 @@
- #include "generic.h"
- 
- 
--static const struct of_device_id irq_of_match[] __initconst = {
--
--	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static void __init at91_dt_device_init(void)
- {
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-@@ -52,7 +41,6 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
- 	.init_time	= at91sam926x_pit_init,
- 	.map_io		= at91_map_io,
- 	.init_early	= at91_dt_initialize,
--	.init_irq	= at91_dt_init_irq,
- 	.init_machine	= at91_dt_device_init,
- 	.dt_compat	= at91_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 015178f..b3b6a1b 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -27,17 +27,6 @@
- #include "generic.h"
- 
- 
--static const struct of_device_id irq_of_match[] __initconst = {
--
--	{ .compatible = "atmel,sama5d3-aic", .data = at91_aic5_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static int ksz9021rn_phy_fixup(struct phy_device *phy)
- {
- 	int value;
-@@ -79,7 +68,6 @@ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
- 	.init_time	= at91sam926x_pit_init,
- 	.map_io		= at91_map_io,
- 	.init_early	= at91_dt_initialize,
--	.init_irq	= at91_dt_init_irq,
- 	.init_machine	= sama5_dt_device_init,
- 	.dt_compat	= sama5_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 78ab065..23077cf 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -29,11 +29,6 @@ extern void __init at91_init_interrupts(unsigned int priority[]);
- extern void __init at91x40_init_interrupts(unsigned int priority[]);
- extern void __init at91_aic_init(unsigned int priority[],
- 				 unsigned int ext_irq_mask);
--extern int  __init at91_aic_of_init(struct device_node *node,
--				    struct device_node *parent);
--extern int  __init at91_aic5_of_init(struct device_node *node,
--				    struct device_node *parent);
--
- 
-  /* Timer */
- extern void at91rm9200_ioremap_st(u32 addr);
-diff --git a/drivers/irqchip/irq-at91.c b/drivers/irqchip/irq-at91.c
-index ca49096..137d428 100644
---- a/drivers/irqchip/irq-at91.c
-+++ b/drivers/irqchip/irq-at91.c
-@@ -43,6 +43,8 @@
- #include <asm/mach/irq.h>
- #include <asm/mach/map.h>
- 
-+#include "irqchip.h"
-+
- 
- void __iomem *at91_aic_base;
- static struct irq_domain *at91_aic_domain;
-@@ -473,6 +475,7 @@ int __init at91_aic_of_init(struct device_node *node,
- 
- 	return 0;
- }
-+IRQCHIP_DECLARE(at91rm9200_aic, "atmel,at91rm9200-aic", at91_aic_of_init);
- 
- int __init at91_aic5_of_init(struct device_node *node,
- 				     struct device_node *parent)
-@@ -497,6 +500,7 @@ int __init at91_aic5_of_init(struct device_node *node,
- 
- 	return 0;
- }
-+IRQCHIP_DECLARE(sama5d3_aic, "atmel,sama5d3-aic", at91_aic5_of_init);
- #endif
- 
- /*
--- 
-1.7.9.5
+You could create a hpagecache_nr_pages() helper or something I guess.
+
+>>> +	}
+>>> +	__mod_zone_page_state(page_zone(page), NR_FILE_PAGES, nr);
+>>> +	if (PageTransHuge(page))
+>>> +		__inc_zone_page_state(page, NR_FILE_TRANSPARENT_HUGEPAGES);
+>>> +	mapping->nrpages += nr;
+>>> +	spin_unlock_irq(&mapping->tree_lock);
+>>> +	radix_tree_preload_end();
+>>> +	trace_mm_filemap_add_to_page_cache(page);
+>>> +	return 0;
+>>> +err:
+>>> +	if (i != 0)
+>>> +		error = -ENOSPC; /* no space for a huge page */
+>>> +	page_cache_release(page + i);
+>>> +	page[i].mapping = NULL;
+>>
+>> I guess it's a slight behaviour change (I think it's harmless) but if
+>> you delay doing the page_cache_get() and page[i].mapping= until after
+>> the radix tree insertion, you can avoid these two lines.
+> 
+> Hm. I don't think it's safe. The spinlock protects radix-tree against
+> modification, but find_get_page() can see it just after
+> radix_tree_insert().
+
+Except that the mapping->tree_lock is still held.  I don't think
+find_get_page() can find it in the radix tree without taking the lock.
+
+> The page is locked and IIUC never uptodate at this point, so nobody will
+> be able to do much with it, but leave it without valid ->mapping is a bad
+> idea.
+
+->mapping changes are protected by lock_page().  You can't keep
+->mapping stable without holding it.  If you unlock_page(), you have to
+recheck ->mapping after you reacquire the lock.
+
+In other words, I think the code is fine.
+
+>> I'm also trying to figure out how and when you'd actually have to unroll
+>> a partial-huge-page worth of radix_tree_insert().  In the small-page
+>> case, you can collide with another guy inserting in to the page cache.
+>> But, can that happen in the _middle_ of a THP?
+> 
+> E.g. if you enable THP after some uptime, the mapping can contain small pages
+> already.
+> Or if a process map the file with bad alignement (MAP_FIXED) and touch the
+> area, it will get small pages.
+
+Could you put a comment in explaining this case a bit?  It's a bit subtle.
 
