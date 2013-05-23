@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab3EWA1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 20:27:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42918 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab3EWA1l convert rfc822-to-8bit (ORCPT
+	id S1757083Ab3EWA3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 20:29:42 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:8348 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3EWA3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 20:27:41 -0400
-X-IronPort-AV: E=Sophos;i="4.87,724,1363104000"; 
-   d="scan'208";a="7338935"
-Subject: Re: [PATCH] drivers: idle: comment DEBUG
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1366873227-920-1-git-send-email-lig.fnst@cn.fujitsu.com>
-References: <1366873227-920-1-git-send-email-lig.fnst@cn.fujitsu.com>
-Date: Thu, 23 May 2013 08:27:36 +0800
-Message-ID: <1369268856.5142.157.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/23 08:26:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/23 08:26:20,
-	Serialize complete at 2013/05/23 08:26:20
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 22 May 2013 20:29:40 -0400
+X-IronPort-AV: E=Sophos;i="4.87,724,1363158000"; 
+   d="scan'208";a="49891175"
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 0/3] Cleanup MSM_GPIOMUX and add DT support for gpio-msm
+Date: Wed, 22 May 2013 17:29:21 -0700
+Message-Id: <1369268964-28304-1-git-send-email-rvaswani@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping ...
+Hi Linus,
+Could this series go through David's tree or is there a better way to do this?
+It would be great if I can have you ack for the gpio patch.
 
-在 2013-04-25四的 15:00 +0800，liguang写道：
-> seems we should comment DEBUG as above comment said:
-> "/* un-comment DEBUG to enable pr_debug() statements */"
-> 
-> now, pr_debug is already enabled as DEBUG been defined.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
-> ---
->  drivers/idle/intel_idle.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 5d66750..9618586 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -51,7 +51,7 @@
->   */
->  
->  /* un-comment DEBUG to enable pr_debug() statements */
-> -#define DEBUG
-> +/* #define DEBUG */
->  
->  #include <linux/kernel.h>
->  #include <linux/cpuidle.h>
+Thanks,
+Rohit
 
+Rohit Vaswani (3):
+  ARM: msm: Remove gpiomux-v2 and re-organize MSM_GPIOMUX configs
+  ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
+  gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+
+ .../devicetree/bindings/gpio/gpio-msm.txt          |   26 +++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   11 ++
+ arch/arm/boot/dts/msm8960-cdp.dts                  |   11 ++
+ arch/arm/mach-msm/Kconfig                          |   13 +-
+ arch/arm/mach-msm/Makefile                         |    6 +-
+ arch/arm/mach-msm/gpiomux-8x60.c                   |   19 --
+ arch/arm/mach-msm/gpiomux-v2.c                     |   25 ---
+ arch/arm/mach-msm/gpiomux-v2.h                     |   61 -------
+ arch/arm/mach-msm/gpiomux.c                        |   15 ++
+ arch/arm/mach-msm/gpiomux.h                        |    5 -
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |    4 -
+ drivers/gpio/Kconfig                               |    2 +-
+ drivers/gpio/gpio-msm-v2.c                         |  173 +++++++++++++-------
+ 13 files changed, 181 insertions(+), 190 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-msm.txt
+ delete mode 100644 arch/arm/mach-msm/gpiomux-8x60.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-v2.c
+ delete mode 100644 arch/arm/mach-msm/gpiomux-v2.h
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
