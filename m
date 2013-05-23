@@ -1,168 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab3EWMwg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:52:36 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33420
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758881Ab3EWMwe (ORCPT
+	id S1759006Ab3EWMwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:52:41 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:60056 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758991Ab3EWMwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:52:34 -0400
-Date: Thu, 23 May 2013 14:52:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130523125218.GB23650@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523044803.GA25399@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 23 May 2013 08:52:39 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 1/2] char: xilinx_hwicap: Checkpatch.pl cleanup
+Date: Thu, 23 May 2013 14:52:33 +0200
+Message-Id: <113e9af3a4a45647da48d04b68cfc50aade0fb0c.1369313543.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-15199-1369313554-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-The below fixes things for me.
+--=_mimegpg-monstr-desktop-15199-1369313554-0001
 
+Remove checkpatch warning:
+WARNING: Use #include <linux/io.h> instead of <asm/io.h>
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
-Subject: perf: Fix perf mmap issues
+ drivers/char/xilinx_hwicap/xilinx_hwicap.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Vince reported a problem found by his perf specific trinity fuzzer. Al noticed
-perf's mmap() has issues against fork() -- since we use vma->vm_mm -- and
-double mmap() -- we leak an rb refcount.
+diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.h b/drivers/char/xilinx_hwicap/xilinx_hwicap.h
+index d31ee23..96677fc 100644
+--- a/drivers/char/xilinx_hwicap/xilinx_hwicap.h
++++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.h
+@@ -37,7 +37,7 @@
+ #include <linux/cdev.h>
+ #include <linux/platform_device.h>
 
-While staring at this code I also found the introduction of
-mm_struct::pinned_vm wrecked accounting against RLIMIT_LOCKED.
+-#include <asm/io.h>
++#include <linux/io.h>
 
-Aside from the rb reference leak spotted by Al, Vince's example prog was indeed
-doing a double mmap() through the use of perf_event_set_output(). When cloning
-the buffer of another event we should also copy their mmap_{user,locked}
-settings, because as it turns out, this second event might be the last to get
-unmapped, meaning it will hit perf_mmap_close() and needs to undo whatever the
-initial mmap() did.
+ struct hwicap_drvdata {
+ 	u32 write_buffer_in_use;  /* Always in [0,3] */
+--
+1.8.2.3
 
-This means perf_event_set_output() now needs to hold both events their
-mmap_mutex.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/events/core.c |   42 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 35 insertions(+), 7 deletions(-)
+--=_mimegpg-monstr-desktop-15199-1369313554-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9dc297f..b736ad2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3676,9 +3676,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	mutex_lock(&event->mmap_mutex);
- 	if (event->rb) {
--		if (event->rb->nr_pages == nr_pages)
--			atomic_inc(&event->rb->refcount);
--		else
-+		if (event->rb->nr_pages != nr_pages)
- 			ret = -EINVAL;
- 		goto unlock;
- 	}
-@@ -3699,7 +3697,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 
- 	lock_limit = rlimit(RLIMIT_MEMLOCK);
- 	lock_limit >>= PAGE_SHIFT;
--	locked = vma->vm_mm->pinned_vm + extra;
-+	locked = vma->vm_mm->locked_vm + vma->vm_mm->pinned_vm + extra;
- 
- 	if ((locked > lock_limit) && perf_paranoid_tracepoint_raw() &&
- 		!capable(CAP_IPC_LOCK)) {
-@@ -3734,7 +3732,7 @@ unlock:
- 		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
--	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
- 	vma->vm_ops = &perf_mmap_vmops;
- 
- 	return ret;
-@@ -6381,14 +6379,26 @@ err_size:
- 	goto out;
- }
- 
-+static void mutex_lock_double(struct mutex *m1, struct mutex *m2)
-+{
-+	if (m2 < m1) swap(m1, m2);
-+
-+	mutex_lock(m1);
-+	mutex_lock_nested(m2, SINGLE_DEPTH_NESTING);
-+}
-+
- static int
- perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
- {
- 	struct ring_buffer *rb = NULL, *old_rb = NULL;
-+	struct user_struct *mmap_user = NULL;
-+	int mmap_locked = 0;
- 	int ret = -EINVAL;
- 
--	if (!output_event)
-+	if (!output_event) {
-+		mutex_lock(&event->mmap_mutex);
- 		goto set;
-+	}
- 
- 	/* don't allow circular references */
- 	if (event == output_event)
-@@ -6406,8 +6416,9 @@ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
- 	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
- 		goto out;
- 
-+	mutex_lock_double(&event->mmap_mutex, &output_event->mmap_mutex);
- set:
--	mutex_lock(&event->mmap_mutex);
-+
- 	/* Can't redirect output if we've got an active mmap() */
- 	if (atomic_read(&event->mmap_count))
- 		goto unlock;
-@@ -6417,15 +6428,32 @@ set:
- 		rb = ring_buffer_get(output_event);
- 		if (!rb)
- 			goto unlock;
-+
-+		/*
-+		 * If we're going to copy the rb, we need also copy
-+		 * mmap_{user,locked} in case we'll hit perf_mmap_close().
-+		 */
-+		mmap_user = output_event->mmap_user;
-+		mmap_locked = output_event->mmap_locked;
- 	}
- 
- 	old_rb = event->rb;
- 	rcu_assign_pointer(event->rb, rb);
- 	if (old_rb)
- 		ring_buffer_detach(event, old_rb);
-+
-+	/*
-+	 * Per the above check we cannot have an active mmap on event,
-+	 * therefore mmap_{user,locked} must be clear.
-+	 */
-+	event->mmap_user = mmap_user;
-+	event->mmap_locked = mmap_locked;
-+
- 	ret = 0;
- unlock:
- 	mutex_unlock(&event->mmap_mutex);
-+	if (output_event)
-+		mutex_unlock(&output_event->mmap_mutex);
- 
- 	if (old_rb)
- 		ring_buffer_put(old_rb);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEABECAAYFAlGeERIACgkQykllyylKDCF33QCgheCxf3Pfg74p+vkJAAqF1fq/
++2wAnRhl0ecwK9aY9em20M0pfUWPyVi7
+=1YP7
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-15199-1369313554-0001--
