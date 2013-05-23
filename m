@@ -1,109 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab3EWNEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:04:55 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:53693 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758550Ab3EWNEy (ORCPT
+	id S1758898Ab3EWNG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:06:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758245Ab3EWNG1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:04:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5hmwrlx5np.wl%tiwai@suse.de>
-References: <20130521230332.GC12713@redhat.com>
-	<519D1668.6000601@zytor.com>
-	<20130522200012.GA15456@redhat.com>
-	<ebdf0a48-4f93-48da-a0a2-b601268c8fb2@email.android.com>
-	<20130523033911.GA9411@redhat.com>
-	<CACVXFVP3stgc2JKc31_yjPuokTbqcSrW_FWDvHrHK+NA-xu-yg@mail.gmail.com>
-	<s5h7giq86hr.wl%tiwai@suse.de>
-	<s5hwqqqvw59.wl%tiwai@suse.de>
-	<CACVXFVMsTjSqvyVkZEPfWgHDUJ_mqwqWy=vydCsTvv7TS-EKiQ@mail.gmail.com>
-	<s5hr4gyvv7r.wl%tiwai@suse.de>
-	<CACVXFVNO9FeCaJ_YFbvPMUHOBjneLqqW+ucYprZb7884Eth-DA@mail.gmail.com>
-	<s5hmwrlx5np.wl%tiwai@suse.de>
-Date: Thu, 23 May 2013 21:04:53 +0800
-Message-ID: <CACVXFVMm=dKz9mwt=moU4Dw9-K=offHb10S3sV2-cxiQ5vH_cA@mail.gmail.com>
-Subject: Re: microcode loading got really slow.
-From: Ming Lei <tom.leiming@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Jones <davej@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
-        fenghua.yu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 May 2013 09:06:27 -0400
+Date: Thu, 23 May 2013 09:05:26 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
+        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <oleg@redhat.com>, <bfields@fieldses.org>,
+        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <devel@openvz.org>
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+Message-ID: <20130523090526.63fc153e@corrin.poochiereds.net>
+In-Reply-To: <519E0AB0.7040704@panasas.com>
+References: <20130522072840.27720.85023.stgit@localhost.localdomain>
+	<878v36ex6n.fsf@xmission.com>
+	<519DCE5D.6070204@parallels.com>
+	<87k3mq9fsu.fsf@xmission.com>
+	<519DF109.9010309@parallels.com>
+	<20130523073108.13afafa6@tlielax.poochiereds.net>
+	<519DFFA9.3010606@parallels.com>
+	<20130523075620.21abf79a@tlielax.poochiereds.net>
+	<519E0474.5000606@parallels.com>
+	<519E0AB0.7040704@panasas.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 8:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu, 23 May 2013 18:45:29 +0800,
-> Ming Lei wrote:
->>
->> On Thu, May 23, 2013 at 6:36 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> >
->> > No, f/w loader always fall back to user mode helper, as long as its
->> > support is built in.  And doing that for microcode driver in that code
->> > path isn't only superfluous but also broken due to request_firmware
->> > call in module init.
->>
->> Firstly, it is not good to do this since some distributions doesn't support
->> direct loading and doesn't have udevd(such as, android).
->>
->> Secondly, returning failure from request_firmware_direct() doesn't mean
->> the firmware doesn't exist since distribution may put the firmware other where.
->
-> Right, the non-standard path is the problem, and basically the only
-> problem.  The distribution that doesn't support the direct loading
-> means nothing but that.
+On Thu, 23 May 2013 15:25:20 +0300
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-Suppose it is, it is the fact, and it isn't OK to break this distribution.
+> On 23/05/13 14:58, Stanislav Kinsbursky wrote:
+> > 23.05.2013 15:56, Jeff Layton пишет:
+> >> On Thu, 23 May 2013 15:38:17 +0400
+> >> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> >>
+> >>> 23.05.2013 15:31, Jeff Layton пишет:
+> >>>> On Thu, 23 May 2013 14:35:53 +0400
+> >>>> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+> >>>>
+> >>>>> 23.05.2013 14:00, Eric W. Biederman пишет:
+> >>>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+> >>>>>>
+> >>>>>>> 22.05.2013 21:33, Eric W. Biederman пишет:
+> >>>>>>>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+> >>>>>>>>
+> >>>>>>>>> Usermode helper executes all binaries in global "init" root context. This
+> >>>>>>>>> doesn't allow to call a binary from other root context (for example in a
+> >>>>>>>>> container).
+> >>>>>>>>> Currently, both containerized NFS client and NFS server requires an ability to
+> >>>>>>>>> execute a binary in a container's root context. Root swap can be done in
+> >>>>>>>>> "init" callback, passed by UMH caller.
+> >>>>>>>>> But since we have 2 callers already (and more of them are expected to appear
+> >>>>>>>>> in future) and because set_fs_root() in not exported, it looks reasonable to
+> >>>>>>>>> add one more generic UMH helper to generic fs code.
+> >>>>>>>>> Root path reference must be hold by the caller, since it will be put on UMH
+> >>>>>>>>> thread exit.
+> >>>>>>>>
+> >>>>>>>> Awesome.  With this patch as an uprivilieged user I get to pick which
+> >>>>>>>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
+> >>>>>>>> user namespace (something that looks like only matter of time).
+> >>>>>>>>
+> >>>>>>>
+> >>>>>>> Not really. Only by using a kernel module to call the UMH.
+> >>>>>>> And an unprivileged can't load a module as far a I know.
+> >>>>>>> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
+> >>>>>>
+> >>>>>> To help me understand the context which instances of call user mode
+> >>>>>> helper are you expecting to use this facility?
+> >>>>>>
+> >>>>>
+> >>>>> Ok. Here is how the NFSd uses UMH:
+> >>>>> UMH is used on NFSd service to start user-space client tracker daemon
+> >>>>> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
+> >>>>> persistent storage.
+> >>>>>
+> >>>>>>>> I think this is a seriously bad idea.
+> >>>>>>>>
+> >>>>>>>> Why can't we do this in userspace with setns as we do with the core dump
+> >>>>>>>> helper?
+> >>>>>>>>
+> >>>>>>>
+> >>>>>>> Could you, please, clarify, how setns can help here?
+> >>>>>>
+> >>>>>> setns can change the mount namespace, and chroot can change to root
+> >>>>>> directory in the specified mount namespace.  Essentially you can enter
+> >>>>>> into a containers complete context (pid, mnt, root, etc) comming from
+> >>>>>> the outside.
+> >>>>>>
+> >>>>>
+> >>>>> So, you are actually suggesting to move the binary start from the kernel to user-space.
+> >>>>> IOW, you are suggesting to do not using UMH at all.
+> >>>>> Am I right?
+> >>>>> I don't know the reasons, why it was done by using UMH and not in userspace.
+> >>>>> Could you clarify this, Jeff?
+> >>>>>
+> >>>>
+> >>>> nfsdcltrack is a "one-shot" program for managing and querying the nfsd
+> >>>> client tracking database. When knfsd needs to query or modify the
+> >>>> db, it uses the UMH infrastructure to call this program that does
+> >>>> what's requested and then exits.
+> >>>>
+> >>>> So, I'm not sure I really understand your question. It wasn't done in
+> >>>> userspace since the whole purpose of this program is to handle upcalls
+> >>>> from the kernel.
+> >>>>
+> >>>
+> >>> The question is what was the reason to start this binary from kernel by UMH?
+> >>
+> >> Manipulating and querying the client tracking database is an infrequent
+> >> event, so having a continuously running daemon is wasteful and means
+> >> that the admin has to ensure that it's running. A UMH upcall is much
+> >> simpler and generally "just works" if the program is present.
+> >>
+> >>> I.e. why it can't be started by some user-space process before or after NFSd start?
+> >>> I don't familiar with this client tracking facility and that's the only reason why I'm asking.
+> >>>
+> >>
+> >> This program is not a daemon that runs continuously. It's only called
+> >> when the kernel needs to manipulate the database. Are you asking
+> >> whether we could turn this into a continuously running daemon? If so
+> >> then the answer is "yes", but that's not really a good idea either.
+> >>
+> >> In fact, we had that with the nfsdcld program, but no one liked it
+> >> (including me) for the reasons I detailed above.
+> >>
+> > 
+> > No, I'm just asking to understand.
+> > Eric was, actually, asking the same. I.e. how does NFSd uses UMH and why this can't be done in userspace?
+> > Thanks you for your answer.
+> > 
+> 
+> I'm not familiar with nfsdcltrack but I would imagine it receives it's information from
+> Kernel as a command line parameters.
+> 
+> Would it not be the simplest approach to add a --chroot=/path/to/root optional
+> parameter to nfsdcltrack so it should access an alternate DB relative to 
+> --chroot.
+> 
+> This would address Eric's concern of not executing user-privileged executable
+> from Kernel. I think
+> 
+> Just my $0.017
+> Boaz
+> 
 
-Also udev supports user-defined rules to load firmware, which
-means some drivers may not put their firmware in the default
-path of distribution's firmware.
+I think that sounds reasonable. Is it always the case
+that /path/to/root is reachable from the "primary" namespace? If not,
+you may need to do something more exotic there.
 
->
->> Anyway, this example is very specific(no firmware can be accepted), and
->> request_firmware_nowait() should be OK for the situation.
->
-> Oh no, rewriting with request_firmware_nowait() should be really the
-> last choice.  It would change the code flow awfully bad in most
-> cases.
->
-> The new kernel driver has a better firmware mechanism.  If it's only
-> the question of paths, we should move on toward that direction and
-> drop the too complex old way.  I'd vote for a warning shown when a
+Also, do you have to do anything like change the uid/gid to a different
+user who is root within the container?
 
-Simply dropping the old way may cause user space regression.
+What might help most here is to lay out a particular scenario for how
+you envision setting up knfsd in a container so we can ensure that it's
+addressed properly by whatever solution you settle on.
 
-> firmware file is loaded via user mode helper (except for explicit
-> cases like FW_ACTION_NOHOTPLUG), for example.
-
-As it is a very driver specific problem, it is better to solve it inside driver.
-
->
->
->> >> wrt. this problem, I think we
->> >> need to know why the direct loading is failed.
->> >
->> > The reason is obvious: the requested f/w file doesn't exist.
->> > And it's fine, because the microcode update is an optional operation.
->> > If no f/w file is found, it's not handled as an error.  It just means
->> > that no need to update, continuing to work.
->>
->> OK, as said above, the example is very specific, and might be
->> workarounded by request_firmware_nowait().
->
-> It's not that easy in this case.  The microcode loader driver core
-> module doesn't invoke request_firmware() directly but it's via cpu
-> driver.  And the same callback is called in different code paths, not
-> only at init but also via sysfs write.  Thus the request_firmware()
-> call must be synchronous there.
-
-I don't think the way is too difficult to implement. In the path which
-requires synchronization, it can be waited on one completion after
-calling request_firmware_nowait().
-
-
-Thanks,
 -- 
-Ming Lei
+Jeff Layton <jlayton@redhat.com>
