@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab3EWAyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 20:54:37 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54414 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab3EWAyg (ORCPT
+	id S1756616Ab3EWBBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 21:01:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:60419 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3EWBBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 20:54:36 -0400
-Date: Thu, 23 May 2013 09:54:31 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-Message-ID: <20130523005431.GA17291@mtj.dyndns.org>
-References: <519C959A.3090100@redhat.com>
- <20130522100212.GE3466@mtj.dyndns.org>
- <519C9CBC.3050003@redhat.com>
- <20130522134134.GA15189@mtj.dyndns.org>
- <519CD234.40608@redhat.com>
- <20130522143019.GA18541@mtj.dyndns.org>
- <519CDDA4.2050100@redhat.com>
- <20130522193009.GA23845@mtj.dyndns.org>
- <519D360D.4050309@redhat.com>
- <20130522221737.GA12339@mtj.dyndns.org>
+	Wed, 22 May 2013 21:01:36 -0400
+X-Spam-Score: -100.8
+Message-ID: <519D6A3D.5050003@asianux.com>
+Date: Thu, 23 May 2013 09:00:45 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130522221737.GA12339@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] kernel/sched/core.c: need return NULL when BUG() is defined
+ as empty.
+References: <5199D565.4070307@asianux.com> <20130522091156.GC18810@twins.programming.kicks-ass.net> <20130522133317.GC18614@n2100.arm.linux.org.uk> <20130522161935.GR18810@twins.programming.kicks-ass.net>
+In-Reply-To: <20130522161935.GR18810@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 07:17:37AM +0900, Tejun Heo wrote:
-> > No, it doesn't.  You can use SCM_RIGHTS, and pass a file descriptor for
-> > the device node to an unprivileged program.  You can choose the
-> > users/groups that are allowed to access the device.  In either case, the
-> > privileged action is limited in time or in scope.
-> > 
-> > The count-me-out knob affects all processes that use the device node,
-> > and won't be cleaned up properly if you SIGKILL the (privileged)
-> > process that sets it.  So if you can avoid it, you should.
+On 05/23/2013 12:19 AM, Peter Zijlstra wrote:
+> On Wed, May 22, 2013 at 02:33:17PM +0100, Russell King - ARM Linux wrote:
+>> > On Wed, May 22, 2013 at 11:11:56AM +0200, Peter Zijlstra wrote:
+>>> > > On Mon, May 20, 2013 at 03:48:53PM +0800, Chen Gang wrote:
+>>>> > > > 
+>>>> > > > When neither CONFIG_BUG nor HAVE_ARCH_BUG is defined, need let function
+>>>> > > > return failure value ('NULL') instead of random value.
+>>> > > 
+>>> > > What will such a kernel do? Happily continue running whenever we hit a
+>>> > > BUG? that seems like a particularly bad idea. Should we not have a stub
+>>> > > BUG() function like:
+>>> > > 
+>>> > > void BUG(void) __attribute__((noreturn))
+>>> > > {
+>>> > > 	local_irq_disable();
+>>> > > 	while (1) ;
+>>> > > }
+>> > 
+>> > Eww.  So you've a platform where you have things like panic_on_oops
+>> > enabled, and you hit this bug... do we really want to just stop?
+>> > Wouldn't replacing BUG() with panic("BUG"); be better ?
+>> > 
+>> > But, this begs the question - what is the point of being able to turn
+>> > off BUG() ?  As BUG() on any sensible architecture is implemented by
+>> > placing the minimum of code at the callsite (eg, one instruction if
+>> > not using verbose) anything like the above is likely to be bigger.
+>> > 
+>> > So, I'd actually argue that rather than trying to "fix" this, get rid
+>> > of CONFIG_BUG and make it always enabled everywhere - just like what
+>> > has recently been done with hotplug.
+> Works for me. 
 > 
-> Then let's make it fit the use case better.  I really can't see much
-> point in crafting the cdb filter when you basically have to entrust
-> the device to the user anyway.  Let's either trust the user with the
 
-One more thing, is it really necessary to have finer granularity than
-provided by file permissions?  What would be the use case?  Do you
-expect to have multiple - two - differing levels of access with and
-without SG_IO?  Note that, for the same user, it's pointless to give
-out SG_IO access to processes while denying for other processes.  As
-long as ptrace can be attached, hijacking such fd is easy.  Making it
-per-device should be suitable enough, no?
+Thanks all, I should send the related patch for it.
 
+Excuse me, I have to do another things, so I will finish it within this
+week (2013-05-26)
+
+Welcome any additional suggestions and completions.
+
+
+Thanks.
 -- 
-tejun
+Chen Gang
+
+Asianux Corporation
