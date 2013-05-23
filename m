@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759955Ab3EWXfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 19:35:46 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:63818 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759788Ab3EWXfo (ORCPT
+	id S1759963Ab3EWXkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 19:40:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51017 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759898Ab3EWXkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 19:35:44 -0400
-Date: Thu, 23 May 2013 19:40:12 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-In-Reply-To: <20130523152611.GE23650@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1305231936210.2452@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523125218.GB23650@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1305231006280.17701@vincent-weaver-1.um.maine.edu> <20130523152611.GE23650@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 23 May 2013 19:40:20 -0400
+Date: Thu, 23 May 2013 16:40:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, mgorman@suse.de, aarcange@redhat.com,
+        dave.hansen@intel.com, dsterba@suse.cz, hannes@cmpxchg.org,
+        kosaki.motohiro@gmail.com, kirill.shutemov@linux.intel.com,
+        mpm@selenic.com, n-horiguchi@ah.jp.nec.com, rdunlap@infradead.org
+Subject: Re: [PATCH v3] mm/pagewalk.c: walk_page_range should avoid
+ VM_PFNMAP areas
+Message-Id: <20130523164018.bed0409e29b46901bcc67960@linux-foundation.org>
+In-Reply-To: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+References: <E1Ucb6K-00047X-9I@eag09.americas.sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Peter Zijlstra wrote:
+On Wed, 15 May 2013 07:46:36 -0500 Cliff Wickman <cpw@sgi.com> wrote:
 
-> On Thu, May 23, 2013 at 10:10:36AM -0400, Vince Weaver wrote:
-> > 
-> > I can confirm your patch avoids the oops on my machine.
-> > 
-> > It does lead to interesting behavior if I run the sample program
-> > multiple times (with added printfs):
-> > 
-> > vince@core2:~$ ./perf_mmap_close_bug 
-> > mmap1=0x7f06a6e90000
-> > mmap2=0x7f06a6e7f000
-> > vince@core2:~$ ./perf_mmap_close_bug 
-> > mmap1=0x7f878a138000
-> > mmap2=0x7f878a127000
-> > vince@core2:~$ ./perf_mmap_close_bug 
-> > mmap1=0xffffffffffffffff
-> > Error opening fd2 Invalid argument
-> > 
-> > and then it never successfully completes again.  Is this unexpected 
-> > behavior?  
+> Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+> assume that all the mapped PFN's are backed with page structures. And this is
+> not usually true for VM_PFNMAP areas. This can result in panics on kernel
+> page faults when attempting to address those page structures.
 > 
-> Sounds weird to me, I'll see if I can reproduce/understand.
+> There are a half dozen callers of walk_page_range() that walk through
+> a task's entire page table (as N. Horiguchi pointed out). So rather than
+> change all of them, this patch changes just walk_page_range() to ignore 
+> VM_PFNMAP areas.
+> 
+> The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+> want to test any vma in the range.
+> 
+> VM_PFNMAP areas are used by:
+> - graphics memory manager   gpu/drm/drm_gem.c
+> - global reference unit     sgi-gru/grufile.c
+> - sgi special memory        char/mspec.c
+> - and probably several out-of-tree modules
 
-I tracked this down in case you haven't already.
+What are your thoughts on the urgency/scheduling of this fix?
 
-The problem is that in the kernel patched 
-with your patch locked_vm is getting decremented twice in the sample code 
-and going negative.  I'm not sure why this isn't a problem until the 
-third time through.  Here are my crude debug printk 
-results from kernel/events/core.c
 
-[   28.684862] user_extra: 17 user_lock_limit: 129
-[   28.698458] user_locked: 17 locked_vm: 0 user_extra 17
-[   28.713853] locked: 0 locked_vm: 0 pinned_vm: 0 extra: 0 lock_limit: 16
-[   28.733728] perf_mmap: locked_vm: 17
-[   28.744509] mmap_close: locked_vm=0
-[   28.754939] mmap_close: locked_vm=-17
-[   29.472741] user_extra: 17 user_lock_limit: 129
-[   29.486332] user_locked: 0 locked_vm: -17 user_extra 17
-[   29.501996] locked: 0 locked_vm: 0 pinned_vm: 0 extra: 0 lock_limit: 16
-[   29.521874] perf_mmap: locked_vm: 0
-[   29.532400] mmap_close: locked_vm=-17
-[   29.543352] mmap_close: locked_vm=-34
-[   30.028236] user_extra: 17 user_lock_limit: 129
-[   30.041835] user_locked: -17 locked_vm: -34 user_extra 17
-[   30.058018] extra: -275 user_locked: -17 user_lock_limit: 258
-[   30.075232] locked: -275 locked_vm: 0 pinned_vm: 0 extra: -275 lock_limit: 16
-
-Vince
+(Just to be irritating: "When writing a changelog, please describe the
+end-user-visible effects of the bug, so that others can more easily
+decide which kernel version(s) should be fixed, and so that downstream
+kernel maintainers can more easily work out whether this patch will fix
+a problem which they or their customers are observing.")
