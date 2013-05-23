@@ -1,187 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab3EWJXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:23:18 -0400
-Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:59677 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757494Ab3EWJXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:23:17 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <brezillonboris@gmail.com>
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: [PATCH 2/3] ARM: at91: use IRQCHIP_DECLARE instead of machine specific init_irq
-Date: Thu, 23 May 2013 10:49:49 +0200
-Message-Id: <1369298990-9826-3-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1369298990-9826-1-git-send-email-b.brezillon@overkiz.com>
-References: <1369298990-9826-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 15577669637981647948
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeihedrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1757947Ab3EWJ0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:26:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49165 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757740Ab3EWJ0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 05:26:33 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 1/2] mm: vmscan: mm: vmscan: Have kswapd writeback pages based on dirty pages encountered, not priority -fix
+Date: Thu, 23 May 2013 10:26:26 +0100
+Message-Id: <1369301187-24934-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369301187-24934-1-git-send-email-mgorman@suse.de>
+References: <1369301187-24934-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <brezillonboris@gmail.com>
+If a zone is marked "reclaim dirty" then kswapd starts writing back pages
+but this situation is flagged too easily and flushers are not given the
+opportunity to catch up. This patch causes kswapd to only start writing back
+pages if all dirty pages scanned at the tail of the LRU are unqueued. If
+a zone is flagged as "reclaim dirty", the reclaiming process will stall
+to give flushers a chance to clean up. It also renames nr_dirty to
+nr_unqueued dirty in shrink_inactive_list() to clarify.
 
-Replace machine specific init_irq functions with IRQCHIP_DECLARE.
+This could be treated as a fix to the patch
+mm-vmscan-have-kswapd-writeback-pages-based-on-dirty-pages-encountered-not-priority.patch
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/arm/mach-at91/board-dt-rm9200.c |   11 -----------
- arch/arm/mach-at91/board-dt-sam9.c   |   12 ------------
- arch/arm/mach-at91/board-dt-sama5.c  |   12 ------------
- arch/arm/mach-at91/generic.h         |    5 -----
- drivers/irqchip/irq-at91.c           |    4 ++++
- 5 files changed, 4 insertions(+), 40 deletions(-)
+ mm/vmscan.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
-index 0c2a06d..523a9ae 100644
---- a/arch/arm/mach-at91/board-dt-rm9200.c
-+++ b/arch/arm/mach-at91/board-dt-rm9200.c
-@@ -27,16 +27,6 @@
- #include "generic.h"
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index b1b38ad..f3315c6 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1316,7 +1316,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	unsigned long nr_scanned;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_taken;
+-	unsigned long nr_dirty = 0;
++	unsigned long nr_unqueued_dirty = 0;
+ 	unsigned long nr_writeback = 0;
+ 	isolate_mode_t isolate_mode = 0;
+ 	int file = is_file_lru(lru);
+@@ -1359,7 +1359,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 		return 0;
  
+ 	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+-					&nr_dirty, &nr_writeback, false);
++				&nr_unqueued_dirty, &nr_writeback, false);
  
--static const struct of_device_id irq_of_match[] __initconst = {
--	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91rm9200_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static void __init at91rm9200_dt_device_init(void)
- {
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-@@ -52,7 +42,6 @@ DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic_handle_irq,
- 	.init_early	= at91rm9200_dt_initialize,
--	.init_irq	= at91rm9200_dt_init_irq,
- 	.init_machine	= at91rm9200_dt_device_init,
- 	.dt_compat	= at91rm9200_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
-index ac899d8..a07da3b 100644
---- a/arch/arm/mach-at91/board-dt-sam9.c
-+++ b/arch/arm/mach-at91/board-dt-sam9.c
-@@ -27,17 +27,6 @@
- #include "generic.h"
+ 	spin_lock_irq(&zone->lru_lock);
  
+@@ -1414,11 +1414,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+ 	/*
+ 	 * Similarly, if many dirty pages are encountered that are not
+ 	 * currently being written then flag that kswapd should start
+-	 * writing back pages.
++	 * writing back pages and stall to give a chance for flushers
++	 * to catch up.
+ 	 */
+-	if (global_reclaim(sc) && nr_dirty &&
+-			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
++	if (global_reclaim(sc) && nr_unqueued_dirty == nr_taken) {
++		congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 		zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
++	}
  
--static const struct of_device_id irq_of_match[] __initconst = {
--
--	{ .compatible = "atmel,at91rm9200-aic", .data = at91_aic_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static void __init at91_dt_device_init(void)
- {
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-@@ -54,7 +43,6 @@ DT_MACHINE_START(at91sam_dt, "Atmel AT91SAM (Device Tree)")
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic_handle_irq,
- 	.init_early	= at91_dt_initialize,
--	.init_irq	= at91_dt_init_irq,
- 	.init_machine	= at91_dt_device_init,
- 	.dt_compat	= at91_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 43b8f7a..65cf099 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -28,17 +28,6 @@
- #include "generic.h"
- 
- 
--static const struct of_device_id irq_of_match[] __initconst = {
--
--	{ .compatible = "atmel,sama5d3-aic", .data = at91_aic5_of_init },
--	{ /*sentinel*/ }
--};
--
--static void __init at91_dt_init_irq(void)
--{
--	of_irq_init(irq_of_match);
--}
--
- static int ksz9021rn_phy_fixup(struct phy_device *phy)
- {
- 	int value;
-@@ -81,7 +70,6 @@ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic5_handle_irq,
- 	.init_early	= at91_dt_initialize,
--	.init_irq	= at91_dt_init_irq,
- 	.init_machine	= sama5_dt_device_init,
- 	.dt_compat	= sama5_dt_board_compat,
- MACHINE_END
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 78ab065..23077cf 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -29,11 +29,6 @@ extern void __init at91_init_interrupts(unsigned int priority[]);
- extern void __init at91x40_init_interrupts(unsigned int priority[]);
- extern void __init at91_aic_init(unsigned int priority[],
- 				 unsigned int ext_irq_mask);
--extern int  __init at91_aic_of_init(struct device_node *node,
--				    struct device_node *parent);
--extern int  __init at91_aic5_of_init(struct device_node *node,
--				    struct device_node *parent);
--
- 
-  /* Timer */
- extern void at91rm9200_ioremap_st(u32 addr);
-diff --git a/drivers/irqchip/irq-at91.c b/drivers/irqchip/irq-at91.c
-index daf2959..b45fe2c 100644
---- a/drivers/irqchip/irq-at91.c
-+++ b/drivers/irqchip/irq-at91.c
-@@ -44,6 +44,8 @@
- 
- #include <mach/at91_aic.h>
- 
-+#include "irqchip.h"
-+
- void __iomem *at91_aic_base;
- static struct irq_domain *at91_aic_domain;
- static struct device_node *at91_aic_np;
-@@ -471,6 +473,7 @@ int __init at91_aic_of_init(struct device_node *node,
- 
- 	return 0;
- }
-+IRQCHIP_DECLARE(at91rm9200_aic, "atmel,at91rm9200-aic", at91_aic_of_init);
- 
- int __init at91_aic5_of_init(struct device_node *node,
- 				     struct device_node *parent)
-@@ -493,6 +496,7 @@ int __init at91_aic5_of_init(struct device_node *node,
- 
- 	return 0;
- }
-+IRQCHIP_DECLARE(sama5d3_aic, "atmel,sama5d3-aic", at91_aic5_of_init);
- #endif
- 
- /*
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
 -- 
-1.7.9.5
+1.8.1.4
 
