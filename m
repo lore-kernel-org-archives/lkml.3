@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419Ab3EWCQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 May 2013 22:16:19 -0400
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:43098 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab3EWCQR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 May 2013 22:16:17 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 May 2013 22:16:17 EDT
-Date: Thu, 23 May 2013 11:10:11 +0900 (JST)
-Message-Id: <20130523.111011.203250975.satoshi.uchino@toshiba.co.jp>
-To: balbi@ti.com, linux-usb@vger.kernel.org
-Cc: mina86@mina86.com, stern@rowland.harvard.edu, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH v2] usb: gadget: f_mass_storage: add missing memory
- barrier for thread_wakeup_needed
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-X-Mailer: Mew version 6.4 on Emacs 22.3 / Mule 5.0 (SAKAKI)
+	id S1757449Ab3EWCTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 May 2013 22:19:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45971 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756474Ab3EWCTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 May 2013 22:19:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,725,1363158000"; 
+   d="scan'208";a="306568587"
+Message-ID: <1369275584.2036.10.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 2/3] Thermal: core: Modify temp_crit_show() to use
+ proper callback function.
+From: Zhang Rui <rui.zhang@intel.com>
+To: jonghwa3.lee@samsung.com
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Date: Thu, 23 May 2013 10:19:44 +0800
+In-Reply-To: <519ACE88.3090503@samsung.com>
+References: <1368870656-1183-1-git-send-email-jonghwa3.lee@samsung.com>
+	 <744357E9AAD1214791ACBA4B0B9092630110240D@SHSMSX101.ccr.corp.intel.com>
+	 <519ACE88.3090503@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
+On Tue, 2013-05-21 at 10:31 +0900, jonghwa3.lee@samsung.com wrote:
+> On 2013년 05월 21일 00:57, Zhang, Rui wrote:
+> 
+> > 
+> > 
+> >> -----Original Message-----
+> >> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
+> >> Sent: Saturday, May 18, 2013 5:51 PM
+> >> To: linux-pm@vger.kernel.org
+> >> Cc: linux-kernel@vger.kernel.org; Zhang, Rui; Eduardo Valentin; Amit
+> >> Dinel Kachhap; Jonghwa Lee; MyungJoo Ham
+> >> Subject: [PATCH 2/3] Thermal: core: Modify temp_crit_show() to use
+> >> proper callback function.
+> >> Importance: High
+> >>
+> >> This patch modifies temp_crit_show() which is used to create hwmon's
+> >> sysfs node to use .get_crit_temp callback function of thermal zone
+> >> device rather than .get_trip_temp.
+> >>
+> >> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > 
+> > The problem is that .get_crit_temp is optional for thermal drivers
+> > that has a critical trip point.
+> 
+> 
+> Actually, this is a interface for hwmon not generic thermal framework. And when
+> we create this node through the thermal_add_hwmon_sysfs(), we've already checked
+> whether call back function is available. So the problem won't happen.
+> 
+Oh, I see.
 
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
+But back to my question, still take rcar driver for example,
+it has a critical trip point but this is not shown in hwmon, which IMO
+is still a problem.
+So we should either make .get_crit_temp() mandatory for thermal drivers
+with critical trip point or remove this callback and register hwmon
+crit_temp interface via checking .get_trip_type().
 
-Cc: stable@vger.kernel.org
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
----
-Resending with revised to and cc list and Acked-by line.
-Cf. http://marc.info/?l=linux-usb&m=136361467905630&w=2
+thanks,
+rui
 
- drivers/usb/gadget/f_mass_storage.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> Thanks
+> Jonghwa
+> 
+> > At least we do not have such kind of check in thermal core.
+> > Take rcar_thermal driver for example,
+> > It supports critical trip point but it does not have .get_crit_type.
+> > 
+> > So I'd like to see a fix in rcar thermal driver and thermal core
+> > for this issue, together with this patch.
+> > 
+> > Thanks,
+> > rui
+> >> ---
+> >>  drivers/thermal/thermal_core.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/thermal/thermal_core.c
+> >> b/drivers/thermal/thermal_core.c index f753f48..ce4384a 100644
+> >> --- a/drivers/thermal/thermal_core.c
+> >> +++ b/drivers/thermal/thermal_core.c
+> >> @@ -924,7 +924,7 @@ temp_crit_show(struct device *dev, struct
+> >> device_attribute *attr,
+> >>  	long temperature;
+> >>  	int ret;
+> >>
+> >> -	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
+> >> +	ret = tz->ops->get_crit_temp(tz, &temperature);
+> >>  	if (ret)
+> >>  		return ret;
+> >>
+> >> --
+> >> 1.7.9.5
+> > 
+> > 
+> 
+> 
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 97666e8..c35a9ec 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -413,6 +413,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -632,6 +633,7 @@ static int sleep_thread(struct fsg_common *common)
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
- 
--- 
-1.7.4.1
 
