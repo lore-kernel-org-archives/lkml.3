@@ -1,137 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3EWJrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:47:39 -0400
-Received: from mail-gh0-f178.google.com ([209.85.160.178]:51254 "EHLO
-	mail-gh0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758088Ab3EWJri (ORCPT
+	id S1758127Ab3EWJry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:47:54 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48757 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757890Ab3EWJrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:47:38 -0400
-Message-ID: <519DE5AD.7080303@redhat.com>
-Date: Thu, 23 May 2013 11:47:25 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 23 May 2013 05:47:52 -0400
+Date: Thu, 23 May 2013 10:47:09 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] dma-mapping: Define dma_{alloc,free}_attrs()
+ for all archs
+Message-ID: <20130523094709.GB16722@arm.com>
+References: <1367290899-10410-1-git-send-email-dhobsong@igel.co.jp>
+ <519C2F5D.8000809@igel.co.jp>
+ <20130522094741.GE14322@arm.com>
+ <519D8331.3060203@igel.co.jp>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org>
-In-Reply-To: <20130523090222.GA26592@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519D8331.3060203@igel.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/05/2013 11:02, Tejun Heo ha scritto:
-> On Thu, May 23, 2013 at 09:45:42AM +0200, Paolo Bonzini wrote:
->> Il 23/05/2013 00:17, Tejun Heo ha scritto:
->>> Then let's make it fit the use case better.  I really can't see much
->>> point in crafting the cdb filter when you basically have to entrust
->>> the device to the user anyway.  Let's either trust the user with the
->>> device or not.  I'm very doubtful that the filtered access via SG_IO
->>> can be reliable or secure enough.  Let's please avoid extending a
->>> broken thing.
->>
->> Sorry to say that, but "I'm very doubtful that..." is just conspiracy
->> theory.
->>
->> It is not broken.  I'm not _that_ clueless, if it were broken I wouldn't
->> have had users use it in production.
+On Thu, May 23, 2013 at 03:47:13AM +0100, Damian Hobson-Garcia wrote:
+> Hi Catalin,
+> On 2013/05/22 18:47, Catalin Marinas wrote:
+> > On Wed, May 22, 2013 at 03:37:17AM +0100, Damian Hobson-Garcia wrote:
+> >> Hello,
+> >> On 2013/04/30 12:01, Damian Hobson-Garcia wrote:
+> >>> Most architectures that define CONFIG_HAVE_DMA=y, have implementations for
+> >>> both dma_alloc_attrs() and dma_free_attrs().  All achitectures that do
+> >>> not define CONFIG_HAVE_DMA also have both of these definitions provided by
+> >>> dma-mapping-broken.h.
+> > 
+> > BTW, shouldn't this be called CONFIG_HAVE_DMA_ATTRS?
 > 
-> No no, I'm not talking about it not working for the users - it's just
-> passing the commands, it of course works.  I'm doubting about it being
-> a worthy security isolation layer.  cdb filtering (of any form really)
-> has always been something on the border.  It always was something we
-> got stuck with due to lack of other immediate options.
+> CONFIG_HAVE_DMA_ATTRS is currently used to enable the functions to
+> set/get the DMA attribute values. Poking through the headers, it looks
+> like the struct dma_attrs is defined regardless of the
+> CONFIG_HAVE_DMA_ATTRS setting, so in that respect
+> we always seem to "have" DMA attributes (if we have DMA), but they may
+> not always be meaningful (ie. set to some value).
 
-I understood correctly then. :)  I agree it's not the best, but it's not
-completely broken either.  It has bugs, and that's what these patches
-try to fix.
+My point was about the commit log - grep'ing the kernel for
+CONFIG_HAVE_DMA did not return anything.
 
->>> One more thing, is it really necessary to have finer granularity than
->>> provided by file permissions?  What would be the use case?  Do you
->>> expect to have multiple - two - differing levels of access with and
->>> without SG_IO?
->>
->> No, I don't.  I want four levels:
->>
->> 1) no access;
->> 2) read-only access;
->> 3) read-write whitelisted access;
->> 4) generic access;
->>
->> but it's indeed fine to assume that 3 and 4 will never be given together
->> to the same disk.  The important point is that 2 and 3 should not
->> require any privileges except for opening the file.
-> 
-> I'm wondering whether combining 3 into 4 would be good enough.
-
-No, it wouldn't.  I learnt it the hard way (by having a patch nacked :))
-at http://thread.gmane.org/gmane.linux.kernel/1311887.
-
->> With the opt-out knob, you still need a long-lived privileged process in
->> order to set the knob back to "no access", and that's undesirable.
->> Long-lived privileged processes can be SIGKILLed and leave things open
->> for misuse; instead, if I need something privileged I want to confine it
->> to a helper that opens the file and passes back the file descriptor.
-> 
-> Hmmm?  Somebody has to give out the access rights anyway, be it a udev
-> rule or polkit.  While not having to depend on them could be nice, I
-> don't think involving userland is a big deal.  It's already involved
-> in closely related capacities anyway.
-
-Polkit need not do anything to give out the access rights, it only has
-to just confirm the credentials.  A helper setgid-disk can consult
-polkit, open the file, pass the file descriptor back, and exit.  We
-already do something similar for tap devices.
-
->>>> There are many use cases, I listed some in my reply to Martin.
->>>> Sometimes you have trust over the guest and can use count-me-out.  But
->>>> in some cases you don't, and yet the current whitelist is not enough
->>>> (e.g. tapes).
->>>
->>> Can you elaborate?  Why can't a tape device be entrusted to the user?
->
-> I was curious why they wouldn't be able to use count-me-out knob.  The
-> white list was nasty but we did it anyway because there were some
-> horrible commands which, ISTR, could even affect other devices sharing
-> the bus and at least at the beginning the list of commands which
-> should be allowed were pretty compact.
-
-Exactly.  Though these commands do not really affect other devices
-sharing the bus, they affect other initiators trying to use the device.
- And these commands are generic, so they apply to disks as well as tapes.
-
-Unfortunately, a purely userspace whitelist would be too easy to circumvent.
-
-> Whitelisting those commands is likely to be mostly harmless most of
-> the time but I would be surprised if there aren't devices out in the
-> wild which can be bricked / affected adversely with carefully crafted
-> commands within the allowed cdbs.  The level of security isolation
-> which can be provided by command code filtering is somewhat flimsy,
-> which is why cdb filtering was always seen as a kludge, which in turn
-> is why there's reluctance against extending it to more use cases.
-
-Yes, I understand that.  But I don't believe it is a serious concern.
-In the case of tapes, for example, you're not talking about 10 dollar
-USB pendrives whose firmware was written in fire-and-forget mode.
-Firmware bugs would be updated by the manufacturers.
-
-I cannot exclude there will _never_ be a bug like this, of course.  But
-even if there will be one, IMHO it would be exceptional enough that we
-can afford fixing it with a per-device quirk.
-
-Scanners have never had any CDB filtering done on them; I searched for
-this kind of bug, and I couldn't find any report.
-
-What I am trying to do is to reach a compromise.  The one I'm proposing
-is to forbid reserved or vendor-specific commands, while at the same
-time opening the doors on more standardized commands.
-
-Paolo
-
+-- 
+Catalin
