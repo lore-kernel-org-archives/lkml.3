@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab3EWGDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 02:03:50 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:58291 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab3EWGDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 02:03:48 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org
-Cc: monstr@monstr.eu, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>
-Subject: [PATCH] audit: Fix decimal constant description
-Date: Thu, 23 May 2013 08:03:35 +0200
-Message-Id: <f0df7e546368dbf705bd302cfe7f834476d00e3e.1369288979.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-21252-1369289015-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1751820Ab3EWGMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:12:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751389Ab3EWGMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 02:12:53 -0400
+Date: Thu, 23 May 2013 09:12:49 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
+ pages
+Message-ID: <20130523061249.GB26157@redhat.com>
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Thu, May 23, 2013 at 03:55:59AM +0800, Xiao Guangrong wrote:
+> kvm_zap_obsolete_pages uses lock-break technique to zap pages,
+> it will flush tlb every time when it does lock-break
+> 
+> We can reload mmu on all vcpus after updating the generation
+> number so that the obsolete pages are not used on any vcpus,
+> after that we do not need to flush tlb when obsolete pages
+> are zapped
+> 
+> Note: kvm_mmu_commit_zap_page is still needed before free
+> the pages since other vcpus may be doing locklessly shadow
+> page walking
+> 
+Since obsolete pages are not accessible for lockless page walking after
+reload of all roots I do not understand why additional tlb flush is
+needed. Also why tlb flush should prevent lockless-walking from using
+the page? Making page unreachable from root_hpa does that, no?
+ 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   32 ++++++++++++++++++++++----------
+>  1 files changed, 22 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index e676356..5e34056 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -4237,8 +4237,6 @@ static void kvm_zap_obsolete_pages(struct kvm *kvm)
+>  restart:
+>  	list_for_each_entry_safe_reverse(sp, node,
+>  	      &kvm->arch.active_mmu_pages, link) {
+> -		int ret;
+> -
+>  		/*
+>  		 * No obsolete page exists before new created page since
+>  		 * active_mmu_pages is the FIFO list.
+> @@ -4254,21 +4252,24 @@ restart:
+>  		if (sp->role.invalid)
+>  			continue;
+>  
+> +		/*
+> +		 * Need not flush tlb since we only zap the sp with invalid
+> +		 * generation number.
+> +		 */
+>  		if (batch >= BATCH_ZAP_PAGES &&
+> -		      (need_resched() || spin_needbreak(&kvm->mmu_lock))) {
+> +		      cond_resched_lock(&kvm->mmu_lock)) {
+>  			batch = 0;
+> -			kvm_mmu_commit_zap_page(kvm, &invalid_list);
+> -			cond_resched_lock(&kvm->mmu_lock);
+>  			goto restart;
+>  		}
+>  
+> -		ret = kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+> -		batch += ret;
+> -
+> -		if (ret)
+> -			goto restart;
+> +		batch += kvm_mmu_prepare_zap_obsolete_page(kvm, sp,
+> +						      &invalid_list);
+>  	}
+>  
+> +	/*
+> +	 * Should flush tlb before free page tables since lockless-walking
+> +	 * may use the pages.
+> +	 */
+>  	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+>  }
+>  
+> @@ -4287,6 +4288,17 @@ void kvm_mmu_invalidate_zap_all_pages(struct kvm *kvm)
+>  	trace_kvm_mmu_invalidate_zap_all_pages(kvm);
+>  	kvm->arch.mmu_valid_gen++;
+>  
+> +	/*
+> +	 * Notify all vcpus to reload its shadow page table
+> +	 * and flush TLB. Then all vcpus will switch to new
+> +	 * shadow page table with the new mmu_valid_gen.
+> +	 *
+> +	 * Note: we should do this under the protection of
+> +	 * mmu-lock, otherwise, vcpu would purge shadow page
+> +	 * but miss tlb flush.
+> +	 */
+> +	kvm_reload_remote_mmus(kvm);
+> +
+>  	kvm_zap_obsolete_pages(kvm);
+>  	spin_unlock(&kvm->mmu_lock);
+>  }
+> -- 
+> 1.7.7.6
 
---=_mimegpg-monstr-desktop-21252-1369289015-0001
-
-Use proper decimal type for comparison with u32.
-
-Compilation warning was introduced by:
-"audit: Make testing for a valid loginuid explicit."
-(sha1: 780a7654cee8d61819512385e778e4827db4bfbc)
-
-Warning:
-kernel/auditfilter.c: In function 'audit_data_to_entry':
-kernel/auditfilter.c:426:3: warning: this decimal constant
-is unsigned only in ISO C90 [enabled by default]
-   if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>
-CC: Eric Paris <eparis@redhat.com>
----
- kernel/auditfilter.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 83a2970..cfa1f73 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -423,7 +423,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
- 		f->lsm_rule = NULL;
-
- 		/* Support legacy tests for a valid loginuid */
--		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
-+		if ((f->type == AUDIT_LOGINUID) && (f->val == ~0U)) {
- 			f->type = AUDIT_LOGINUID_SET;
- 			f->val = 0;
- 		}
 --
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-21252-1369289015-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlGdsTcACgkQykllyylKDCFUJgCdH6CkRlCu2z4nb9O3IGyQM9Rx
-onIAoItrzEE6ZKlLHPQF60rDLmxb0diS
-=Kftm
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-21252-1369289015-0001--
+			Gleb.
