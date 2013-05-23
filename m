@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3EWQ6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:58:14 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:2119
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758708Ab3EWQ6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:58:11 -0400
-X-Forefront-Antispam-Report: CIP:157.56.238.53;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0712HT004.namprd07.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h19ceh1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
-Message-ID: <519E4A98.7020903@caviumnetworks.com>
-Date: Thu, 23 May 2013 09:58:00 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1757847Ab3EWQ7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:59:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50277 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757631Ab3EWQ7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 12:59:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,729,1363158000"; 
+   d="scan'208";a="306914028"
+Date: Thu, 23 May 2013 21:52:12 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mika Westerberg <mika.westerberg@intel.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] dma: support Lynxpoint DMA
+Message-ID: <20130523162212.GJ30200@intel.com>
+References: <1368003349-12204-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130514045423.GC27639@intel.com>
+ <1369128579.29283.139.camel@smile>
+ <20130523101919.GB30200@intel.com>
+ <CAHp75Vctb1kR8gUQk0vu8scsgjBtZUq9DS0NQ+zVOPAobG0QOw@mail.gmail.com>
+ <20130523112504.GF11878@intel.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
-        <ralf@linux-mips.org>, <kvm@vger.kernel.org>,
-        Sanjay Lal <sanjayl@kymasys.com>, <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH v5 0/6] mips/kvm: Fix ABI for compatibility with 64-bit
- guests.
-References: <1369248236-27237-1-git-send-email-ddaney.cavm@gmail.com> <20130523102834.GN4725@redhat.com>
-In-Reply-To: <20130523102834.GN4725@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130523112504.GF11878@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 03:28 AM, Gleb Natapov wrote:
-> On Wed, May 22, 2013 at 11:43:50AM -0700, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->>
-> Please regenerate against master. arch/mips/include/asm/kvm.h does not
-> exists any more.
+On Thu, May 23, 2013 at 02:25:05PM +0300, Mika Westerberg wrote:
+> On Thu, May 23, 2013 at 02:07:54PM +0300, Andy Shevchenko wrote:
+> > On Thu, May 23, 2013 at 1:19 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > > On Tue, May 21, 2013 at 12:29:39PM +0300, Andy Shevchenko wrote:
+> > >> On Tue, 2013-05-14 at 10:24 +0530, Vinod Koul wrote:
+> > >> > On Wed, May 08, 2013 at 11:55:47AM +0300, Andy Shevchenko wrote:
+> > >> > > This is the rest of patch series related to ACPI DMA helpers and Lynxpoint DMAC.
+> > >> > > Patches are rebased against current Linus' tree and Vinod's branch for-linus.
+> > >> > >
+> > >> > > Since v2:
+> > >> > >  - remove patches that are already in the Vinod's tree
+> > >> > >  - rebase on top of today's origin/master and Vinod's for-linus branch
+> > >> > >  - fix description in patch 2/2
+> > >> > Applied both, Thanks
+> > >>
+> > >> Thank you for applying them to next.
+> > >>
+> > >> I'm just wondering if you are going to send pull request soon to get
+> > >> them in the v3.10-rcX.
+> > > Nope these are in next & would show up in Linus's tree in next merge window.
+> > > Something which is not a bug fix doesnt get merged in rc's. You should know the
+> > > process
+> > 
+> > Hmm... Now we have a situation when v3.9.x has support of Lynxpoint
+> > DMA, v3.10-rc2 has it broken.
+How does it work in 3.9 and not in 3.10?
 
-New patch sent.  I gather from this message, that you want to merge this 
-particular set via your tree instead of Ralf's MIPS tree.  That's fine 
-with me.  However, we were hoping to have these ABI fixing patches 
-pushed to Linus before 3.10 releases, so that there don't exist kernel 
-versions with the defective ABI.
+> > As far as I remember our discussion [1]  we agreed to wait for
+> > v3.10-rc1 due to merge of linux-pm patches.
+Yes I applied these. BUT that does not mean they will get merged to Linus as
+this is not a fix. Which part is not obvious here. This is _the_ process.
 
-Future patch sets may affect core MIPS architecture files, and therefore 
-may not be so amenable to merging via the KVM tree.  We will have to 
-figure out how to handle that.
+> Yes, and we need that stuff for BayTrail support as well. Currently Rafael
+> is waiting these patches so that he can then merge [1].
+I can keep these in a topic/branch which wont eb rebased. So Rafael can merge
+the other dependecies. Let me know if you would like that.
 
-David Daney
-
-
-
+--
+~Vinod
