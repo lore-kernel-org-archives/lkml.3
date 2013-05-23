@@ -1,48 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245Ab3EWN7n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:59:43 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:43858 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759175Ab3EWN7l (ORCPT
+	id S1759273Ab3EWN7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 09:59:53 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:37852 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759241Ab3EWN7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:59:41 -0400
+	Thu, 23 May 2013 09:59:49 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org
-Subject: [PATCH v3 part3 0/7] Customize the SG_IO whitelist for different device classes
-Date: Thu, 23 May 2013 15:59:28 +0200
-Message-Id: <1369317575-4236-1-git-send-email-pbonzini@redhat.com>
+Cc: tj@kernel.org, "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH v3 part3 3/7] sg_io: cleanup and complete whitelist for rare device types
+Date: Thu, 23 May 2013 15:59:31 +0200
+Message-Id: <1369317575-4236-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1369317575-4236-1-git-send-email-pbonzini@redhat.com>
+References: <1369317575-4236-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last problem in the SG_IO whitelist is that because the bitmap
-of allowed commands is designed for MMC devices only, some commands
-are missing even though they are generally useful and not insecure.
-At least, they are not more insecure than anything else you can do
-if you have access to /dev/sdX or /dev/stX nodes.
+Start cleaning up the table, moving out of the way four rare & obsolete
+device types: printers, communication devices (network cards), and
+processor devices.
 
-In particular, the whitelist is hardly usable for tapes; and in the
-case of virtualization, the few missing commands for disks may cause
-guests to log errors.
+This patch is included mostly for tidiness, so that flags for obsolete
+device types do not clutter the other entries.  However, it adds two
+commands for printers: SLEW AND PRINT and SYNCHRONIZE BUFFER.  These are
+present even in SCSI-2 (dated 1994).
 
-Paolo
+Processor devices could also do EXTENDED COPY operations, but these
+should not be allowed for unprivileged users because they can read/write
+to other devices.
 
-Paolo Bonzini (7):
-  sg_io: complete transition to per-class lists of allowed commands
-  sg_io: create separate entries for conflicting commands
-  sg_io: cleanup and complete whitelist for rare device types
-  sg_io: whitelist another command for multimedia devices
-  sg_io: cleanup and complete whitelist for media changers
-  sg_io: cleanup and complete whitelist for tapes
-  sg_io: cleanup and complete whitelist for disks
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ block/scsi_ioctl.c | 41 ++++++++++++++++++++++++++++++++---------
+ 1 file changed, 32 insertions(+), 9 deletions(-)
 
- block/scsi_ioctl.c  | 309 ++++++++++++++++++++++++++++++++++------------------
- include/scsi/scsi.h |   3 +
- 2 files changed, 206 insertions(+), 106 deletions(-)
-
+diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
+index 8f0344f..41bbd93 100644
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -142,7 +142,7 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x03, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C, read);  /* REQUEST SENSE */
+ 	sgio_bitmap_set(0x12, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C, read);  /* INQUIRY */
+ 	sgio_bitmap_set(0x1A, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C, read);  /* MODE SENSE(6) */
+-	sgio_bitmap_set(0x1B, D|T|L|  W|R|O|M|A|  B|K|V|F  , read);  /* START STOP UNIT */
++	sgio_bitmap_set(0x1B, D|T|    W|R|O|M|A|  B|K|V|F  , read);  /* START STOP UNIT */
+ 	sgio_bitmap_set(0x1C, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C, read);  /* RECEIVE DIAGNOSTIC RESULTS */
+ 	sgio_bitmap_set(0x2B, D|T|    W|R|O|M|      K      , read);  /* SEEK(10) */
+ 	sgio_bitmap_set(0x3C, D|T|L|P|W|R|O|M|A|E|B|K|V|F|C, read);  /* READ BUFFER */
+@@ -161,21 +161,21 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 
+ 	/* read */
+ 
+-	sgio_bitmap_set(0x08, D|T|  P|W|  O|              C, read);  /* READ(6) */
++	sgio_bitmap_set(0x08, D|T|    W|  O                , read);  /* READ(6) */
+ 	sgio_bitmap_set(0x25, D|      W|R|O|      B|K      , read);  /* READ CAPACITY(10) */
+-	sgio_bitmap_set(0x28, D|      W|R|O|      B|K|    C, read);  /* READ(10) */
++	sgio_bitmap_set(0x28, D|      W|R|O|      B|K      , read);  /* READ(10) */
+ 	sgio_bitmap_set(0x2F, D|      W|R|O                , read);  /* VERIFY(10) */
+ 	sgio_bitmap_set(0x37, D|          O|M              , read);  /* READ DEFECT DATA(10) */
+ 	sgio_bitmap_set(0x3E, D|      W|  O                , read);  /* READ LONG(10) */
+ 	sgio_bitmap_set(0x88, D|T|    W|  O|      B        , read);  /* READ(16) */
+ 	sgio_bitmap_set(0x8F, D|T|    W|  O|      B        , read);  /* VERIFY(16) */
+-	sgio_bitmap_set(0xA8, D|      W|R|O|              C, read);  /* READ(12) */
++	sgio_bitmap_set(0xA8, D|      W|R|O                , read);  /* READ(12) */
+ 
+ 	/* write */
+ 
+-	sgio_bitmap_set(0x04, D|T|L|    R|O                , write); /* FORMAT UNIT */
+-	sgio_bitmap_set(0x0A, D|T|L|P|W|  O|              C, write); /* WRITE(6) */
+-	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K|    C, write); /* WRITE(10) */
++	sgio_bitmap_set(0x04, D|T|      R|O                , write); /* FORMAT UNIT */
++	sgio_bitmap_set(0x0A, D|T|    W|  O                , write); /* WRITE(6) */
++	sgio_bitmap_set(0x2A, D|      W|R|O|      B|K      , write); /* WRITE(10) */
+ 	sgio_bitmap_set(0x2E, D|      W|R|O|      B|K      , write); /* WRITE AND VERIFY(10) */
+ 	sgio_bitmap_set(0x35, D|      W|R|O|      B|K      , write); /* SYNCHRONIZE CACHE(10) */
+ 	sgio_bitmap_set(0x3F, D|      W|  O                , write); /* WRITE LONG(10) */
+@@ -183,11 +183,20 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 	sgio_bitmap_set(0x48, D|                  B        , write); /* SANITIZE */
+ 	sgio_bitmap_set(0x51, D                            , write); /* XPWRITE(10) */
+ 	sgio_bitmap_set(0x8A, D|T|    W|  O|      B        , write); /* WRITE(16) */
+-	sgio_bitmap_set(0xAA, D|      W|R|O|              C, write); /* WRITE(12) */
++	sgio_bitmap_set(0xAA, D|      W|R|O                , write); /* WRITE(12) */
+ 	sgio_bitmap_set(0xAC,             O                , write); /* ERASE(12) */
+ 	sgio_bitmap_set(0xAE, D|      W|  O                , write); /* WRITE AND VERIFY(12) */
+ 	sgio_bitmap_set(0xEA, D|      W|  O                , write); /* WRITE_LONG_2 ?? */
+ 
++	/* printer */
++
++	sgio_bitmap_set(0x04,     L                        , write); /* FORMAT */
++	sgio_bitmap_set(0x0A,     L                        , write); /* PRINT */
++	sgio_bitmap_set(0x0B,     L                        , write); /* SLEW AND PRINT */
++	sgio_bitmap_set(0x10,     L                        , write); /* SYNCHRONIZE BUFFER */
++	sgio_bitmap_set(0x14,     L                        , write); /* RECOVER BUFFERED DATA */
++	sgio_bitmap_set(0x1B,     L                        , write); /* STOP PRINT */
++
+ 	/* MMC */
+ 
+ 	sgio_bitmap_set(0x23,           R                  , read);  /* READ FORMAT CAPACITIES */
+@@ -230,6 +239,20 @@ static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
+ 
+ 	sgio_bitmap_set(0x19,   T                          , write); /* ERASE(6) */
+ 
++	/* communication devices (obsolete) */
++
++	sgio_bitmap_set(0x08,                             C, read);  /* GET MESSAGE(6) */
++	sgio_bitmap_set(0x28,                             C, read);  /* GET MESSAGE(10) */
++	sgio_bitmap_set(0xA8,                             C, read);  /* GET MESSAGE(12) */
++	sgio_bitmap_set(0x0A,                             C, write); /* SEND MESSAGE(6) */
++	sgio_bitmap_set(0x2A,                             C, write); /* SEND MESSAGE(10) */
++	sgio_bitmap_set(0xAA,                             C, write); /* SEND MESSAGE(12) */
++
++	/* processor devices (mostly obsolete, SPC-2) */
++
++	sgio_bitmap_set(0x08,       P                      , read);  /* RECEIVE(6) */
++	sgio_bitmap_set(0x0A,       P                      , write); /* SEND(6) */
++
+ #undef D
+ #undef T
+ #undef L
 -- 
 1.8.1.4
+
 
