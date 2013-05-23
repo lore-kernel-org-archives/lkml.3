@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725Ab3EWF7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 01:59:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63485 "EHLO mx1.redhat.com"
+	id S1751796Ab3EWGBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:01:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50588 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab3EWF7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 01:59:40 -0400
-Date: Thu, 23 May 2013 08:59:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH V2] virtio_net: enable napi for all possible queues
- during open
-Message-ID: <20130523055957.GC13916@redhat.com>
-References: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
+	id S1751440Ab3EWGBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 02:01:32 -0400
+From: Ravi Babu <ravibabu@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <balbi@ti.com>, Ravi Babu <ravibabu@ti.com>
+Subject: [PATCH v1 0/9] adding dual instance and usb-phy support for am335x platform
+Date: Thu, 23 May 2013 11:31:19 +0530
+Message-ID: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 02:03:58PM +0800, Jason Wang wrote:
-> Commit 55257d72bd1c51f25106350f4983ec19f62ed1fa (virtio-net: fill only rx
-> queues which are being used) only does the napi enabling during open for
-> curr_queue_pairs. This will break multiqueue receiving since napi of new queues
-> were still disabled after changing the number of queues.
-> 
-> This patch fixes this by enabling napi for all possible queues during open.
-> 
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+This patch set series
+        - adds dual musb instances support for am335x platform
+        - adds phy-dsps-usb driver based on TI's gs70 driver
+        - adds DT bindings for am33xx usb-phy
+	- removed references to usb-nop-xceiv from musb
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+has been verified on tree [1]
 
-> ---
-> Changes from V1:
-> - enable napi in open instead of virtnet_set_queues() to avoid kernel BUG() when
-> trying to do napi_enable() for a already enabled queue
-> ---
->  drivers/net/virtio_net.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 2d6abac..241527d 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -636,10 +636,11 @@ static int virtnet_open(struct net_device *dev)
->  	struct virtnet_info *vi = netdev_priv(dev);
->  	int i;
->  
-> -	for (i = 0; i < vi->curr_queue_pairs; i++) {
-> -		/* Make sure we have some buffers: if oom use wq. */
-> -		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-> -			schedule_delayed_work(&vi->refill, 0);
-> +	for (i = 0; i < vi->max_queue_pairs; i++) {
-> +		if (i < vi->curr_queue_pairs)
-> +			/* Make sure we have some buffers: if oom use wq. */
-> +			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-> +				schedule_delayed_work(&vi->refill, 0);
->  		virtnet_napi_enable(&vi->rq[i]);
->  	}
->  
-> -- 
-> 1.7.1
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+
+Ravi Babu (9):
+  usb: musb: dsps: enable dual instance support for am33xx platform
+  usb: musb: nop: remove unused nop_xceiv_(un)register APIs from glue
+  arch: arm: omap3: remove unused usb_nop_xceive register API's
+  usb: phy: nop: removing unused usb_nop_xceiv_(un_)register API
+  usb: phy: dsps: adding usbphy driver for am33xx platform
+  usb: musb: dsps: use usb-phy driver API for phy power on/off
+  usb: musb: dsps: use get-usb-phy by phandle for multi instance
+  usb: phy: dts: Adding usbphy DT bindings for am33xx
+  usb: musb: dsp: remove the usb-phy control acess from platform glue
+
+ arch/arm/boot/dts/am33xx.dtsi        |   17 +++
+ arch/arm/mach-omap2/board-omap3evm.c |    3 -
+ drivers/usb/musb/am35x.c             |    2 -
+ drivers/usb/musb/blackfin.c          |    2 -
+ drivers/usb/musb/da8xx.c             |    2 -
+ drivers/usb/musb/davinci.c           |    3 -
+ drivers/usb/musb/musb_dsps.c         |   85 +++----------
+ drivers/usb/musb/tusb6010.c          |    3 -
+ drivers/usb/phy/Kconfig              |    9 ++
+ drivers/usb/phy/Makefile             |    1 +
+ drivers/usb/phy/phy-dsps-usb.c       |  236 ++++++++++++++++++++++++++++++++++
+ drivers/usb/phy/phy-nop.c            |   21 ---
+ include/linux/usb/nop-usb-xceiv.h    |   14 --
+ 13 files changed, 282 insertions(+), 116 deletions(-)
+ create mode 100644 drivers/usb/phy/phy-dsps-usb.c
+
