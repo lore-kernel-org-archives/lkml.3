@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759733Ab3EWP0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:26:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:38806 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759611Ab3EWPZw (ORCPT
+	id S1759716Ab3EWP0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:26:44 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:43451 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759600Ab3EWPZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:25:52 -0400
+	Thu, 23 May 2013 11:25:55 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org, sameo@linux.intel.com
 Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 09/16] mfd: cros_ec: Convert to managed resources for allocating memory
-Date: Thu, 23 May 2013 16:25:10 +0100
-Message-Id: <1369322717-30429-9-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 15/16] mfd: max77686: Convert to managed resources for allocating memory
+Date: Thu, 23 May 2013 16:25:16 +0100
+Message-Id: <1369322717-30429-15-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
 References: <1369322717-30429-1-git-send-email-lee.jones@linaro.org>
@@ -22,72 +22,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/cros_ec.c |   28 +++++++++-------------------
- 1 file changed, 9 insertions(+), 19 deletions(-)
+ drivers/mfd/max77686.c |   25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-index 10cd14e..1f36885 100644
---- a/drivers/mfd/cros_ec.c
-+++ b/drivers/mfd/cros_ec.c
-@@ -104,23 +104,19 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 	ec_dev->command_sendrecv = cros_ec_command_sendrecv;
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 1cbb176..b094ac5 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -84,12 +84,12 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
  
- 	if (ec_dev->din_size) {
--		ec_dev->din = kmalloc(ec_dev->din_size, GFP_KERNEL);
--		if (!ec_dev->din) {
--			err = -ENOMEM;
--			goto fail_din;
--		}
-+		ec_dev->din = devm_kzalloc(dev, ec_dev->din_size, GFP_KERNEL);
-+		if (!ec_dev->din)
-+			return -ENOMEM;
- 	}
- 	if (ec_dev->dout_size) {
--		ec_dev->dout = kmalloc(ec_dev->dout_size, GFP_KERNEL);
--		if (!ec_dev->dout) {
--			err = -ENOMEM;
--			goto fail_dout;
--		}
-+		ec_dev->dout = devm_kzalloc(dev, ec_dev->dout_size, GFP_KERNEL);
-+		if (!ec_dev->dout)
-+			return -ENOMEM;
+ 	if (!pdata) {
+-		ret = -EIO;
+ 		dev_err(&i2c->dev, "No platform data found.\n");
+-		goto err;
++		return -EIO;
  	}
  
- 	if (!ec_dev->irq) {
- 		dev_dbg(dev, "no valid IRQ: %d\n", ec_dev->irq);
--		goto fail_irq;
-+		return err;
+-	max77686 = kzalloc(sizeof(struct max77686_dev), GFP_KERNEL);
++	max77686 = devm_kzalloc(&i2c->dev,
++				sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (max77686 == NULL)
+ 		return -ENOMEM;
+ 
+@@ -107,7 +107,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		ret = PTR_ERR(max77686->regmap);
+ 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
+ 				ret);
+-		kfree(max77686);
+ 		return ret;
  	}
  
- 	err = request_threaded_irq(ec_dev->irq, NULL, ec_irq_thread,
-@@ -128,7 +124,7 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
- 				   "chromeos-ec", ec_dev);
- 	if (err) {
- 		dev_err(dev, "request irq %d: error %d\n", ec_dev->irq, err);
--		goto fail_irq;
-+		return err;
- 	}
+@@ -115,8 +114,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			 MAX77686_REG_DEVICE_ID, &data) < 0) {
+ 		dev_err(max77686->dev,
+ 			"device not found on this channel (this is not an error)\n");
+-		ret = -ENODEV;
+-		goto err;
++		return -ENODEV;
+ 	} else
+ 		dev_info(max77686->dev, "device found\n");
  
- 	err = mfd_add_devices(dev, 0, cros_devs,
-@@ -145,11 +141,7 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
+@@ -127,17 +125,11 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
  
- fail_mfd:
- 	free_irq(ec_dev->irq, ec_dev);
--fail_irq:
--	kfree(ec_dev->dout);
--fail_dout:
--	kfree(ec_dev->din);
--fail_din:
-+
- 	return err;
+ 	ret = mfd_add_devices(max77686->dev, -1, max77686_devs,
+ 			      ARRAY_SIZE(max77686_devs), NULL, 0, NULL);
++	if (ret < 0) {
++		mfd_remove_devices(max77686->dev);
++		i2c_unregister_device(max77686->rtc);
++	}
+ 
+-	if (ret < 0)
+-		goto err_mfd;
+-
+-	return ret;
+-
+-err_mfd:
+-	mfd_remove_devices(max77686->dev);
+-	i2c_unregister_device(max77686->rtc);
+-err:
+-	kfree(max77686);
+ 	return ret;
  }
- EXPORT_SYMBOL(cros_ec_register);
-@@ -158,8 +150,6 @@ int cros_ec_remove(struct cros_ec_device *ec_dev)
- {
- 	mfd_remove_devices(ec_dev->dev);
- 	free_irq(ec_dev->irq, ec_dev);
--	kfree(ec_dev->dout);
--	kfree(ec_dev->din);
+ 
+@@ -147,7 +139,6 @@ static int max77686_i2c_remove(struct i2c_client *i2c)
+ 
+ 	mfd_remove_devices(max77686->dev);
+ 	i2c_unregister_device(max77686->rtc);
+-	kfree(max77686);
  
  	return 0;
  }
