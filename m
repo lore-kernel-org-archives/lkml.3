@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab3EWMJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:09:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54863 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758578Ab3EWMJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:09:46 -0400
-Date: Thu, 23 May 2013 14:09:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] HID: usbhid: ignore Jabra speakerphones HID interface
-In-Reply-To: <1369258790-30629-1-git-send-email-vpalatin@chromium.org>
-Message-ID: <alpine.LNX.2.00.1305231409360.22195@pobox.suse.cz>
-References: <CAP_ceTxhMut6Gewj=WxqAREusK4ZpwOyptAOAm9YT=LvEJcXCQ@mail.gmail.com> <1369258790-30629-1-git-send-email-vpalatin@chromium.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758600Ab3EWMMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:12:10 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:35899 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3EWMMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:12:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130523120856.DD752E0090@blue.fi.intel.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
+	<CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
+	<20130523120856.DD752E0090@blue.fi.intel.com>
+Date: Thu, 23 May 2013 20:12:07 +0800
+Message-ID: <CAJd=RBAcsAk5qN1dy2OhHYqB3fuwd0RfjPK_4=E1G_k=CUwycw@mail.gmail.com>
+Subject: Re: [PATCHv4 37/39] thp: handle write-protect exception to
+ file-backed huge pages
+From: Hillf Danton <dhillf@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 May 2013, Vincent Palatin wrote:
+On Thu, May 23, 2013 at 8:08 PM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> Hillf Danton wrote:
+>> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+>> <kirill.shutemov@linux.intel.com> wrote:
+>> > @@ -1120,7 +1119,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>> >
+>> >         page = pmd_page(orig_pmd);
+>> >         VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+>> > -       if (page_mapcount(page) == 1) {
+>> > +       if (PageAnon(page) && page_mapcount(page) == 1) {
+>>
+>> Could we avoid copying huge page if
+>> no-one else is using it, no matter anon?
+>
+> No. The page is still in page cache and can be later accessed later.
+> We could isolate the page from page cache, but I'm not sure whether it's
+> good idea.
+>
+Hugetlb tries to avoid copying pahe.
 
-> Add a quirk to ignore Jabra speakerphone 410 and 510 devices HID
-> interface.
-> On those devices, the USB audio interface is working nicely,
-> but the HID interface is not working with the kernel usbhid driver,
-> and it requires a specific userspace program.
-> We could unbind it from userspace but just attaching the usbhid driver has
-> sometimes nasty effects:
-> either confusing the device state machine or triggering a storm of volume key
-> events making eventual sound UI blinking like crazy.
-> 
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> ---
->  drivers/hid/hid-core.c | 2 ++
->  drivers/hid/hid-ids.h  | 4 ++++
->  2 files changed, 6 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 264f550..5d2ef66 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -2042,6 +2042,8 @@ static const struct hid_device_id hid_ignore_list[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_GTCO, USB_DEVICE_ID_GTCO_1006) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_GTCO, USB_DEVICE_ID_GTCO_1007) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_IMATION, USB_DEVICE_ID_DISC_STAKKA) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_JABRA, USB_DEVICE_ID_JABRA_SPEAK_410) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_JABRA, USB_DEVICE_ID_JABRA_SPEAK_510) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_KBGEAR, USB_DEVICE_ID_KBGEAR_JAMSTUDIO) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_KWORLD, USB_DEVICE_ID_KWORLD_RADIO_FM700) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_GPEN_560) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 38535c9..533815b 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -447,6 +447,10 @@
->  #define USB_VENDOR_ID_IRTOUCHSYSTEMS	0x6615
->  #define USB_DEVICE_ID_IRTOUCH_INFRARED_USB	0x0070
->  
-> +#define USB_VENDOR_ID_JABRA		0x0b0e
-> +#define USB_DEVICE_ID_JABRA_SPEAK_410	0x0412
-> +#define USB_DEVICE_ID_JABRA_SPEAK_510	0x0420
-> +
->  #define USB_VENDOR_ID_JESS		0x0c45
->  #define USB_DEVICE_ID_JESS_YUREX	0x1010
-
-Applied, thanks.
-
--- 
-Jiri Kosina
-SUSE Labs
+	/* If no-one else is actually using this page, avoid the copy
+	 * and just make the page writable */
+	avoidcopy = (page_mapcount(old_page) == 1);
