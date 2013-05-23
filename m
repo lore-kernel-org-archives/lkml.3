@@ -1,208 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759103Ab3EWN6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 09:58:41 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:51586 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758632Ab3EWN6j (ORCPT
+	id S1759330Ab3EWOCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:02:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41066 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759243Ab3EWOCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 09:58:39 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tj@kernel.org, stable@gnu.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH v3 part1 2/4] sg_io: prepare to introduce per-class command filters
-Date: Thu, 23 May 2013 15:58:21 +0200
-Message-Id: <1369317503-4095-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
-References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
+	Thu, 23 May 2013 10:02:01 -0400
+Message-ID: <1369317700.3469.256.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] build some drivers only when compile-testing
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        linux-usb@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>, netdev@vger.kernel.org,
+        "Keller, Jacob E" <jacob.e.keller@intel.com>
+Date: Thu, 23 May 2013 15:01:40 +0100
+In-Reply-To: <20130523022327.GB6159@kroah.com>
+References: <1369214326-6558-1-git-send-email-jslaby@suse.cz>
+	 <20130523022327.GB6159@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-/YrTbIfb6pF3h+cb9713"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare for the next patches, abstract setting of an entry in the
-command filter behind a macro.
 
-The next patch will change the implementation of the macro.
+--=-/YrTbIfb6pF3h+cb9713
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Cc: stable@gnu.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/scsi_ioctl.c | 148 +++++++++++++++++++++++++++--------------------------
- 1 file changed, 76 insertions(+), 72 deletions(-)
+On Wed, 2013-05-22 at 19:23 -0700, Greg Kroah-Hartman wrote:
+> On Wed, May 22, 2013 at 11:18:46AM +0200, Jiri Slaby wrote:
+> > Some drivers can be built on more platforms than they run on. This
+> > causes users and distributors packaging burden when they have to
+> > manually deselect some drivers from their allmodconfigs. Or sometimes
+> > it is even impossible to disable the drivers without patching the
+> > kernel.
+> >=20
+> > Introduce a new config option COMPILE_TEST and make all those drivers
+> > to depend on the platform they run on, or on the COMPILE_TEST option.
+> > Now, when users/distributors choose COMPILE_TEST=3Dn they will not have
+> > the drivers in their allmodconfig setups, but developers still can
+> > compile-test them with COMPILE_TEST=3Dy.
+>=20
+> I understand the urge, and it's getting hard for distros to handle these
+> drivers that just don't work on other architectures, but it's really
+> valuable to ensure that they build properly, for those of us that don't
+> have many/any cross compilers set up.
+>=20
+> > Now the drivers where we use this new option:
+> > * PTP_1588_CLOCK_PCH: The PCH EG20T is only compatible with Intel Atom
+> >   processors so it should depend on x86.
+> > * FB_GEODE: Geode is 32-bit only so only enable it for X86_32.
+> > * USB_CHIPIDEA_IMX: The OF_DEVICE dependency will be met on powerpc
+> >   systems -- which do not actually support the hardware via that
+> >   method.
+>=20
+> This seems ripe to start to get really messy, really quickly.  Shouldn't
+> "default configs" handle if this "should" be enabled for a platform or
+> not, and let the rest of us just build them with no problems?
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 96cab50..21ddf17 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -116,85 +116,89 @@ static int sg_emulated_host(struct request_queue *q, int __user *p)
- 
- static void blk_set_cmd_filter_defaults(struct blk_cmd_filter *filter)
- {
-+#define sgio_bitmap_set(cmd, rw) \
-+	__set_bit((cmd), filter->rw##_ok)
-+
- 	/* Basic read-only commands */
--	__set_bit(TEST_UNIT_READY, filter->read_ok);
--	__set_bit(REQUEST_SENSE, filter->read_ok);
--	__set_bit(READ_6, filter->read_ok);
--	__set_bit(READ_10, filter->read_ok);
--	__set_bit(READ_12, filter->read_ok);
--	__set_bit(READ_16, filter->read_ok);
--	__set_bit(READ_BUFFER, filter->read_ok);
--	__set_bit(READ_DEFECT_DATA, filter->read_ok);
--	__set_bit(READ_CAPACITY, filter->read_ok);
--	__set_bit(READ_LONG, filter->read_ok);
--	__set_bit(INQUIRY, filter->read_ok);
--	__set_bit(MODE_SENSE, filter->read_ok);
--	__set_bit(MODE_SENSE_10, filter->read_ok);
--	__set_bit(LOG_SENSE, filter->read_ok);
--	__set_bit(START_STOP, filter->read_ok);
--	__set_bit(GPCMD_VERIFY_10, filter->read_ok);
--	__set_bit(VERIFY_16, filter->read_ok);
--	__set_bit(REPORT_LUNS, filter->read_ok);
--	__set_bit(SERVICE_ACTION_IN, filter->read_ok);
--	__set_bit(RECEIVE_DIAGNOSTIC, filter->read_ok);
--	__set_bit(MAINTENANCE_IN, filter->read_ok);
--	__set_bit(GPCMD_READ_BUFFER_CAPACITY, filter->read_ok);
-+	sgio_bitmap_set(TEST_UNIT_READY, read);
-+	sgio_bitmap_set(REQUEST_SENSE, read);
-+	sgio_bitmap_set(READ_6, read);
-+	sgio_bitmap_set(READ_10, read);
-+	sgio_bitmap_set(READ_12, read);
-+	sgio_bitmap_set(READ_16, read);
-+	sgio_bitmap_set(READ_BUFFER, read);
-+	sgio_bitmap_set(READ_DEFECT_DATA, read);
-+	sgio_bitmap_set(READ_CAPACITY, read);
-+	sgio_bitmap_set(READ_LONG, read);
-+	sgio_bitmap_set(INQUIRY, read);
-+	sgio_bitmap_set(MODE_SENSE, read);
-+	sgio_bitmap_set(MODE_SENSE_10, read);
-+	sgio_bitmap_set(LOG_SENSE, read);
-+	sgio_bitmap_set(START_STOP, read);
-+	sgio_bitmap_set(GPCMD_VERIFY_10, read);
-+	sgio_bitmap_set(VERIFY_16, read);
-+	sgio_bitmap_set(REPORT_LUNS, read);
-+	sgio_bitmap_set(SERVICE_ACTION_IN, read);
-+	sgio_bitmap_set(RECEIVE_DIAGNOSTIC, read);
-+	sgio_bitmap_set(MAINTENANCE_IN, read);
-+	sgio_bitmap_set(GPCMD_READ_BUFFER_CAPACITY, read);
- 
- 	/* Audio CD commands */
--	__set_bit(GPCMD_PLAY_CD, filter->read_ok);
--	__set_bit(GPCMD_PLAY_AUDIO_10, filter->read_ok);
--	__set_bit(GPCMD_PLAY_AUDIO_MSF, filter->read_ok);
--	__set_bit(GPCMD_PLAY_AUDIO_TI, filter->read_ok);
--	__set_bit(GPCMD_PAUSE_RESUME, filter->read_ok);
-+	sgio_bitmap_set(GPCMD_PLAY_CD, read);
-+	sgio_bitmap_set(GPCMD_PLAY_AUDIO_10, read);
-+	sgio_bitmap_set(GPCMD_PLAY_AUDIO_MSF, read);
-+	sgio_bitmap_set(GPCMD_PLAY_AUDIO_TI, read);
-+	sgio_bitmap_set(GPCMD_PAUSE_RESUME, read);
- 
- 	/* CD/DVD data reading */
--	__set_bit(GPCMD_READ_CD, filter->read_ok);
--	__set_bit(GPCMD_READ_CD_MSF, filter->read_ok);
--	__set_bit(GPCMD_READ_DISC_INFO, filter->read_ok);
--	__set_bit(GPCMD_READ_CDVD_CAPACITY, filter->read_ok);
--	__set_bit(GPCMD_READ_DVD_STRUCTURE, filter->read_ok);
--	__set_bit(GPCMD_READ_HEADER, filter->read_ok);
--	__set_bit(GPCMD_READ_TRACK_RZONE_INFO, filter->read_ok);
--	__set_bit(GPCMD_READ_SUBCHANNEL, filter->read_ok);
--	__set_bit(GPCMD_READ_TOC_PMA_ATIP, filter->read_ok);
--	__set_bit(GPCMD_REPORT_KEY, filter->read_ok);
--	__set_bit(GPCMD_SCAN, filter->read_ok);
--	__set_bit(GPCMD_GET_CONFIGURATION, filter->read_ok);
--	__set_bit(GPCMD_READ_FORMAT_CAPACITIES, filter->read_ok);
--	__set_bit(GPCMD_GET_EVENT_STATUS_NOTIFICATION, filter->read_ok);
--	__set_bit(GPCMD_GET_PERFORMANCE, filter->read_ok);
--	__set_bit(GPCMD_SEEK, filter->read_ok);
--	__set_bit(GPCMD_STOP_PLAY_SCAN, filter->read_ok);
-+	sgio_bitmap_set(GPCMD_READ_CD, read);
-+	sgio_bitmap_set(GPCMD_READ_CD_MSF, read);
-+	sgio_bitmap_set(GPCMD_READ_DISC_INFO, read);
-+	sgio_bitmap_set(GPCMD_READ_CDVD_CAPACITY, read);
-+	sgio_bitmap_set(GPCMD_READ_DVD_STRUCTURE, read);
-+	sgio_bitmap_set(GPCMD_READ_HEADER, read);
-+	sgio_bitmap_set(GPCMD_READ_TRACK_RZONE_INFO, read);
-+	sgio_bitmap_set(GPCMD_READ_SUBCHANNEL, read);
-+	sgio_bitmap_set(GPCMD_READ_TOC_PMA_ATIP, read);
-+	sgio_bitmap_set(GPCMD_REPORT_KEY, read);
-+	sgio_bitmap_set(GPCMD_SCAN, read);
-+	sgio_bitmap_set(GPCMD_GET_CONFIGURATION, read);
-+	sgio_bitmap_set(GPCMD_READ_FORMAT_CAPACITIES, read);
-+	sgio_bitmap_set(GPCMD_GET_EVENT_STATUS_NOTIFICATION, read);
-+	sgio_bitmap_set(GPCMD_GET_PERFORMANCE, read);
-+	sgio_bitmap_set(GPCMD_SEEK, read);
-+	sgio_bitmap_set(GPCMD_STOP_PLAY_SCAN, read);
- 
- 	/* Basic writing commands */
--	__set_bit(WRITE_6, filter->write_ok);
--	__set_bit(WRITE_10, filter->write_ok);
--	__set_bit(WRITE_VERIFY, filter->write_ok);
--	__set_bit(WRITE_12, filter->write_ok);
--	__set_bit(WRITE_VERIFY_12, filter->write_ok);
--	__set_bit(WRITE_16, filter->write_ok);
--	__set_bit(WRITE_LONG, filter->write_ok);
--	__set_bit(WRITE_LONG_2, filter->write_ok);
--	__set_bit(ERASE, filter->write_ok);
--	__set_bit(GPCMD_MODE_SELECT_10, filter->write_ok);
--	__set_bit(MODE_SELECT, filter->write_ok);
--	__set_bit(LOG_SELECT, filter->write_ok);
--	__set_bit(GPCMD_BLANK, filter->write_ok);
--	__set_bit(GPCMD_CLOSE_TRACK, filter->write_ok);
--	__set_bit(GPCMD_FLUSH_CACHE, filter->write_ok);
--	__set_bit(GPCMD_FORMAT_UNIT, filter->write_ok);
--	__set_bit(GPCMD_REPAIR_RZONE_TRACK, filter->write_ok);
--	__set_bit(GPCMD_RESERVE_RZONE_TRACK, filter->write_ok);
--	__set_bit(GPCMD_SEND_DVD_STRUCTURE, filter->write_ok);
--	__set_bit(GPCMD_SEND_EVENT, filter->write_ok);
--	__set_bit(GPCMD_SEND_KEY, filter->write_ok);
--	__set_bit(GPCMD_SEND_OPC, filter->write_ok);
--	__set_bit(GPCMD_SEND_CUE_SHEET, filter->write_ok);
--	__set_bit(GPCMD_SET_SPEED, filter->write_ok);
--	__set_bit(GPCMD_PREVENT_ALLOW_MEDIUM_REMOVAL, filter->write_ok);
--	__set_bit(GPCMD_LOAD_UNLOAD, filter->write_ok);
--	__set_bit(GPCMD_SET_STREAMING, filter->write_ok);
--	__set_bit(GPCMD_SET_READ_AHEAD, filter->write_ok);
-+	sgio_bitmap_set(WRITE_6, write);
-+	sgio_bitmap_set(WRITE_10, write);
-+	sgio_bitmap_set(WRITE_VERIFY, write);
-+	sgio_bitmap_set(WRITE_12, write);
-+	sgio_bitmap_set(WRITE_VERIFY_12, write);
-+	sgio_bitmap_set(WRITE_16, write);
-+	sgio_bitmap_set(WRITE_LONG, write);
-+	sgio_bitmap_set(WRITE_LONG_2, write);
-+	sgio_bitmap_set(ERASE, write);
-+	sgio_bitmap_set(GPCMD_MODE_SELECT_10, write);
-+	sgio_bitmap_set(MODE_SELECT, write);
-+	sgio_bitmap_set(LOG_SELECT, write);
-+	sgio_bitmap_set(GPCMD_BLANK, write);
-+	sgio_bitmap_set(GPCMD_CLOSE_TRACK, write);
-+	sgio_bitmap_set(GPCMD_FLUSH_CACHE, write);
-+	sgio_bitmap_set(GPCMD_FORMAT_UNIT, write);
-+	sgio_bitmap_set(GPCMD_REPAIR_RZONE_TRACK, write);
-+	sgio_bitmap_set(GPCMD_RESERVE_RZONE_TRACK, write);
-+	sgio_bitmap_set(GPCMD_SEND_DVD_STRUCTURE, write);
-+	sgio_bitmap_set(GPCMD_SEND_EVENT, write);
-+	sgio_bitmap_set(GPCMD_SEND_KEY, write);
-+	sgio_bitmap_set(GPCMD_SEND_OPC, write);
-+	sgio_bitmap_set(GPCMD_SEND_CUE_SHEET, write);
-+	sgio_bitmap_set(GPCMD_SET_SPEED, write);
-+	sgio_bitmap_set(GPCMD_PREVENT_ALLOW_MEDIUM_REMOVAL, write);
-+	sgio_bitmap_set(GPCMD_LOAD_UNLOAD, write);
-+	sgio_bitmap_set(GPCMD_SET_STREAMING, write);
-+	sgio_bitmap_set(GPCMD_SET_READ_AHEAD, write);
-+#undef sgio_bitmap_set
- }
- 
- int blk_verify_command(struct request_queue *q,
--- 
-1.8.1.4
+Debian aims to provide a consistent feature set across all supported
+architectures so far as possible, and I would expect other distributions
+to do the same.  I don't believe anyone is coordinating defconfigs
+across architectures to ensure that.
 
+Distributions may also have particular requirements from userland that a
+distribution-agnostic defconfig obviously doesn't cover.  (Isn't that
+why we had the discussion about 'configure for my distribution' some
+months back?)
 
+For the driver configuration, what we provide in Debian is closer to
+allmodconfig, only with some attempt to exclude those useless drivers.
+Dependencies like this would make it easier to do that.
+
+> What problems is this causing you?  Are you running out of space in
+> kernel packages with drivers that will never be actually used?
+
+On most x86 systems this isn't going to be an issue.  But if packages
+are built natively (as they are for most distributions) then building
+useless drivers for some architecture which doesn't have fast processors
+available is a waste of precious resources.
+
+This is particularly bad where the architecture doesn't support generic
+kernels that boot on a wide range of machines and therefore we must
+build many times over.  These unfortunately tend to be among those with
+slower processors (ARM[1], MIPS, SH, ...).  Currently, Debian's linux
+package takes ~48 hours to build for armel (ARM processors without FPU)
+- and that's without building many of the PCI drivers we could for those
+platforms which have PCI support.  So that's a minimum of 2 days to
+provide a security update across all architectures[2].
+
+[1] I'm aware that ARM is getting better in this regard and most ARMv7
+machines are likely to be supportable by a single kernel image soon.
+That doesn't mean the whole problem is solved.
+
+[2] We don't always wait for all builds before releasing/announcing an
+update; for example <http://www.debian.org/security/2013/dsa-2669>.  But
+that's no comfort for those using the slower architecture.
+
+> > +config COMPILE_TEST
+> > +     bool "Compile also drivers which will not load" if EXPERT
+>=20
+> EXPERT is getting to be the "let's hide it here" option, isn't it...
+
+This little detail seems likely to reduce the usefulness of randconfig
+as many drivers will become dependent on both EXPERT and COMPILE_TEST
+being selected.
+
+> I don't know, if no one else strongly objects, I can be convinced that
+> this is needed, but so far, I don't see why it really is, or what this
+> is going to help with.
+
+Ben.
+
+--=20
+Ben Hutchings
+friends: People who know you well, but like you anyway.
+
+--=-/YrTbIfb6pF3h+cb9713
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUZ4hROe/yOyVhhEJAQowLw//aF3B/Qj0C7QD3gq+DQq47c1LAUVFsLPq
+T8VpRfvBkjjGurl5Ks3CBcubPo4Nv2Z37AyHCo1aNfMkEV7NOH6/mMeKe6qa5I05
+U/fYlxERDGp/bDTvCwjkTFbeud/WKTF1q20chCAaPdnqjpHtzj9wV3vaC94CcwZ9
+ZWvtQYpgObUY2t2JIryUd7q2xN1EcIBf2L0nuShsqCBe6KQCCNWfZX8imRy3F61R
+JcIdkO/G5lSu5yAFC/K34L538BUFJU5u9gipXXgO9r88+riluvIAakQSTpJagmaB
+Yp6Oql3GMFd7hZ3Evv5KeSsc0HnqZyvrePD/Oe4LbZYC8pdLOhBQ02GMQzAP/mF2
+JkfwoGzMdD9GoSYdd61Qzqlaez8w0PI9hnLnmX2XKr0wJ3pObh3Rro+QOs/4QBwN
+7nH5nJNGtq8pZlLAxDXX3QqvYHBnig5QE9g7223YwPuBDut7TlBbFH07UaZ0wFRQ
+g38qXBqQ8TsUDA51evfj204qDmz6P3AN6fUM+4d6ZXGsjlkeakSxWi1zW+v1q/I0
+9Fy++morArCRvwh5Bh1BeRhlIG4PlJNjwNYCmSPAYx9eFkTHyTJlmBWgj3K5fTO4
+POlQC3LaK+mASEInCA93ij33i9Sj/70V3ix/cx50C7yYGuP2xfQrsOb6OJ2lJgUm
+4F0rjNu0gwU=
+=40uU
+-----END PGP SIGNATURE-----
+
+--=-/YrTbIfb6pF3h+cb9713--
