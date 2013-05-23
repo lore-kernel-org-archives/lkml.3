@@ -1,183 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3EWOL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:11:26 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24361 "EHLO mga03.intel.com"
+	id S1758772Ab3EWOLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:11:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24373 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757494Ab3EWOLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:11:23 -0400
+	id S1758523Ab3EWOL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:11:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="306834271"
+   d="scan'208";a="306834354"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: linux-usb@vger.kernel.org
 Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: =?UTF-8?q?=5BRFC=20PATCH=20v3=201/4=5D=20usb=3A=20xhci=3A=20check=20usb2=20port=20capabilities=20before=20adding=20hw=20link=20PM=20support?=
-Date: Thu, 23 May 2013 17:14:28 +0300
-Message-Id: <1369318471-10353-2-git-send-email-mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v3 4/4] usb: add usb2 Link PM variables to sysfs and usb_device
+Date: Thu, 23 May 2013 17:14:31 +0300
+Message-Id: <1369318471-10353-5-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
 References: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hardware link powermanagement in usb2 is a per-port capability.
-Previously support for hw lpm was enabled for all ports if any usb2 port supported it.
+Adds abitilty to tune L1 timeout (inactivity timer for usb2 link sleep)
+and BESL (best effort service latency)via sysfs.
 
-Now instead cache the capability values and check them for each port individually
+This also adds a new usb2_lpm_parameters structure with those variables to
+struct usb_device.
 
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 ---
- drivers/usb/host/xhci-mem.c |   33 +++++++++++++++++++++++++++++----
- drivers/usb/host/xhci.c     |   27 ++++++++++++++++++++++++++-
- drivers/usb/host/xhci.h     |    3 +++
- 3 files changed, 58 insertions(+), 5 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-usb |   27 +++++++++++++++
+ drivers/usb/core/sysfs.c                |   54 +++++++++++++++++++++++++++++++
+ drivers/usb/host/xhci.c                 |    6 ++-
+ include/linux/usb.h                     |   18 ++++++++++
+ 4 files changed, 103 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 965b539..5fd97d1 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1851,6 +1851,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
- 	kfree(xhci->usb3_ports);
- 	kfree(xhci->port_array);
- 	kfree(xhci->rh_bw);
-+	kfree(xhci->ext_caps);
- 
- 	xhci->page_size = 0;
- 	xhci->page_shift = 0;
-@@ -2038,7 +2039,7 @@ static void xhci_set_hc_event_deq(struct xhci_hcd *xhci)
- }
- 
- static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
--		__le32 __iomem *addr, u8 major_revision)
-+		__le32 __iomem *addr, u8 major_revision, int max_caps)
- {
- 	u32 temp, port_offset, port_count;
- 	int i;
-@@ -2063,6 +2064,10 @@ static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
- 		/* WTF? "Valid values are ‘1’ to MaxPorts" */
- 		return;
- 
-+	/* cache usb2 port capabilities */
-+	if (major_revision < 0x03 && xhci->num_ext_caps < max_caps)
-+		xhci->ext_caps[xhci->num_ext_caps++] = temp;
+diff --git a/Documentation/ABI/testing/sysfs-bus-usb b/Documentation/ABI/testing/sysfs-bus-usb
+index f093e59..9759b8c 100644
+--- a/Documentation/ABI/testing/sysfs-bus-usb
++++ b/Documentation/ABI/testing/sysfs-bus-usb
+@@ -236,3 +236,30 @@ Description:
+ 		This attribute is to expose these information to user space.
+ 		The file will read "hotplug", "wired" and "not used" if the
+ 		information is available, and "unknown" otherwise.
 +
- 	/* Check the host's USB2 LPM capability */
- 	if ((xhci->hci_version == 0x96) && (major_revision != 0x03) &&
- 			(temp & XHCI_L1C)) {
-@@ -2120,10 +2125,11 @@ static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
-  */
- static int xhci_setup_port_arrays(struct xhci_hcd *xhci, gfp_t flags)
- {
--	__le32 __iomem *addr;
--	u32 offset;
-+	__le32 __iomem *addr, *tmp_addr;
-+	u32 offset, tmp_offset;
- 	unsigned int num_ports;
- 	int i, j, port_index;
-+	int cap_count = 0;
++What:		/sys/bus/usb/devices/.../power/usb2_lpm_l1_timeout
++Date:		May 2013
++Contact:	Mathias Nyman <mathias.nyman@linux.intel.com>
++Description:
++		USB 2.0 devices may support hardware link power management (LPM)
++		L1 sleep state. The usb2_lpm_l1_timeout attribute allows
++		tuning the timeout for L1 inactivity timer (LPM timer), e.g.
++		needed inactivity time before host requests the device to go to L1 sleep.
++		Useful for power management tuning.
++		Supported values are 0 - 65535 microseconds.
++
++What:		/sys/bus/usb/devices/.../power/usb2_lpm_besl
++Date:		May 2013
++Contact:	Mathias Nyman <mathias.nyman@linux.intel.com>
++Description:
++		USB 2.0 devices that support hardware link power management (LPM)
++		L1 sleep state now use a best effort service latency value (BESL) to
++		indicate the best effort to resumption of service to the device after the
++		initiation of the resume event.
++		If the device does not have a preferred besl value then the host can select
++		one instead. This usb2_lpm_besl attribute allows to tune the host selected besl
++		value in order to tune power saving and service latency.
++
++		Supported values are 0 - 15.
++		More information on how besl values map to microseconds can be found in
++		USB 2.0 ECN Errata for Link Power Management, section 4.10)
+diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+index aa38db4..d9284b9 100644
+--- a/drivers/usb/core/sysfs.c
++++ b/drivers/usb/core/sysfs.c
+@@ -497,8 +497,62 @@ set_usb2_hardware_lpm(struct device *dev, struct device_attribute *attr,
+ static DEVICE_ATTR(usb2_hardware_lpm, S_IRUGO | S_IWUSR, show_usb2_hardware_lpm,
+ 			set_usb2_hardware_lpm);
  
- 	addr = &xhci->cap_regs->hcc_params;
- 	offset = XHCI_HCC_EXT_CAPS(xhci_readl(xhci, addr));
-@@ -2156,13 +2162,32 @@ static int xhci_setup_port_arrays(struct xhci_hcd *xhci, gfp_t flags)
- 	 * See section 5.3.6 for offset calculation.
- 	 */
- 	addr = &xhci->cap_regs->hc_capbase + offset;
-+
-+	tmp_addr = addr;
-+	tmp_offset = offset;
-+
-+	/* count extended protocol capability entries for later caching */
-+	do {
-+		u32 cap_id;
-+		cap_id = xhci_readl(xhci, tmp_addr);
-+		if (XHCI_EXT_CAPS_ID(cap_id) == XHCI_EXT_CAPS_PROTOCOL)
-+			cap_count++;
-+		tmp_offset = XHCI_EXT_CAPS_NEXT(cap_id);
-+		tmp_addr += tmp_offset;
-+	} while (tmp_offset);
-+
-+	xhci->ext_caps = kzalloc(sizeof(*xhci->ext_caps) * cap_count, flags);
-+	if (!xhci->ext_caps)
-+		return -ENOMEM;
-+
- 	while (1) {
- 		u32 cap_id;
- 
- 		cap_id = xhci_readl(xhci, addr);
- 		if (XHCI_EXT_CAPS_ID(cap_id) == XHCI_EXT_CAPS_PROTOCOL)
- 			xhci_add_in_port(xhci, num_ports, addr,
--					(u8) XHCI_EXT_PORT_MAJOR(cap_id));
-+					(u8) XHCI_EXT_PORT_MAJOR(cap_id),
-+					cap_count);
- 		offset = XHCI_EXT_CAPS_NEXT(cap_id);
- 		if (!offset || (xhci->num_usb2_ports + xhci->num_usb3_ports)
- 				== num_ports)
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index b4aa79d..e540a36 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4023,15 +4023,40 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- 	return 0;
- }
- 
-+/* check if a usb2 port supports a given extened capability protocol
-+ * only USB2 ports extended protocol capability values are cached.
-+ * Return 1 if capability is supported
-+ */
-+static int xhci_check_usb2_port_capability(struct xhci_hcd *xhci, int port,
-+					   unsigned capability)
++static ssize_t
++show_usb2_lpm_l1_timeout(struct device *dev, struct device_attribute *attr,
++			 char *buf)
 +{
-+	u32 port_offset, port_count;
-+	int i;
-+
-+	for (i = 0; i < xhci->num_ext_caps; i++) {
-+		if (xhci->ext_caps[i] & capability) {
-+			/* port offsets starts at 1 */
-+			port_offset = XHCI_EXT_PORT_OFF(xhci->ext_caps[i]) - 1;
-+			port_count = XHCI_EXT_PORT_COUNT(xhci->ext_caps[i]);
-+			if (port >= port_offset &&
-+			    port < port_offset + port_count)
-+				return 1;
-+		}
-+	}
-+	return 0;
++	struct usb_device *udev = to_usb_device(dev);
++	return sprintf(buf, "%d\n", udev->l1_params.timeout);
 +}
 +
- int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
- {
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
- 	int		ret;
-+	int		portnum = udev->portnum - 1;
++static ssize_t
++set_usb2_lpm_l1_timeout(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	u16 timeout;
++
++	if (kstrtou16(buf, 0, &timeout))
++		return -EINVAL;
++
++	udev->l1_params.timeout = timeout;
++
++	return count;
++}
++
++static DEVICE_ATTR(usb2_lpm_l1_timeout, S_IRUGO | S_IWUSR,
++		   show_usb2_lpm_l1_timeout, set_usb2_lpm_l1_timeout);
++
++static ssize_t
++show_usb2_lpm_besl(struct device *dev, struct device_attribute *attr,
++		   char *buf)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	return sprintf(buf, "%d\n", udev->l1_params.besl);
++}
++
++static ssize_t
++set_usb2_lpm_besl(struct device *dev, struct device_attribute *attr,
++		const char *buf, size_t count)
++{
++	struct usb_device *udev = to_usb_device(dev);
++	u8 besl;
++
++	if (kstrtou8(buf, 0, &besl) || besl > 15)
++		return -EINVAL;
++
++	udev->l1_params.besl = besl;
++
++	return count;
++}
++
++static DEVICE_ATTR(usb2_lpm_besl, S_IRUGO | S_IWUSR,
++		   show_usb2_lpm_besl, set_usb2_lpm_besl);
++
+ static struct attribute *usb2_hardware_lpm_attr[] = {
+ 	&dev_attr_usb2_hardware_lpm.attr,
++	&dev_attr_usb2_lpm_l1_timeout.attr,
++	&dev_attr_usb2_lpm_besl.attr,
+ 	NULL,
+ };
+ static struct attribute_group usb2_hardware_lpm_attr_group = {
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index d1eb393..ba7822f 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3907,7 +3907,7 @@ static int xhci_calculate_usb2_hw_lpm_params(struct usb_device *udev)
+ 	field = le32_to_cpu(udev->bos->ext_cap->bmAttributes);
  
- 	ret = xhci_usb2_software_lpm_test(hcd, udev);
- 	if (!ret) {
- 		xhci_dbg(xhci, "software LPM test succeed\n");
--		if (xhci->hw_lpm_support == 1) {
-+		if (xhci->hw_lpm_support == 1 &&
-+		    xhci_check_usb2_port_capability(xhci, portnum, XHCI_HLC)) {
+ 	/* xHCI l1 is set in steps of 256us, xHCI 1.0 section 5.4.11.2 */
+-	l1 = XHCI_L1_TIMEOUT / 256;
++	l1 = udev->l1_params.timeout / 256;
+ 
+ 	/* device has preferred BESLD */
+ 	if (field & USB_BESL_DEEP_VALID) {
+@@ -4091,7 +4091,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
+ 			    (field & USB_BESL_BASELINE_VALID))
+ 				hird = USB_GET_BESL_BASELINE(field);
+ 			else
+-				hird = XHCI_DEFAULT_BESL;
++				hird = udev->l1_params.besl;
+ 
+ 			exit_latency = xhci_besl_encoding[hird];
+ 			spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -4181,6 +4181,8 @@ int xhci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 		if (xhci->hw_lpm_support == 1 &&
+ 		    xhci_check_usb2_port_capability(xhci, portnum, XHCI_HLC)) {
  			udev->usb2_hw_lpm_capable = 1;
- 			ret = xhci_set_usb2_hardware_lpm(hcd, udev, 1);
- 			if (!ret)
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 29c978e..1dbc63f 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1532,6 +1532,9 @@ struct xhci_hcd {
- 	unsigned		sw_lpm_support:1;
- 	/* support xHCI 1.0 spec USB2 hardware LPM */
- 	unsigned		hw_lpm_support:1;
-+	/* cached usb2 extened protocol capabilites */
-+	u32                     *ext_caps;
-+	unsigned int            num_ext_caps;
- 	/* Compliance Mode Recovery Data */
- 	struct timer_list	comp_mode_recovery_timer;
- 	u32			port_status_u0;
++			udev->l1_params.timeout = XHCI_L1_TIMEOUT;
++			udev->l1_params.besl = XHCI_DEFAULT_BESL;
+ 			if (xhci_check_usb2_port_capability(xhci, portnum,
+ 							    XHCI_BLC))
+ 				udev->usb2_hw_lpm_besl_capable = 1;
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index 3a1b864..1f7d63f 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -394,6 +394,22 @@ enum usb_port_connect_type {
+ };
+ 
+ /*
++ * USB 2.0 Link Power Management (LPM) parameters.
++ */
++struct usb2_lpm_parameters {
++	/* Best effort service latency indicate how long the host will drive
++	 * resume on an exit from L1.
++	 */
++	unsigned int besl;
++
++	/* Timeout value in microseconds for the L1 inactivity (LPM) timer.
++	 * When the timer counts to zero, the parent hub will initiate a LPM
++	 * transition to L1.
++	 */
++	int timeout;
++};
++
++/*
+  * USB 3.0 Link Power Management (LPM) parameters.
+  *
+  * PEL and SEL are USB 3.0 Link PM latencies for device-initiated LPM exit.
+@@ -488,6 +504,7 @@ struct usb3_lpm_parameters {
+  *	specific data for the device.
+  * @slot_id: Slot ID assigned by xHCI
+  * @removable: Device can be physically removed from this port
++ * @l1_params: best effor service latency for USB2 L1 LPM state, and L1 timeout.
+  * @u1_params: exit latencies for USB3 U1 LPM state, and hub-initiated timeout.
+  * @u2_params: exit latencies for USB3 U2 LPM state, and hub-initiated timeout.
+  * @lpm_disable_count: Ref count used by usb_disable_lpm() and usb_enable_lpm()
+@@ -568,6 +585,7 @@ struct usb_device {
+ 	struct wusb_dev *wusb_dev;
+ 	int slot_id;
+ 	enum usb_device_removable removable;
++	struct usb2_lpm_parameters l1_params;
+ 	struct usb3_lpm_parameters u1_params;
+ 	struct usb3_lpm_parameters u2_params;
+ 	unsigned lpm_disable_count;
 -- 
 1.7.4.1
 
