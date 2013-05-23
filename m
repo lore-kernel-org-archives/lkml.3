@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab3EWGcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 02:32:08 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34565 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab3EWGcF (ORCPT
+	id S1751946Ab3EWGcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:32:46 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:48431 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab3EWGco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 02:32:05 -0400
-Message-ID: <519DB7D3.7030101@linux.vnet.ibm.com>
-Date: Thu, 23 May 2013 14:31:47 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 23 May 2013 02:32:44 -0400
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com>
-In-Reply-To: <20130523061818.GC26157@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052306-2674-0000-0000-0000091469F1
+In-Reply-To: <1369266331.2670.40.camel@bwh-desktop.uk.level5networks.com>
+References: <1368498506-25857-1-git-send-email-yinghai@kernel.org>
+	<1368498506-25857-7-git-send-email-yinghai@kernel.org>
+	<51925FB0.4080504@intel.com>
+	<CAE9FiQXYQEAZ=0sG6+2OdffBqfLS9MpoN1xviRR9aDbxPxcKxQ@mail.gmail.com>
+	<5192946F.1050700@intel.com>
+	<CAE9FiQVGGHB_amKw0-DfDifpTnRGPbxA+q3WY5F-O3x-sx386A@mail.gmail.com>
+	<5192AEF4.1070905@intel.com>
+	<519BE778.9040800@redhat.com>
+	<20130521214912.GA21713@redhat.com>
+	<519BEEA4.2030804@gmail.com>
+	<20130521221117.GB803@redhat.com>
+	<519BF594.1020607@gmail.com>
+	<CAJZOPZKsp2_Fr3xY0NZfz5QDLn-=2fn+kL0w55EihuUgDZWEiw@mail.gmail.com>
+	<1369266331.2670.40.camel@bwh-desktop.uk.level5networks.com>
+Date: Thu, 23 May 2013 09:32:43 +0300
+Message-ID: <CAJZOPZK-xYiY__iijF5jhPhqKK81T5QVd5DcGrcxLNAe97j5LQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] PCI: Make sure VF's driver get attached after PF's
+From: Or Gerlitz <or.gerlitz@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Alexander Duyck <alexander.duyck@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 02:18 PM, Gleb Natapov wrote:
-> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
->> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
->>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
->>>> It is only used to zap the obsolete page. Since the obsolete page
->>>> will not be used, we need not spend time to find its unsync children
->>>> out. Also, we delete the page from shadow page cache so that the page
->>>> is completely isolated after call this function.
->>>>
->>>> The later patch will use it to collapse tlb flushes
->>>>
->>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->>>> ---
->>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
->>>>  1 files changed, 41 insertions(+), 5 deletions(-)
->>>>
->>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>>> index 9b57faa..e676356 100644
->>>> --- a/arch/x86/kvm/mmu.c
->>>> +++ b/arch/x86/kvm/mmu.c
->>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
->>>>  {
->>>>  	ASSERT(is_empty_shadow_page(sp->spt));
->>>> -	hlist_del(&sp->hash_link);
->>>> +	hlist_del_init(&sp->hash_link);
->>> Why do you need hlist_del_init() here? Why not move it into
->>
->> Since the hlist will be double freed. We will it like this:
->>
->> kvm_mmu_prepare_zap_obsolete_page(page, list);
->> kvm_mmu_commit_zap_page(list);
->>    kvm_mmu_free_page(page);
->>
->> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
->> deleted the hash list.
->>
->>> kvm_mmu_prepare_zap_page() like we discussed it here:
->>> https://patchwork.kernel.org/patch/2580351/ instead of doing
->>> it differently for obsolete and non obsolete pages?
->>
->> It is can break the hash-list walking: we should rescan the
->> hash list once the page is prepared-ly zapped.
->>
->> I mentioned it in the changelog:
->>
->>   4): drop the patch which deleted page from hash list at the "prepare"
->>       time since it can break the walk based on hash list.
-> Can you elaborate on how this can happen?
+On Thu, May 23, 2013 at 2:45 AM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+> On Wed, 2013-05-22 at 23:16 +0300, Or Gerlitz wrote:
+> [...]
+>> all in all, we will look into returning  -EPROBE_DEFER from the VF
+>> when they identify the problematic situation -- so for how much time
+>> this is deferred? or if this isn't time based what the logical
+>> condition which once met the VF probe is attempted again?
+>
+> My reading is that it will be retried as soon as the PF probe returns.
+> But I've never tried using this feature myself.
 
-There is a example:
+Yes, empirically this is what happens, the VF probe detects that the
+PF isn't ready yet, and returns error.
+Few seconds later the VF is probed again and this time it works, today
+we return -EIO, so we  need
+to change that to  -EPROBE_DEFER to make that more robust.
 
-int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
-{
-	struct kvm_mmu_page *sp;
-	LIST_HEAD(invalid_list);
-	int r;
-
-	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
-	r = 0;
-	spin_lock(&kvm->mmu_lock);
-	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
-		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
-			 sp->role.word);
-		r = 1;
-		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
-	}
-	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-	spin_unlock(&kvm->mmu_lock);
-
-	return r;
-}
-
-It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
-If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
-be changed to:
-
-restart:
-	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
-		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
-			 sp->role.word);
-		r = 1;
-		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
-			goto restart;
-	}
-	kvm_mmu_commit_zap_page(kvm, &invalid_list);
-
-
+Or.
