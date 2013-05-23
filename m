@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab3EWH43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:56:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757140Ab3EWH42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:56:28 -0400
-Date: Thu, 23 May 2013 10:56:25 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 10/11] KVM: MMU: collapse TLB flushes when zap all
- pages
-Message-ID: <20130523075625.GF26157@redhat.com>
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1369252560-11611-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <20130523061249.GB26157@redhat.com>
- <519DB6B1.4070209@linux.vnet.ibm.com>
- <20130523072451.GD26157@redhat.com>
- <519DC72B.2070503@linux.vnet.ibm.com>
- <519DC789.1080809@linux.vnet.ibm.com>
+	id S1757187Ab3EWH4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:56:48 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:42595 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab3EWH4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 03:56:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519DC789.1080809@linux.vnet.ibm.com>
+In-Reply-To: <1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
+	<1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
+Date: Thu, 23 May 2013 09:56:46 +0200
+Message-ID: <CACRpkdaWADjy1YZXTcRaXU+ZsS6_pG0hojQdnz=qeTgyVY7_Ww@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@ardb.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Oliver Schinagl <oliver@schinagl.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 03:38:49PM +0800, Xiao Guangrong wrote:
-> On 05/23/2013 03:37 PM, Xiao Guangrong wrote:
-> > On 05/23/2013 03:24 PM, Gleb Natapov wrote:
-> >> On Thu, May 23, 2013 at 02:26:57PM +0800, Xiao Guangrong wrote:
-> >>> On 05/23/2013 02:12 PM, Gleb Natapov wrote:
-> >>>> On Thu, May 23, 2013 at 03:55:59AM +0800, Xiao Guangrong wrote:
-> >>>>> kvm_zap_obsolete_pages uses lock-break technique to zap pages,
-> >>>>> it will flush tlb every time when it does lock-break
-> >>>>>
-> >>>>> We can reload mmu on all vcpus after updating the generation
-> >>>>> number so that the obsolete pages are not used on any vcpus,
-> >>>>> after that we do not need to flush tlb when obsolete pages
-> >>>>> are zapped
-> >>>>>
-> >>>>> Note: kvm_mmu_commit_zap_page is still needed before free
-> >>>>> the pages since other vcpus may be doing locklessly shadow
-> >>>>> page walking
-> >>>>>
-> >>>> Since obsolete pages are not accessible for lockless page walking after
-> >>>> reload of all roots I do not understand why additional tlb flush is
-> >>>
-> >>> kvm_reload_remote_mmus() forces vcpus to leave guest mode, but if the
-> >>> vcpu is not running on guest mode, it does nothing except set the request
-> >>> bit. So, the vcpu can go lockless page walking after kvm_reload_remote_mmus()
-> >>> return on other vcpu.
-> >>>
-> >>> Like this scenario:
-> >>>
-> >>> VCPU 0                              VCPU 1
-> >>>                                  exit when it encounters #PF
-> >>>
-> >>> kvm_reload_remote_mmus(){
-> >>>     set vcpu1->request bit;
-> >>>
-> >>>     do not send IPI due to
-> >>>     vcpu 1 not running on guest mode
-> >>>
-> >>>                                  call page-fault handler then go lockless walking !!!
-> >>>     return
-> >>> }
-> >>>
-> >>>
-> >>>> needed. Also why tlb flush should prevent lockless-walking from using
-> >>>> the page? Making page unreachable from root_hpa does that, no?
-> >>>
-> >>> lockless-walking disables the interrupt and makes the vcpu state as
-> >>> READING_SHADOW_PAGE_TABLES, this state is treated as GUEST_MODE,
-> >>> kvm_flush_remote_tlbs() should send IPI to this vcpu in this case.
-> >>
-> >> kvm_flush_remote_tlbs() uses the same make_all_cpus_request() as
-> >> kvm_reload_remote_mmus() does, so why the same scenario you describe
-> >> above cannot happen with kvm_flush_remote_tlbs()?
-> > 
-> > 
-> > After call kvm_flush_remote_tlbs(), the page still exists on vcpu->root,
-> 
-> Sorry, should be kvm_reload_remote_mmus() here.
-> 
-> > so we can not protect the page is being used by other vcpu.
-> > 
-> > But before call kvm_mmu_commit_zap_page(), the page has been deleted from
-> > vcpu's page table, after call kvm_flush_remote_tlbs(), we can ensure that
-> > other vcpus can not find these pages.
-> > 
-Ah, I see, so the barrier is needed after page is unlinked from the
-vcpu->root hierarchy.
+On Fri, May 17, 2013 at 3:35 PM, Oliver Schinagl
+<oliver+list@schinagl.nl> wrote:
 
---
-			Gleb.
+(...)
+> While initially these fuses are used to somewhat determin the chipID, these
+> appear to be writeable by the user and thus can be used for other purpouses.
+> For example storing a 128 bit root key, a unique serial number, which could
+> then even be used as a MAC address.
+(...)
+Then follows some code to read out the keys from sysfs I guess..
+> +static int __init sid_probe(struct platform_device *pdev)
+
+It's really simple to actually make the kernel use this to seed the
+entropy pool.
+
+#include <linux/random.h>
+add_device_randomness(u8 *, num);
+
+If you know after probe that you can read out a number of bytes
+of device-unique data, I think you should add those bytes to the
+entropy pool like this.
+
+Yours,
+Linus Walleij
