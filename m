@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab3EWUdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 16:33:25 -0400
-Received: from mx10.gouders.net ([89.244.147.155]:49939 "EHLO mx10.gouders.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758293Ab3EWUdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 16:33:23 -0400
-From: Dirk Gouders <dirk@gouders.net>
-To: Borislav Petkov <bp@suse.de>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: tools/lib/lk: redefinition of _FORTIFY_SOURCE (gcc-4.7.2)
-In-Reply-To: <20130522111850.GA15091@pd.tnic> (Borislav Petkov's message of
-	"Wed, 22 May 2013 13:18:50 +0200")
-References: <giy5b7uyfe.fsf@karga.hank.lab> <20130522111850.GA15091@pd.tnic>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-Date: Thu, 23 May 2013 22:32:56 +0200
-Message-ID: <ghppwh4etj.fsf@mx10.gouders.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759476Ab3EWUeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 16:34:13 -0400
+Received: from smtp-out-103.synserver.de ([212.40.185.103]:1079 "EHLO
+	smtp-out-103.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758979Ab3EWUeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 16:34:09 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 8636
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Ralf Baechle <ralf@linux-mips.org>, Vinod Koul <vinod.koul@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 2/6] MIPS: jz4740: Acquire and enable DMA controller clock
+Date: Thu, 23 May 2013 22:36:23 +0200
+Message-Id: <1369341387-19147-3-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1369341387-19147-1-git-send-email-lars@metafoo.de>
+References: <1369341387-19147-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+From: Maarten ter Huurne <maarten@treewalker.org>
 
-Borislav Petkov <bp@suse.de> writes:
+Previously, it was assumed that the DMA controller clock is not gated
+when the kernel starts running. While that is the power-on state, it is
+safer to not rely on that.
 
-> Hi,
->
-> On Wed, May 22, 2013 at 12:00:21PM +0200, Dirk Gouders wrote:
->> CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
->
-> it seems someone else hit this already and fixed it too:
->
-> commit d2f32479e5526a1ab3b4e43910fcb279871524ce
-> Author: Marcin Slusarz <marcin.slusarz@gmail.com>
-> Date:   Sun Feb 17 16:03:36 2013 +0100
->
->     perf tools: check if -DFORTIFY_SOURCE=2 is allowed
+Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ arch/mips/jz4740/dma.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
-I thought about this _FORTIFY_SOURCE test and how the above commit
-could/should be adopted to lib/lk/Makefile, and I thought that if it
-were true that recent versions of gcc define _FORTIFY_SOURCE by default,
-that test could probably be modified and just check gcc's builtin macros to
-find out if _FORTIFY_SOURCE has to be defined explicitely and I tried to
-find out when gcc started to use _FORTIFY_SOURCE builtin definitions...
+diff --git a/arch/mips/jz4740/dma.c b/arch/mips/jz4740/dma.c
+index 317ec6f..0e34b97 100644
+--- a/arch/mips/jz4740/dma.c
++++ b/arch/mips/jz4740/dma.c
+@@ -16,6 +16,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
++#include <linux/clk.h>
+ #include <linux/interrupt.h>
+ 
+ #include <linux/dma-mapping.h>
+@@ -268,6 +269,7 @@ static irqreturn_t jz4740_dma_irq(int irq, void *dev_id)
+ 
+ static int jz4740_dma_init(void)
+ {
++	struct clk *clk;
+ 	unsigned int ret;
+ 
+ 	jz4740_dma_base = ioremap(JZ4740_DMAC_BASE_ADDR, 0x400);
+@@ -277,11 +279,29 @@ static int jz4740_dma_init(void)
+ 
+ 	spin_lock_init(&jz4740_dma_lock);
+ 
+-	ret = request_irq(JZ4740_IRQ_DMAC, jz4740_dma_irq, 0, "DMA", NULL);
++	clk = clk_get(NULL, "dma");
++	if (IS_ERR(clk)) {
++		ret = PTR_ERR(clk);
++		printk(KERN_ERR "JZ4740 DMA: Failed to request clock: %d\n",
++				ret);
++		goto err_iounmap;
++	}
+ 
+-	if (ret)
++	ret = request_irq(JZ4740_IRQ_DMAC, jz4740_dma_irq, 0, "DMA", NULL);
++	if (ret) {
+ 		printk(KERN_ERR "JZ4740 DMA: Failed to request irq: %d\n", ret);
++		goto err_clkput;
++	}
++
++	clk_prepare_enable(clk);
++
++	return 0;
++
++err_clkput:
++	clk_put(clk);
+ 
++err_iounmap:
++	iounmap(jz4740_dma_base);
+ 	return ret;
+ }
+ arch_initcall(jz4740_dma_init);
+-- 
+1.8.2.1
 
-In short: all what I said in my initial post was tested with gcc
-versions on gentoo machines and it is gentoo that patches gcc so that
-_FORTIFY_SOURCE becomes a builtin definition.  Unfortunately I don't
-have access to machines running other distributions and can only report
-about gcc on gentoo, but even with this limited information I would say
-it depends on the distribution in use if -D_FORTIFY_SOURCE=2 is needed
-and not on the gcc version.
-
-Sorry for the noise if you already noticed my fault, I felt I should
-correct my initial misleading information.
-
-Dirk
