@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab3EWKmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:42:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34555 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757999Ab3EWKmV (ORCPT
+	id S1758283Ab3EWKnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:43:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58655 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757958Ab3EWKnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:42:21 -0400
-Date: Thu, 23 May 2013 12:41:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org, cl@linux.com
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130523104154.GA23650@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523044803.GA25399@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 23 May 2013 06:43:01 -0400
+X-AuditID: cbfee68e-b7f276d000002279-2d-519df2b4696e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 3/3] rtc: rtc-rc5t583: use platform_{get,set}_drvdata()
+Date: Thu, 23 May 2013 19:42:59 +0900
+Message-id: <003301ce57a2$4b300600$e1901200$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac5XojmGNpIBPxbyReKNQq9xBz/06w==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zI90tn+YGGnw/wmWx5OJVdos569ew
+	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAaxSXTUpqTmZZ
+	apG+XQJXxpbVx1kKvrFVnDgZ0sD4gbWLkYNDQsBE4s0X4S5GTiBTTOLCvfVsXYxcHEICyxgl
+	thy8ygSRMJHY2X6RFSKxiFGi8/0qFgjnF6PEh7/PmEGq2ATUJL58OcwOMlVEQF+irUUDpIZZ
+	oJtR4lHzXGaQuLCAu8SvRUYgJouAqkTfrTyQTl4BS4m/6y+zQNiCEj8m3wOzmQW0JNbvPM4E
+	YctLbF7zlhniHgWJHWdfM0Js0pO4eTYZokREYt+Ld4wgWyUEDrFLTLm2lBUkwSIgIPFt8iEW
+	iH9lJTYdgBojKXFwxQ2WCYxis5BsnoVk8ywkm2chWbGAkWUVo2hqQXJBcVJ6kZFecWJucWle
+	ul5yfu4mRkjM9e1gvHnA+hBjMtD6icxSosn5wJjNK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6
+	UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj/5oXVidD9rX0TJJJPd7knqLa927ReeEQPqY5
+	PRYJF+7s3zbRYcVlIVWV9SsDEizzGdeGJ+0P1VvbejrNfILHiqtHw9Q15CvCJ//hOixquvzd
+	jUd9FQ+Pxd8723XupGyLlGSN+ufdLT4TvHLWavKGrlf5dLx/rXjV1cwXx7v55ZNn8Uacav6v
+	xFKckWioxVxUnAgAqQcNIc8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jAd0tn+YGGkx9w2ax5OJVdos569ew
+	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAa1QDo01GamJK
+	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
+	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aW1cdZCr6xVZw4GdLA+IG1i5GTQ0LARGJn
+	+0UoW0ziwr31bF2MXBxCAosYJTrfr2KBcH4xSnz4+4wZpIpNQE3iy5fD7F2MHBwiAvoSbS0a
+	IDXMAt2MEo+a5zKDxIUF3CV+LTICMVkEVCX6buWBdPIKWEr8XX+ZBcIWlPgx+R6YzSygJbF+
+	53EmCFteYvOat8wQ9yhI7Dj7mhFik57EzbPJECUiEvtevGOcwCgwC8mkWUgmzUIyaRaSlgWM
+	LKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmP6mdQOxpUNFocYBTgYlXh4JW7PCRRiTSwr
+	rsw9xCjBwawkwru5Z26gEG9KYmVValF+fFFpTmrxIcZkoD8nMkuJJucD001eSbyhsYmZkaWR
+	mYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTCe25Qrk7tL5MrnBZ83Ozyf7a/c
+	2+TA/fzccX23c4qa80riuFcnnnkx8+isG6WvRTu0Ql+8DvWd81B5v9z6jPnSTcHL077fr5P/
+	f/L31DsLftgpFdfy6jbIHVaP0t3C/HD3ZKvE6zt4dSX4vxTdVxAuyRRrFpztdMtiZ138NTuu
+	d2fL/grktL1SYinOSDTUYi4qTgQA6sGTVS0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 05:48:03AM +0100, Al Viro wrote:
-> On Wed, May 22, 2013 at 11:48:51PM -0400, Vince Weaver wrote:
-> > 
-> > In case anyone cares, the Oops is happening here:
-> > 
-> >     1a56:       48 c1 e8 0c             shr    $0xc,%rax
-> >     1a5a:       48 ff c0                inc    %rax
-> > >   1a5d:       f0 48 29 45 60          lock sub %rax,0x60(%rbp)
-> >     1a62:       49 8b 46 40             mov    0x40(%r14),%rax
-> > 
-> > Which maps to this in perf_mmap_close() in kernel/events/core.c:
-> > 
-> >                 atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
-> > 
-> > And "user" (%rbp) is RBP: 0000000000000000, hence the problem.
-> > 
-> > I'm having trouble tracking the problem back any further as the code is a 
-> > bit covoluted and is not commented at all.
-> 
-> FWIW, at least part of perf_mmap_close() is obvious garbage - increment of
-> ->pinned_vm happens in mmap(), decrement - on the ->close() of the last
-> VMA clonal to one we'd created in that mmap(), regardless of the address
-> space it's in.  Not that handling of ->pinned_vm made any sense wrt fork()...
+Use the wrapper functions for getting and setting the driver data using
+platform_device instead of using dev_{get,set}_drvdata() with &pdev->dev,
+so we can directly pass a struct platform_device.
 
-Right it doesn't. I think the easiest solution for now is to not copy the VMA
-on fork(). 
-
-But I totally missed patch bc3e53f682d that introduced pinned_vm, AFAICT that
-also wrecked some accounting. We should still account both against
-RLIMIT_MEMLOCK.
-
-> Actually...  What happens if you mmap() the same opened file of that
-> kind several times, each time with the same size?  AFAICS, on all
-> subsequent calls we'll get
->         mutex_lock(&event->mmap_mutex);
->         if (event->rb) {
->                 if (event->rb->nr_pages == nr_pages)
->                         atomic_inc(&event->rb->refcount);
-> 		else
-> 			...
-> 		goto unlock;
-> unlock:
->         if (!ret)
->                 atomic_inc(&event->mmap_count);
->         mutex_unlock(&event->mmap_mutex);
-> 
-> i.e. we bump event->mmap_count *and* event->rb->refcount.  munmap()
-> all of them and each will generate a call of perf_mmap_close(); ->mmap_count
-> will go down to zero and on all but the last call we'll have nothing else
-> done.  On the last call we'll hit ring_buffer_put(), which will decrement
-> event->rb->refcount once.  Note that by that point we simply don't know
-> how many times we'd incremented it in those mmap() calls - it's too late
-> to clean up.  IOW, unless I'm misreading that code, we've got a leak in
-> there.  Not the same bug, but...
-
-Quite so, lets remove that rb->refcount.
-
-Now I don't think any of this explains Vince's splat, I'll go stare at that
-next.
-
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- kernel/events/core.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-rc5t583.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9dc297f..c75b9c6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3676,9 +3676,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
- 	mutex_lock(&event->mmap_mutex);
- 	if (event->rb) {
--		if (event->rb->nr_pages == nr_pages)
--			atomic_inc(&event->rb->refcount);
--		else
-+		if (event->rb->nr_pages != nr_pages)
- 			ret = -EINVAL;
- 		goto unlock;
- 	}
-@@ -3699,7 +3697,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+diff --git a/drivers/rtc/rtc-rc5t583.c b/drivers/rtc/rtc-rc5t583.c
+index 8eabcf5..e53e9b1 100644
+--- a/drivers/rtc/rtc-rc5t583.c
++++ b/drivers/rtc/rtc-rc5t583.c
+@@ -273,7 +273,7 @@ static int rc5t583_rtc_probe(struct platform_device *pdev)
+  */
+ static int rc5t583_rtc_remove(struct platform_device *pdev)
+ {
+-	struct rc5t583_rtc *rc5t583_rtc = dev_get_drvdata(&pdev->dev);
++	struct rc5t583_rtc *rc5t583_rtc = platform_get_drvdata(pdev);
  
- 	lock_limit = rlimit(RLIMIT_MEMLOCK);
- 	lock_limit >>= PAGE_SHIFT;
--	locked = vma->vm_mm->pinned_vm + extra;
-+	locked = vma->vm_mm->locked_vm + vma->vm_mm->pinned_vm + extra;
- 
- 	if ((locked > lock_limit) && perf_paranoid_tracepoint_raw() &&
- 		!capable(CAP_IPC_LOCK)) {
-@@ -3734,7 +3732,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
- 		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
--	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
- 	vma->vm_ops = &perf_mmap_vmops;
- 
- 	return ret;
+ 	rc5t583_rtc_alarm_irq_enable(&rc5t583_rtc->rtc->dev, 0);
+ 	return 0;
+-- 
+1.7.10.4
+
 
