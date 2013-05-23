@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab3EWSVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 14:21:30 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54923 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab3EWSV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 14:21:29 -0400
-Message-ID: <519E5E2E.4070104@cogentembedded.com>
-Date: Thu, 23 May 2013 22:21:34 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "B, Ravi" <ravibabu@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register
- APIs from glue
-References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-3-git-send-email-ravibabu@ti.com> <519E2612.5000904@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com>
-In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758323Ab3EWS1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 14:27:50 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47350
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758066Ab3EWS1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 14:27:49 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 0/2] Drivers: hv: vmbus: Implement multi-channel support 
+Date: Thu, 23 May 2013 12:02:10 -0700
+Message-Id: <1369335730-16965-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch-set implements multi-channel support for Hyper-V devices.
 
-On 05/23/2013 09:07 PM, B, Ravi wrote:
+Earlier, these two patches were sent out as part of a larger patch-set
+that included relevant changes in the storage driver. 
 
->>> removed unused nop xceiv (un_)register API's from all musb
->>> platform drivers
->>     Since when are they unused?
-> Please refer to commit id 662dca54 : usb: otg: support for multiple transceivers by a single controller.
-> Usb_get_phy() is used to get the of phy used by controller, phy bindings are done through DT.
+In this version of the patch, I have fixed a race condition in the code that
+opens the sub-channels.
 
-    Why are you sure that all these platforms support DT (in all 
-configurations)?
-It seems to me that you're simply breaking the patched glue layers with 
-this patch.
-I'll let Felipe decide the fate of this patch though...
+K. Y. Srinivasan (2):
+  Drivers: hv: vmbus: Implement multi-channel support
+  Drivers: hv: Add the GUID fot synthetic fibre channel device
 
->
->>> Signed-off-by: Ravi Babu <ravibabu@ti.com>
-> --
-> Ravi B
+ drivers/hv/channel.c      |   50 +++++++++++++++++--
+ drivers/hv/channel_mgmt.c |  119 +++++++++++++++++++++++++++++++++++++++++++--
+ drivers/hv/connection.c   |   14 +++++
+ include/linux/hyperv.h    |   70 ++++++++++++++++++++++++++
+ 4 files changed, 245 insertions(+), 8 deletions(-)
 
-WBR, Sergei
+-- 
+1.7.4.1
 
