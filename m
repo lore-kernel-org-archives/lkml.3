@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3EWIH2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:07:28 -0400
-Received: from www.meduna.org ([92.240.244.38]:49231 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab3EWIHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:07:22 -0400
-Message-ID: <519DCE2A.4010801@meduna.org>
-Date: Thu, 23 May 2013 10:07:06 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1754320Ab3EWIIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:08:35 -0400
+Received: from relay.parallels.com ([195.214.232.42]:40904 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab3EWII1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 04:08:27 -0400
+Message-ID: <519DCE5D.6070204@parallels.com>
+Date: Thu, 23 May 2013 12:07:57 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com>
-In-Reply-To: <519D11BF.5000604@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2013-05-23 10:07:12
-X-Connected-IP: 95.105.165.4:1491
-X-Message-Linecount: 56
-X-Body-Linecount: 34
-X-Message-Size: 2418
-X-Body-Size: 1093
-X-Received-Count: 1
-X-Recipient-Count: 10
-X-Local-Recipient-Count: 10
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: <viro@zeniv.linux.org.uk>, <serge.hallyn@canonical.com>,
+        <jlayton@redhat.com>, <lucas.demarchi@profusion.mobi>,
+        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
+        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <devel@openvz.org>
+Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
+References: <20130522072840.27720.85023.stgit@localhost.localdomain> <878v36ex6n.fsf@xmission.com>
+In-Reply-To: <878v36ex6n.fsf@xmission.com>
+Content-Type: text/plain; charset="windows-1251"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.18.163]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2013 20:43, Rik van Riel wrote:
+22.05.2013 21:33, Eric W. Biederman пишет:
+> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+>
+>> Usermode helper executes all binaries in global "init" root context. This
+>> doesn't allow to call a binary from other root context (for example in a
+>> container).
+>> Currently, both containerized NFS client and NFS server requires an ability to
+>> execute a binary in a container's root context. Root swap can be done in
+>> "init" callback, passed by UMH caller.
+>> But since we have 2 callers already (and more of them are expected to appear
+>> in future) and because set_fs_root() in not exported, it looks reasonable to
+>> add one more generic UMH helper to generic fs code.
+>> Root path reference must be hold by the caller, since it will be put on UMH
+>> thread exit.
+>
+> Awesome.  With this patch as an uprivilieged user I get to pick which
+> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
+> user namespace (something that looks like only matter of time).
+>
 
->> Some CPUs have had errata when it comes to flushing large pages that
->> have been split into small pages by hardware, e.g. due to MTRR
->> conflicts.  In that case, fragments of the large page may have been left
->> in the TLB.
+Not really. Only by using a kernel module to call the UMH.
+And an unprivileged can't load a module as far a I know.
+I.e. NFSd, for example, will use unprivileged user's root to perform this call.
 
-Can I somehow find if this is the case? The memory mapping
-for the failing process has two regions slightly larger than
-4 MB - code and heap.
+> I think this is a seriously bad idea.
+>
+> Why can't we do this in userspace with setns as we do with the core dump
+> helper?
+>
 
-The process also does not access any funny memory regions
-from userspace - it is basically networking (both TCP/IP
-and raw sockets) and crunching of the data received.
-No mmapped devices or something like that.
+Could you, please, clarify, how setns can help here?
 
-> static inline void __native_flush_tlb_single(unsigned long addr)
-> {
->         __flush_tlb();
-> }
-> 
-> This on top of the other two patches.
+> I am missing a lot of context here and capturing the context of a
+> process at time time we mount the filesystem and reconstituing it in
+> call user mode helper seems like something we could do.
+>
+> This patch as it stands looks like it would compete for the honor of the
+> easiest kernel feature to exploit.
+>
 
-It did not crash overnight, but it also does not show any
-minor fault counted for the threads, so I'm afraid the situation
-just did not happen - there should be at least one visible in
-the ps -o min_flt output, right?
+Hmmm...
+As far as I can see (maybe I'm missing something), there main security issue that could be here
+is allowing of using any passed root to swap to.
+What about using the current root instead of passed one? I.e. taking the root to swap to inside the UMH.
+Does this keeps the isolation on the same level?
 
-I will give it some more testing time.
+> Eric
+>
 
-Thanks
+
 -- 
-                                             Stano
-
+Best regards,
+Stanislav Kinsbursky
