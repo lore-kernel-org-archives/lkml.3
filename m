@@ -1,154 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab3EWMfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:35:06 -0400
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:50247 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757636Ab3EWMfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:35:04 -0400
-Message-ID: <519E0CF5.7000308@gmail.com>
-Date: Thu, 23 May 2013 08:35:01 -0400
-From: "Matthew O'Connor" <liquidhorse@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1758883Ab3EWMkR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:40:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757821Ab3EWMkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:40:15 -0400
+Date: Thu, 23 May 2013 15:39:47 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce
+ kvm_mmu_prepare_zap_obsolete_page
+Message-ID: <20130523123947.GO4725@redhat.com>
+References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130523055725.GA26157@redhat.com>
+ <519DB372.3080803@linux.vnet.ibm.com>
+ <20130523061818.GC26157@redhat.com>
+ <519DB7D3.7030101@linux.vnet.ibm.com>
+ <20130523073708.GE26157@redhat.com>
+ <519DCA38.30200@linux.vnet.ibm.com>
+ <20130523080922.GG26157@redhat.com>
+ <519DF9F6.1060902@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: f.wiessner@smart-weblications.de
-CC: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        andy@greyhouse.net, fubar@us.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        nikolay@redhat.com, vfalico@redhat.com, zheng.x.li@oracle.com
-Subject: Re: https://lkml.org/lkml/2013/2/1/531
-References: <519CADA9.9060909@smart-weblications.de> <20130522135745.GA14640@kroah.com> <519CEF4B.5090108@smart-weblications.de> <20130522162336.GA5761@kroah.com> <519D0B79.6010307@smart-weblications.de> <20130522190640.GA20276@kroah.com> <519D1DEF.8090206@smart-weblications.de> <20130522200439.GA21367@kroah.com> <519D37F4.2030202@smart-weblications.de> <519D5206.8080701@gmail.com> <519DEE6E.7060700@smart-weblications.de>
-In-Reply-To: <519DEE6E.7060700@smart-weblications.de>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/mixed;
- boundary="------------060400020600070505060008"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <519DF9F6.1060902@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060400020600070505060008
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+On Thu, May 23, 2013 at 07:13:58PM +0800, Xiao Guangrong wrote:
+> On 05/23/2013 04:09 PM, Gleb Natapov wrote:
+> > On Thu, May 23, 2013 at 03:50:16PM +0800, Xiao Guangrong wrote:
+> >> On 05/23/2013 03:37 PM, Gleb Natapov wrote:
+> >>> On Thu, May 23, 2013 at 02:31:47PM +0800, Xiao Guangrong wrote:
+> >>>> On 05/23/2013 02:18 PM, Gleb Natapov wrote:
+> >>>>> On Thu, May 23, 2013 at 02:13:06PM +0800, Xiao Guangrong wrote:
+> >>>>>> On 05/23/2013 01:57 PM, Gleb Natapov wrote:
+> >>>>>>> On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
+> >>>>>>>> It is only used to zap the obsolete page. Since the obsolete page
+> >>>>>>>> will not be used, we need not spend time to find its unsync children
+> >>>>>>>> out. Also, we delete the page from shadow page cache so that the page
+> >>>>>>>> is completely isolated after call this function.
+> >>>>>>>>
+> >>>>>>>> The later patch will use it to collapse tlb flushes
+> >>>>>>>>
+> >>>>>>>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> >>>>>>>> ---
+> >>>>>>>>  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
+> >>>>>>>>  1 files changed, 41 insertions(+), 5 deletions(-)
+> >>>>>>>>
+> >>>>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >>>>>>>> index 9b57faa..e676356 100644
+> >>>>>>>> --- a/arch/x86/kvm/mmu.c
+> >>>>>>>> +++ b/arch/x86/kvm/mmu.c
+> >>>>>>>> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+> >>>>>>>>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+> >>>>>>>>  {
+> >>>>>>>>  	ASSERT(is_empty_shadow_page(sp->spt));
+> >>>>>>>> -	hlist_del(&sp->hash_link);
+> >>>>>>>> +	hlist_del_init(&sp->hash_link);
+> >>>>>>> Why do you need hlist_del_init() here? Why not move it into
+> >>>>>>
+> >>>>>> Since the hlist will be double freed. We will it like this:
+> >>>>>>
+> >>>>>> kvm_mmu_prepare_zap_obsolete_page(page, list);
+> >>>>>> kvm_mmu_commit_zap_page(list);
+> >>>>>>    kvm_mmu_free_page(page);
+> >>>>>>
+> >>>>>> The first place is kvm_mmu_prepare_zap_obsolete_page(page), which have
+> >>>>>> deleted the hash list.
+> >>>>>>
+> >>>>>>> kvm_mmu_prepare_zap_page() like we discussed it here:
+> >>>>>>> https://patchwork.kernel.org/patch/2580351/ instead of doing
+> >>>>>>> it differently for obsolete and non obsolete pages?
+> >>>>>>
+> >>>>>> It is can break the hash-list walking: we should rescan the
+> >>>>>> hash list once the page is prepared-ly zapped.
+> >>>>>>
+> >>>>>> I mentioned it in the changelog:
+> >>>>>>
+> >>>>>>   4): drop the patch which deleted page from hash list at the "prepare"
+> >>>>>>       time since it can break the walk based on hash list.
+> >>>>> Can you elaborate on how this can happen?
+> >>>>
+> >>>> There is a example:
+> >>>>
+> >>>> int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+> >>>> {
+> >>>> 	struct kvm_mmu_page *sp;
+> >>>> 	LIST_HEAD(invalid_list);
+> >>>> 	int r;
+> >>>>
+> >>>> 	pgprintk("%s: looking for gfn %llx\n", __func__, gfn);
+> >>>> 	r = 0;
+> >>>> 	spin_lock(&kvm->mmu_lock);
+> >>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+> >>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+> >>>> 			 sp->role.word);
+> >>>> 		r = 1;
+> >>>> 		kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
+> >>>> 	}
+> >>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+> >>>> 	spin_unlock(&kvm->mmu_lock);
+> >>>>
+> >>>> 	return r;
+> >>>> }
+> >>>>
+> >>>> It works fine since kvm_mmu_prepare_zap_page does not touch the hash list.
+> >>>> If we delete hlist in kvm_mmu_prepare_zap_page(), this kind of codes should
+> >>>> be changed to:
+> >>>>
+> >>>> restart:
+> >>>> 	for_each_gfn_indirect_valid_sp(kvm, sp, gfn) {
+> >>>> 		pgprintk("%s: gfn %llx role %x\n", __func__, gfn,
+> >>>> 			 sp->role.word);
+> >>>> 		r = 1;
+> >>>> 		if (kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list))
+> >>>> 			goto restart;
+> >>>> 	}
+> >>>> 	kvm_mmu_commit_zap_page(kvm, &invalid_list);
+> >>>>
+> >>> Hmm, yes. So lets leave it as is and always commit invalid_list before
+> >>
+> >> So, you mean drop this patch and the patch of
+> >> KVM: MMU: collapse TLB flushes when zap all pages?
+> >>
+> > We still want to add kvm_reload_remote_mmus() to
+> > kvm_mmu_invalidate_zap_all_pages(). But yes, we disable a nice
+> > optimization here. So may be skipping obsolete pages while walking
+> > hashtable is better solution.
+> 
+> I am willing to use this way instead, but it looks worse than this
+> patch:
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 9b57faa..810410c 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
+>  {
+>  	ASSERT(is_empty_shadow_page(sp->spt));
+> -	hlist_del(&sp->hash_link);
+> +	hlist_del_init(&sp->hash_link);
+Why not drop this
 
-On 05/23/2013 06:24 AM, Smart Weblications GmbH - Florian Wiessner wrote:
-> Hm, i tried to apply it to 3.4.46 but it does not work:
->
-> node02:/ocfs2/usr/src/linux-3.4.46# patch -p1 <../bridge-patch-3.4.46
-> patching file drivers/net/bonding/bond_alb.c
-> Hunk #1 FAILED at 704.
-> 1 out of 1 hunk FAILED -- saving rejects to file drivers/net/bonding/bond_alb.c.rej
-> patching file drivers/net/bonding/bonding.h
-> patching file include/linux/etherdevice.h
-> Hunk #1 FAILED at 277.
-> 1 out of 1 hunk FAILED -- saving rejects to file include/linux/etherdevice.h.rej
-That is extremely odd, considering I applied this to a freshly
-downloaded kernel source directly from kernel.org before resubmitting it:
+>  	list_del(&sp->link);
+>  	free_page((unsigned long)sp->spt);
+>  	if (!sp->role.direct)
+> @@ -1648,14 +1648,20 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+>  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>  				    struct list_head *invalid_list);
+> 
+> +static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+> +{
+> +	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+> +}
+> +
+>  #define for_each_gfn_sp(_kvm, _sp, _gfn)				\
+>  	hlist_for_each_entry(_sp,					\
+>  	  &(_kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(_gfn)], hash_link) \
+> -		if ((_sp)->gfn != (_gfn)) {} else
+> +		if ((_sp)->gfn != (_gfn) || is_obsolete_sp(_kvm, _sp)) {} else
+> 
+>  #define for_each_gfn_indirect_valid_sp(_kvm, _sp, _gfn)			\
+>  	for_each_gfn_sp(_kvm, _sp, _gfn)				\
+> -		if ((_sp)->role.direct || (_sp)->role.invalid) {} else
+> +		if ((_sp)->role.direct ||				\
+> +		      (_sp)->role.invalid || is_obsolete_sp(_kvm, _sp)) {} else
+> 
+>  /* @sp->gfn should be write-protected at the call site */
+>  static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> @@ -1838,11 +1844,6 @@ static void clear_sp_write_flooding_count(u64 *spte)
+>  	__clear_sp_write_flooding_count(sp);
+>  }
+> 
+> -static bool is_obsolete_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+> -{
+> -	return unlikely(sp->mmu_valid_gen != kvm->arch.mmu_valid_gen);
+> -}
+> -
+>  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+>  					     gfn_t gfn,
+>  					     gva_t gaddr,
+> @@ -2085,11 +2086,15 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+> 
+>  	if (sp->unsync)
+>  		kvm_unlink_unsync_page(kvm, sp);
+> +
+>  	if (!sp->root_count) {
+>  		/* Count self */
+>  		ret++;
+>  		list_move(&sp->link, invalid_list);
+>  		kvm_mod_used_mmu_pages(kvm, -1);
+> +
+> +		if (unlikely(is_obsolete_sp(kvm, sp)))
+> +			hlist_del_init(&sp->hash_link);
+and this.
 
-hv11:~/kernel/linux-3.4.46$ patch -p1 <
-../balance-alb-patches/balance-alb-3.4.patch
-patching file drivers/net/bonding/bond_alb.c
-patching file drivers/net/bonding/bonding.h
-patching file include/linux/etherdevice.h
+Since we check for obsolete while searching hashtable why delete it
+here?
 
+>  	} else {
+>  		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+>  		kvm_reload_remote_mmus(kvm);
+> 
+> isn't it?
 
-Here's the patch as an attachment instead; I suspect it keeps getting
-damaged by my method of inclusion.
-
---------------060400020600070505060008
-Content-Type: text/x-patch;
- name="balance-alb-3.4.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="balance-alb-3.4.patch"
-
-diff -uprN linux-3.4.28/drivers/net/bonding/bond_alb.c linux-3.4.28-patched/drivers/net/bonding/bond_alb.c
---- linux-3.4.28/drivers/net/bonding/bond_alb.c	2013-01-27 23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/drivers/net/bonding/bond_alb.c	2013-01-30 15:37:25.121708311 -0500
-@@ -704,6 +704,12 @@ static struct slave *rlb_arp_xmit(struct
- 	struct arp_pkt *arp = arp_pkt(skb);
- 	struct slave *tx_slave = NULL;
- 
-+	/* Don't modify or load balance ARPs that do not originate locally
-+	 * (e.g.,arrive via a bridge).
-+	 */
-+	if (!bond_slave_has_mac(bond, arp->mac_src))
-+		return NULL;
-+
- 	if (arp->op_code == htons(ARPOP_REPLY)) {
- 		/* the arp must be sent on the selected
- 		* rx channel
-diff -uprN linux-3.4.28/drivers/net/bonding/bonding.h linux-3.4.28-patched/drivers/net/bonding/bonding.h
---- linux-3.4.28/drivers/net/bonding/bonding.h	2013-01-27 23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/drivers/net/bonding/bonding.h	2013-01-30 15:37:25.121708311 -0500
-@@ -18,6 +18,7 @@
- #include <linux/timer.h>
- #include <linux/proc_fs.h>
- #include <linux/if_bonding.h>
-+#include <linux/etherdevice.h>
- #include <linux/cpumask.h>
- #include <linux/in6.h>
- #include <linux/netpoll.h>
-@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir
- }
- #endif
- 
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+					       const u8 *mac)
-+{
-+	int i = 0;
-+	struct slave *tmp;
-+
-+	bond_for_each_slave(bond, tmp, i)
-+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+			return tmp;
-+
-+	return NULL;
-+}
- 
- /* exported from bond_main.c */
- extern int bond_net_id;
-diff -uprN linux-3.4.28/include/linux/etherdevice.h linux-3.4.28-patched/include/linux/etherdevice.h
---- linux-3.4.28/include/linux/etherdevice.h	2013-01-27 23:51:45.000000000 -0500
-+++ linux-3.4.28-patched/include/linux/etherdevice.h	2013-01-30 15:37:25.121708311 -0500
-@@ -277,4 +277,37 @@ static inline unsigned long compare_ethe
- #endif
- }
- 
-+/**
-+ * ether_addr_equal_64bits - Compare two Ethernet addresses
-+ * @addr1: Pointer to an array of 8 bytes
-+ * @addr2: Pointer to an other array of 8 bytes
-+ *
-+ * Compare two Ethernet addresses, returns true if equal, false otherwise.
-+ *
-+ * The function doesn't need any conditional branches and possibly uses
-+ * word memory accesses on CPU allowing cheap unaligned memory reads.
-+ * arrays = { byte1, byte2, byte3, byte4, byte5, byte6, pad1, pad2 }
-+ *
-+ * Please note that alignment of addr1 & addr2 are only guaranteed to be 16 bits.
-+ */
-+
-+static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
-+                                           const u8 addr2[6+2])
-+{
-+#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-+        unsigned long fold = ((*(unsigned long *)addr1) ^
-+                              (*(unsigned long *)addr2));
-+
-+        if (sizeof(fold) == 8)
-+                return zap_last_2bytes(fold) == 0;
-+
-+        fold |= zap_last_2bytes((*(unsigned long *)(addr1 + 4)) ^
-+                                (*(unsigned long *)(addr2 + 4)));
-+        return fold == 0;
-+#else
-+        return ether_addr_equal(addr1, addr2);
-+#endif
-+}
-+
-+
- #endif	/* _LINUX_ETHERDEVICE_H */
-
---------------060400020600070505060008--
+--
+			Gleb.
