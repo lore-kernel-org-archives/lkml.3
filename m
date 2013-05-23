@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922Ab3EWPaa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:30:30 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:44963 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759540Ab3EWPa0 (ORCPT
+	id S1759530Ab3EWPcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:32:17 -0400
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:46080 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876Ab3EWPcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:30:26 -0400
-Date: Thu, 23 May 2013 16:30:15 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com
-Subject: Re: [PATCH] regulator: ab8500-ext: Don't register without
- initialisation data
-Message-ID: <20130523153015.GN22683@gmail.com>
-References: <1369226853-16978-1-git-send-email-lee.jones@linaro.org>
- <1369226853-16978-3-git-send-email-lee.jones@linaro.org>
- <20130522155347.GJ1627@sirena.org.uk>
- <20130522165353.GB18714@gmail.com>
- <20130522174516.GT1627@sirena.org.uk>
- <20130523070905.GD18714@gmail.com>
- <20130523142419.GG2412@sirena.org.uk>
- <20130523144453.GL22683@gmail.com>
- <20130523151816.GB6406@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130523151816.GB6406@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 May 2013 11:32:16 -0400
+From: <patrice.chotard.st@gmail.com>
+To: <linux-kernel@vger.kernel.org>, <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, <fabio.baltieri@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>
+Subject: [PATCH] pinctrl: abx500: suppress unused mutex
+Date: Thu, 23 May 2013 17:31:42 +0200
+Message-Id: <1369323102-3030-1-git-send-email-patrice.chotard.st@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013, Mark Brown wrote:
+From: Patrice Chotard <patrice.chotard@st.com>
 
-> On Thu, May 23, 2013 at 03:44:53PM +0100, Lee Jones wrote:
-> 
-> > Well, whatever happens I'm going to be able to refactor the driver in
-> > the -rc:s, so we still need this fix, or the world will end.
-> 
-> Why is it so invasive to have the driver cope with absent constraints?
+Suppress a mutex which was initialized on probe
+and destroyed on remove but never used.
 
-It probably isn't. Are you asking me to code that up for the -rc:s?
+Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+---
+ drivers/pinctrl/pinctrl-abx500.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
-I would be happier if I could stick it onto my TODO and address it
-at another time for inclusion into -next, as I have a list of priority
-items to attend to in the immediate future.
-
+diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
+index aa17f75..bbada4b 100644
+--- a/drivers/pinctrl/pinctrl-abx500.c
++++ b/drivers/pinctrl/pinctrl-abx500.c
+@@ -99,7 +99,6 @@ struct abx500_pinctrl {
+ 	struct abx500_pinctrl_soc_data *soc;
+ 	struct gpio_chip chip;
+ 	struct ab8500 *parent;
+-	struct mutex lock;
+ 	struct abx500_gpio_irq_cluster *irq_cluster;
+ 	int irq_cluster_size;
+ };
+@@ -882,8 +881,6 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+ 	pct->chip.dev = &pdev->dev;
+ 	pct->chip.base = (np) ? -1 : pdata->gpio_base;
+ 
+-	/* initialize the lock */
+-	mutex_init(&pct->lock);
+ 
+ 	/* Poke in other ASIC variants here */
+ 	switch (id) {
+@@ -902,13 +899,11 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+ 	default:
+ 		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
+ 				(int) platid->driver_data);
+-		mutex_destroy(&pct->lock);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (!pct->soc) {
+ 		dev_err(&pdev->dev, "Invalid SOC data\n");
+-		mutex_destroy(&pct->lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -919,7 +914,6 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+ 	ret = gpiochip_add(&pct->chip);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to add gpiochip: %d\n", ret);
+-		mutex_destroy(&pct->lock);
+ 		return ret;
+ 	}
+ 	dev_info(&pdev->dev, "added gpiochip\n");
+@@ -956,7 +950,6 @@ out_rem_chip:
+ 	if (err)
+ 		dev_info(&pdev->dev, "failed to remove gpiochip\n");
+ 
+-	mutex_destroy(&pct->lock);
+ 	return ret;
+ }
+ 
+@@ -976,8 +969,6 @@ static int abx500_gpio_remove(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	mutex_destroy(&pct->lock);
+-
+ 	return 0;
+ }
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10
+
