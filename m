@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab3EWMMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:12:10 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:35899 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab3EWMMI (ORCPT
+	id S1758696Ab3EWMNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:13:30 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53158 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758158Ab3EWMN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:12:08 -0400
+	Thu, 23 May 2013 08:13:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130523120856.DD752E0090@blue.fi.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-38-git-send-email-kirill.shutemov@linux.intel.com>
-	<CAJd=RBA64hW7x6u0Mou4_z_Ox3J+sC3ZL+a4h8XcTHbXZicALg@mail.gmail.com>
-	<20130523120856.DD752E0090@blue.fi.intel.com>
-Date: Thu, 23 May 2013 20:12:07 +0800
-Message-ID: <CAJd=RBAcsAk5qN1dy2OhHYqB3fuwd0RfjPK_4=E1G_k=CUwycw@mail.gmail.com>
-Subject: Re: [PATCHv4 37/39] thp: handle write-protect exception to
- file-backed huge pages
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <OF6992CC88.316C799B-ON48257B74.0040CED8-48257B74.0041FF6F@zte.com.cn>
+References: <CAFLxGvxfzHudUMRc7VkgWMO9RJAkyh1iuouRAV-0s-5eaLqfEQ@mail.gmail.com>
+	<OFE7F9663A.1F3DE1BE-ON48257B60.00045684-48257B60.001360DF@zte.com.cn>
+	<CAFLxGvzKw1_L3Nm4J5GM_wr0sFe6umN0yLzDnK=DM_AJ7GpaaQ@mail.gmail.com>
+	<OF6992CC88.316C799B-ON48257B74.0040CED8-48257B74.0041FF6F@zte.com.cn>
+Date: Thu, 23 May 2013 14:13:27 +0200
+Message-ID: <CAFLxGvw5gj-dfQeMKQVJpHPAXi4ZeNTaG3u3yXOAkshJRavXVA@mail.gmail.com>
+Subject: Re: Re: Re: Re: [PATCH] UBI: fix memory leak when use fastmap
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: wang.bo116@zte.com.cn
+Cc: cui.yunfeng@zte.com.cn, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        liu.dong3@zte.com.cn
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 8:08 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> Hillf Danton wrote:
->> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
->> <kirill.shutemov@linux.intel.com> wrote:
->> > @@ -1120,7 +1119,7 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->> >
->> >         page = pmd_page(orig_pmd);
->> >         VM_BUG_ON(!PageCompound(page) || !PageHead(page));
->> > -       if (page_mapcount(page) == 1) {
->> > +       if (PageAnon(page) && page_mapcount(page) == 1) {
+On Thu, May 23, 2013 at 2:00 PM,  <wang.bo116@zte.com.cn> wrote:
+> richard -rw- weinberger <richard.weinberger@gmail.com>  2013-05-13
+> 16:08:35:
+>
 >>
->> Could we avoid copying huge page if
->> no-one else is using it, no matter anon?
+>> I tried to apply/test your patch.
+>> It has lots of white spaces damages.
+>> Can you please resend it using git send-email?
+>> And also run checkpatch.pl before sending.
+>>
+>> --
+>> Thanks,
+>> //richard
 >
-> No. The page is still in page cache and can be later accessed later.
-> We could isolate the page from page cache, but I'm not sure whether it's
-> good idea.
->
-Hugetlb tries to avoid copying pahe.
+> hello:
+>         I use git to remake a patch, and pass the checkpatch.pl's test.
+> But my email client is lotus notes, and the patch's format may be damage
+> by the client.
 
-	/* If no-one else is actually using this page, avoid the copy
-	 * and just make the page writable */
-	avoidcopy = (page_mapcount(old_page) == 1);
+This explains the broken patch.
+You can also send me the patch as attachment. :)
+
+--
+Thanks,
+//richard
