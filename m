@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab3EWOJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:09:04 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51171 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab3EWOJC (ORCPT
+	id S1758271Ab3EWOJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:09:15 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:55443 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757869Ab3EWOJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:09:02 -0400
-Date: Thu, 23 May 2013 09:08:56 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Davide Ciminaghi <ciminaghi@gnudd.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Message-ID: <20130523140856.GE2412@sirena.org.uk>
-References: <1369314377-22873-1-git-send-email-lars@metafoo.de>
+	Thu, 23 May 2013 10:09:12 -0400
+Date: Thu, 23 May 2013 14:09:10 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Al Viro <viro@ZenIV.linux.org.uk>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+In-Reply-To: <20130523104154.GA23650@twins.programming.kicks-ass.net>
+Message-ID: <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
+ <20130523104154.GA23650@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KlAEzMkarCnErv5Q"
-Content-Disposition: inline
-In-Reply-To: <1369314377-22873-1-git-send-email-lars@metafoo.de>
-X-Cookie: You enjoy the company of other people.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 144.188.69.1
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regmap: regcache: Fixup locking for custom lock
- callbacks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.23-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 23 May 2013, Peter Zijlstra wrote:
 
---KlAEzMkarCnErv5Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Right it doesn't. I think the easiest solution for now is to not copy the VMA
+> on fork().
 
-On Thu, May 23, 2013 at 03:06:15PM +0200, Lars-Peter Clausen wrote:
-> The parameter passed to the regmap lock/unlock callbacks needs to be
-> map->lock_arg, regcache passes just map. This works fine in the case that no
-> custom locking callbacks are used, since in this case map->lock_arg equals map,
-> but will break when custom locking callbacks are used. The issue was introduced
-> in commit 0d4529c5 ("regmap: make lock/unlock functions customizable") and is
-> fixed by this patch.
+Right. Pinned pages are not inherited. If a page is unpinned then that is
+going to happen for all address spaces that reference the page.
 
-I've applied this but can you please also generate a version that
-applies against v3.10-rc2 since this should really go in as a bug fix
-but the patch depends on recent changes in the regcache code.
+> But I totally missed patch bc3e53f682d that introduced pinned_vm, AFAICT that
+> also wrecked some accounting. We should still account both against
+> RLIMIT_MEMLOCK.
 
---KlAEzMkarCnErv5Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The point of the patch was to unwreck accounting. Before the patch mlocked
+pages were counted twice which resulted in stramge VM scenarios where more
+pages were mlocked than memory available. Note that a pinned page may also
+be mlocked.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRniL1AAoJELSic+t+oim9T6MP/3eYDhqei4coTPgMH+3hkU+a
-RouCxbHORN1xsg/QYCpv0I6GhroUEUanjU4T2IdDLwnEYyIMalnlEb/xHOdft704
-CWWXadV75jC1I9OrGNiuXSINsOzbQuJ97fccDfj+0kA/J7NF0uqqa17ObROcKGBs
-kxDFA/TaHdW0+bkGdDSxaxJv2tBJm6V7Hxu1+0U9y6CJzFeB/yv8icJhc9zSF+mP
-ONTJydVQIteKLHQXBB7tK2YZnwwTQ1jtCbstuOhUUrvGIaXeics9LOzKVx25M+wF
-sTIYT/G8/pMhEoXh7Lf2U8PLkieBWiuQ73myY/vRGt1owML/xToqtVUqLXLVEmY3
-BbvvHtbBT+nHq3BY9uipiymSOMHFrocALEgI6dA6fAKeW075YR+DPnslaegEFlQa
-yw2zBEC2huriIBQRs2oCCZ3SDRDAt/WnfrbfiBxZUNfXxVNRfOnWPRW1TZ9QE00N
-Zza+S4xkkOzMietz0Q4h2gsZj5jgVYGSkoAaaH/NsXR+SDM0+ESqHsELBi/uaQvK
-ifANp6WNYxhIICvltsFBocQFlMcdjt88rji7vKmwbFYw05CgQ70j6KKrJwIbu1r9
-snRHOoI2qpNtXRzRY6IFbnDLXA13DEOwP47FpZlk40Q2RxPOMe19UZ16YsaI/Z3p
-SVQrtgLwLxdtdryuKFHe
-=C6n4
------END PGP SIGNATURE-----
-
---KlAEzMkarCnErv5Q--
+Simply adding the two will reintroduce the problems that were fixed by the
+patch.
