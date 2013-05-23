@@ -1,179 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab3EWIkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:40:09 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:41193 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995Ab3EWIjb (ORCPT
+	id S1757534Ab3EWInF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:43:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46537 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab3EWInC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:39:31 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Robert Nelson <Robert.Nelson@digikey.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH v3 3/5] rtc-at91rm9200: refactor interrupt-register handling
-Date: Thu, 23 May 2013 10:38:53 +0200
-Message-Id: <1369298335-24597-4-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1369298335-24597-1-git-send-email-jhovold@gmail.com>
-References: <1364983415-20298-1-git-send-email-jhovold@gmail.com>
- <1369298335-24597-1-git-send-email-jhovold@gmail.com>
+	Thu, 23 May 2013 04:43:02 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 1/4] mm/memory-hotplug: fix lowmem count overflow when offline pages 
+Date: Thu, 23 May 2013 16:42:45 +0800
+Message-Id: <1369298568-20094-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052308-8256-0000-0000-0000079E34E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add accessors for the interrupt register.
+Changelog:
+ v1 -> v2:
+	* show number of HighTotal before hotremove 
+	* remove CONFIG_HIGHMEM
+	* cc stable kernels
+	* add Michal reviewed-by
 
-This will allow us to easily add a shadow interrupt-mask register to
-use on SoCs where the interrupt-mask register cannot be used.
+Logic memory-remove code fails to correctly account the Total High Memory 
+when a memory block which contains High Memory is offlined as shown in the
+example below. The following patch fixes it.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Stable for 2.6.24+.
+
+Before logic memory remove:
+
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/rtc/rtc-at91rm9200.c | 43 +++++++++++++++++++++++++++++--------------
- 1 file changed, 29 insertions(+), 14 deletions(-)
+ mm/page_alloc.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index ab2024b..9592d08 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -51,6 +51,21 @@ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
- 
-+static void at91_rtc_write_ier(u32 mask)
-+{
-+	at91_rtc_write(AT91_RTC_IER, mask);
-+}
-+
-+static void at91_rtc_write_idr(u32 mask)
-+{
-+	at91_rtc_write(AT91_RTC_IDR, mask);
-+}
-+
-+static u32 at91_rtc_read_imr(void)
-+{
-+	return at91_rtc_read(AT91_RTC_IMR);
-+}
-+
- /*
-  * Decode time/date into rtc_time structure
-  */
-@@ -114,9 +129,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
- 
--	at91_rtc_write(AT91_RTC_IER, AT91_RTC_ACKUPD);
-+	at91_rtc_write_ier(AT91_RTC_ACKUPD);
- 	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD interrupt */
--	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD);
-+	at91_rtc_write_idr(AT91_RTC_ACKUPD);
- 
- 	at91_rtc_write(AT91_RTC_TIMR,
- 			  bin2bcd(tm->tm_sec) << 0
-@@ -148,7 +163,7 @@ static int at91_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
- 	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon, tm->tm_year);
- 	tm->tm_year = at91_alarm_year - 1900;
- 
--	alrm->enabled = (at91_rtc_read(AT91_RTC_IMR) & AT91_RTC_ALARM)
-+	alrm->enabled = (at91_rtc_read_imr() & AT91_RTC_ALARM)
- 			? 1 : 0;
- 
- 	dev_dbg(dev, "%s(): %4d-%02d-%02d %02d:%02d:%02d\n", __func__,
-@@ -173,7 +188,7 @@ static int at91_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
- 	tm.tm_min = alrm->time.tm_min;
- 	tm.tm_sec = alrm->time.tm_sec;
- 
--	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
-+	at91_rtc_write_idr(AT91_RTC_ALARM);
- 	at91_rtc_write(AT91_RTC_TIMALR,
- 		  bin2bcd(tm.tm_sec) << 0
- 		| bin2bcd(tm.tm_min) << 8
-@@ -186,7 +201,7 @@ static int at91_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
- 
- 	if (alrm->enabled) {
- 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
--		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
-+		at91_rtc_write_ier(AT91_RTC_ALARM);
- 	}
- 
- 	dev_dbg(dev, "%s(): %4d-%02d-%02d %02d:%02d:%02d\n", __func__,
-@@ -202,9 +217,9 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
- 
- 	if (enabled) {
- 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
--		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
-+		at91_rtc_write_ier(AT91_RTC_ALARM);
- 	} else
--		at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
-+		at91_rtc_write_idr(AT91_RTC_ALARM);
- 
- 	return 0;
- }
-@@ -213,7 +228,7 @@ static int at91_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-  */
- static int at91_rtc_proc(struct device *dev, struct seq_file *seq)
- {
--	unsigned long imr = at91_rtc_read(AT91_RTC_IMR);
-+	unsigned long imr = at91_rtc_read_imr();
- 
- 	seq_printf(seq, "update_IRQ\t: %s\n",
- 			(imr & AT91_RTC_ACKUPD) ? "yes" : "no");
-@@ -233,7 +248,7 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
- 	unsigned int rtsr;
- 	unsigned long events = 0;
- 
--	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read(AT91_RTC_IMR);
-+	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read_imr();
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
-@@ -328,7 +343,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- 	at91_rtc_write(AT91_RTC_MR, 0);		/* 24 hour mode */
- 
- 	/* Disable all interrupts */
--	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
-+	at91_rtc_write_idr(AT91_RTC_ACKUPD | AT91_RTC_ALARM |
- 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
- 					AT91_RTC_CALEV);
- 
-@@ -373,7 +388,7 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
- 	struct rtc_device *rtc = platform_get_drvdata(pdev);
- 
- 	/* Disable all interrupts */
--	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
-+	at91_rtc_write_idr(AT91_RTC_ACKUPD | AT91_RTC_ALARM |
- 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
- 					AT91_RTC_CALEV);
- 	free_irq(irq, pdev);
-@@ -396,13 +411,13 @@ static int at91_rtc_suspend(struct device *dev)
- 	/* this IRQ is shared with DBGU and other hardware which isn't
- 	 * necessarily doing PM like we are...
- 	 */
--	at91_rtc_imr = at91_rtc_read(AT91_RTC_IMR)
-+	at91_rtc_imr = at91_rtc_read_imr()
- 			& (AT91_RTC_ALARM|AT91_RTC_SECEV);
- 	if (at91_rtc_imr) {
- 		if (device_may_wakeup(dev))
- 			enable_irq_wake(irq);
- 		else
--			at91_rtc_write(AT91_RTC_IDR, at91_rtc_imr);
-+			at91_rtc_write_idr(at91_rtc_imr);
- 	}
- 	return 0;
- }
-@@ -413,7 +428,7 @@ static int at91_rtc_resume(struct device *dev)
- 		if (device_may_wakeup(dev))
- 			disable_irq_wake(irq);
- 		else
--			at91_rtc_write(AT91_RTC_IER, at91_rtc_imr);
-+			at91_rtc_write_ier(at91_rtc_imr);
- 	}
- 	return 0;
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 98cbdf6..23b921f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6140,6 +6140,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 -- 
-1.8.2.1
+1.8.1.2
 
