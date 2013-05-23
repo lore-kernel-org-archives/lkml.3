@@ -1,161 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab3EWMBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:01:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:62574 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758489Ab3EWMAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:00:30 -0400
-From: Libo Chen <libo.chen@huawei.com>
-To: <wsa@the-dreams.de>
-CC: <guz.fnst@cn.fujitsu.com>, <sonic.zhang@analog.com>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <libo.chen@huawei.com>
-Subject: [PATCH RFC v3 2/3] i2c: pxa: convert to devm_* API
-Date: Thu, 23 May 2013 20:00:08 +0800
-Message-ID: <1369310408-10348-1-git-send-email-libo.chen@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+	id S1758755Ab3EWMBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:01:22 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:48261 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758727Ab3EWMBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 08:01:20 -0400
+In-Reply-To: <CAFLxGvzKw1_L3Nm4J5GM_wr0sFe6umN0yLzDnK=DM_AJ7GpaaQ@mail.gmail.com>
+References: <CAFLxGvxfzHudUMRc7VkgWMO9RJAkyh1iuouRAV-0s-5eaLqfEQ@mail.gmail.com>	<OFE7F9663A.1F3DE1BE-ON48257B60.00045684-48257B60.001360DF@zte.com.cn> <CAFLxGvzKw1_L3Nm4J5GM_wr0sFe6umN0yLzDnK=DM_AJ7GpaaQ@mail.gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: cui.yunfeng@zte.com.cn, wang.bo116@zte.com.cn,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        liu.dong3@zte.com.cn
+Subject: Re: Re: Re: Re: [PATCH] UBI: fix memory leak when use fastmap
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+X-KeepSent: 6992CC88:316C799B-48257B74:0040CED8;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
+Message-ID: <OF6992CC88.316C799B-ON48257B74.0040CED8-48257B74.0041FF6F@zte.com.cn>
+From: wang.bo116@zte.com.cn
+Date: Thu, 23 May 2013 20:00:33 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-05-23 20:00:45,
+	Serialize complete at 2013-05-23 20:00:45
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r4NC0lCH002002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when i2c malloc faild, we should not try to call release_mem_region.
-aovid this, convert them to devm_* API.
+richard -rw- weinberger <richard.weinberger@gmail.com>  2013-05-13 
+16:08:35:
 
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> 
+> I tried to apply/test your patch.
+> It has lots of white spaces damages.
+> Can you please resend it using git send-email?
+> And also run checkpatch.pl before sending.
+> 
+> --
+> Thanks,
+> //richard
+
+hello:
+        I use git to remake a patch, and pass the checkpatch.pl's test.
+But my email client is lotus notes, and the patch's format may be damage 
+by the client.
+
+
+
+Subject: [PATCH] Fix ubi fastmap memory leak
+Signed-off-by: wang bo <wang.bo116@zte.com.cn>
 ---
- drivers/i2c/busses/i2c-pxa.c |   63 ++++++++++--------------------------------
- 1 files changed, 15 insertions(+), 48 deletions(-)
+ linux-3.9-rc6/drivers/mtd/ubi/attach.c  |   58 
++++++++++++++++++-------------
+ linux-3.9-rc6/drivers/mtd/ubi/fastmap.c |   13 -------
+ 2 files changed, 33 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index ea6d45d..7b10102 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -1091,10 +1091,9 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	struct resource *res = NULL;
- 	int ret, irq;
+diff --git a/linux-3.9-rc6/drivers/mtd/ubi/attach.c 
+b/linux-3.9-rc6/drivers/mtd/ubi/attach.c
+index c071d41..e9f64bc
+--- a/linux-3.9-rc6/drivers/mtd/ubi/attach.c
++++ b/linux-3.9-rc6/drivers/mtd/ubi/attach.c
+@@ -1212,6 +1212,30 @@ static void destroy_ai(struct ubi_attach_info *ai)
+        kfree(ai);
+ }
  
--	i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
-+	i2c = devm_kzalloc(&dev->dev, sizeof(struct pxa_i2c), GFP_KERNEL);
- 	if (!i2c) {
--		ret = -ENOMEM;
--		goto emalloc;
-+		return -ENOMEM;
- 	}
++static struct ubi_attach_info *alloc_ai(const char *slab_name)
++{
++       struct ubi_attach_info *ai;
++
++       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
++       if (!ai)
++               return ai;
++
++       INIT_LIST_HEAD(&ai->corr);
++       INIT_LIST_HEAD(&ai->free);
++       INIT_LIST_HEAD(&ai->erase);
++       INIT_LIST_HEAD(&ai->alien);
++       ai->volumes = RB_ROOT;
++       ai->aeb_slab_cache = kmem_cache_create(slab_name,
++                                              sizeof(struct 
+ubi_ainf_peb),
++                                              0, 0, NULL);
++       if (!ai->aeb_slab_cache) {
++               kfree(ai);
++               ai = NULL;
++       }
++
++       return ai;
++}
++
+ /**
+  * scan_all - scan entire MTD device.
+  * @ubi: UBI device description object
+@@ -1315,8 +1339,13 @@ static int scan_fast(struct ubi_device *ubi, struct 
+ubi_attach_info *ai)
+        int err, pnum, fm_anchor = -1;
+        unsigned long long max_sqnum = 0;
  
- 	/* Default adapter num to device id; i2c_pxa_probe_dt can override. */
-@@ -1104,19 +1103,11 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	if (ret > 0)
- 		ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
- 	if (ret < 0)
--		goto eclk;
-+		return ret;
++       struct ubi_attach_info *fm_temp_ai = NULL;
+        err = -ENOMEM;
  
--	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(dev, 0);
--	if (res == NULL || irq < 0) {
--		ret = -ENODEV;
--		goto eclk;
--	}
--
--	if (!request_mem_region(res->start, resource_size(res), res->name)) {
--		ret = -ENOMEM;
--		goto eclk;
--	}
-+	if (irq < 0)
-+		return -ENODEV;
++       fm_temp_ai = alloc_ai("ubi_scan_fastmap_slab_cache");
++       if (!fm_temp_ai)
++               goto out;
++
+        ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
+        if (!ech)
+                goto out;
+@@ -1331,7 +1360,7 @@ static int scan_fast(struct ubi_device *ubi, struct 
+ubi_attach_info *ai)
+                cond_resched();
  
- 	i2c->adap.owner   = THIS_MODULE;
- 	i2c->adap.retries = 5;
-@@ -1126,17 +1117,15 @@ static int i2c_pxa_probe(struct platform_device *dev)
+                dbg_gen("process PEB %d", pnum);
+-               err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
++               err = scan_peb(ubi, fm_temp_ai, pnum, &vol_id, &sqnum);
+                if (err < 0)
+                        goto out_vidh;
  
- 	strlcpy(i2c->adap.name, "pxa_i2c-i2c", sizeof(i2c->adap.name));
+@@ -1343,6 +1372,7 @@ static int scan_fast(struct ubi_device *ubi, struct 
+ubi_attach_info *ai)
  
--	i2c->clk = clk_get(&dev->dev, NULL);
-+	i2c->clk = devm_clk_get(&dev->dev, NULL);
- 	if (IS_ERR(i2c->clk)) {
--		ret = PTR_ERR(i2c->clk);
--		goto eclk;
-+		return PTR_ERR(i2c->clk);
- 	}
+        ubi_free_vid_hdr(ubi, vidh);
+        kfree(ech);
++       destroy_ai(fm_temp_ai);
  
--	i2c->reg_base = ioremap(res->start, resource_size(res));
--	if (!i2c->reg_base) {
--		ret = -EIO;
--		goto eremap;
--	}
-+	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	i2c->reg_base = devm_ioremap_resource(&dev->dev, res);
-+	if (IS_ERR(i2c->reg_base))
-+		return PTR_ERR(i2c->reg_bas);
+        if (fm_anchor < 0)
+                return UBI_NO_FASTMAP;
+@@ -1351,6 +1381,7 @@ static int scan_fast(struct ubi_device *ubi, struct 
+ubi_attach_info *ai)
  
- 	i2c->reg_ibmr = i2c->reg_base + pxa_reg_layout[i2c_type].ibmr;
- 	i2c->reg_idbr = i2c->reg_base + pxa_reg_layout[i2c_type].idbr;
-@@ -1166,10 +1155,10 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 		i2c->adap.algo = &i2c_pxa_pio_algorithm;
- 	} else {
- 		i2c->adap.algo = &i2c_pxa_algorithm;
--		ret = request_irq(irq, i2c_pxa_handler, IRQF_SHARED,
--				  dev_name(&dev->dev), i2c);
-+		ret = devm_request_irq(&dev->dev, irq, i2c_pxa_handler,
-+					IRQF_SHARED, dev_name(&dev->dev), i2c);
- 		if (ret)
--			goto ereqirq;
-+			return ret;
- 	}
+ out_vidh:
+        ubi_free_vid_hdr(ubi, vidh);
++       destroy_ai(fm_temp_ai);
+ out_ech:
+        kfree(ech);
+ out:
+@@ -1359,29 +1390,6 @@ out:
  
- 	i2c_pxa_reset(i2c);
-@@ -1183,7 +1172,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	ret = i2c_add_numbered_adapter(&i2c->adap);
- 	if (ret < 0) {
- 		printk(KERN_INFO "I2C: Failed to add bus\n");
--		goto eadapt;
-+		return ret;
- 	}
- 	of_i2c_register_devices(&i2c->adap);
- 
-@@ -1198,19 +1187,6 @@ static int i2c_pxa_probe(struct platform_device *dev)
  #endif
- 	return 0;
  
--eadapt:
--	if (!i2c->use_pio)
--		free_irq(irq, i2c);
--ereqirq:
--	clk_disable(i2c->clk);
--	iounmap(i2c->reg_base);
--eremap:
--	clk_put(i2c->clk);
--eclk:
--	kfree(i2c);
--emalloc:
--	release_mem_region(res->start, resource_size(res));
--	return ret;
- }
- 
- static int i2c_pxa_remove(struct platform_device *dev)
-@@ -1218,15 +1194,6 @@ static int i2c_pxa_remove(struct platform_device *dev)
- 	struct pxa_i2c *i2c = platform_get_drvdata(dev);
- 
- 	i2c_del_adapter(&i2c->adap);
--	if (!i2c->use_pio)
--		free_irq(i2c->irq, i2c);
+-static struct ubi_attach_info *alloc_ai(const char *slab_name)
+-{
+-       struct ubi_attach_info *ai;
 -
--	clk_disable(i2c->clk);
--	clk_put(i2c->clk);
+-       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
+-       if (!ai)
+-               return ai;
 -
--	iounmap(i2c->reg_base);
--	release_mem_region(i2c->iobase, i2c->iosize);
--	kfree(i2c);
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+-       ai->aeb_slab_cache = kmem_cache_create(slab_name,
+-                                              sizeof(struct 
+ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               kfree(ai);
+-               ai = NULL;
+-       }
+-
+-       return ai;
+-}
  
- 	return 0;
- }
+ /**
+  * ubi_attach - attach an MTD device.
+@@ -1419,7 +1427,7 @@ int ubi_attach(struct ubi_device *ubi, int 
+force_scan)
+                                        return -ENOMEM;
+                        }
+ 
+-                       err = scan_all(ubi, ai, UBI_FM_MAX_START);
++                       err = scan_all(ubi, ai, 0);
+                }
+        }
+ #else
+diff --git a/linux-3.9-rc6/drivers/mtd/ubi/fastmap.c 
+b/linux-3.9-rc6/drivers/mtd/ubi/fastmap.c
+index 0648c69..7b73d23
+--- a/linux-3.9-rc6/drivers/mtd/ubi/fastmap.c
++++ b/linux-3.9-rc6/drivers/mtd/ubi/fastmap.c
+@@ -552,21 +552,8 @@ static int ubi_attach_fastmap(struct ubi_device *ubi,
+        INIT_LIST_HEAD(&used);
+        INIT_LIST_HEAD(&free);
+        INIT_LIST_HEAD(&eba_orphans);
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+        ai->min_ec = UBI_MAX_ERASECOUNTER;
+ 
+-       ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
+-                                              sizeof(struct 
+ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               ret = -ENOMEM;
+-               goto fail;
+-       }
+-
+        fmsb = (struct ubi_fm_sb *)(fm_raw);
+        ai->max_sqnum = fmsb->sqnum;
+        fm_pos += sizeof(struct ubi_fm_sb);
 -- 
 1.7.1
-
 
