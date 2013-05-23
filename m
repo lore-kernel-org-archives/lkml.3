@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab3EWLBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:01:08 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:35283 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758332Ab3EWLBG (ORCPT
+	id S1758441Ab3EWLC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:02:27 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:40081 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756862Ab3EWLC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:01:06 -0400
+	Thu, 23 May 2013 07:02:26 -0400
+Message-ID: <519DF6D3.40705@mellanox.com>
+Date: Thu, 23 May 2013 14:00:35 +0300
+From: Alex Rosenbaum <alexr@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1368321816-17719-39-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1368321816-17719-39-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Thu, 23 May 2013 19:01:04 +0800
-Message-ID: <CAJd=RBDHD9Ov+Bdk1JfiHNYh0+RJmcpej+27HcTFtwnee2Rw5w@mail.gmail.com>
-Subject: Re: [PATCHv4 38/39] thp: vma_adjust_trans_huge(): adjust file-backed
- VMA too
-From: Hillf Danton <dhillf@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+CC: Dave Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        <e1000-devel@lists.sourceforge.net>,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Or Gerlitz <or.gerlitz@gmail.com>,
+        Eilon Greenstien <eilong@broadcom.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [PATCH v4 net-next 0/4] net: low latency Ethernet device polling
+References: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130521142641.18498.52856.stgit@ladj378.jer.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> Since we're going to have huge pages in page cache, we need to call
-> adjust file-backed VMA, which potentially can contain huge pages.
->
-> For now we call it for all VMAs.
->
-> Probably later we will need to introduce a flag to indicate that the VMA
-> has huge pages.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
+Eliezer,
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+With AmirV's help we got this working on our NIC as well and it look 
+nice. We too see the nice performance gain.
 
->  include/linux/huge_mm.h |   11 +----------
->  mm/huge_memory.c        |    2 +-
->  2 files changed, 2 insertions(+), 11 deletions(-)
->
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index b20334a..f4d6626 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -139,7 +139,7 @@ extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
->  #endif
->  extern int hugepage_madvise(struct vm_area_struct *vma,
->                             unsigned long *vm_flags, int advice);
-> -extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-> +extern void vma_adjust_trans_huge(struct vm_area_struct *vma,
->                                     unsigned long start,
->                                     unsigned long end,
->                                     long adjust_next);
-> @@ -155,15 +155,6 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
->         else
->                 return 0;
->  }
-> -static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
-> -                                        unsigned long start,
-> -                                        unsigned long end,
-> -                                        long adjust_next)
-> -{
-> -       if (!vma->anon_vma || vma->vm_ops)
-> -               return;
-> -       __vma_adjust_trans_huge(vma, start, end, adjust_next);
-> -}
->  static inline int hpage_nr_pages(struct page *page)
->  {
->         if (unlikely(PageTransHuge(page)))
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index d7c9df5..9c3815b 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -2783,7 +2783,7 @@ static void split_huge_page_address(struct mm_struct *mm,
->         split_huge_page_pmd_mm(mm, address, pmd);
->  }
->
-> -void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-> +void vma_adjust_trans_huge(struct vm_area_struct *vma,
->                              unsigned long start,
->                              unsigned long end,
->                              long adjust_next)
-> --
-> 1.7.10.4
->
+I tested with epoll and as expected there is no performance improvement. 
+I don't think there is any point delaying this feature commit due to 
+this fact. Future development should handle that.
+
+I also tested LLS with different message rates.
+Using sockperf you can set a ping send rate (--msp) and measure latency 
+at different rates (I don't think netperf can do this).
+In the financial trading sector, low latencies for 100mps are just as 
+important as in 50Kmsp (or higher). The market orders go out at these 
+low rates.
+I noticed a penalty in the latency performance as I go lower in mps. I 
+don't think it is related to the LLS code but it is more obvious then 
+without it since you reach lower results.
+
+These numbers are for sockperf TCP ping-pong at different msp for a 12 
+byte payload.
+I verified LLS hit counter was at 100% for all different message rates 
+on both server and client side.
+Machine is a x86_64 Intel(R) Xeon(R) CPU E5-2620 0 @ 2.00GHz with 64GB ram.
+
+    rate   | LLS-on RTT | LLS-off RTT
+   (msp) |    (usec)      |   (usec)
+  10000 |     14.0        |     21.8
+    1000 |     15.6        |     23.0
+      100 |     16.6        |     24.4
+
+You can see that as I go lower in send message rate the latency increases.
+
+* Don't consider these number as best results, they or on a random 
+machine with some effort tuning and core isolation. I saw this hit in 
+performance as lower the msg rate on several machine elsewhere and I am 
+sure it will reproduce on your tuned machine so you can notice it as well.
+
+Again, this should not block your feature commit but is interesting for 
+me to understand and I though someone here might have a good explanation.
+
+thanks,
+Alex Rosenbaum
+Director R&D Application Acceleration
+Mellanox Technologies | Raanana, Israel | +972 (74) 712-9215
