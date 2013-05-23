@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab3EWPLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:11:06 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:60315 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597Ab3EWPLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:11:04 -0400
-Message-ID: <519E318B.2010804@cogentembedded.com>
-Date: Thu, 23 May 2013 19:11:07 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC 3/8] macvtap: introduce macvtap_get_vlan()
-References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1369278753-2533-4-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759133Ab3EWPMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:12:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8397 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754876Ab3EWPMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 11:12:45 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFww-UYfLA4cN6MSkeXzmAnAruShddAPegCpn+5yd1HGmQ@mail.gmail.com>
+References: <CA+55aFww-UYfLA4cN6MSkeXzmAnAruShddAPegCpn+5yd1HGmQ@mail.gmail.com> <6402.1369320636@warthog.procyon.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Ingo Molnar <mingo@kernel.org>, milosz@adfin.com,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Is spin_is_locked() safe to use with BUG_ON()/WARN_ON()?
+Date: Thu, 23 May 2013 16:12:35 +0100
+Message-ID: <6788.1369321955@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On 23-05-2013 7:12, Jason Wang wrote:
+> We do *not* want to add some crazy "spin_is_nt_locked". We just want
+> to get rid of these idiotic debug tests.
 
-> Factor out the device holding logic to a macvtap_get_vlan(), this will be also
-> used by multiqueue API.
+Generally, I think you are right, though there are also some checks in
+deallocation routines that check that a spinlock is not currently held before
+releasing the memory holding it - should those be allowed to stay?  I'd be
+tempted to wrap the whole check in something, perhaps an "spin_lock_uninit()"
+and move the check to a header file.  Would this be useful for lockdep or
+anything like that?
 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->   drivers/net/macvtap.c |   26 +++++++++++++++++++-------
->   1 files changed, 19 insertions(+), 7 deletions(-)
-
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index ce1c72a..a36e49e 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -890,6 +890,23 @@ out:
->   	return ret;
->   }
->
-> +static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
-> +{
-> +	struct macvlan_dev *vlan;
-
-    Empty line wouldn't hurt here, after declaration.
-
-> +	rcu_read_lock_bh();
-> +	vlan = rcu_dereference_bh(q->vlan);
-> +	if (vlan)
-> +		dev_hold(vlan->dev);
-> +	rcu_read_unlock_bh();
-> +
-> +	return vlan;
-> +}
-[...]
-
-WBR, Sergei
-
+David
