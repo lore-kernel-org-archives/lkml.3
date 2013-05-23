@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab3EWQjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 12:39:14 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34594
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759546Ab3EWQjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 12:39:12 -0400
-Date: Thu, 23 May 2013 18:39:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: OOPS in perf_mmap_close()
-Message-ID: <20130523163901.GG23650@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
- <20130523044803.GA25399@ZenIV.linux.org.uk>
- <20130523104154.GA23650@twins.programming.kicks-ass.net>
- <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com>
- <20130523152458.GD23650@twins.programming.kicks-ass.net>
- <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
+	id S1759669Ab3EWQkT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 12:40:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16019 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752417Ab3EWQkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 12:40:18 -0400
+Date: Thu, 23 May 2013 12:40:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        fweisbec@gmail.com
+Subject: Re: rcu_read_lock() used illegally while idle!
+Message-ID: <20130523164004.GJ16419@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com
+References: <20130521173100.GA2076@redhat.com>
+ <20130522093624.GZ3578@linux.vnet.ibm.com>
+ <1369226958.6828.175.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1369226958.6828.175.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 04:12:14PM +0000, Christoph Lameter wrote:
-> On Thu, 23 May 2013, Peter Zijlstra wrote:
-> 
-> > The patch completely fails to explain how RLIMIT_LOCKED is supposed to
-> > deal with pinned vs locked. Perf used to account its pages against
-> > RLIMIT_LOCKED, with the patch it compares pinned against RLIMIT_LOCKED
-> > but completely discards any possible locked pages.
-> 
-> Pinned pages are different from mlock. Mlock semantics means that the
-> pages are kept in memory but the pages are movable (subject to page
-> migration f.e.).
-> 
-> Pinned pages have to stay where they are since the physical addresses may
-> be used for device I/O or other stuff.
-> 
-> Both pinned and mlocked pages cannot be evicted from memory. If one wants
-> to account for unevictable pages then both are contributing. However,
-> since a pinned page may be mlocked simply adding up the counter may cause
-> problems. The sum could be used as a worst case estimate though.
-> 
-> We could mlock all pinned pages but then the issue arises on how to track
-> that properly in order to unpin when the I/O action is done since the app
-> may have also mlocked pages.
+On Wed, May 22, 2013 at 08:49:18AM -0400, Steven Rostedt wrote:
 
-I know all that, and its completely irrelevant to the discussion.
+ > > ===============================
+ > > [ INFO: suspicious RCU usage. ]
+ > > 3.10.0-rc2+ #1 Not tainted
+ > > -------------------------------
+ > > include/linux/rcupdate.h:771 rcu_read_lock() used illegally while idle!
+ > > other info that might help us debug this:
+ > > RCU used illegally from idle CPU! rcu_scheduler_active = 1, debug_locks = 0
+ > > RCU used illegally from extended quiescent state!
+ > > 2 locks held by cc1/63645:
+ > >  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff816b39fd>] __schedule+0xed/0x9b0
+ > >  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8109d645>] cpuacct_charge+0x5/0x1f0
+ > > 
+ > > CPU: 1 PID: 63645 Comm: cc1 Not tainted 3.10.0-rc2+ #1 [loadavg: 40.57 27.55 13.39 25/277 64369]
+ > > Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
+ > >  0000000000000000 ffff88010f78fcf8 ffffffff816ae383 ffff88010f78fd28
+ > >  ffffffff810b698d ffff88011c092548 000000000023d073 ffff88011c092500
+ > >  0000000000000001 ffff88010f78fd60 ffffffff8109d7c5 ffffffff8109d645
+ > > Call Trace:
+ > >  [<ffffffff816ae383>] dump_stack+0x19/0x1b
+ > >  [<ffffffff810b698d>] lockdep_rcu_suspicious+0xfd/0x130
+ > >  [<ffffffff8109d7c5>] cpuacct_charge+0x185/0x1f0
+ > >  [<ffffffff8109d645>] ? cpuacct_charge+0x5/0x1f0
+ > >  [<ffffffff8108dffc>] update_curr+0xec/0x240
+ > >  [<ffffffff8108f528>] put_prev_task_fair+0x228/0x480
+ > >  [<ffffffff816b3a71>] __schedule+0x161/0x9b0
+ > >  [<ffffffff816b4721>] preempt_schedule+0x51/0x80
+ > >  [<ffffffff816b4800>] ? __cond_resched_softirq+0x60/0x60
+ > >  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+ > >  [<ffffffff810ff3cc>] ftrace_ops_control_func+0x1dc/0x210
+ > >  [<ffffffff816be280>] ftrace_call+0x5/0x2f
+ > >  [<ffffffff816b681d>] ? retint_careful+0xb/0x2e
+ > >  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+ > >  [<ffffffff816b4805>] ? schedule_user+0x5/0x70
+ > >  [<ffffffff816b6824>] ? retint_careful+0x12/0x2e
+ > > ------------[ cut here ]------------
+ > 
+ > This looks to be the caused by the same issue that this patch fixes:
+ > 
+ > https://lkml.org/lkml/2013/5/10/537
+ > 
+ > The schedule_user() was traced, and the preempt_enable_no_trace() that
+ > the function tracer does caused for a schedule to occur. As the
+ > scheduler uses rcu, and it was called before schedule_user() could tell
+ > the kernel that the context is changing from user to kernel.
 
-You cannot simply take away pinned pages from the RLIMIT_MEMLOCK
-accounting without mention nor replacement limits.
+That patch doesn't help unfortunatly.
 
-You now have double the amount of memory you can loose, once to actual
-mlock() and once through whatever generates pinned -- if it bothers with
-checking limits at all.
+	Dave
 
-Where we had the guarantee that x < y; you did x := x1 + x2; which then
-should result in: x1 + x2 < y, instead you did: x1 < y && x2 < y, not
-the same and completely wrong.
