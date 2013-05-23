@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab3EWEet (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 00:34:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:13072 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab3EWEer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 00:34:47 -0400
-X-IronPort-AV: E=Sophos;i="4.87,725,1363104000"; 
-   d="scan'208";a="7341235"
-Message-ID: <519D9D04.9090403@cn.fujitsu.com>
-Date: Thu, 23 May 2013 12:37:24 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751285Ab3EWEsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 00:48:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43604 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab3EWEsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 00:48:10 -0400
+Date: Thu, 23 May 2013 05:48:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: OOPS in perf_mmap_close()
+Message-ID: <20130523044803.GA25399@ZenIV.linux.org.uk>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, isimatu.yasuaki@jp.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com, Len Brown <lenb@kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] Driver core / memory: Simplify __memory_block_change_state()
-References: <1576321.HU0tZ4cGWk@vostro.rjw.lan> <1824290.fKsAJTo9gA@vostro.rjw.lan> <519C4D6E.6080902@cn.fujitsu.com> <1594596.DcsjzgnrZI@vostro.rjw.lan>
-In-Reply-To: <1594596.DcsjzgnrZI@vostro.rjw.lan>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/23 12:33:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/23 12:33:22,
-	Serialize complete at 2013/05/23 12:33:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+On Wed, May 22, 2013 at 11:48:51PM -0400, Vince Weaver wrote:
+> 
+> In case anyone cares, the Oops is happening here:
+> 
+>     1a56:       48 c1 e8 0c             shr    $0xc,%rax
+>     1a5a:       48 ff c0                inc    %rax
+> >   1a5d:       f0 48 29 45 60          lock sub %rax,0x60(%rbp)
+>     1a62:       49 8b 46 40             mov    0x40(%r14),%rax
+> 
+> Which maps to this in perf_mmap_close() in kernel/events/core.c:
+> 
+>                 atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
+> 
+> And "user" (%rbp) is RBP: 0000000000000000, hence the problem.
+> 
+> I'm having trouble tracking the problem back any further as the code is a 
+> bit covoluted and is not commented at all.
 
-Thanks. :)
+FWIW, at least part of perf_mmap_close() is obvious garbage - increment of
+->pinned_vm happens in mmap(), decrement - on the ->close() of the last
+VMA clonal to one we'd created in that mmap(), regardless of the address
+space it's in.  Not that handling of ->pinned_vm made any sense wrt fork()...
 
-On 05/23/2013 06:06 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
->
-> As noted by Tang Chen, the last_online field in struct memory_block
-> introduced by commit 4960e05 (Driver core: Introduce offline/online
-> callbacks for memory blocks) is not really necessary, because
-> online_pages() restores the previous state if passed ONLINE_KEEP as
-> the last argument.  Therefore, remove that field along with the code
-> referring to it.
->
-> References: http://marc.info/?l=linux-kernel&m=136919777305599&w=2
-> Signed-off-by: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
-> ---
->
-> Hi,
->
-> The patch is on top (and the commit mentioned in the changelog is present in)
-> the acpi-hotplug branch of the linux-pm.git tree.
->
-> Thanks,
-> Rafael
->
-> ---
->   drivers/base/memory.c  |   11 ++---------
->   include/linux/memory.h |    1 -
->   2 files changed, 2 insertions(+), 10 deletions(-)
->
-> Index: linux-pm/drivers/base/memory.c
-> ===================================================================
-> --- linux-pm.orig/drivers/base/memory.c
-> +++ linux-pm/drivers/base/memory.c
-> @@ -291,13 +291,7 @@ static int __memory_block_change_state(s
->   		mem->state = MEM_GOING_OFFLINE;
->
->   	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
-> -	if (ret) {
-> -		mem->state = from_state_req;
-> -	} else {
-> -		mem->state = to_state;
-> -		if (to_state == MEM_ONLINE)
-> -			mem->last_online = online_type;
-> -	}
-> +	mem->state = ret ? from_state_req : to_state;
->   	return ret;
->   }
->
-> @@ -310,7 +304,7 @@ static int memory_subsys_online(struct d
->
->   	ret = mem->state == MEM_ONLINE ? 0 :
->   		__memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE,
-> -					    mem->last_online);
-> +					    ONLINE_KEEP);
->
->   	mutex_unlock(&mem->state_mutex);
->   	return ret;
-> @@ -618,7 +612,6 @@ static int init_memory_block(struct memo
->   			base_memory_block_id(scn_nr) * sections_per_block;
->   	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
->   	mem->state = state;
-> -	mem->last_online = ONLINE_KEEP;
->   	mem->section_count++;
->   	mutex_init(&mem->state_mutex);
->   	start_pfn = section_nr_to_pfn(mem->start_section_nr);
-> Index: linux-pm/include/linux/memory.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/memory.h
-> +++ linux-pm/include/linux/memory.h
-> @@ -26,7 +26,6 @@ struct memory_block {
->   	unsigned long start_section_nr;
->   	unsigned long end_section_nr;
->   	unsigned long state;
-> -	int last_online;
->   	int section_count;
->
->   	/*
->
->
+Actually...  What happens if you mmap() the same opened file of that
+kind several times, each time with the same size?  AFAICS, on all
+subsequent calls we'll get
+        mutex_lock(&event->mmap_mutex);
+        if (event->rb) {
+                if (event->rb->nr_pages == nr_pages)
+                        atomic_inc(&event->rb->refcount);
+		else
+			...
+		goto unlock;
+unlock:
+        if (!ret)
+                atomic_inc(&event->mmap_count);
+        mutex_unlock(&event->mmap_mutex);
+
+i.e. we bump event->mmap_count *and* event->rb->refcount.  munmap()
+all of them and each will generate a call of perf_mmap_close(); ->mmap_count
+will go down to zero and on all but the last call we'll have nothing else
+done.  On the last call we'll hit ring_buffer_put(), which will decrement
+event->rb->refcount once.  Note that by that point we simply don't know
+how many times we'd incremented it in those mmap() calls - it's too late
+to clean up.  IOW, unless I'm misreading that code, we've got a leak in
+there.  Not the same bug, but...
+
