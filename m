@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab3EWJw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 05:52:28 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43684 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757890Ab3EWJw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 05:52:26 -0400
+	id S1758146Ab3EWJwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 05:52:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49871 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757890Ab3EWJwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 05:52:30 -0400
+Date: Thu, 23 May 2013 10:52:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@sr71.net>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv11 2/4] zbud: add to mm/
+Message-ID: <20130523095215.GV11497@suse.de>
+References: <1368448803-2089-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1368448803-2089-3-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130517154837.GN11497@suse.de>
+ <20130519205219.GA3252@cerebellum>
+ <20130520135439.GR11497@suse.de>
+ <20130520154225.GA25536@cerebellum>
+ <20130521081020.GT11497@suse.de>
+ <519D7827.80607@oracle.com>
 MIME-Version: 1.0
-Date: Thu, 23 May 2013 11:52:25 +0200
-X-Google-Sender-Auth: pC-pQ24bY2Xj_Si7hfokftIvjWM
-Message-ID: <CAMuHMdXAGBU97pg2SzoZteFk9fd7FOpOVtu=buZ40z+SwRpE6Q@mail.gmail.com>
-Subject: Blocking allmodconfig with missing defaults (was: Re: kbuild: Fix
- missing '\n' for NEW symbols in yes "" | make oldconfig >conf.new)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Marek <mmarek@suse.cz>, Ben Hutchings <bhutchings@solarflare.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <519D7827.80607@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 9:37 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=62dc989921df2a98d1a73aacd085abe941cb9828
->
->     According to Documentation/kbuild/kconfig.txt, the commands:
->
->         yes "" | make oldconfig >conf.new
->         grep "(NEW)" conf.new
->
->     should list the new config symbols with their default values.
+On Thu, May 23, 2013 at 10:00:07AM +0800, Bob Liu wrote:
+> Hi Mel & Seth,
+> 
+> On 05/21/2013 04:10 PM, Mel Gorman wrote:
+> > On Mon, May 20, 2013 at 10:42:25AM -0500, Seth Jennings wrote:
+> >> On Mon, May 20, 2013 at 02:54:39PM +0100, Mel Gorman wrote:
+> >>> On Sun, May 19, 2013 at 03:52:19PM -0500, Seth Jennings wrote:
+> >>>> My first guess is that the external fragmentation situation you are referring to
+> >>>> is a workload in which all pages compress to greater than half a page.  If so,
+> >>>> then it doesn't matter what NCHUCNKS_ORDER is, there won't be any pages the
+> >>>> compress enough to fit in the < PAGE_SIZE/2 free space that remains in the
+> >>>> unbuddied zbud pages.
+> >>>>
+> >>>
+> >>> There are numerous aspects to this, too many to write them all down.
+> >>> Modelling the external fragmentation one and how it affects swap IO
+> >>> would be a complete pain in the ass so lets consider the following
+> >>> example instead as it's a bit clearer.
+> >>>
+> >>> Three processes. Process A compresses by 75%, Process B compresses to 15%,
+> >>> Process C pages compress to 15%. They are all adding to zswap in lockstep.
+> >>> Lets say that zswap can hold 100 physical pages.
+> >>>
+> >>> NCHUNKS == 2
+> >>> 	All Process A pages get rejected.
+> >>
+> >> Ah, I think this is our disconnect.  Process A pages will not be rejected.
+> >> They will be stored in a zbud page, and that zbud page will be added
+> >> to the 0th unbuddied list.  This list maintains a list of zbud pages
+> >> that will never be buddied because there are no free chunks.
+> >>
+> > 
+> > D'oh, good point. Unfortunately, the problem then still exists at the
+> > writeback end which I didn't bring up in the previous mail. 
+> 
+> What's your opinion if we write back the whole compressed page to swap disk?
+> 
 
-There are other cases where this is not working.
-If there are int or hex symbols without a default value, "allmodconfig",
-"allyesconfig", "allnoconfig", and "randconfig" fill in empty string values,
-causing a subsequent build (which does oldconfig) to wait for user input.
+I'm not sure how to answer that sensibly. If the compressed page is
+written to swap, in my opinion then there will be IO :/ . It will be a
+maximum of two pages of IO with zbud (or zpair or whatever) as currently
+implemented. With zsmalloc it potentially was more.
 
-This is easy to reproduce:
-    make ARCH=h8300 allmodconfig
-    make ARCH=h8300 oldconfig
-
-Should kconfig generate default values for these cases?
-Should all int/hex symbols provide default values? If yes, I think
-kconfig should
-complain about missing defaults.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Mel Gorman
+SUSE Labs
