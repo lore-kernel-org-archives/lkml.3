@@ -1,17 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab3EWKqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:46:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55037 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758281Ab3EWKqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:46:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,727,1363158000"; 
-   d="scan'208";a="306745835"
-Date: Thu, 23 May 2013 15:39:32 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
+	id S1758042Ab3EWKvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:51:32 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:64956 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757798Ab3EWKvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 06:51:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130523100932.GA30200@intel.com>
+References: <20130516153553.GI11706@mudshark.cambridge.arm.com>
+	<1369139597-24446-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130521151143.GH10453@mudshark.cambridge.arm.com>
+	<CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
+	<20130523100932.GA30200@intel.com>
+Date: Thu, 23 May 2013 13:51:29 +0300
+Message-ID: <CAHp75Vf58kq0t7+et9i54fxjEdQfBrTWxji4xk_MS-fZgWGOdQ@mail.gmail.com>
+Subject: Re: [PATCH] dmatest: abort transfers immediately when asked for
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
 Cc: Will Deacon <will.deacon@arm.com>,
         Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
         "djbw @ fb . com" <djbw@fb.com>,
@@ -19,53 +26,47 @@ Cc: Will Deacon <will.deacon@arm.com>,
         "linux-arm-kernel @ lists . infradead . org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] dmatest: abort transfers immediately when asked for
-Message-ID: <20130523100932.GA30200@intel.com>
-References: <20130516153553.GI11706@mudshark.cambridge.arm.com>
- <1369139597-24446-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130521151143.GH10453@mudshark.cambridge.arm.com>
- <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 08:24:15PM +0300, Andy Shevchenko wrote:
-> On Tue, May 21, 2013 at 6:11 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > Hi Andy,
-> >
-> > On Tue, May 21, 2013 at 01:33:17PM +0100, Andy Shevchenko wrote:
-> >> When thread is going to be stopped we have to unconditionally terminate all
-> >> ongoing transfers. Otherwise it would be possible that callback function will
-> >> be called on the next interrupt and will try to access to already freed
-> >> structures.
-> >>
-> >> The patch introduces specific error message for this, though it doesn't
-> >> increase the counter of the failed tests.
-> >>
-> >> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> >> Reported-by: Will Deacon <will.deacon@arm.com>
-> >
-> > Thanks for persevering with this! Although this patch definitely fixes the
-> > panic I was seeing, I now observe buffer verification failures in subsequent
-> > test runs after an aborted run:
-> 
-> I think the description to the commit adfa543e "dmatest: don't use
-> set_freezable_with_signal()" may shed light on this.
-> 
-> The background (if  I got it correctly) is in race with done flag. So,
-> we got a callback call from the DMA engine, but we don't know which
-> transfer triggers it.
-> I might be wrong. This is just an assumption.
-> 
-> Have you ever see such behaviour on pre v3.10-rc1 kernels? (I mean
-> with old dmatest module)
-Terminate shouldnt cause the issue with buffer verfication, can you try this on
-dw_dmac, do you see similar failures on verfication?
+On Thu, May 23, 2013 at 1:09 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Tue, May 21, 2013 at 08:24:15PM +0300, Andy Shevchenko wrote:
+>> On Tue, May 21, 2013 at 6:11 PM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Tue, May 21, 2013 at 01:33:17PM +0100, Andy Shevchenko wrote:
+>> >> When thread is going to be stopped we have to unconditionally terminate all
+>> >> ongoing transfers. Otherwise it would be possible that callback function will
+>> >> be called on the next interrupt and will try to access to already freed
+>> >> structures.
+>> >>
+>> >> The patch introduces specific error message for this, though it doesn't
+>> >> increase the counter of the failed tests.
+>> >>
+>> > Thanks for persevering with this! Although this patch definitely fixes the
+>> > panic I was seeing, I now observe buffer verification failures in subsequent
+>> > test runs after an aborted run:
+>>
+>> I think the description to the commit adfa543e "dmatest: don't use
+>> set_freezable_with_signal()" may shed light on this.
+>>
+>> The background (if  I got it correctly) is in race with done flag. So,
+>> we got a callback call from the DMA engine, but we don't know which
+>> transfer triggers it.
+>> I might be wrong. This is just an assumption.
+>>
+>> Have you ever see such behaviour on pre v3.10-rc1 kernels? (I mean
+>> with old dmatest module)
+> Terminate shouldnt cause the issue with buffer verfication, can you try this on
+> dw_dmac, do you see similar failures on verfication?
 
---
-~Vinod
+I saw the similar errors on dw_dmac on Intel Medfield device.
+Anyway, I checked another approach with Will.
+For now I will send a quick fix that prevents tester to abort an
+ongoing transfer.
+In future we could implement a robust logic when transfers can be
+interrupted at any time.
+
+-- 
+With Best Regards,
+Andy Shevchenko
