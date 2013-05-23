@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758752Ab3EWMcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:32:12 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44204 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253Ab3EWMcL (ORCPT
+	id S1758870Ab3EWMcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:32:17 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:62296 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758777Ab3EWMcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:32:11 -0400
+	Thu, 23 May 2013 08:32:14 -0400
 From: Michal Simek <michal.simek@xilinx.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        Graeme Smecher <gsmecher@threespeedlogic.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 1/2] xilinx systemace: Fix device name assignment for SystemACE (from "xs`" to "xsa").
-Date: Thu, 23 May 2013 14:31:55 +0200
-Message-Id: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Graeme Smecher <gsmecher@threespeedlogic.com>
+Subject: [PATCH 2/2] xilinx systemace: Fix sparse warnings
+Date: Thu, 23 May 2013 14:31:56 +0200
+Message-Id: <13f757593d672bf87b89b4eba9c31e65baceb1d9.1369312303.git.michal.simek@xilinx.com>
 X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+References: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+In-Reply-To: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
+References: <4b5d6615a1338145a461a6d4e1c7d3e42d4f4522.1369312303.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-1140-1369312316-0001";
+    boundary="=_mimegpg-monstr-desktop-1158-1369312329-0001";
     micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,50 +35,51 @@ The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
 To open this message correctly you will need to install E-mail or Usenet
 software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-1140-1369312316-0001
+--=_mimegpg-monstr-desktop-1158-1369312329-0001
 
-From: Graeme Smecher <gsmecher@threespeedlogic.com>
+Fix sysace sparse warnings.
 
-This fixes a bug introduced in 5d10302f46d, where device trees that don't
-provide the "port-number" attribute are mistakenly assigned the device "xs`".
-The error check that's supposed to assign a default letter can't succeed,
-since it tests an unsigned type against a negative return code.
-
-Signed-off-by: Graeme Smecher <gsmecher@threespeedlogic.com>
 Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/block/xsysace.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/block/xsysace.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
-index f8ef15f..3fd130f 100644
+index 3fd130f..1393b88 100644
 --- a/drivers/block/xsysace.c
 +++ b/drivers/block/xsysace.c
-@@ -1160,8 +1160,7 @@ static int ace_probe(struct platform_device *dev)
- 	dev_dbg(&dev->dev, "ace_probe(%p)\n", dev);
+@@ -407,7 +407,7 @@ static void ace_dump_regs(struct ace_device *ace)
+ 		 ace_in32(ace, ACE_CFGLBA), ace_in(ace, ACE_FATSTAT));
+ }
 
- 	/* device id and bus width */
--	of_property_read_u32(dev->dev.of_node, "port-number", &id);
--	if (id < 0)
-+	if (of_property_read_u32(dev->dev.of_node, "port-number", &id))
- 		id = 0;
- 	if (of_find_property(dev->dev.of_node, "8-bit", NULL))
- 		bus_width = ACE_BUS_WIDTH_8;
+-void ace_fix_driveid(u16 *id)
++static void ace_fix_driveid(u16 *id)
+ {
+ #if defined(__BIG_ENDIAN)
+ 	int i;
+@@ -463,7 +463,7 @@ static inline void ace_fsm_yieldirq(struct ace_device *ace)
+ }
+
+ /* Get the next read/write request; ending requests that we don't handle */
+-struct request *ace_get_next_request(struct request_queue * q)
++static struct request *ace_get_next_request(struct request_queue *q)
+ {
+ 	struct request *req;
+
 --
 1.8.2.3
 
 
---=_mimegpg-monstr-desktop-1140-1369312316-0001
+--=_mimegpg-monstr-desktop-1158-1369312329-0001
 Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAlGeDDwACgkQykllyylKDCEY3wCffT5m5T9N0NiJEsycOrqcYsAP
-DzkAn3+2PO588a+Lrv8W4xHXODcmS48x
-=UbY6
+iEYEABECAAYFAlGeDEkACgkQykllyylKDCEmHgCfVrbs1p8NzQIsHLpqNh00fhnQ
+pmkAoJ23pZhlJjqdTJStRHGtcD/5rLQo
+=Hffa
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-1140-1369312316-0001--
+--=_mimegpg-monstr-desktop-1158-1369312329-0001--
