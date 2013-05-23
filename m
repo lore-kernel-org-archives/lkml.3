@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab3EWF5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 01:57:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64844 "EHLO mx1.redhat.com"
+	id S1751725Ab3EWF7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 01:59:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab3EWF5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 01:57:31 -0400
-Date: Thu, 23 May 2013 08:57:25 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce
- kvm_mmu_prepare_zap_obsolete_page
-Message-ID: <20130523055725.GA26157@redhat.com>
-References: <1369252560-11611-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1751316Ab3EWF7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 01:59:40 -0400
+Date: Thu, 23 May 2013 08:59:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH V2] virtio_net: enable napi for all possible queues
+ during open
+Message-ID: <20130523055957.GC13916@redhat.com>
+References: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369252560-11611-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1369202638-17660-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 03:55:58AM +0800, Xiao Guangrong wrote:
-> It is only used to zap the obsolete page. Since the obsolete page
-> will not be used, we need not spend time to find its unsync children
-> out. Also, we delete the page from shadow page cache so that the page
-> is completely isolated after call this function.
+On Wed, May 22, 2013 at 02:03:58PM +0800, Jason Wang wrote:
+> Commit 55257d72bd1c51f25106350f4983ec19f62ed1fa (virtio-net: fill only rx
+> queues which are being used) only does the napi enabling during open for
+> curr_queue_pairs. This will break multiqueue receiving since napi of new queues
+> were still disabled after changing the number of queues.
 > 
-> The later patch will use it to collapse tlb flushes
+> This patch fixes this by enabling napi for all possible queues during open.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+
 > ---
->  arch/x86/kvm/mmu.c |   46 +++++++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 41 insertions(+), 5 deletions(-)
+> Changes from V1:
+> - enable napi in open instead of virtnet_set_queues() to avoid kernel BUG() when
+> trying to do napi_enable() for a already enabled queue
+> ---
+>  drivers/net/virtio_net.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 9b57faa..e676356 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1466,7 +1466,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->  static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
->  {
->  	ASSERT(is_empty_shadow_page(sp->spt));
-> -	hlist_del(&sp->hash_link);
-> +	hlist_del_init(&sp->hash_link);
-Why do you need hlist_del_init() here? Why not move it into
-kvm_mmu_prepare_zap_page() like we discussed it here:
-https://patchwork.kernel.org/patch/2580351/ instead of doing
-it differently for obsolete and non obsolete pages?
-
->  	list_del(&sp->link);
->  	free_page((unsigned long)sp->spt);
->  	if (!sp->role.direct)
-> @@ -2069,14 +2069,19 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
->  	return zapped;
->  }
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 2d6abac..241527d 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -636,10 +636,11 @@ static int virtnet_open(struct net_device *dev)
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  	int i;
 >  
-> -static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> -				    struct list_head *invalid_list)
-> +static int
-> +__kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> +			   bool zap_unsync_children,
-> +			   struct list_head *invalid_list)
->  {
-> -	int ret;
-> +	int ret = 0;
+> -	for (i = 0; i < vi->curr_queue_pairs; i++) {
+> -		/* Make sure we have some buffers: if oom use wq. */
+> -		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> -			schedule_delayed_work(&vi->refill, 0);
+> +	for (i = 0; i < vi->max_queue_pairs; i++) {
+> +		if (i < vi->curr_queue_pairs)
+> +			/* Make sure we have some buffers: if oom use wq. */
+> +			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
+> +				schedule_delayed_work(&vi->refill, 0);
+>  		virtnet_napi_enable(&vi->rq[i]);
+>  	}
 >  
->  	trace_kvm_mmu_prepare_zap_page(sp);
->  	++kvm->stat.mmu_shadow_zapped;
-> -	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
-> +
-> +	if (likely(zap_unsync_children))
-> +		ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
-> +
->  	kvm_mmu_page_unlink_children(kvm, sp);
->  	kvm_mmu_unlink_parents(kvm, sp);
->  
-> @@ -2099,6 +2104,37 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
->  	return ret;
->  }
->  
-> +/*
-> + * The obsolete page will not be used, we need not spend time to find
-> + * its unsync children out. Also, we delete the page from shadow page
-> + * cache so that the page is completely isolated after call this
-> + * function.
-> + *
-> + * Note: if we use this function in for_each_gfn_xxx macros, we should
-> + * re-walk the list when it successfully zaps one page.
-> + */
-> +static int
-> +kvm_mmu_prepare_zap_obsolete_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> +				  struct list_head *invalid_list)
-> +{
-> +	int ret;
-> +
-> +	WARN_ON(!is_obsolete_sp(kvm, sp));
-> +
-> +	ret = __kvm_mmu_prepare_zap_page(kvm, sp, false, invalid_list);
-> +	if (ret)
-> +		hlist_del_init(&sp->hash_link);
-Why hlist_del() is not enough?
-
-> +
-> +	WARN_ON(ret > 1);
-> +	return ret;
-> +}
-> +
-> +static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
-> +				    struct list_head *invalid_list)
-> +{
-> +	return __kvm_mmu_prepare_zap_page(kvm, sp, true, invalid_list);
-> +}
-> +
->  static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->  				    struct list_head *invalid_list)
->  {
 > -- 
-> 1.7.7.6
-
---
-			Gleb.
+> 1.7.1
