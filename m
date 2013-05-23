@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab3EWGBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 02:01:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50597 "EHLO arroyo.ext.ti.com"
+	id S1756990Ab3EWGCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:02:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56941 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752440Ab3EWGBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 02:01:45 -0400
+	id S1755863Ab3EWGBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 02:01:47 -0400
 From: Ravi Babu <ravibabu@ti.com>
 To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: <balbi@ti.com>, Ravi Babu <ravibabu@ti.com>
-Subject: [PATCH v1 7/9] usb: musb: dsps: use get-usb-phy by phandle for multi instance
-Date: Thu, 23 May 2013 11:31:26 +0530
-Message-ID: <1369288888-8614-8-git-send-email-ravibabu@ti.com>
+Subject: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for am33xx
+Date: Thu, 23 May 2013 11:31:27 +0530
+Message-ID: <1369288888-8614-9-git-send-email-ravibabu@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
 References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
@@ -21,31 +21,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of mutli instance support, use get-phy object using phandle
-to return to repsective phy xceiv object for each instance
+The am33xx platforms suppors dual musb instance which need two instances
+of usb-phy. Add dual instance usb-phy DT bindings for am333x platform.
 
 Signed-off-by: Ravi Babu <ravibabu@ti.com>
 ---
- drivers/usb/musb/musb_dsps.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ arch/arm/boot/dts/am33xx.dtsi |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 0096aad..0d8581b 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -416,7 +416,11 @@ static int dsps_musb_init(struct musb *musb)
- 	musb->mregs += wrp->musb_core_offset;
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 0957645..b0b4deb 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -322,6 +322,22 @@
+ 			status = "disabled";
+ 		};
  
- 	/* NOP driver needs change if supporting dual instance */
--	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	if (dev->parent->of_node)
-+		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
-+				"usb-phy", pdev->id);
-+	else
-+		musb->xceiv = devm_usb_get_phy_dev(dev, pdev->id);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
- 		return -EPROBE_DEFER;
++		phy1: usbphy-gs70@44e10620 {
++			compatible = "ti,dsps-usbphy";
++			reg = <0x44e10620 0x8
++			       0x44e10648 0x4>;
++			reg-names = "phy_ctrl","phy_wkup";
++			id = <0>;
++		};
++
++		phy2: usbphy-gs70@44e10628 {
++			compatible = "ti,dsps-usbphy";
++			reg = <0x44e10628 0x8
++			       0x44e10648 0x4>;
++			reg-names = "phy_ctrl","phy_wkup";
++			id = <1>;
++		};
++
+ 		usb@47400000 {
+ 			compatible = "ti,musb-am33xx";
+ 			reg = <0x47400000 0x1000	/* usbss */
+@@ -337,6 +353,7 @@
+ 			port1-mode = <3>;
+ 			power = <250>;
+ 			ti,hwmods = "usb_otg_hs";
++			usb-phy = <&phy1>, <&phy2>;
+ 		};
  
+ 		mac: ethernet@4a100000 {
 -- 
 1.7.0.4
 
