@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab3EWRFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:05:08 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33512 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757656Ab3EWRFG (ORCPT
+	id S1758040Ab3EWRID (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:08:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44251 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757866Ab3EWRIA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:05:06 -0400
-Message-ID: <519E4C3C.7010400@gmail.com>
-Date: Thu, 23 May 2013 10:05:00 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Thu, 23 May 2013 13:08:00 -0400
+From: "B, Ravi" <ravibabu@ti.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: RE: [PATCH v1 2/9] usb: musb: nop: remove unused
+ nop_xceiv_(un)register APIs from glue
+Thread-Topic: [PATCH v1 2/9] usb: musb: nop: remove unused
+ nop_xceiv_(un)register APIs from glue
+Thread-Index: AQHOV3r9vEl26qqbfkypuoIrrrzucpkSTMAAgACy8zA=
+Date: Thu, 23 May 2013 17:07:53 +0000
+Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com>
+References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
+ <1369288888-8614-3-git-send-email-ravibabu@ti.com>
+ <519E2612.5000904@cogentembedded.com>
+In-Reply-To: <519E2612.5000904@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Wladislav Wiebe <wladislav.kw@gmail.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, david.daney@cavium.com,
-        Maxim Uvarov <muvarov@gmail.com>, davem@davemloft.net,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] MIPS: Octeon: fix for held reboot_mutex lock at
- task exit time
-References: <519DDF8D.70700@gmail.com>
-In-Reply-To: <519DDF8D.70700@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 02:21 AM, Wladislav Wiebe wrote:
-> When kernel halt's will reboot_mutex lock still hold at exit.
-> It will issue with 'halt' command:
-> $ halt
-> ..
-> Sent SIGKILL to all processes
-> Requesting system halt
-> [66.729373] System halted.
-> [66.733244]
-> [66.734761] =====================================
-> [66.739473] [ BUG: lock held at task exit time! ]
-> [66.744188] 3.8.7-0-sampleversion-fct #49 Tainted: G           O
-> [66.750202] -------------------------------------
-> [66.754913] init/21479 is exiting with locks still held!
-> [66.760234] 1 lock held by init/21479:
-> [66.763990]  #0:  (reboot_mutex){+.+...}, at: [<ffffffff801776c8>] SyS_reboot+0xe0/0x218
-> [66.772165]
-> [66.772165] stack backtrace:
-> [66.776532] Call Trace:
-> [66.778992] [<ffffffff805780a8>] dump_stack+0x8/0x34
-> [66.783972] [<ffffffff801618b0>] do_exit+0x610/0xa70
-> [66.788948] [<ffffffff801777a8>] SyS_reboot+0x1c0/0x218
-> [66.794186] [<ffffffff8013d6a4>] handle_sys64+0x44/0x64
->
->
-[...]
->
-> Acked-by: Maxim Uvarov <muvarov@gmail.com>
-> Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-> ---
->   arch/mips/cavium-octeon/setup.c |    4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-> index b0baa29..04ce396 100644
-> --- a/arch/mips/cavium-octeon/setup.c
-> +++ b/arch/mips/cavium-octeon/setup.c
-> @@ -457,6 +457,10 @@ static void octeon_halt(void)
->   	}
->
->   	octeon_kill_core(NULL);
-> +
-> +	/* We stop here */
-> +	while (1)
-> +		;
+Sergei
 
-I want to put a WAIT here so we don't burn so much power.
+> Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register APIs from glue
+> Hello.
+> On 23-05-2013 10:01, Ravi Babu wrote:
 
-I will send a patch to do that instead.
+>> removed unused nop xceiv (un_)register API's from all musb
+>> platform drivers
 
->   }
->
->   /**
->
+>    Since when are they unused?
 
+Please refer to commit id 662dca54 : usb: otg: support for multiple transceivers by a single controller.
+Usb_get_phy() is used to get the of phy used by controller, phy bindings are done through DT. 
+
+>> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+
+--
+Ravi B
