@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab3EWG2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 02:28:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58020 "EHLO bear.ext.ti.com"
+	id S1751641Ab3EWG2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 02:28:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49366 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab3EWG2u convert rfc822-to-8bit (ORCPT
+	id S1751320Ab3EWG2u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 May 2013 02:28:50 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 CC: "Nori, Sekhar" <nsekhar@ti.com>,
         "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
         "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "davinci-linux-open-source@linux.davincidsp.com" 
 	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: RE: [PATCH 02/11] gpio: davinci: coding style correction
 Thread-Topic: [PATCH 02/11] gpio: davinci: coding style correction
-Thread-Index: AQHOVrtT3nJPdPxYF0+o1KIziSzAUZkQpOUAgAGoYGA=
-Date: Thu, 23 May 2013 06:27:08 +0000
+Thread-Index: AQHOVrtT3nJPdPxYF0+o1KIziSzAUZkQwRgAgAGN5SA=
+Date: Thu, 23 May 2013 06:27:09 +0000
 Deferred-Delivery: Thu, 23 May 2013 06:27:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EAC7AE3@DBDE04.ent.ti.com>
+Message-ID: <518397C60809E147AF5323E0420B992E3EAC7AE8@DBDE04.ent.ti.com>
 References: <1369206634-6778-1-git-send-email-avinashphilip@ti.com>
  <1369206634-6778-3-git-send-email-avinashphilip@ti.com>
- <519CC142.7050301@cogentembedded.com>
-In-Reply-To: <519CC142.7050301@cogentembedded.com>
+ <20130522144042.GG18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130522144042.GG18614@n2100.arm.linux.org.uk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,92 +40,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 22, 2013 at 18:29:46, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 22-05-2013 11:10, Philip Avinash wrote:
-> 
-> > 1. Corrects coding and commenting styles
-> > 2. Variables name change to meaningful name
-> > 3. Remove unnecessary variable usage
-> > 4. Add BINTEN macro definition
-> >
-> > Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> > ---
-> >   drivers/gpio/gpio-davinci.c |  182 +++++++++++++++++++++----------------------
-> >   1 file changed, 89 insertions(+), 93 deletions(-)
-> 
-> > diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-> > index 17df6db..d308955 100644
-> > --- a/drivers/gpio/gpio-davinci.c
-> > +++ b/drivers/gpio/gpio-davinci.c
-> [...]
-> > @@ -31,10 +31,11 @@ struct davinci_gpio_regs {
-> >   	u32	intstat;
-> >   };
-> >
-> > +#define BINTEN	0x08 /* GPIO Interrupt Per-Bank Enable Register */
-> 
->     Empty line needed here.
-
-Ok, I will add.
-
-> 
-> >   #define chip2controller(chip)	\
-> >   	container_of(chip, struct davinci_gpio_controller, chip)
-> >
-> [...]
-> > @@ -98,8 +94,8 @@ static int davinci_direction_in(struct gpio_chip *chip, unsigned offset)
-> >   	return __davinci_direction(chip, offset, false, 0);
-> >   }
-> >
-> > -static int
-> > -davinci_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-> > +static int davinci_direction_out(struct gpio_chip *chip, unsigned offset,
-> > +		int value)
-> 
->      This line should be aligned under the next character after (.
-
-Will remove this change as Russel pointed out.
-
-> 
-> [...]
-> > @@ -113,22 +109,22 @@ davinci_direction_out(struct gpio_chip *chip, unsigned offset, int value)
-> [...]
-> >   /*
-> >    * Assuming the pin is muxed as a gpio output, set its output value.
-> >    */
+On Wed, May 22, 2013 at 20:10:42, Russell King - ARM Linux wrote:
+> On Wed, May 22, 2013 at 12:40:25PM +0530, Philip Avinash wrote:
+> >  /*
+> >   * Assuming the pin is muxed as a gpio output, set its output value.
+> >   */
 > > -static void
 > > -davinci_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 > > +static void davinci_gpio_set(struct gpio_chip *chip, unsigned offset,
 > > +		int value)
 > 
->      Same here.
-
-I will remove this change as Russel pointed out.
-
+> This kind of stuff is just churn.  If you read Documentation/CodingStyle:
 > 
-> [...]
-> > @@ -368,16 +363,16 @@ static int __init davinci_gpio_irq_setup(void)
-> [...]
-> >   	for (gpio = 0, bank = 0; gpio < ngpio; bank++, gpio += 32) {
-> > -		chips[bank].chip.to_irq = gpio_to_irq_banked;
-> > -		chips[bank].irq_base = soc_info->gpio_unbanked
-> > -			? -EINVAL
-> > -			: (soc_info->intc_irq_num + gpio);
-> > +		ctlrs[bank].chip.to_irq = gpio_to_irq_banked;
-> > +		ctlrs[bank].irq_base = soc_info->gpio_unbanked ?
-> > +			-EINVAL : (soc_info->intc_irq_num + gpio);
+> Statements longer than 80 columns will be broken into sensible chunks, unless
+> exceeding 80 columns significantly increases readability and does not hide
+> information. Descendants are always substantially shorter than the parent and
+> are placed substantially to the right. The same applies to function headers
+> with a long argument list. However, never break user-visible strings such as
+> printk messages, because that breaks the ability to grep for them.
 > 
->     () not needed here.
+> "broken into sensible chunks".  Here's the question: is the former a
+> sensible format?  Arguably it is because it results in all the arguments
+> fitting on one line at the expense of missing the return value.
+> 
+> The latter is also a sensible format - but breaks the arguments instead
+> of the return value.
+> 
+> Both formats can be found in their entirety by grep by function name alone:
+> 
+> 	grep -1 davinci_gpio_set
+> 
+> or if you prefer to type some more then you end up with more specific
+> 
+> 	grep -A1 davinci_gpio_set
+> or
+> 	grep -B1 davinci_gpio_set
+> 
+> depending on the version.
+> 
+> Where there's no clear advantage one way or the other, let the authors
+> preference stand.
 
-Ok will remove in next version ().
+Ok I understood and I will remove these changes in next version.
 
 Thanks
 Avinash
 
-> 
-> WBR, Sergei
-> 
 > 
 
