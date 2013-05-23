@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab3EWLbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:31:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63192 "EHLO mx1.redhat.com"
+	id S1758705Ab3EWLbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:31:35 -0400
+Received: from mail.us.es ([193.147.175.20]:59352 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758432Ab3EWLbV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:31:21 -0400
-Date: Thu, 23 May 2013 07:31:08 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
-        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <oleg@redhat.com>, <bfields@fieldses.org>, <bharrosh@panasas.com>,
-        <linux-fsdevel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <devel@openvz.org>
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-Message-ID: <20130523073108.13afafa6@tlielax.poochiereds.net>
-In-Reply-To: <519DF109.9010309@parallels.com>
-References: <20130522072840.27720.85023.stgit@localhost.localdomain>
-	<878v36ex6n.fsf@xmission.com>
-	<519DCE5D.6070204@parallels.com>
-	<87k3mq9fsu.fsf@xmission.com>
-	<519DF109.9010309@parallels.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758688Ab3EWLb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 07:31:26 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.8/17262. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-101.7/7.5):. 
+ Processed in 4.834373 secs); 23 May 2013 11:31:25 -0000
+X-Envelope-From: pneira@us.es
+Date: Thu, 23 May 2013 13:31:17 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: David Miller <davem@davemloft.net>
+Cc: peterz@infradead.org, horms@verge.net.au, eric.dumazet@gmail.com,
+        ja@ssi.bg, mingo@redhat.com, paulmck@linux.vnet.ibm.com,
+        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dipankar@in.ibm.com
+Subject: Re: [PATCH ipvs-next v3 0/2] sched: Add cond_resched_rcu_lock()
+ helper
+Message-ID: <20130523113117.GG22553@localhost>
+References: <1369201832-17163-1-git-send-email-horms@verge.net.au>
+ <20130522075438.GO26912@twins.programming.kicks-ass.net>
+ <20130522.013108.58504645261021804.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522.013108.58504645261021804.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 May 2013 14:35:53 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> 23.05.2013 14:00, Eric W. Biederman пишет:
-> > Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> >
-> >> 22.05.2013 21:33, Eric W. Biederman пишет:
-> >>> Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
-> >>>
-> >>>> Usermode helper executes all binaries in global "init" root context. This
-> >>>> doesn't allow to call a binary from other root context (for example in a
-> >>>> container).
-> >>>> Currently, both containerized NFS client and NFS server requires an ability to
-> >>>> execute a binary in a container's root context. Root swap can be done in
-> >>>> "init" callback, passed by UMH caller.
-> >>>> But since we have 2 callers already (and more of them are expected to appear
-> >>>> in future) and because set_fs_root() in not exported, it looks reasonable to
-> >>>> add one more generic UMH helper to generic fs code.
-> >>>> Root path reference must be hold by the caller, since it will be put on UMH
-> >>>> thread exit.
-> >>>
-> >>> Awesome.  With this patch as an uprivilieged user I get to pick which
-> >>> binary the kernel will execute.  At least if nfs and nfsd ever runs in a
-> >>> user namespace (something that looks like only matter of time).
-> >>>
-> >>
-> >> Not really. Only by using a kernel module to call the UMH.
-> >> And an unprivileged can't load a module as far a I know.
-> >> I.e. NFSd, for example, will use unprivileged user's root to perform this call.
-> >
-> > To help me understand the context which instances of call user mode
-> > helper are you expecting to use this facility?
-> >
+On Wed, May 22, 2013 at 01:31:08AM -0700, David Miller wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Wed, 22 May 2013 09:54:38 +0200
 > 
-> Ok. Here is how the NFSd uses UMH:
-> UMH is used on NFSd service to start user-space client tracker daemon
-> ("/sbin/nfsdcltarck"), which is used to store some per-client locks data on
-> persistent storage.
+> > On Wed, May 22, 2013 at 02:50:30PM +0900, Simon Horman wrote:
+> >> Add a helper that for use in loops which read data protected by RCU and
+> >> may have a large number of iterations.  Such an example is dumping the list
+> >> of connections known to IPVS: ip_vs_conn_array() and ip_vs_conn_seq_next().
+> >> 
+> >> This series also updates IPVS to use the helper.
+> >> 
+> >> Simon Horman (2):
+> >>   sched: add cond_resched_rcu() helper
+> >>   ipvs: use cond_resched_rcu() helper when walking connections
+> >> 
+> >>  include/linux/sched.h           |  9 +++++++++
+> >>  net/netfilter/ipvs/ip_vs_conn.c | 23 ++++++++---------------
+> >>  2 files changed, 17 insertions(+), 15 deletions(-)
+> > 
+> > Acked-by: Peter Zijlstra <peterz@infradead.org>
+> > 
+> > How do you want to go about merging this? Do you want to route it
+> > through the net tree or through -tip?
 > 
-> >>> I think this is a seriously bad idea.
-> >>>
-> >>> Why can't we do this in userspace with setns as we do with the core dump
-> >>> helper?
-> >>>
-> >>
-> >> Could you, please, clarify, how setns can help here?
-> >
-> > setns can change the mount namespace, and chroot can change to root
-> > directory in the specified mount namespace.  Essentially you can enter
-> > into a containers complete context (pid, mnt, root, etc) comming from
-> > the outside.
-> >
-> 
-> So, you are actually suggesting to move the binary start from the kernel to user-space.
-> IOW, you are suggesting to do not using UMH at all.
-> Am I right?
-> I don't know the reasons, why it was done by using UMH and not in userspace.
-> Could you clarify this, Jeff?
-> 
+> I think we can have Pablo merge it into his netfilter tree.
 
-nfsdcltrack is a "one-shot" program for managing and querying the nfsd
-client tracking database. When knfsd needs to query or modify the
-db, it uses the UMH infrastructure to call this program that does
-what's requested and then exits.
-
-So, I'm not sure I really understand your question. It wasn't done in
-userspace since the whole purpose of this program is to handle upcalls
-from the kernel.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+I did so. Thanks David.
