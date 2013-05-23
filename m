@@ -1,110 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab3EWSuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 14:50:52 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:57116 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab3EWSus (ORCPT
+	id S1758608Ab3EWSwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 14:52:50 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:40252 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab3EWSwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 14:50:48 -0400
-MIME-Version: 1.0
-Date: Thu, 23 May 2013 21:50:47 +0300
-Message-ID: <CA+ydwtrRc4ADTk8WhLaA01p=J4+j5Dn-SO9uPEFCCW3bZj8Fjw@mail.gmail.com>
-Subject: NULL pointer deref after vmalloc() failure in fill_files_note()
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-fsdevel@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        trinity@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 23 May 2013 14:52:49 -0400
+Date: Thu, 23 May 2013 20:52:41 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] kdump: Introduce ELF header in new memory
+ feature
+Message-ID: <20130523205241.4b9e4fde@holzheu>
+In-Reply-To: <20130523174127.GA12290@redhat.com>
+References: <1369245517-16204-1-git-send-email-holzheu@linux.vnet.ibm.com>
+	<1369245517-16204-2-git-send-email-holzheu@linux.vnet.ibm.com>
+	<20130523174127.GA12290@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052318-3548-0000-0000-0000057AAFD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Vivek,
 
-Noticed while fuzzing with trinity, that if the vmalloc() in
-fill_files_note() fails, we Oops.
+Thanks for your reply. I will integrate your feedback into the v3 patch
+set and will make the following changes:
 
-I can easily reproduce the bug with this applied:
+- Get rid of ELFCORE_ADDR_NEWMEM (sorry for that:)
+- Make read_from_crash_header() only read from kernel
+- Move read_from_crash_header() to weak function
+  arch_read_from_crash_header()
+- Implement read_from_crash_header() strong function for s390
+- Set elfcorehdr_addr to address of new ELF header
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index f8a0b0e..11b444f 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1432,7 +1432,7 @@ static void fill_files_note(struct memelfnote *note)
-        if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
-                goto err;
-        size = round_up(size, PAGE_SIZE);
--       data = vmalloc(size);
-+       data = NULL;
-        if (!data)
-                goto err;
+Best Regards,
+Michael
 
+On Thu, 23 May 2013 13:41:27 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Tommi
+> On Wed, May 22, 2013 at 07:58:35PM +0200, Michael Holzheu wrote:
+> > or s390 we create the ELF core header in the 2nd kernel
+> > with a small trick. We relocate the addresses in the ELF header in
+> > a way that for the /proc/vmcore code it seems to be in the 1st
+> > kernel (old) memory and the read_from_oldmem() returns the correct
+> > data. This allows the /proc/vmcore code to use the ELF header in the
+> > 2nd kernel.
+> > 
+> > This patch now exchanges the old mechanism with the new and much
+> > cleaner function call override feature that now offcially allows to
+> > create the ELF core header in the 2nd kernel.
+> > 
+> > To use the new feature the following has to be done by the
+> > architecture backend code:
+> > 
+> >  * Set elfcorehdr_addr to ELFCORE_ADDR_NEWMEM
+> >    -> is_kdump_kernel() will return true
+> 
+> setting elfcorehdr_addr to ELFCORE_ADDR_NEWMEM looks really odd to me.
+> There is no need for arch independent code to know whether crash
+> headers are in new memory or not. Our old assumption was that
+> everything is in old memory. Now that is broken because of s390. So
+> arch should be able to override read_from_crash_header() call and
+> read headers from new memory. If need be s390 can maintain another
+> variable for this state to figure out where headers are.
+> 
+> Also arch should be able to  set elfcorehdr_addr to virtual address
+> of ELF header. is_kdump_kernel() does not care whether address stored
+> in elfcorehdr_addr is physical or virtual.
+> 
+> IOW, generic code would not care whether headers are in new memory
+> or old memory. All the operations on header will be abstracted with
+> the help of helper functions.
+> 
+> Can we please get rid of this NEWMEM stuff.
+> 
+> 
+> >  * Override arch_get_crash_header() to return the address of the ELF
+> >    header in new memory.
+> >  * Override arch_free_crash_header() to free the memory of the ELF
+> >    header in new memory.
+> > 
+> > Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > ---
+> >  fs/proc/vmcore.c           | 80
+> > +++++++++++++++++++++++++++++++++++-----------
+> > include/linux/crash_dump.h |  3 ++ 2 files changed, 65
+> > insertions(+), 18 deletions(-)
+> > 
+> > diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> > index 6ba32f8..d97ed31 100644
+> > --- a/fs/proc/vmcore.c
+> > +++ b/fs/proc/vmcore.c
+> > @@ -123,6 +123,47 @@ static ssize_t read_from_oldmem(char *buf,
+> > size_t count, return read;
+> >  }
+> >  
+> > +/*
+> > + * Read from the current (new) kernel memory
+> > + */
+> > +static ssize_t read_from_newmem(char *buf, size_t count, u64
+> > *ppos, int userbuf) +{
+> > +	if (userbuf) {
+> > +		if (copy_to_user(buf, (void *)*ppos, count))
+> > +			return -EFAULT;
+> > +	} else {
+> > +		memcpy(buf, (void *)*ppos, count);
+> > +	}
+> > +	*ppos += count;
+> > +	return count;
+> > +}
+> > +
+> 
+> Why do we need read_from_newmem? I thought arch code will override
+> read_from_crash_header() and write a variant of read_from_newmem()
+> internally. I think could still be an helper function in vmcore.c if
+> there are many arch keeping headers in new memory so that we don't
+> have same code across multiple arches. But s390 seems to be the only
+> expcetion at this point of time.
+> 
+> > +/*
+> > + * Provide access to the header
+> > + */
+> > +static ssize_t read_from_crash_header(char *buf, size_t count, u64
+> > *ppos,
+> > +				      int userbuf)
+> > +{
+> > +	if (elfcorehdr_addr == ELFCORE_ADDR_NEWMEM)
+> > +		return read_from_newmem(buf, count, ppos, userbuf);
+> > +	else
+> > +		return read_from_oldmem(buf, count, ppos, userbuf);
+> > +}
+> > +
+> 
+> I thought read_from_crash_header() will simply be
+> 
+> read_from_crash_header() {
+> 	return read_from_oldmem()
+> }
+> 
+> And arch code will override it to read the headers from new memory.
+> That way generic code does not have to know whether headers are in
+> old memory or in new memory or somewhere else.
+> 
+> Also current usage of read_from_crash_header() seems to be that we are
+> not copying header data to user space buffer directly. Generic code
+> will process headers and copy them in kernel memory and it will be
+> copied to user space from there if need be.
+> 
+> So for time being I think it should be just fine to assume that
+> read_from_crash_header() is copying data to kernel memory only.
+> 
+> Thanks
+> Vivek
+> 
 
-[   69.144390] BUG: unable to handle kernel NULL pointer dereference
-at 0000000000000246
-[   69.145015] IP: [<ffffffff814d22f0>] strim+0x80/0x80
-[   69.145015] PGD b7ceb067 PUD b7df7067 PMD 0
-[   69.145015] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   69.145015] CPU: 0 PID: 3412 Comm: cat Not tainted 3.10.0-rc2+ #20
-[   69.145015] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   69.145015] task: ffff8800b6a00000 ti: ffff8800b7d78000 task.ti:
-ffff8800b7d78000
-[   69.145015] RIP: 0010:[<ffffffff814d22f0>]  [<ffffffff814d22f0>]
-strim+0x80/0x80
-[   69.145015] RSP: 0018:ffff8800b7d799b0  EFLAGS: 00010206
-[   69.145015] RAX: 0000000000000144 RBX: 0000000000000000 RCX: ffff8800b44c0000
-[   69.145015] RDX: ffff8800b7d79b20 RSI: 0000000000000000 RDI: 0000000000000246
-[   69.145015] RBP: ffff8800b7d799c0 R08: 0000000000000000 R09: 0000000000000000
-[   69.145015] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800b7d79b88
-[   69.145015] R13: 00007ffffffff000 R14: 00007fffbf94cee6 R15: ffffffff8241fde8
-[   69.145015] FS:  00007fa54cb2d700(0000) GS:ffff8800bf600000(0000)
-knlGS:0000000000000000
-[   69.145015] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   69.145015] CR2: 0000000000000246 CR3: 00000000b7e41000 CR4: 00000000000006f0
-[   69.145015] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   69.145015] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   69.145015] Stack:
-[   69.145015]  ffffffff8128784c 00000000000003d8 ffff8800b7d79a70
-ffffffff81289490
-[   69.145015]  ffffffff812891e7 0000000000000246 0000000000000000
-ffff8800b6a00000
-[   69.145015]  ffff8800b7d79e78 ffff8800b6bea410 ffff8800b7d79fd8
-ffff8800b7d79fd8
-[   69.145015] Call Trace:
-[   69.145015]  [<ffffffff8128784c>] ? notesize.isra.6+0xc/0x30
-[   69.145015]  [<ffffffff81289490>] fill_note_info.isra.8+0xc60/0xcc0
-[   69.145015]  [<ffffffff812891e7>] ? fill_note_info.isra.8+0x9b7/0xcc0
-[   69.145015]  [<ffffffff812895a8>] elf_core_dump+0xb8/0x960
-[   69.145015]  [<ffffffff81173028>] ? trace_hardirqs_off_caller+0x28/0xe0
-[   69.145015]  [<ffffffff811730ed>] ? trace_hardirqs_off+0xd/0x10
-[   69.145015]  [<ffffffff8228892f>] ? __slab_free+0x1a1/0x380
-[   69.145015]  [<ffffffff81172f55>] ? trace_hardirqs_on_caller+0x185/0x220
-[   69.145015]  [<ffffffff814dfb7c>] ? debug_check_no_obj_freed+0x16c/0x220
-[   69.145015]  [<ffffffff814c959a>] ? argv_free+0x1a/0x20
-[   69.145015]  [<ffffffff81225226>] ? kfree+0x256/0x2c0
-[   69.145015]  [<ffffffff8128fb9b>] do_coredump+0x8db/0xcd0
-[   69.145015]  [<ffffffff81173028>] ? trace_hardirqs_off_caller+0x28/0xe0
-[   69.145015]  [<ffffffff81172f55>] ? trace_hardirqs_on_caller+0x185/0x220
-[   69.145015]  [<ffffffff8112a65a>] get_signal_to_deliver+0x81a/0x920
-[   69.145015]  [<ffffffff8106f4e9>] ? sched_clock+0x9/0x10
-[   69.145015]  [<ffffffff810673e2>] do_signal+0x52/0x590
-[   69.145015]  [<ffffffff81172f55>] ? trace_hardirqs_on_caller+0x185/0x220
-[   69.145015]  [<ffffffff822a1858>] ? retint_swapgs+0x13/0x1b
-[   69.145015]  [<ffffffff8159e3d7>] ? tty_ldisc_deref+0x67/0xc0
-[   69.145015]  [<ffffffff81594a86>] ? tty_read+0xa6/0x120
-[   69.145015]  [<ffffffff822a2231>] ? sysret_signal+0x5/0x4e
-[   69.145015]  [<ffffffff81067947>] do_notify_resume+0x27/0x70
-[   69.145015]  [<ffffffff822a24e2>] int_signal+0x12/0x17
-[   69.145015] Code: 20 74 18 0f 1f 84 00 00 00 00 00 48 83 c0 01 0f
-b6 10 f6 82 40 00 48 82 20 75 f0 5d c3 66 66 66 66 66 2e 0f 1f 84 00
-00 00 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0
-01 80
-[   69.145015] RIP  [<ffffffff814d22f0>] strim+0x80/0x80
-[   69.145015]  RSP <ffff8800b7d799b0>
-[   69.145015] CR2: 0000000000000246
-[   69.225239] ---[ end trace 5d63690e960d7c7c ]---
