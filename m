@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3EWHpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 03:45:54 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:36690 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab3EWHpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 03:45:53 -0400
-Message-ID: <519DC926.4000106@redhat.com>
-Date: Thu, 23 May 2013 09:45:42 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1757507Ab3EWHqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 03:46:35 -0400
+Received: from ozlabs.org ([203.10.76.45]:51474 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757173Ab3EWHqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 03:46:33 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH mainline] lib: make iovec obj instead of lib
+In-Reply-To: <519DAD21.2050608@infradead.org>
+References: <20130522234213.254ED31C6DC@corp2gmr1-1.hot.corp.google.com> <519DAD21.2050608@infradead.org>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 23 May 2013 16:44:35 +0930
+Message-ID: <87r4gyqias.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522093249.GC3466@mtj.dyndns.org> <519C959A.3090100@redhat.com> <20130522100212.GE3466@mtj.dyndns.org> <519C9CBC.3050003@redhat.com> <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org>
-In-Reply-To: <20130522221737.GA12339@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/05/2013 00:17, Tejun Heo ha scritto:
-> Then let's make it fit the use case better.  I really can't see much
-> point in crafting the cdb filter when you basically have to entrust
-> the device to the user anyway.  Let's either trust the user with the
-> device or not.  I'm very doubtful that the filtered access via SG_IO
-> can be reliable or secure enough.  Let's please avoid extending a
-> broken thing.
+Randy Dunlap <rdunlap@infradead.org> writes:
+> when CONFIG_VMWARE_VMCI=m:
+>
+> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
+> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
+>
+> Changing iovec.o from lib-y to obj-y fixes the build errors.
 
-Sorry to say that, but "I'm very doubtful that..." is just conspiracy
-theory.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-It is not broken.  I'm not _that_ clueless, if it were broken I wouldn't
-have had users use it in production.
+Thanks!
+Rusty.
 
-> One more thing, is it really necessary to have finer granularity than
-> provided by file permissions?  What would be the use case?  Do you
-> expect to have multiple - two - differing levels of access with and
-> without SG_IO?
-
-No, I don't.  I want four levels:
-
-1) no access;
-
-2) read-only access;
-
-3) read-write whitelisted access;
-
-4) generic access;
-
-but it's indeed fine to assume that 3 and 4 will never be given together
-to the same disk.  The important point is that 2 and 3 should not
-require any privileges except for opening the file.
-
-With the opt-out knob, you still need a long-lived privileged process in
-order to set the knob back to "no access", and that's undesirable.
-Long-lived privileged processes can be SIGKILLed and leave things open
-for misuse; instead, if I need something privileged I want to confine it
-to a helper that opens the file and passes back the file descriptor.
-
-> for the same user, it's pointless to give out SG_IO access to
-> processes while denying for other processes.  As long as ptrace can
-> be attached, hijacking such fd is easy. Making it per-device should
-> be suitable enough, no?
-
-Yes, and that's what I did.  Such hijacking is why a kernel whitelist is
-necessary in untrusted cases (i.e. you cannot just implement it in
-userspace).
-
->> There are many use cases, I listed some in my reply to Martin.
->> Sometimes you have trust over the guest and can use count-me-out.  But
->> in some cases you don't, and yet the current whitelist is not enough
->> (e.g. tapes).
-> 
-> Can you elaborate?  Why can't a tape device be entrusted to the user?
-
-In general, any device may or may not be entrusted to the user.  In this
-respect, tapes or disks have no difference.
-
-But while the current whitelist is almost okay for disks, it is not
-usable for tapes.  Too many essential commands are missing; this is why
-extending the whitelist to cover other device types is important for me.
- And since you don't want to open new commands to all classes with no
-distinction (which I understand), the only choice is per-class whitelists.
-
-Paolo
+> ---
+> From: Randy Dunlap <rdunlap@infradead.org>
+>
+> Fix build error io vmw_vmci.ko by chaning iovec.o from lib-y to
+> obj-y.
+>
+> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
+> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>  lib/Makefile |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> --- mmotm-2013-0522-1640.orig/lib/Makefile
+> +++ mmotm-2013-0522-1640/lib/Makefile
+> @@ -9,7 +9,7 @@ endif
+>  
+>  lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>  	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+> -	 idr.o int_sqrt.o extable.o iovec.o \
+> +	 idr.o int_sqrt.o extable.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+>  	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+> @@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
+>  
+>  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+>  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+> -	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o\
+> +	 gcd.o lcm.o list_sort.o uuid.o flex_array.o clz_ctz.o iovec.o \
+>  	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
+>  obj-y += string_helpers.o
+>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
