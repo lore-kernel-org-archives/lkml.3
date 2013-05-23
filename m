@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab3EWKgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:36:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51169 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758102Ab3EWKgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:36:22 -0400
-Message-ID: <519DF122.5020802@suse.cz>
-Date: Thu, 23 May 2013 12:36:18 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758246Ab3EWKgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:36:42 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:64443 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758102Ab3EWKgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 06:36:39 -0400
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: Blocking allmodconfig with missing defaults (was: Re: kbuild:
- Fix missing '\n' for NEW symbols in yes "" | make oldconfig >conf.new)
-References: <CAMuHMdXAGBU97pg2SzoZteFk9fd7FOpOVtu=buZ40z+SwRpE6Q@mail.gmail.com>
-In-Reply-To: <CAMuHMdXAGBU97pg2SzoZteFk9fd7FOpOVtu=buZ40z+SwRpE6Q@mail.gmail.com>
+In-Reply-To: <1368321816-17719-8-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1368321816-17719-8-git-send-email-kirill.shutemov@linux.intel.com>
+Date: Thu, 23 May 2013 18:36:39 +0800
+Message-ID: <CAJd=RBAQzDi3RT5e6Kq3MwQPna1tRUETEjLbFka6P2QRZVWMVA@mail.gmail.com>
+Subject: Re: [PATCHv4 07/39] thp, mm: basic defines for transparent huge page cache
+From: Hillf Danton <dhillf@gmail.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.5.2013 11:52, Geert Uytterhoeven wrote:
-> On Wed, Feb 27, 2013 at 9:37 PM, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
->> Gitweb:     http://git.kernel.org/linus/;a=commit;h=62dc989921df2a98d1a73aacd085abe941cb9828
->>
->>     According to Documentation/kbuild/kconfig.txt, the commands:
->>
->>         yes "" | make oldconfig >conf.new
->>         grep "(NEW)" conf.new
->>
->>     should list the new config symbols with their default values.
-> 
-> There are other cases where this is not working.
-> If there are int or hex symbols without a default value, "allmodconfig",
-> "allyesconfig", "allnoconfig", and "randconfig" fill in empty string values,
-> causing a subsequent build (which does oldconfig) to wait for user input.
-> 
-> This is easy to reproduce:
->     make ARCH=h8300 allmodconfig
->     make ARCH=h8300 oldconfig
-> 
-> Should kconfig generate default values for these cases?
+On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
 
-Yes, I think that we should generate a default of 0 / 0x0 or the lower
-bound of the range, if specified.
+Better if one or two sentences are prepared to show that the following
+defines are necessary.
 
-Michal
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  include/linux/huge_mm.h |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+>
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 528454c..6b4c9b2 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -64,6 +64,10 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+>  #define HPAGE_PMD_MASK HPAGE_MASK
+>  #define HPAGE_PMD_SIZE HPAGE_SIZE
+>
+> +#define HPAGE_CACHE_ORDER      (HPAGE_SHIFT - PAGE_CACHE_SHIFT)
+> +#define HPAGE_CACHE_NR         (1L << HPAGE_CACHE_ORDER)
+> +#define HPAGE_CACHE_INDEX_MASK (HPAGE_CACHE_NR - 1)
+> +
+>  extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+>
+>  #define transparent_hugepage_enabled(__vma)                            \
+> @@ -185,6 +189,10 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+>  #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+>  #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+>
+> +#define HPAGE_CACHE_ORDER      ({ BUILD_BUG(); 0; })
+> +#define HPAGE_CACHE_NR         ({ BUILD_BUG(); 0; })
+> +#define HPAGE_CACHE_INDEX_MASK ({ BUILD_BUG(); 0; })
+> +
+>  #define hpage_nr_pages(x) 1
+>
+>  #define transparent_hugepage_enabled(__vma) 0
+> --
+> 1.7.10.4
+>
