@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab3EWLS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:18:28 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:60446 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757495Ab3EWLS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:18:27 -0400
-From: <yizhang.mrvl@gmail.com>
-To: <sameo@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <yizhang.mrvl@gmail.com>
-CC: <cxie4@marvell.com>, <arnd@arndb.de>, <yizhang@marvell.com>,
-        <linux-kernel@vger.kernel.org>, <jtzhou@marvell.com>
-Subject: [PATCH 3/4] mfd: 88pm800: fix probe bug
-Date: Thu, 23 May 2013 19:10:46 +0800
-Message-ID: <1369307447-17874-4-git-send-email-yizhang.mrvl@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1369307447-17874-1-git-send-email-yizhang.mrvl@gmail.com>
-References: <1369307447-17874-1-git-send-email-yizhang.mrvl@gmail.com>
+	id S1758219Ab3EWLVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:21:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57428 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757985Ab3EWLVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 07:21:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
+   d="scan'208";a="342232968"
+Date: Thu, 23 May 2013 14:25:05 +0300
+From: Mika Westerberg <mika.westerberg@intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] dma: support Lynxpoint DMA
+Message-ID: <20130523112504.GF11878@intel.com>
+References: <1368003349-12204-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130514045423.GC27639@intel.com>
+ <1369128579.29283.139.camel@smile>
+ <20130523101919.GB30200@intel.com>
+ <CAHp75Vctb1kR8gUQk0vu8scsgjBtZUq9DS0NQ+zVOPAobG0QOw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vctb1kR8gUQk0vu8scsgjBtZUq9DS0NQ+zVOPAobG0QOw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yi Zhang <yizhang@marvell.com>
+On Thu, May 23, 2013 at 02:07:54PM +0300, Andy Shevchenko wrote:
+> On Thu, May 23, 2013 at 1:19 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Tue, May 21, 2013 at 12:29:39PM +0300, Andy Shevchenko wrote:
+> >> On Tue, 2013-05-14 at 10:24 +0530, Vinod Koul wrote:
+> >> > On Wed, May 08, 2013 at 11:55:47AM +0300, Andy Shevchenko wrote:
+> >> > > This is the rest of patch series related to ACPI DMA helpers and Lynxpoint DMAC.
+> >> > > Patches are rebased against current Linus' tree and Vinod's branch for-linus.
+> >> > >
+> >> > > Since v2:
+> >> > >  - remove patches that are already in the Vinod's tree
+> >> > >  - rebase on top of today's origin/master and Vinod's for-linus branch
+> >> > >  - fix description in patch 2/2
+> >> > Applied both, Thanks
+> >>
+> >> Thank you for applying them to next.
+> >>
+> >> I'm just wondering if you are going to send pull request soon to get
+> >> them in the v3.10-rcX.
+> > Nope these are in next & would show up in Linus's tree in next merge window.
+> > Something which is not a bug fix doesnt get merged in rc's. You should know the
+> > process
+> 
+> Hmm... Now we have a situation when v3.9.x has support of Lynxpoint
+> DMA, v3.10-rc2 has it broken.
+> As far as I remember our discussion [1]  we agreed to wait for
+> v3.10-rc1 due to merge of linux-pm patches.
 
-1) return 0 when probe function is successful
-2) fine-tune pm800_pages_init()
+Yes, and we need that stuff for BayTrail support as well. Currently Rafael
+is waiting these patches so that he can then merge [1].
 
-Signed-off-by: Yi Zhang <yizhang@marvell.com>
----
- drivers/mfd/88pm800.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 618a6b9..475b5fa 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -369,32 +369,43 @@ static int pm800_pages_init(struct pm80x_chip *chip)
- 	struct pm80x_subchip *subchip;
- 	struct i2c_client *client = chip->client;
- 
-+	int ret = -ENODEV;
-+
- 	subchip = chip->subchip;
- 	/* PM800 block power: i2c addr 0x31 */
--	if (subchip->power_page_addr) {
-+	if (subchip & (subchip->power_page_addr)) {
- 		subchip->power_page =
- 		    i2c_new_dummy(client->adapter, subchip->power_page_addr);
- 		subchip->regmap_power =
- 		    devm_regmap_init_i2c(subchip->power_page,
- 					 &pm80x_regmap_config);
- 		i2c_set_clientdata(subchip->power_page, chip);
--	} else
-+	} else {
- 		dev_info(chip->dev,
- 			 "PM800 block power 0x31: No power_page_addr\n");
-+		return ret;
-+	}
- 
- 	/* PM800 block GPADC: i2c addr 0x32 */
--	if (subchip->gpadc_page_addr) {
-+	if (subchip & (subchip->gpadc_page_addr)) {
- 		subchip->gpadc_page = i2c_new_dummy(client->adapter,
- 						    subchip->gpadc_page_addr);
- 		subchip->regmap_gpadc =
- 		    devm_regmap_init_i2c(subchip->gpadc_page,
- 					 &pm80x_regmap_config);
- 		i2c_set_clientdata(subchip->gpadc_page, chip);
--	} else
-+	} else {
- 		dev_info(chip->dev,
- 			 "PM800 block GPADC 0x32: No gpadc_page_addr\n");
-+		goto out_gpadc_page;
-+	}
- 
- 	return 0;
-+
-+out_gpadc_page:
-+	regmap_exit(subchip->regmap_power);
-+	i2c_unregister_device(subchip->power_page);
-+	return ret;
- }
- 
- static void pm800_pages_exit(struct pm80x_chip *chip)
-@@ -537,16 +548,18 @@ static int pm800_probe(struct i2c_client *client,
- 	ret = device_800_init(chip, pdata);
- 	if (ret) {
- 		dev_err(chip->dev, "%s id 0x%x failed!\n", __func__, chip->id);
--		goto err_subchip_alloc;
-+		goto err_800_init;
- 	}
- 
- 	if (pdata->plat_config)
- 		pdata->plat_config(chip, pdata);
- 
--err_subchip_alloc:
--	mfd_remove_devices(chip->dev);
--	device_irq_exit_800(chip);
-+	return 0;
-+
-+err_800_init:
-+	pm800_pages_exit(chip);
- err_page_init:
-+err_subchip_alloc:
- 	pm80x_deinit();
- out_init:
- 	return ret;
--- 
-1.7.0.4
-
+[1] https://lkml.org/lkml/2013/5/13/542
