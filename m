@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3EWPcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 11:32:17 -0400
-Received: from mail-wi0-f193.google.com ([209.85.212.193]:46080 "EHLO
-	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876Ab3EWPcQ (ORCPT
+	id S1759358Ab3EWPke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 11:40:34 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:13036
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754876Ab3EWPk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 11:32:16 -0400
-From: <patrice.chotard.st@gmail.com>
-To: <linux-kernel@vger.kernel.org>, <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, <fabio.baltieri@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>
-Subject: [PATCH] pinctrl: abx500: suppress unused mutex
-Date: Thu, 23 May 2013 17:31:42 +0200
-Message-Id: <1369323102-3030-1-git-send-email-patrice.chotard.st@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Thu, 23 May 2013 11:40:29 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1155h)
+X-WSS-ID: 0MN9CV5-02-51N-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>
+CC: Fenghua Yu <fenghua.yu@intel.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Borislav Petkov <bp@alien8.de>, <linux-kernel@vger.kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V2 1/3] x86/microcode: vendor abstract out save_microcode_in_initrd()
+Date: Thu, 23 May 2013 10:40:16 -0500
+Message-ID: <1369323618-5820-2-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Chotard <patrice.chotard@st.com>
+Currently save_microcode_in_initrd() is declared in vendor neutural
+microcode.h file, but defined in vendor specific
+microcode_intel_early.c file. Vendor abstract it out to
+microcode_core_early.c with a wrapper function.
 
-Suppress a mutex which was initialized on probe
-and destroyed on remove but never used.
-
-Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 ---
- drivers/pinctrl/pinctrl-abx500.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ arch/x86/include/asm/microcode_intel.h  |    5 +++++
+ arch/x86/kernel/microcode_core_early.c  |   10 ++++++++++
+ arch/x86/kernel/microcode_intel_early.c |    2 +-
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
-index aa17f75..bbada4b 100644
---- a/drivers/pinctrl/pinctrl-abx500.c
-+++ b/drivers/pinctrl/pinctrl-abx500.c
-@@ -99,7 +99,6 @@ struct abx500_pinctrl {
- 	struct abx500_pinctrl_soc_data *soc;
- 	struct gpio_chip chip;
- 	struct ab8500 *parent;
--	struct mutex lock;
- 	struct abx500_gpio_irq_cluster *irq_cluster;
- 	int irq_cluster_size;
- };
-@@ -882,8 +881,6 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	pct->chip.dev = &pdev->dev;
- 	pct->chip.base = (np) ? -1 : pdata->gpio_base;
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index 5356f92..538e407 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -67,10 +67,15 @@ update_match_revision(struct microcode_header_intel *mc_header, int rev);
+ extern void __init load_ucode_intel_bsp(void);
+ extern void __cpuinit load_ucode_intel_ap(void);
+ extern void show_ucode_info_early(void);
++extern int __init save_microcode_in_initrd_intel(void);
+ #else
+ static inline __init void load_ucode_intel_bsp(void) {}
+ static inline __cpuinit void load_ucode_intel_ap(void) {}
+ static inline void show_ucode_info_early(void) {}
++static inline int __init save_microcode_in_initrd_intel(void)
++{
++	return -EINVAL;
++}
+ #endif
  
--	/* initialize the lock */
--	mutex_init(&pct->lock);
- 
- 	/* Poke in other ASIC variants here */
- 	switch (id) {
-@@ -902,13 +899,11 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	default:
- 		dev_err(&pdev->dev, "Unsupported pinctrl sub driver (%d)\n",
- 				(int) platid->driver_data);
--		mutex_destroy(&pct->lock);
- 		return -EINVAL;
- 	}
- 
- 	if (!pct->soc) {
- 		dev_err(&pdev->dev, "Invalid SOC data\n");
--		mutex_destroy(&pct->lock);
- 		return -EINVAL;
- 	}
- 
-@@ -919,7 +914,6 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	ret = gpiochip_add(&pct->chip);
- 	if (ret) {
- 		dev_err(&pdev->dev, "unable to add gpiochip: %d\n", ret);
--		mutex_destroy(&pct->lock);
- 		return ret;
- 	}
- 	dev_info(&pdev->dev, "added gpiochip\n");
-@@ -956,7 +950,6 @@ out_rem_chip:
- 	if (err)
- 		dev_info(&pdev->dev, "failed to remove gpiochip\n");
- 
--	mutex_destroy(&pct->lock);
- 	return ret;
+ #if defined(CONFIG_MICROCODE_INTEL_EARLY) && defined(CONFIG_HOTPLUG_CPU)
+diff --git a/arch/x86/kernel/microcode_core_early.c b/arch/x86/kernel/microcode_core_early.c
+index 833d51d..0d19ac5 100644
+--- a/arch/x86/kernel/microcode_core_early.c
++++ b/arch/x86/kernel/microcode_core_early.c
+@@ -98,3 +98,13 @@ void __cpuinit load_ucode_ap(void)
+ 	if (vendor == X86_VENDOR_INTEL && x86 >= 6)
+ 		load_ucode_intel_ap();
  }
- 
-@@ -976,8 +969,6 @@ static int abx500_gpio_remove(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	mutex_destroy(&pct->lock);
--
- 	return 0;
- }
- 
++
++int __init save_microcode_in_initrd(void)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	if (c->x86_vendor == X86_VENDOR_INTEL && c->x86 >= 6)
++		return save_microcode_in_initrd_intel();
++
++	return 0;
++}
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index 2e9e128..88f0edc 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -699,7 +699,7 @@ static int __cpuinit apply_microcode_early(struct mc_saved_data *mc_saved_data,
+  * This function converts microcode patch offsets previously stored in
+  * mc_saved_in_initrd to pointers and stores the pointers in mc_saved_data.
+  */
+-int __init save_microcode_in_initrd(void)
++int __init save_microcode_in_initrd_intel(void)
+ {
+ 	unsigned int count = mc_saved_data.mc_saved_count;
+ 	struct microcode_intel *mc_saved[MAX_UCODE_COUNT];
 -- 
-1.7.10
+1.7.9.5
+
 
