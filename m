@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab3EWMvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 08:51:47 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:56486 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758180Ab3EWMvp (ORCPT
+	id S1758842Ab3EWMv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 08:51:56 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:62743 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758335Ab3EWMvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 08:51:45 -0400
+	Thu, 23 May 2013 08:51:53 -0400
 From: Ben Minerds <puzzleduck@gmail.com>
 To: greg@kroah.com, rob@landley.net
 Cc: Ben Minerds <PuZZleDucK@gmail.com>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] Documentation: Adding "The Perfect Patch" by Andrew Morton
-Date: Thu, 23 May 2013 22:49:53 +1000
-Message-Id: <5114385ce1897015ad96f59f0fd46014d5f07786.1369312746.git.PuZZleDucK@gmail.com>
+Subject: [PATCH 2/8] Documentation: Adding "Linux Kernel Patch Submission Format"
+Date: Thu, 23 May 2013 22:49:54 +1000
+Message-Id: <154bc77a1f769e7da6e72ccb32d595e15f239ad1.1369312746.git.PuZZleDucK@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1369312746.git.PuZZleDucK@gmail.com>
 References: <cover.1369312746.git.PuZZleDucK@gmail.com>
@@ -23,188 +23,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Adding Andrews advice on patch submission and subdirectory for further patch
- documentstion.
+ Adding "Linux Kernel Patch Submission Format" reference to remove external
+ dependancy.
 
  Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
 ---
- .../patches/The-Perfect-Patch.txt                  | 167 +++++++++++++++++++++
- 1 file changed, 167 insertions(+)
- create mode 100644 Documentation/development-process/patches/The-Perfect-Patch.txt
+ .../patches/Patch-Submission-Format.txt            | 89 ++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
+ create mode 100644 Documentation/development-process/patches/Patch-Submission-Format.txt
 
-diff --git a/Documentation/development-process/patches/The-Perfect-Patch.txt b/Documentation/development-process/patches/The-Perfect-Patch.txt
+diff --git a/Documentation/development-process/patches/Patch-Submission-Format.txt b/Documentation/development-process/patches/Patch-Submission-Format.txt
 new file mode 100644
-index 0000000..b07074e
+index 0000000..44a1eb9
 --- /dev/null
-+++ b/Documentation/development-process/patches/The-Perfect-Patch.txt
-@@ -0,0 +1,167 @@
-+From: Andrew Morton [email blocked]
-+To: Mukker, Atul [email blocked]
-+Subject: Re: [patch] 2.6.9-rc1-mm1: megaraid_mbox.c compile error with gcc 3.4
-+Date: 	Sat, 28 Aug 2004 13:04:19 -0700
++++ b/Documentation/development-process/patches/Patch-Submission-Format.txt
+@@ -0,0 +1,89 @@
++Linux Kernel Patch Submission Format
++====================================
 +
-+"Mukker, Atul" [email blocked] wrote:
-+>
-+> The driver and the patches with the re-ordered functions is available at
-+>  ftp://ftp.lsil.com/pub/linux-megaraid/drivers/version-2.20.3.1/
++Most Linux kernel submissions are merged into the kernel source code repository by script. These instructions describe the proper format for emailed kernel patch submissions, to ensure that submittors and maintainers waste a minimum amount of time on these details.
++1. Email subject format
 +
-+I dunno about James, but I *really* dislike receiving patches by going and
-+getting them from internet servers.  It breaks our commonly-used tools.  It
-+loses authorship info.  It loses Signed-off-by: info.  There is no
-+changelog.  All this means that your patch is more likely to be ignored by
-+busy people.  Please, just email the diffs.
++The email subject has a precise format, communicating several pieces of information.
 +
-+I wrote a little guide this week:
++[PATCH $version $n/$total] $subsystem: one-line summary
 +
++    "[PATCH": constant prefix
++    $version: kernel version against which this patch was generated
++    $n/$total: when a change encompasses more than one patch, $n indicates the order of this patch in the series, and $total indicates the total number of patches in the series.
++    $subsystem: area of the kernel, or device driver, to which this patch applies.
++    one-line summary: summarizes the change this patch makes. This summary is copied directly into the SCM (i.e. git) changelog, so make sure that your summary is descriptive. Ensure that $subsystem uniquely identifies the subsystem or driver being modified. "update to latest CVS" or "fix bug in probe" is not specific enough about what portion of the code is being modified.
++    Keep your overall subject line under 65 characters or so.
 +
++The scripts will strip all the text inside the brackets ("[PATCH ...]"), and replace it "[PATCH]".
 +
-+The perfect patch. [email blocked]
++Example:
 +
-+The latest version of this document may be found at
-+http://www.zip.com.au/~akpm/linux/patches/stuff/tpp.txt
++	[PATCH 2.6.9-rc1-mm2 1/2] 8139cp: fix PCI DAC mode
 +
-+Delivery
-+========
++The "$n/$total" may be omitted if there is only one patch in the series. Writing "1/1" is not necessary.
++2. Email body contents: description
 +
-+- Patches are delivered via email only.  Downloading them from internet
-+  servers is a pain.
++At the beginning of your email, use as many lines as you wish to describe the patch. This text is copied directly into the SCM (i.e. git) changelog.
 +
-+- One patch per email, with the changelog in the body of the email.
++Include comments and other data (such as diffstat) you don't wish to be in the kernel changelog following a "---" terminator line. The terminator must be on a line by itself.
++3. Email body contents: patch
 +
-+Subject:
-+========
++Sub-Rule Number One: Patches must be reviewable in a standard Linux email client. This means in particular, no compression and no base64 encoding. Attachments are discouraged, but some corporate mail systems provide no other way to send patches.
 +
-+- The email's Subject: should consisely describe the patch which that email
-+  contains.  The Subject: should not be a filename.  Do not use the same
-+  Subject: for every patch in a whole patch series.
++Sub-Rule Number Two: Patch must be apply-able by a script that has no knowledge of [MIME] encoding. You must make sure your mailer does not escape standard US-ASCII characters, wrap long lines, or encode plaintext patches in base64 (or any other encoding).
 +
-+  Bear in mind that the Subject: of your email becomes a globally-unique
-+  identifier for that patch.  It propagates all the way into BitKeeper.  The
-+  Subject: may later be used in developer discussions which refer to the
-+  patch.  People will want to google for the patch's Subject: to read
-+  discussion regarding that patch.
++Sub-Rule Number Three: Patch must be rooted one level above a standard kernel source tree. i.e.
 +
-+- When sending a series of patches, the patches should be sequence-numbered
-+  in the Subject:
++     --- a/drivers/scsi/megaraid/megaraid_mm.c       2004-08-31 04:05:10 -04:00
++     +++ b/drivers/scsi/megaraid/megaraid_mm.c       2004-08-31 04:05:10 -04:00
 +
-+- It is nice if the Subject: includes mention of the subsystem which it
-+  affects.  See example below.
++or in other words, the patch must be apply-able using
 +
-+- Example Subject:
++	patch -sp1 < foo.patch
 +
-+	[patch 2/5] ext2: improve scalability of bitmap searching
++4. One patch per email
 +
-+- Note that various people's patch receiving scripts will strip away
-+  Subject: text which is inside brackets [].  So you should place information
-+  which has no long-term relevance to the patch inside brackets.  This
-+  includes the word "patch" and any sequence numbering.  The subsystem
-+  identifier ("ext2:") should hence be outside brackets.
++This cannot be stressed enough. Even when you are resending a change for the 5th time, resist the urge to attach 20 patches to a single email. If you do send multiple emails, make sure the second and subsequent emails are sent as replies to the first, to keep them all together in a thread.
++5. Sign your work
 +
++The sign-off is a simple line at the end of the explanation for the patch, which certifies that you wrote it or otherwise have the right to pass it on as a open-source patch. The rules are pretty simple: if you can certify the below:
 +
-+Changelog
-+=========
++        Developer's Certificate of Origin 1.1
 +
-+- Bear in mind that the Subject: and changelog which you provide will
-+  propagate all the way into the permanent kernel record.  Other developers
-+  will want to read and understand your patch and changelog years in the
-+  future.
++        By making a contribution to this project, I certify that:
 +
-+  So the changelog should describe the patch fully:
++        (a) The contribution was created in whole or in part by me and I
++            have the right to submit it under the open source license
++            indicated in the file; or
 +
-+  - why the kernel needed patching
++        (b) The contribution is based upon previous work that, to the best
++            of my knowledge, is covered under an appropriate open source
++            license and I have the right under that license to submit that
++            work with modifications, whether created in whole or in part
++            by me, under the same open source license (unless I am
++            permitted to submit under a different license), as indicated
++            in the file; or
 +
-+  - the overall design approach in the patch
++        (c) The contribution was provided directly to me by some other
++            person who certified (a), (b) or (c) and I have not modified
++            it.
 +
-+  - implementation details
++        (d) I understand and agree that this project and the contribution
++            are public and that a record of the contribution (including all
++            personal information I submit with it, including my sign-off) is
++            maintained indefinitely and may be redistributed consistent with
++            this project or the open source license(s) involved.
 +
-+  - testing results
++then you just add a line at the end of your patch description, saying
 +
-+- Don't bother mentioning what version of the kernel the patch applies to
-+  ("applies to 2.6.8-rc1").  This is not interesting information - once the
-+  patch is in bitkeeper, of _course_ it applied, and it'll probably be merged
-+  into a later kernel than the one which you wrote it for.
++        Signed-off-by: Random J Developer <random@developer.org>
 +
-+- Do not refer to earlier patches when changelogging a new version of a
-+  patch.  It's not very useful to have a bitkeeper changelog which says "OK,
-+  this fixes the things you mentioned yesterday".  Each iteration of the patch
-+  should contain a standalone changelog.  This implies that you need a patch
-+  management system which maintains changelogs.  See below.
++6. Avoid attachments and MIME
 +
-+- Add a Signed-off-by: line.
++Attachments make it more difficult to review and comment on your patches. MIME (the mechanism by which files are attached to an email) has historically created a problem for patch import scripts. Some unfortunate email programs insist upon base64 encoding for all attachments, which completely shrouds the patch to some scripts and mailers.
++7. Follow these instructions even when resending
 +
-+- Most people's patch receiving scripts will treat a ^--- string as the
-+  separator between the changelog and the patch itself.  You can use this to
-+  ensure that any diffstat information is discarded when the patch is applied:
++Quite often, when a patch receives comments, the patch author will (deep in an email thread) include a revised version of their patch but omit the email subject one-line summary, and overall patch description. This isn't script friendly, and requires the patch description to be hand-edited.
 +
-+
-+
-+	Another few #if/#ifdef cleanups, this time for the PPC architecture.
-+
-+	Signed-off-by: <valdis.kletnieks@vt.edu>
-+	Signed-off-by: Andrew Morton [email blocked]
-+	---
-+
-+	 25-akpm/arch/ppc/kernel/process.c                    |    2 +-
-+	 25-akpm/arch/ppc/platforms/85xx/mpc85xx_cds_common.c |    2 +-
-+	 25-akpm/arch/ppc/syslib/ppc85xx_setup.c              |    4 ++--
-+	 3 files changed, 4 insertions(+), 4 deletions(-)
-+
-+	--- 25/arch/ppc/kernel/process.c
-+	+++ 25/arch/ppc/kernel/process.c
-+	@@ -667,7 +667,7 @@ void show_stack(struct task_struct *tsk,
-+
-+
-+The diff
-+========
-+
-+- Patches should be in `patch -p1' form:
-+
-+  --- a/kernel/sched.c
-+  +++ b/kernel/sched.c
-+
-+- Make sure that your patches apply to the latest version of the kernel
-+  tree.  Either straight from bitkeeper or from
-+  ftp://ftp.kernel.org/pub/linux/kernel/v2.6/snapshots/
-+
-+- When raising patches for -mm it's generally best to base them on the
-+  latest Linus tree.  I'll work out any rejects/incompatibilities.  There are
-+  of course exceptions to this.
-+
-+- Ensure that your patch does not add new trailing whitespace.  The below
-+  script will fix up your patch by stripping off such whitespace.
-+
-+	#!/bin/sh
-+
-+	strip1()
-+	{
-+		TMP=$(mktemp /tmp/XXXXXX)
-+		cp $1 $TMP
-+		sed -e '/^+/s/[ 	]*$//' < $TMP > $1
-+		rm $TMP
-+	}
-+
-+	for i in $*
-+	do
-+		strip1 $i
-+	done
-+
-+
-+Overall
-+=======
-+
-+- Avoid MIME and attachements if possible.  Make sure that your email client
-+  does not wordwrap your patch.  Make sure that your email client does not
-+  replace tabs with spaces.
-+
-+  Mail yourself a decent-sized patch and check that it still applies.
-+
-+
-+
-+The patch management scripts at http://www.zip.com.au/~akpm/linux/patches/
-+implement all of the above.
-+
-+The patch management tools at https://savannah.nongnu.org/projects/quilt/ also
-+implement all of the above.
++For more details, read Documentation/SubmittingPatches and Documentation/SubmittingDrivers in the kernel source tree.
 \ No newline at end of file
 -- 
 1.8.1.2
