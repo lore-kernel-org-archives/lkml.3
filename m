@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab3EWRYw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:24:52 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64770 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757992Ab3EWRYt (ORCPT
+	id S1758438Ab3EWR20 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:28:26 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:35362
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757758Ab3EWR2Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:24:49 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/OzmqUeKjErjYPkLgDivroGOqQEa/iy7I=
-Date: Thu, 23 May 2013 13:23:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for
- Kirkwood SoCs
-Message-ID: <20130523172339.GQ31290@titan.lakedaemon.net>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130522201607.GA18823@obsidianresearch.com>
- <20130523160111.GP31290@titan.lakedaemon.net>
- <20130523171112.GB31281@obsidianresearch.com>
+	Thu, 23 May 2013 13:28:24 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: 0
+X-BigFish: PS0(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d07h1d0ch1d2eh1d3fh17ej9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH V1 1/7] Drivers: hv: vmbus: Implement multi-channel
+ support
+Thread-Topic: [PATCH V1 1/7] Drivers: hv: vmbus: Implement multi-channel
+ support
+Thread-Index: AQHOUiteQf4jxeL22k+ONbA1O5yKHJkH10+AgAs4D9A=
+Date: Thu, 23 May 2013 17:26:14 +0000
+Message-ID: <ad436d7ee6d64ddfb45f0b31e4e142fc@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1368706784-32276-1-git-send-email-kys@microsoft.com>
+ <1368706879-32321-1-git-send-email-kys@microsoft.com>
+ <20130516140113.GB2629@kroah.com>
+In-Reply-To: <20130516140113.GB2629@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:e0:2027:a1ed:29e5:3607:2062]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523171112.GB31281@obsidianresearch.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(199002)(51704005)(13464003)(377454002)(189002)(24454002)(69226001)(54316002)(76482001)(51856001)(74706001)(56776001)(50466002)(16676001)(49866001)(65816001)(47976001)(20776003)(74876001)(47776003)(4396001)(74366001)(74662001)(56816002)(80022001)(77982001)(74316001)(47736001)(53806001)(54356001)(81542001)(81342001)(79102001)(74502001)(6806003)(63696002)(47446002)(31966008)(46406003)(33646001)(59766001)(23726002)(46102001)(50986001)(3826001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB009;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 085551F5A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:11:12AM -0600, Jason Gunthorpe wrote:
-> On Thu, May 23, 2013 at 12:01:11PM -0400, Jason Cooper wrote:
-> > > > +	/* Kirkwood resets some registers on gated clocks. Especially
-> > > > +	 * CLK125_BYPASS_EN must be cleared but is not available on
-> > > > +	 * all other SoCs/System Controllers using this driver.
-> > > > +	 */
-> > > > +	if (of_machine_is_compatible("marvell,kirkwood"))
-> > > > +		wrlp(mp, PORT_SERIAL_CONTROL1,
-> > > > +		     rdlp(mp, PORT_SERIAL_CONTROL1) & ~CLK125_BYPASS_EN);
-> > > 
-> > > of_machine_is_compatible seems heavy handed, I would expect this to be
-> > > based on the compatible string of the ethernet node itself, not the
-> > > machine??
-> > 
-> > Is there a model number variation between IP that needs this and IP that
-> > doesn't?  If not, I'm fine with of_machine_is_compatible().
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, May 16, 2013 10:01 AM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> ohering@suse.com; jbottomley@parallels.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH V1 1/7] Drivers: hv: vmbus: Implement multi-channel
+> support
 > 
-> Well the name 'mv643xx' is a family of system controller SOC's
-> from ages ago, it seems reasonble to continue the trend and label the
-> IP variations with the SOC name:
+> On Thu, May 16, 2013 at 05:21:13AM -0700, K. Y. Srinivasan wrote:
+> > Starting with Win8, the host supports multiple sub-channels for a given
+> > device. As in the past, the initial channel offer specifies the device and
+> > is associated with both the type and the instance GUIDs. For performance
+> > critical devices, the host may support multiple sub-channels. The sub-channels
+> > share the same type and instance GUID as the primary channel. The number of
+> > sub-channels offerrred to the guest depends on the number of virtual CPUs
+> > assigned to the guest. The guest can request the creation of these sub-
+> channels
+> > and once created and opened, the guest can distribute the traffic across all
+> > the channels (the primary and the sub-channels). A request sent on a sub-
+> channel
+> > will have the response delivered on the same sub-channel.
+> >
+> > At channel (sub-channel) creation we bind the channel interrupt to a CPU and
+> > with this sub-channel support we will be able to spread the interrupt load
+> > of a given device across all available CPUs.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 > 
->  compatible = "marvell,kirwood,ethernet", "marvell,mv643xx_eth"
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
 
-Shouldn't it rather be
+James,
 
-	compatible = "marvell,kirkwood-eth", "marvell,orion-eth";
+Please drop this patch-set. I fixed a couple of bugs in the vmbus support for multi-channel and I would need to resubmit this. Greg, I think it may make sense to first get the vmbus support checked in before I submit the storage related patches. There are networking related patches for multi-channel support that we will be submitting shortly. Getting the vmbus support in first would allow us to decouple network and storage patches. Greg, I will shortly submit the next version of the vmbus related patches for your consideration.
 
-I'm inclined to go with of_machine_is_compatible() since the only
-concrete difference we know is that the tweak is needed on kirkwood and
-nowhere else.
+Regards,
 
-If we had an errata, or a datasheet saying specifically flavor X needs
-this and none other does, then we could trigger on the ethernet node
-compatible string or a boolean in the node.  But we don't have that...
+K. Y
 
-thx,
-
-Jason.
