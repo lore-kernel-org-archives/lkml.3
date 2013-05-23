@@ -1,417 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab3EWIEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:04:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35263 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab3EWIEK (ORCPT
+	id S1751798Ab3EWIFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:05:40 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:35248 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab3EWIFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:04:10 -0400
-From: Stephen Mell <sub.atomic.fusion@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] proc: move proc mount options out of pid_namespace
-Date: Thu, 23 May 2013 08:05:48 +0000
-Message-ID: <3342521.NtikuogILA@pegasus>
-User-Agent: KMail/4.9.5 (Linux/3.9.3; KDE/4.9.5; x86_64; ; )
+	Thu, 23 May 2013 04:05:35 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <35286B1AE75A7C47BFF0870081A31B4B49E400663F@SAFEX1MAIL4.st.com>
+References: <1368796239-2049-1-git-send-email-mathias.leblanc@st.com>
+	<CAHp75Vf6iCZxe4tydVTJ3nMdFx7nMuSgnk0KSzps4ULxDoJV8Q@mail.gmail.com>
+	<35286B1AE75A7C47BFF0870081A31B4B49E400663F@SAFEX1MAIL4.st.com>
+Date: Thu, 23 May 2013 11:05:33 +0300
+Message-ID: <CAHp75VetFvYfejvSkPTMAc78_w0ThHnQsSRpsbm3kRsVv=R4Tg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mathias LEBLANC <Mathias.LEBLANC@st.com>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Luc BLANC <jean-luc.blanc@st.com>,
+        Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Mell <sub.atomic.fusion@gmail.com>
+On Thu, May 23, 2013 at 10:43 AM, Mathias LEBLANC
+<Mathias.LEBLANC@st.com> wrote:
 
-hide_pid and pid_gid are proc mount options whose values are stored in the pid_namespace struct. As a result, if one mounts proc again for the same PID namespace with different mount options, all mounts for that PID namespace will be affected. This seems undesirable. This patch creates a proc_sb_info struct that points to the applicable PID namespace, and it moves hide_pid, pid_gid, and proc_self from pid_namespace to proc_sb_info.
+> Thanks for your support, I will fix these code style problem.
 
-Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
----
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index dd51e50..853eb68 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -584,13 +584,13 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
-  * May current process learn task's sched/cmdline info (for hide_pid_min=1)
-  * or euid/egid (for hide_pid_min=2)?
-  */
--static bool has_pid_permissions(struct pid_namespace *pid,
-+static bool has_pid_permissions(struct proc_sb_info *fsi,
- 				 struct task_struct *task,
- 				 int hide_pid_min)
- {
--	if (pid->hide_pid < hide_pid_min)
-+	if (fsi->hide_pid < hide_pid_min)
- 		return true;
--	if (in_group_p(pid->pid_gid))
-+	if (in_group_p(fsi->pid_gid))
- 		return true;
- 	return ptrace_may_access(task, PTRACE_MODE_READ);
- }
-@@ -598,18 +598,18 @@ static bool has_pid_permissions(struct pid_namespace *pid,
- 
- static int proc_pid_permission(struct inode *inode, int mask)
- {
--	struct pid_namespace *pid = inode->i_sb->s_fs_info;
-+	struct proc_sb_info *fsi = inode->i_sb->s_fs_info;
- 	struct task_struct *task;
- 	bool has_perms;
- 
- 	task = get_proc_task(inode);
- 	if (!task)
- 		return -ESRCH;
--	has_perms = has_pid_permissions(pid, task, 1);
-+	has_perms = has_pid_permissions(fsi, task, 1);
- 	put_task_struct(task);
- 
- 	if (!has_perms) {
--		if (pid->hide_pid == 2) {
-+		if (fsi->hide_pid == 2) {
- 			/*
- 			 * Let's make getdents(), stat(), and open()
- 			 * consistent with each other.  If a process
-@@ -670,12 +670,14 @@ static const struct file_operations proc_info_file_operations = {
- static int proc_single_show(struct seq_file *m, void *v)
- {
- 	struct inode *inode = m->private;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 	struct pid *pid;
- 	struct task_struct *task;
- 	int ret;
- 
--	ns = inode->i_sb->s_fs_info;
-+	fsi = inode->i_sb->s_fs_info;
-+	ns = fsi->ns;
- 	pid = proc_pid(inode);
- 	task = get_pid_task(pid, PIDTYPE_PID);
- 	if (!task)
-@@ -1574,7 +1576,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	struct inode *inode = dentry->d_inode;
- 	struct task_struct *task;
- 	const struct cred *cred;
--	struct pid_namespace *pid = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
- 
- 	generic_fillattr(inode, stat);
- 
-@@ -1583,7 +1585,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	stat->gid = GLOBAL_ROOT_GID;
- 	task = pid_task(proc_pid(inode), PIDTYPE_PID);
- 	if (task) {
--		if (!has_pid_permissions(pid, task, 2)) {
-+		if (!has_pid_permissions(fsi, task, 2)) {
- 			rcu_read_unlock();
- 			/*
- 			 * This doesn't prevent learning whether PID exists,
-@@ -2869,13 +2871,15 @@ struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsign
- 	struct dentry *result = NULL;
- 	struct task_struct *task;
- 	unsigned tgid;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
- 	tgid = name_to_int(dentry);
- 	if (tgid == ~0U)
- 		goto out;
- 
--	ns = dentry->d_sb->s_fs_info;
-+	fsi = dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	rcu_read_lock();
- 	task = find_task_by_pid_ns(tgid, ns);
- 	if (task)
-@@ -2954,6 +2958,7 @@ static int fake_filldir(void *buf, const char *name, int namelen,
- int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
- {
- 	struct tgid_iter iter;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 	filldir_t __filldir;
- 	loff_t pos = filp->f_pos;
-@@ -2970,11 +2975,12 @@ int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 		iter.tgid = pos - TGID_OFFSET;
- 	}
- 	iter.task = NULL;
--	ns = filp->f_dentry->d_sb->s_fs_info;
-+	fsi = filp->f_dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	for (iter = next_tgid(ns, iter);
- 	     iter.task;
- 	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
--		if (has_pid_permissions(ns, iter.task, 2))
-+		if (has_pid_permissions(fsi, iter.task, 2))
- 			__filldir = filldir;
- 		else
- 			__filldir = fake_filldir;
-@@ -3132,6 +3138,7 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
- 	struct task_struct *task;
- 	struct task_struct *leader = get_proc_task(dir);
- 	unsigned tid;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
- 	if (!leader)
-@@ -3141,7 +3148,8 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
- 	if (tid == ~0U)
- 		goto out;
- 
--	ns = dentry->d_sb->s_fs_info;
-+	fsi = dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	rcu_read_lock();
- 	task = find_task_by_pid_ns(tid, ns);
- 	if (task)
-@@ -3249,6 +3257,7 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
- 	int retval = -ENOENT;
- 	ino_t ino;
- 	int tid;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
- 	task = get_proc_task(inode);
-@@ -3283,7 +3292,8 @@ static int proc_task_readdir(struct file * filp, void * dirent, filldir_t filldi
- 	/* f_version caches the tgid value that the last readdir call couldn't
- 	 * return. lseek aka telldir automagically resets f_version to 0.
- 	 */
--	ns = filp->f_dentry->d_sb->s_fs_info;
-+	fsi = filp->f_dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	tid = (int)filp->f_version;
- 	filp->f_version = 0;
- 	for (task = first_tid(leader, tid, filp->f_pos - 2, ns);
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 073aea6..148737d 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -110,12 +110,12 @@ void __init proc_init_inodecache(void)
- static int proc_show_options(struct seq_file *seq, struct dentry *root)
- {
- 	struct super_block *sb = root->d_sb;
--	struct pid_namespace *pid = sb->s_fs_info;
-+	struct proc_sb_info *fsi = sb->s_fs_info;
- 
--	if (!gid_eq(pid->pid_gid, GLOBAL_ROOT_GID))
--		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, pid->pid_gid));
--	if (pid->hide_pid != 0)
--		seq_printf(seq, ",hidepid=%u", pid->hide_pid);
-+	if (!gid_eq(fsi->pid_gid, GLOBAL_ROOT_GID))
-+		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, fsi->pid_gid));
-+	if (fsi->hide_pid != 0)
-+		seq_printf(seq, ",hidepid=%u", fsi->hide_pid);
- 
- 	return 0;
- }
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index d600fb0..ff970e4 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -29,6 +29,14 @@ struct mempolicy;
-  * /proc file has a parent, but "subdir" is NULL for all
-  * non-directory entries).
-  */
-+
-+struct proc_sb_info {
-+	struct pid_namespace *ns;
-+	struct dentry *proc_self;
-+	kgid_t pid_gid;
-+	int hide_pid;
-+};
-+
- struct proc_dir_entry {
- 	unsigned int low_ino;
- 	umode_t mode;
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 41a6ea9..526aec6 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -20,6 +20,7 @@
- #include <linux/mount.h>
- #include <linux/pid_namespace.h>
- #include <linux/parser.h>
-+#include <linux/slab.h>
- 
- #include "internal.h"
- 
-@@ -31,10 +32,9 @@ static int proc_test_super(struct super_block *sb, void *data)
- static int proc_set_super(struct super_block *sb, void *data)
- {
- 	int err = set_anon_super(sb, NULL);
--	if (!err) {
--		struct pid_namespace *ns = (struct pid_namespace *)data;
--		sb->s_fs_info = get_pid_ns(ns);
--	}
-+	if (!err)
-+		sb->s_fs_info = (struct proc_sb_info *)data;
-+
- 	return err;
- }
- 
-@@ -48,7 +48,7 @@ static const match_table_t tokens = {
- 	{Opt_err, NULL},
- };
- 
--static int proc_parse_options(char *options, struct pid_namespace *pid)
-+static int proc_parse_options(char *options, struct proc_sb_info *fsi)
- {
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
-@@ -68,7 +68,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 		case Opt_gid:
- 			if (match_int(&args[0], &option))
- 				return 0;
--			pid->pid_gid = make_kgid(current_user_ns(), option);
-+			fsi->pid_gid = make_kgid(current_user_ns(), option);
- 			break;
- 		case Opt_hidepid:
- 			if (match_int(&args[0], &option))
-@@ -77,7 +77,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 				pr_err("proc: hidepid value must be between 0 and 2.\n");
- 				return 0;
- 			}
--			pid->hide_pid = option;
-+			fsi->hide_pid = option;
- 			break;
- 		default:
- 			pr_err("proc: unrecognized mount option \"%s\" "
-@@ -91,36 +91,44 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 
- int proc_remount(struct super_block *sb, int *flags, char *data)
- {
--	struct pid_namespace *pid = sb->s_fs_info;
--	return !proc_parse_options(data, pid);
-+	struct proc_sb_info *fsi = sb->s_fs_info;
-+	return !proc_parse_options(data, fsi);
- }
- 
- static struct dentry *proc_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
- 	int err;
-+	struct proc_sb_info *fsi;
- 	struct super_block *sb;
--	struct pid_namespace *ns;
- 	char *options;
-+	
-+	fsi = kzalloc(sizeof(struct proc_sb_info), GFP_KERNEL);
-+	if (!fsi)
-+		return ERR_PTR(-ENOMEM);
-+
-+	sb = sget(fs_type, proc_test_super, proc_set_super, flags, fsi);
-+	if (IS_ERR(sb))
-+		return ERR_CAST(sb);
- 
- 	if (flags & MS_KERNMOUNT) {
--		ns = (struct pid_namespace *)data;
-+		fsi->ns = (struct pid_namespace *)data;
-+		get_pid_ns(fsi->ns);
- 		options = NULL;
- 	} else {
--		ns = task_active_pid_ns(current);
--		options = data;
--
- 		if (!current_user_ns()->may_mount_proc)
- 			return ERR_PTR(-EPERM);
--	}
--
--	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
--	if (IS_ERR(sb))
--		return ERR_CAST(sb);
-+		
-+		options = data;
-+		if (!proc_parse_options(options, fsi)) {
-+			deactivate_locked_super(sb);
-+			return ERR_PTR(-EINVAL);
-+		}
- 
--	if (!proc_parse_options(options, ns)) {
--		deactivate_locked_super(sb);
--		return ERR_PTR(-EINVAL);
-+		if (!fsi->ns) {
-+			fsi->ns = task_active_pid_ns(current);
-+			get_pid_ns(fsi->ns);
-+		}
- 	}
- 
- 	if (!sb->s_root) {
-@@ -138,13 +146,16 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
- 
- static void proc_kill_sb(struct super_block *sb)
- {
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
--	ns = (struct pid_namespace *)sb->s_fs_info;
--	if (ns->proc_self)
--		dput(ns->proc_self);
-+	fsi = (struct proc_sb_info *)sb->s_fs_info;
-+	ns = (struct pid_namespace *)fsi->ns;
-+	if (fsi->proc_self)
-+		dput(fsi->proc_self);
- 	kill_anon_super(sb);
- 	put_pid_ns(ns);
-+	kfree(fsi);
- }
- 
- static struct file_system_type proc_fs_type = {
-diff --git a/fs/proc/self.c b/fs/proc/self.c
-index 6b6a993..ff4a2e2 100644
---- a/fs/proc/self.c
-+++ b/fs/proc/self.c
-@@ -10,7 +10,8 @@
- static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
- 			      int buflen)
- {
--	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
-+	struct pid_namespace *ns = fsi->ns;
- 	pid_t tgid = task_tgid_nr_ns(current, ns);
- 	char tmp[PROC_NUMBUF];
- 	if (!tgid)
-@@ -21,7 +22,8 @@ static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
- 
- static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
- {
--	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
-+	struct pid_namespace *ns = fsi->ns;
- 	pid_t tgid = task_tgid_nr_ns(current, ns);
- 	char *name = ERR_PTR(-ENOENT);
- 	if (tgid) {
-@@ -55,7 +57,7 @@ static unsigned self_inum;
- int proc_setup_self(struct super_block *s)
- {
- 	struct inode *root_inode = s->s_root->d_inode;
--	struct pid_namespace *ns = s->s_fs_info;
-+	struct proc_sb_info *fsi = s->s_fs_info;
- 	struct dentry *self;
- 	
- 	mutex_lock(&root_inode->i_mutex);
-@@ -82,7 +84,7 @@ int proc_setup_self(struct super_block *s)
- 		pr_err("proc_fill_super: can't allocate /proc/self\n");
- 		return PTR_ERR(self);
- 	}
--	ns->proc_self = self;
-+	fsi->proc_self = self;
- 	return 0;
- }
- 
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index e277266..6185386 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -31,15 +31,12 @@ struct pid_namespace {
- 	struct pid_namespace *parent;
- #ifdef CONFIG_PROC_FS
- 	struct vfsmount *proc_mnt;
--	struct dentry *proc_self;
- #endif
- #ifdef CONFIG_BSD_PROCESS_ACCT
- 	struct bsd_acct_struct *bacct;
- #endif
- 	struct user_namespace *user_ns;
- 	struct work_struct proc_work;
--	kgid_t pid_gid;
--	int hide_pid;
- 	int reboot;	/* group exit code if this pidns was rebooted */
- 	unsigned int proc_inum;
- };
+I left below the comments I think should be addressed besides style.
+Please, comment what you think about them.
+
+> However in a first time, can we publish this SPI driver?
+
+It's up to SPI subsystem maintainer, though I couldn't consider the
+quality of the driver is enough to include to upstream. You may try to
+ask Greg to go to staging if you have real demand of this.
+
+> I think that it will be preferable to submit it and apply some patch if it's only coding style error.
+
+I don't support the way of submitting patch on top of submiting
+something that must be just fixed.
+
+> I have fix errors in this patch that has been discovered in the I2C patch, so I don't know what's stop this submission.
+> I think that's driver is more criticized than the I2C driver although it's the same base.
+
+I hope you understand it's not an exuce.
+
+> I know that's important to have good code in the kernel source and I'm agree about that,
+
+Good.
+
+> I propose it be published as a first release and I fix coding style problem in a second time.
+
+See above.
+
+>> +++ b/drivers/char/tpm/tpm_spi_stm_st33.c
+
+>> +enum stm33zp24_int_flags {
+>> +       TPM_GLOBAL_INT_ENABLE = 0x80,
+>> +       TPM_INTF_CMD_READY_INT = 0x080,
+>
+> What the difference? It looks like first constant is not belong to this enum.
+>
+>> +static int spi_write8_reg(struct tpm_chip *tpm, u8 tpm_register,
+>> +                     u8 *tpm_data, u16 tpm_size) {
+>> +       u8 data = 0;
+>> +       int total_length = 0, nbr_dummy_bytes;
+>> +       int value = 0;
+>> +       struct spi_device *dev =
+>> +                (struct spi_device __force *)tpm->vendor.iobase;
+>> +       struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
+>> +       u8 *data_buffer = platform_data->tpm_spi_buffer[0];
+>
+> It seems a bad idea to have buffers in platform_data. I bet the buffers should be part of other struct. What did I miss?
+>
+>> +       struct spi_transfer xfer = {
+>> +               .tx_buf  = data_buffer,
+>> +               .rx_buf  = platform_data->tpm_spi_buffer[1],
+>> +       };
+>
+> ... even this entire structure.
+> Can you consider to use spi_message API ?
+
+>> +static unsigned long wait_for_serirq_timeout(struct tpm_chip *chip,
+>> +        bool condition, unsigned long timeout) {
+>> +       long status = 0;
+>> +       struct spi_device *client;
+>> +       struct st33zp24_platform_data *pin_infos;
+>> +
+>> +       client = (struct spi_device __force *)chip->vendor.iobase;
+>
+> Is there any better storage for this pointer? It seems an abuse of iobase member.
+
+>> +       chip->vendor.iobase = (void __iomem *)dev;
+>
+> Don't like this one. Try to find better way to drag pointer.
+
+
+--
+With Best Regards,
+Andy Shevchenko
