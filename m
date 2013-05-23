@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab3EWKnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:43:04 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:58655 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757958Ab3EWKnB (ORCPT
+	id S1758264Ab3EWKnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:43:47 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:54277 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab3EWKnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:43:01 -0400
-X-AuditID: cbfee68e-b7f276d000002279-2d-519df2b4696e
+	Thu, 23 May 2013 06:43:45 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-c0-519df2e03a0e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 3/3] rtc: rtc-rc5t583: use platform_{get,set}_drvdata()
-Date: Thu, 23 May 2013 19:42:59 +0900
-Message-id: <003301ce57a2$4b300600$e1901200$@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, "'Guenter Roeck'" <linux@roeck-us.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/5] watchdog: cpwd: use platform_{get,set}_drvdata()
+Date: Thu, 23 May 2013 19:43:43 +0900
+Message-id: <003401ce57a2$658fbb80$30af3280$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac5XojmGNpIBPxbyReKNQq9xBz/06w==
+Thread-index: Ac5Xol5MPcv9O9HOS+iEihh1rpoqPA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zI90tn+YGGnw/wmWx5OJVdos569ew
-	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAaxSXTUpqTmZZ
-	apG+XQJXxpbVx1kKvrFVnDgZ0sD4gbWLkYNDQsBE4s0X4S5GTiBTTOLCvfVsXYxcHEICyxgl
-	thy8ygSRMJHY2X6RFSKxiFGi8/0qFgjnF6PEh7/PmEGq2ATUJL58OcwOMlVEQF+irUUDpIZZ
-	oJtR4lHzXGaQuLCAu8SvRUYgJouAqkTfrTyQTl4BS4m/6y+zQNiCEj8m3wOzmQW0JNbvPM4E
-	YctLbF7zlhniHgWJHWdfM0Js0pO4eTYZokREYt+Ld4wgWyUEDrFLTLm2lBUkwSIgIPFt8iEW
-	iH9lJTYdgBojKXFwxQ2WCYxis5BsnoVk8ywkm2chWbGAkWUVo2hqQXJBcVJ6kZFecWJucWle
-	ul5yfu4mRkjM9e1gvHnA+hBjMtD6icxSosn5wJjNK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6
-	UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj/5oXVidD9rX0TJJJPd7knqLa927ReeEQPqY5
-	PRYJF+7s3zbRYcVlIVWV9SsDEizzGdeGJ+0P1VvbejrNfILHiqtHw9Q15CvCJ//hOixquvzd
-	jUd9FQ+Pxd8723XupGyLlGSN+ufdLT4TvHLWavKGrlf5dLx/rXjV1cwXx7v55ZNn8Uacav6v
-	xFKckWioxVxUnAgAqQcNIc8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jAd0tn+YGGkx9w2ax5OJVdos569ew
-	WVxeeInV4vKuOWwW+zs7GB1YPfZMPMnmcWLGbxaPvi2rGD2mz/vJ5PF5k1wAa1QDo01GamJK
-	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
-	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aW1cdZCr6xVZw4GdLA+IG1i5GTQ0LARGJn
-	+0UoW0ziwr31bF2MXBxCAosYJTrfr2KBcH4xSnz4+4wZpIpNQE3iy5fD7F2MHBwiAvoSbS0a
-	IDXMAt2MEo+a5zKDxIUF3CV+LTICMVkEVCX6buWBdPIKWEr8XX+ZBcIWlPgx+R6YzSygJbF+
-	53EmCFteYvOat8wQ9yhI7Dj7mhFik57EzbPJECUiEvtevGOcwCgwC8mkWUgmzUIyaRaSlgWM
-	LKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmP6mdQOxpUNFocYBTgYlXh4JW7PCRRiTSwr
-	rsw9xCjBwawkwru5Z26gEG9KYmVValF+fFFpTmrxIcZkoD8nMkuJJucD001eSbyhsYmZkaWR
-	mYWRibk5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTCe25Qrk7tL5MrnBZ83Ozyf7a/c
-	2+TA/fzccX23c4qa80riuFcnnnkx8+isG6WvRTu0Ql+8DvWd81B5v9z6jPnSTcHL077fr5P/
-	f/L31DsLftgpFdfy6jbIHVaP0t3C/HD3ZKvE6zt4dSX4vxTdVxAuyRRrFpztdMtiZ138NTuu
-	d2fL/grktL1SYinOSDTUYi4qTgQA6sGTVS0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t8zQ90Hn+YGGmzokrKYs34Nm8XlhZdY
+	LS7vmsNmcWPdPnaLJwvPMFncmvGC1YHN49pmMY8TM36zeOz83sDu0bdlFaPH501yAaxRXDYp
+	qTmZZalF+nYJXBkN1z+xFOxir/i37DhrA2MLWxcjJ4eEgIlEz/NlLBC2mMSFe+uB4lwcQgLL
+	GCVaz1+CK1o79SorRGI6o8SGB2+gnF+MEtPXL2QFqWITUJP48uUwexcjB4eIgL5EW4sGSA2z
+	wCZGib+7+8FqhAVcJS609jCB2CwCqhKPVr1kBLF5BSwllszaAGULSvyYfA/sJGYBLYn1O48z
+	QdjyEpvXvGWGuEhBYsfZ14wQu/QkPky0higRkdj34h0jyF4JgWPsEvu/fWWH2CUg8W3yIRaQ
+	egkBWYlNB6DGSEocXHGDZQKj2Cwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSiV5yYW1ya
+	l66XnJ+7iRESgxN2MN47YH2IMRlo/URmKdHkfGAM55XEGxqbGVmYmpgaG5lbmpEmrCTOq95i
+	HSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUXvOqpl6c97+28h09dzJjhdHLPpsMi+E1ZzQ
+	+nE/OTTmyqrnbj/kT5lq2FV3BOhNPRGgx3QyM3GnVM/RKVaJoeGV8a6MlWI16p0ZO1MtZq3/
+	sOXR//PRfO93vQ87XbLs3Mzv/nfEj4gsjNaIXi950914/4xbWYm8nE4bfQ5JBbP3ZaWmJtqs
+	VGIpzkg01GIuKk4EADythfXXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIKsWRmVeSWpSXmKPExsVy+t9jQd0Hn+YGGryeLGYxZ/0aNovLCy+x
+	WlzeNYfN4sa6fewWTxaeYbK4NeMFqwObx7XNYh4nZvxm8dj5vYHdo2/LKkaPz5vkAlijGhht
+	MlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4AuUFIoS8wp
+	BQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmNFz/xFKwi73i37LjrA2MLWxdjJwc
+	EgImEmunXmWFsMUkLtxbDxTn4hASmM4oseHBG1YI5xejxPT1C8Gq2ATUJL58OczexcjBISKg
+	L9HWogFSwyywiVHi7+5+sBphAVeJC609TCA2i4CqxKNVLxlBbF4BS4klszZA2YISPybfYwGx
+	mQW0JNbvPM4EYctLbF7zlhniIgWJHWdfM0Ls0pP4MNEaokREYt+Ld4wTGAVmIZk0C8mkWUgm
+	zULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcIQ/k97BuKrB4hCjAAejEg+vxO05
+	gUKsiWXFlbmHGCU4mJVEeDf3zA0U4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5Hxg8skriTc0
+	NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBkavbNfLe74aflALrbwR
+	cIP7pNpcZh/nAM8E492CngU1WXvaV5l1774X/fLAYdGYWK/fonvnJKT9bltj1KS1IPxIAeMP
+	7tAXxlVfmFdXfeNR1fzrZ27vnb1x7sSJz75/unYjb1OD0hYb7z0Rkbyyn96wiMo+FJZ5e8bA
+	K/FOe9sR51NM3zuLBJVYijMSDbWYi4oTASQKZlE0AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,22 +60,31 @@ so we can directly pass a struct platform_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-rc5t583.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/watchdog/cpwd.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-rc5t583.c b/drivers/rtc/rtc-rc5t583.c
-index 8eabcf5..e53e9b1 100644
---- a/drivers/rtc/rtc-rc5t583.c
-+++ b/drivers/rtc/rtc-rc5t583.c
-@@ -273,7 +273,7 @@ static int rc5t583_rtc_probe(struct platform_device *pdev)
-  */
- static int rc5t583_rtc_remove(struct platform_device *pdev)
- {
--	struct rc5t583_rtc *rc5t583_rtc = dev_get_drvdata(&pdev->dev);
-+	struct rc5t583_rtc *rc5t583_rtc = platform_get_drvdata(pdev);
+diff --git a/drivers/watchdog/cpwd.c b/drivers/watchdog/cpwd.c
+index 7038758..213225e 100644
+--- a/drivers/watchdog/cpwd.c
++++ b/drivers/watchdog/cpwd.c
+@@ -621,7 +621,7 @@ static int cpwd_probe(struct platform_device *op)
+ 			WD_BADMODEL);
+ 	}
  
- 	rc5t583_rtc_alarm_irq_enable(&rc5t583_rtc->rtc->dev, 0);
- 	return 0;
+-	dev_set_drvdata(&op->dev, p);
++	platform_set_drvdata(op, p);
+ 	cpwd_device = p;
+ 	err = 0;
+ 
+@@ -642,7 +642,7 @@ out_free:
+ 
+ static int cpwd_remove(struct platform_device *op)
+ {
+-	struct cpwd *p = dev_get_drvdata(&op->dev);
++	struct cpwd *p = platform_get_drvdata(op);
+ 	int i;
+ 
+ 	for (i = 0; i < WD_NUMDEVS; i++) {
 -- 
 1.7.10.4
 
