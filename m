@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab3EWKzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 06:55:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40201 "EHLO mga09.intel.com"
+	id S1758308Ab3EWK7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 06:59:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16157 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758125Ab3EWKzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 06:55:47 -0400
+	id S1757910Ab3EWK7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 06:59:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,727,1363158000"; 
-   d="scan'208";a="341946301"
-Date: Thu, 23 May 2013 15:49:19 +0530
+   d="scan'208";a="318316333"
+Date: Thu, 23 May 2013 15:52:48 +0530
 From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] dma: support Lynxpoint DMA
-Message-ID: <20130523101919.GB30200@intel.com>
-References: <1368003349-12204-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130514045423.GC27639@intel.com>
- <1369128579.29283.139.camel@smile>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        "djbw @ fb . com" <djbw@fb.com>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel @ lists . infradead . org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] dmatest: abort transfers immediately when asked for
+Message-ID: <20130523102248.GC30200@intel.com>
+References: <20130516153553.GI11706@mudshark.cambridge.arm.com>
+ <1369139597-24446-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <20130521151143.GH10453@mudshark.cambridge.arm.com>
+ <CAHp75VdRn8baf0ak57HpoJKNues6vEsjBp1uOQ2Zpvwa+B5rjA@mail.gmail.com>
+ <20130523100932.GA30200@intel.com>
+ <CAHp75Vf58kq0t7+et9i54fxjEdQfBrTWxji4xk_MS-fZgWGOdQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1369128579.29283.139.camel@smile>
+In-Reply-To: <CAHp75Vf58kq0t7+et9i54fxjEdQfBrTWxji4xk_MS-fZgWGOdQ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 21, 2013 at 12:29:39PM +0300, Andy Shevchenko wrote:
-> On Tue, 2013-05-14 at 10:24 +0530, Vinod Koul wrote: 
-> > On Wed, May 08, 2013 at 11:55:47AM +0300, Andy Shevchenko wrote:
-> > > This is the rest of patch series related to ACPI DMA helpers and Lynxpoint DMAC.
-> > > Patches are rebased against current Linus' tree and Vinod's branch for-linus.
-> > > 
-> > > Since v2:
-> > >  - remove patches that are already in the Vinod's tree
-> > >  - rebase on top of today's origin/master and Vinod's for-linus branch
-> > >  - fix description in patch 2/2
-> > Applied both, Thanks
+On Thu, May 23, 2013 at 01:51:29PM +0300, Andy Shevchenko wrote:
+> On Thu, May 23, 2013 at 1:09 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > On Tue, May 21, 2013 at 08:24:15PM +0300, Andy Shevchenko wrote:
+> >> On Tue, May 21, 2013 at 6:11 PM, Will Deacon <will.deacon@arm.com> wrote:
+> >> > On Tue, May 21, 2013 at 01:33:17PM +0100, Andy Shevchenko wrote:
+> >> >> When thread is going to be stopped we have to unconditionally terminate all
+> >> >> ongoing transfers. Otherwise it would be possible that callback function will
+> >> >> be called on the next interrupt and will try to access to already freed
+> >> >> structures.
+> >> >>
+> >> >> The patch introduces specific error message for this, though it doesn't
+> >> >> increase the counter of the failed tests.
+> >> >>
+> >> > Thanks for persevering with this! Although this patch definitely fixes the
+> >> > panic I was seeing, I now observe buffer verification failures in subsequent
+> >> > test runs after an aborted run:
+> >>
+> >> I think the description to the commit adfa543e "dmatest: don't use
+> >> set_freezable_with_signal()" may shed light on this.
+> >>
+> >> The background (if  I got it correctly) is in race with done flag. So,
+> >> we got a callback call from the DMA engine, but we don't know which
+> >> transfer triggers it.
+> >> I might be wrong. This is just an assumption.
+> >>
+> >> Have you ever see such behaviour on pre v3.10-rc1 kernels? (I mean
+> >> with old dmatest module)
+> > Terminate shouldnt cause the issue with buffer verfication, can you try this on
+> > dw_dmac, do you see similar failures on verfication?
 > 
-> Thank you for applying them to next.
-> 
-> I'm just wondering if you are going to send pull request soon to get
-> them in the v3.10-rcX.
-Nope these are in next & would show up in Linus's tree in next merge window.
-Something which is not a bug fix doesnt get merged in rc's. You should know the
-process
-> 
-> Besides those two are really needed to support Haswell properly, there
-> are people who are waiting for those patches, because patches touch ACPI
-> subsystem.
-well distro's should cherry-pick the patch, this is fairly common way to do so
+> I saw the similar errors on dw_dmac on Intel Medfield device.
+Ah, so may not be a driver issue.
+
+> Anyway, I checked another approach with Will.
+> For now I will send a quick fix that prevents tester to abort an
+> ongoing transfer.
+okay so taht should prevent regression, let me check on my setup if I find
+anything
 
 --
 ~Vinod
+> In future we could implement a robust logic when transfers can be
+> interrupted at any time.
+> 
+> -- 
+> With Best Regards,
+> Andy Shevchenko
