@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836Ab3EWRyB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 13:54:01 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:51089 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758057Ab3EWRx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 13:53:59 -0400
-Date: Thu, 23 May 2013 11:53:57 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for Kirkwood
- SoCs
-Message-ID: <20130523175357.GB2821@obsidianresearch.com>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130522201607.GA18823@obsidianresearch.com>
- <20130523160111.GP31290@titan.lakedaemon.net>
- <20130523171112.GB31281@obsidianresearch.com>
- <20130523172339.GQ31290@titan.lakedaemon.net>
+	id S1758936Ab3EWRyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 13:54:18 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:52245 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758057Ab3EWRyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 13:54:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130523172339.GQ31290@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
+In-Reply-To: <519DB8E6.4020709@signal11.us>
+References: <CAO+c-UVJQJbmmmCS4hxAEYHKa8gEU1Bs=y+Rv_A75UHeBZxc+w@mail.gmail.com>
+	<1369188080-8904-1-git-send-email-alan@signal11.us>
+	<519C278F.5030809@signal11.us>
+	<CAO+c-UV1bZZEE=9=7VVn3f1eLWzCpYCK9eZnnvzNwcPOKKtKLA@mail.gmail.com>
+	<519DB8E6.4020709@signal11.us>
+Date: Thu, 23 May 2013 19:54:12 +0200
+X-Google-Sender-Auth: ZW3SQZGUqf5WnISU-swdDWYzyJ8
+Message-ID: <CAO+c-UVMoctgG2qM2EzOVJwsEY_2TT79J-AuzX-xrPkSUHrQtw@mail.gmail.com>
+Subject: Re: [PATCH beta 1] 0/3] Fix race conditions in mrf24j40 interrupts
+From: David Hauweele <david@hauweele.net>
+To: Alan Ott <alan@signal11.us>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 01:23:39PM -0400, Jason Cooper wrote:
+2013/5/23 Alan Ott <alan@signal11.us>:
+> On 5/22/13 4:32 PM, David Hauweele wrote:
+>>
+>> I cannot use level-triggered interrupts with GPIO on the RPi, so I
+>> cannot test this specific patch.
+>
+>
+> Is there another interrupt line you can tie into which does support
+> level-trigger interrupts (INT0 or something)?
 
-> Shouldn't it rather be
-> 
-> 	compatible = "marvell,kirkwood-eth", "marvell,orion-eth";
+According to the datasheet it should be possible but the bcm2708 port
+does not support it. I've been told that we shouldn't use level-triggered
+interrupts in the first place.
 
-Not sure about orion-eth?
- 
-> I'm inclined to go with of_machine_is_compatible() since the only
-> concrete difference we know is that the tweak is needed on kirkwood and
-> nowhere else.
+>
+>
+>> However I agree with the idea of level-triggered interrupts, that
+>> would fix all major problems related to missed interrupts.
+>>
+>> Beside this I'm running a ping -f since more than two hours now and it
+>> seems to work well.
+>>
+>
+> So that surprises me. I thought level-trigger interrupts were the thing that
+> would fix this problem, and if you're not running with that patch, you just
+> have the INIT_COMPLETION() fix (which you said didn't fix your issue) and
+> the threaded interrupts patch, which I was fairly sure I had determined
+> wasn't fixing any actual race-condition-related problems.
 
-But there is a larger problem here then just this one bit.
+I should have been more clear about this. I've tested [PATCH 1/3]
+which fixes the race condition with tx_complete. That is the
+INIT_COMPLETION() fix. But it is still possible to miss an interrupt,
+perhaps it just took longer this time. I ran the test again today and
+it failed after 30 minutes.
 
-The PSC1 register must be set properly for the board layout, and today
-we rely on the bootloader to set it. In fact, even with Sebastian's
-change the ethernet port won't work without bootloader
-intervention. The PortReset bit should also be cleared by the driver
-(and it is only present on some variants of this IP block,
-apparently).
+I did not test [PATCH 2/3], that is the threaded IRQ. Instead I
+removed interrupt enable/disable from the IRQ handler and the
+workqueue. Without this the driver would fail within seconds of a ping
+-f. Have you observed this too ? Perhaps this problem is specific to
+the bcm2708 port.
 
-We know that some Marvell SOC's wack the ethernet registers when they
-clock gate, and the flip of Clk125Bypass is another symptom of this
-general problem.
+David
 
-So, long term, the PSC1 must be fully set by the driver, based on DT
-information describing the board (eg RGMII/MII/1000Base-X [SFP] Phy
-type), and the layout of this register seems to vary on a SOC by SOC
-basis.
-
-Thus, I think it is appropriate to call this variant of the eth IP
-'marvell,kirkwood-eth' which indicates that the register block follows
-the kirkwood manual and the PSC1 register specifically has the
-kirkwood layout.
-
-The question is what other Marvell SOCs have the same PSC1 layout as
-kirkwood?
-
-Jason
+>
+> I'm glad, but surprised that you're no longer seeing issues.
+>
+> Alan.
+>
+>
+>>
+>> 2013/5/22 Alan Ott <alan@signal11.us>:
+>>>
+>>> On 05/21/2013 10:01 PM, Alan Ott wrote:
+>>>>
+>>>> David Hauweele noticed that the mrf24j40 would hang arbitrarily after
+>>>> some
+>>>> period of heavy traffic.  Two race conditions were discovered, and the
+>>>> driver was changed to use threaded interrupts, since the enable/disable
+>>>> of
+>>>> interrupts in the driver has recently been a lighning rod whenever
+>>>> issues
+>>>> arise related to interrupts (costing engineering time), and since
+>>>> threaded
+>>>> interrupts are the right way to do it.
+>>>>
+>>>> Alan Ott (3):
+>>>>    mrf24j40: Move INIT_COMPLETION() to before packet transmission
+>>>>    mrf24j40: Use threaded IRQ handler
+>>>>    mrf24j40: Use level-triggered interrupts
+>>>>
+>>>>   drivers/net/ieee802154/mrf24j40.c | 31 +++++++++----------------------
+>>>>   1 file changed, 9 insertions(+), 22 deletions(-)
+>>>
+>>>
+>>> I forgot to add, I ran ping -f both ways all afternoon (6.5 hours), and
+>>> it seems solid.
+>>>
+>
