@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab3EWIUP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 04:20:15 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36443 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab3EWIUK (ORCPT
+	id S1756936Ab3EWIXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 04:23:16 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:53938 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab3EWIXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 04:20:10 -0400
+	Thu, 23 May 2013 04:23:13 -0400
+Date: Thu, 23 May 2013 09:23:08 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Leon Romanovsky <leon@leon.nu>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: mfd: tps65912: Convert to use devm_kzalloc
+Message-ID: <20130523082308.GB22683@gmail.com>
+References: <1368609586-20905-1-git-send-email-leon@leon.nu>
+ <CALq1K=KP4pADX89QJ3MJzaC+uTeEVOy7FUNikEnYddb0u-rihw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <519DCEE9.6070208@schinagl.nl>
-References: <1368797744-13737-1-git-send-email-oliver+list@schinagl.nl>
-	<1368797744-13737-2-git-send-email-oliver+list@schinagl.nl>
-	<CACRpkdaWADjy1YZXTcRaXU+ZsS6_pG0hojQdnz=qeTgyVY7_Ww@mail.gmail.com>
-	<519DCEE9.6070208@schinagl.nl>
-Date: Thu, 23 May 2013 10:20:09 +0200
-Message-ID: <CACRpkdZveQsVpw7_FnecGNZX4nVwWMtVwme7JEcy1R7uvdEe8A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Initial support for Allwinner's Security ID fuses
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Oliver Schinagl <oliver+list@schinagl.nl>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@ardb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Oliver Schinagl <oliver@schinagl.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALq1K=KP4pADX89QJ3MJzaC+uTeEVOy7FUNikEnYddb0u-rihw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 10:10 AM, Oliver Schinagl
-<oliver+list@schinagl.nl> wrote:
-> On 05/23/13 09:56, Linus Walleij wrote:
->>
->> On Fri, May 17, 2013 at 3:35 PM, Oliver Schinagl
->> <oliver+list@schinagl.nl> wrote:
->>
->> (...)
->>>
->>> While initially these fuses are used to somewhat determin the chipID,
->>> these
->>> appear to be writeable by the user and thus can be used for other
->>> purpouses.
->>> For example storing a 128 bit root key, a unique serial number, which
->>> could
->>> then even be used as a MAC address.
->>
->> (...)
->> Then follows some code to read out the keys from sysfs I guess..
->>>
->>> +static int __init sid_probe(struct platform_device *pdev)
->>
->>
->> It's really simple to actually make the kernel use this to seed the
->> entropy pool.
->>
->> #include <linux/random.h>
->> add_device_randomness(u8 *, num);
->>
->> If you know after probe that you can read out a number of bytes
->> of device-unique data, I think you should add those bytes to the
->> entropy pool like this.
->
-> While that is a great idea, we can't guarantee device uniqueness. We've
-> already seen some chips that where 'forgotten' to program and default set to
-> all 0. I guess that doesn't have to be a bad thing.
+> > There is no need to call kfree while using devm_kzalloc,
+> > remove it from *_device_init function.
+> >
+> > Signed-off-by: Leon Romanovsky <leon@leon.nu>
+> > ---
+> >  drivers/mfd/tps65912-core.c | 5 ++---
+> >  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> To be honest the whole tps65912 looks strange to me.
+> For example,  kfree(tps65912) calls all over the code.
+> 
+> tps65912_i2c_probe allocates tps65912 struct, but tps65912_device_exit
+> releases it.
 
-Ted can confirm but AFAIK that is not a problem. This device-unique
-numer is just one of the things mixed into the pool, if it's on some
-devices just an array of zeroes it does not make things worse, but
-in the cases when there is some uniqueness in it make things better.
+Yes, this is expected.
 
-> It should probably be noted, that the sunxi series have a hardware crypto
-> engine, with hardware random seed generator, one for a later project.
+tps65912_[spi|i2c]_remove() both call tps65912_device_exit() which in
+turn frees tps65912. Saves duplicating code.
 
-That will anyway be augmented with the contents of the entropy
-pool rather than returned to random clients right off if I know the
-recent changes to random code right.
+I'll clean thinks up a little, so this is less confusing.
 
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
