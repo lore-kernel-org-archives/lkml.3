@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759048Ab3EWOMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 10:12:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24361 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758277Ab3EWOLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 10:11:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
-   d="scan'208";a="306834311"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: linux-usb@vger.kernel.org
-Cc: <sarah.a.sharp@intel.com>, <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v3 2/4] usb: xhci: define port register names and use them instead of magic numbers
-Date: Thu, 23 May 2013 17:14:29 +0300
-Message-Id: <1369318471-10353-3-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1369318471-10353-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1759122Ab3EWOOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 10:14:47 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37775 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757590Ab3EWOOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 10:14:45 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [Resend/PATCHv5 0/3] Omap serial cleanup
+References: <1368633673-32308-1-git-send-email-sourav.poddar@ti.com>
+Date: Thu, 23 May 2013 07:14:41 -0700
+In-Reply-To: <1368633673-32308-1-git-send-email-sourav.poddar@ti.com> (Sourav
+	Poddar's message of "Wed, 15 May 2013 21:31:10 +0530")
+Message-ID: <87y5b5iy0e.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-hub.c |   16 +++++++---------
- drivers/usb/host/xhci.c     |    4 ++--
- drivers/usb/host/xhci.h     |    5 +++++
- 3 files changed, 14 insertions(+), 11 deletions(-)
+Hi Sourav,
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index 187a3ec..1d35459 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -867,18 +867,18 @@ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
- 		case USB_PORT_FEAT_U1_TIMEOUT:
- 			if (hcd->speed != HCD_USB3)
- 				goto error;
--			temp = xhci_readl(xhci, port_array[wIndex] + 1);
-+			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
- 			temp &= ~PORT_U1_TIMEOUT_MASK;
- 			temp |= PORT_U1_TIMEOUT(timeout);
--			xhci_writel(xhci, temp, port_array[wIndex] + 1);
-+			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
- 			break;
- 		case USB_PORT_FEAT_U2_TIMEOUT:
- 			if (hcd->speed != HCD_USB3)
- 				goto error;
--			temp = xhci_readl(xhci, port_array[wIndex] + 1);
-+			temp = xhci_readl(xhci, port_array[wIndex] + PORTPMSC);
- 			temp &= ~PORT_U2_TIMEOUT_MASK;
- 			temp |= PORT_U2_TIMEOUT(timeout);
--			xhci_writel(xhci, temp, port_array[wIndex] + 1);
-+			xhci_writel(xhci, temp, port_array[wIndex] + PORTPMSC);
- 			break;
- 		default:
- 			goto error;
-@@ -1098,10 +1098,8 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
- 			__le32 __iomem *addr;
- 			u32 tmp;
- 
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
-+			/* Get the port power control register address. */
-+			addr = port_array[port_index] + PORTPMSC;
- 			tmp = xhci_readl(xhci, addr);
- 			tmp |= PORT_RWE;
- 			xhci_writel(xhci, tmp, addr);
-@@ -1193,7 +1191,7 @@ int xhci_bus_resume(struct usb_hcd *hcd)
- 			/* Add one to the port status register address to get
- 			 * the port power control register address.
- 			 */
--			addr = port_array[port_index] + 1;
-+			addr = port_array[port_index] + PORTPMSC;
- 			tmp = xhci_readl(xhci, addr);
- 			tmp &= ~PORT_RWE;
- 			xhci_writel(xhci, tmp, addr);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index e540a36..317bf08 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3901,7 +3901,7 @@ static int xhci_usb2_software_lpm_test(struct usb_hcd *hcd,
- 	 * Check device's USB 2.0 extension descriptor to determine whether
- 	 * HIRD or BESL shoule be used. See USB2.0 LPM errata.
- 	 */
--	pm_addr = port_array[port_num] + 1;
-+	pm_addr = port_array[port_num] + PORTPMSC;
- 	hird = xhci_calculate_hird_besl(xhci, udev);
- 	temp = PORT_L1DS(udev->slot_id) | PORT_HIRD(hird);
- 	xhci_writel(xhci, temp, pm_addr);
-@@ -3999,7 +3999,7 @@ int xhci_set_usb2_hardware_lpm(struct usb_hcd *hcd,
- 
- 	port_array = xhci->usb2_ports;
- 	port_num = udev->portnum - 1;
--	pm_addr = port_array[port_num] + 1;
-+	pm_addr = port_array[port_num] + PORTPMSC;
- 	temp = xhci_readl(xhci, pm_addr);
- 
- 	xhci_dbg(xhci, "%s port %d USB2 hardware LPM\n",
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 1dbc63f..b6cd55e 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -132,6 +132,11 @@ struct xhci_cap_regs {
- /* Number of registers per port */
- #define	NUM_PORT_REGS	4
- 
-+#define PORTSC		0
-+#define PORTPMSC	1
-+#define PORTLI		2
-+#define PORTHLPMC	3
-+
- /**
-  * struct xhci_op_regs - xHCI Host Controller Operational Registers.
-  * @command:		USBCMD - xHC command register
--- 
-1.7.4.1
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
+> Resending this patch series again on top of 3.10-rc1.
+>
+> This is a cleanup series done in response to the
+> serial driver fixes done for "no_console_suspend" case.
+
+Greg has queued the serial core changes for v3.11, and I've queued this
+series for the OMAP specific changes for v3.11[1].
+
+Thanks again for your persistence with this series.
+
+Kevin
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-omap-pm.git for_3.11/uart/no_console_suspend
+
+> This cleanups mainly include getting
+> rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case
+> as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
+> Serial was the only one making use of "omap_device_disable_idle_on_suspend"
+>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Rajendra nayak <rnayak@ti.com>
+>
+> Test info
+> Omap4430sdp:
+> - Tested wakeup from UART after suspend for dt and non dt case.
+> Omap5430evm:
+> - Tested wakeup from UART after suspend for dt case.
+>
+> These patches were the part of the bigger series[2]. Breaking them into
+> two relevant series as they go through the different tree.
+>
+> [2]: http://lkml.org/lkml/2013/4/26/274
+>
+> The following changes since commit b973425cbb51e08301b34fecdfd476a44507d8cf:
+>
+>   Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
+>
+> are available in the git repository at:
+>
+>   git://gitorious.org/linux-connectivity/linux-connectivity.git omap_fix_resend
+>
+> Sourav Poddar (3):
+>       arm: omap2+: serial: remove no_console_suspend support
+>       arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+>       arm: omap2+: omap_device: remove no_idle_on_suspend
+>
+>  arch/arm/boot/dts/am33xx.dtsi     |    1 -
+>  arch/arm/mach-omap2/omap_device.c |    9 ++-------
+>  arch/arm/mach-omap2/omap_device.h |   10 ----------
+>  arch/arm/mach-omap2/serial.c      |    7 -------
+>  4 files changed, 2 insertions(+), 25 deletions(-)
