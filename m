@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab3EWLpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 07:45:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52720 "EHLO mx1.redhat.com"
+	id S1758721Ab3EWLqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 07:46:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27348 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758176Ab3EWLpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 07:45:35 -0400
-Date: Thu, 23 May 2013 14:45:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [net-next RFC 6/8] macvtap: allow TUNSETIFF to create multiqueue
- device
-Message-ID: <20130523114556.GC17993@redhat.com>
-References: <1369278753-2533-1-git-send-email-jasowang@redhat.com>
- <1369278753-2533-7-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369278753-2533-7-git-send-email-jasowang@redhat.com>
+	id S1758471Ab3EWLqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 07:46:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,728,1363158000"; 
+   d="scan'208";a="338811246"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Dave Hansen <dave@sr71.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAJd=RBCP+YvA46j8K7pXDGBLdLgh2+Db9RDrHU4DP7JHsv_Qcw@mail.gmail.com>
+References: <1368321816-17719-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1368321816-17719-40-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAJd=RBCP+YvA46j8K7pXDGBLdLgh2+Db9RDrHU4DP7JHsv_Qcw@mail.gmail.com>
+Subject: Re: [PATCHv4 39/39] thp: map file-backed huge pages on fault
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130523114829.B5692E0090@blue.fi.intel.com>
+Date: Thu, 23 May 2013 14:48:29 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 23, 2013 at 11:12:31AM +0800, Jason Wang wrote:
-> Though the queue were in fact created by open(), we still need to add this check
-> to be compatible with tuntap which can let mgmt software use a single API to
-> manage queues. This patch only validates the device name and moves the TUNSETIFF
-> to a helper.
+Hillf Danton wrote:
+> On Sun, May 12, 2013 at 9:23 AM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > Look like all pieces are in place, we can map file-backed huge-pages
+> > now.
+> >
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  include/linux/huge_mm.h |    4 +++-
+> >  mm/memory.c             |    5 ++++-
+> >  2 files changed, 7 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> > index f4d6626..903f097 100644
+> > --- a/include/linux/huge_mm.h
+> > +++ b/include/linux/huge_mm.h
+> > @@ -78,7 +78,9 @@ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
+> >            (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG) &&                   \
+> >            ((__vma)->vm_flags & VM_HUGEPAGE))) &&                       \
+> >          !((__vma)->vm_flags & VM_NOHUGEPAGE) &&                        \
+> > -        !is_vma_temporary_stack(__vma))
+> > +        !is_vma_temporary_stack(__vma) &&                              \
+> > +        (!(__vma)->vm_ops ||                                           \
+> > +                 mapping_can_have_hugepages((__vma)->vm_file->f_mapping)))
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/macvtap.c |   50 ++++++++++++++++++++++++++++++++++++++----------
->  1 files changed, 39 insertions(+), 11 deletions(-)
+> Redefine, why?
 > 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 5fd341c..e3f9344 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -867,6 +867,7 @@ out:
->  	return ret;
->  }
->  
-> +
+> >  #define transparent_hugepage_defrag(__vma)                             \
+> >         ((transparent_hugepage_flags &                                  \
+> >           (1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)) ||                     \
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index ebff552..7fe9752 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3939,10 +3939,13 @@ retry:
+> >         if (!pmd)
+> >                 return VM_FAULT_OOM;
+> >         if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+> > -               int ret = 0;
+> > +               int ret;
+> >                 if (!vma->vm_ops)
+> >                         ret = do_huge_pmd_anonymous_page(mm, vma, address,
+> >                                         pmd, flags);
+> 
+> Ah vma->vm_ops is checked here, so
+> 		else if (mapping_can_have_hugepages())
 
-Please don't add empty lines like this :).
+Okay, it's cleaner.
 
->  static struct macvlan_dev *macvtap_get_vlan(struct macvtap_queue *q)
->  {
->  	struct macvlan_dev *vlan;
-> @@ -884,6 +885,43 @@ static void macvtap_put_vlan(struct macvlan_dev *vlan)
->  	dev_put(vlan->dev);
->  }
->  
-> +static int macvtap_set_iff(struct file *file, struct ifreq __user *ifr_u)
-> +{
-> +	struct macvtap_queue *q = file->private_data;
-> +	struct net *net = current->nsproxy->net_ns;
-> +	struct inode *inode = file_inode(file);
-> +	struct net_device *dev, *dev2;
-> +	struct ifreq ifr;
-> +
-> +	if (copy_from_user(&ifr, ifr_u, sizeof(struct ifreq)))
-> +		return -EFAULT;
-> +
-> +	if (ifr.ifr_flags & IFF_MULTI_QUEUE) {
-
-So why do we validate the name?
-Pls add a comment.
-
-> +		dev = __dev_get_by_name(net, ifr.ifr_name);
-> +		if (!dev)
-> +			return -EINVAL;
-> +
-> +		dev2 = dev_get_by_macvtap_minor(iminor(inode));
-> +		if (!dev2)
-> +			return -EINVAL;
-> +
-> +		if (dev != dev2) {
-> +			dev_put(dev2);
-> +			return -EINVAL;
-> +		}
-> +
-> +		dev_put(dev2);
-> +	}
-> +
-> +	if ((ifr.ifr_flags & ~(IFF_VNET_HDR | IFF_MULTI_QUEUE)) !=
-> +	    (IFF_NO_PI | IFF_TAP))
-> +		return -EINVAL;
-> +	else
-> +		q->flags = ifr.ifr_flags;
-> +
-> +	return 0;
-> +}
-> +
->  /*
->   * provide compatibility with generic tun/tap interface
->   */
-> @@ -902,17 +940,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
->  
->  	switch (cmd) {
->  	case TUNSETIFF:
-> -		/* ignore the name, just look at flags */
-> -		if (get_user(u, &ifr->ifr_flags))
-> -			return -EFAULT;
-> -
-> -		ret = 0;
-> -		if ((u & ~IFF_VNET_HDR) != (IFF_NO_PI | IFF_TAP))
-> -			ret = -EINVAL;
-> -		else
-> -			q->flags = u;
-> -
-> -		return ret;
-> +		return macvtap_set_iff(file, ifr);
->  
->  	case TUNGETIFF:
->  		vlan = macvtap_get_vlan(q);
-> -- 
-> 1.7.1
+-- 
+ Kirill A. Shutemov
