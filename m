@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3EXG1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 02:27:53 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:48854 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab3EXG1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 02:27:52 -0400
+	id S1755871Ab3EXG2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 02:28:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab3EXG2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 02:28:43 -0400
+Message-ID: <519F088C.1020509@redhat.com>
+Date: Fri, 24 May 2013 14:28:28 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1368703646-26418-1-git-send-email-lee.jones@linaro.org>
-References: <1368703646-26418-1-git-send-email-lee.jones@linaro.org>
-Date: Fri, 24 May 2013 08:27:52 +0200
-Message-ID: <CACRpkdapJ4Y0fxHa_j0WaOtWEom3y+bv2aA3qVBnLBjHsB2tOA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] crypto: ux500/[cryp|hash] - Enable Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [net-next RFC 2/8] macvtap: return -EBADFD when TUNGETIFF fails
+References: <1369278753-2533-1-git-send-email-jasowang@redhat.com> <1369278753-2533-3-git-send-email-jasowang@redhat.com> <20130523115423.GF17993@redhat.com>
+In-Reply-To: <20130523115423.GF17993@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 16, 2013 at 1:27 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 05/23/2013 07:54 PM, Michael S. Tsirkin wrote:
+> On Thu, May 23, 2013 at 11:12:27AM +0800, Jason Wang wrote:
+>> Tuntap return -EBADFD when TUNGETIFF fails, we should return the same value.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Can you add some more comments on why this matters?
 
-> This patch-set simply allows ux500-[cryp|hash] drivers to be probed
-> when Snowball is running with Device Tree enabled.
+Just to keep compatibility for tuntap.
+> Any userspace that cares will have to handle both, right?
+
+Ideally the userspace should expect the same behavior for both tap and
+macvtap.
+
+Maybe we should just keep this.
 >
-> Linus,
->
-> Feel free to split the DTS changes out into your ux500-devicetree branch.
+>> ---
+>>  drivers/net/macvtap.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+>> index 59e9605..ce1c72a 100644
+>> --- a/drivers/net/macvtap.c
+>> +++ b/drivers/net/macvtap.c
+>> @@ -928,7 +928,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+>>  		rcu_read_unlock_bh();
+>>  
+>>  		if (!vlan)
+>> -			return -ENOLINK;
+>> +			return -EBADFD;
+>>  
+>>  		ret = 0;
+>>  		if (copy_to_user(&ifr->ifr_name, vlan->dev->name, IFNAMSIZ) ||
+>> -- 
+>> 1.7.1
 
-I have tentatively applied 1, 2, 3 & 4 to my device tree branch.
-
-5 & 6 need bindings and ACKs.
-
-I can merge them through the ux500 devicetree branch as well I
-think, they "should" be orthogonal to other (DMA-related) changes
-AFAICT.
-
-Yours,
-Linus Walleij
