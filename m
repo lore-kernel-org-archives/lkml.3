@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760305Ab3EXJnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:43:14 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:63361 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab3EXJnK (ORCPT
+	id S1760087Ab3EXJpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:45:46 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:40575 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3EXJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:43:10 -0400
+	Fri, 24 May 2013 05:45:44 -0400
+Message-ID: <519F36BD.1030806@redhat.com>
+Date: Fri, 24 May 2013 11:45:33 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1369387394-9453-3-git-send-email-maxime.ripard@free-electrons.com>
-References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
- <1369387394-9453-3-git-send-email-maxime.ripard@free-electrons.com>
-From: Florian Fainelli <florian@openwrt.org>
-Date: Fri, 24 May 2013 10:42:30 +0100
-X-Google-Sender-Auth: e3Uy7G5BH_6rsWpGc0xi_b4wbKY
-Message-ID: <CAGVrzcbyXiKCKxtOAj0gnG8eCQag8_xvmd9dUKACCbfW-2HN9Q@mail.gmail.com>
-Subject: Re: [PATCHv3 2/6] net: Add MDIO bus driver for the Allwinner EMAC
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: David Miller <davem@davemloft.net>, linux-arm-kernel@lists.infradead.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Emilio Lopez <emilio@elopez.com.ar>,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com> <519F2566.2000008@redhat.com> <CAOS58YMSw6wJU07WfVG8wd_BnU4TXr7VDBHeDPa4XjSpn2p3Ag@mail.gmail.com>
+In-Reply-To: <CAOS58YMSw6wJU07WfVG8wd_BnU4TXr7VDBHeDPa4XjSpn2p3Ag@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maxime,
+Il 24/05/2013 11:07, Tejun Heo ha scritto:
+> On Fri, May 24, 2013 at 5:31 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>> I agree intuition may not count, and it's perfectly possible that
+>> firmware writers forgot a "break;" or put the wrong location in a jump
+>> table, so that unimplemented commands give interesting results.
+> 
+> It's not just unimplemented commands. Exposing any new command exposes
+> its borderline problems together with it.
 
-2013/5/24 Maxime Ripard <maxime.ripard@free-electrons.com>
->
-> This patch adds a separate driver for the MDIO interface of the
-> Allwinner ethernet controllers.
->
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +++
->  drivers/net/ethernet/allwinner/Kconfig             |   8 +
->  drivers/net/ethernet/allwinner/Makefile            |   1 +
->  drivers/net/ethernet/allwinner/sun4i-mdio.c        | 191 +++++++++++++++++++++
+For commands that are used by Linux already, the right way to fix the
+problems is not obscuring the commands from userspace's view.  You can
+hit the same problems with ioctls or even with normal operation of the
+device.
 
-Ok, so you probably followed Thomas's example here with mvneta/mvmdio,
-but all other MDIO bus drivers live in drivers/net/phy. Unfortunately,
-mvmdio lives in drivers/net/ethernet/marvell/mvmdio.c which I should
-have noticed before. Whatever is good for you guys, but we should
-probably start normalizing this now before more mdio drivers get
-merged alongside their corresponding ethernet MAC users.
+>> However, the _fact_ is that this might happen anyway with the buttload
+>> of commands that are already enabled by the whitelist and that most
+>> disks will never implement.
+> 
+> Yes and that's why the whitelist is generally frowned upon. It's
+> inherently fragile. These devices simply aren't designed and
+> implemented to be exposed to lesser security domains directly. It's
+> true that it's already kinda broken that way but as I wrote before
+> it's a vicious cycle and we don't wanna keep building on top of it.
+> This expansion is gonna increase the usage of whitelisting which will
+> in turn attract further use cases which are likely to call for even
+> more expansion.
+
+And prohibiting the extension of whitelists is gonna increase the
+usage of unpriv_sgio and less-secure userspace whitelists.
+
+Anvil, meet hammer.
+
+>>> The thing is that both approaches aren't perfect here so you can make
+>>> similar type of argument from the other side. If the system wants to
+>>> give out raw hardware access to VMs, requiring it to delegate the
+>>> device fully could be reasonable.
+>>
+>> No, it is not unfortunately.  Allowing to do discards is one thing,
+>> allowing to disrupt the settings of a SAN is another.  You can only
+>> delegate the device fully in these cases:
+>>
+>> (a) of course, if the guest is trusted;
+>> (b) if QEMU is running as a confined user;
+> 
+> If the bulk of filtering can be solved with userland whitelisting as a
+> confined user, it should be possible to resolve peripheral problems
+> like log messages in simpler way, no? Can you please elaborate on the
+> log message problem? Who's spewing those messages?
+
+For example:
+
+        if (bdev_write_same(bdev)) {
+                unsigned char bdn[BDEVNAME_SIZE];
+
+                if (!blkdev_issue_write_same(bdev, sector, nr_sects, gfp_mask,
+                                             ZERO_PAGE(0)))
+                        return 0;
+
+                bdevname(bdev, bdn);
+                pr_err("%s: WRITE SAME failed. Manually zeroing.\n", bdn);
+        }
+
+        return __blkdev_issue_zeroout(bdev, sector, nr_sects, gfp_mask);
+
+The device exposes the ability to zero out LUN blocks, but the command is
+not whitelisted and it fails.
+
+Paolo
