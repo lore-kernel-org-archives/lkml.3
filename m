@@ -1,40 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab3EXOYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:24:40 -0400
-Received: from 18.mo4.mail-out.ovh.net ([188.165.54.143]:59516 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751880Ab3EXOYj (ORCPT
+	id S1754100Ab3EXO3K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:29:10 -0400
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:49560 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753178Ab3EXO3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:24:39 -0400
-X-Greylist: delayed 93898 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 10:24:39 EDT
-Date: Fri, 24 May 2013 16:03:22 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@maxim.org.za" <linux@maxim.org.za>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
- "MT_MEMORY_SO"
-Message-ID: <20130524140322.GD24476@game.jcrosoft.org>
-References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
- <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
- <20130522001457.GA18614@n2100.arm.linux.org.uk>
- <B256D81BAE5131468A838E5D7A243641687BB93C@penmbx01>
- <20130524112029.GW18614@n2100.arm.linux.org.uk>
+	Fri, 24 May 2013 10:29:08 -0400
+Message-ID: <519F792E.8090109@overkiz.com>
+Date: Fri, 24 May 2013 16:29:02 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130524112029.GW18614@n2100.arm.linux.org.uk>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 8368814009572502451
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91/dt: add pinctrl definition for at91 tc blocks
+References: <1369389956-30466-1-git-send-email-b.brezillon@overkiz.com> <20130524140528.GE24476@game.jcrosoft.org> <519F754F.50908@atmel.com>
+In-Reply-To: <519F754F.50908@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 8780330424054151276
+X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
 X-OVH-SPAMSCORE: -100
@@ -47,22 +37,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:20 Fri 24 May     , Russell King - ARM Linux wrote:
-> On Fri, May 24, 2013 at 07:11:04AM +0000, Yang, Wenyou wrote:
-> > The story is: for sama5d3x with Cortex-A5 core, if not so, when copying
-> > code snippet to the internal SRAM, then jump to run this code, but fail
-> > to run.
-> 
-> And that is where your mistake is - you forgot that you're working with
-> a CPU with harvard caches which will require some cache maintanence
-> between copying the code and executing it.
-> 
-> You want to look at flush_icache_range() rather than making this memory
-> strongly ordered.
+On 24/05/2013 16:12, Nicolas Ferre wrote:
+> On 24/05/2013 16:05, Jean-Christophe PLAGNIOL-VILLARD :
+>> On 12:05 Fri 24 May     , Boris BREZILLON wrote:
+>>> Hello,
+>>>
+>>> This patch adds pinctrl configs for at91 Timer Conter blocks.
+>>> These pin configs will be referenced by "atmel,tcb-pwm" devices to
+>>> setup pins as PWM output.
+>>
+>> you need to rebase on
+>>
+>> a cleanup I did preset on our git tag at91-3.11-cleanup
+>>
+>> As we announce Mandaotory for 3.11
+>>
+>> as I introduce Macro fro DT
+Ok, I'll base my future dt patches (kizbox.dts) on this tag.
+>
+> Boris, Hold on.
+>
+> I may have the solution for you. Give me some time and we may have the 
+> automatic generation for updating your patch.
+Ok, thanks.
+>
+> Bye,
 
-I understand your point but today we map a SRAM as MT_DEVICE
-
-I do not think it's the best
-
-Best Regards,
-J.
