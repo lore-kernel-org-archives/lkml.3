@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab3EXFeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:34:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55026 "EHLO arroyo.ext.ti.com"
+	id S1754123Ab3EXFeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:34:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58231 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3EXFeI convert rfc822-to-8bit (ORCPT
+	id S1753760Ab3EXFeT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:34:08 -0400
+	Fri, 24 May 2013 01:34:19 -0400
 From: "B, Ravi" <ravibabu@ti.com>
 To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Balbi, Felipe" <balbi@ti.com>
-Subject: RE: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
- am33xx
-Thread-Topic: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for
- am33xx
-Thread-Index: AQHOV3sDeuljQaJjrUaNxyq64bPttJkSTkcAgACzRiD//40XAIABKrbg
-Date: Fri, 24 May 2013 05:34:02 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAE52A3@DBDE04.ent.ti.com>
+Subject: RE: [PATCH v1 2/9] usb: musb: nop: remove unused
+ nop_xceiv_(un)register APIs from glue
+Thread-Topic: [PATCH v1 2/9] usb: musb: nop: remove unused
+ nop_xceiv_(un)register APIs from glue
+Thread-Index: AQHOV3r9vEl26qqbfkypuoIrrrzucpkSTMAAgACy8zD//4/wAIABK5vQ
+Date: Fri, 24 May 2013 05:34:13 +0000
+Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAE52AA@DBDE04.ent.ti.com>
 References: <1369288888-8614-1-git-send-email-ravibabu@ti.com>
- <1369288888-8614-9-git-send-email-ravibabu@ti.com>
- <519E275A.5020200@cogentembedded.com>
- <6C6B28D4DC342643927BEAFCE8707BF63EAE3EBF@DBDE04.ent.ti.com>
- <519E5D58.5020002@cogentembedded.com>
-In-Reply-To: <519E5D58.5020002@cogentembedded.com>
+ <1369288888-8614-3-git-send-email-ravibabu@ti.com>
+ <519E2612.5000904@cogentembedded.com>
+ <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com>
+ <519E5E2E.4070104@cogentembedded.com>
+In-Reply-To: <519E5E2E.4070104@cogentembedded.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,35 +37,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Re: [PATCH v1 8/9] usb: phy: dts: Adding usbphy DT bindings for am33xx
+
+Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register APIs from glue
 
 Hello.
 
-On 05/23/2013 09:13 PM, B, Ravi wrote:
+On 05/23/2013 09:07 PM, B, Ravi wrote:
+
+>>> removed unused nop xceiv (un_)register API's from all musb platform 
+>>> drivers
+>>     Since when are they unused?
+> Please refer to commit id 662dca54 : usb: otg: support for multiple transceivers by a single controller.
+> Usb_get_phy() is used to get the of phy used by controller, phy bindings are done through DT.
+
+>    Why are you sure that all these platforms support DT (in all configurations)?
+> It seems to me that you're simply breaking the patched glue layers with this patch.
+> I'll let Felipe decide the fate of this patch though...
+
+You are correct, the bindings of phy and controller need not to done through DT alone, there is a saperate API
+Phy API's available for such bindings done in respective board platform files. 
 
 >
->>> +		phy1: usbphy-gs70@44e10620 {
->>> +			compatible = "ti,dsps-usbphy";
->>> +			reg = <0x44e10620 0x8
->>> +			       0x44e10648 0x4>;
->>> +			reg-names = "phy_ctrl","phy_wkup";
->>> +			id = <0>;
->>> +		};
->>> +
->>> +		phy2: usbphy-gs70@44e10628 {
->>> +			compatible = "ti,dsps-usbphy";
->>> +			reg = <0x44e10628 0x8
->>> +			       0x44e10648 0x4>;
->> The second register conflicts with phy1.
-> The two instances of phy uses common phy wakeup register.
+>>> Signed-off-by: Ravi Babu <ravibabu@ti.com>
+> --
+> Ravi B
 
->>     That's why there is a resource conflict. Have you actually tried to instantiate the devices out of such tree?
->>This register should be declared somewhere above the PHYs I think...
-
-I did not face any problem with this, I have tested both instances of phy used by dual instance controller, worked fine. 
-What do you suggest, in case of common register which both phy have to use this for wakeup functionality.  
-The DT should support this.  What do you suggest in such case?
-
---
-Ravi B
+WBR, Sergei
 
