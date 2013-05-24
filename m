@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3EXXZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 19:25:01 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.99]:24905 "EHLO
+	id S1754101Ab3EXXZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 19:25:39 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.100]:28522 "EHLO
 	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751880Ab3EXXY7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751610Ab3EXXZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 19:24:59 -0400
+	Fri, 24 May 2013 19:25:38 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-160.messagelabs.com!1369437896!5754328!6
-X-Originating-IP: [216.166.12.98]
+X-Msg-Ref: server-14.tower-209.messagelabs.com!1369437868!7352445!4
+X-Originating-IP: [216.166.12.32]
 X-StarScan-Received: 
 X-StarScan-Version: 6.9.6; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/14] misc/ep93xx_pwm: remove ep93xx_pwm_write_tc() inline function
-Date: Fri, 24 May 2013 16:23:00 -0700
+Subject: [PATCH 06/14] misc/ep93xx_pwm: remove ep93xx_pwm_enable() inline function
+Date: Fri, 24 May 2013 16:24:16 -0700
 User-Agent: KMail/1.9.9
 CC: <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
         Ryan Mallon <rmallon@gmail.com>, <mcrapet@gmail.com>,
@@ -25,7 +25,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201305241623.00686.hartleys@visionengravers.com>
+Message-ID: <201305241624.17007.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,48 +38,34 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Ryan Mallon <rmallon@gmail.com>
 Cc: Matthieu Crapet <mcrapet@gmail.com>
 ---
- drivers/misc/ep93xx_pwm.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/misc/ep93xx_pwm.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/drivers/misc/ep93xx_pwm.c b/drivers/misc/ep93xx_pwm.c
-index 06f0c63..ab5a481 100644
+index 7a13304..cf42347 100644
 --- a/drivers/misc/ep93xx_pwm.c
 +++ b/drivers/misc/ep93xx_pwm.c
-@@ -39,11 +39,6 @@ struct ep93xx_pwm {
- 	u32		duty_percent;
- };
+@@ -44,11 +44,6 @@ static inline u16 ep93xx_pwm_read_tc(struct ep93xx_pwm *pwm)
+ 	return readl(pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
+ }
  
--static inline void ep93xx_pwm_write_tc(struct ep93xx_pwm *pwm, u16 value)
+-static inline void ep93xx_pwm_enable(struct ep93xx_pwm *pwm)
 -{
--	writel(value, pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
+-	writel(0x1, pwm->mmio_base + EP93XX_PWMx_ENABLE);
 -}
 -
- static inline u16 ep93xx_pwm_read_tc(struct ep93xx_pwm *pwm)
+ static inline void ep93xx_pwm_disable(struct ep93xx_pwm *pwm)
  {
- 	return readl(pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
-@@ -157,11 +152,11 @@ static ssize_t ep93xx_pwm_set_freq(struct device *dev,
- 
- 		/* If pwm is running, order is important */
- 		if (val > term) {
--			ep93xx_pwm_write_tc(pwm, val);
-+			writel(val, pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
- 			ep93xx_pwm_write_dc(pwm, duty);
- 		} else {
- 			ep93xx_pwm_write_dc(pwm, duty);
--			ep93xx_pwm_write_tc(pwm, val);
-+			writel(val, pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
+ 	writel(0x0, pwm->mmio_base + EP93XX_PWMx_ENABLE);
+@@ -155,7 +150,7 @@ static ssize_t ep93xx_pwm_set_freq(struct device *dev,
  		}
  
  		if (!ep93xx_pwm_is_enabled(pwm))
-@@ -290,7 +285,7 @@ static int __init ep93xx_pwm_probe(struct platform_device *pdev)
- 
- 	/* disable pwm at startup. Avoids zero value. */
- 	ep93xx_pwm_disable(pwm);
--	ep93xx_pwm_write_tc(pwm, EP93XX_PWM_MAX_COUNT);
-+	writel(EP93XX_PWM_MAX_COUNT, pwm->mmio_base + EP93XX_PWMx_TERM_COUNT);
- 	ep93xx_pwm_write_dc(pwm, EP93XX_PWM_MAX_COUNT / 2);
- 
- 	clk_enable(pwm->clk);
+-			ep93xx_pwm_enable(pwm);
++			writel(0x1, pwm->mmio_base + EP93XX_PWMx_ENABLE);
+ 	} else {
+ 		return -EINVAL;
+ 	}
 -- 
 1.8.1.4
 
