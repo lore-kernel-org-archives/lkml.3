@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760125Ab3EXI3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:29:50 -0400
-Received: from smtp-out-103.synserver.de ([212.40.185.103]:1033 "EHLO
-	smtp-out-103.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759437Ab3EXI3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:29:47 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22449
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] regmap: Make regmap-mmio usable from atomic contexts
-Date: Fri, 24 May 2013 10:29:22 +0200
-Message-Id: <1369384162-25196-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S1760140Ab3EXIaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:30:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38844 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759985Ab3EXIaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 04:30:14 -0400
+Date: Fri, 24 May 2013 10:29:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 0/3] x86/microcode: early microcode patch loading
+ support on AMD
+Message-ID: <20130524082948.GA23402@nazgul.tnic>
+References: <1369323618-5820-1-git-send-email-jacob.shin@amd.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C712205633D6C3@ORSMSX106.amr.corp.intel.com>
+ <20130523212301.GA13275@jshin-Toonie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130523212301.GA13275@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for locking.
-To be able to use the regmap API from different contexts (atomic vs non-atomic),
-without the risk of race conditions, we need to use spin_lock_irqsave() and
-spin_lock_irqrestore() instead. A new field, the spinlock_flags field, is added
-to regmap struct to store the flags between regmap_{,un}lock_spinlock(). The
-spinlock_flags field itself is also protected by the spinlock.
+On Thu, May 23, 2013 at 04:23:01PM -0500, Jacob Shin wrote:
+> On Thu, May 23, 2013 at 09:01:21PM +0000, Yu, Fenghua wrote:
+> > > From: Jacob Shin [mailto:jacob.shin@amd.com]
+> > > The following patchset adds early microcode patch loading support on
+> > > AMD systems, on top of the framework introduced by:
+> > >   https://lkml.org/lkml/2012/12/21/193
+> > > 
+> > 
+> > Could you please change Documentation/x86/early-microcode.txt for AMD? At least please add AMD microcode file in cpio name space: kernel/x86/microcode/AuthenticAMD.bin. Users can generate the cpio file with AMD microcode based on your document.
+> 
+> Ah, yes will do. I'll send out another revision tomorrow.
 
-Thanks to Stephen Warren for the suggestion of this particular solution.
+Jacob, would you please wait a bit longer when sending new revisions after
+people have had time to review the current one first?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/internal.h | 1 +
- drivers/base/regmap/regmap.c   | 7 +++++--
- 2 files changed, 6 insertions(+), 2 deletions(-)
+A couple of days is normally a good timeout. :)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index b33a4ff..ae23d83 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -52,6 +52,7 @@ struct regmap_async {
- struct regmap {
- 	struct mutex mutex;
- 	spinlock_t spinlock;
-+	unsigned long spinlock_flags;
- 	regmap_lock lock;
- 	regmap_unlock unlock;
- 	void *lock_arg; /* This is passed to lock/unlock functions */
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 307f5a1..1a01553 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -302,13 +302,16 @@ static void regmap_unlock_mutex(void *__map)
- static void regmap_lock_spinlock(void *__map)
- {
- 	struct regmap *map = __map;
--	spin_lock(&map->spinlock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&map->spinlock, flags);
-+	map->spinlock_flags = flags;
- }
- 
- static void regmap_unlock_spinlock(void *__map)
- {
- 	struct regmap *map = __map;
--	spin_unlock(&map->spinlock);
-+	spin_unlock_irqrestore(&map->spinlock, map->spinlock_flags);
- }
- 
- static void dev_get_regmap_release(struct device *dev, void *res)
--- 
-1.8.0
-
+Thanks.
