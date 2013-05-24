@@ -1,66 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab3EXJh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:37:28 -0400
+	id S1760262Ab3EXJkI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:40:08 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:14209 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752859Ab3EXJhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:37:23 -0400
+	id S1760129Ab3EXJh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 05:37:27 -0400
 X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
-   d="scan'208";a="7355206"
+   d="scan'208";a="7355220"
 From: Tang Chen <tangchen@cn.fujitsu.com>
-To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH v3 08/13] x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
-Date: Fri, 24 May 2013 17:29:17 +0800
-Message-Id: <1369387762-17865-9-git-send-email-tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, mingo@redhat.com,
+        hpa@zytor.com, minchan@kernel.org, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, yinghai@kernel.org, jiang.liu@huawei.com,
+        tj@kernel.org, liwanp@linux.vnet.ibm.com,
+        isimatu.yasuaki@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] mem-hotplug: Skip LOCAL_NODE_DATA pages in memory offline procedure.
+Date: Fri, 24 May 2013 17:30:05 +0800
+Message-Id: <1369387807-17956-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:25:04,
+ 2013/05/24 17:25:48,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:35:56,
-	Serialize complete at 2013/05/24 17:35:56
+ 2013/05/24 17:36:02,
+	Serialize complete at 2013/05/24 17:36:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory_add_physaddr_to_nid() is declared in include/linux/memory_hotplug.h,
-protected by CONFIG_NUMA. And in x86, the definitions are protected by
-CONFIG_MEMORY_HOTPLUG.
+In memory offline procedure, skip pages marked as LOCAL_NODE_DATA.
+For now, this kind of pages are used to store local node pagetables.
 
-memory_add_physaddr_to_nid() uses numa_meminfo to find the physical address's
-nid. It has nothing to do with memory hotplug. And also, it can be used by
-alloc_low_pages() to obtain nid of the allocated memory.
-
-So in x86, also use CONFIG_NUMA to protect it.
+The minimum unit of memory online/offline is a memory block. In a
+block, the movable pages will be offlined as usual (unmapped and
+isolated), and the pagetable pages will be skipped. After the iteration
+of all page, the block will be set as offline, but the kernel can
+still access the pagetable pages. This is user transparent.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/page_alloc.c     |   18 ++++++++++++++++--
+ mm/page_isolation.c |    6 ++++++
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8357c75..b28baf3 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -955,7 +955,7 @@ EXPORT_SYMBOL(cpumask_of_node);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 557b21b..73b8f0b 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5701,11 +5701,18 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
+ 	pfn = page_to_pfn(page);
+ 	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
+ 		unsigned long check = pfn + iter;
++		unsigned long magic;
  
- #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+ 		if (!pfn_valid_within(check))
+ 			continue;
  
--#ifdef CONFIG_MEMORY_HOTPLUG
-+#ifdef CONFIG_NUMA
- int memory_add_physaddr_to_nid(u64 start)
+ 		page = pfn_to_page(check);
++
++		/* Skip pages storing local node kernel data. */
++		magic = (unsigned long)page->lru.next;
++		if (magic == LOCAL_NODE_DATA)
++			continue;
++
+ 		/*
+ 		 * We can't use page_count without pin a page
+ 		 * because another CPU can free compound page.
+@@ -6029,8 +6036,7 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 	struct page *page;
+ 	struct zone *zone;
+ 	int order, i;
+-	unsigned long pfn;
+-	unsigned long flags;
++	unsigned long pfn, flags, magic;
+ 	/* find the first valid pfn */
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn++)
+ 		if (pfn_valid(pfn))
+@@ -6046,6 +6052,14 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 			continue;
+ 		}
+ 		page = pfn_to_page(pfn);
++
++		/* Skip pages storing local node kernel data. */
++		magic = (unsigned long)page->lru.next;
++		if (magic == LOCAL_NODE_DATA) {
++			pfn++;
++			continue;
++		}
++
+ 		/*
+ 		 * The HWPoisoned page may be not in buddy system, and
+ 		 * page_count() is not 0.
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 383bdbb..fb60a27 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -174,6 +174,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 				  bool skip_hwpoisoned_pages)
  {
- 	struct numa_meminfo *mi = &numa_meminfo;
+ 	struct page *page;
++	unsigned long magic;
+ 
+ 	while (pfn < end_pfn) {
+ 		if (!pfn_valid_within(pfn)) {
+@@ -181,6 +182,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 			continue;
+ 		}
+ 		page = pfn_to_page(pfn);
++		magic = (unsigned long)page->lru.next;
++
+ 		if (PageBuddy(page)) {
+ 			/*
+ 			 * If race between isolatation and allocation happens,
+@@ -208,6 +211,9 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
+ 			 */
+ 			pfn++;
+ 			continue;
++		} else if (magic == LOCAL_NODE_DATA) {
++			pfn++;
++			continue;
+ 		}
+ 		else
+ 			break;
 -- 
 1.7.1
 
