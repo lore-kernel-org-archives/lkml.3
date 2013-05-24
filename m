@@ -1,104 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab3EXXbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 19:31:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36550 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3EXXbq (ORCPT
+	id S1755266Ab3EXXb7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 19:31:59 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37388 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab3EXXbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 19:31:46 -0400
-Date: Fri, 24 May 2013 16:31:40 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Paul Taysom <taysom@chromium.org>
-Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org
-Subject: Re: [PATCH] fs: ecryptfs: fixed msync to flush data
-Message-ID: <20130524233139.GA4029@boyd>
-References: <1369344703-22245-1-git-send-email-taysom@chromium.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <1369344703-22245-1-git-send-email-taysom@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 May 2013 19:31:47 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3] PCI: Don't let mmio fallback to must-only, if ioport fails with must+optional
+Date: Fri, 24 May 2013 16:31:23 -0700
+Message-Id: <1369438283-6208-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <CAErSpo6pT2iTMx6U50AeScCjmPu53MOj6-TCnATRj_+EUNz46w@mail.gmail.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+BenH reported that there is some assign unassigned resource problem
+in powerpc.
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It turns out after
+| commit 0c5be0cb0edfe3b5c4b62eac68aa2aa15ec681af
+| Date:   Thu Feb 23 19:23:29 2012 -0800
+|
+|    PCI: Retry on IORESOURCE_IO type allocations
 
-On 2013-05-23 14:31:43, Paul Taysom wrote:
-> When msync is called on a memory mapped file, that
-> data is not flushed to the disk.
->=20
-> In Linux, msync calls fsync for the file. For ecryptfs,
-> fsync just calls the lower level file system's fsync.
-> Changed the ecryptfs fsync code to call filemap_write_and_wait
-> before calling the lower level fsync.
->=20
-> Addresses the problem described in http://crbug.com/239536
->=20
-> Signed-off-by: Paul Taysom <taysom@chromium.org>
-> ---
+even the root bus does not have io port range, it will keep retrying
+to realloc with mmio.
 
-Thanks, Paul! I've pushed this to the eCryptfs next branch:
+Current retry logic is : try with must+optional at first, and if
+it fails with any ioport or mmio, it will try must then try to extend
+must with optional. The reassign will put extended mmio or pref mmio
+in the middle of parent resource range.
+That will prevent other sibling resources to get must-have resources
+or get extended properly.
 
-http://git.kernel.org/cgit/linux/kernel/git/tyhicks/ecryptfs.git/log/?h=3Dn=
-ext
+We can check fail type to see if can we need fall back to must-have
+only, that will keep not needed release resource to be must+optional.
 
-I also marked it for the stable kernel as affecting 3.6 and newer.
+Separate three resource type checking if we need to release
+assigned resource after requested + add_size try.
+1. if there is io port assign fail, will release assigned io port.
+2. if there is pref mmio assign fail, release assigned pref mmio.
+   if assigned pref mmio's parent is non-pref mmio and there
+   is non-pref mmio assign fail, will release that assigned pref mmio.
+3. if there is non-pref mmio assign fail or pref mmio assigned fail,
+   will release assigned non-pref mmio.
 
-As a side note, we need to make ecryptfs_fsync() more selective about
-what gets synced by using filemap_write_and_wait_range() and
-vfs_fsync_range(). Since we're already calling vfs_fsync() for the
-entire lower file, this patch is good enough for now.
+This will be become more often when we have x86 8 sockets or 32 sockets
+system, and those system will have one root bus per socket.
+They will have some root buses do not have ioport range.
 
-Tyler
+-v2: need to remove assigned entries from optional list too.
+-v3: not just checking ioport related, requested by Bjorn.
 
->  fs/ecryptfs/file.c | 1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index 201f0a0..16f509d 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -295,6 +295,7 @@ static int ecryptfs_release(struct inode *inode, stru=
-ct file *file)
->  static int
->  ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
->  {
-> +	filemap_write_and_wait(file->f_mapping);
->  	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
->  }
-> =20
-> --=20
-> 1.8.2.1
->=20
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+---
+ drivers/pci/setup-bus.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 69 insertions(+), 1 deletion(-)
 
-iQIcBAEBCgAGBQJRn/hbAAoJENaSAD2qAscKTLoP/1rv6hWwsnLwlYx1XaGg5C/X
-MC5GRK/lxwsC/vKBnXjJSDl4TXJzQeuaJDJUqjOugO5kj8O5aLjdwCgmtOpO4E26
-AUvC7/Iw8PIrQq72DYlBB0Gh8kvro5RQ6nPeSy+rVcWS8BBFlpqCsaml4PhTFA/w
-kZ4LCPifSLXqmXXU0LuhoC4YXnZecinWNWaHvjO/Z+j9EQ9sZZK2IKg/eQXYDzCj
-vmBlOH58hxa42NVu5mRZ9exajPmmQLPq9OJx+ZBgghKt57x3bfORdy5+cgUwM25R
-ucV77WZYzD6vyaCKzuKLOGTgL1L9709e4ctitDpFo+TU0fIhoUEAp4v/c5J+IpOm
-STaT/Q4eV+p/4/BrQzH1XwSiowK/xFLXpVjWzy3H8fI31Rdee2Mu7x2DriDM+uts
-XFoXiEjwbDYw/5FbgEhPpJYdpXkdaK6X8v59eqFL4v+tX2IWMe3FbXASfzOF+Ppx
-HbH2CvAsIfeWBJ4uocOjJnYhlILj7wq1Q72x/BH50e2cdEPw/G7OCS6XOZeUluN8
-7/ipjqlIR+0jfyIneI46ME7oqzVhUlx9lV6PIMzZ9eoEIuZ4djWO1HI3LV2cGJyl
-bWaQiO6h8pmkiTXQPisPpV4Li0vxulRvwsgVJEOCFIFm3088THRuXo43eHUik5u7
-wPKMq1/CMPsBhBAyIdm6
-=Qk69
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
+Index: linux-2.6/drivers/pci/setup-bus.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/setup-bus.c
++++ linux-2.6/drivers/pci/setup-bus.c
+@@ -300,6 +300,48 @@ static void assign_requested_resources_s
+ 	}
+ }
+ 
++static unsigned long pci_fail_res_type_mask(struct list_head *fail_head)
++{
++	struct pci_dev_resource *fail_res;
++	unsigned long mask = 0;
++
++	/* check failed type */
++	list_for_each_entry(fail_res, fail_head, list)
++		mask |= fail_res->flags;
++
++	/*
++	 * one pref failed resource will set IORESOURCE_MEM,
++	 * as we can allocate pref in non-pref range.
++	 * Will release all asssigned non-pref sibling resources
++	 * according to that bit.
++	 */
++	return mask & (IORESOURCE_IO | IORESOURCE_MEM | IORESOURCE_PREFETCH);
++}
++
++static bool pci_need_to_release(unsigned long mask, struct resource *res)
++{
++	if (res->flags & IORESOURCE_IO)
++		return !!(mask & IORESOURCE_IO);
++
++	/* check pref at first */
++	if (res->flags & IORESOURCE_PREFETCH) {
++		if (mask & IORESOURCE_PREFETCH)
++			return true;
++		/* count pref if its parent is non-pref */
++		else if ((mask & IORESOURCE_MEM) &&
++			 !(res->parent->flags & IORESOURCE_PREFETCH))
++			return true;
++		else
++			return false;
++	}
++
++	if (res->flags & IORESOURCE_MEM)
++		return !!(mask & IORESOURCE_MEM);
++
++	/* should not get here */
++	return false;
++}
++
+ static void __assign_resources_sorted(struct list_head *head,
+ 				 struct list_head *realloc_head,
+ 				 struct list_head *fail_head)
+@@ -312,11 +354,24 @@ static void __assign_resources_sorted(st
+ 	 *  if could do that, could get out early.
+ 	 *  if could not do that, we still try to assign requested at first,
+ 	 *    then try to reassign add_size for some resources.
++	 *
++	 * Separate three resource type checking if we need to release
++	 *  assigned resource after requested + add_size try.
++	 *	1. if there is io port assign fail, will release assigned
++	 *	   io port.
++	 *	2. if there is pref mmio assign fail, release assigned
++	 *	   pref mmio.
++	 *	   if assigned pref mmio's parent is non-pref mmio and there
++	 *	   is non-pref mmio assign fail, will release that assigned
++	 *	   pref mmio.
++	 *	3. if there is non-pref mmio assign fail or pref mmio
++	 *	   assigned fail, will release assigned non-pref mmio.
+ 	 */
+ 	LIST_HEAD(save_head);
+ 	LIST_HEAD(local_fail_head);
+ 	struct pci_dev_resource *save_res;
+-	struct pci_dev_resource *dev_res;
++	struct pci_dev_resource *dev_res, *tmp_res;
++	unsigned long fail_type;
+ 
+ 	/* Check if optional add_size is there */
+ 	if (!realloc_head || list_empty(realloc_head))
+@@ -348,6 +403,19 @@ static void __assign_resources_sorted(st
+ 		return;
+ 	}
+ 
++	/* check failed type */
++	fail_type = pci_fail_res_type_mask(&local_fail_head);
++	/* remove not need to be released assigned res from head list etc */
++	list_for_each_entry_safe(dev_res, tmp_res, head, list)
++		if (dev_res->res->parent &&
++		    !pci_need_to_release(fail_type, dev_res->res)) {
++			/* remove it from realloc_head list */
++			remove_from_list(realloc_head, dev_res->res);
++			remove_from_list(&save_head, dev_res->res);
++			list_del(&dev_res->list);
++			kfree(dev_res);
++		}
++
+ 	free_list(&local_fail_head);
+ 	/* Release assigned resource */
+ 	list_for_each_entry(dev_res, head, list)
