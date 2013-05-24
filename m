@@ -1,128 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3EXREA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:04:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50441 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab3EXRD7 (ORCPT
+	id S1756901Ab3EXREk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:04:40 -0400
+Received: from 11.mo4.mail-out.ovh.net ([46.105.34.195]:34918 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753132Ab3EXREi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:03:59 -0400
-Message-ID: <519F9D63.8000305@oracle.com>
-Date: Fri, 24 May 2013 12:03:31 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 24 May 2013 13:04:38 -0400
+X-Greylist: delayed 102298 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 13:04:38 EDT
+Date: Fri, 24 May 2013 18:52:54 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@maxim.org.za" <linux@maxim.org.za>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
+ "MT_MEMORY_SO"
+Message-ID: <20130524165254.GF24476@game.jcrosoft.org>
+References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
+ <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
+ <20130522001457.GA18614@n2100.arm.linux.org.uk>
+ <B256D81BAE5131468A838E5D7A243641687BB93C@penmbx01>
+ <20130524112029.GW18614@n2100.arm.linux.org.uk>
+ <20130524140322.GD24476@game.jcrosoft.org>
+ <20130524164055.GA18614@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Vahram Martirosyan <vmartirosyan@gmail.com>
-CC: Dave Kleikamp <shaggy@kernel.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
-        jfs-discussion@lists.sourceforge.net, spruce-project@linuxtesting.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Jfs-discussion] [PATCH 1/2] jfs: Several bugs in jfs_freeze()
- and jfs_unfreeze()
-References: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org>
-In-Reply-To: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524164055.GA18614@n2100.arm.linux.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 11232258947684412339
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 03:57 AM, Vahram Martirosyan wrote:
-> The mentioned functions do not pay attention to the error codes returned
-> by the functions updateSuper(), lmLogInit() and lmLogShutdown(). It brings to
-> system crash later when writing to log.
+On 17:40 Fri 24 May     , Russell King - ARM Linux wrote:
+> On Fri, May 24, 2013 at 04:03:22PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 12:20 Fri 24 May     , Russell King - ARM Linux wrote:
+> > > On Fri, May 24, 2013 at 07:11:04AM +0000, Yang, Wenyou wrote:
+> > > > The story is: for sama5d3x with Cortex-A5 core, if not so, when copying
+> > > > code snippet to the internal SRAM, then jump to run this code, but fail
+> > > > to run.
+> > > 
+> > > And that is where your mistake is - you forgot that you're working with
+> > > a CPU with harvard caches which will require some cache maintanence
+> > > between copying the code and executing it.
+> > > 
+> > > You want to look at flush_icache_range() rather than making this memory
+> > > strongly ordered.
+> > 
+> > I understand your point but today we map a SRAM as MT_DEVICE
 > 
-> The patch adds corresponding code to check and return the error codes
-> and to print correct error messages in case of errors.
-> 
-> Besides that the lmLogShutdown() function must not be called when 'nointegrity' mount option is provided.
-> It leads to kernel OOPS.
-> 
-> Found by Linux File System Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
-> 
-> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  fs/jfs/super.c | 29 ++++++++++++++++++++++-------
->  1 file changed, 22 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-> index 2003e83..a3d424d 100644
-> --- a/fs/jfs/super.c
-> +++ b/fs/jfs/super.c
-> @@ -611,11 +611,20 @@ static int jfs_freeze(struct super_block *sb)
->  {
->  	struct jfs_sb_info *sbi = JFS_SBI(sb);
->  	struct jfs_log *log = sbi->log;
-> +	int rc = 0;
->  
->  	if (!(sb->s_flags & MS_RDONLY)) {
->  		txQuiesce(sb);
-> -		lmLogShutdown(log);
-> -		updateSuper(sb, FM_CLEAN);
-> +		rc = lmLogShutdown(log);
-> +		if (rc != 0) {
-> +			jfs_err("lmLogShutdown failed with return code %d", rc);
-> +			return rc;
+> If you map SRAM as MT_DEVICE then you won't be able to execute code from
+> it.  It needs to be a normal memory mapping.
 
-Hmm. I'm not sure about the nicest way to recover here. txQuiesce() has
-been called. This will leave the filesystem effectively frozen, but not
-marked as frozen. Maybe better to call jfs_error() and maybe txResume()
-in an attempt to unblock any blocked threads.
+Yeah that a bug on AT91, by luck it work on armv3/v4 with MT_DEVICE, I should
+have spot it earlier when cleanning the at91 but did not
 
-> +		}
-> +		rc = updateSuper(sb, FM_CLEAN);
-> +		if (rc != 0) {
-> +			jfs_err("updateSuper failed with return code %d", rc);
-> +			return rc;
+That's why Yang change the SRAM mapping as MT_MEMORY_SO
 
-same here, except we know that lmLogShutdown() has already succeeded.
-Maybe we're better off ignoring this return code, since the freezing
-succeeded. Failing to mark the filesystem clean is hardly damaging. It
-just means that fsck will work harder next time, which is probably a
-good idea. This is an unlikely error if everything else has succeeded.
+I agree the commit message need to be re-done
 
-> +		}
->  	}
->  	return 0;
->  }
-> @@ -627,11 +636,17 @@ static int jfs_unfreeze(struct super_block *sb)
->  	int rc = 0;
->  
->  	if (!(sb->s_flags & MS_RDONLY)) {
-> -		updateSuper(sb, FM_MOUNT);
-> -		if ((rc = lmLogInit(log)))
-> -			jfs_err("jfs_unlock failed with return code %d", rc);
-> -		else
-> -			txResume(sb);
-> +		rc = updateSuper(sb, FM_MOUNT);
-> +		if (rc != 0) {
-> +			jfs_err("updateSuper failed with return code %d", rc);
-> +			return rc;
-
-I think I like calling jfs_error() here and letting the system panic,
-the filesystem to be marked as read-only (default), or whatever action
-is desired.
-
-> +		}
-> +		rc = lmLogInit(log);
-> +		if (rc != 0) {
-> +			jfs_err("lmLogInit failed with return code %d", rc);
-> +			return rc;
-
-same here
-
-> +		}
-> +		txResume(sb);
->  	}
->  	return 0;
->  }
-
-I'm going to tweak your patch a bit and see what kind of improvement I
-can make.
-
-Thanks,
-Shaggy
+Best Regards,
+J.
