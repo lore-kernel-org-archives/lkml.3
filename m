@@ -1,237 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760027Ab3EXDvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 23:51:38 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:33780 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759950Ab3EXDvg convert rfc822-to-8bit (ORCPT
+	id S1760034Ab3EXD5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 23:57:46 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28471 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759956Ab3EXD5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 23:51:36 -0400
-Date: Thu, 23 May 2013 22:51:32 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 03/07] Documentation patch of ams AS3722 PMIC against
- linux_3.8.8
-To: Florian Lobmaier <Florian.Lobmaier@ams.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <EB31996D403C2C48A47628A08DCCFD29018405708B@SUX2182.office.amsiag.com>
-	(from Florian.Lobmaier@ams.com on Thu May 23 07:07:37 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1369367492.2776.12@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 May 2013 23:57:45 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-7d-519ee537e65b
+Message-id: <519EE53F.6010005@samsung.com>
+Date: Fri, 24 May 2013 12:57:51 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510
+ Thunderbird/17.0.6
+MIME-version: 1.0
+To: "Felipe F. Tonello" <eu@felipetonello.com>
+Cc: linux-mmc@vger.kernel.org, ben-linux@fluff.org, cjb@laptop.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mmc: sdhci-s3c: Added set_power handler to platdata
+References: <1369244832-23868-1-git-send-email-eu@felipetonello.com>
+ <1369244832-23868-3-git-send-email-eu@felipetonello.com>
+In-reply-to: <1369244832-23868-3-git-send-email-eu@felipetonello.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkSNf86bxAgyWHRS3+TjrGbjFp3QEm
+	i+2vN7JZdM4/y25xedccNosj//sZHdg8fv+axOhx9+tDdo+/q14wexy6spbR4/MmuQDWKC6b
+	lNSczLLUIn27BK6Mpfe+sBQ8FKj42fqWsYHxIm8XIyeHhICJxLd/y9ggbDGJC/fWg9lCAksZ
+	Jf7MioWpmby3h7GLkQsovohRYtrv1WwQzktGiX2L3rB0MXJw8ApoSXzfKAPSwCKgKrGzeR0r
+	iM0moCOx/dtxJhBbVCBMYlNPM5jNKyAo8WPyPbBWEQE9ib7dVSBhZoFCiWcnjrCA2MICPhK7
+	p16HuqdeYvOe32BxTgFXifO/m1kh6nUk9rdOY4Ow5SU2r3nLDHKahMApdommD3MZIe4RkPg2
+	+RDYLgkBWYlNB5gh/pKUOLjiBssERrFZSC6ahWTsLCRjFzAyr2IUTS1ILihOSi8y1CtOzC0u
+	zUvXS87P3cQIjLTT/5717mC8fcD6EGMy0MqJzFKiyfnASM0riTc0NjOyMDUxNTYytzQjTVhJ
+	nFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2OkDoO13M3Da9STXgdt3zq5OPg7L3ec
+	p93JZNc//korG/lfpiv/eWd3bMJ8sY1HF8o6e89gDzZsbM0WMtxx+PpGs6wZxkEvjPgjBWZd
+	nLzlJU/IG6X1b2KNF/GICLrVrP7ZJLE0oVxt2jwN+dT0xuM1HAyL1lSv37Euju/1ieojLP8+
+	P5Hyi1diKc5INNRiLipOBAD7wrRLygIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAV3zp/MCDRpn8Vn8nXSM3WLSugNM
+	Fttfb2Sz6Jx/lt3i8q45bBZH/vczOrB5/P41idHj7teH7B5/V71g9jh0ZS2jx+dNcgGsUQ2M
+	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJygplCXm
+	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM5be+8JS8FCg4mfrW8YGxou8XYyc
+	HBICJhKT9/YwQthiEhfurWfrYuTiEBJYxCgx7fdqKOclo8S+RW9Yuhg5OHgFtCS+b5QBaWAR
+	UJXY2byOFcRmE9CR2P7tOBOILSoQJrGppxnM5hUQlPgx+R5Yq4iAnkTf7iqQMLNAocSzE0dY
+	QGxhAR+J3VOvs4HYQgL1Epv3/AaLcwq4Spz/3cwKUa8jsb91GhuELS+xec1b5gmMArOQbJiF
+	pGwWkrIFjMyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYIj+ZnUDsaVDRaHGAU4GJV4eGfo
+	zAsUYk0sK67MPcQowcGsJMJbGAYU4k1JrKxKLcqPLyrNSS0+xJgMDICJzFKiyfnAJJNXEm9o
+	bGJmZGlkbmhhZGxOmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyy2Zt6ekTTT57duadj
+	yu6gXRmzOF4EzHtpJ54pp2YtsrZIbD2f+dwPm4uemNUfabkju+jrUsmoG5+tebcYmm0yWBur
+	GlZ/9vMpizaTD0Hbe02ExPkd9Iv23OmvKrNJDe6foP3Q/HaXzNubu5b85VtgHTh92+ewHMXf
+	SwVtn5vceztJcMbZNSpKLMUZiYZazEXFiQDajF15KAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2013 07:07:37 AM, Florian Lobmaier wrote:
-> From: Florian Lobmaier <florian.lobmaier@ams.com>
-> 
-> Added multi-function device driver support for ams AS3722 PMIC
-> Includes modules gpio, regulator, rtc, and watchdog
-> 
-> Signed-off-by: Florian Lobmaier <florian.lobmaier@ams.com>
+Hi Felipe,
 
-This seems like company-internal documentation that's got large  
-irrelevant sections once merged into Linus's tree.
+I didn't understand this patch, why need to add set_power?
+We can use to control the power with the fixed regulator.
+Then we can also use the regulator framework.
+And i know also control the module like wifi with rfkill.
+In set_power, what is it controlled?
 
+Best Regards,
+Jaehoon Chung
+On 05/23/2013 02:47 AM, Felipe F. Tonello wrote:
+> From: "Felipe F. Tonello" <eu@felipetonello.com>
+> 
+> This is useful to turn off peripherals that are related to the mmc host. One
+> common case is when the wifi module is connected as an mmc card to the host.
+> 
+> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
 > ---
-> diff -uprN -X Documentation/dontdiff  
-> ../kernel_3.8.8/linux-kernel/Documentation/mfd-as3722.txt  
-> ./Documentation/mfd-as3722.txt
-> --- ../kernel_3.8.8/linux-kernel/Documentation/mfd-as3722.txt	 
-> 1970-01-01 01:00:00.000000000 +0100
-> +++ ./Documentation/mfd-as3722.txt	2013-05-23 13:12:35.000000000  
-> +0200
+>  drivers/mmc/host/sdhci-s3c.c                | 8 ++++++++
+>  include/linux/platform_data/mmc-sdhci-s3c.h | 1 +
+>  2 files changed, 9 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
+> index c6f6246..f7e740c 100644
+> --- a/drivers/mmc/host/sdhci-s3c.c
+> +++ b/drivers/mmc/host/sdhci-s3c.c
+> @@ -360,11 +360,19 @@ static int sdhci_s3c_platform_bus_width(struct sdhci_host *host, int width)
+>  	return 0;
+>  }
+>  
+> +static void sdhci_s3c_set_power(struct sdhci_host *host, bool power)
+> +{
+> +	struct sdhci_s3c *ourhost = to_s3c(host);
+> +	if (ourhost->pdata->set_power)
+> +		ourhost->pdata->set_power(power);
+> +}
+> +
+>  static struct sdhci_ops sdhci_s3c_ops = {
+>  	.get_max_clock		= sdhci_s3c_get_max_clk,
+>  	.set_clock		= sdhci_s3c_set_clock,
+>  	.get_min_clock		= sdhci_s3c_get_min_clock,
+>  	.platform_bus_width	= sdhci_s3c_platform_bus_width,
+> +	.set_power		= sdhci_s3c_set_power,
+>  };
+>  
+>  static void sdhci_s3c_notify_change(struct platform_device *dev, int state)
+> diff --git a/include/linux/platform_data/mmc-sdhci-s3c.h b/include/linux/platform_data/mmc-sdhci-s3c.h
+> index 249f023..55be925 100644
+> --- a/include/linux/platform_data/mmc-sdhci-s3c.h
+> +++ b/include/linux/platform_data/mmc-sdhci-s3c.h
+> @@ -50,6 +50,7 @@ struct s3c_sdhci_platdata {
+>  						      int state));
+>  
+>  	void	(*cfg_gpio)(struct platform_device *dev, int width);
+> +	void	(*set_power)(bool power);
+>  };
+>  
+>  
+> 
 
-Is there a better place for this than the top level Documentation  
-directory?
-
-> @@ -0,0 +1,133 @@
-> +AS3722 PMIC Driver documentation
-> +--------------------------------
-> +Author: Florian Lobmaier <florian.lobmaier@ams.com>
-> +Last update: 2013-04-12
-
-This is information you use git to find.
-
-> +This document describes how to use the multi-function device driver  
-> for
-> +AS3722 PMICs. The AS3722 PMICs are accessed via i2c.
-> +
-> +Version info:
-> +=============
-> +Linux kernel: 3.4.38
-> +Patch created with: $ git diff  
-> f3b5af9a6e2a873110bb8546b42ae7c51f2213b3 > as3722_driver_v0.0.1.patch
-> +Apply patch with:  $ patch -p0 < as3722_driver_v0.0.1.patch
-
-Again: if this goes into the tree with git, you're copying the git  
-history into Documentation.
-
-And "Apply patch with" means what after merging...? (You are submitting  
-this for inclusion, right?)
-
-$ git show f3b5af9a6e2a
-fatal: ambiguous argument 'f3b5af9a6e2a': unknown revision or path not  
-in the working tree.
-
-> +Description of files:
-> +=====================
-> +
-> +as3722_platform-data.c:
-> +Platform data and as3722 regulator initialisation support.
-> +
-> +drivers/mfd/as3722-core.c:
-> +AS3722 communication and device management
-> +
-> +drivers/regulator/as3722-regulator.c:
-> +Adds the LDO's DCDC's and current regulators to /sys/class/regulator.
-> +
-> +drivers/gpio/gpio-as3722.c:
-> +Adds the GPIOs of AS3722 to /sys/class/gpio and to GPIO framework.
-> +
-> +drivers/rtc/rtc-as3722.c:
-> +Adds the RTC functionality of AS3722 to RTC framework.
-> +
-> +drivers/mfd/as3722-test.c:
-> +Regulator test framework. Exports some tests to userspace (see below)
-> +
-> +include/linux/mfd/as3722-reg.h:
-> +Register definitions
-> +
-> +include/linux/mfd/as3722-plat.h:
-> +platform data struct definitions
-
-Putting a one line comment at the top of each file would be more  
-appropriate.
-
-> +How do I configure it?
-> +======================
-> +
-> +1. Configure it in config by selecting
-> +
-> +CONFIG_MFD_CORE=y
-> +CONFIG_MFD_AS3722=y
-> +CONFIG_REGULATOR=y
-> +CONFIG_REGULATOR_AS3722=y
-> +CONFIG_GPIO_AS3722=y
-> +CONFIG_RTC_DRV_AS3722=y
-
-Menuconfig help exists, and forward slash search "AS3722" within  
-menuconfig also exists. There's bound to be a better way to phrase  
-this...
-
-> +2. Configure the driver according to the schematic  by filling out  
-> the
-> +as3722_platform_data. Additionally regulator initial data and  
-> initial register
-> +setup can be done here. Add it to the list of attached devices when
-> +registering the proper i2c bus.
-
-Ok, this looks like it might belong in Documentation. Except it doesn't  
-say how to do any of that.
-
-Also, this does _not_ support device tree? (Given the mention of gpio  
-I'd generally assumed this was arm, but you haven't mentioned any  
-actual use cases for it yet...)
-
-The next section seems actually useful:
-
-> +Testing Regulators:
-> +===================
-> +
-> +# insmod as3722-core.ko
-> +# insmod as3722-regulators.ko
-> +
-> +Regulators using the linux kernel regulator framework can be found at
-> +/sys/class/regulator. Via sysfs its possible to get some status  
-> information:
-> +
-> +# cd /sys/class/regulator/regulator.9
-> +# ls
-> +# ls
-> +device          microvolts      num_users       type
-> +max_microamps   min_microamps   power           uevent
-> +max_microvolts  min_microvolts  state
-> +microamps       name            subsystem
-> +
-> +We can perform the testing by using the as3722-test.ko modules which  
-> provides
-> +a testframework to userspace:
-> +
-> +Mount debugfs
-> +# mount -t debugfs none /sys/kernel/debug/
-> +
-> +Load test modules (needed for regulator tests)
-> +# insmod as3722-test.ko
-> +
-> +Use the provided test-scripts. Transfer the scripts and the  
-> respective
-> +command text files to the rowboat board via adb:
-
-What's a rowboat board? Where are the provided test-scripts?
-
-> +(win cygwin) $ adb shell mkdir -p /testing/ && adb push regtest.sh  
-> /testing/regtest.sh
-> +(win cygwin) $ adb push test-dig-ldo.txt /testing/test-dig-ldo.txt
-> +
-> +Run the script on the beagle-board testing the ldo3:
-> +# sh /testing/regtest.sh as3722-ldo3 /testing/test-dig-ldo.txt
-> +
-> +Example testing the sd1 (using test-sd.txt):
-> +# sh /testing/regtest.sh as3722-sd1 /testing/test-sd.txt
-> +
-> +Testing gpio:
-> +=============
-> +For testing the gpio framework the sysFS functions are used. Of  
-> course
-> +all gpio framework functionality exists as well.
-> +# cd /sys/class/gpio/
-> +
-> +Now "export" and "unexport" files should be available. Use export  
-> function
-> +to create a gpio211 node for GPIO #211 if that is not requested by  
-> kernel
-> +code yet. (GPIO #211 is used as an example number, please substitute  
-> with
-> +a valid AS3722 gpio number):
-> +# echo 211 > export
-> +
-> +The gpio signal for gpio #211 should now be available at:
-> +# ls /sys/class/gpio/gpio211/
-> +direction	edge
-> +value		active_low
-> +
-> +This gpio framework files may now be used to setup and test the gpio.
-> +Please refer to gpio.txt documentation on how to use the gpio  
-> framework
-> +attributes.
-> +
-> +Testing rtc:
-> +============
-> +The sysfs interface under /sys/class/rtc/rtcN provides access to  
-> various
-> +rtc attributes without requiring the use of ioctls. All dates and  
-> times
-> +are in the RTC's timezone, rather than in system time.
-> +# cd /sys/class/rtc/rtc0/
-> +date		max_user_freq	since_epoch	wakealarm
-> +hctosys		name		time
-> +
-> +In order to set the current time or alarm time, IOCTL interface  
-> should
-> +be used. The ioctl calls are supported by /dev/rtc and by the RTC  
-> class
-> +framework.
-> +
-> +To test the rtc via IOCTL interface calls, the file rtctest.c copied  
-> from
-> +kernel/Documentation/rtc.txt can be used.
-
-I don't object to it going in as part of a series, but I'm not going to  
-ack it because it needs cleanup.
-
-Rob
