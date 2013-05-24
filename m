@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab3EXWBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 18:01:51 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:49365 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3EXWBt (ORCPT
+	id S1756237Ab3EXWFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 18:05:54 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41952 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab3EXWFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 18:01:49 -0400
-Message-ID: <519FE349.7050208@samsung.com>
-Date: Sat, 25 May 2013 07:01:45 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Fri, 24 May 2013 18:05:52 -0400
+X-IronPort-AV: E=Sophos;i="4.87,737,1363158000"; 
+   d="scan'208";a="50632576"
+Date: Fri, 24 May 2013 15:05:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: avoid mis-detecting some V7 cores in the
+ decompressor
+Message-ID: <20130524220539.GB599@codeaurora.org>
+References: <1368049671-22879-1-git-send-email-sboyd@codeaurora.org>
+ <5193E424.9090605@codeaurora.org>
+ <519E57D2.3050000@codeaurora.org>
+ <20130523231531.GT18614@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: EXYNOS: add PM dependency to PM_GENERIC_DOMAINS
- for Exynos4210
-References: <001a01ce5041$1b9ddd30$52d99790$@samsung.com>
-In-Reply-To: <001a01ce5041$1b9ddd30$52d99790$@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130523231531.GT18614@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/13 10:19, Jingoo Han wrote:
-> PM_GENERIC_DOMAINS needs PM dependency.
->
-> Fixed build warning as below:
->
-> warning: (PLAT_S3C64XX&&  CPU_EXYNOS4210) selects PM_GENERIC_DOMAINS which has unmet direct dependencies (PM)
+On 05/24, Russell King - ARM Linux wrote:
+> On Thu, May 23, 2013 at 10:54:26AM -0700, Stephen Boyd wrote:
+> > On 05/15/13 12:38, Stephen Boyd wrote:
+> > > On 05/08/13 14:47, Stephen Boyd wrote:
+> > >> From: Brian Swetland <swetland@google.com>
+> > >>
+> > >> Currently v7 CPUs with an MIDR that has no bits set in the range
+> > >> [16:12] will be detected as old ARM CPUs with no caches and so
+> > >> the cache will never be turned on during decompression. ARM's
+> > >> Cortex chips have an 0xC in the range [16:12] so they never match
+> > >> this entry, but Qualcomm's Scorpion and Krait processors never
+> > >> set these bits to anything besides 0 so they always match.
+> > >>
+> > >> Skip this entry if we've compiled in support for v7 CPUs. This
+> > >> allows kernel decompression to happen nearly instantly instead of
+> > >> taking over 20 seconds.
+> > >>
+> > >> Signed-off-by: Brian Swetland <swetland@google.com>
+> > >> [sboyd: Clarified and extended commit text]
+> > >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > >> ---
+> > > Ping?
+> > 
+> > Russell, shall I add this to the patch tracker?
+> 
+> Yes please.
+> 
 
-If so, PLAT_S3C64XX should be fixed together.
+Ok, thanks.
 
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index 2057853..c04c4ee 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -8,7 +8,7 @@ config PLAT_S3C64XX
-  	bool
-  	depends on ARCH_S3C64XX
-  	default y
--	select PM_GENERIC_DOMAINS
-+	select PM_GENERIC_DOMAINS if PM
-  	select SAMSUNG_WAKEMASK
-  	help
-  	  Base platform code for any Samsung S3C64XX device
+I've noticed another problem now that our caches are used. On MSM
+we have TEXT_OFFSET set to at least 0x208000 if we've built-in
+support for MSM8x60/8960. If I boot a kernel with the MSM code
+built-in that requires the higher text offset, but I load my
+compressed kernel below that address (such as 0x0) the
+decompression fails.
 
-> warning: (PLAT_S3C64XX&&  CPU_EXYNOS4210) selects PM_GENERIC_DOMAINS which has unmet direct dependencies (PM)
-> arch/arm/kernel/return_address.c:63:2: warning: #warning "TODO: return_address should use unwind tables" [-Wcpp]
-> drivers/base/power/domain.c: In function '__pm_genpd_add_device':
-> drivers/base/power/domain.c:1422:2: error: implicit declaration of function 'genpd_acquire_lock'
-> [-Werror=implicit-function-declaration]
-> drivers/base/power/domain.c:1466:2: error: implicit declaration of function 'genpd_release_lock'
-> [-Werror=implicit-function-declaration]
-> drivers/base/power/domain.c: In function 'pm_genpd_add_subdomain':
-> drivers/base/power/domain.c:1649:3: error: implicit declaration of function 'genpd_sd_counter_inc'
-> [-Werror=implicit-function-declaration]
-> drivers/base/power/domain.c: In function 'pm_genpd_remove_subdomain':
-> drivers/base/power/domain.c:1721:4: error: implicit declaration of function 'genpd_sd_counter_dec'
-> [-Werror=implicit-function-declaration]
-> drivers/base/power/domain.c: In function 'pm_genpd_attach_cpuidle':
-> drivers/base/power/domain.c:1887:2: error: implicit declaration of function 'genpd_recalc_cpu_exit_latency'
-> [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
->
-> Signed-off-by: Jingoo Han<jg1.han@samsung.com>
-> ---
->   arch/arm/mach-exynos/Kconfig |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index d19edff..1f7ddb2 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -34,7 +34,7 @@ config CPU_EXYNOS4210
->   	default y
->   	depends on ARCH_EXYNOS4
->   	select ARM_CPU_SUSPEND if PM
-> -	select PM_GENERIC_DOMAINS
-> +	select PM_GENERIC_DOMAINS if PM
->   	select S5P_PM if PM
->   	select S5P_SLEEP if PM
->   	select SAMSUNG_DMADEV
+This happens because the page tables are written into the
+compressed data region before we relocate ourself to a higher
+location.
+
+Here's some ascii art to show the problem
+
+We start off at 0x0
+
+ 0x000000 +---------+
+          |         |
+          | zImage  |
+ 0x208000 |---------| <- r4 (zreladdr)
+          | zImage  |
+ 0x300000 +---------+ <- _edata
+
+Then we run far enough to call cache_on which goes ahead and
+calls __setup_mmu and sets up our page tables.
+
+ 0x008000 +---------+
+          |         |
+          | zImage  |
+          |         |
+ 0x204000 |---------|
+          |  pgdir  |
+ 0x208000 |---------| <- r4 (zreladdr)
+          |         |
+          | zImage  |
+          |         |
+ 0x300000 +---------+ <- _edata
+
+This is bad because we just wrote our page tables into the
+compressed data. Nobody notices though and we finish relocating
+ourselves and then we call decompress_kernel() which fails
+randomly. (BTW, why does error() sit in a while loop forever? We
+can't get any information about why the decompression failed if
+we have debug_ll enabled. I had to patch the error() routine to
+not while loop forever to get that print after do_decompress to
+be useful.)
+
+I see a few solutions.
+
+ 1) Relocate with caches off and then turn on caches after we're
+    running in a location where we won't overwrite ourselves.
+
+ 2) Have temporary page tables for the relocation phase that live
+    just below the location we're going to relocate to.
+
+ 3) Force bootloaders loading these types of images to load the
+    zImage at least as high as the TEXT_OFFSET is compiled to.
+
+I don't think we can convince everyone that #3 is ok to do. I'm
+leaning towards #2 since we get all the benefits of the cache
+during the relocation phase but #1 is the obviously simple fix.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
