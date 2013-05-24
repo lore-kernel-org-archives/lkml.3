@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab3EXAhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 20:37:07 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:35705 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757810Ab3EXAhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 20:37:05 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: David Woodhouse <dwmw2@infradead.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] x86/iommu: fix dma pte address size error
-Date: Fri, 24 May 2013 08:35:56 +0800
-Message-Id: <1369355756-1030-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1759177Ab3EXAhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 20:37:25 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43637 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757915Ab3EXAhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 20:37:22 -0400
+Message-ID: <1369355784.2080.5.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] x86/iommu: use bit structures for context_entry
+From: Joe Perches <joe@perches.com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1369354931-19373-1-git-send-email-zhen-hual@hp.com>
+References: <1369354931-19373-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 23 May 2013 17:36:24 -0700
+Mime-Version: 1.0
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Intel Vt-D specs, Chapter 9.3 Page-Table Entry,
-The size of ADDR(address) field is 12:51, but the function dma_pte_addr
- treats it as 12:63.
+On Fri, 2013-05-24 at 08:22 +0800, Li, Zhen-Hua wrote:
+> There is a structure named context_entry used by intel iommu, and there
+> are some bit operations on it. Use bit structure may make these operations
+> easy.
+[]
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+[]
+> @@ -221,55 +221,28 @@ get_context_addr_from_root(struct root_entry *root)
+>   * 8-23: domain id
+>   */
+>  struct context_entry {
+> -	u64 lo;
+> -	u64 hi;
+> +	union {
+> +		struct {
+> +			u64	present:1,
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/intel-iommu.c   |    4 ++--
- include/linux/dma_remapping.h |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+why use struct and union at all?
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index b4f0e28..c6d2847 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -311,10 +311,10 @@ static inline void dma_set_pte_prot(struct dma_pte *pte, unsigned long prot)
- static inline u64 dma_pte_addr(struct dma_pte *pte)
- {
- #ifdef CONFIG_64BIT
--	return pte->val & VTD_PAGE_MASK;
-+	return pte->val & DMA_PTE_MASK;
- #else
- 	/* Must have a full atomic 64-bit read */
--	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
-+	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & DMA_PTE_MASK;
- #endif
- }
- 
-diff --git a/include/linux/dma_remapping.h b/include/linux/dma_remapping.h
-index 57c9a8a..7a1e212 100644
---- a/include/linux/dma_remapping.h
-+++ b/include/linux/dma_remapping.h
-@@ -16,6 +16,8 @@
- #define DMA_PTE_WRITE (2)
- #define DMA_PTE_LARGE_PAGE (1 << 7)
- #define DMA_PTE_SNP (1 << 11)
-+#define DMA_PTE_ADD_LENGTH (40)
-+#define DMA_PTE_MASK	((((u64)1 << DMA_PTE_ADD_LENGTH) - 1) << VTD_PAGE_SHIFT)
- 
- #define CONTEXT_TT_MULTI_LEVEL	0
- #define CONTEXT_TT_DEV_IOTLB	1
--- 
-1.7.10.4
+Why not just:
+
+struct context_entry {
+	u64	present:1,
+		fpd:1,
+		translation_type:2,
+		reserved_l:8,
+		asr:52;
+	u64	aw:3,
+		avail:4,
+		reserved_h1:1,
+		did:16,
+		reserved_h2:40;
+}; 
+
+> @@ -743,7 +716,8 @@ static void clear_context_table(struct intel_iommu *iommu, u8 bus, u8 devfn)
+[]
+>  	if (context) {
+> -		context_clear_entry(&context[devfn]);
+> +		context[devfn].lo = 0;
+> +		context[devfn].hi = 0;
+
+		memset(&context[devfn], 0, sizeof(...))
+
 
