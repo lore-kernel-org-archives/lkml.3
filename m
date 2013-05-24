@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3EXMgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 08:36:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61483 "EHLO mx1.redhat.com"
+	id S1755273Ab3EXMgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 08:36:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab3EXMgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 08:36:16 -0400
+	id S1751787Ab3EXMgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 08:36:36 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/25] perf tools: Move programs check into config/Makefile
-Date: Fri, 24 May 2013 14:35:06 +0200
-Message-Id: <1369398928-9809-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/25] perf tools: Move slang check config into config/Makefile
+Date: Fri, 24 May 2013 14:35:12 +0200
+Message-Id: <1369398928-9809-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
 References: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving programs check into config/Makefile.
+Moving slang check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,83 +41,91 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 24 ++++++++----------------
- tools/perf/config/Makefile | 10 ++++++++++
- 2 files changed, 18 insertions(+), 16 deletions(-)
+ tools/perf/Makefile        | 39 +++++++++++++--------------------------
+ tools/perf/config/Makefile | 17 +++++++++++++++++
+ 2 files changed, 30 insertions(+), 26 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 10b4c7e..ecb0e6f 100644
+index 57d39ed..f0c23ce 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -58,6 +58,14 @@ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+@@ -99,10 +99,6 @@ ifeq ($(config),1)
+ include config/Makefile
+ endif
  
-+RM      = rm -f
-+MKDIR   = mkdir
-+FIND    = find
-+INSTALL = install
-+FLEX    = flex
-+BISON   = bison
-+STRIP  ?= strip
-+
- # include config/Makefile by default and rule out
- # non-config cases
- config := 1
-@@ -100,7 +108,6 @@ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
--STRIP ?= strip
- 
+-ifdef NO_NEWT
+-	NO_SLANG=1
+-endif
+-
  # Among the variables below, these:
  #   perfexecdir
-@@ -137,13 +144,6 @@ lib = lib
- 
- export prefix bindir sharedir sysconfdir
- 
--RM = rm -f
--MKDIR = mkdir
--FIND = find
--INSTALL = install
--FLEX = flex
--BISON= bison
--
- # sparse is architecture-neutral, which means that we need to tell it
- # explicitly what architecture to check for. Fix this up for yours..
- SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
-@@ -152,14 +152,6 @@ ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- -include config/feature-tests.mak
- 
--ifeq ($(call get-executable,$(FLEX)),)
--	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
--endif
--
--ifeq ($(call get-executable,$(BISON)),)
--	dummy := $(error Error: $(BISON) is missing on this system, please install it)
--endif
--
- ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
+ #   template_dir
+@@ -509,28 +505,19 @@ ifndef NO_LIBAUDIT
  endif
+ 
+ ifndef NO_SLANG
+-	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
+-	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
+-		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
+-	else
+-		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+-		BASIC_CFLAGS += -I/usr/include/slang
+-		BASIC_CFLAGS += -DSLANG_SUPPORT
+-		EXTLIBS += -lslang
+-		LIB_OBJS += $(OUTPUT)ui/browser.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/util.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/progress.o
+-		LIB_H += ui/browser.h
+-		LIB_H += ui/browsers/map.h
+-		LIB_H += ui/keysyms.h
+-		LIB_H += ui/libslang.h
+-	endif
++	LIB_OBJS += $(OUTPUT)ui/browser.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++	LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
++	LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++	LIB_OBJS += $(OUTPUT)ui/tui/util.o
++	LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
++	LIB_OBJS += $(OUTPUT)ui/tui/progress.o
++	LIB_H += ui/browser.h
++	LIB_H += ui/browsers/map.h
++	LIB_H += ui/keysyms.h
++	LIB_H += ui/libslang.h
+ endif
+ 
+ ifndef NO_GTK2
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index fe317c2..04bf8ac 100644
+index 52d6fe9..008b212 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -32,3 +32,13 @@ endif
- ifeq ($(NO_PERF_REGS),0)
-         BASIC_CFLAGS += -DHAVE_PERF_REGS
+@@ -208,3 +208,20 @@ ifndef NO_LIBAUDIT
+ 		EXTLIBS += -laudit
+ 	endif
  endif
 +
-+-include config/feature-tests.mak
-+
-+ifeq ($(call get-executable,$(FLEX)),)
-+	dummy := $(error Error: $(FLEX) is missing on this system, please install it)
++ifdef NO_NEWT
++	NO_SLANG=1
 +endif
 +
-+ifeq ($(call get-executable,$(BISON)),)
-+	dummy := $(error Error: $(BISON) is missing on this system, please install it)
++ifndef NO_SLANG
++	FLAGS_SLANG=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
++	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
++		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
++		NO_SLANG := 1
++	else
++		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
++		BASIC_CFLAGS += -I/usr/include/slang
++		BASIC_CFLAGS += -DSLANG_SUPPORT
++		EXTLIBS += -lslang
++	endif
 +endif
 -- 
 1.7.11.7
