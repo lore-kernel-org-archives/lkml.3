@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3EXQyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 12:54:47 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23527 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755706Ab3EXQyp (ORCPT
+	id S1756766Ab3EXRAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:00:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57032 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab3EXRAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 12:54:45 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18F/NS9VSJIWOxzSFqf4Q3PVI6RswnDJ44=
-Date: Fri, 24 May 2013 12:53:38 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for
- Kirkwood SoCs
-Message-ID: <20130524165338.GW31290@titan.lakedaemon.net>
-References: <1369154510-4927-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130522201607.GA18823@obsidianresearch.com>
- <20130523160111.GP31290@titan.lakedaemon.net>
- <20130523171112.GB31281@obsidianresearch.com>
- <20130523172339.GQ31290@titan.lakedaemon.net>
- <20130523175357.GB2821@obsidianresearch.com>
- <20130523184028.GU31290@titan.lakedaemon.net>
- <519E9ADA.3040204@gmail.com>
+	Fri, 24 May 2013 13:00:19 -0400
+Date: Fri, 24 May 2013 17:59:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: "Yang, Wenyou" <Wenyou.Yang@atmel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@maxim.org.za" <linux@maxim.org.za>
+Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
+	"MT_MEMORY_SO"
+Message-ID: <20130524165934.GC18614@n2100.arm.linux.org.uk>
+References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com> <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com> <20130522001457.GA18614@n2100.arm.linux.org.uk> <B256D81BAE5131468A838E5D7A243641687BB93C@penmbx01> <20130524112029.GW18614@n2100.arm.linux.org.uk> <20130524140322.GD24476@game.jcrosoft.org> <20130524164055.GA18614@n2100.arm.linux.org.uk> <20130524165254.GF24476@game.jcrosoft.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <519E9ADA.3040204@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130524165254.GF24476@game.jcrosoft.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 12:40:26AM +0200, Sebastian Hesselbarth wrote:
-> On 05/23/2013 08:40 PM, Jason Cooper wrote:
-> >On Thu, May 23, 2013 at 11:53:57AM -0600, Jason Gunthorpe wrote:
-> >>On Thu, May 23, 2013 at 01:23:39PM -0400, Jason Cooper wrote:
-> >>>Shouldn't it rather be
-> >>>
-> >>>	compatible = "marvell,kirkwood-eth", "marvell,orion-eth";
-> >>
-> >>Not sure about orion-eth?
-
-Sorry, yep, one or the other.
-
-> Jason, Jason,
-
-For a second, I read this as "tsk tsk tsk..." ;-)
-
-> sorry I didn't came back to this conversation earlier. I already
-> reworked the patch to rely on
-> of_device_is_compatible(.."marvell,kirkwood-eth"..). This is a
-> kirkwood only thing as other Orions cannot do clock gating or
-> retain critcal register content (Dove). I will stick with orion-eth
-> for all other and maybe introduce new compatible strings (and new
-> fixes) as soon as issues surface.
-
-Okay, as I mentioned to Jason, I would like to test 6282 before we
-settle on this path.  Other than that, I'm fine with it.
-
-> >>>I'm inclined to go with of_machine_is_compatible() since the only
-> >>>concrete difference we know is that the tweak is needed on kirkwood and
-> >>>nowhere else.
-> >>
-> >>But there is a larger problem here then just this one bit.
-> >>
-> >>The PSC1 register must be set properly for the board layout, and today
-> >>we rely on the bootloader to set it. In fact, even with Sebastian's
-> >>change the ethernet port won't work without bootloader
-> >>intervention. The PortReset bit should also be cleared by the driver
-> >>(and it is only present on some variants of this IP block,
-> >>apparently).
+On Fri, May 24, 2013 at 06:52:54PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 17:40 Fri 24 May     , Russell King - ARM Linux wrote:
+> > On Fri, May 24, 2013 at 04:03:22PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > > On 12:20 Fri 24 May     , Russell King - ARM Linux wrote:
+> > > > On Fri, May 24, 2013 at 07:11:04AM +0000, Yang, Wenyou wrote:
+> > > > > The story is: for sama5d3x with Cortex-A5 core, if not so, when copying
+> > > > > code snippet to the internal SRAM, then jump to run this code, but fail
+> > > > > to run.
+> > > > 
+> > > > And that is where your mistake is - you forgot that you're working with
+> > > > a CPU with harvard caches which will require some cache maintanence
+> > > > between copying the code and executing it.
+> > > > 
+> > > > You want to look at flush_icache_range() rather than making this memory
+> > > > strongly ordered.
+> > > 
+> > > I understand your point but today we map a SRAM as MT_DEVICE
+> > 
+> > If you map SRAM as MT_DEVICE then you won't be able to execute code from
+> > it.  It needs to be a normal memory mapping.
 > 
-> Actually, fixing modular scenarios is only for the sake of multiarch
-> someday. I don't see the point in running current kernel without eth
-> compiled in _on a NAS SoC_ ;)
+> Yeah that a bug on AT91, by luck it work on armv3/v4 with MT_DEVICE, I should
+> have spot it earlier when cleanning the at91 but did not
+> 
+> That's why Yang change the SRAM mapping as MT_MEMORY_SO
 
-Good point, but if the eth can be gated to save power, we shouldn't
-limit the user's ability just because the SoC is primarily in NAS's.
-
-thx,
-
-Jason.
+I said "normal memory".  Strongly ordered is not "normal memory".
