@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab3EXLLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 07:11:43 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:46558 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3EXLLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 07:11:40 -0400
-Message-ID: <519F4AE7.8000003@gmail.com>
-Date: Fri, 24 May 2013 13:11:35 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	id S1751820Ab3EXLNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 07:13:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52182 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091Ab3EXLNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 07:13:07 -0400
+Date: Fri, 24 May 2013 13:09:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Russ Anderson <rja@sgi.com>, Matthew Garrett <matthew.garrett@nebula.com>,
+        matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Message-ID: <20130524110911.GA32220@nazgul.tnic>
+References: <20130522162747.GA20816@sgi.com>
+ <20130523115801.GJ14575@console-pimps.org>
+ <20130523203234.GD20913@sgi.com>
+ <20130524074331.GL14575@console-pimps.org>
 MIME-Version: 1.0
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH RFC v2] media: OF: add sync-on-green endpoint property
-References: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1368710287-8741-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130524074331.GL14575@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prabhakar,
+On Fri, May 24, 2013 at 08:43:31AM +0100, Matt Fleming wrote:
+> What appears to be happening is that your the EFI runtime services
+> code is calling into the EFI boot services code, which is definitely
+> a bug in your firmware because we're at runtime, but we've seen
+> other machines that do similar things so we usually handle it just
+> fine. However, what makes your case different, and the reason you
+> see the above splat, is that it's using the physical address of
+> the EFI boot services region, not the virtual one we setup with
+> SetVirtualAddressMap(). Which is a second firmware bug.
 
-On 05/16/2013 03:18 PM, Lad Prabhakar wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->
-> This patch adds "sync-on-green" property as part of
-> endpoint properties and also support to parse them in the parser.
+I'm speechless. Let's have someone else do the ranting this time:
 
-> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-> @@ -101,6 +101,8 @@ Optional endpoint properties
->     array contains only one entry.
->   - clock-noncontinuous: a boolean property to allow MIPI CSI-2 non-continuous
->     clock mode.
-> +-sync-on-green: a boolean property indicating to sync with the green signal in
-> + RGB.
+http://www.happyassassin.net/2013/05/03/a-day-in-the-life-of-a-firmware-engineer/
 
-Are you sure this is what you need for the TVP7002 chip ?
+> Again, we have seen other machines that access
+> physical addresses after SetVirtualAddressMap(), but until now we
+> haven't had any non-optional code that triggered them.
+> 
+> The only reason I can see that the offending commit would introduce this
+> problem is because it calls QueryVariableInfo() at boot time. I notice
+> that your machine is an SGI UV one, is there any chance you could get a
+> firmware fix for this? If possible, it would be also good to confirm
+> that it's this chunk of code in setup_efi_vars(),
+> 
+> 	status = efi_call_phys4(sys_table->runtime->query_variable_info,
+> 				EFI_VARIABLE_NON_VOLATILE |
+> 				EFI_VARIABLE_BOOTSERVICE_ACCESS |
+> 				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
+> 				&remaining_size, &var_size);
+> 
+> that later makes GetNextVariable() jump to the physical address of the
+> EFI Boot Services region. Because if not, we need to do some more
+> digging.
+> 
+> Borislav, how are your 1:1 mapping patches coming along? In theory, once
+> those are merged we can gracefully workaround these kinds of issues.
 
-I think we should differentiate between analog and digital signals and 
-the related
-device's configuration. AFAIU for the analog part there can be various video
-sychronisation methods, i.e. ways in which the synchronisation signals are
-transmitted along side the video component (RGB or luma/chroma) signals. 
-According
-to [1] (presumably not most reliable source of information) there are 
-following
-methods of transmitting sync signals:
+What do you mean, map boot time functions 1:1 too?
 
-  - Separate sync
-  - Composite sync
-  - Sync-on-green (SOG)
-  - Sync-on-luminance
-  - Sync-on-composite
-
-And all these seem to refer to analog video signal.
-
- From looking at Figure 8 "TVP7002 Application Example" in the TVP7002's 
-datasheet
-([2], p. 52) and your initial TVP7002 patches it looks like what you 
-want is to
-specify polarity of the SOGOUT signal, so the processor that receives 
-this signal
-can properly interpret it, is it correct ?
-
-If so then wouldn't it be more appropriate to define e.g. 'sog-active' 
-property
-and media bus flags:
-	V4L2_MBUS_SYNC_ON_GREEN_ACTIVE_LOW
-	V4L2_MBUS_SYNC_ON_GREEN_ACTIVE_HIGH
-?
-
-And for synchronisation method on the analog part we could perhaps define
-'component-sync' or similar property that would enumerate all possible
-synchronisation methods. We might as well use separate boolean properties,
-but I'm a bit concerned about the increasing number of properties that need
-to be parsed for each parallel video bus "endpoint".
-
-Anyway I'm not sure if we would already have use cases for the 
-'component-sync'
-property.
-
-[1] http://en.wikipedia.org/wiki/Component_video_sync
-[2] 
-http://www.ti.com/general/docs/lit/getliterature.tsp?genericPartNumber=tvp7002&fileType=pdf
-
->   Example
-> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-> index aa59639..b51d61f 100644
-> --- a/drivers/media/v4l2-core/v4l2-of.c
-> +++ b/drivers/media/v4l2-core/v4l2-of.c
-> @@ -100,6 +100,9 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
->   	if (!of_property_read_u32(node, "data-shift",&v))
->   		bus->data_shift = v;
->
-> +	if (of_get_property(node, "sync-on-green",&v))
-> +		flags |= V4L2_MBUS_SYNC_ON_GREEN;
-> +
->   	bus->flags = flags;
->
->   }
-> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-> index 83ae07e..cf2c66f9 100644
-> --- a/include/media/v4l2-mediabus.h
-> +++ b/include/media/v4l2-mediabus.h
-> @@ -40,6 +40,7 @@
->   #define V4L2_MBUS_FIELD_EVEN_HIGH		(1<<  10)
->   /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->   #define V4L2_MBUS_FIELD_EVEN_LOW		(1<<  11)
-> +#define V4L2_MBUS_SYNC_ON_GREEN		(1<<  12)
-
---
-Regards,
-Sylwester
+In any case, I think I have an idea about the bug I was discussing with
+hpa recently but I need to do more experimenting. I have the next week
+off, though, so don't hold your breath just yet :).
