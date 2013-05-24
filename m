@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab3EXPmf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 11:42:35 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:11711 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab3EXPme (ORCPT
+	id S1756694Ab3EXPmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 11:42:51 -0400
+Received: from 1.mo4.mail-out.ovh.net ([178.33.248.196]:52091 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756664Ab3EXPmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 11:42:34 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-CC: <b.brezillon@overkiz.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.10 #2
-Date: Fri, 24 May 2013 17:42:31 +0200
-Message-ID: <1369410151-7837-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-Organization: atmel
+	Fri, 24 May 2013 11:42:50 -0400
+X-Greylist: delayed 94980 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 11:42:50 EDT
+Date: Fri, 24 May 2013 17:38:35 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-fbdev@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [RFC] Add co-maintainer for fbdev
+Message-ID: <20130524153835.GF15839@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 9977162025138039582
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
+Hi Florian,
 
-Second AT91 fixes pull-request for 3.10-rc. The PMC definition fix is the most
-important of this batch.
+	As you seems very busy I'd like to propose the help you to handle the
+	fbdev subsystem to easier the rich of the fbdev patch to Linus
 
-Thanks, best regards,
+	As I'm working on fbdev on at91 and others and already Co-Maintain the
+	at91 mach on ARM
 
-The following changes since commit b7a8ca5173ef9aa55fa039d7c216426ff0b25a12:
+	And if you are not willing to continue I could take over
 
-  ARM: at91: rm9200 fix time support (2013-05-15 12:37:45 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 144ea15e4fefbee14a7dcb05c7cd0822fda3ebf6:
-
-  ARM: at91/sama5: fix incorrect PMC pcr div definition (2013-05-24 10:53:51 +0200)
-
-----------------------------------------------------------------
-One definition fix that can lead to mis-clock some
-AT91 peripherals on SAMA5.
-Two DT related fixes.
-
-----------------------------------------------------------------
-Boris BREZILLON (1):
-      ARM: at91/dt: fix macb pinctrl_macb_rmii_mii_alt definition
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: at91sam9n12: move external irq declatation to DT
-
-Josh Wu (1):
-      ARM: at91/sama5: fix incorrect PMC pcr div definition
-
- arch/arm/boot/dts/at91sam9260.dtsi         | 2 +-
- arch/arm/boot/dts/at91sam9n12.dtsi         | 1 +
- arch/arm/mach-at91/at91sam9n12.c           | 6 ------
- arch/arm/mach-at91/include/mach/at91_pmc.h | 6 +++---
- 4 files changed, 5 insertions(+), 10 deletions(-)
-
--- 
-Nicolas Ferre
+Best Regards,
+J.
