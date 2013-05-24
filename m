@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3EXOlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:41:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45357 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab3EXOlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:41:44 -0400
-Message-ID: <519F7C2E.2060409@cogentembedded.com>
-Date: Fri, 24 May 2013 18:41:50 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1756172Ab3EXOmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:42:21 -0400
+Received: from imentarabar.com ([89.144.129.18]:4056 "EHLO host2-askiran"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753767Ab3EXOmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 10:42:20 -0400
+Reply-To: <p.imanzadeh@iautalesh.ac.ir>
+From: "Webmail** Customers ** Helpdesk Team" <p.imanzadeh@iautalesh.ac.ir>
+Subject: Attn:webmail customers  Online Services.!!
+Date: Fri, 24 May 2013 11:36:34 +0100
 MIME-Version: 1.0
-To: "B, Ravi" <ravibabu@ti.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: Re: [PATCH v1 2/9] usb: musb: nop: remove unused nop_xceiv_(un)register
- APIs from glue
-References: <1369288888-8614-1-git-send-email-ravibabu@ti.com> <1369288888-8614-3-git-send-email-ravibabu@ti.com> <519E2612.5000904@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE3E31@DBDE04.ent.ti.com> <519E5E2E.4070104@cogentembedded.com> <6C6B28D4DC342643927BEAFCE8707BF63EAE52AA@DBDE04.ent.ti.com>
-In-Reply-To: <6C6B28D4DC342643927BEAFCE8707BF63EAE52AA@DBDE04.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130523-1, 05/23/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000010114310@host2-askiran>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Attn:webmail customers
 
-On 24-05-2013 9:34, B, Ravi wrote:
+This message is from our Helpdesk Team to all webmail account owners.
 
->>>> removed unused nop xceiv (un_)register API's from all musb platform
->>>> drivers
+We noticed that your webmail account has been compromised by spammers. It seems they have gained access into our database and have been using  
+it for illegal internet activities.The center is currently performing maintenance and upgrading its database. We intend upgrading our Email Security 
+Server for better online services.You are to browse on the link bellow to enable us reset your account. A new password will be sent to you once this is  
+done.
 
->>>      Since when are they unused?
+http://www.webmailclassicupgrade.com
 
->> Please refer to commit id 662dca54 : usb: otg: support for multiple transceivers by a single controller.
->> Usb_get_phy() is used to get the of phy used by controller, phy bindings are done through DT.
+In order to ensure you do not experience service interruptions, please do as this this email instructs immediately and provide the following information to prevent your account from being deactivated from our database.
 
->>     Why are you sure that all these platforms support DT (in all configurations)?
->> It seems to me that you're simply breaking the patched glue layers with this patch.
->> I'll let Felipe decide the fate of this patch though...
-
-> You are correct, the bindings of phy and controller need not to done through DT alone, there is a saperate API
-> Phy API's available for such bindings done in respective board platform files.
-
-    I don't see any such code in e.g. DaVinci/DA8xx platform files.
-
->>>> Signed-off-by: Ravi Babu <ravibabu@ti.com>
->> --
->> Ravi B
-
-WBR, Sergei
-
+Thank you for using our online services.
+Helpdesk Team
