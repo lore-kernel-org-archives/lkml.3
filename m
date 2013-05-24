@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3EXPGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 11:06:36 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:35524 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab3EXPGe (ORCPT
+	id S1756605Ab3EXPJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 11:09:10 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:55371 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab3EXPJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 11:06:34 -0400
-Date: Fri, 24 May 2013 17:06:26 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH 0/2] kdump/mmap: Fix mmap of /proc/vmcore for s390
-Message-ID: <20130524170626.2ac06efe@holzheu>
-In-Reply-To: <20130524143644.GD18218@redhat.com>
-References: <1369400889-11064-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<20130524143644.GD18218@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 24 May 2013 11:09:08 -0400
+Message-ID: <519F829A.6070604@cogentembedded.com>
+Date: Fri, 24 May 2013 19:09:14 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: myungjoo.ham@samsung.com, cw00.choi@samsung.com, balbi@ti.com,
+        ldewangan@nvidia.com, gg@slimlogic.co.uk, lgirdwood@gmail.com,
+        broonie@kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        gregkh@linuxfoundation.org, george.cherian@ti.com,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 1/3] drivers: regulator: palmas: add an API to set/clear
+ the switch bit on SMPS10
+References: <1369405896-30246-1-git-send-email-kishon@ti.com> <1369405896-30246-2-git-send-email-kishon@ti.com>
+In-Reply-To: <1369405896-30246-2-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13052415-1948-0000-0000-0000053EFBDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+Hello.
 
-On Fri, 24 May 2013 10:36:44 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On 24-05-2013 18:31, Kishon Vijay Abraham I wrote:
 
-[snip]
+> From: Graeme Gregory <gg@slimlogic.co.uk>
 
-> Sorry, I don't understand the problem. If we swapped low memory and
-> crash reserved memory, that should have been taken care by prepared
-> ELF headers so that we map the right pfns. In x86 we swap 640K of low
-> memory with 640K of memory in reserved and we take care of this by
-> preparing elf headers accordingly.
-> 
-> So why s390 can't do the same thing?
+> Added an API to set/clear the switch bit on SMPS10 which can be used by
+> palmas usb. The switch bit should be set in order for palmas to
+> supply VBUS and is needed when OMAP is acting as USB HOST.
 
-I am not sure if I understand this. Currently we create the ELF
-header in a way that we have virtual=real. In the copy_oldmem_page() we
-do the swap so that for the /proc/vmcore code it looks like contiguous
-non-swapped memory.
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>   drivers/regulator/palmas-regulator.c | 26 ++++++++++++++++++++++++++
+>   include/linux/mfd/palmas.h           |  2 ++
+>   2 files changed, 28 insertions(+)
 
-One reason why I thought this was necessary was that /dev/oldmem
-also uses the function and it should provide linear memory access like
-it is on the live system with /dev/mem.
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 92ceed0..d57ab55 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -465,6 +465,32 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
+>   	return ret;
+>   }
+>
+> +/**
+> + * palmas_set_switch_smps10() - set or clear the switch bit on SMPS10
+> + * @param palmas pointer to the palmas mfd structure
+> + * @param sw boolean to indicate switch status
 
-Is that implementation incorrect?
+    Please follow the kernel-doc style described in 
+Documentation/kernel-doc-nano-HOWTO.txt.
 
-Best Regards,
-Michael
+[...]
 
+WBR, Sergei
 
