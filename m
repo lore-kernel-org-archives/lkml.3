@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3EXU1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 16:27:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58153 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab3EXU1w (ORCPT
+	id S1755001Ab3EXU2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 16:28:49 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:40700 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab3EXU2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 16:27:52 -0400
-Date: Fri, 24 May 2013 13:27:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: jg1.han@samsung.com
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: [PATCH 1/2] backlight: add
- devm_backlight_device_{register,unregister}()
-Message-Id: <20130524132751.8bbcf26cb02c78ad9a8b7d80@linux-foundation.org>
-In-Reply-To: <20226221.131531368682106551.JavaMail.weblogic@epml12>
-References: <20226221.131531368682106551.JavaMail.weblogic@epml12>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Fri, 24 May 2013 16:28:48 -0400
+Message-ID: <1369427323.8290.37.camel@jlt4.sipsolutions.net>
+Subject: Re: Bisected 3.9 regression for iwl4965 connection problem to
+ 1672c0e3
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jake Edge <jake@lwn.net>, linux-wireless@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Date: Fri, 24 May 2013 22:28:43 +0200
+In-Reply-To: <20130522115908.GA22547@redhat.com>
+References: <20130505143803.7e46e4c6@chukar.edge2.net>
+	 <20130506123805.GA1602@redhat.com>
+	 <20130506083759.556dac76@chukar.edge2.net>
+	 <20130506153044.GB1602@redhat.com>
+	 <1367854279.8434.13.camel@jlt4.sipsolutions.net>
+	 <1367855046.8434.16.camel@jlt4.sipsolutions.net>
+	 <20130507084241.GA1581@redhat.com>
+	 <1367934810.8328.30.camel@jlt4.sipsolutions.net>
+	 <20130507153525.GB1576@redhat.com> <20130522115908.GA22547@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 16 May 2013 05:28:26 +0000 (GMT) Jingoo Han <jg1.han@samsung.com> wrote:
+On Wed, 2013-05-22 at 13:59 +0200, Stanislaw Gruszka wrote:
 
-> These functions allow the driver core to automatically clean up any
-> allocation made by backlight drivers. Thus it simplifies the error
-> paths.
+> > AFICT, we wake queues only if beacon arrives or mac80211 call drv_config
+> > with BSS_CHANGED_IDLE. I'm not sure if the latter prevent stuck. 
 > 
-> ...
->
-> --- a/drivers/video/backlight/backlight.c
-> +++ b/drivers/video/backlight/backlight.c
-> @@ -370,6 +370,81 @@ void backlight_device_unregister(struct backlight_device *bd)
->  }
->  EXPORT_SYMBOL(backlight_device_unregister);
->  
-> +static void devm_backlight_device_release(struct device *dev, void *res)
-> +{
-> +	struct backlight_device *backlight = *(struct backlight_device **)res;
-> +
-> +	backlight_device_unregister(backlight);
-> +}
->
-> ...
->
-> +struct backlight_device *devm_backlight_device_register(struct device *dev,
-> +	const char *name, struct device *parent, void *devdata,
-> +	const struct backlight_ops *ops,
-> +	const struct backlight_properties *props)
-> +{
-> +	struct backlight_device **ptr, *backlight;
-> +
-> +	ptr = devres_alloc(devm_backlight_device_release, sizeof(*ptr),
-> +			GFP_KERNEL);
+> It should prevent stuck. When we fail to auth, drv_config() with BSS_CHANGED_IDLE
+> is called via:
+> 
+> ieee80211_destroy_auth_data ->
+> ieee80211_vif_release_channel ->
+> __ieee80211_vif_release_channel ->
+> ieee80211_unassign_vif_chanctx ->
+> ieee80211_bss_info_change_notify
+> 
+> But there is need to have ->vif.chanctx_conf valid in 
+> __ieee80211_vif_release_channel(), where is below condition:
+> 
+>         conf = rcu_dereference_protected(sdata->vif.chanctx_conf,
+>                                          lockdep_is_held(&local->chanctx_mtx));
+>         if (!conf)
+>                 return;
+> 
+> I'm not sure if that always happen. Perhaps would be better to change
+> BSS_CHANGED_IDLE to BSS_CHANGED_BSSID, which is called directly from
+> ieee80211_destroy_auth_data() ?
 
-Well this is an awkward-looking thing.  We allocate a silly little 4-
-or 8-byte object just to track the backlight_device* via the devres
-system.
+I don't think the "!conf" can hit in this case, since to even try to
+associate you have to have a channel context assigned.
 
-I assume this was done so that devres could be used as a wrapper around
-the existing code?  
-
-Really it would be better if things like backlight_device_register()
-were themselves directly converted to use devm_foo(), yes?
+johannes
 
