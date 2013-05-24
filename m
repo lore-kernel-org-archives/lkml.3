@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3EXO3K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:29:10 -0400
-Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:49560 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753178Ab3EXO3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:29:08 -0400
-Message-ID: <519F792E.8090109@overkiz.com>
-Date: Fri, 24 May 2013 16:29:02 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754240Ab3EXOcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:32:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60616 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab3EXOcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 10:32:23 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>, <balbi@ti.com>,
+        <ldewangan@nvidia.com>, <gg@slimlogic.co.uk>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <george.cherian@ti.com>, <kishon@ti.com>,
+        <sameo@linux.intel.com>
+Subject: [PATCH 1/3] drivers: regulator: palmas: add an API to set/clear the switch bit on SMPS10
+Date: Fri, 24 May 2013 20:01:34 +0530
+Message-ID: <1369405896-30246-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1369405896-30246-1-git-send-email-kishon@ti.com>
+References: <1369405896-30246-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91/dt: add pinctrl definition for at91 tc blocks
-References: <1369389956-30466-1-git-send-email-b.brezillon@overkiz.com> <20130524140528.GE24476@game.jcrosoft.org> <519F754F.50908@atmel.com>
-In-Reply-To: <519F754F.50908@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 8780330424054151276
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrtdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/05/2013 16:12, Nicolas Ferre wrote:
-> On 24/05/2013 16:05, Jean-Christophe PLAGNIOL-VILLARD :
->> On 12:05 Fri 24 May     , Boris BREZILLON wrote:
->>> Hello,
->>>
->>> This patch adds pinctrl configs for at91 Timer Conter blocks.
->>> These pin configs will be referenced by "atmel,tcb-pwm" devices to
->>> setup pins as PWM output.
->>
->> you need to rebase on
->>
->> a cleanup I did preset on our git tag at91-3.11-cleanup
->>
->> As we announce Mandaotory for 3.11
->>
->> as I introduce Macro fro DT
-Ok, I'll base my future dt patches (kizbox.dts) on this tag.
->
-> Boris, Hold on.
->
-> I may have the solution for you. Give me some time and we may have the 
-> automatic generation for updating your patch.
-Ok, thanks.
->
-> Bye,
+From: Graeme Gregory <gg@slimlogic.co.uk>
+
+Added an API to set/clear the switch bit on SMPS10 which can be used by
+palmas usb. The switch bit should be set in order for palmas to
+supply VBUS and is needed when OMAP is acting as USB HOST.
+
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/regulator/palmas-regulator.c | 26 ++++++++++++++++++++++++++
+ include/linux/mfd/palmas.h           |  2 ++
+ 2 files changed, 28 insertions(+)
+
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 92ceed0..d57ab55 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -465,6 +465,32 @@ static int palmas_smps_set_ramp_delay(struct regulator_dev *rdev,
+ 	return ret;
+ }
+ 
++/**
++ * palmas_set_switch_smps10() - set or clear the switch bit on SMPS10
++ * @param palmas pointer to the palmas mfd structure
++ * @param sw boolean to indicate switch status
++ *
++ * There is not a way to represent this function within the regulator
++ * framework. This sets/clears the switch of SMPS10 so SMPS10_OUT1 and
++ * SMPS10_OUT2 are shorted together.
++ */
++int palmas_set_switch_smps10(struct palmas *palmas, int sw)
++{
++	unsigned int reg;
++
++	palmas_smps_read(palmas, PALMAS_SMPS10_CTRL, &reg);
++
++	if (sw)
++		reg |= SMPS10_SWITCH_EN;
++	else
++		reg &= ~SMPS10_SWITCH_EN;
++
++	palmas_smps_write(palmas, PALMAS_SMPS10_CTRL, reg);
++
++	return 0;
++}
++EXPORT_SYMBOL(palmas_set_switch_smps10);
++
+ static struct regulator_ops palmas_ops_smps = {
+ 	.is_enabled		= palmas_is_enabled_smps,
+ 	.enable			= palmas_enable_smps,
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 8f21daf..6df375d 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -404,6 +404,8 @@ enum usb_irq_events {
+ 	N_PALMAS_USB_VOTG_SESS_VLD,
+ };
+ 
++extern int palmas_set_switch_smps10(struct palmas *palmas, int sw);
++
+ /* defines so we can store the mux settings */
+ #define PALMAS_GPIO_0_MUXED					(1 << 0)
+ #define PALMAS_GPIO_1_MUXED					(1 << 1)
+-- 
+1.8.1.2
 
