@@ -1,72 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760078Ab3EXICy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:02:54 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:32973 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759907Ab3EXICv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:02:51 -0400
+	id S1760098Ab3EXIDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:03:42 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:51724 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760085Ab3EXIDd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 04:03:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkNAFsen1F5LEc//2dsb2JhbABZgwi9LYUgBAGBABd0giMBAQQBJxMcKAsIAxQBAwklDwUlAyEBEogHBboKFo1qaigSg1QDlzqRQYMhKg
+Date: Fri, 24 May 2013 18:03:00 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: XFS assertion from truncate. (3.10-rc2)
+Message-ID: <20130524080300.GI24543@dastard>
+References: <20130522051243.GH29466@dastard>
+ <20130522052938.GA2573@redhat.com>
+ <20130522055147.GI29466@dastard>
+ <20130522215454.GL29466@dastard>
+ <20130523184948.GA11151@redhat.com>
+ <20130523223038.GB24543@dastard>
+ <20130524004906.GA21171@redhat.com>
+ <20130524012625.GH24543@dastard>
+ <20130524015219.GA28486@redhat.com>
+ <20130524030300.GA30760@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <519F12FF.6090809@redhat.com>
-References: <20130522134134.GA15189@mtj.dyndns.org>
-	<519CD234.40608@redhat.com>
-	<20130522143019.GA18541@mtj.dyndns.org>
-	<519CDDA4.2050100@redhat.com>
-	<20130522193009.GA23845@mtj.dyndns.org>
-	<519D360D.4050309@redhat.com>
-	<20130522221737.GA12339@mtj.dyndns.org>
-	<519DC926.4000106@redhat.com>
-	<20130523090222.GA26592@mtj.dyndns.org>
-	<519DE5AD.7080303@redhat.com>
-	<20130524014405.GB16882@mtj.dyndns.org>
-	<519F12FF.6090809@redhat.com>
-Date: Fri, 24 May 2013 17:02:50 +0900
-X-Google-Sender-Auth: NZ8eOBdDBUoG7fZN_0vH4yEUbQk
-Message-ID: <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of
- the SG_IO command whitelist (CVE-2012-4542))
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130524030300.GA30760@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 4:13 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->> The same filtering table being applied to different classes of
->> hardware is a software bug, but my point is that the practive
->> essentially entrusts non-insignificant part of security enforcement to
->> the hardware itself.  The variety of hardware in question is very wide
->> and significant portion has historically been known to be flaky.
->
-> Unproven theory, and contradicted by actual practice.  Bugs are more
-> common in the handling of borderline conditions, not in the handling of
-> unimplemented commands.
->
-> If you want to be secure aginst buggy firmware, the commands you have to
-> block are READ and WRITE.  Check out the list of existing USB quirks.
+On Thu, May 23, 2013 at 11:03:00PM -0400, Dave Jones wrote:
+> On Thu, May 23, 2013 at 09:52:19PM -0400, Dave Jones wrote:
+>  > On Fri, May 24, 2013 at 11:26:25AM +1000, Dave Chinner wrote:
+>  >  
+>  >  > You want to print the debug output if the masked value != 0.
+>  > 
+>  > XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
+> 
+> ah, sneaky. There's some unprintable characters there that didn't
+> show up in my terminal when I cut-n-pasted.  They made it to the
+> logs though..
+> 
+> XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
 
-Well, I'd actually much prefer disabling CDB whitelisting for all !MMC
-devices if at all possible. You're basically arguing that because what
-we have is already broken, it should be okay to break it further.
-Also, RW commands having more quirks doesn't necessarily indicate that
-they tend to be more broken. They just get hammered on a lot in
-various ways so problems on those commands tend to be more noticeable.
+So the mask is:
 
-> You need to allow more commands.
-> The count-me-out knob allows all commands.
-> You cannot always allow all commands.
-> Ergo, you cannot always use the count-me-out knob.
+	ATTR_OPEN | ATTR_FILE | ATTR_KILL_SUID | ATTR_FORCE | \
+	ATTR_CTIME | ATTR_MTIME | ATTR_MODE
 
-The thing is that both approaches aren't perfect here so you can make
-similar type of argument from the other side. If the system wants to
-give out raw hardware access to VMs, requiring it to delegate the
-device fully could be reasonable. Not ideal but widening direct
-command access by default is pretty nasty too.
+And so the mask is tripping the assert is (ATTR_KILL_SUID |
+ATTR_MODE).
 
---
-tejun
+Ok, that now makes sense - that's consistent with open(O_TRUNCATE)
+on a suid file. How the hell has this gone unnoticed?
+
+> Hexdump: of that part.. 706d 352e 012f 0a01 
+> So filename is 0x01 0x01
+> 
+> Don't know if that's relevant to the bug or not..
+
+No, it's not. It seems like the XFS code is simply broken, and has
+been for a couple of years. This is the commit that changed the code
+into the split we currently have now:
+
+commit c4ed4243c40f97ed5b7b121777bbbc6aeaa722f0
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Fri Jul 8 14:34:23 2011 +0200
+
+    xfs: split xfs_setattr
+    
+    Split up xfs_setattr into two functions, one for the complex truncate
+    handling, and one for the trivial attribute updates.  Also move both
+    new routines to xfs_iops.c as they are fairly Linux-specific.
+    
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Reviewed-by: Alex Elder <aelder@sgi.com>
+    Reviewed-by: Dave Chinner <dchinner@redhat.com>
+
+Clearly there's a simple test that xfstests is missing, not to
+mention every other test suite out there that is run regularly on
+linux....
+
+Awww, hell.
+
+xfstest generic/193 is *supposed* to test behaviour of suid/sgid bits
+and clearing them is various situations.
+
+You know what I'm about to say, don't you? The test doesn't test
+what it thinks it is testing. it puts the destination file in root
+directory of the xfstests harness, not in the filesystems being
+tested.
+
+So, on all my machines, it runs on ext3 filesystems, never on the
+ext4, btrfs, xfs, etc filesystems that I'm actually testing.
+
+That's beside the point, because it doesn't test truncate behaviour.
+But at least I know now why my attempts to reproduce the problem
+didn't work...
+
+Right, patch below should fix the problem.
+
+What a frustrating bug. Now, where's my bottle of scotch?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
+
+xfs: kill suid/sgid through the truncate path.
+
+From: Dave Chinner <dchinner@redhat.com>
+
+XFS has failed to kill suid/sgid bits correctly when truncating
+files of non-zero size since commit c4ed4243 ("xfs: split
+xfs_setattr") introduced in the 3.1 kernel. Fix it.
+
+Fix it.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_iops.c |   43 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
+
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index d82efaa..c255382 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -455,6 +455,24 @@ xfs_vn_getattr(
+ 	return 0;
+ }
+ 
++static void
++xfs_setattr_mode(
++	struct inode	*inode,
++	struct iattr	*iattr)
++{
++	struct xfs_inode *ip = XFS_I(inode);
++	umode_t		mode = iattr->ia_mode;
++
++	if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
++		mode &= ~S_ISGID;
++
++	ip->i_d.di_mode &= S_IFMT;
++	ip->i_d.di_mode |= mode & ~S_IFMT;
++
++	inode->i_mode &= S_IFMT;
++	inode->i_mode |= mode & ~S_IFMT;
++}
++
+ int
+ xfs_setattr_nonsize(
+ 	struct xfs_inode	*ip,
+@@ -606,18 +624,8 @@ xfs_setattr_nonsize(
+ 	/*
+ 	 * Change file access modes.
+ 	 */
+-	if (mask & ATTR_MODE) {
+-		umode_t mode = iattr->ia_mode;
+-
+-		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+-			mode &= ~S_ISGID;
+-
+-		ip->i_d.di_mode &= S_IFMT;
+-		ip->i_d.di_mode |= mode & ~S_IFMT;
+-
+-		inode->i_mode &= S_IFMT;
+-		inode->i_mode |= mode & ~S_IFMT;
+-	}
++	if (mask & ATTR_MODE)
++		xfs_setattr_mode(inode, iattr);
+ 
+ 	/*
+ 	 * Change file access or modified times.
+@@ -714,9 +722,8 @@ xfs_setattr_size(
+ 		return XFS_ERROR(error);
+ 
+ 	ASSERT(S_ISREG(ip->i_d.di_mode));
+-	ASSERT((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+-			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
+-			ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
++	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
++			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+ 
+ 	if (!(flags & XFS_ATTR_NOLOCK)) {
+ 		lock_flags |= XFS_IOLOCK_EXCL;
+@@ -860,6 +867,12 @@ xfs_setattr_size(
+ 		xfs_inode_clear_eofblocks_tag(ip);
+ 	}
+ 
++	/*
++	 * Change file access modes.
++	 */
++	if (mask & ATTR_MODE)
++		xfs_setattr_mode(inode, iattr);
++
+ 	if (mask & ATTR_CTIME) {
+ 		inode->i_ctime = iattr->ia_ctime;
+ 		ip->i_d.di_ctime.t_sec = iattr->ia_ctime.tv_sec;
