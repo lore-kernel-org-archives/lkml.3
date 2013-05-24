@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760365Ab3EXK2j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 06:28:39 -0400
-Received: from www.meduna.org ([92.240.244.38]:47783 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760156Ab3EXK2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 06:28:37 -0400
-Message-ID: <519F40BB.1050504@meduna.org>
-Date: Fri, 24 May 2013 12:28:11 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1760390Ab3EXK2s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 06:28:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36884 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760374Ab3EXK2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 06:28:44 -0400
+Message-ID: <519F40D8.7040500@linaro.org>
+Date: Fri, 24 May 2013 12:28:40 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Hai Huang <hhuang@redhat.com>
-Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
-References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org>
-In-Reply-To: <519F24DD.5060700@meduna.org>
-X-Enigmail-Version: 1.5.1
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Lukasz Majewski <l.majewski@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "Rafael J. Wysocky" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        Vicent Guittot <vincent.guittot@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>
+Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
+ governor - tests results
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com> <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com> <20130522122700.104ca5cd@amdc308.digital.local> <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com> <20130522164453.29cd3a7d@amdc308.digital.local> <20130524075640.0a5b80ff@amdc308.digital.local> <CAKohpoksymD76rDvg_+PwU7r3JXp1oydHBbJE4-y6TBHOomZHg@mail.gmail.com> <20130524103007.7bb206ee@amdc308.digital.local> <CAKohponbX7u_k9ZYQ7KyBeyKh93Qu+niGZj60t9c1n+AmaA6pg@mail.gmail.com> <519F2D89.5030602@linaro.org> <CAKohpom+wsGj=1nurNtoiRaZCD7KRbx0BO+tNXpoqO+FmmzehA@mail.gmail.com>
+In-Reply-To: <CAKohpom+wsGj=1nurNtoiRaZCD7KRbx0BO+tNXpoqO+FmmzehA@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2013-05-24 12:28:29
-X-Connected-IP: 95.105.165.4:3590
-X-Message-Linecount: 43
-X-Body-Linecount: 21
-X-Message-Size: 1965
-X-Body-Size: 550
-X-Received-Count: 1
-X-Recipient-Count: 10
-X-Local-Recipient-Count: 10
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.05.2013 10:29, Stanislav Meduna wrote:
-
->>>> static inline void __native_flush_tlb_single(unsigned long addr)
->>>> {
->>>>          __flush_tlb();
->>>> }
->>
->>> I will give it some more testing time.
->>
->> That is a good idea.
+On 05/24/2013 11:13 AM, Viresh Kumar wrote:
+> On 24 May 2013 14:36, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>> I agree with Viresh, a new governor is not necessary here for that.
 > 
-> Still no crash, so this one indeed seems to change things.
+> Their patchset had two parts.. One is LAB and other is overclocking.
+> We are trying to solve overclocking for which they never wanted a
+> new governor. :)
+> 
+>> There is the /sys/devices/system/cpufreq/boost option existing for x86
+>> platform, why do not reuse it ? It is supposed to do exactly what you
+>> want to achieve.
+> 
+> The problem is that it was added at the wrong place.. It should have
+> been at cpu/cpuX/cpufreq/boost...
 
-Take that back, now crashed as well, it just took longer.
-min_flt of two threads jumped from zero at 1848 (lower prio)
-and 735993 (higher prio, preempted the first one) respectively,
-1.7 seconds hang.
+Yes, I saw in the commit log (615b7300717b9ad5c23d1f391843484fe30f6c12),
+that should be done.
+
+> Consider how will we achieve it for big LITTLE.. We know we can
+> go to overdrive only for a single core in big but for two cores in
+> LITTLE at the same time.. So, we need that in the location I just
+> mentioned...
+
+I thought the constraints should be hardcoded in the driver and only one
+option is exposed to the userspace. If the user sets
+ondemand|performance + boost, then the exynos's or b.L's drivers know
+when they can go to boost (1x core, 1x big core, 2x little core, ...).
+
+> Over that.. I believe it is governor specific too.. It shouldn't be part
+> of conservative as it should be conservative rather then aggressive :)
+
+Yes, it is part of the governor policy and maybe that could fall in the
+common cpufreq framework.
+
+>> IMO, the logic of boosting one core when the other are idle should be in
+>> the driver itself and certainly not setup by the user, except if we
+>> consider acceptable the user can burn its board ... :)
+> 
+> I didn't get it completely.. So, with the options I gave user can only
+> say.. boost if required and only when few cores are active. User
+> can't just set max freq continuously if he wishes..
+
+Ok, may be I misunderstood. You suggested to define 'overdrive_cores'
+where the user can setup when to overdrive a core. If the user set an
+incorrect value, IIUC, the thermal value can go beyond the thermal limit
+and break the board. I am just worried this option is dangerous.
+
+
+
 
 -- 
-                                        Stano
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
