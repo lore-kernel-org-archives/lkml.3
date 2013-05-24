@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab3EXRZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:25:25 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:42448 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab3EXRZQ (ORCPT
+	id S1757308Ab3EXRZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:25:47 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37553 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab3EXRZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:25:16 -0400
-Message-ID: <519FA277.3010802@gmail.com>
-Date: Fri, 24 May 2013 19:25:11 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 24 May 2013 13:25:44 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
-Subject: Re: [PATCH 2/2] net: mv643xx_eth: proper initialization for Kirkwood
- SoCs
-References: <1369253042-15082-2-git-send-email-sebastian.hesselbarth@gmail.com> <20130522201607.GA18823@obsidianresearch.com> <20130523160111.GP31290@titan.lakedaemon.net> <20130523171112.GB31281@obsidianresearch.com> <20130523172339.GQ31290@titan.lakedaemon.net> <20130523175357.GB2821@obsidianresearch.com> <20130523184028.GU31290@titan.lakedaemon.net> <519E9ADA.3040204@gmail.com> <CACRpkdbsicPkPAiaQCOg2mQF2Ce2dg_K=BKqqx=FCdAH7Y+QBg@mail.gmail.com> <20130524170125.GX31290@titan.lakedaemon.net> <20130524171300.GD18614@n2100.arm.linux.org.uk>
-In-Reply-To: <20130524171300.GD18614@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130524171709.GH24476@game.jcrosoft.org>
+References: <1369410151-7837-1-git-send-email-nicolas.ferre@atmel.com>
+	<CAOesGMjvKhVKZf9A70K7VzXikY902KVyKR==4ivnb-gxhyRCPQ@mail.gmail.com>
+	<20130524171709.GH24476@game.jcrosoft.org>
+Date: Fri, 24 May 2013 10:25:43 -0700
+Message-ID: <CAOesGMjOaWardKRq-8BM_v8JKx+-Vgzg6XRRL5E1FQTut_ePdQ@mail.gmail.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.10 #2
+From: Olof Johansson <olof@lixom.net>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        b.brezillon@overkiz.com,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 07:13 PM, Russell King - ARM Linux wrote:
-> Do you really want that on ARM?  Given the fiasco with the location of
-> the registers, are you sure you want to place more trust in that
-> direction?  Does it give you a warm fuzzy feeling to know that you
-> might have to work out some way to patch vendor supplied bytecode?
+On Fri, May 24, 2013 at 10:17 AM, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
+> On 10:11 Fri 24 May     , Olof Johansson wrote:
+>> Hi,
+>>
+>> I'll pull this for now, but...
+>>
+>>
+>> > Jean-Christophe PLAGNIOL-VILLARD (1):
+>> >       ARM: at91: at91sam9n12: move external irq declatation to DT
+>>
+>> This one is not a fix. While OK this time, please stick to only
+>> sending true fixes for 3.10 from here on out.
+>
+> it's as you must specify them via DT, the C code is not event use in case of
+> DT
+> I should have put fix in the commit
+>
 
-Don't get me wrong. I want mv643xx_eth DT or even platform_data to
-evolve to a fully self configured driver not depending on proper u-boot
-setup at all.
+I don't understand.
 
-But I don't want to go that road now and I wonder if it might be safer
-for us (and PPC guys) if we start mv643xx_eth over from scratch one day.
 
-For this patch set, I want a basic DT binding that works. Patching the
-driver to play with kirkwood loosing the MAC and other important
-registers is not my main concern here. If clearing that one bit doesn't
-help for all kirkwood boards, I'd rather leave the non-gating
-workaround.
-
-mv643xx_eth not knowing DT for ARM is stalling last important bits for
-Orion SoCs. I want this to go in first as with David another maintainer
-is involved.
-
-Sebastian
+-Olof
