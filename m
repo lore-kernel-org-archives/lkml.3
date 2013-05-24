@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760336Ab3EXKIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 06:08:44 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752201Ab3EXKIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 06:08:43 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 06:08:42 EDT
-From: Richard Weinberger <richard@nod.at>
-To: gregkh@linuxfoundation.org
-Cc: bjorn@mork.no, dcbw@redhat.com, jhovold@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] serial: Add Option GTM681W to qcserial device table.
-Date: Fri, 24 May 2013 12:01:51 +0200
-Message-Id: <1369389711-4290-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.2.3
+	id S1760353Ab3EXKOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 06:14:24 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:42457 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760156Ab3EXKOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 06:14:22 -0400
+Date: Fri, 24 May 2013 12:14:19 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: David Miller <davem@davemloft.net>, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stefan Roese <sr@denx.de>, Emilio Lopez <emilio@elopez.com.ar>,
+        kevin@allwinnertech.com, sunny@allwinnertech.com,
+        shuge@allwinnertech.com
+Subject: Re: [PATCHv3 2/6] net: Add MDIO bus driver for the Allwinner EMAC
+Message-ID: <20130524101419.GC8785@lukather>
+References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1369387394-9453-3-git-send-email-maxime.ripard@free-electrons.com>
+ <CAGVrzcbyXiKCKxtOAj0gnG8eCQag8_xvmd9dUKACCbfW-2HN9Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGVrzcbyXiKCKxtOAj0gnG8eCQag8_xvmd9dUKACCbfW-2HN9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Option GTM681W uses a qualcomm chip and can be
-served by the qcserial device driver.
+Hi Florian,
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/usb/serial/qcserial.c | 1 +
- 1 file changed, 1 insertion(+)
+On Fri, May 24, 2013 at 10:42:30AM +0100, Florian Fainelli wrote:
+> Hello Maxime,
+> 
+> 2013/5/24 Maxime Ripard <maxime.ripard@free-electrons.com>
+> >
+> > This patch adds a separate driver for the MDIO interface of the
+> > Allwinner ethernet controllers.
+> >
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  .../bindings/net/allwinner,sun4i-mdio.txt          |  26 +++
+> >  drivers/net/ethernet/allwinner/Kconfig             |   8 +
+> >  drivers/net/ethernet/allwinner/Makefile            |   1 +
+> >  drivers/net/ethernet/allwinner/sun4i-mdio.c        | 191 +++++++++++++++++++++
+> 
+> Ok, so you probably followed Thomas's example here with mvneta/mvmdio,
+> but all other MDIO bus drivers live in drivers/net/phy.
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 59b32b7..bd794b4 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -118,6 +118,7 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(0x1199, 0x901b)},	/* Sierra Wireless MC7770 */
- 	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
- 	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
-+	{USB_DEVICE(0x0AF0, 0x8120)},	/* Option GTM681W */
- 
- 	/* non Gobi Qualcomm serial devices */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x0f3d, 0x68a2, 0)},	/* Sierra Wireless MC7700 Device Management */
+Indeed I shamelessly followed Thomas here.
+
+> Unfortunately, mvmdio lives in drivers/net/ethernet/marvell/mvmdio.c
+> which I should have noticed before. Whatever is good for you guys, but
+> we should probably start normalizing this now before more mdio drivers
+> get merged alongside their corresponding ethernet MAC users.
+
+I'm fine with either way, just tell me where to put it and I'll happily
+do so.
+
+Maxime
+
 -- 
-1.8.2.3
-
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
