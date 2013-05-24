@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab3EXUPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 16:15:43 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:44803 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab3EXUPl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 16:15:41 -0400
-Date: Fri, 24 May 2013 22:15:39 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>
-Cc: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Roese <sr@denx.de>, Florian Fainelli <florian@openwrt.org>,
-        kevin@allwinnertech.com, sunny@allwinnertech.com,
-        shuge@allwinnertech.com
-Subject: Re: [PATCHv3 5/6] ARM: cubieboard: Enable ethernet (EMAC) support in
- dts
-Message-ID: <20130524201539.GB17847@lukather>
-References: <1369387394-9453-1-git-send-email-maxime.ripard@free-electrons.com>
- <1369387394-9453-6-git-send-email-maxime.ripard@free-electrons.com>
- <519F62B3.8090302@elopez.com.ar>
+	id S1757524Ab3EXUQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 16:16:34 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:6714
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756709Ab3EXUQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 16:16:33 -0400
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 16:16:33 EDT
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Russ Anderson <rja@sgi.com>
+CC: Matt Fleming <matt@console-pimps.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Thread-Topic: [regression, bisected] x86: efi: Pass boot services variable
+ info to runtime code
+Thread-Index: AQHOVwlPdAxADEfBGkSu955aMbeVBpkSq3mAgACPxACAALt2gIAAz1mAgAABeYA=
+Date: Fri, 24 May 2013 20:11:01 +0000
+Message-ID: <1369426255.2217.9.camel@x230>
+References: <20130522162747.GA20816@sgi.com>
+	 <20130523115801.GJ14575@console-pimps.org> <20130523203234.GD20913@sgi.com>
+	 <20130524074331.GL14575@console-pimps.org> <20130524200539.GA3322@sgi.com>
+In-Reply-To: <20130524200539.GA3322@sgi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+x-forefront-antispam-report: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:BL2PR05MB210;H:BL2PR05MB211.namprd05.prod.outlook.com;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <57B58A5C84456A4E8B5B8EA858867C69@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <519F62B3.8090302@elopez.com.ar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4OKGdQl013955
 
-Hi Emilio,
+On Fri, 2013-05-24 at 15:05 -0500, Russ Anderson wrote:
 
-On Fri, May 24, 2013 at 09:53:07AM -0300, Emilio López wrote:
-> Hi,
-> 
-> El 24/05/13 06:23, Maxime Ripard escribió:
-> > From: Stefan Roese <sr@denx.de>
-> > 
-> > Signed-off-by: Stefan Roese <sr@denx.de>
-> > ---
-> >  arch/arm/boot/dts/sun4i-a10-cubieboard.dts | 15 +++++++++++++++
-> >  1 file changed, 15 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> > index b70fe0d..32d9b18 100644
-> > --- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> > +++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
-> > @@ -27,6 +27,21 @@
-> >  	};
-> >  
-> >  	soc@01c20000 {
-> > +		emac: ethernet@01c0b000 {
-> > +			pinctrl-names = "default";
-> > +			pinctrl-0 = <&emac_pins_a>;
-> > +			phy = <&phy0>;
-> > +			status = "okay";
-> > +		};
-> > +
-> > +		mdio@01c0b080 {
-> > +			status = "okay";
-> > +
-> > +			phy0: ethernet-phy@0 {
-> > +				reg = <0>;
-> > +			};
-> 
-> During my testing I found out that I needed to use 1 as reg for the
-> driver to work. You can find a fixup patch enclosed that changes this;
-> it's possible that some extra changes may also be needed (s/phy0/phy1/
-> on the node?)
+> One other data point is if the query_variable_info call is hacked to
+> remove one of the EFI flags (ie comment out EFI_VARIABLE_BOOTSERVICE_ACCESS)
+> the efi_call_phys4() call fails with EFI_INVALID_PARAMETER and
+> the system boots.  Of course it does not create /sys/firmware/efivars
+> entries and complains "[Firmware Bug]: efi: Inconsistent initial sizes".
+> But at least it boots.
 
-Merged, thanks for noticing!
-
-Maxime
+EFI_VARIABLE_RUNTIME_ACCESS is only legal if
+EFI_VARIABLE_BOOTSERVICE_ACCESS is set, so it's correct to throw
+EFI_INVALID_PARAMETER there.
 
 -- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
