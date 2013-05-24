@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604Ab3EXHZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 03:25:30 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:18563 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671Ab3EXHZ3 (ORCPT
+	id S1759993Ab3EXHgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 03:36:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37881 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756887Ab3EXHgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 03:25:29 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 May 2013 03:25:29 EDT
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 24 May 2013 00:10:35 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] ARM: tegra114: correctly output clk_32k
-Date: Fri, 24 May 2013 16:10:07 +0900
-Message-ID: <1369379407-12764-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.2.3
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 24 May 2013 03:36:11 -0400
+Message-ID: <1369380965.1945.10.camel@dabdike>
+Subject: Re: [PATCH v3 part1 1/4] sg_io: pass request_queue to
+ blk_verify_command
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org, stable@gnu.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Date: Fri, 24 May 2013 11:36:05 +0400
+In-Reply-To: <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
+References: <1369317503-4095-1-git-send-email-pbonzini@redhat.com>
+	 <1369317503-4095-2-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra has a blink timer register that allows to modulate the
-clk_32k clock before outputting it. Since clk_32k is presented to the
-kernel as a fixed clock, make sure this register does not tamper with
-the clock frequency and that clk_32k is outputted as-is, similarly to
-what is done on t20 and t30.
+On Thu, 2013-05-23 at 15:58 +0200, Paolo Bonzini wrote:
+> Adjust the blk_verify_command function to let it look at per-queue
+> data.  This will be done in the next patch.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/clk/tegra/clk-tegra114.c | 3 +++
- 1 file changed, 3 insertions(+)
+This is not a bug fix.  This is an enabler for your complex and to my
+mind dubious rework of the SG_IO command filter.  I'm running out of
+ways to say please don't mix bug fixes with features, because this
+redesignating of the original patch set as part 1 and parts 2,3 doesn't
+satisfy the requirement.
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index d78e16e..dc76d67 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -127,6 +127,7 @@
- #define PMC_DPD_PADS_ORIDE_BLINK_ENB 20
- #define PMC_CTRL 0
- #define PMC_CTRL_BLINK_ENB 7
-+#define PMC_BLINK_TIMER 0x40
- 
- #define OSC_CTRL			0x50
- #define OSC_CTRL_OSC_FREQ_SHIFT		28
-@@ -1625,6 +1626,8 @@ static void __init tegra114_pmc_clk_init(void __iomem *pmc_base)
- 	clks[clk_out_3] = clk;
- 
- 	/* blink */
-+	/* clear the blink timer register to directly output clk_32k */
-+	writel_relaxed(0, pmc_base + PMC_BLINK_TIMER);
- 	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
- 				pmc_base + PMC_DPD_PADS_ORIDE,
- 				PMC_DPD_PADS_ORIDE_BLINK_ENB, 0, NULL);
--- 
-1.8.2.3
+Does anyone in the real world actually care about this bug?  because if
+not perhaps we can just remove the confusion and consider this as a
+feature set.  If there's someone who actually cares, please lets just do
+the bug fix first and argue about the feature later.
+
+James
+
 
