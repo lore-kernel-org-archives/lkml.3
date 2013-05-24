@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab3EXOXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 10:23:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29648 "EHLO mx1.redhat.com"
+	id S1753881Ab3EXOX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 10:23:57 -0400
+Received: from www.meduna.org ([92.240.244.38]:52218 "EHLO meduna.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab3EXOXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 10:23:47 -0400
-Date: Fri, 24 May 2013 10:23:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        fweisbec@gmail.com
-Subject: Re: rcu_read_lock() used illegally while idle!
-Message-ID: <20130524142338.GB3106@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>, paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>, fweisbec@gmail.com
-References: <20130521173100.GA2076@redhat.com>
- <20130522093624.GZ3578@linux.vnet.ibm.com>
- <1369226958.6828.175.camel@gandalf.local.home>
- <20130523164004.GJ16419@redhat.com>
- <1369403180.6828.223.camel@gandalf.local.home>
+	id S1753383Ab3EXOX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 10:23:56 -0400
+Message-ID: <519F77EC.1070603@meduna.org>
+Date: Fri, 24 May 2013 16:23:40 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369403180.6828.223.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rik van Riel <riel@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Hai Huang <hhuang@redhat.com>
+Subject: Re: [PATCH] mm: fix up a spurious page fault whenever it happens
+References: <5195ED8B.7060002@meduna.org>  <1369183168.6828.168.camel@gandalf.local.home>  <519CBB30.3060200@redhat.com>  <CA+55aFxMqvDvcVtLW-yD2PuU_CcjPOC30Zk07Kuk6S25WCzbHQ@mail.gmail.com>  <20130522134111.33a695c5@cuia.bos.redhat.com> <519D08B0.8050707@meduna.org> <1369246316.6828.176.camel@gandalf.local.home> <519D0CAB.7020800@meduna.org> <519D0FF8.5080200@redhat.com> <519D118B.6010306@zytor.com> <519D11BF.5000604@redhat.com> <519DCE2A.4010801@meduna.org> <519E095A.4000105@redhat.com> <519F24DD.5060700@meduna.org> <519F65DB.2020305@redhat.com> <519F7159.5010009@meduna.org>
+In-Reply-To: <519F7159.5010009@meduna.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2013-05-24 16:23:45
+X-Connected-IP: 95.105.165.4:7735
+X-Message-Linecount: 35
+X-Body-Linecount: 13
+X-Message-Size: 1806
+X-Body-Size: 326
+X-Received-Count: 1
+X-Recipient-Count: 10
+X-Local-Recipient-Count: 10
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 09:46:20AM -0400, Steven Rostedt wrote:
+On 24.05.2013 15:55, Stanislav Meduna wrote:
 
- > >  > This looks to be the caused by the same issue that this patch fixes:
- > >  > 
- > >  > https://lkml.org/lkml/2013/5/10/537
- > >  > 
- > >  > The schedule_user() was traced, and the preempt_enable_no_trace() that
- > >  > the function tracer does caused for a schedule to occur. As the
- > >  > scheduler uses rcu, and it was called before schedule_user() could tell
- > >  > the kernel that the context is changing from user to kernel.
- > > 
- > > That patch doesn't help unfortunatly.
- > > 
- > 
- > Dave,
- > 
- > Can you send me your full .config, and also what you did to trigger
- > this? As I see ftrace_call is there, I'm assuming you have function
- > tracing enabled somewhere. Probably via perf, as ftrace_ops_control_func
- > is used by perf.
- > 
- > Also, if you added anything special on the kernel command line, that
- > info will be useful too.
+>> Just to rule something out, are you using
+>> transparent huge pages on those systems?
+> 
+> On my present test system they are configured in, but I am
+> not using them.
 
-.config: http://paste.fedoraproject.org/14281/94052971/raw/
+Ah, _transparent_ huge pages. No, that is not enabled.
 
-trace shows the problem process was 'cc1', so I was likely building a kernel
-at the time.  There was also a trinity run going on in the background.
-
-cmdline: nothing special..
-
-BOOT_IMAGE=/vmlinuz-3.10.0-rc2+ root=UUID=bee21cd9-1852-4d1d-9e9d-2e44332b8df1 ro rd.md=0 rd.lvm=0 rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16 consoleblank=0 console=ttyUSB0,115200 console=tty0 pause_on_oops=30 audit=0
-
-	Dave
+-- 
+                                         Stano
 
