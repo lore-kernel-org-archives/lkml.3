@@ -1,84 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3EXMU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 08:20:28 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:41220 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab3EXMU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 08:20:27 -0400
-Date: Fri, 24 May 2013 14:20:17 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "Mylene Josserand" <Mylene.Josserand@navocap.com>
-Cc: "anish singh" <anish198519851985@gmail.com>,
-        "kernelnewbies" <kernelnewbies@kernelnewbies.org>,
-        "Linux I2C" <linux-i2c@vger.kernel.org>,
-        "linux-kernel-mail" <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [I2C] informations + advice about messages handling
-Message-ID: <20130524142017.52545a52@endymion.delvare>
-In-Reply-To: <CA78C307B8F06747967D122FC656B15398644B@SERVEUR0.nvp.local>
-References: <CA78C307B8F06747967D122FC656B153986448@SERVEUR0.nvp.local>
-	<CAK7N6vpg6QUAKODKO2Msr4+GTASLDpA2cG1teQV3yiwt7D4SSw@mail.gmail.com>
-	<20130524094407.61d0ec42@endymion.delvare>
-	<CA78C307B8F06747967D122FC656B15398644A@SERVEUR0.nvp.local>
-	<20130524110706.6052493e@endymion.delvare>
-	<CA78C307B8F06747967D122FC656B15398644B@SERVEUR0.nvp.local>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754615Ab3EXMgL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 08:36:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751787Ab3EXMgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 08:36:09 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 01/25] perf tools: Add automated make test suite
+Date: Fri, 24 May 2013 14:35:04 +0200
+Message-Id: <1369398928-9809-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
+References: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 May 2013 11:52:54 +0200, Mylene Josserand wrote:
-> Right now, my company uses the "i2c_smbus_read/write_byte_data" 
-> functions to talk to devices through an application. On the datasheet of 
-> these devices, I search but did not seem to be SMBus compliant.
-> As it was a software which was using these functions, we thought that a 
-> driver (that I would write) should be better. And here I am ! I prefer 
-> to understand well the mechanism before coding anything and it is 
-> interesting !
+Adding automated test for testing the build process.
+To run it you need to be in perf directory or specify
+one with PERF variable. It's also possible to specify
+optional Makefile to test via MK variable.
 
-If the application was using i2c_smbus_read/write_byte_data from
-user-space, then a kernel driver would call the same functions. No
-reason why this wouldn't work.
+Whole suite is executed twice, the second time with
+O=/tmp/xxx option added.
 
-> (...)
-> Thanks for the explanation.
-> No problem, we have 2 devices used without drivers :
-> - an odometer PIC18F24201 : In the datasheet, there is a SMBus select 
-> bit but I don't know if it is SMBus compliant.
+To run the whole suite:
+  $ make -f tests/make
+  - make_pure: cd . && make -f Makefile
+    test: test -x ./perf
+  - make_clean_all: cd . && make -f Makefile clean all
+    test: test -x ./perf
+  - make_python_perf_so: cd . && make -f Makefile python/perf.so
+    test: test -f ./python/perf.so
+  - make_debug: cd . && make -f Makefile DEBUG=1
+    test: test -x ./perf
+  - make_no_libperl: cd . && make -f Makefile NO_LIBPERL=1
+    test: test -x ./perf
 
-Couldn't find the datasheet for this one, unfortunately.
+You see command line for 'make_pure' test right away,
+and the output is stored into 'make_pure' file.
 
-> - an audio codec tlv320aic3204 : There is a driver for this device but 
-> for some reasons, we did not use it. Did not find a "SMBus compliant" in 
-> its datasheet.
+To run simple test:
+  $ make -f tests/make make_debug
+  - make_debug: cd . && make -f Makefile DEBUG=1
+    test: test -x ./perf
 
-The tlv320aic32x4 driver uses i2c_master_send, which is a shortcut to
-i2c_transfer. However it seems to only send 2 bytes on the bus at once,
-the same could be achieved with i2c_smbus_write_byte_data if needed.
+At this moment tests checks for successfull build
+and for existence of several built files. Additional
+after-build checks could be added.
 
-For completeness: a device might use transactions which are compliant
-with SMBus without being formally "SMBus-compliant", because SMBus has
-more constraints than just transaction types (I kept things simple
-originally to not confuse you.) This may explain why it isn't mentioned
-in the datasheet. Or just because the manufacturer did not care because
-they target fully I2C-capable systems anyway.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/tests/make | 138 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
+ create mode 100644 tools/perf/tests/make
 
-What you have to look at is the transaction types. They are usually
-described in the datasheet. Then compare with either the SMBus
-specification or
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/i2c/smbus-protocol
-and if they match then you can use the i2c_smbus_*() calls.
-
-> (...)
-> Thanks a lot for your help !
-
-You're welcome.
-
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+new file mode 100644
+index 0000000..c441a28
+--- /dev/null
++++ b/tools/perf/tests/make
+@@ -0,0 +1,138 @@
++PERF := .
++MK   := Makefile
++
++# standard single make variable specified
++make_clean_all      := clean all
++make_python_perf_so := python/perf.so
++make_debug          := DEBUG=1
++make_no_libperl     := NO_LIBPERL=1
++make_no_libpython   := NO_LIBPYTHON=1
++make_no_scripts     := NO_LIBPYTHON=1 NO_LIBPERL=1
++make_no_newt        := NO_NEWT=1
++make_no_slang       := NO_SLANG=1
++make_no_gtk2        := NO_GTK2=1
++make_no_ui          := NO_NEWT=1 NO_SLANG=1 NO_GTK2=1
++make_no_demangle    := NO_DEMANGLE=1
++make_no_libelf      := NO_LIBELF=1
++make_no_libunwind   := NO_LIBUNWIND=1
++make_no_backtrace   := NO_BACKTRACE=1
++make_no_libnuma     := NO_LIBNUMA=1
++make_no_libaudit    := NO_LIBAUDIT=1
++make_no_libbionic   := NO_LIBBIONIC=1
++make_tags           := tags
++make_cscope         := cscope
++make_help           := help
++make_doc            := doc
++make_perf_o         := perf.o
++make_util_map_o     := util/map.o
++
++# all the NO_* variable combined
++make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
++make_minimal        += NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1
++make_minimal        += NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
++
++# $(run) contains all available tests
++run := make_pure
++run += make_clean_all
++run += make_python_perf_so
++run += make_debug
++run += make_no_libperl
++run += make_no_libpython
++run += make_no_scripts
++run += make_no_newt
++run += make_no_slang
++run += make_no_gtk2
++run += make_no_ui
++run += make_no_demangle
++run += make_no_libelf
++run += make_no_libunwind
++run += make_no_backtrace
++run += make_no_libnuma
++run += make_no_libaudit
++run += make_no_libbionic
++run += make_tags
++run += make_cscope
++run += make_help
++run += make_doc
++run += make_perf_o
++run += make_util_map_o
++run += make_minimal
++
++# $(run_O) contains same portion of $(run) tests with '_O' attached
++# to distinguish O=... tests
++run_O := $(addsuffix _O,$(run))
++
++# disable some tests for O=...
++run_O := $(filter-out make_python_perf_so_O,$(run_O))
++
++# define test for each compile as 'test_NAME' variable
++# with the test itself as a value
++test_make_tags   = test -f tags
++test_make_cscope = test -f cscope.out
++
++test_make_tags_O   := $(test_make_tags)
++test_make_cscope_O := $(test_make_cscope)
++
++test_ok          := true
++test_make_help   := $(test_ok)
++test_make_doc    := $(test_ok)
++test_make_help_O := $(test_ok)
++test_make_doc_O  := $(test_ok)
++
++test_make_python_perf_so := test -f $(PERF)/python/perf.so
++
++test_make_perf_o     := test -f $(PERF)/perf.o
++test_make_util_map_o := test -f $(PERF)/util/map.o
++
++# Kbuild tests only
++#test_make_python_perf_so_O := test -f $$TMP/tools/perf/python/perf.so
++#test_make_perf_o_O         := test -f $$TMP/tools/perf/perf.o
++#test_make_util_map_o_O     := test -f $$TMP/tools/perf/util/map.o
++
++test_make_perf_o_O     := true
++test_make_util_map_o_O := true
++
++test_default = test -x $(PERF)/perf
++test = $(if $(test_$1),$(test_$1),$(test_default))
++
++test_default_O = test -x $$TMP/perf
++test_O = $(if $(test_$1),$(test_$1),$(test_default_O))
++
++all:
++
++ifdef DEBUG
++d := $(info run   $(run))
++d := $(info run_O $(run_O))
++endif
++
++MAKEFLAGS := --no-print-directory
++
++clean := @(cd $(PERF); make -s -f $(MK) clean >/dev/null)
++
++$(run):
++	$(call clean)
++	@cmd="cd $(PERF) && make -f $(MK) $($@)"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1; \
++	echo "  test: $(call test,$@)"; \
++	$(call test,$@) && \
++	rm -f $@
++
++$(run_O):
++	$(call clean)
++	@TMP=$$(mktemp -d); \
++	cmd="cd $(PERF) && make -f $(MK) $($(patsubst %_O,%,$@)) O=$$TMP"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1 && \
++	echo "  test: $(call test_O,$@)"; \
++	$(call test_O,$@) && \
++	rm -f $@ && \
++	rm -rf $$TMP
++
++all: $(run) $(run_O)
++	@echo OK
++
++out: $(run_O)
++	@echo OK
++
++.PHONY: all $(run) $(run_O) clean
 -- 
-Jean Delvare
+1.7.11.7
+
