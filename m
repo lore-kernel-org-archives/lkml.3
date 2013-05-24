@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760121Ab3EXJGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:06:24 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52675 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758065Ab3EXJGV (ORCPT
+	id S1760143Ab3EXJHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:07:14 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:45298 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065Ab3EXJHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:06:21 -0400
-Message-ID: <519F2D89.5030602@linaro.org>
-Date: Fri, 24 May 2013 11:06:17 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 24 May 2013 05:07:12 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Lukasz Majewski <l.majewski@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "Rafael J. Wysocky" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        Vicent Guittot <vincent.guittot@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>
-Subject: Re: [RFC v2 0/3][TESTS] LAB: Support for Legacy Application Booster
- governor - tests results
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com> <CAKohpokXNUmMbk0KOh58-0=sAs7yzD=cQe24eaoArpRSwM__Gg@mail.gmail.com> <20130522122700.104ca5cd@amdc308.digital.local> <CAKohpo=9dRXb1jjauvhzuje9rOgH82k-3DeL2zqiwHDHOwSo4g@mail.gmail.com> <20130522164453.29cd3a7d@amdc308.digital.local> <20130524075640.0a5b80ff@amdc308.digital.local> <CAKohpoksymD76rDvg_+PwU7r3JXp1oydHBbJE4-y6TBHOomZHg@mail.gmail.com> <20130524103007.7bb206ee@amdc308.digital.local> <CAKohponbX7u_k9ZYQ7KyBeyKh93Qu+niGZj60t9c1n+AmaA6pg@mail.gmail.com>
-In-Reply-To: <CAKohponbX7u_k9ZYQ7KyBeyKh93Qu+niGZj60t9c1n+AmaA6pg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <519F2566.2000008@redhat.com>
+References: <20130522134134.GA15189@mtj.dyndns.org>
+	<519CD234.40608@redhat.com>
+	<20130522143019.GA18541@mtj.dyndns.org>
+	<519CDDA4.2050100@redhat.com>
+	<20130522193009.GA23845@mtj.dyndns.org>
+	<519D360D.4050309@redhat.com>
+	<20130522221737.GA12339@mtj.dyndns.org>
+	<519DC926.4000106@redhat.com>
+	<20130523090222.GA26592@mtj.dyndns.org>
+	<519DE5AD.7080303@redhat.com>
+	<20130524014405.GB16882@mtj.dyndns.org>
+	<519F12FF.6090809@redhat.com>
+	<CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
+	<519F2566.2000008@redhat.com>
+Date: Fri, 24 May 2013 18:07:11 +0900
+X-Google-Sender-Auth: pw3sg0X39Yd7cb5-yIdK5B5e-n0
+Message-ID: <CAOS58YMSw6wJU07WfVG8wd_BnU4TXr7VDBHeDPa4XjSpn2p3Ag@mail.gmail.com>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization of
+ the SG_IO command whitelist (CVE-2012-4542))
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 10:51 AM, Viresh Kumar wrote:
-> On 24 May 2013 14:00, Lukasz Majewski <l.majewski@samsung.com> wrote:
->> The overclock frequency (1.5 GHz) is possible to set as an ordinary,
->> available frequency (policy->max) for ondemand.
->>
->> Unfortunately with our load patterns, this frequency rapidly increases
->> internal chip temperature (chip goes out of available power/thermal
->> dissipation range), and consumes extra power when not needed.
->>
->> The core idea with overclock is to increase ("boost") the frequency
->> when conditions allow to do it (for example load is affined to a single
->> core, other are idle). Then we will not exceed power/thermal budget, but
->> increase performance (and even save power).
->>
->>
->> Overclocking is efficiently utilized by LAB, which relies on a number of
->> idle cpus. Thus, we can easily asses if we can enable it.
->>
->> I also foresee potential use of overclocking, when scheduler will take a
->> major role of power saver for mobile (ARM) linux. Since it will try to
->> pack as much tasks as possible to a single core - it will need a
->> framework/API to "boost" their execution.
-> 
-> Okay.. so its exactly what I thought the reason would be.
-> 
-> What I would have done if I was in your place is:
-> 
-> Add following sysfs tunables to ondemand governor:
-> 
-> - overdrive_freq: We will go over this frequency only when
-> number of busy cores is <= overdrive_cores..
-> For your case it will be 1.4 GHz
-> 
-> - overdrive_cores: We will enable overdrive frequencies only if no. of
-> busy cores is <= overdrive_cores. Zero by default (So, that this feature
-> is disabled by default) and 1 for your case.
-> 
-> And your driver will include all the available frequencies in the freq
-> table.
-> 
-> I hope this will be the most generic solution to your problem..
+On Fri, May 24, 2013 at 5:31 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> I agree intuition may not count, and it's perfectly possible that
+> firmware writers forgot a "break;" or put the wrong location in a jump
+> table, so that unimplemented commands give interesting results.
 
-I agree with Viresh, a new governor is not necessary here for that.
+It's not just unimplemented commands. Exposing any new command exposes
+its borderline problems together with it.
 
-There is the /sys/devices/system/cpufreq/boost option existing for x86
-platform, why do not reuse it ? It is supposed to do exactly what you
-want to achieve.
+> However, the _fact_ is that this might happen anyway with the buttload
+> of commands that are already enabled by the whitelist and that most
+> disks will never implement.
 
-IMO, the logic of boosting one core when the other are idle should be in
-the driver itself and certainly not setup by the user, except if we
-consider acceptable the user can burn its board ... :)
+Yes and that's why the whitelist is generally frowned upon. It's
+inherently fragile. These devices simply aren't designed and
+implemented to be exposed to lesser security domains directly. It's
+true that it's already kinda broken that way but as I wrote before
+it's a vicious cycle and we don't wanna keep building on top of it.
+This expansion is gonna increase the usage of whitelisting which will
+in turn attract further use cases which are likely to call for even
+more expansion.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>> The thing is that both approaches aren't perfect here so you can make
+>> similar type of argument from the other side. If the system wants to
+>> give out raw hardware access to VMs, requiring it to delegate the
+>> device fully could be reasonable.
+>
+> No, it is not unfortunately.  Allowing to do discards is one thing,
+> allowing to disrupt the settings of a SAN is another.  You can only
+> delegate the device fully in these cases:
+>
+> (a) of course, if the guest is trusted;
+>
+> (b) if QEMU is running as a confined user, then you can get by with a
+> userspace whitelist.  (Otherwise you're just a ptrace away from
+> arbitrary access, as you pointed out).
+>
+> Unfortunately, there are _real_ problems that this patches fix, such as
+> log spews due to blocked commands, and these happen even if neither of
+> the above conditions is true.
+>
+> Is there anything else I can do?  Sure, I can check for the presence of
+> the whitelist and hack the VPD pages to hide features that I know the
+> whitelist will block.  Is it the right thing to do?  In my opinion no.
+> It makes no sense to have raw device access _disable_ features compared
+> to emulation.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+If the bulk of filtering can be solved with userland whitelisting as a
+confined user, it should be possible to resolve peripheral problems
+like log messages in simpler way, no? Can you please elaborate on the
+log message problem? Who's spewing those messages?
 
+--
+tejun
