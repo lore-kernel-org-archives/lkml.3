@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3EXHNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 03:13:15 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:41361 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab3EXHNO (ORCPT
+	id S1758862Ab3EXHOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 03:14:48 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:19080 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab3EXHOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 03:13:14 -0400
-Message-ID: <519F12FF.6090809@redhat.com>
-Date: Fri, 24 May 2013 09:13:03 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Fri, 24 May 2013 03:14:47 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@maxim.org.za" <linux@maxim.org.za>
+Subject: RE: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
+	"MT_MEMORY_SO"
+Thread-Topic: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
+	"MT_MEMORY_SO"
+Thread-Index: AQHOVoFuzDkEomPIvUCuWrVoFTdpRZkTy4JA
+Date: Fri, 24 May 2013 07:11:04 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641687BB93C@penmbx01>
+References: <1369011911-21282-1-git-send-email-wenyou.yang@atmel.com>
+ <1369011979-21354-1-git-send-email-wenyou.yang@atmel.com>
+ <20130522001457.GA18614@n2100.arm.linux.org.uk>
+In-Reply-To: <20130522001457.GA18614@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
- of the SG_IO command whitelist (CVE-2012-4542))
-References: <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org>
-In-Reply-To: <20130524014405.GB16882@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r4O7EqDv009768
 
-Il 24/05/2013 03:44, Tejun Heo ha scritto:
-> On Thu, May 23, 2013 at 11:47:25AM +0200, Paolo Bonzini wrote:
->>> No no, I'm not talking about it not working for the users - it's just
->>> passing the commands, it of course works.  I'm doubting about it being
->>> a worthy security isolation layer.  cdb filtering (of any form really)
->>> has always been something on the border.  It always was something we
->>> got stuck with due to lack of other immediate options.
->>
->> I understood correctly then. :)  I agree it's not the best, but it's not
->> completely broken either.  It has bugs, and that's what these patches
->> try to fix.
+
+
+> -----Original Message-----
+> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
+> Sent: 2013Äê5ÔÂ22ÈÕ 8:15
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> plagnioj@jcrosoft.com; Ferre, Nicolas; linux@maxim.org.za
+> Subject: Re: [PATCH] ARM: at91: Fix: Change internal SRAM memory type to
+> "MT_MEMORY_SO"
 > 
-> The same filtering table being applied to different classes of
-> hardware is a software bug, but my point is that the practive
-> essentially entrusts non-insignificant part of security enforcement to
-> the hardware itself.  The variety of hardware in question is very wide
-> and significant portion has historically been known to be flaky.
-
-Unproven theory, and contradicted by actual practice.  Bugs are more
-common in the handling of borderline conditions, not in the handling of
-unimplemented commands.
-
-If you want to be secure aginst buggy firmware, the commands you have to
-block are READ and WRITE.  Check out the list of existing USB quirks.
-
->>> I'm wondering whether combining 3 into 4 would be good enough.
->>
->> No, it wouldn't.  I learnt it the hard way (by having a patch nacked :))
->> at http://thread.gmane.org/gmane.linux.kernel/1311887.
+> On Mon, May 20, 2013 at 09:06:19AM +0800, Wenyou Yang wrote:
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > 
-> Of course you can't do that by adding dangerous commands to the
-> existing filtering table which is allowed by default.  I'm saying
-> "count me out" knob could be good enough.  Neither is perfect but at
-> least the latter doesn't affect the default cases.
+> This needs more of a description.  Also, for a single patch, it's silly
+> to send two mails, the first being a cover which has a little more
+> information in it about the patch than the patch itself.
+> 
+> You need to explain _why_ you're making this change.  What I want to see
+> is that you've thought about the implications of this - particularly that
+> you know that strongly ordered memory does *not* imply any ordering with
+> any other memory types.
+> 
+> In other words, I want to know that this change is not a bodge but there's
+> a real reason behind it.
+The story is: for sama5d3x with Cortex-A5 core, if not so, when copying code snippet to the internal SRAM, then jump to run this code, but fail to run.
+So, refer to other code(such as omap4), do such change. I also test it on at91sam9 with 926ej-s core.
+As what you said, I am digging it. Thank you very much.
 
-You need to allow more commands.
-
-The count-me-out knob allows all commands.
-
-You cannot always allow all commands.
-
-Ergo, you cannot always use the count-me-out knob.
-
-Paolo
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
