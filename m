@@ -1,134 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932097Ab3EXDTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 23:19:46 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:61671 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759888Ab3EXDTo (ORCPT
+	id S1760004Ab3EXDUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 23:20:05 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30259 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab3EXDUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 23:19:44 -0400
+	Thu, 23 May 2013 23:20:04 -0400
+Message-ID: <519EDBD1.1020508@huawei.com>
+Date: Fri, 24 May 2013 11:17:37 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1369310405-21112-1-git-send-email-libo.chen@huawei.com>
-References: <1369310405-21112-1-git-send-email-libo.chen@huawei.com>
-Date: Fri, 24 May 2013 08:49:43 +0530
-Message-ID: <CAK9yfHx7ifnWjKCVc0Oju-28PdosF81OpVC5S5Vdj6hDSnfQfw@mail.gmail.com>
-Subject: Re: [PATCH RFC v3 1/3] i2c: i2c-bfin-twi: convert to devm_* API
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Libo Chen <libo.chen@huawei.com>
-Cc: wsa@the-dreams.de, guz.fnst@cn.fujitsu.com, sonic.zhang@analog.com,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Frank Ch. Eigler" <fche@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] ktap 0.1 released
+References: <519AF05E.1050808@huawei.com> <y0m8v38jj62.fsf@fche.csb>
+In-Reply-To: <y0m8v38jj62.fsf@fche.csb>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 May 2013 17:30, Libo Chen <libo.chen@huawei.com> wrote:
-> peripheral_request_list has got free if any one faild, so no need to free again in err case.
-> aovid this, convert them to devm_* API
->
-> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+On 2013/5/22 2:13, Frank Ch. Eigler wrote:
+> "zhangwei(Jovi)" <jovi.zhangwei@huawei.com> writes:
+> 
+>> I'm pleased to announce that ktap release v0.1, this is the first official
+>> release of ktap project [...]
+> 
+> Congrats.
+> 
+> 
+>> = what's ktap?
+>>
+>>    Because this is the first release, so there wouldn't include too
+>>    much features, just contain several basic features about tracing,
+>>    [...]
+> 
+> Nice progress.  Reviewing the safety/security items from
+> https://lkml.org/lkml/2013/1/17/623, I see improvement in most.
+Thanks, frank, you give me a lot of helpful technical comments in that RFC mail,
+also as this one :) really thanks.
+> 
+> For example, you seem to be using GFP_ATOMIC for run-time memory
+> allocation, which is safer than before (though still could exhaust
+> resources).  OTOH your code doesn't handle *failure* of such
+> allocation attempts (see call sites to kp_*alloc).
+Yes, memory allocation would be change to be more safer.
+> 
+> There still doesn't seem to be safety constraints on the incoming
+> byte code (like jump ranges, or loop counts).
+> 
+> It's nice to see some arithmetic OP_* checks, and the user_string
+> function is probably safe enough now.  You'll need something analogous
+> for kernel space (and possibly as verification for the various %s
+> kp_printfs).  The hash tables might be susceptible to the deliberate
+> hash collision attacks from last year.
+Current hashtable implementation is efficient, but need have more
+security concern as you pointed.
+> 
+> It's nice to see the *_STACK_SIZE constraints in the bytecode
+> interpreter; is there any C-level recursion remaining to consume
+> excessive kernel stack?
+library C functions should not be a problem, like other kernel functions,
+author should take care on stack overflow in own risk.
+> 
+> Exposing os.sleep/os.wait (or general kernel functions) to become
+> callable from the scripts is fraught with danger.  You just can't call
+> the underlying functions from random kernel context (imagine from the
+> most pessimal possible kprobe or tracepoint, somewhere within an
+> atomic section), and you'll get crashes.
+Right, so those functions only can be called from mainthread,
+I will add these checking later.
 
-It is a good practice to include changelog while submitting revised
-versions of the patch.
-
-> ---
->  drivers/i2c/busses/i2c-bfin-twi.c |   38 +++++++++---------------------------
->  1 files changed, 10 insertions(+), 28 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-> index 05080c4..2b99c48 100644
-> --- a/drivers/i2c/busses/i2c-bfin-twi.c
-> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
-> @@ -621,35 +621,27 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->         int rc;
->         unsigned int clkhilow;
->
-> -       iface = kzalloc(sizeof(struct bfin_twi_iface), GFP_KERNEL);
-> +       iface = devm_kzalloc(&pdev->dev, sizeof(struct bfin_twi_iface),
-> +                       GFP_KERNEL);
->         if (!iface) {
->                 dev_err(&pdev->dev, "Cannot allocate memory\n");
-
-This error message is not really required.
-
-> -               rc = -ENOMEM;
-> -               goto out_error_nomem;
-> +               return -ENOMEM;
->         }
->
->         spin_lock_init(&(iface->lock));
->
->         /* Find and map our resources */
->         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -       if (res == NULL) {
-> -               dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
-> -               rc = -ENOENT;
-> -               goto out_error_get_res;
-> -       }
-> -
-> -       iface->regs_base = ioremap(res->start, resource_size(res));
-> -       if (iface->regs_base == NULL) {
-> +       iface->regs_base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(iface->regs_base)) {
->                 dev_err(&pdev->dev, "Cannot map IO\n");
-
-devm_ioremap_resource prints out the error messages. So the above line
-is redundant.
-
-> -               rc = -ENXIO;
-> -               goto out_error_ioremap;
-> +               return -ENXIO;
-
-Why not return PTR_ERR(iface->regs_base)?
-
->         }
->
->         iface->irq = platform_get_irq(pdev, 0);
->         if (iface->irq < 0) {
->                 dev_err(&pdev->dev, "No IRQ specified\n");
-> -               rc = -ENOENT;
-> -               goto out_error_no_irq;
-> +               return -ENOENT;
->         }
->
->         p_adap = &iface->adap;
-> @@ -666,10 +658,10 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->                                         "i2c-bfin-twi");
->         if (rc) {
->                 dev_err(&pdev->dev, "Can't setup pin mux!\n");
-> -               goto out_error_pin_mux;
-> +               return rc;
->         }
->
-> -       rc = request_irq(iface->irq, bfin_twi_interrupt_entry,
-> +       rc = devm_request_irq(&pdev->dev, iface->irq, bfin_twi_interrupt_entry,
->                 0, pdev->name, iface);
->         if (rc) {
->                 dev_err(&pdev->dev, "Can't get IRQ %d !\n", iface->irq);
-> @@ -707,16 +699,9 @@ static int i2c_bfin_twi_probe(struct platform_device *pdev)
->         return 0;
->
->  out_error_add_adapter:
-> -       free_irq(iface->irq, iface);
->  out_error_req_irq:
-> -out_error_no_irq:
->         peripheral_free_list((unsigned short *)pdev->dev.platform_data);
-> -out_error_pin_mux:
-> -       iounmap(iface->regs_base);
-> -out_error_ioremap:
-> -out_error_get_res:
-> -       kfree(iface);
-> -out_error_nomem:
-> +
-
-Empty line not required.
-
-You could probably combine all the empty labels into one meaningful label above.
-
->         return rc;
+> 
+> You should write several time/space/invasivity stress-tests to help
+> see how future progress improves the code's performance/safety on
+> these and other problem areas.
+Yes, there already have a test/ directory for basic functionality testing,
+obviously it's not enough, I will add more benchmark and safety checking testcases.
+> 
+> 
+>> = Planned Changes
+>>
+>>    we are planning to enable more kernel ineroperability into ktap [...]
+> 
+> As per the above, you'll want to be extremely careful about the idea
+> to export FFI to let the lua scripts call into arbitrary kernel
+> functions.  Perhaps wrap it into a 'guru' mode flag?
+Definitely, there must need a mode flag to separate safety and not-safety.
+> 
+> 
+> - FChE
+> 
+> .
+> 
 
 
--- 
-With warm regards,
-Sachin
