@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab3EXBpd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 May 2013 21:45:33 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:31066 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758134Ab3EXBpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 May 2013 21:45:32 -0400
-Message-ID: <1369359930.1770.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 00/11] sysv mqueue: do not hold the ipc lock
- unnecessarily
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 23 May 2013 18:45:30 -0700
-In-Reply-To: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
-References: <1368666490-29055-1-git-send-email-davidlohr.bueso@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759903Ab3EXBw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 May 2013 21:52:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759223Ab3EXBwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 May 2013 21:52:25 -0400
+Date: Thu, 23 May 2013 21:52:19 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: XFS assertion from truncate. (3.10-rc2)
+Message-ID: <20130524015219.GA28486@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+References: <20130522040318.GG29466@dastard>
+ <20130522041521.GA1837@redhat.com>
+ <20130522051243.GH29466@dastard>
+ <20130522052938.GA2573@redhat.com>
+ <20130522055147.GI29466@dastard>
+ <20130522215454.GL29466@dastard>
+ <20130523184948.GA11151@redhat.com>
+ <20130523223038.GB24543@dastard>
+ <20130524004906.GA21171@redhat.com>
+ <20130524012625.GH24543@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130524012625.GH24543@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping, Andrew?
+On Fri, May 24, 2013 at 11:26:25AM +1000, Dave Chinner wrote:
+ 
+ > You want to print the debug output if the masked value != 0.
 
-On Wed, 2013-05-15 at 18:07 -0700, Davidlohr Bueso wrote:
-> This patchset continues the work that began in the sysv ipc semaphore scaling 
-> series: https://lkml.org/lkml/2013/3/20/546
-> 
-> Just like semaphores used to be, sysv shared memory and msg queues also abuse the ipc
-> lock, unnecessarily holding it for operations such as permission and security checks. This
-> patchset mostly deals with mqueues, and while shared mem can be done in a very similar way,
-> I want to get these patches out in the open first. It also does some pending cleanups,
-> mostly focused on the two level locking we have in ipc code, taking care of ipc_addid() 
-> and ipcctl_pre_down_nolock() - yes there are still functions that need to be updated as well.
-> 
-> I have tried to split each patch to be as readable and specific as possible, specially when
-> shortening the critical regions, going one function at a time.
-> 
-> Patch 1 moves the locking to be explicitly done by the callers of ipc_addid.
-> It updates msg, sem and shm.
-> 
-> Patches 2-3: are just wrappers around the ipc lock, initially suggested by Linus.
-> 
-> Patch 4 is similar to patch 1, moving the rcu and rw_mutex locking out of
-> ipcctl_pre_down_nolock so that the callers explicitly deals with them. It updates msg, sem
-> and shm.
-> 
-> Patch 5 shortens the critical region in msgctl_down(), using the lockless
-> ipcctl_pre_down() function and only acquiring the ipc lock for RMID and SET commands.
-> 
-> Patch 6 simply moves the what-should-be lockless logic of *_INFO and *_STAT commands
-> out of msgctl() into a new function, msgctl_lockless().
-> 
-> Patch 7 introduces the necessary wrappers around ipc_obtain_object[_check]()
-> that will later enable us to separately lookup the ipc object without holding the lock.
-> 
-> Patch 8 updates the previously added msgctl_nolock() to actually be lockless, reducing
-> the critical region for the STAT commands.
-> 
-> Patch 9 redoes the locking for msgsend().
-> 
-> Patch 10 redoes the locking for msgrcv().
-> 
-> Patch 11 removes the now unused msg_lock and msg_lock_check functions, replaced by
-> a smarter combination of rcu, ipc_obtain_object and ipc_object_lock.
-> 
-> Davidlohr Bueso (11):
->   ipc: move rcu lock out of ipc_addid
->   ipc: introduce ipc object locking helpers
->   ipc: close open coded spin lock calls
->   ipc: move locking out of ipcctl_pre_down_nolock
->   ipc,msg: shorten critical region in semctl_down
->   ipc,msg: introduce msgctl_nolock
->   ipc,msg: introduce lockless functions to obtain the ipc object
->   ipc,msg: make msgctl_nolock lockless
->   ipc,msg: reduce critical region in msgsnd
->   ipc,msg: make shorten critical region in msgrcv
->   ipc: remove unused functions
-> 
->  ipc/msg.c  | 227 ++++++++++++++++++++++++++++++++++++++-----------------------
->  ipc/sem.c  |  42 +++++++-----
->  ipc/shm.c  |  32 ++++++---
->  ipc/util.c |  25 ++-----
->  ipc/util.h |  22 ++++--
->  5 files changed, 211 insertions(+), 137 deletions(-)
-> 
-> Thanks,
-> Davidlohr
-> 
+XFS (sda2): xfs_setattr_size: mask 0xaa69, masked 0x801 ii 0xffff8802129e98c0, d 0xffff88021757d970 path /davej/src/trinity/tmp/tmp.5/
 
-
+	Dave
