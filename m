@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab3EXFpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 01:45:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44869 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab3EXFpI (ORCPT
+	id S1754130Ab3EXFx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 01:53:56 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50019 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab3EXFxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 01:45:08 -0400
-Message-ID: <519EFE46.2070507@parallels.com>
-Date: Fri, 24 May 2013 09:44:38 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 24 May 2013 01:53:54 -0400
+Message-ID: <519F0068.5090403@linux.vnet.ibm.com>
+Date: Fri, 24 May 2013 13:53:44 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Jeff Layton <jlayton@redhat.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, <viro@zeniv.linux.org.uk>,
-        <serge.hallyn@canonical.com>, <lucas.demarchi@profusion.mobi>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <oleg@redhat.com>, <linux-fsdevel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <devel@openvz.org>
-Subject: Re: [RFC PATCH] fs: call_usermodehelper_root helper introduced
-References: <878v36ex6n.fsf@xmission.com> <519DCE5D.6070204@parallels.com> <87k3mq9fsu.fsf@xmission.com> <519DF109.9010309@parallels.com> <20130523073108.13afafa6@tlielax.poochiereds.net> <519DFFA9.3010606@parallels.com> <20130523075620.21abf79a@tlielax.poochiereds.net> <519E0474.5000606@parallels.com> <519E0AB0.7040704@panasas.com> <20130523090526.63fc153e@corrin.poochiereds.net> <20130523195547.GA13640@fieldses.org>
-In-Reply-To: <20130523195547.GA13640@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.18.163]
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com, mtosatti@redhat.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v7 09/11] KVM: MMU: introduce kvm_mmu_prepare_zap_obsolete_page
+References: <20130523055725.GA26157@redhat.com> <519DB372.3080803@linux.vnet.ibm.com> <20130523061818.GC26157@redhat.com> <519DB7D3.7030101@linux.vnet.ibm.com> <20130523073708.GE26157@redhat.com> <519DCA38.30200@linux.vnet.ibm.com> <20130523080922.GG26157@redhat.com> <519DF9F6.1060902@linux.vnet.ibm.com> <20130523123947.GO4725@redhat.com> <519E13B6.7060807@linux.vnet.ibm.com> <20130523155722.GJ26157@redhat.com> <519EFD15.2080109@linux.vnet.ibm.com>
+In-Reply-To: <519EFD15.2080109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13052405-5816-0000-0000-0000081CDC8C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-23.05.2013 23:55, J. Bruce Fields пишет:
-> On Thu, May 23, 2013 at 09:05:26AM -0400, Jeff Layton wrote:
->> On Thu, 23 May 2013 15:25:20 +0300
->>> I'm not familiar with nfsdcltrack but I would imagine it receives it's information from
->>> Kernel as a command line parameters.
+On 05/24/2013 01:39 PM, Xiao Guangrong wrote:
+
+>>> if (kvm_mmu_prepare_zap_page(sp, list))
+>>> 	hlist_del(sp->hlist);
 >>>
->>> Would it not be the simplest approach to add a --chroot=/path/to/root optional
->>> parameter to nfsdcltrack so it should access an alternate DB relative to
->>> --chroot.
->>>
->>> This would address Eric's concern of not executing user-privileged executable
->>> from Kernel. I think
->>>
->>> Just my $0.017
->>> Boaz
->>>
->>
->> I think that sounds reasonable. Is it always the case
->> that /path/to/root is reachable from the "primary" namespace?
->
-> I don't think we can assume that.
->
+>>> Or, i missed your suggestion?
+>> My assumption is that we can leave obsolete shadow pages on hashtable
+>> till commit_zap time.
+> 
+> Ah, i see.
+> 
+> Yes, i agree with your idea. I think we can only skip the obsolete-and-invalid
+> page since the obsolete-but-unzapped page still affects the mmu's behaviour,
+> for example, it can cause page write-protect, kvm_mmu_unprotect_page()
+> can not work by skipping unzapped-obsolete pages.
 
-Yes, we can't. For example in case of different mount namespaces.
+kvm_mmu_unprotect_page() can work, we can skip obsolete pages too when detect
+whether need to write-protect a page, it is easier to make the page become
+writable when zapping obsolete pages.
 
->> If not, you may need to do something more exotic there.
->
-> We should be able to pass a file descriptor and then work relative to
-> that.
->
+Will update it following your idea, sorry for my noise.
 
-We can't do this either.
-Moreover, passing a file descriptor is something, that solves (?) completely different problem.
-Imagine the following:
-1) We have a host, based on, say RHEL6, which nfs-utils has doesn't have "/sbin/nfsdcltrack" and all.
-2) And we have a container in it, based on, say, Fedora-19, which nfs-utils has this binary.
-
-In case of starting NFSd in Fedora CT, we won't be able to execute the desired binary without root swapping.
-Because we won't be able to even lookup it in the host file system.
-
-So, as I said previously, the main problem here is not how to modify the userspace binary, but how to lookup and execute the right (!) one.
-And I don't see, how we can do this (simple enough) without root swap.
-
-
--- 
-Best regards,
-Stanislav Kinsbursky
