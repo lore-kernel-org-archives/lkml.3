@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760253Ab3EXJjq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:39:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47827 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760172Ab3EXJh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760183Ab3EXJh2 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 24 May 2013 05:37:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14209 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859Ab3EXJhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 05:37:23 -0400
 X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
-   d="scan'208";a="7355222"
+   d="scan'208";a="7355206"
 From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, mingo@redhat.com,
-        hpa@zytor.com, minchan@kernel.org, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, yinghai@kernel.org, jiang.liu@huawei.com,
-        tj@kernel.org, liwanp@linux.vnet.ibm.com,
-        isimatu.yasuaki@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] Support hot-remove local pagetable pages.
-Date: Fri, 24 May 2013 17:30:03 +0800
-Message-Id: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
+To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v3 08/13] x86, numa: Move memory_add_physaddr_to_nid() to CONFIG_NUMA.
+Date: Fri, 24 May 2013 17:29:17 +0800
+Message-Id: <1369387762-17865-9-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:25:48,
+ 2013/05/24 17:25:04,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:36:00,
-	Serialize complete at 2013/05/24 17:36:00
+ 2013/05/24 17:35:56,
+	Serialize complete at 2013/05/24 17:35:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch-set from Yinghai allocates pagetables to local nodes.
-v1: https://lkml.org/lkml/2013/3/7/642
-v2: https://lkml.org/lkml/2013/3/10/47
-v3: https://lkml.org/lkml/2013/4/4/639
-v4: https://lkml.org/lkml/2013/4/11/829
+memory_add_physaddr_to_nid() is declared in include/linux/memory_hotplug.h,
+protected by CONFIG_NUMA. And in x86, the definitions are protected by
+CONFIG_MEMORY_HOTPLUG.
 
-Since pagetable pages are used by the kernel, they cannot be offlined.
-As a result, they cannot be hot-remove.
+memory_add_physaddr_to_nid() uses numa_meminfo to find the physical address's
+nid. It has nothing to do with memory hotplug. And also, it can be used by
+alloc_low_pages() to obtain nid of the allocated memory.
 
-This patch fix this problem with the following solution:
+So in x86, also use CONFIG_NUMA to protect it.
 
-     1.   Introduce a new bootmem type LOCA_NODE_DATAL, and register local 
-          pagetable pages as LOCA_NODE_DATAL by setting page->lru.next to
-          LOCA_NODE_DATAL, just like we register SECTION_INFO pages.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/numa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-     2.   Skip LOCA_NODE_DATAL pages in offline/online procedures. When the 
-          whole memory block they reside in is offlined, the kernel can 
-          still access the pagetables.
-          (This changes the semantics of offline/online a little bit.)
-
-     3.   Do not free LOCA_NODE_DATAL pages to buddy system because they 
-          were skipped when in offline/online procedures. The memory block 
-          they reside in could have been offlined.
-
-Anyway, this problem should be fixed. Any better idea is welcome.
-
-Tang Chen (4):
-  bootmem, mem-hotplug: Register local pagetable pages with
-    LOCAL_NODE_DATA when freeing bootmem.
-  mem-hotplug: Skip LOCAL_NODE_DATA pages in memory offline procedure.
-  mem-hotplug: Skip LOCAL_NODE_DATA pages in memory online procedure.
-  mem-hotplug: Do not free LOCAL_NODE_DATA pages to buddy system in
-    hot-remove procedure.
-
- arch/x86/mm/init_64.c          |    2 +
- include/linux/memblock.h       |   22 +++++++++++++++++
- include/linux/memory_hotplug.h |   13 ++++++++-
- mm/memblock.c                  |   52 ++++++++++++++++++++++++++++++++++++++++
- mm/memory_hotplug.c            |   42 +++++++++++++++++++++++++++++++-
- mm/page_alloc.c                |   18 ++++++++++++-
- mm/page_isolation.c            |    6 ++++
- 7 files changed, 150 insertions(+), 5 deletions(-)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 8357c75..b28baf3 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -955,7 +955,7 @@ EXPORT_SYMBOL(cpumask_of_node);
+ 
+ #endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG
++#ifdef CONFIG_NUMA
+ int memory_add_physaddr_to_nid(u64 start)
+ {
+ 	struct numa_meminfo *mi = &numa_meminfo;
+-- 
+1.7.1
 
