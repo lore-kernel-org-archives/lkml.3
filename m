@@ -1,137 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab3EXJik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:38:40 -0400
+	id S1760297Ab3EXJjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:39:20 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:32075 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760205Ab3EXJh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:37:29 -0400
+	id S1760156Ab3EXJh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 05:37:28 -0400
 X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
-   d="scan'208,223";a="7355226"
-Message-ID: <519F3212.6050602@cn.fujitsu.com>
-Date: Fri, 24 May 2013 17:25:38 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Vahram Martirosyan <vmartirosyan@gmail.com>
-CC: Dave Kleikamp <shaggy@kernel.org>,
-        Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
-        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        spruce-project@linuxtesting.org
-Subject: Re: [PATCH 2/2] jfs: Log shutdown error in jfs_freeze() function
-References: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org> <1369385833-6852-2-git-send-email-vahram.martirosyan@linuxtesting.org>
-In-Reply-To: <1369385833-6852-2-git-send-email-vahram.martirosyan@linuxtesting.org>
+   d="scan'208";a="7355221"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, mgorman@suse.de, mingo@redhat.com,
+        hpa@zytor.com, minchan@kernel.org, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, yinghai@kernel.org, jiang.liu@huawei.com,
+        tj@kernel.org, liwanp@linux.vnet.ibm.com,
+        isimatu.yasuaki@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] bootmem, mem-hotplug: Register local pagetable pages with LOCAL_NODE_DATA when freeing bootmem.
+Date: Fri, 24 May 2013 17:30:04 +0800
+Message-Id: <1369387807-17956-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1369387807-17956-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:26:36,
+ 2013/05/24 17:25:48,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:36:04,
-	Serialize complete at 2013/05/24 17:36:04
-Content-Type: multipart/mixed;
- boundary="------------090707070902080206040309"
+ 2013/05/24 17:36:02,
+	Serialize complete at 2013/05/24 17:36:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090707070902080206040309
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+As Yinghai suggested, even if a node is movable node, which has only
+ZONE_MOVABLE, pagetables should be put in the local node.
 
-Hi Vahram,
-   I saw the same issue in the bugzilla:
-https://bugzilla.kernel.org/show_bug.cgi?id=53331,
-and I sent out a patch this issue, but I've get any feedback.
-In fact, I think it's the right way to fix this issue,
-can you help to test it?
+In memory hot-remove logic, it offlines all pages first, and then
+removes pagetables. But the local pagetable pages cannot be offlined
+because they are used by kernel.
 
-Thanks,
-Gu
+So we should skip this kind of pages in offline procedure. But first
+of all, we need to mark them.
 
+This patch marks local node data pages in the same way as we mark the
+SECTION_INFO and MIX_SECTION_INFO data pages. We introduce a new type
+of bootmem: LOCAL_NODE_DATA. And use page->lru.next to mark this type
+of memory.
 
-On 05/24/2013 04:57 PM, Vahram Martirosyan wrote:
-
-> In function jfs_freeze() the log is shut down through lmLogShutdown() call.
-> When the "nointegrity" mount option is enabled, the log is actually not
-> initialized. As a result the freeze operation in that case brings to a
-> kernel OOPS.
-> 
-> The solution is to check if the "nointegrity" option is enabled and if it is not
-> then shut the log down. 
-> 
-> May be this is not the best solution, but at least it fixes the OOPS.
-> 
-> Found by Linux File System Verification project (linuxtesting.org)
-> 
-> Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
-> ---
->  fs/jfs/super.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-> index a3d424d..9788970 100644
-> --- a/fs/jfs/super.c
-> +++ b/fs/jfs/super.c
-> @@ -615,10 +615,12 @@ static int jfs_freeze(struct super_block *sb)
->  
->  	if (!(sb->s_flags & MS_RDONLY)) {
->  		txQuiesce(sb);
-> -		rc = lmLogShutdown(log);
-> -		if (rc != 0) {
-> -			jfs_err("lmLogShutdown failed with return code %d", rc);
-> -			return rc;
-> +		if (!log->no_integrity) {
-> +			rc = lmLogShutdown(log);
-> +			if (rc != 0) {
-> +				jfs_err("lmLogShutdown failed with return code %d", rc);
-> +				return rc;
-> +			}
->  		}
->  		rc = updateSuper(sb, FM_CLEAN);
->  		if (rc != 0) {
-
-
-
---------------090707070902080206040309
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
- name="0001-fs-jfs-Add-check-if-journaling-to-disk-has-been-disa.patch"
-Content-Disposition: attachment;
- filename*0="0001-fs-jfs-Add-check-if-journaling-to-disk-has-been-disa.pa";
- filename*1="tch"
-
->From 2f1fb676cfc98602706eb8aaa1638272b8da8dfb Mon Sep 17 00:00:00 2001
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Thu, 23 May 2013 16:14:19 +0800
-Subject: [PATCH] fs/jfs: Add check if journaling to disk has been disabled in
- lbmRead()
-
-
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- fs/jfs/jfs_logmgr.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ arch/x86/mm/init_64.c          |    2 +
+ include/linux/memblock.h       |   22 +++++++++++++++++
+ include/linux/memory_hotplug.h |   13 ++++++++-
+ mm/memblock.c                  |   52 ++++++++++++++++++++++++++++++++++++++++
+ mm/memory_hotplug.c            |   26 ++++++++++++++++++++
+ 5 files changed, 113 insertions(+), 2 deletions(-)
 
-diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
-index c57499d..360d27c 100644
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -2009,7 +2009,13 @@ static int lbmRead(struct jfs_log * log, int pn, struct lbuf ** bpp)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index dafdeb2..8be9c3b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1055,6 +1055,8 @@ static void __init register_page_bootmem_info(void)
  
- 	bio->bi_end_io = lbmIODone;
- 	bio->bi_private = bp;
--	submit_bio(READ_SYNC, bio);
-+	/*check if journaling to disk has been disabled*/
-+	if (log->no_integrity) {
-+		bio->bi_size = 0;
-+		lbmIODone(bio, 0);
-+	} else {
-+		submit_bio(READ_SYNC, bio);
+ 	for_each_online_node(i)
+ 		register_page_bootmem_info_node(NODE_DATA(i));
++
++	register_page_bootmem_local_node();
+ #endif
+ }
+ 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 5528e8f..4dd43df 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -134,6 +134,28 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+ 	     i != (u64)ULLONG_MAX;					\
+ 	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+ 
++void __next_local_node_mem_range(int *idx, int nid, phys_addr_t *out_start,
++				 phys_addr_t *out_end, int *out_nid);
++
++/**
++ * for_each_local_node_mem_range - iterate memblock areas storing local node
++ * 				   data
++ * @i: int used as loop variable
++ * @nid: node selector, %MAX_NUMNODES for all nodes
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @p_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Walks over memblock areas storing local node data. Since all the local node
++ * areas will be reserved by memblock, this iterator will only iterate
++ * memblock.reserve. Available as soon as memblock is initialized.
++ */
++#define for_each_local_node_mem_range(i, nid, p_start, p_end, p_nid)	    \
++	for (i = -1,							    \
++	     __next_local_node_mem_range(&i, nid, p_start, p_end, p_nid);   \
++	     i != -1;							    \
++	     __next_local_node_mem_range(&i, nid, p_start, p_end, p_nid))
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ 
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 18fe2a3..a720fd1 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -16,14 +16,19 @@ struct memory_block;
+ 
+ /*
+  * Types for free bootmem stored in page->lru.next. These have to be in
+- * some random range in unsigned long space for debugging purposes.
++ * some random range in unsigned long space for debugging purposes except
++ * LOCAL_NODE_DATA.
++ *
++ * LOCAL_NODE_DATA is used to mark local node pages storing data to
++ * describe the memory of the node, such as local pagetable pages.
+  */
+ enum {
+ 	MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE = 12,
+ 	SECTION_INFO = MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE,
+ 	MIX_SECTION_INFO,
+ 	NODE_INFO,
+-	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = NODE_INFO,
++	LOCAL_NODE_DATA,
++	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = LOCAL_NODE_DATA,
+ };
+ 
+ /* Types for control the zone type of onlined memory */
+@@ -179,10 +184,14 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+ 
+ #ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
++extern void register_page_bootmem_local_node(void);
+ #else
+ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+ }
++static inline void register_page_bootmem_local_node()
++{
++}
+ #endif
+ extern void put_page_bootmem(struct page *page);
+ extern void get_page_bootmem(unsigned long ingo, struct page *page,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 8b9a13c..7f429f4 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -628,6 +628,58 @@ bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
+ 	return region->flags & (1 << MEMBLK_HOTPLUGGABLE);
+ }
+ 
++/*
++ * Common iterator to find next range with the same flags.
++ */
++static void __init_memblock __next_flag_mem_range(int *idx, int nid,
++					unsigned long flags,
++					phys_addr_t *out_start,
++					phys_addr_t *out_end, int *out_nid)
++{
++	struct memblock_type *rsv = &memblock.reserved;
++	struct memblock_region *r;
++
++	while (++*idx < rsv->cnt) {
++		r = &rsv->regions[*idx];
++
++		if (nid != MAX_NUMNODES &&
++		    nid != memblock_get_region_node(r))
++			continue;
++
++		if (r->flags & flags)
++			break;
 +	}
++
++	if (*idx >= rsv->cnt) {
++		*idx = -1;
++		return;
++	}
++
++	if (out_start)
++		*out_start = r->base;
++	if (out_end)
++		*out_end = r->base + r->size;
++	if (out_nid)
++		*out_nid = memblock_get_region_node(r);
++}
++
++/**
++ * __next_local_node_mem_range - next function for
++ * 				 for_each_local_node_mem_range()
++ * @idx: pointer to int loop variable
++ * @nid: node selector, %MAX_NUMNODES for all nodes
++ * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @out_nid: ptr to int for nid of the range, can be %NULL
++ */
++void __init_memblock __next_local_node_mem_range(int *idx, int nid,
++					phys_addr_t *out_start,
++					phys_addr_t *out_end, int *out_nid)
++{
++	__next_flag_mem_range(idx, nid, 1 << MEMBLK_LOCAL_NODE,
++			      out_start, out_end, out_nid);
++}
++
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index b81a367..075d412 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -30,6 +30,7 @@
+ #include <linux/mm_inline.h>
+ #include <linux/firmware-map.h>
+ #include <linux/stop_machine.h>
++#include <linux/memblock.h>
  
- 	wait_event(bp->l_ioevent, (bp->l_flag != lbmREAD));
+ #include <asm/tlbflush.h>
  
+@@ -191,6 +192,31 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ }
+ #endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+ 
++void __ref register_page_bootmem_local_node()
++{
++	int i, nid;
++	phys_addr_t start, end;
++	unsigned long start_pfn, end_pfn;
++	struct page *page;
++
++	for_each_local_node_mem_range(i, MAX_NUMNODES, &start, &end, &nid) {
++		start_pfn = PFN_DOWN(start);
++		end_pfn = PFN_UP(end);
++		page = pfn_to_page(start_pfn);
++
++		for ( ; start_pfn <= end_pfn; start_pfn++, page++) {
++			/*
++			 * We need to set the whole page as LOCAL_NODE_DATA,
++			 * so we get the upper end_pfn. But this upper end_pfn
++			 * may not exist. So we have to check if the page
++			 * present before we access its struct page.
++			 */
++			if (pfn_present(start_pfn))
++				get_page_bootmem(nid, page, LOCAL_NODE_DATA);
++		}
++	}
++}
++
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+ 	unsigned long i, pfn, end_pfn, nr_pages;
 -- 
-1.7.7
+1.7.1
 
-
---------------090707070902080206040309--
