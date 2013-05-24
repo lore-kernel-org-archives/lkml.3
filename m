@@ -1,35 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab3EXPkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 11:40:11 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48091 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab3EXPkK (ORCPT
+	id S1756673Ab3EXPka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 11:40:30 -0400
+Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:50099 "EHLO
+	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754488Ab3EXPk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 11:40:10 -0400
-Message-ID: <519F89D7.3000009@wwwdotorg.org>
-Date: Fri, 24 May 2013 09:40:07 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 24 May 2013 11:40:28 -0400
+Date: Fri, 24 May 2013 15:40:26 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Al Viro <viro@ZenIV.linux.org.uk>, Vince Weaver <vincent.weaver@maine.edu>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, roland@kernel.org,
+        infinipath@qlogic.com, linux-mm@kvack.org, linux-rdma@vger.kernel.org,
+        Or Gerlitz <or.gerlitz@gmail.com>
+Subject: Re: [RFC][PATCH] mm: Fix RLIMIT_MEMLOCK
+In-Reply-To: <20130524140114.GK23650@twins.programming.kicks-ass.net>
+Message-ID: <0000013ed732b615-748f574f-ccb8-4de7-bbe4-d85d1cbf0c9d-000000@email.amazonses.com>
+References: <alpine.DEB.2.10.1305221523420.9944@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305221953370.11450@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1305222344060.12929@vincent-weaver-1.um.maine.edu> <20130523044803.GA25399@ZenIV.linux.org.uk>
+ <20130523104154.GA23650@twins.programming.kicks-ass.net> <0000013ed1b8d0cc-ad2bb878-51bd-430c-8159-629b23ed1b44-000000@email.amazonses.com> <20130523152458.GD23650@twins.programming.kicks-ass.net> <0000013ed2297ba8-467d474a-7068-45b3-9fa3-82641e6aa363-000000@email.amazonses.com>
+ <20130523163901.GG23650@twins.programming.kicks-ass.net> <0000013ed28b638a-066d7dc7-b590-49f8-9423-badb9537b8b6-000000@email.amazonses.com> <20130524140114.GK23650@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap: Make regmap-mmio usable from atomic contexts
-References: <1369384162-25196-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1369384162-25196-1-git-send-email-lars@metafoo.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.05.24-54.240.9.50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2013 02:29 AM, Lars-Peter Clausen wrote:
-> regmap-mmio uses a spinlock with spin_lock() and spin_unlock() for locking.
-> To be able to use the regmap API from different contexts (atomic vs non-atomic),
-> without the risk of race conditions, we need to use spin_lock_irqsave() and
-> spin_lock_irqrestore() instead. A new field, the spinlock_flags field, is added
-> to regmap struct to store the flags between regmap_{,un}lock_spinlock(). The
-> spinlock_flags field itself is also protected by the spinlock.
+On Fri, 24 May 2013, Peter Zijlstra wrote:
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Patch bc3e53f682 ("mm: distinguish between mlocked and pinned pages")
+> broke RLIMIT_MEMLOCK.
+
+Nope the patch fixed a problem with double accounting.
+
+The problem that we seem to have is to define what mlocked and pinned mean
+and how this relates to RLIMIT_MEMLOCK.
+
+mlocked pages are pages that are movable (not pinned!!!) and that are
+marked in some way by user space actions as mlocked (POSIX semantics).
+They are marked with a special page flag (PG_mlocked).
+
+Pinned pages are pages that have an elevated refcount because the hardware
+needs to use these pages for I/O. The elevated refcount may be temporary
+(then we dont care about this) or for a longer time (such as the memory
+registration of the IB subsystem). That is when we account the memory as
+pinned. The elevated refcount stops page migration and other things from
+trying to move that memory.
+
+Pages can be both pinned and mlocked. Before my patch some pages those two
+issues were conflated since the same counter was used and therefore these
+pages were counted twice. If an RDMA application was running using
+mlockall() and was performing large scale I/O then the counters could show
+extraordinary large numbers and the VM would start to behave erratically.
+
+It is important for the VM to know which pages cannot be evicted but that
+involves many more pages due to dirty pages etc etc.
+
+So far the assumption has been that RLIMIT_MEMLOCK is a limit on the pages
+that userspace has mlocked.
+
+You want the counter to mean something different it seems. What is it?
+
+I think we need to be first clear on what we want to accomplish and what
+these counters actually should count before changing things.
+
+Certainly would appreciate improvements in this area but resurrecting the
+conflation between mlocked and pinned pages is not the way to go.
+
+> This patch proposes to properly fix the problem by introducing
+> VM_PINNED. This also provides the groundwork for a possible mpin()
+> syscall or MADV_PIN -- although these are not included.
+
+Maybe add a new PIN page flag? Pages are not pinned per vma as the patch
+seems to assume.
+
+> It recognises that pinned page semantics are a strict super-set of
+> locked page semantics -- a pinned page will not generate major faults
+> (and thus satisfies mlock() requirements).
+
+Not exactly true. Pinned pages may not have the mlocked flag set and they
+are not managed on the unevictable LRU lists of the MM.
+
+> If people find this approach unworkable, I request we revert the above
+> mentioned patch to at least restore RLIMIT_MEMLOCK to a usable state
+> again.
+
+Cannot do that. This will cause the breakage that the patch was fixing to
+resurface.
