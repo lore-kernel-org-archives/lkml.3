@@ -1,179 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab3EXRXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 13:23:12 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:45860 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755494Ab3EXRXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 13:23:11 -0400
-X-Sasl-enc: M1SGrU9KHyWkWPy8iU+jPmK5TNKMw+R1IbGoS3kyC+cQ 1369416189
-Message-ID: <519FA1FC.8090102@iki.fi>
-Date: Fri, 24 May 2013 10:23:08 -0700
-From: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757112Ab3EXRYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 13:24:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30595 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753210Ab3EXRYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 13:24:31 -0400
+Subject: [PATCH 0/2] vfio: type1 iommu hugepage support
+To: alex.williamson@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, chegu_vinod@hp.com,
+        qemu-devel@nongnu.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 24 May 2013 11:24:26 -0600
+Message-ID: <20130524171613.14229.84050.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net-next] x86: bpf_jit_comp: secure bpf jit against spraying
- attacks
-References: <1368844623.3301.142.camel@edumazet-glaptop>
-In-Reply-To: <1368844623.3301.142.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+This series let's the vfio type1 iommu backend take advantage of iommu
+large page support.  See patch 2/2 for the details.  This has been
+tested on both amd_iommu and intel_iommu, but only my AMD system has
+large page support.  I'd appreciate any testing and feedback on other
+systems, particularly vt-d systems supporting large pages.  Mapping
+efficiency should be improved a bit without iommu hugepages, but I
+hope that it's much more noticeable with huge pages, especially for
+very large QEMU guests.
 
-Peter talked to me about this BPF work to prevent JIT spraying attacks
-in the beginning of this week and I took a look at your patch.
+This change includes a clarification to the mapping expectations for
+users of the type1 iommu, but is compatible with known users and works
+with existing QEMU userspace supporting vfio.  Thanks,
 
-Some comments:
+Alex
 
-* Meta-comment about patch structure: why this was a one patch and not
-   two patches? It changes two things that are orthogonal to each other
-   (random offset,  RW -> RO change).
-* Should NX bit be turned on while JIT code is being prepared?
-* How hard it would be to read value of bpf_func pointer? If attacker
-   is able to read that, it would compromise the whole randomization
-   scheme.
-* I loved the socket creation trick in the blog post :) Are there any
-   plans to do something about it?
-* How was minimum entropy of 128 bytes chose? The patch description
-   does not explain this in anyway although it seems like decent choice.
+---
 
-/Jarkko
+Alex Williamson (2):
+      vfio: Convert type1 iommu to use rbtree
+      vfio: hugepage support for vfio_iommu_type1
 
-On 17.05.2013 19:37, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
->
-> hpa bringed into my attention some security related issues
-> with BPF JIT on x86.
->
-> This patch makes sure the bpf generated code is marked read only,
-> as other kernel text sections.
->
-> It also splits the unused space (we vmalloc() and only use a fraction of
-> the page) in two parts, so that the generated bpf code not starts at a
-> known offset in the page, but a pseudo random one.
->
-> Refs:
-> http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
->
-> Reported-by: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> ---
->   arch/x86/net/bpf_jit_comp.c |   53 ++++++++++++++++++++++++++++++----
->   1 file changed, 47 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-> index c0212db..79c216a 100644
-> --- a/arch/x86/net/bpf_jit_comp.c
-> +++ b/arch/x86/net/bpf_jit_comp.c
-> @@ -12,6 +12,7 @@
->   #include <linux/netdevice.h>
->   #include <linux/filter.h>
->   #include <linux/if_vlan.h>
-> +#include <linux/random.h>
->   
->   /*
->    * Conventions :
-> @@ -144,6 +145,39 @@ static int pkt_type_offset(void)
->   	return -1;
->   }
->   
-> +struct bpf_binary_header {
-> +	unsigned int	pages;
-> +	/* Note : for security reasons, bpf code will follow a randomly
-> +	 * sized amount of int3 instructions
-> +	 */
-> +	u8		image[];
-> +};
-> +
-> +static struct bpf_binary_header *bpf_alloc_binary(unsigned int proglen,
-> +						  u8 **image_ptr)
-> +{
-> +	unsigned int sz, hole;
-> +	struct bpf_binary_header *header;
-> +
-> +	/* Most of BPF filters are really small,
-> +	 * but if some of them fill a page, allow at least
-> +	 * 128 extra bytes to insert a random section of int3
-> +	 */
-> +	sz = round_up(proglen + sizeof(*header) + 128, PAGE_SIZE);
-> +	header = module_alloc(sz);
-> +	if (!header)
-> +		return NULL;
-> +
-> +	memset(header, 0xcc, sz); /* fill whole space with int3 instructions */
-> +
-> +	header->pages = sz / PAGE_SIZE;
-> +	hole = sz - (proglen + sizeof(*header));
-> +
-> +	/* insert a random number of int3 instructions before BPF code */
-> +	*image_ptr = &header->image[prandom_u32() % hole];
-> +	return header;
-> +}
-> +
->   void bpf_jit_compile(struct sk_filter *fp)
->   {
->   	u8 temp[64];
-> @@ -153,6 +187,7 @@ void bpf_jit_compile(struct sk_filter *fp)
->   	int t_offset, f_offset;
->   	u8 t_op, f_op, seen = 0, pass;
->   	u8 *image = NULL;
-> +	struct bpf_binary_header *header = NULL;
->   	u8 *func;
->   	int pc_ret0 = -1; /* bpf index of first RET #0 instruction (if any) */
->   	unsigned int cleanup_addr; /* epilogue code offset */
-> @@ -693,7 +728,7 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
->   				if (unlikely(proglen + ilen > oldproglen)) {
->   					pr_err("bpb_jit_compile fatal error\n");
->   					kfree(addrs);
-> -					module_free(NULL, image);
-> +					module_free(NULL, header);
->   					return;
->   				}
->   				memcpy(image + proglen, temp, ilen);
-> @@ -717,8 +752,8 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
->   			break;
->   		}
->   		if (proglen == oldproglen) {
-> -			image = module_alloc(proglen);
-> -			if (!image)
-> +			header = bpf_alloc_binary(proglen, &image);
-> +			if (!header)
->   				goto out;
->   		}
->   		oldproglen = proglen;
-> @@ -728,7 +763,8 @@ cond_branch:			f_offset = addrs[i + filter[i].jf] - addrs[i];
->   		bpf_jit_dump(flen, proglen, pass, image);
->   
->   	if (image) {
-> -		bpf_flush_icache(image, image + proglen);
-> +		bpf_flush_icache(header, image + proglen);
-> +		set_memory_ro((unsigned long)header, header->pages);
->   		fp->bpf_func = (void *)image;
->   	}
->   out:
-> @@ -738,6 +774,11 @@ out:
->   
->   void bpf_jit_free(struct sk_filter *fp)
->   {
-> -	if (fp->bpf_func != sk_run_filter)
-> -		module_free(NULL, fp->bpf_func);
-> +	if (fp->bpf_func != sk_run_filter) {
-> +		unsigned long addr = (unsigned long)fp->bpf_func & PAGE_MASK;
-> +		struct bpf_binary_header *header = (void *)addr;
-> +
-> +		set_memory_rw(addr, header->pages);
-> +		module_free(NULL, header);
-> +	}
->   }
->
->
 
+ drivers/vfio/vfio_iommu_type1.c |  607 ++++++++++++++++++++++++---------------
+ include/uapi/linux/vfio.h       |    8 -
+ 2 files changed, 387 insertions(+), 228 deletions(-)
