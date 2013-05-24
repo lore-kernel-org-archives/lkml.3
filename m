@@ -1,186 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246Ab3EXJll (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 05:41:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32075 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760017Ab3EXJhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 05:37:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,734,1363104000"; 
-   d="scan'208";a="7355212"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com, tj@kernel.org,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH v3 04/13] x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct numa_meminfo.
-Date: Fri, 24 May 2013 17:29:13 +0800
-Message-Id: <1369387762-17865-5-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1369387762-17865-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:25:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/05/24 17:35:58,
-	Serialize complete at 2013/05/24 17:35:58
+	id S1760302Ab3EXJlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 05:41:53 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53685 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760090Ab3EXJlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 05:41:51 -0400
+Message-ID: <1369388490.30145.16.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Fri, 24 May 2013 19:41:30 +1000
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since Yinghai has implement "Allocate pagetable pages in local node", for a
-node with hotpluggable memory, we have to allocate pagetable pages first, and
-then reserve the rest as hotpluggable memory in memblock.
+Hi Linus !
 
-But the kernel parse SRAT first, and then initialize memory mapping. So we have
-to remember the which memory ranges are hotpluggable for future usage.
+Here are a few more powerpc fixes for 3.10. Some more P8 related
+bits, a bunch of fixes for our P7+/P8 HW crypto drivers, some added
+workarounds for those radeons that don't do proper 64-bit MSIs and
+a couple of other trivialities by myself.
 
-When parsing SRAT, we added each memory range to numa_meminfo. So we can store
-hotpluggable info in numa_meminfo.
+Cheers,
+Ben.
 
-This patch introduces a "bool hotpluggable" member into struct
-numa_meminfo.
+The following changes since commit 519fe2ecb755b875d9814cdda19778c2e88c6901:
 
-And modifies the following APIs' prototypes to support it:
-   - numa_add_memblk()
-   - numa_add_memblk_to()
+  Merge branch 'leds-fixes-3.10' of git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds (2013-05-21 11:41:07 -0700)
 
-And the following callers:
-   - numaq_register_node()
-   - dummy_numa_init()
-   - amd_numa_init()
-   - acpi_numa_memory_affinity_init() in x86
+are available in the git repository at:
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/include/asm/numa.h     |    3 ++-
- arch/x86/kernel/apic/numaq_32.c |    2 +-
- arch/x86/mm/amdtopology.c       |    3 ++-
- arch/x86/mm/numa.c              |   10 +++++++---
- arch/x86/mm/numa_internal.h     |    1 +
- arch/x86/mm/srat.c              |    2 +-
- 6 files changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 1b99ee5..73096b2 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -31,7 +31,8 @@ extern int numa_off;
- extern s16 __apicid_to_node[MAX_LOCAL_APIC];
- extern nodemask_t numa_nodes_parsed __initdata;
- 
--extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
-+extern int __init numa_add_memblk(int nodeid, u64 start, u64 end,
-+				  bool hotpluggable);
- extern void __init numa_set_distance(int from, int to, int distance);
- 
- static inline void set_apicid_to_node(int apicid, s16 node)
-diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
-index d661ee9..7a9c542 100644
---- a/arch/x86/kernel/apic/numaq_32.c
-+++ b/arch/x86/kernel/apic/numaq_32.c
-@@ -82,7 +82,7 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
- 	int ret;
- 
- 	node_set(node, numa_nodes_parsed);
--	ret = numa_add_memblk(node, start, end);
-+	ret = numa_add_memblk(node, start, end, false);
- 	BUG_ON(ret < 0);
- }
- 
-diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
-index 5247d01..d521471 100644
---- a/arch/x86/mm/amdtopology.c
-+++ b/arch/x86/mm/amdtopology.c
-@@ -167,7 +167,8 @@ int __init amd_numa_init(void)
- 			nodeid, base, limit);
- 
- 		prevbase = base;
--		numa_add_memblk(nodeid, base, limit);
-+		/* Do not support memory hotplug for AMD cpu. */
-+		numa_add_memblk(nodeid, base, limit, false);
- 		node_set(nodeid, numa_nodes_parsed);
- 	}
- 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index af18b18..892729b 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -134,6 +134,7 @@ void __init setup_node_to_cpumask_map(void)
- }
- 
- static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
-+				     bool hotpluggable,
- 				     struct numa_meminfo *mi)
- {
- 	/* ignore zero length blks */
-@@ -155,6 +156,7 @@ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
- 	mi->blk[mi->nr_blks].start = start;
- 	mi->blk[mi->nr_blks].end = end;
- 	mi->blk[mi->nr_blks].nid = nid;
-+	mi->blk[mi->nr_blks].hotpluggable = hotpluggable;
- 	mi->nr_blks++;
- 	return 0;
- }
-@@ -179,15 +181,17 @@ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
-  * @nid: NUMA node ID of the new memblk
-  * @start: Start address of the new memblk
-  * @end: End address of the new memblk
-+ * @hotpluggable: True if memblk is hotpluggable
-  *
-  * Add a new memblk to the default numa_meminfo.
-  *
-  * RETURNS:
-  * 0 on success, -errno on failure.
-  */
--int __init numa_add_memblk(int nid, u64 start, u64 end)
-+int __init numa_add_memblk(int nid, u64 start, u64 end,
-+			   bool hotpluggable)
- {
--	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
-+	return numa_add_memblk_to(nid, start, end, hotpluggable, &numa_meminfo);
- }
- 
- /* Initialize NODE_DATA for a node on the local memory */
-@@ -627,7 +631,7 @@ static int __init dummy_numa_init(void)
- 	       0LLU, PFN_PHYS(max_pfn) - 1);
- 
- 	node_set(0, numa_nodes_parsed);
--	numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
-+	numa_add_memblk(0, 0, PFN_PHYS(max_pfn), false);
- 
- 	return 0;
- }
-diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
-index bb2fbcc..1ce4e6b 100644
---- a/arch/x86/mm/numa_internal.h
-+++ b/arch/x86/mm/numa_internal.h
-@@ -8,6 +8,7 @@ struct numa_memblk {
- 	u64			start;
- 	u64			end;
- 	int			nid;
-+	bool			hotpluggable;
- };
- 
- struct numa_meminfo {
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 5055fa7..f7f6fd4 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -171,7 +171,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		goto out_err_bad_srat;
- 	}
- 
--	if (numa_add_memblk(node, start, end) < 0)
-+	if (numa_add_memblk(node, start, end, hotpluggable) < 0)
- 		goto out_err_bad_srat;
- 
- 	node_set(node, numa_nodes_parsed);
--- 
-1.7.1
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to f1dd153121dcb872ae6cba8d52bec97519eb7d97:
+
+  powerpc/pseries: Make 32-bit MSI quirk work on systems lacking firmware support (2013-05-24 18:16:54 +1000)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (5):
+      powerpc: Fix TLB cleanup at boot on POWER8
+      powerpc/pci: Fix bogus message at boot about empty memory resources
+      powerpc/powernv: Fix condition for when to invalidate the TCE cache
+      powerpc: Make radeon 32-bit MSI quirk work on powernv
+      powerpc/powernv: Build a zImage.epapr
+
+Brian King (1):
+      powerpc/pseries: Make 32-bit MSI quirk work on systems lacking firmware support
+
+Kent Yoder (1):
+      drivers/crypto/nx: Fixes for multiple races and issues
+
+Michael Ellerman (1):
+      powerpc: Context switch more PMU related SPRs
+
+ arch/powerpc/include/asm/pci-bridge.h     |    2 +
+ arch/powerpc/include/asm/processor.h      |    6 +++
+ arch/powerpc/kernel/asm-offsets.c         |    6 +++
+ arch/powerpc/kernel/cpu_setup_power.S     |    8 ++-
+ arch/powerpc/kernel/entry_64.S            |   28 +++++++++++
+ arch/powerpc/kernel/pci-common.c          |    7 +--
+ arch/powerpc/kernel/pci_64.c              |   10 ++++
+ arch/powerpc/kernel/pci_dn.c              |    8 +++
+ arch/powerpc/platforms/powernv/Kconfig    |    1 +
+ arch/powerpc/platforms/powernv/pci-ioda.c |   27 +++++------
+ arch/powerpc/platforms/powernv/pci.c      |    6 ++-
+ arch/powerpc/platforms/pseries/msi.c      |   75 +++++++++++++++--------------
+ drivers/crypto/nx/nx-aes-cbc.c            |    1 +
+ drivers/crypto/nx/nx-aes-ecb.c            |    1 +
+ drivers/crypto/nx/nx-aes-gcm.c            |    2 +-
+ drivers/crypto/nx/nx-sha256.c             |    8 +--
+ drivers/crypto/nx/nx-sha512.c             |    7 +--
+ drivers/crypto/nx/nx.c                    |   38 +++------------
+ 18 files changed, 146 insertions(+), 95 deletions(-)
+
 
