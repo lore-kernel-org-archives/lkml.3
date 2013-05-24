@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab3EXMh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 08:37:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58424 "EHLO mx1.redhat.com"
+	id S1755837Ab3EXMhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 08:37:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20625 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755666Ab3EXMhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 08:37:23 -0400
+	id S1755394Ab3EXMhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 08:37:35 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -17,16 +17,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>, Sam Ravnborg <sam@ravnborg.org>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 13/25] perf tools: Move libbfd check config into config/Makefile
-Date: Fri, 24 May 2013 14:35:16 +0200
-Message-Id: <1369398928-9809-14-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 19/25] perf tools: Merge all *LDFLAGS* make variable into LDFLAGS
+Date: Fri, 24 May 2013 14:35:22 +0200
+Message-Id: <1369398928-9809-20-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
 References: <1369398928-9809-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libbfd check config into config/Makefile.
+Merging all *LDFLAGS* make variable into LDFLAGS to eliminate
+all special *LDFLAGS* variables and make the setup clear.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,103 +42,201 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: Sam Ravnborg <sam@ravnborg.org>
 Cc: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/Makefile        | 37 -------------------------------------
- tools/perf/config/Makefile | 37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+), 37 deletions(-)
+ tools/perf/Makefile        |  6 ++----
+ tools/perf/config/Makefile | 41 +++++++++++++++++++++++------------------
+ 2 files changed, 25 insertions(+), 22 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 061de65..e4d99c4 100644
+index 603ce96..0a74f14 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -538,43 +538,6 @@ ifndef NO_LIBPYTHON
- 	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
- endif
+@@ -513,8 +513,6 @@ endif
  
--ifdef NO_DEMANGLE
--	BASIC_CFLAGS += -DNO_DEMANGLE
--else
--	ifdef HAVE_CPLUS_DEMANGLE
--		EXTLIBS += -liberty
--		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--	else
--		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
--		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
--		ifeq ($(has_bfd),y)
--			EXTLIBS += -lbfd
--		else
--			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
--			ifeq ($(has_bfd_iberty),y)
--				EXTLIBS += -lbfd -liberty
--			else
--				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
--				ifeq ($(has_bfd_iberty_z),y)
--					EXTLIBS += -lbfd -liberty -lz
--				else
--					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
--					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
--					ifeq ($(has_cplus_demangle),y)
--						EXTLIBS += -liberty
--						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--					else
--						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--						BASIC_CFLAGS += -DNO_DEMANGLE
--					endif
--				endif
--			endif
--		endif
--	endif
--endif
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+ 
+-ALL_LDFLAGS += $(BASIC_LDFLAGS)
 -
- ifeq ($(NO_PERF_REGS),0)
- 	ifeq ($(ARCH),x86)
- 		LIB_H += arch/x86/include/perf_regs.h
+ export INSTALL SHELL_PATH
+ 
+ ### Build rules
+@@ -537,7 +535,7 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 		$(CFLAGS) -c $(filter %.c,$^) -o $@
+ 
+ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
++	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+ 
+ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+@@ -642,7 +640,7 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+ 
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
++	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
+ 
+ $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
+ $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index d5e0386..68c6a2b 100644
+index a53d2b3..c6e4902 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -324,3 +324,40 @@ else
-     endif
-   endif
+@@ -71,7 +71,6 @@ CFLAGS += \
+ 	-std=gnu99
+ 
+ EXTLIBS = -lpthread -lrt -lelf -lm
+-ALL_LDFLAGS = $(LDFLAGS)
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+ 	CFLAGS += -fstack-protector-all
+@@ -107,8 +106,6 @@ CFLAGS += \
+ 	-I../lib/ \
+ 	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ 
+-BASIC_LDFLAGS =
+-
+ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	BIONIC := 1
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+@@ -120,9 +117,9 @@ ifdef NO_LIBELF
+ 	NO_DEMANGLE := 1
+ 	NO_LIBUNWIND := 1
+ else
+-FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-	FLAGS_GLIBC=$(CFLAGS) $(ALL_LDFLAGS)
++	FLAGS_GLIBC=$(CFLAGS) $(LDFLAGS)
+ 	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+ 		LIBC_SUPPORT := 1
+ 	endif
+@@ -146,7 +143,7 @@ else
+ 		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+ 	endif
+ 
+-	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++	FLAGS_DWARF=$(CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(LDFLAGS) $(EXTLIBS)
+ 	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+ 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+ 		NO_DWARF := 1
+@@ -156,7 +153,7 @@ endif # NO_LIBELF
+ 
+ ifndef NO_LIBELF
+ CFLAGS += -DLIBELF_SUPPORT
+-FLAGS_LIBELF=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
+ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+ 	CFLAGS += -DLIBELF_MMAP
  endif
+@@ -170,13 +167,21 @@ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	NO_DWARF := 1
+ else
+ 	CFLAGS += -DDWARF_SUPPORT $(LIBDW_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
++	LDFLAGS += $(LIBDW_LDFLAGS)
+ 	EXTLIBS += -lelf -ldw
+ endif # PERF_HAVE_DWARF_REGS
+ endif # NO_DWARF
+ 
+ endif # NO_LIBELF
+ 
++ifndef NO_LIBELF
++CFLAGS += -DLIBELF_SUPPORT
++FLAGS_LIBELF=$(CFLAGS) $(LDFLAGS) $(EXTLIBS)
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
++	CFLAGS += -DLIBELF_MMAP
++endif # try-cc
++endif # NO_LIBELF
 +
-+ifdef NO_DEMANGLE
-+	BASIC_CFLAGS += -DNO_DEMANGLE
-+else
-+	ifdef HAVE_CPLUS_DEMANGLE
-+		EXTLIBS += -liberty
-+		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+	else
-+		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
-+		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
-+		ifeq ($(has_bfd),y)
-+			EXTLIBS += -lbfd
-+		else
-+			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
-+			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
-+			ifeq ($(has_bfd_iberty),y)
-+				EXTLIBS += -lbfd -liberty
-+			else
-+				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
-+				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
-+				ifeq ($(has_bfd_iberty_z),y)
-+					EXTLIBS += -lbfd -liberty -lz
-+				else
-+					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
-+					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
-+					ifeq ($(has_cplus_demangle),y)
-+						EXTLIBS += -liberty
-+						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-+					else
-+						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+						BASIC_CFLAGS += -DNO_DEMANGLE
-+					endif
-+				endif
-+			endif
-+		endif
-+	endif
-+endif
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifneq ($(ARCH),x86)
+ 	NO_LIBUNWIND := 1
+@@ -190,7 +195,7 @@ ifdef LIBUNWIND_DIR
+ 	LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
+ endif
+ 
+-FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
++FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS) $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+ ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+ 	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+ 	NO_LIBUNWIND := 1
+@@ -201,11 +206,11 @@ ifndef NO_LIBUNWIND
+ 	CFLAGS += -DLIBUNWIND_SUPPORT
+ 	EXTLIBS += $(LIBUNWIND_LIBS)
+ 	CFLAGS += $(LIBUNWIND_CFLAGS)
+-	BASIC_LDFLAGS := $(LIBUNWIND_LDFLAGS) $(BASIC_LDFLAGS)
++	LDFLAGS += $(LIBUNWIND_LDFLAGS)
+ endif # NO_LIBUNWIND
+ 
+ ifndef NO_LIBAUDIT
+-	FLAGS_LIBAUDIT = $(CFLAGS) $(ALL_LDFLAGS) -laudit
++	FLAGS_LIBAUDIT = $(CFLAGS) $(LDFLAGS) -laudit
+ 	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+ 		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+ 		NO_LIBAUDIT := 1
+@@ -220,7 +225,7 @@ ifdef NO_NEWT
+ endif
+ 
+ ifndef NO_SLANG
+-	FLAGS_SLANG=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
++	FLAGS_SLANG=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -I/usr/include/slang -lslang
+ 	ifneq ($(call try-cc,$(SOURCE_SLANG),$(FLAGS_SLANG),libslang),y)
+ 		msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
+ 		NO_SLANG := 1
+@@ -233,7 +238,7 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-	FLAGS_GTK2=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+ 	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+ 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+ 		NO_GTK2 := 1
+@@ -263,7 +268,7 @@ else
+ 		CFLAGS += -DNO_LIBPERL
+ 		NO_LIBPERL := 1
+ 	else
+-		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
++		LDFLAGS += $(PERL_EMBED_LDFLAGS)
+ 		EXTLIBS += $(PERL_EMBED_LIBADD)
+ 	endif
+ endif
+@@ -322,7 +327,7 @@ else
+           $(warning $(and ,))
+           $(error   $(and ,))
+         else
+-          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
++          LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+           EXTLIBS += $(PYTHON_EMBED_LIBADD)
+           LANG_BINDINGS += $(OUTPUT)python/perf.so
+         endif
+@@ -338,7 +343,7 @@ else
+ 		EXTLIBS += -liberty
+ 		CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ 	else
+-		FLAGS_BFD=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
++		FLAGS_BFD=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+ 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+ 		ifeq ($(has_bfd),y)
+ 			EXTLIBS += -lbfd
+@@ -353,7 +358,7 @@ else
+ 				ifeq ($(has_bfd_iberty_z),y)
+ 					EXTLIBS += -lbfd -liberty -lz
+ 				else
+-					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++					FLAGS_CPLUS_DEMANGLE=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) -liberty
+ 					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+ 					ifeq ($(has_cplus_demangle),y)
+ 						EXTLIBS += -liberty
+@@ -387,7 +392,7 @@ ifndef NO_BACKTRACE
+ endif
+ 
+ ifndef NO_LIBNUMA
+-	FLAGS_LIBNUMA = $(CFLAGS) $(ALL_LDFLAGS) -lnuma
++	FLAGS_LIBNUMA = $(CFLAGS) $(LDFLAGS) -lnuma
+ 	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
+ 		msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numa-libs-devel or libnuma-dev);
+ 		NO_LIBNUMA := 1
 -- 
 1.7.11.7
 
