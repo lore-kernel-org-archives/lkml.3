@@ -1,115 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3EXVBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 17:01:43 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41417 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab3EXVBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 17:01:42 -0400
-Message-ID: <519FD520.1010705@oracle.com>
-Date: Fri, 24 May 2013 16:01:20 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755813Ab3EXVFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 17:05:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57928 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755553Ab3EXVFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 17:05:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,737,1363158000"; 
+   d="scan'208";a="319164159"
+Date: Fri, 24 May 2013 14:05:03 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Shawn Nematbakhsh <shawnn@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky
+ controllers.
+Message-ID: <20130524210503.GC15788@xanatos>
+References: <1369419177-23281-1-git-send-email-shawnn@chromium.org>
 MIME-Version: 1.0
-To: Vahram Martirosyan <vmartirosyan@gmail.com>
-CC: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, spruce-project@linuxtesting.org
-Subject: [PATCH] jfs: Several bugs in jfs_freeze() and jfs_unfreeze()
-References: <1369385833-6852-1-git-send-email-vahram.martirosyan@linuxtesting.org> <519F9D63.8000305@oracle.com>
-In-Reply-To: <519F9D63.8000305@oracle.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1369419177-23281-1-git-send-email-shawnn@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vahram,
-This is your first patch modified to be a little more robust. If there is
-no objection, I'll push it to linux-next along with Gu's nointegrity
-patch.
+On Fri, May 24, 2013 at 11:12:57AM -0700, Shawn Nematbakhsh wrote:
+> If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
+> a reset will be performed upon runtime resume. Any previously suspended
+> devices attached to the controller will be re-enumerated at this time.
+> This will cause problems, for example, if an open system call on the
+> device triggered the resume (the open call will fail).
 
-From: Vahram Martirosyan <vmartirosyan@gmail.com>
-Date: Fri, 24 May 2013 13:57:12 +0500
+That's ugly, but disabling runtime PM is going to have a big impact on
+the power consumption of those systems.
 
-The mentioned functions do not pay attention to the error codes returned
-by the functions updateSuper(), lmLogInit() and lmLogShutdown(). It brings
-to system crash later when writing to log.
+Alan, do you think this is really the right thing to be doing here?  It
+feels like userspace should just be able to deal with devices
+disconnecting on resume.  After all, there are lots of USB devices that
+can't handle USB device suspend at all.
 
-The patch adds corresponding code to check and return the error codes
-and to print correct error messages in case of errors.
+Shouldn't userspace just disable runtime PM for the USB device classes
+that don't have a reset resume callback?
 
-Found by Linux File System Verification project (linuxtesting.org).
+> Note that this change is only relevant when persist_enabled is not set
+> for USB devices.
 
-Signed-off-by: Vahram Martirosyan <vahram.martirosyan@linuxtesting.org>
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
----
- fs/jfs/super.c | 38 ++++++++++++++++++++++++++++++--------
- 1 file changed, 30 insertions(+), 8 deletions(-)
+Could we at least wrap the call in an ifdef CONFIG_USB_DEFAULT_PERSIST?
+That way if people have USB persist turned off in their configuration,
+their host will still be able to suspend.
 
-diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-index 2003e83..788e0a9 100644
---- a/fs/jfs/super.c
-+++ b/fs/jfs/super.c
-@@ -611,11 +611,28 @@ static int jfs_freeze(struct super_block *sb)
- {
- 	struct jfs_sb_info *sbi = JFS_SBI(sb);
- 	struct jfs_log *log = sbi->log;
-+	int rc = 0;
- 
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		txQuiesce(sb);
--		lmLogShutdown(log);
--		updateSuper(sb, FM_CLEAN);
-+		rc = lmLogShutdown(log);
-+		if (rc) {
-+			jfs_error(sb, "jfs_freeze: lmLogShutdown failed");
-+
-+			/* let operations fail rather than hang */
-+			txResume(sb);
-+
-+			return rc;
-+		}
-+		rc = updateSuper(sb, FM_CLEAN);
-+		if (rc) {
-+			jfs_err("jfs_freeze: updateSuper failed\n");
-+			/*
-+			 * Don't fail here. Everything succeeded except
-+			 * marking the superblock clean, so there's really
-+			 * no harm in leaving it frozen for now.
-+			 */
-+		}
- 	}
- 	return 0;
- }
-@@ -627,13 +644,18 @@ static int jfs_unfreeze(struct super_block *sb)
- 	int rc = 0;
- 
- 	if (!(sb->s_flags & MS_RDONLY)) {
--		updateSuper(sb, FM_MOUNT);
--		if ((rc = lmLogInit(log)))
--			jfs_err("jfs_unlock failed with return code %d", rc);
--		else
--			txResume(sb);
-+		rc = updateSuper(sb, FM_MOUNT);
-+		if (rc) {
-+			jfs_error(sb, "jfs_unfreeze: updateSuper failed");
-+			goto out;
-+		}
-+		rc = lmLogInit(log);
-+		if (rc)
-+			jfs_error(sb, "jfs_unfreeze: lmLogInit failed");
-+out:
-+		txResume(sb);
- 	}
--	return 0;
-+	return rc;
- }
- 
- static struct dentry *jfs_do_mount(struct file_system_type *fs_type,
--- 
-1.8.2.3
+Sarah Sharp
+
+> 
+> Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
+> ---
+>  drivers/usb/host/xhci.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index b4aa79d..7455156 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -4687,6 +4687,12 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
+>  
+>  	get_quirks(dev, xhci);
+>  
+> +	/* If we are resetting upon resume, we must disable runtime PM.
+> +	 * Otherwise, an open() syscall to a device on our runtime suspended
+> +	 * controller will trigger controller reset and device re-enumeration */
+> +	if (xhci->quirks & XHCI_RESET_ON_RESUME)
+> +		pm_runtime_get_noresume(dev);
+> +
+>  	/* Make sure the HC is halted. */
+>  	retval = xhci_halt(xhci);
+>  	if (retval)
+> -- 
+> 1.7.12.4
+> 
