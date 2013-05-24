@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760163Ab3EXIbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 May 2013 04:31:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15119 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760070Ab3EXIao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 May 2013 04:30:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,733,1363158000"; 
-   d="scan'208";a="342725940"
-Date: Fri, 24 May 2013 13:24:03 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Maarten ter Huurne <maarten@treewalker.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 3/6] dma: Add a jz4740 dmaengine driver
-Message-ID: <20130524075403.GS30200@intel.com>
-References: <1369341387-19147-1-git-send-email-lars@metafoo.de>
- <1369341387-19147-4-git-send-email-lars@metafoo.de>
- <20130524045935.GM30200@intel.com>
- <519F016C.4040901@metafoo.de>
- <20130524055453.GR30200@intel.com>
- <519F0B81.1090009@metafoo.de>
+	id S1760161Ab3EXIbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 May 2013 04:31:49 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:55972 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760097Ab3EXIbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 May 2013 04:31:46 -0400
+Message-ID: <519F2566.2000008@redhat.com>
+Date: Fri, 24 May 2013 10:31:34 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <519F0B81.1090009@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: PING^7 (was Re: [PATCH v2 00/14] Corrections and customization
+ of the SG_IO command whitelist (CVE-2012-4542))
+References: <20130522134134.GA15189@mtj.dyndns.org> <519CD234.40608@redhat.com> <20130522143019.GA18541@mtj.dyndns.org> <519CDDA4.2050100@redhat.com> <20130522193009.GA23845@mtj.dyndns.org> <519D360D.4050309@redhat.com> <20130522221737.GA12339@mtj.dyndns.org> <519DC926.4000106@redhat.com> <20130523090222.GA26592@mtj.dyndns.org> <519DE5AD.7080303@redhat.com> <20130524014405.GB16882@mtj.dyndns.org> <519F12FF.6090809@redhat.com> <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
+In-Reply-To: <CAOS58YODjkSF=V7wADqbn_z8c6bmj=r03hWxEs5B1O+1cd0n6g@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 24, 2013 at 08:41:05AM +0200, Lars-Peter Clausen wrote:
-> On 05/24/2013 07:54 AM, Vinod Koul wrote:
-> > On Fri, May 24, 2013 at 07:58:04AM +0200, Lars-Peter Clausen wrote:
-> >> This one needs both.
-> >>
-> >>>> +	jzcfg.mode = JZ4740_DMA_MODE_SINGLE;
-> >>>> +	jzcfg.request_type = config->slave_id;
-> >>>> +
-> >>>> +	chan->config = *config;
-> >>>> +
-> >>>> +	jz4740_dma_configure(chan->jz_chan, &jzcfg);
-> >>>> +
-> >>>> +	return 0;
-> >>> You are NOT use src_addr/dstn_addr? How else are you passing the periphral
-> >>> address?
-> >> I'm saving the whole config, which will later be used to retrieve the source or
-> >> dest address.
-> > well I missed that and it is a bad idea. You dont know when client has
-> > freed/thrown the pointer so copy this instead..
+Il 24/05/2013 10:02, Tejun Heo ha scritto:
+> On Fri, May 24, 2013 at 4:13 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>>> The same filtering table being applied to different classes of
+>>> hardware is a software bug, but my point is that the practive
+>>> essentially entrusts non-insignificant part of security enforcement to
+>>> the hardware itself.  The variety of hardware in question is very wide
+>>> and significant portion has historically been known to be flaky.
+>>
+>> Unproven theory, and contradicted by actual practice.  Bugs are more
+>> common in the handling of borderline conditions, not in the handling of
+>> unimplemented commands.
+>>
+>> If you want to be secure aginst buggy firmware, the commands you have to
+>> block are READ and WRITE.  Check out the list of existing USB quirks.
 > 
-> I do copy the full config, not just the pointer to the config. Although
-> src_addr and dest_addr are the only two fields which are used later on at this
-> point. So I could change it to just copy src_addr and dest_addr, or well just
-> one of them depending on the direction.
-One of them based on direction would be right
+> Well, I'd actually much prefer disabling CDB whitelisting for all !MMC
+> devices if at all possible. You're basically arguing that because what
+> we have is already broken, it should be okay to break it further.
+> Also, RW commands having more quirks doesn't necessarily indicate that
+> they tend to be more broken. They just get hammered on a lot in
+> various ways so problems on those commands tend to be more noticeable.
 
-> 
-> > 
-> >>
-> >>>> +}
-> >> [...]
-> >>>> +static int jz4740_dma_alloc_chan_resources(struct dma_chan *c)
-> >>>> +{
-> >>>> +	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
-> >>>> +
-> >>>> +	chan->jz_chan = jz4740_dma_request(chan, NULL);
-> >>>> +	if (!chan->jz_chan)
-> >>>> +		return -EBUSY;
-> >>>> +
-> >>>> +	jz4740_dma_set_complete_cb(chan->jz_chan, jz4740_dma_complete_cb);
-> >>>> +
-> >>>> +	return 0;
-> >>> Zero is not expected value, you need to return the descriptors allocated
-> >>> sucessfully.
-> >>
-> >> Well, zero descriptors have been allocated. As far as I can see only a negative
-> >> return value is treated as an error. Also the core doesn't seem to use the
-> >> return value for anything else but checking if it is an error.
-> > This is the API defination
-> > * @device_alloc_chan_resources: allocate resources and return the
-> > *      number of allocated descriptors
-> > 
-> 
-> But 0 is still the number of descriptors that have been pre-allocated.
-and that should change, typically the driver will preallocate a pool of
-descriptors. These are to be used later for .device_prep_xxx calls.
+I agree intuition may not count, and it's perfectly possible that
+firmware writers forgot a "break;" or put the wrong location in a jump
+table, so that unimplemented commands give interesting results.
 
---
-~Vinod
+However, the _fact_ is that this might happen anyway with the buttload
+of commands that are already enabled by the whitelist and that most
+disks will never implement.
+
+>> You need to allow more commands.
+>> The count-me-out knob allows all commands.
+>> You cannot always allow all commands.
+>> Ergo, you cannot always use the count-me-out knob.
+> 
+> The thing is that both approaches aren't perfect here so you can make
+> similar type of argument from the other side. If the system wants to
+> give out raw hardware access to VMs, requiring it to delegate the
+> device fully could be reasonable.
+
+No, it is not unfortunately.  Allowing to do discards is one thing,
+allowing to disrupt the settings of a SAN is another.  You can only
+delegate the device fully in these cases:
+
+(a) of course, if the guest is trusted;
+
+(b) if QEMU is running as a confined user, then you can get by with a
+userspace whitelist.  (Otherwise you're just a ptrace away from
+arbitrary access, as you pointed out).
+
+Unfortunately, there are _real_ problems that this patches fix, such as
+log spews due to blocked commands, and these happen even if neither of
+the above conditions is true.
+
+Is there anything else I can do?  Sure, I can check for the presence of
+the whitelist and hack the VPD pages to hide features that I know the
+whitelist will block.  Is it the right thing to do?  In my opinion no.
+It makes no sense to have raw device access _disable_ features compared
+to emulation.
+
+> Not ideal but widening direct
+> command access by default is pretty nasty too.
+
+I actually agree, and that's why I'm trying to balance the widening and
+restricting.
+
+Paolo
